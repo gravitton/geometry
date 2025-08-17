@@ -8,7 +8,7 @@
 [![Go Dev Reference][ico-go-dev-reference]][link-go-dev-reference]
 [![Software License][ico-license]][link-licence]
 
-2D geometry library for game development.
+Generic immutable 2D geometry library for game development.
 
 
 ## Installation
@@ -24,7 +24,7 @@ go get github.com/gravitton/geometry
 package main
 
 import (
-	"github.com/gravitton/geometry"
+	geom "github.com/gravitton/geometry"
 )
 ```
 
