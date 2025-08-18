@@ -3,6 +3,7 @@ package geom
 import (
 	"encoding/json"
 	"github.com/gravitton/assert"
+	"math"
 	"testing"
 )
 
@@ -33,6 +34,21 @@ func TestPoint_Lerp(t *testing.T) {
 	testPoint(t, Pt(0.4, -0.25).Lerp(Pt(100.1, -0.1), 0.1), 10.37, -0.235)
 }
 
+func TestPoint_DistanceTo(t *testing.T) {
+	assert.EqualDelta(t, Pt(1, 2).DistanceTo(Pt(2, 3)), math.Sqrt(2), Delta)
+	assert.EqualDelta(t, Pt(0.4, -0.25).DistanceTo(Pt(0.5, -0.35)), math.Sqrt(0.02), Delta)
+}
+
+func TestPoint_DistanceToSquared(t *testing.T) {
+	assert.Equal(t, Pt(1, 2).DistanceToSquared(Pt(2, 3)), 2)
+	assert.EqualDelta(t, Pt(0.4, -0.25).DistanceToSquared(Pt(0.5, -0.35)), 0.02, Delta)
+}
+
+func TestPoint_AngleTo(t *testing.T) {
+	assert.EqualDelta(t, Pt(2, 2).AngleTo(Pt(3, 2)), ToRadians(0), Delta)
+	assert.EqualDelta(t, Pt(0.4, -0.25).AngleTo(Pt(0.5, -0.35)), ToRadians(-45), Delta)
+}
+
 func TestPoint_Equal(t *testing.T) {
 	assert.False(t, Pt(1, 2).Equal(Pt(3, -3)))
 	assert.True(t, Pt(1, 2).Equal(Pt(1, 2)))
@@ -48,7 +64,7 @@ func TestPoint_Zero(t *testing.T) {
 	assert.True(t, ZeroPoint[int]().Zero())
 
 	assert.False(t, Pt(0.4, -0.25).Zero())
-	assert.True(t, Pt(0.0, -0.0).Zero())
+	assert.True(t, Pt(0.0, 0.0).Zero())
 	assert.True(t, Pt(0.0, 0.000001).Zero())
 	assert.True(t, ZeroPoint[float64]().Zero())
 }

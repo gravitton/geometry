@@ -35,6 +35,21 @@ func (p Point[T]) Lerp(other Point[T], t float64) Point[T] {
 	return Point[T]{Lerp(p.X, other.X, t), Lerp(p.Y, other.Y, t)}
 }
 
+// DistanceTo return euclidean distance from the current point to the given point.
+func (p Point[T]) DistanceTo(other Point[T]) float64 {
+	return other.Sub(p).Length()
+}
+
+// DistanceToSquared return euclidean distance squared (for faster comparison) from the current point to the given point.
+func (p Point[T]) DistanceToSquared(other Point[T]) T {
+	return other.Sub(p).LengthSquared()
+}
+
+// AngleTo return angle between the current point to the given point.
+func (p Point[T]) AngleTo(other Point[T]) float64 {
+	return other.Sub(p).Angle()
+}
+
 // Equal checks for equal X and Y values with given point.
 func (p Point[T]) Equal(other Point[T]) bool {
 	return Equal(p.X, other.X) && Equal(p.Y, other.Y)
