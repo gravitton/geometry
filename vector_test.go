@@ -3,6 +3,7 @@ package geom
 import (
 	"encoding/json"
 	"github.com/gravitton/assert"
+	"math"
 	"testing"
 )
 
@@ -28,6 +29,56 @@ func TestVector_Sub(t *testing.T) {
 	testVector(t, Vec(0.4, -0.25).Sub(Vec(100.1, -0.1)), -99.7, -0.15)
 }
 
+func TestVector_Scale(t *testing.T) {
+	testVector(t, Vec(1, 2).Scale(3), 3, 6)
+	testVector(t, Vec(0.4, -0.25).Scale(-1.5), -0.6, 0.375)
+}
+
+func TestVector_Stretch(t *testing.T) {
+	testVector(t, Vec(1, 2).Stretch(3, 2), 3, 4)
+	testVector(t, Vec(0.4, -0.25).Stretch(-1.5, 0.5), -0.6, -0.125)
+}
+
+func TestVector_Dot(t *testing.T) {
+	assert.Equal(t, Vec(1, 2).Dot(Vec(3, -3)), -3)
+	assert.EqualDelta(t, Vec(0.4, -0.25).Dot(Vec(100.1, -0.1)), 40.065, Delta)
+}
+
+func TestVector_Cross(t *testing.T) {
+	assert.Equal(t, Vec(1, 2).Cross(Vec(3, -3)), -9)
+	assert.EqualDelta(t, Vec(0.4, -0.25).Cross(Vec(100.1, -0.1)), 24.985, Delta)
+}
+
+func TestVector_Length(t *testing.T) {
+	assert.EqualDelta(t, Vec(1, 2).Length(), math.Sqrt(5), Delta)
+	assert.EqualDelta(t, Vec(0.4, -0.25).Length(), 0.4716990566028302, Delta)
+}
+
+func TestVector_LengthSquared(t *testing.T) {
+	assert.Equal(t, Vec(1, 2).LengthSquared(), 5)
+	assert.EqualDelta(t, Vec(0.4, -0.25).LengthSquared(), 0.2225, Delta)
+}
+
+func TestVector_Negate(t *testing.T) {
+	testVector(t, Vec(1, 2).Negate(), -1, -2)
+	testVector(t, Vec(0.4, -0.25).Negate(), -0.4, 0.25)
+}
+
+func TestVector_Resize(t *testing.T) {
+	testVector(t, Vec(1, 2).Resize(5), 2, 4)
+	testVector(t, Vec(0.4, -0.25).Resize(5), 4.239991, -2.649994)
+}
+
+func TestVector_Unit(t *testing.T) {
+	testVector(t, Vec(1, 2).Unit(), 0, 0)
+	testVector(t, Vec(0.4, -0.25).Unit(), 0.847998, -0.529998)
+}
+
+func TestVector_Angle(t *testing.T) {
+	assert.EqualDelta(t, Vec(2, 2).Angle(), ToRadians(45), Delta)
+	assert.EqualDelta(t, Vec(0.4, -0.25).Angle(), ToRadians(-32.005383), Delta)
+}
+
 func TestVector_Equal(t *testing.T) {
 	assert.False(t, Vec(1, 2).Equal(Vec(3, -3)))
 	assert.True(t, Vec(1, 2).Equal(Vec(1, 2)))
@@ -43,9 +94,17 @@ func TestVector_Zero(t *testing.T) {
 	assert.True(t, ZeroVector[int]().Zero())
 
 	assert.False(t, Vec(0.4, -0.25).Zero())
-	assert.True(t, Vec(0.0, -0.0).Zero())
+	assert.True(t, Vec(0.0, 0.0).Zero())
 	assert.True(t, Vec(0.0, 0.000001).Zero())
 	assert.True(t, ZeroVector[float64]().Zero())
+}
+
+func TestVector_Less(t *testing.T) {
+	assert.False(t, Vec(1, 2).Less(2))
+	assert.True(t, Vec(1, 2).Less(3))
+
+	assert.False(t, Vec(0.4, -0.25).Less(0.1))
+	assert.True(t, Vec(0.4, -0.25).Less(0.49))
 }
 
 func TestVector_String(t *testing.T) {
@@ -74,6 +133,8 @@ func TestVector_Immutable(t *testing.T) {
 
 	p1.Add(Vec(3, -2))
 	p1.Sub(p2)
+	p1.Scale(2)
+	p1.Stretch(3, 4)
 
 	testVector(t, p1, 1, 2)
 	testVector(t, p2, 3, -3)

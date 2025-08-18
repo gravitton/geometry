@@ -1,15 +1,41 @@
 package geom
 
-import "math"
+import (
+	"math"
+)
 
 const (
+	RadToDeg float64 = 180.0 / math.Pi
+	DegToRad float64 = math.Pi / 180.0
+
 	Delta float64 = 1e-6
 )
+
+// ToRadians converts degrees to radians
+func ToRadians(degrees float64) float64 {
+	return degrees * DegToRad
+}
+
+// ToDegrees converts radians to degrees
+func ToDegrees(radians float64) float64 {
+	return radians * RadToDeg
+}
+
+// Scale multiple number by scale factor
+func Scale[T Number](a T, scale float64) T {
+	return T(float64(a) * scale)
+}
+
+// Abs returns absolute value
+func Abs[T Number](a T) T {
+	return T(math.Abs(float64(a)))
+}
 
 // Midpoint calculate midpoint (point exactly halfway between two points)
 // Shorthand for `lerp(a, b, 0.5)`
 // TODO: fix rounding for int numbers
 func Midpoint[T Number](a, b T) T {
+	// return T(lerp(float64(a), float64(b), 0.5))
 	return T(midpoint(float64(a), float64(b)))
 }
 
