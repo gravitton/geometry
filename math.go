@@ -23,20 +23,20 @@ func ToDegrees(radians float64) float64 {
 
 // Scale multiple number by scale factor
 func Scale[T Number](a T, scale float64) T {
-	return T(float64(a) * scale)
+	return Cast[T](float64(a) * scale)
 }
 
 // Abs returns absolute value
 func Abs[T Number](a T) T {
-	return T(math.Abs(float64(a)))
+	return Cast[T](math.Abs(float64(a)))
 }
 
 // Midpoint calculate midpoint (point exactly halfway between two points)
 // Shorthand for `lerp(a, b, 0.5)`
 // TODO: fix rounding for int numbers
 func Midpoint[T Number](a, b T) T {
-	// return T(lerp(float64(a), float64(b), 0.5))
-	return T(midpoint(float64(a), float64(b)))
+	// return Cast(lerp(float64(a), float64(b), 0.5))
+	return Cast[T](midpoint(float64(a), float64(b)))
 }
 
 func midpoint(a, b float64) float64 {
@@ -48,7 +48,7 @@ func midpoint(a, b float64) float64 {
 // Lerp calculate linear interpolation (point along a line between two points based on a given ratio)
 // TODO: fix rounding for int numbers
 func Lerp[T Number](a, b T, t float64) T {
-	return T(lerp(float64(a), float64(b), t))
+	return Cast[T](lerp(float64(a), float64(b), t))
 }
 
 func lerp(a, b, t float64) float64 {

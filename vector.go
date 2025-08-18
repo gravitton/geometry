@@ -86,7 +86,7 @@ func (v Vector[T]) Rotate(angle float64) Vector[T] {
 	cosA := math.Cos(angle)
 	sinA := math.Sin(angle)
 
-	return Vector[T]{T(float64(v.X)*cosA - float64(v.Y)*sinA), T(float64(v.X)*sinA + float64(v.Y)*cosA)}
+	return Vector[T]{Cast[T](float64(v.X)*cosA - float64(v.Y)*sinA), Cast[T](float64(v.X)*sinA + float64(v.Y)*cosA)}
 }
 
 // Equal checks for equal X and Y values with given vector.

@@ -25,12 +25,12 @@ func TestPoint_Sub(t *testing.T) {
 }
 
 func TestPoint_Midpoint(t *testing.T) {
-	testPoint(t, Pt(1, 2).Midpoint(Pt(3, -3)), 2, 0)
+	testPoint(t, Pt(1, 2).Midpoint(Pt(3, -3)), 2, -1)
 	testPoint(t, Pt(0.4, -0.25).Midpoint(Pt(100.1, -0.1)), 50.25, -0.175)
 }
 
 func TestPoint_Lerp(t *testing.T) {
-	testPoint(t, Pt(1, 2).Lerp(Pt(3, -3), 0.3), 1, 0)
+	testPoint(t, Pt(1, 2).Lerp(Pt(3, -3), 0.3), 2, 1)
 	testPoint(t, Pt(0.4, -0.25).Lerp(Pt(100.1, -0.1), 0.1), 10.37, -0.235)
 }
 

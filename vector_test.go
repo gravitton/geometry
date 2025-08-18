@@ -70,7 +70,7 @@ func TestVector_Resize(t *testing.T) {
 }
 
 func TestVector_Unit(t *testing.T) {
-	testVector(t, Vec(1, 2).Unit(), 0, 0)
+	testVector(t, Vec(1, 2).Unit(), 0, 1)
 	testVector(t, Vec(0.4, -0.25).Unit(), 0.847998, -0.529998)
 }
 
