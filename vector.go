@@ -46,6 +46,12 @@ func (v Vector[T]) Cross(other Vector[T]) T {
 	return v.X*other.Y - v.Y*other.X
 }
 
+// Normal creates a new Vector as normal to current vector.
+// Faster equivalent to Rotate(math.Pi/2).
+func (v Vector[T]) Normal() Vector[T] {
+	return Vector[T]{-v.Y, v.X}
+}
+
 // Length returns the Vector's length (magnitude).
 func (v Vector[T]) Length() float64 {
 	return math.Hypot(float64(v.X), float64(v.Y))
@@ -68,6 +74,10 @@ func (v Vector[T]) Resize(length float64) Vector[T] {
 
 // Normalize creates a new Vector resized to a length of 1.
 func (v Vector[T]) Normalize() Vector[T] {
+	if v.Zero() {
+		return Vector[T]{1, 0}
+	}
+
 	return v.Resize(1)
 }
 
@@ -83,10 +93,9 @@ func (v Vector[T]) Angle() float64 {
 
 // Rotate creates a new Vector rotated by the given angle (in radians).
 func (v Vector[T]) Rotate(angle float64) Vector[T] {
-	cosA := math.Cos(angle)
-	sinA := math.Sin(angle)
+	sin, cos := math.Sincos(angle)
 
-	return Vector[T]{Cast[T](float64(v.X)*cosA - float64(v.Y)*sinA), Cast[T](float64(v.X)*sinA + float64(v.Y)*cosA)}
+	return Vector[T]{Cast[T](float64(v.X)*cos - float64(v.Y)*sin), Cast[T](float64(v.X)*sin + float64(v.Y)*cos)}
 }
 
 // Equal checks for equal X and Y values with given vector.

@@ -71,6 +71,7 @@ func TestVector_Resize(t *testing.T) {
 
 func TestVector_Normalize(t *testing.T) {
 	testVector(t, Vec(1, 2).Normalize(), 0, 1)
+	testVector(t, Vec(0, 0).Normalize(), 1, 0)
 	testVector(t, Vec(0.4, -0.25).Normalize(), 0.847998, -0.529998)
 }
 
