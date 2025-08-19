@@ -66,8 +66,8 @@ func (v Vector[T]) Resize(length float64) Vector[T] {
 	return v.Scale(length / v.Length())
 }
 
-// Unit creates a new Vector resized to a length of 1.
-func (v Vector[T]) Unit() Vector[T] {
+// Normalize creates a new Vector resized to a length of 1.
+func (v Vector[T]) Normalize() Vector[T] {
 	return v.Resize(1)
 }
 
@@ -98,6 +98,11 @@ func (p Vector[T]) Equal(other Vector[T]) bool {
 func (p Vector[T]) Zero() bool {
 	// return Equal(p.X, 0) && Equal(p.Y, 0)
 	return p.Equal(Vector[T]{})
+}
+
+// Unit checks if Vector is normalized.
+func (v Vector[T]) Unit() bool {
+	return Equal(v.LengthSquared(), 1.0)
 }
 
 // Less checks the Vector length is less than given value.

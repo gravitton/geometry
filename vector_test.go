@@ -69,14 +69,19 @@ func TestVector_Resize(t *testing.T) {
 	testVector(t, Vec(0.4, -0.25).Resize(5), 4.239991, -2.649994)
 }
 
-func TestVector_Unit(t *testing.T) {
-	testVector(t, Vec(1, 2).Unit(), 0, 1)
-	testVector(t, Vec(0.4, -0.25).Unit(), 0.847998, -0.529998)
+func TestVector_Normalize(t *testing.T) {
+	testVector(t, Vec(1, 2).Normalize(), 0, 1)
+	testVector(t, Vec(0.4, -0.25).Normalize(), 0.847998, -0.529998)
 }
 
 func TestVector_Angle(t *testing.T) {
 	assert.EqualDelta(t, Vec(2, 2).Angle(), ToRadians(45), Delta)
 	assert.EqualDelta(t, Vec(0.4, -0.25).Angle(), ToRadians(-32.005383), Delta)
+}
+
+func TestVector_Rotate(t *testing.T) {
+	testVector(t, Vec(1, 0).Rotate(ToRadians(90)), 0, 1)
+	testVector(t, Vec(0.4, -0.25).Rotate(math.Pi), -0.4, 0.25)
 }
 
 func TestVector_Equal(t *testing.T) {
@@ -90,13 +95,27 @@ func TestVector_Equal(t *testing.T) {
 
 func TestVector_Zero(t *testing.T) {
 	assert.False(t, Vec(1, 2).Zero())
-	assert.True(t, Vec(0, -0).Zero())
+	assert.True(t, Vec(0, 0).Zero())
 	assert.True(t, ZeroVector[int]().Zero())
 
 	assert.False(t, Vec(0.4, -0.25).Zero())
 	assert.True(t, Vec(0.0, 0.0).Zero())
 	assert.True(t, Vec(0.0, 0.000001).Zero())
 	assert.True(t, ZeroVector[float64]().Zero())
+}
+
+func TestVector_Unit(t *testing.T) {
+	assert.False(t, Vec(1, 2).Unit())
+	assert.True(t, Vec(1, 2).Normalize().Unit())
+	assert.True(t, Vec(1.1, 2.1).Normalize().Unit())
+	assert.False(t, Vec(0, 0).Unit())
+	assert.True(t, Vec(1, 0).Unit())
+	assert.True(t, Vec(1/math.Sqrt2, 1/math.Sqrt2).Unit())
+
+	assert.True(t, UpVector[float64]().Unit())
+	assert.True(t, DownVector[float64]().Unit())
+	assert.True(t, LeftVector[float64]().Unit())
+	assert.True(t, RightVector[float64]().Unit())
 }
 
 func TestVector_Less(t *testing.T) {
