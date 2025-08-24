@@ -23,49 +23,44 @@ func VecFromAngle[T Number](angle float64, length T) Vector[T] {
 	return Vector[T]{Cast[T](float64(length) * cos), Cast[T](float64(length) * sin)}
 }
 
-// XY returns the point X, Y values in standard order.
-func (v Vector[T]) XY() (T, T) {
-	return v.X, v.Y
-}
-
 // Add creates a new Vector by adding the given vector to the current vector.
-func (v Vector[T]) Add(other Vector[T]) Vector[T] {
-	return Vector[T]{v.X + other.X, v.Y + other.Y}
+func (v Vector[T]) Add(vector Vector[T]) Vector[T] {
+	return Vector[T]{v.X + vector.X, v.Y + vector.Y}
 }
 
 // AddXY creates a new Vector by adding the given values to the current vector.
-func (v Vector[T]) AddXY(dx, dy T) Vector[T] {
-	return Vector[T]{v.X + dx, v.Y + dy}
+func (v Vector[T]) AddXY(deltaX, deltaY T) Vector[T] {
+	return Vector[T]{v.X + deltaX, v.Y + deltaY}
 }
 
 // Subtract creates a new Vector by subtracting the given vector from the current vector.
-func (v Vector[T]) Subtract(other Vector[T]) Vector[T] {
-	return Vector[T]{v.X - other.X, v.Y - other.Y}
+func (v Vector[T]) Subtract(vector Vector[T]) Vector[T] {
+	return Vector[T]{v.X - vector.X, v.Y - vector.Y}
 }
 
 // SubtractXY creates a new Vector by subtracting the given values from the current vector.
-func (v Vector[T]) SubtractXY(dx, dy T) Vector[T] {
-	return Vector[T]{v.X - dx, v.Y - dy}
+func (v Vector[T]) SubtractXY(deltaX, deltaY T) Vector[T] {
+	return Vector[T]{v.X - deltaX, v.Y - deltaY}
 }
 
 // Multiply creates a new Vector by multiplying the given value to the current vector.
-func (v Vector[T]) Multiply(s float64) Vector[T] {
-	return Vector[T]{Multiple(v.X, s), Multiple(v.Y, s)}
+func (v Vector[T]) Multiply(scale float64) Vector[T] {
+	return Vector[T]{Multiple(v.X, scale), Multiple(v.Y, scale)}
 }
 
 // MultiplyXY creates a new Vector by multiplying the given values to the current vector.
-func (v Vector[T]) MultiplyXY(sx, sy float64) Vector[T] {
-	return Vector[T]{Multiple(v.X, sx), Multiple(v.Y, sy)}
+func (v Vector[T]) MultiplyXY(scaleX, scaleY float64) Vector[T] {
+	return Vector[T]{Multiple(v.X, scaleX), Multiple(v.Y, scaleY)}
 }
 
 // Divide creates a new Vector by dividing the given value to the current vector.
-func (v Vector[T]) Divide(s float64) Vector[T] {
-	return Vector[T]{Divide(v.X, s), Divide(v.Y, s)}
+func (v Vector[T]) Divide(scale float64) Vector[T] {
+	return Vector[T]{Divide(v.X, scale), Divide(v.Y, scale)}
 }
 
 // DivideXY creates a new Vector by dividing the given values to the current vector.
-func (v Vector[T]) DivideXY(sx, sy float64) Vector[T] {
-	return Vector[T]{Divide(v.X, sx), Divide(v.Y, sy)}
+func (v Vector[T]) DivideXY(scaleX, scaleY float64) Vector[T] {
+	return Vector[T]{Divide(v.X, scaleX), Divide(v.Y, scaleY)}
 }
 
 // Negate creates a new Vector with opposite direction.
@@ -100,13 +95,13 @@ func (v Vector[T]) Abs() Vector[T] {
 }
 
 // Dot returns dot (scalar) product of two vectors.
-func (v Vector[T]) Dot(other Vector[T]) T {
-	return v.X*other.X + v.Y*other.Y
+func (v Vector[T]) Dot(vector Vector[T]) T {
+	return v.X*vector.X + v.Y*vector.Y
 }
 
 // Cross returns cross product of two vectors.
-func (v Vector[T]) Cross(other Vector[T]) T {
-	return v.X*other.Y - v.Y*other.X
+func (v Vector[T]) Cross(vector Vector[T]) T {
+	return v.X*vector.Y - v.Y*vector.X
 }
 
 // Normal creates a new Vector as normal to current vector. Faster equivalent to Rotate(math.Pi/2).
@@ -130,8 +125,8 @@ func (v Vector[T]) Angle() float64 {
 }
 
 // Equal checks for equal X and Y values with given vector.
-func (v Vector[T]) Equal(other Vector[T]) bool {
-	return Equal(v.X, other.X) && Equal(v.Y, other.Y)
+func (v Vector[T]) Equal(vector Vector[T]) bool {
+	return Equal(v.X, vector.X) && Equal(v.Y, vector.Y)
 }
 
 // Zero checks if X and Y values are 0.
@@ -147,6 +142,11 @@ func (v Vector[T]) Unit() bool {
 // Less checks if Vector length is less than given value.
 func (v Vector[T]) Less(value T) bool {
 	return v.LengthSquared() < value*value
+}
+
+// XY returns the point X, Y values in standard order.
+func (v Vector[T]) XY() (T, T) {
+	return v.X, v.Y
 }
 
 // String returns a string representing the vector.
@@ -169,17 +169,17 @@ func UpVector[T Number]() Vector[T] {
 	return Vector[T]{0, 1}
 }
 
-// UpVector creates a new Vector with down (-y) direction (0,-1)
+// DownVector creates a new Vector with down (-y) direction (0,-1)
 func DownVector[T Number]() Vector[T] {
 	return Vector[T]{0, -1}
 }
 
-// UpVector creates a new Vector with right (+x) direction (+1,0)
+// RightVector creates a new Vector with right (+x) direction (+1,0)
 func RightVector[T Number]() Vector[T] {
 	return Vector[T]{1, 0}
 }
 
-// UpVector creates a new Vector with left (-x) direction (-1,0)
+// LeftVector creates a new Vector with left (-x) direction (-1,0)
 func LeftVector[T Number]() Vector[T] {
 	return Vector[T]{-1, 0}
 }
