@@ -13,19 +13,14 @@ func R[T Number](center Point[T], size Size[T]) Rectangle[T] {
 	return Rectangle[T]{center, size}
 }
 
-// RectMin creates a Rectangle from min point and size.
-func RectMin[T Number](min Point[T], size Size[T]) Rectangle[T] {
+// RectangleFromMin creates a Rectangle from min point and size.
+func RectangleFromMin[T Number](min Point[T], size Size[T]) Rectangle[T] {
 	return Rectangle[T]{min.AddXY(size.Scale(0.5).XY()), size}
 }
 
-// RectMinMax creates a Rectangle from min and max points.
-func RectMinMax[T Number](min, max Point[T]) Rectangle[T] {
-	return RectMin(min, S(max.Subtract(min).XY()))
-}
-
-// RectFromSize creates a Rectangle centered at (0,0) with the given size.
-func RectFromSize[T Number](size Size[T]) Rectangle[T] {
-	return Rectangle[T]{Point[T]{0, 0}, size}
+// RectangleFromMinMax creates a Rectangle from min and max points.
+func RectangleFromMinMax[T Number](min, max Point[T]) Rectangle[T] {
+	return RectangleFromMin(min, S(max.Subtract(min).XY()))
 }
 
 // Translate creates a new Rectangle translated by the given vector.
@@ -122,7 +117,7 @@ func (r Rectangle[T]) Edges() []Line[T] {
 	return []Line[T]{}
 }
 
-// Vertices returns the four corner points in clockwise order starting from Min (bottom-left).
+// Vertices returns the polygon vertices in order starting Min point, counter-clockwise.
 func (r Rectangle[T]) Vertices() []Point[T] {
 	return []Point[T]{
 		r.BottomLeft(),
@@ -159,8 +154,12 @@ func (r Rectangle[T]) Contains(point Point[T]) bool {
 	return minPoint.X <= point.X && point.X <= maxPoint.X && minPoint.Y <= point.Y && point.Y <= maxPoint.Y
 }
 
+// ToPolygon converts the rectangle into a generic Polygon with computed vertices.
+func (r Rectangle[T]) ToPolygon() Polygon[T] {
+	return Polygon[T]{r.Vertices()}
+}
+
 // String returns a string representation of the Rectangle using min and max.
 func (r Rectangle[T]) String() string {
 	return fmt.Sprintf("%s-%s", r.Min().String(), r.Max().String())
-
 }
