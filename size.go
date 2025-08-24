@@ -8,7 +8,7 @@ type Size[T Number] struct {
 	Height T `json:"h"`
 }
 
-// S is shorthand for Size[T]{width, height}.
+// S is shorthand for Size{width, height}.
 func S[T Number](width, height T) Size[T] {
 	return Size[T]{width, height}
 }

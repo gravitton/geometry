@@ -2,40 +2,53 @@ package geom
 
 import "fmt"
 
-// Line is a 2D line from point A to point B.
+// Line is a 2D line.
 type Line[T Number] struct {
-	A Point[T] `json:"a"`
-	B Point[T] `json:"b"`
+	Start Point[T] `json:"a"`
+	End   Point[T] `json:"b"`
 }
 
-func L[T Number](x1, y1, x2, y2 T) Line[T] {
-	return Line[T]{Point[T]{x1, y1}, Point[T]{x2, y2}}
+// L is shorthand for Line{start, end}.
+func L[T Number](start, end Point[T]) Line[T] {
+	return Line[T]{start, end}
 }
 
-func (l Line[T]) Translate(change Vector[T]) Line[T] {
-	return Line[T]{l.A.Add(change), l.B.Add(change)}
+// Translate creates a new Line translated by the given vector.
+func (l Line[T]) Translate(vector Vector[T]) Line[T] {
+	return Line[T]{l.Start.Add(vector), l.End.Add(vector)}
 }
 
+// MoveTo creates a new Line with the start point moved to point and same length and direction.
+func (l Line[T]) MoveTo(point Point[T]) Line[T] {
+	return Line[T]{point, l.End.Add(point.Subtract(l.Start))}
+}
+
+// Reversed creates a new Line with the start and end points swapped.
 func (l Line[T]) Reversed() Line[T] {
-	return Line[T]{l.B, l.A}
+	return Line[T]{l.End, l.Start}
 }
 
+// Midpoint returns the midpoint of the line.
 func (l Line[T]) Midpoint() Point[T] {
-	return l.A.Midpoint(l.B)
+	return l.Start.Midpoint(l.End)
 }
 
+// Direction returns the direction vector of the line.
 func (l Line[T]) Direction() Vector[T] {
-	return l.B.Sub(l.A)
+	return l.End.Subtract(l.Start)
 }
 
+// Length returns the length of the line.
 func (l Line[T]) Length() float64 {
 	return l.Direction().Length()
 }
 
+// Equal checks if the start and end points of the lines are equal.
 func (l Line[T]) Equal(other Line[T]) bool {
-	return l.A.Equal(other.A) && l.B.Equal(other.B)
+	return l.Start.Equal(other.Start) && l.End.Equal(other.End)
 }
 
+// String returns a string representation of the Line.
 func (l Line[T]) String() string {
-	return fmt.Sprintf("L(%s;%s)", l.A.String(), l.B.String())
+	return fmt.Sprintf("L(%s;%s)", l.Start.String(), l.End.String())
 }
