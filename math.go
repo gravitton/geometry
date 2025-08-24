@@ -9,6 +9,9 @@ const (
 	DegToRad float64 = math.Pi / 180.0
 
 	Delta float64 = 1e-6
+
+	Sqrt3          = 1.732050807568877293527446341505872367
+	OneOverSqrtTwo = 1 / math.Sqrt2
 )
 
 // ToRadians converts degrees to radians
@@ -21,9 +24,18 @@ func ToDegrees(radians float64) float64 {
 	return radians * RadToDeg
 }
 
-// Scale multiple number by scale factor
-func Scale[T Number](a T, scale float64) T {
+// Multiple multiple number by scale factor
+func Multiple[T Number](a T, scale float64) T {
 	return Cast[T](float64(a) * scale)
+}
+
+// Divide divide number by scale factor
+func Divide[T Number](a T, scale float64) T {
+	if scale == 0 {
+		return a
+	}
+
+	return Cast[T](float64(a) / scale)
 }
 
 // Abs returns absolute value
@@ -33,7 +45,6 @@ func Abs[T Number](a T) T {
 
 // Midpoint calculate midpoint (point exactly halfway between two points)
 // Shorthand for `lerp(a, b, 0.5)`
-// TODO: fix rounding for int numbers
 func Midpoint[T Number](a, b T) T {
 	// return Cast(lerp(float64(a), float64(b), 0.5))
 	return Cast[T](midpoint(float64(a), float64(b)))
@@ -46,7 +57,6 @@ func midpoint(a, b float64) float64 {
 }
 
 // Lerp calculate linear interpolation (point along a line between two points based on a given ratio)
-// TODO: fix rounding for int numbers
 func Lerp[T Number](a, b T, t float64) T {
 	return Cast[T](lerp(float64(a), float64(b), t))
 }

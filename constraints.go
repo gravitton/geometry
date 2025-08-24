@@ -5,6 +5,7 @@ import (
 	"math"
 )
 
+// Number is a generic number type supported by all types and functions in this package.
 type Number interface {
 	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~float32 | ~float64
 }
@@ -21,9 +22,9 @@ func Cast[T Number](a float64) T {
 // ToString format Number as numeric string
 func ToString[T Number](value T) string {
 	if isIntValue(value) {
-		return fmt.Sprintf("%+d", int64(value))
+		return fmt.Sprintf("%d", int64(value))
 	} else {
-		return fmt.Sprintf("%+.2f", float64(value))
+		return fmt.Sprintf("%.2f", float64(value))
 	}
 }
 
