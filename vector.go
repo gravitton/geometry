@@ -11,7 +11,7 @@ type Vector[T Number] struct {
 	Y T `json:"y"`
 }
 
-// V is shorthand for Vector[T]{x, y}.
+// V is shorthand for Vector{x, y}.
 func V[T Number](x, y T) Vector[T] {
 	return Vector[T]{x, y}
 }
