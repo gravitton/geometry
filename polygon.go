@@ -1,11 +1,11 @@
 package geom
 
-// Polygon is a 2D polygon with 3+ transform.
+// Polygon is a 2D polygon with 3+ vertices.
 type Polygon[T Number] struct {
 	Vertices []Point[T]
 }
 
-// Center returns the polygon centroid computed as the average of its transform.
+// Center returns the polygon centroid computed as the average of its vertices.
 func (p Polygon[T]) Center() Point[T] {
 	var x, y T
 	l := T(len(p.Vertices))
@@ -16,9 +16,9 @@ func (p Polygon[T]) Center() Point[T] {
 	return Point[T]{x / l, y / l}
 }
 
-// Translate creates a new Polygon translated by the given vector (applied to all transform).
+// Translate creates a new Polygon translated by the given vector (applied to all vertices).
 func (p Polygon[T]) Translate(vector Vector[T]) Polygon[T] {
-	return Polygon[T]{transform(p.Vertices, func(e Point[T]) Point[T] {
+	return Polygon[T]{Transform(p.Vertices, func(e Point[T]) Point[T] {
 		return e.Add(vector)
 	})}
 }
@@ -31,7 +31,7 @@ func (p Polygon[T]) MoveTo(point Point[T]) Polygon[T] {
 // Scale creates a new Polygon uniformly scaled about its centroid by the factor.
 func (p Polygon[T]) Scale(scale float64) Polygon[T] {
 	center := p.Center()
-	return Polygon[T]{transform(p.Vertices, func(point Point[T]) Point[T] {
+	return Polygon[T]{Transform(p.Vertices, func(point Point[T]) Point[T] {
 		return center.Add(point.Subtract(center).Multiply(scale))
 	})}
 }
@@ -39,16 +39,7 @@ func (p Polygon[T]) Scale(scale float64) Polygon[T] {
 // ScaleXY creates a new Polygon scaled about its centroid by the factors.
 func (p Polygon[T]) ScaleXY(scaleX, scaleY float64) Polygon[T] {
 	center := p.Center()
-	return Polygon[T]{transform(p.Vertices, func(point Point[T]) Point[T] {
+	return Polygon[T]{Transform(p.Vertices, func(point Point[T]) Point[T] {
 		return center.Add(point.Subtract(center).MultiplyXY(scaleX, scaleY))
 	})}
-}
-
-func transform[S ~[]E, E any, T any](input S, fn func(E) T) []T {
-	output := make([]T, len(input))
-	for i, v := range input {
-		output[i] = fn(v)
-	}
-
-	return output
 }

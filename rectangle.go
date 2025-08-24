@@ -23,6 +23,11 @@ func RectangleFromMinMax[T Number](min, max Point[T]) Rectangle[T] {
 	return RectangleFromMin(min, S(max.Subtract(min).XY()))
 }
 
+// RectangleFromSize creates a Rectangle from zero point and size.
+func RectangleFromSize[T Number](size Size[T]) Rectangle[T] {
+	return Rectangle[T]{P[T](0, 0), size}
+}
+
 // Translate creates a new Rectangle translated by the given vector.
 func (r Rectangle[T]) Translate(vector Vector[T]) Rectangle[T] {
 	return Rectangle[T]{r.Center.Add(vector), r.Size}

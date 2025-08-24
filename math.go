@@ -79,3 +79,13 @@ func EqualDelta[T Number](a, b T, delta float64) bool {
 func equalDelta(a, b, delta float64) bool {
 	return math.Abs(a-b) <= delta
 }
+
+// Transform applies a function to each element in a slice
+func Transform[S ~[]E, E any, T any](input S, fn func(E) T) []T {
+	output := make([]T, len(input))
+	for i, v := range input {
+		output[i] = fn(v)
+	}
+
+	return output
+}
