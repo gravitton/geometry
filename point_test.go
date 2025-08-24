@@ -16,9 +16,9 @@ func TestPoint_New(t *testing.T) {
 }
 
 func TestPoint_Add(t *testing.T) {
-	testPoint(t, P(1, 2).Add(Vec(3, -2)), 4, 0)
+	testPoint(t, P(1, 2).Add(V(3, -2)), 4, 0)
 	testPoint(t, P(1, 2).AddXY(3, -2), 4, 0)
-	testPoint(t, P(0.4, -0.25).Add(Vec(100.1, -0.1)), 100.5, -0.35)
+	testPoint(t, P(0.4, -0.25).Add(V(100.1, -0.1)), 100.5, -0.35)
 	testPoint(t, P(0.4, -0.25).AddXY(100.1, -0.1), 100.5, -0.35)
 }
 
@@ -110,7 +110,7 @@ func TestPoint_Immutable(t *testing.T) {
 	p1 := P(1, 2)
 	p2 := P(3, -3)
 
-	p1.Add(Vec(3, -2))
+	p1.Add(V(3, -2))
 	p1.AddXY(2, 3)
 	p1.Subtract(p2)
 	p1.Multiply(2)

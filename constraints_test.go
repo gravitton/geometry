@@ -1,9 +1,10 @@
 package geom
 
 import (
-	"github.com/gravitton/assert"
 	"math"
 	"testing"
+
+	"github.com/gravitton/assert"
 )
 
 func BenchmarkIsIntValue_Int(b *testing.B) {
@@ -78,13 +79,13 @@ func TestCast(t *testing.T) {
 }
 
 func TestToString(t *testing.T) {
-	testToString(t, 3, "+3")
+	testToString(t, 3, "3")
 	testToString(t, -2, "-2")
-	testToString(t, 0.0000, "+0")
-	testToString(t, 1.00, "+1")
-	testToString(t, 29.59, "+29.59")
-	testToString(t, 1.001, "+1.00")
-	testToString(t, 1.009, "+1.01")
+	testToString(t, 0.0000, "0")
+	testToString(t, 1.00, "1")
+	testToString(t, 29.59, "29.59")
+	testToString(t, 1.001, "1.00")
+	testToString(t, 1.009, "1.01")
 	testToString(t, -1.011, "-1.01")
 }
 

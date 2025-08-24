@@ -11,65 +11,78 @@ type Vector[T Number] struct {
 	Y T `json:"y"`
 }
 
-// Vec is shorthand for Vector[T]{x, y}.
-func Vec[T Number](x, y T) Vector[T] {
+// V is shorthand for Vector[T]{x, y}.
+func V[T Number](x, y T) Vector[T] {
 	return Vector[T]{x, y}
 }
 
+// VecFromAngle is shorthand for V(1,0).Rotate(angle)
+func VecFromAngle[T Number](angle float64, length T) Vector[T] {
+	sin, cos := math.Sincos(angle)
+
+	return Vector[T]{Cast[T](float64(length) * cos), Cast[T](float64(length) * sin)}
+}
+
+// XY returns the point X, Y values in standard order.
+func (v Vector[T]) XY() (T, T) {
+	return v.X, v.Y
+}
+
 // Add creates a new Vector by adding the given vector to the current vector.
-func (p Vector[T]) Add(other Vector[T]) Vector[T] {
-	return Vector[T]{p.X + other.X, p.Y + other.Y}
+func (v Vector[T]) Add(other Vector[T]) Vector[T] {
+	return Vector[T]{v.X + other.X, v.Y + other.Y}
 }
 
-// Sub creates a new Vector by subtracting the given vector from the current vector.
-func (p Vector[T]) Sub(other Vector[T]) Vector[T] {
-	return Vector[T]{p.X - other.X, p.Y - other.Y}
+// AddXY creates a new Vector by adding the given values to the current vector.
+func (v Vector[T]) AddXY(dx, dy T) Vector[T] {
+	return Vector[T]{v.X + dx, v.Y + dy}
 }
 
-// Scale creates a new Vector with uniform scaled X and Y.
-func (v Vector[T]) Scale(scale float64) Vector[T] {
-	return Vector[T]{Scale(v.X, scale), Scale(v.Y, scale)}
+// Subtract creates a new Vector by subtracting the given vector from the current vector.
+func (v Vector[T]) Subtract(other Vector[T]) Vector[T] {
+	return Vector[T]{v.X - other.X, v.Y - other.Y}
 }
 
-// Scale creates a new Vector with scaled X and Y.
-func (v Vector[T]) Stretch(scaleX, scaleY float64) Vector[T] {
-	return Vector[T]{Scale(v.X, scaleX), Scale(v.Y, scaleY)}
+// SubtractXY creates a new Vector by subtracting the given values from the current vector.
+func (v Vector[T]) SubtractXY(dx, dy T) Vector[T] {
+	return Vector[T]{v.X - dx, v.Y - dy}
 }
 
-// Dot returns dot (scalar) product of two vectors.
-func (v Vector[T]) Dot(other Vector[T]) T {
-	return v.X*other.X + v.Y*other.Y
+// Multiply creates a new Vector by multiplying the given value to the current vector.
+func (v Vector[T]) Multiply(s float64) Vector[T] {
+	return Vector[T]{Multiple(v.X, s), Multiple(v.Y, s)}
 }
 
-// Cross returns cross product of two vectors.
-func (v Vector[T]) Cross(other Vector[T]) T {
-	return v.X*other.Y - v.Y*other.X
+// MultiplyXY creates a new Vector by multiplying the given values to the current vector.
+func (v Vector[T]) MultiplyXY(sx, sy float64) Vector[T] {
+	return Vector[T]{Multiple(v.X, sx), Multiple(v.Y, sy)}
 }
 
-// Normal creates a new Vector as normal to current vector.
-// Faster equivalent to Rotate(math.Pi/2).
-func (v Vector[T]) Normal() Vector[T] {
-	return Vector[T]{-v.Y, v.X}
+// Divide creates a new Vector by dividing the given value to the current vector.
+func (v Vector[T]) Divide(s float64) Vector[T] {
+	return Vector[T]{Divide(v.X, s), Divide(v.Y, s)}
 }
 
-// Length returns the Vector's length (magnitude).
-func (v Vector[T]) Length() float64 {
-	return math.Hypot(float64(v.X), float64(v.Y))
-}
-
-// LengthSquared returns the Vector's length (magnitude) squared (for faster comparison).
-func (v Vector[T]) LengthSquared() T {
-	return v.X*v.X + v.Y*v.Y
+// DivideXY creates a new Vector by dividing the given values to the current vector.
+func (v Vector[T]) DivideXY(sx, sy float64) Vector[T] {
+	return Vector[T]{Divide(v.X, sx), Divide(v.Y, sy)}
 }
 
 // Negate creates a new Vector with opposite direction.
 func (v Vector[T]) Negate() Vector[T] {
-	return v.Scale(-1)
+	return Vector[T]{-v.X, -v.Y}
+}
+
+// Rotate creates a new Vector rotated by the given angle (in radians).
+func (v Vector[T]) Rotate(angle float64) Vector[T] {
+	sin, cos := math.Sincos(angle)
+
+	return Vector[T]{Cast[T](float64(v.X)*cos - float64(v.Y)*sin), Cast[T](float64(v.X)*sin + float64(v.Y)*cos)}
 }
 
 // Resize creates a new Vector resized to the given length.
 func (v Vector[T]) Resize(length float64) Vector[T] {
-	return v.Scale(length / v.Length())
+	return v.Multiply(length / v.Length())
 }
 
 // Normalize creates a new Vector resized to a length of 1.
@@ -86,27 +99,44 @@ func (v Vector[T]) Abs() Vector[T] {
 	return Vector[T]{Abs(v.X), Abs(v.Y)}
 }
 
+// Dot returns dot (scalar) product of two vectors.
+func (v Vector[T]) Dot(other Vector[T]) T {
+	return v.X*other.X + v.Y*other.Y
+}
+
+// Cross returns cross product of two vectors.
+func (v Vector[T]) Cross(other Vector[T]) T {
+	return v.X*other.Y - v.Y*other.X
+}
+
+// Normal creates a new Vector as normal to current vector. Faster equivalent to Rotate(math.Pi/2).
+func (v Vector[T]) Normal() Vector[T] {
+	return Vector[T]{-v.Y, v.X}
+}
+
+// Length returns the Vector's length (magnitude).
+func (v Vector[T]) Length() float64 {
+	return math.Hypot(float64(v.X), float64(v.Y))
+}
+
+// LengthSquared returns the Vector's length (magnitude) squared (for faster comparison).
+func (v Vector[T]) LengthSquared() T {
+	return v.X*v.X + v.Y*v.Y
+}
+
 // Angle returns Vector's angle (in radian).
 func (v Vector[T]) Angle() float64 {
 	return math.Atan2(float64(v.Y), float64(v.X))
 }
 
-// Rotate creates a new Vector rotated by the given angle (in radians).
-func (v Vector[T]) Rotate(angle float64) Vector[T] {
-	sin, cos := math.Sincos(angle)
-
-	return Vector[T]{Cast[T](float64(v.X)*cos - float64(v.Y)*sin), Cast[T](float64(v.X)*sin + float64(v.Y)*cos)}
-}
-
 // Equal checks for equal X and Y values with given vector.
-func (p Vector[T]) Equal(other Vector[T]) bool {
-	return Equal(p.X, other.X) && Equal(p.Y, other.Y)
+func (v Vector[T]) Equal(other Vector[T]) bool {
+	return Equal(v.X, other.X) && Equal(v.Y, other.Y)
 }
 
 // Zero checks if X and Y values are 0.
-func (p Vector[T]) Zero() bool {
-	// return Equal(p.X, 0) && Equal(p.Y, 0)
-	return p.Equal(Vector[T]{})
+func (v Vector[T]) Zero() bool {
+	return v.Equal(Vector[T]{})
 }
 
 // Unit checks if Vector is normalized.
@@ -114,14 +144,14 @@ func (v Vector[T]) Unit() bool {
 	return Equal(v.LengthSquared(), 1.0)
 }
 
-// Less checks the Vector length is less than given value.
+// Less checks if Vector length is less than given value.
 func (v Vector[T]) Less(value T) bool {
 	return v.LengthSquared() < value*value
 }
 
 // String returns a string representing the vector.
-func (p Vector[T]) String() string {
-	return fmt.Sprintf("⟨%s,%s⟩", ToString(p.X), ToString(p.Y))
+func (v Vector[T]) String() string {
+	return fmt.Sprintf("⟨%s,%s⟩", ToString(v.X), ToString(v.Y))
 }
 
 // ZeroVector creates a new Vector with zero values (0,0).
