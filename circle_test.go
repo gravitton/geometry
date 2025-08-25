@@ -2,6 +2,7 @@ package geom
 
 import (
 	"encoding/json"
+	"math"
 	"testing"
 
 	"github.com/gravitton/assert"
@@ -30,6 +31,36 @@ func TestCircle_Scale(t *testing.T) {
 func TestCircle_Resize(t *testing.T) {
 	testCircle(t, C(P(1, 2), 10).Resize(8), 1, 2, 8)
 	testCircle(t, C(P(0.4, -0.25), 1.2).Resize(3.1), 0.4, -0.25, 3.1)
+}
+
+func TestCircle_Expand(t *testing.T) {
+	testCircle(t, C(P(1, 2), 10).Expand(8), 1, 2, 18)
+	testCircle(t, C(P(0.4, -0.25), 1.2).Expand(3.1), 0.4, -0.25, 4.3)
+}
+
+func TestCircle_Shrunk(t *testing.T) {
+	testCircle(t, C(P(1, 2), 10).Shrunk(8), 1, 2, 2)
+	testCircle(t, C(P(0.4, -0.25), 1.2).Shrunk(0.3), 0.4, -0.25, 0.9)
+}
+
+func TestCircle_Area(t *testing.T) {
+	assert.EqualDelta(t, C(P(1, 2), 10).Area(), math.Pi*100.0, Delta)
+	assert.EqualDelta(t, C(P(0.4, -0.25), 1.2).Area(), math.Pi*1.44, Delta)
+}
+
+func TestCircle_Circumference(t *testing.T) {
+	assert.EqualDelta(t, C(P(1, 2), 10).Circumference(), math.Pi*20.0, Delta)
+	assert.EqualDelta(t, C(P(0.4, -0.25), 1.2).Circumference(), math.Pi*2.4, Delta)
+}
+
+func TestCircle_Diameter(t *testing.T) {
+	assert.Equal(t, C(P(1, 2), 10).Diameter(), 20)
+	assert.EqualDelta(t, C(P(0.4, -0.25), 1.2).Diameter(), 2.4, Delta)
+}
+
+func TestCircle_Bounds(t *testing.T) {
+	testRect(t, C(P(1, 2), 10).Bounds(), 1, 2, 10, 10)
+	testRect(t, C(P(0.4, -0.25), 1.2).Bounds(), 0.4, -0.25, 1.2, 1.2)
 }
 
 func TestCircle_Equal(t *testing.T) {
