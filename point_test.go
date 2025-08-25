@@ -56,9 +56,9 @@ func TestPoint_DistanceTo(t *testing.T) {
 	assert.EqualDelta(t, P(0.4, -0.25).DistanceTo(P(0.5, -0.35)), math.Sqrt(0.02), Delta)
 }
 
-func TestPoint_DistanceToSquared(t *testing.T) {
-	assert.Equal(t, P(1, 2).DistanceToSquared(P(2, 3)), 2)
-	assert.EqualDelta(t, P(0.4, -0.25).DistanceToSquared(P(0.5, -0.35)), 0.02, Delta)
+func TestPoint_DistanceSquaredTo(t *testing.T) {
+	assert.Equal(t, P(1, 2).DistanceSquaredTo(P(2, 3)), 2)
+	assert.EqualDelta(t, P(0.4, -0.25).DistanceSquaredTo(P(0.5, -0.35)), 0.02, Delta)
 }
 
 func TestPoint_AngleTo(t *testing.T) {
