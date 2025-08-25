@@ -14,33 +14,33 @@ func S[T Number](width, height T) Size[T] {
 }
 
 // Scale creates a new Size scaled by the given factor in both dimensions.
-func (s Size[T]) Scale(scale float64) Size[T] {
-	return Size[T]{Multiple(s.Width, scale), Multiple(s.Height, scale)}
+func (s Size[T]) Scale(factor float64) Size[T] {
+	return Size[T]{Multiple(s.Width, factor), Multiple(s.Height, factor)}
 }
 
 // ScaleXY creates a new Size scaled by the given factors along X and Y.
-func (s Size[T]) ScaleXY(scaleX, scaleY float64) Size[T] {
-	return Size[T]{Multiple(s.Width, scaleX), Multiple(s.Height, scaleY)}
+func (s Size[T]) ScaleXY(factorX, factorY float64) Size[T] {
+	return Size[T]{Multiple(s.Width, factorX), Multiple(s.Height, factorY)}
 }
 
-// Expand creates a new Size expanded by the same delta in both dimensions.
-func (s Size[T]) Expand(delta T) Size[T] {
-	return Size[T]{s.Width + delta, s.Height + delta}
+// Grow creates a new Size expanded by the same delta in both dimensions.
+func (s Size[T]) Grow(amount T) Size[T] {
+	return Size[T]{s.Width + amount, s.Height + amount}
 }
 
-// ExpandXY creates a new Size expanded by the given deltas along X and Y.
-func (s Size[T]) ExpandXY(deltaWidth, deltaHeight T) Size[T] {
-	return Size[T]{s.Width + deltaWidth, s.Height + deltaHeight}
+// GrowXY creates a new Size expanded by the given amounts along X and Y.
+func (s Size[T]) GrowXY(amountX, amountY T) Size[T] {
+	return Size[T]{s.Width + amountX, s.Height + amountY}
 }
 
-// Shrunk creates a new Size reduced by the same delta in both dimensions.
-func (s Size[T]) Shrunk(delta T) Size[T] {
-	return Size[T]{s.Width - delta, s.Height - delta}
+// Shrink creates a new Size reduced by the same delta in both dimensions.
+func (s Size[T]) Shrink(amount T) Size[T] {
+	return Size[T]{s.Width - amount, s.Height - amount}
 }
 
-// ShrunkXY creates a new Size reduced by the given deltas along X and Y.
-func (s Size[T]) ShrunkXY(deltaWidth, deltaHeight T) Size[T] {
-	return Size[T]{s.Width - deltaWidth, s.Height - deltaHeight}
+// ShrinkXY creates a new Size reduced by the given amounts along X and Y.
+func (s Size[T]) ShrinkXY(amountX, amountY T) Size[T] {
+	return Size[T]{s.Width - amountX, s.Height - amountY}
 }
 
 // Area returns the size's area (width * height).

@@ -20,17 +20,17 @@ func TestSize_Scale(t *testing.T) {
 }
 
 func TestSize_Expand(t *testing.T) {
-	testSize(t, S(2, 3).Expand(2), 4, 5)
-	testSize(t, S(2, 3).ExpandXY(2, 3), 4, 6)
-	testSize(t, S(0.4, 0.25).Expand(0.1), 0.5, 0.35)
-	testSize(t, S(0.4, 0.25).ExpandXY(0.1, 0.2), 0.5, 0.45)
+	testSize(t, S(2, 3).Grow(2), 4, 5)
+	testSize(t, S(2, 3).GrowXY(2, 3), 4, 6)
+	testSize(t, S(0.4, 0.25).Grow(0.1), 0.5, 0.35)
+	testSize(t, S(0.4, 0.25).GrowXY(0.1, 0.2), 0.5, 0.45)
 }
 
 func TestSize_Shrunk(t *testing.T) {
-	testSize(t, S(2, 3).Shrunk(1), 1, 2)
-	testSize(t, S(2, 3).ShrunkXY(1, 2), 1, 1)
-	testSize(t, S(0.4, 0.25).Shrunk(0.1), 0.3, 0.15)
-	testSize(t, S(0.4, 0.25).ShrunkXY(0.1, 0.2), 0.3, 0.05)
+	testSize(t, S(2, 3).Shrink(1), 1, 2)
+	testSize(t, S(2, 3).ShrinkXY(1, 2), 1, 1)
+	testSize(t, S(0.4, 0.25).Shrink(0.1), 0.3, 0.15)
+	testSize(t, S(0.4, 0.25).ShrinkXY(0.1, 0.2), 0.3, 0.05)
 }
 
 func TestSize_Area(t *testing.T) {
@@ -97,10 +97,10 @@ func TestSize_Immutable(t *testing.T) {
 
 	s.Scale(2)
 	s.ScaleXY(2, 3)
-	s.Expand(1)
-	s.ExpandXY(1, 2)
-	s.Shrunk(1)
-	s.ShrunkXY(1, 2)
+	s.Grow(1)
+	s.GrowXY(1, 2)
+	s.Shrink(1)
+	s.ShrinkXY(1, 2)
 
 	testSize(t, s, 2, 3)
 }

@@ -42,13 +42,13 @@ func (rp RegularPolygon[T]) MoveTo(point Point[T]) RegularPolygon[T] {
 }
 
 // Multiple creates a new RegularPolygon with size scaled by the given factor.
-func (rp RegularPolygon[T]) Scale(scale float64) RegularPolygon[T] {
-	return RegularPolygon[T]{rp.Center, rp.Size.Scale(scale), rp.N}
+func (rp RegularPolygon[T]) Scale(factor float64) RegularPolygon[T] {
+	return RegularPolygon[T]{rp.Center, rp.Size.Scale(factor), rp.N}
 }
 
 // Multiple creates a new RegularPolygon with size scaled by the given factors.
-func (rp RegularPolygon[T]) ScaleXY(scaleX, scaleY float64) RegularPolygon[T] {
-	return RegularPolygon[T]{rp.Center, rp.Size.ScaleXY(scaleX, scaleY), rp.N}
+func (rp RegularPolygon[T]) ScaleXY(factorX, factorY float64) RegularPolygon[T] {
+	return RegularPolygon[T]{rp.Center, rp.Size.ScaleXY(factorX, factorY), rp.N}
 }
 
 // Vertices returns the polygon vertices in order starting from angle 0, counter-clockwise.

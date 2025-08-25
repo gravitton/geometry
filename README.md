@@ -121,10 +121,11 @@ func (s Size[T]) AspectRatio() float64
 
 
 // Dimension operations
-func (s Size[T]) Scaled(factor float64) Size[T]
-func (s Size[T]) ScaledXY(scaleX, scaleY float64) Size[T]
-func (s Size[T]) Expand(deltaWidth, deltaHeight T) Size[T]
-func (s Size[T]) Shrunk(deltaWidth, deltaHeight T) Size[T]
+func (s Size[T]) Scale(factor float64) Size[T]
+func (s Size[T]) ScaleXY(factorX, factorY float64) Size[T]
+func (s Size[T]) Grow(amount T) Size[T]
+func (s Size[T]) GrowXY(amountX, amountY T) Size[T]
+func (s Size[T]) Shrink(amountX, amountY T) Size[T]
 
 // Utilities
 func (s Size[T]) Equal(other Size[T]) bool

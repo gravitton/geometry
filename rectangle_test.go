@@ -43,17 +43,17 @@ func TestRectangle_Resize(t *testing.T) {
 }
 
 func TestRectangle_Expand(t *testing.T) {
-	testRect(t, R(P(1, 2), S(3, 4)).Expand(2), 1, 2, 5, 6)
-	testRect(t, R(P(1, 2), S(3, 4)).ExpandXY(2, 3), 1, 2, 5, 7)
-	testRect(t, R(P(0.4, -0.25), S(1.2, 3.4)).Expand(0.1), 0.4, -0.25, 1.3, 3.5)
-	testRect(t, R(P(0.4, -0.25), S(1.2, 3.4)).ExpandXY(0.1, 0.2), 0.4, -0.25, 1.3, 3.6)
+	testRect(t, R(P(1, 2), S(3, 4)).Grow(2), 1, 2, 5, 6)
+	testRect(t, R(P(1, 2), S(3, 4)).GrowXY(2, 3), 1, 2, 5, 7)
+	testRect(t, R(P(0.4, -0.25), S(1.2, 3.4)).Grow(0.1), 0.4, -0.25, 1.3, 3.5)
+	testRect(t, R(P(0.4, -0.25), S(1.2, 3.4)).GrowXY(0.1, 0.2), 0.4, -0.25, 1.3, 3.6)
 }
 
 func TestRectangle_Shrunk(t *testing.T) {
-	testRect(t, R(P(1, 2), S(3, 4)).Shrunk(1), 1, 2, 2, 3)
-	testRect(t, R(P(1, 2), S(3, 4)).ShrunkXY(1, 2), 1, 2, 2, 2)
-	testRect(t, R(P(0.4, -0.25), S(1.2, 3.4)).Shrunk(0.1), 0.4, -0.25, 1.1, 3.3)
-	testRect(t, R(P(0.4, -0.25), S(1.2, 3.4)).ShrunkXY(0.1, 0.2), 0.4, -0.25, 1.1, 3.2)
+	testRect(t, R(P(1, 2), S(3, 4)).Shrink(1), 1, 2, 2, 3)
+	testRect(t, R(P(1, 2), S(3, 4)).ShrinkXY(1, 2), 1, 2, 2, 2)
+	testRect(t, R(P(0.4, -0.25), S(1.2, 3.4)).Shrink(0.1), 0.4, -0.25, 1.1, 3.3)
+	testRect(t, R(P(0.4, -0.25), S(1.2, 3.4)).ShrinkXY(0.1, 0.2), 0.4, -0.25, 1.1, 3.2)
 }
 
 func TestRectangle_Width(t *testing.T) {
@@ -146,10 +146,10 @@ func TestRectangle_Immutable(t *testing.T) {
 	r.Scale(2)
 	r.ScaleXY(3, 4)
 	r.Resize(S(5, 6))
-	r.Expand(1)
-	r.ExpandXY(1, 2)
-	r.Shrunk(2)
-	r.ShrunkXY(2, 3)
+	r.Grow(1)
+	r.GrowXY(1, 2)
+	r.Shrink(2)
+	r.ShrinkXY(2, 3)
 
 	testRect(t, r, 1, 2, 3, 4)
 }

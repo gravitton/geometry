@@ -39,13 +39,13 @@ func (r Rectangle[T]) MoveTo(point Point[T]) Rectangle[T] {
 }
 
 // Multiple creates a new Rectangle with size uniformly scaled by the factor.
-func (r Rectangle[T]) Scale(scale float64) Rectangle[T] {
-	return Rectangle[T]{r.Center, r.Size.Scale(scale)}
+func (r Rectangle[T]) Scale(factor float64) Rectangle[T] {
+	return Rectangle[T]{r.Center, r.Size.Scale(factor)}
 }
 
 // ScaleXY creates a new Rectangle with size scaled by the given factors.
-func (r Rectangle[T]) ScaleXY(scaleX, scaleY float64) Rectangle[T] {
-	return Rectangle[T]{r.Center, r.Size.ScaleXY(scaleX, scaleY)}
+func (r Rectangle[T]) ScaleXY(factorX, factorY float64) Rectangle[T] {
+	return Rectangle[T]{r.Center, r.Size.ScaleXY(factorX, factorY)}
 }
 
 // Resize creates a new Rectangle with the given size.
@@ -53,24 +53,24 @@ func (r Rectangle[T]) Resize(size Size[T]) Rectangle[T] {
 	return Rectangle[T]{r.Center, size}
 }
 
-// Shrunk creates a new Rectangle with size expanded by the same delta in both dimensions.
-func (r Rectangle[T]) Expand(delta T) Rectangle[T] {
-	return Rectangle[T]{r.Center, r.Size.Expand(delta)}
+// Grow creates a new Rectangle with size expanded by the same amount in both dimensions.
+func (r Rectangle[T]) Grow(amount T) Rectangle[T] {
+	return Rectangle[T]{r.Center, r.Size.Grow(amount)}
 }
 
-// Shrunk creates a new Rectangle with size expanded by the given deltas along X and Y.
-func (r Rectangle[T]) ExpandXY(deltaWidth, deltaHeight T) Rectangle[T] {
-	return Rectangle[T]{r.Center, r.Size.ExpandXY(deltaWidth, deltaHeight)}
+// GrowXY creates a new Rectangle with size expanded by the given amounts along X and Y.
+func (r Rectangle[T]) GrowXY(amountX, amountY T) Rectangle[T] {
+	return Rectangle[T]{r.Center, r.Size.GrowXY(amountX, amountY)}
 }
 
-// Shrunk creates a new Rectangle with size reduced by the same delta in both dimensions.
-func (r Rectangle[T]) Shrunk(delta T) Rectangle[T] {
-	return Rectangle[T]{r.Center, r.Size.Shrunk(delta)}
+// Shrink creates a new Rectangle with size reduced by the same amount in both dimensions.
+func (r Rectangle[T]) Shrink(amount T) Rectangle[T] {
+	return Rectangle[T]{r.Center, r.Size.Shrink(amount)}
 }
 
-// Shrunk creates a new Rectangle with size reduced by the given deltas along X and Y.
-func (r Rectangle[T]) ShrunkXY(deltaWidth, deltaHeight T) Rectangle[T] {
-	return Rectangle[T]{r.Center, r.Size.ShrunkXY(deltaWidth, deltaHeight)}
+// Shrink creates a new Rectangle with size reduced by the given amounts along X and Y.
+func (r Rectangle[T]) ShrinkXY(amountX, amountY T) Rectangle[T] {
+	return Rectangle[T]{r.Center, r.Size.ShrinkXY(amountX, amountY)}
 }
 
 // Width returns the rectangle width.

@@ -44,23 +44,23 @@ func (v Vector[T]) SubtractXY(deltaX, deltaY T) Vector[T] {
 }
 
 // Multiply creates a new Vector by multiplying the given value to the current vector.
-func (v Vector[T]) Multiply(scale float64) Vector[T] {
-	return Vector[T]{Multiple(v.X, scale), Multiple(v.Y, scale)}
+func (v Vector[T]) Multiply(factor float64) Vector[T] {
+	return Vector[T]{Multiple(v.X, factor), Multiple(v.Y, factor)}
 }
 
 // MultiplyXY creates a new Vector by multiplying the given values to the current vector.
-func (v Vector[T]) MultiplyXY(scaleX, scaleY float64) Vector[T] {
-	return Vector[T]{Multiple(v.X, scaleX), Multiple(v.Y, scaleY)}
+func (v Vector[T]) MultiplyXY(factorX, factorY float64) Vector[T] {
+	return Vector[T]{Multiple(v.X, factorX), Multiple(v.Y, factorY)}
 }
 
 // Divide creates a new Vector by dividing the given value to the current vector.
-func (v Vector[T]) Divide(scale float64) Vector[T] {
-	return Vector[T]{Divide(v.X, scale), Divide(v.Y, scale)}
+func (v Vector[T]) Divide(factor float64) Vector[T] {
+	return Vector[T]{Divide(v.X, factor), Divide(v.Y, factor)}
 }
 
 // DivideXY creates a new Vector by dividing the given values to the current vector.
-func (v Vector[T]) DivideXY(scaleX, scaleY float64) Vector[T] {
-	return Vector[T]{Divide(v.X, scaleX), Divide(v.Y, scaleY)}
+func (v Vector[T]) DivideXY(factorX, factorY float64) Vector[T] {
+	return Vector[T]{Divide(v.X, factorX), Divide(v.Y, factorY)}
 }
 
 // Negate creates a new Vector with opposite direction.

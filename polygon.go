@@ -29,17 +29,17 @@ func (p Polygon[T]) MoveTo(point Point[T]) Polygon[T] {
 }
 
 // Scale creates a new Polygon uniformly scaled about its centroid by the factor.
-func (p Polygon[T]) Scale(scale float64) Polygon[T] {
+func (p Polygon[T]) Scale(factor float64) Polygon[T] {
 	center := p.Center()
 	return Polygon[T]{Transform(p.Vertices, func(point Point[T]) Point[T] {
-		return center.Add(point.Subtract(center).Multiply(scale))
+		return center.Add(point.Subtract(center).Multiply(factor))
 	})}
 }
 
 // ScaleXY creates a new Polygon scaled about its centroid by the factors.
-func (p Polygon[T]) ScaleXY(scaleX, scaleY float64) Polygon[T] {
+func (p Polygon[T]) ScaleXY(factorX, factorY float64) Polygon[T] {
 	center := p.Center()
 	return Polygon[T]{Transform(p.Vertices, func(point Point[T]) Point[T] {
-		return center.Add(point.Subtract(center).MultiplyXY(scaleX, scaleY))
+		return center.Add(point.Subtract(center).MultiplyXY(factorX, factorY))
 	})}
 }

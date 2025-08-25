@@ -25,8 +25,8 @@ func ToDegrees(radians float64) float64 {
 }
 
 // Multiple multiple number by scale factor
-func Multiple[T Number](a T, scale float64) T {
-	return Cast[T](float64(a) * scale)
+func Multiple[T Number](a T, factor float64) T {
+	return Cast[T](float64(a) * factor)
 }
 
 // Divide divide number by scale factor

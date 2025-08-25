@@ -27,8 +27,8 @@ func (c Circle[T]) MoveTo(point Point[T]) Circle[T] {
 }
 
 // Multiple creates a new Circle with radius scaled by the given factor.
-func (c Circle[T]) Scale(scale float64) Circle[T] {
-	return Circle[T]{c.Center, Multiple(c.Radius, scale)}
+func (c Circle[T]) Scale(factor float64) Circle[T] {
+	return Circle[T]{c.Center, Multiple(c.Radius, factor)}
 }
 
 // Resize creates a new Circle with the given radius.
@@ -36,13 +36,13 @@ func (c Circle[T]) Resize(radius T) Circle[T] {
 	return Circle[T]{c.Center, radius}
 }
 
-// Expand creates a new Circle with radius increased by amount.
-func (c Circle[T]) Expand(amount T) Circle[T] {
+// Grow creates a new Circle with radius increased by amount.
+func (c Circle[T]) Grow(amount T) Circle[T] {
 	return Circle[T]{c.Center, c.Radius + amount}
 }
 
-// Shrunk creates a new Circle with radius decreased by amount.
-func (c Circle[T]) Shrunk(amount T) Circle[T] {
+// Shrink creates a new Circle with radius decreased by amount.
+func (c Circle[T]) Shrink(amount T) Circle[T] {
 	return Circle[T]{c.Center, c.Radius - amount}
 }
 

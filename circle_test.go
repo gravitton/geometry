@@ -34,13 +34,13 @@ func TestCircle_Resize(t *testing.T) {
 }
 
 func TestCircle_Expand(t *testing.T) {
-	testCircle(t, C(P(1, 2), 10).Expand(8), 1, 2, 18)
-	testCircle(t, C(P(0.4, -0.25), 1.2).Expand(3.1), 0.4, -0.25, 4.3)
+	testCircle(t, C(P(1, 2), 10).Grow(8), 1, 2, 18)
+	testCircle(t, C(P(0.4, -0.25), 1.2).Grow(3.1), 0.4, -0.25, 4.3)
 }
 
 func TestCircle_Shrunk(t *testing.T) {
-	testCircle(t, C(P(1, 2), 10).Shrunk(8), 1, 2, 2)
-	testCircle(t, C(P(0.4, -0.25), 1.2).Shrunk(0.3), 0.4, -0.25, 0.9)
+	testCircle(t, C(P(1, 2), 10).Shrink(8), 1, 2, 2)
+	testCircle(t, C(P(0.4, -0.25), 1.2).Shrink(0.3), 0.4, -0.25, 0.9)
 }
 
 func TestCircle_Area(t *testing.T) {
@@ -107,8 +107,8 @@ func TestCircle_Immutable(t *testing.T) {
 	c1.MoveTo(P(4, 3))
 	c1.Scale(2)
 	c1.Resize(15)
-	c1.Expand(1)
-	c1.Shrunk(2)
+	c1.Grow(1)
+	c1.Shrink(2)
 
 	testCircle(t, c1, 1, 2, 10)
 }

@@ -31,23 +31,23 @@ func (p Point[T]) Subtract(point Point[T]) Vector[T] {
 }
 
 // Multiply creates a new Point by multiplying the given value to the current point.
-func (p Point[T]) Multiply(scale float64) Point[T] {
-	return Point[T]{Multiple(p.X, scale), Multiple(p.Y, scale)}
+func (p Point[T]) Multiply(factor float64) Point[T] {
+	return Point[T]{Multiple(p.X, factor), Multiple(p.Y, factor)}
 }
 
 // MultiplyXY creates a new Point by multiplying the given values to the current point.
-func (p Point[T]) MultiplyXY(scaleX, scaleY float64) Point[T] {
-	return Point[T]{Multiple(p.X, scaleX), Multiple(p.Y, scaleY)}
+func (p Point[T]) MultiplyXY(factorX, factorY float64) Point[T] {
+	return Point[T]{Multiple(p.X, factorX), Multiple(p.Y, factorY)}
 }
 
 // Divide creates a new Point by dividing the given value to the current point.
-func (p Point[T]) Divide(scale float64) Point[T] {
-	return Point[T]{Divide(p.X, scale), Divide(p.Y, scale)}
+func (p Point[T]) Divide(factor float64) Point[T] {
+	return Point[T]{Divide(p.X, factor), Divide(p.Y, factor)}
 }
 
 // DivideXY creates a new Point by dividing the given values to the current point.
-func (p Point[T]) DivideXY(scaleX, scaleY float64) Point[T] {
-	return Point[T]{Divide(p.X, scaleX), Divide(p.Y, scaleY)}
+func (p Point[T]) DivideXY(factorX, factorY float64) Point[T] {
+	return Point[T]{Divide(p.X, factorX), Divide(p.Y, factorY)}
 }
 
 // DistanceTo return euclidean distance from the current point to the given point.
