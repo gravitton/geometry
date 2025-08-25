@@ -147,6 +147,16 @@ func TestVector_Less(t *testing.T) {
 	assert.True(t, V(0.4, -0.25).Less(0.49))
 }
 
+func TestVector_XY(t *testing.T) {
+	x1, y1 := V(10, 16).XY()
+	assert.Equal(t, x1, 10)
+	assert.Equal(t, y1, 16)
+
+	x2, y2 := V(0.4, -0.25).XY()
+	assert.Equal(t, x2, x2)
+	assert.Equal(t, y2, y2)
+}
+
 func TestVector_String(t *testing.T) {
 	assert.Equal(t, V(10, 16).String(), "⟨10,16⟩")
 	assert.Equal(t, V(100, -34.0000115).String(), "⟨100,-34.00⟩")

@@ -86,6 +86,16 @@ func TestPoint_Zero(t *testing.T) {
 	assert.True(t, ZeroPoint[float64]().Zero())
 }
 
+func TestPoint_XY(t *testing.T) {
+	x1, y1 := P(10, 16).XY()
+	assert.Equal(t, x1, 10)
+	assert.Equal(t, y1, 16)
+
+	x2, y2 := P(0.4, -0.25).XY()
+	assert.Equal(t, x2, x2)
+	assert.Equal(t, y2, y2)
+}
+
 func TestPoint_String(t *testing.T) {
 	assert.Equal(t, P(10, 16).String(), "(10,16)")
 	assert.Equal(t, P(100, -34.0000115).String(), "(100,-34.00)")
