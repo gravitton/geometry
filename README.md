@@ -50,11 +50,11 @@ func (p Point[T]) XY() (T, T)
 // Mathematical operations
 func (p Point[T]) Add(vector Vector[T]) Point[T]
 func (p Point[T]) AddXY(deltaX, deltaY T) Point[T]
-func (p Point[T]) Subtract(other Point[T]) Vector[T] 
-func (p Point[T]) Multiply(scale float64) Point[T]
-func (p Point[T]) MultiplyXY(scaleX, scaleY float64) Point[T]
-func (p Point[T]) Divide(scale float64) Point[T]
-func (p Point[T]) DivideXY(scaleX, scaleY float64) Point[T]
+func (p Point[T]) Subtract(point Point[T]) Vector[T] 
+func (p Point[T]) Multiply(factor float64) Point[T]
+func (p Point[T]) MultiplyXY(factorX, factorY float64) Point[T]
+func (p Point[T]) Divide(factor float64) Point[T]
+func (p Point[T]) DivideXY(factorX, factorY float64) Point[T]
 
 // Geometric operations
 func (p Point[T]) DistanceTo(point Point[T]) float64
@@ -81,29 +81,34 @@ func (v Vector[T]) XY() (T, T)
 // Mathematical operations
 func (v Vector[T]) Add(vector Vector[T]) Vector[T]
 func (v Vector[T]) AddXY(deltaX, deltaY T) Vector[T]
-func (v Vector[T]) Sub(vector Vector[T]) Vector[T]
-func (v Vector[T]) SubXY(deltaX, deltaY T) Vector[T]
-func (v Vector[T]) Multiply(scale float64) Vector[T]
-func (v Vector[T]) MultiplyXY(scaleX, scaleY float64) Vector[T]
-func (v Vector[T]) Divide(scale float64) Vector[T]
-func (v Vector[T]) DivideXY(scaleX, scaleY float64) Vector[T]
+func (v Vector[T]) Subtract(vector Vector[T]) Vector[T]
+func (v Vector[T]) SubtractXY(deltaX, deltaY T) Vector[T]
+func (v Vector[T]) Multiply(factor float64) Vector[T]
+func (v Vector[T]) MultiplyXY(factorX, factorY float64) Vector[T]
+func (v Vector[T]) Divide(factor float64) Vector[T]
+func (v Vector[T]) DivideXY(factorX, factorY float64) Vector[T]
 func (v Vector[T]) Negate() Vector[T]
 
 // Vector operations
-func (v Vector[T]) Dot(vector Vector[T]) float64
-func (v Vector[T]) Cross(vector Vector[T]) float64
+func (v Vector[T]) Dot(vector Vector[T]) T
+func (v Vector[T]) Cross(vector Vector[T]) T
 func (v Vector[T]) Length() float64
 func (v Vector[T]) LengthSquared() T
-func (v Vector[T]) Normalize() Vector[T]
 func (v Vector[T]) Angle() float64
 
 // Transformations
 func (v Vector[T]) Rotate(angle float64) Vector[T]
 func (v Vector[T]) Normal() Vector[T]
+func (v Vector[T]) Resize(length float64) Vector[T]
+func (v Vector[T]) Normalize() Vector[T]
+func (v Vector[T]) Abs() Vector[T]
 
 // Utilities
-func (v Vector[T]) Equal(vector Vector) bool
+func (v Vector[T]) Equal(vector Vector[T]) bool
 func (v Vector[T]) Zero() bool
+func (v Vector[T]) Unit() bool
+func (v Vector[T]) Less(value T) bool
+func (v Vector[T]) String() string
 ```
 
 ### Size
@@ -115,21 +120,22 @@ type Size[T Number] struct {
 
 // Properties
 func (s Size[T]) XY() (T, T)
-func (s Size[T]) Area() float64
+func (s Size[T]) Area() T
 func (s Size[T]) Perimeter() T
 func (s Size[T]) AspectRatio() float64
-
 
 // Dimension operations
 func (s Size[T]) Scale(factor float64) Size[T]
 func (s Size[T]) ScaleXY(factorX, factorY float64) Size[T]
 func (s Size[T]) Grow(amount T) Size[T]
 func (s Size[T]) GrowXY(amountX, amountY T) Size[T]
-func (s Size[T]) Shrink(amountX, amountY T) Size[T]
+func (s Size[T]) Shrink(amount T) Size[T]
+func (s Size[T]) ShrinkXY(amountX, amountY T) Size[T]
 
 // Utilities
 func (s Size[T]) Equal(other Size[T]) bool
 func (s Size[T]) Zero() bool
+func (s Size[T]) String() string
 ```
 
 ### Circle
@@ -153,14 +159,15 @@ func (c Circle[T]) Scale(factor float64) Circle[T]
 
 // Size operations
 func (c Circle[T]) Resize(radius T) Circle[T]
-func (c Circle[T]) Expand(amount T) Circle[T]
-func (c Circle[T]) Shrunk(amount T) Circle[T]
+func (c Circle[T]) Grow(amount T) Circle[T]
+func (c Circle[T]) Shrink(amount T) Circle[T]
 
 // Geometric queries
 func (c Circle[T]) Contains(point Point[T]) bool
 
 // Utilities
-func (c Circle[T]) Equal(circle Circle) bool
+func (c Circle[T]) Equal(circle Circle[T]) bool
+func (c Circle[T]) String() string
 ```
 
 ### Rectangle
@@ -170,6 +177,42 @@ type Rectangle[T Number] struct{
     Center Point[T]
     Size   Size[T]
 }
+
+// Properties
+func (r Rectangle[T]) Width() T
+func (r Rectangle[T]) Height() T
+func (r Rectangle[T]) Min() Point[T]
+func (r Rectangle[T]) Max() Point[T]
+func (r Rectangle[T]) BottomLeft() Point[T]
+func (r Rectangle[T]) BottomRight() Point[T]
+func (r Rectangle[T]) TopLeft() Point[T]
+func (r Rectangle[T]) TopRight() Point[T]
+func (r Rectangle[T]) Edges() []Line[T]
+func (r Rectangle[T]) Vertices() []Point[T]
+func (r Rectangle[T]) Area() T
+func (r Rectangle[T]) Perimeter() T
+func (r Rectangle[T]) AspectRatio() float64
+
+// Transformations
+func (r Rectangle[T]) Translate(vector Vector[T]) Rectangle[T]
+func (r Rectangle[T]) MoveTo(center Point[T]) Rectangle[T]
+func (r Rectangle[T]) Scale(factor float64) Rectangle[T]
+func (r Rectangle[T]) ScaleXY(factorX, factorY float64) Rectangle[T]
+
+// Size operations
+func (r Rectangle[T]) Resize(size Size[T]) Rectangle[T]
+func (r Rectangle[T]) Grow(amount T) Rectangle[T]
+func (r Rectangle[T]) GrowXY(amountX, amountY T) Rectangle[T]
+func (r Rectangle[T]) Shrink(amount T) Rectangle[T]
+func (r Rectangle[T]) ShrinkXY(amountX, amountY T) Rectangle[T]
+
+// Geometric queries
+func (r Rectangle[T]) Contains(point Point[T]) bool
+
+// Utilities
+func (r Rectangle[T]) Equal(other Rectangle[T]) bool
+func (r Rectangle[T]) ToPolygon() Polygon[T]
+func (r Rectangle[T]) String() string
 ```
 
 ### Line
@@ -179,6 +222,20 @@ type Line[T Number] struct{
     Start Point[T]
     End   Point[T]
 }
+
+// Transformations
+func (l Line[T]) Translate(vector Vector[T]) Line[T]
+func (l Line[T]) MoveTo(point Point[T]) Line[T]
+func (l Line[T]) Reversed() Line[T]
+
+// Measurements
+func (l Line[T]) Midpoint() Point[T]
+func (l Line[T]) Direction() Vector[T]
+func (l Line[T]) Length() float64
+
+// Utilities
+func (l Line[T]) Equal(other Line[T]) bool
+func (l Line[T]) String() string
 ```
 
 ### Polygon
@@ -187,6 +244,15 @@ type Line[T Number] struct{
 type Polygon[T Number] struct{
     Vertices []Point[T]
 }
+
+// Properties
+func (p Polygon[T]) Center() Point[T]
+
+// Transformations
+func (p Polygon[T]) Translate(vector Vector[T]) Polygon[T]
+func (p Polygon[T]) MoveTo(center Point[T]) Polygon[T]
+func (p Polygon[T]) Scale(factor float64) Polygon[T]
+func (p Polygon[T]) ScaleXY(factorX, factorY float64) Polygon[T]
 ```
 
 ### Regular Polygon
@@ -197,6 +263,18 @@ type RegularPolygon[T Number] struct {
     Size   Size[T]
     N      int
 }
+
+// Properties
+func (rp RegularPolygon[T]) Vertices() []Point[T]
+
+// Transformations
+func (rp RegularPolygon[T]) Translate(vector Vector[T]) RegularPolygon[T]
+func (rp RegularPolygon[T]) MoveTo(center Point[T]) RegularPolygon[T]
+func (rp RegularPolygon[T]) Scale(factor float64) RegularPolygon[T]
+func (rp RegularPolygon[T]) ScaleXY(factorX, factorY float64) RegularPolygon[T]
+
+// Utilities
+func (rp RegularPolygon[T]) ToPolygon() Polygon[T]
 ```
 
 ### Constructor Functions
