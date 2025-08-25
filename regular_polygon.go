@@ -4,7 +4,7 @@ import (
 	"math"
 )
 
-// RegularPolygon is a polygon with equally spaced Transform around a center.
+// RegularPolygon is a polygon with equally spaced vertices around a center.
 type RegularPolygon[T Number] struct {
 	Center Point[T]
 	Size   Size[T]
@@ -16,17 +16,17 @@ func RP[T Number](center Point[T], size Size[T], n int) RegularPolygon[T] {
 	return RegularPolygon[T]{center, size, n}
 }
 
-// Triangle creates a RegularPolygon with 3 Transform.
+// Triangle creates a RegularPolygon with 3 vertices.
 func Triangle[T Number](center Point[T], size Size[T]) RegularPolygon[T] {
 	return RegularPolygon[T]{center, size, 3}
 }
 
-// Square creates a RegularPolygon with 4 Transform.
+// Square creates a RegularPolygon with 4 vertices.
 func Square[T Number](center Point[T], size Size[T]) RegularPolygon[T] {
 	return RegularPolygon[T]{center, size, 4}
 }
 
-// Hexagon creates a RegularPolygon with 6 Transform.
+// Hexagon creates a RegularPolygon with 6 vertices.
 func Hexagon[T Number](center Point[T], size Size[T]) RegularPolygon[T] {
 	return RegularPolygon[T]{center, size, 6}
 }
@@ -36,7 +36,7 @@ func (rp RegularPolygon[T]) Translate(change Vector[T]) RegularPolygon[T] {
 	return RegularPolygon[T]{rp.Center.Add(change), rp.Size, rp.N}
 }
 
-// MoveTo creates a new RegularPolygon with the same size and sides centered at point.
+// MoveTo creates a new RegularPolygon with center at point.
 func (rp RegularPolygon[T]) MoveTo(point Point[T]) RegularPolygon[T] {
 	return RegularPolygon[T]{point, rp.Size, rp.N}
 }
@@ -51,7 +51,7 @@ func (rp RegularPolygon[T]) ScaleXY(scaleX, scaleY float64) RegularPolygon[T] {
 	return RegularPolygon[T]{rp.Center, rp.Size.ScaleXY(scaleX, scaleY), rp.N}
 }
 
-// Vertices returns the polygon Transform in order starting from angle 0, counter-clockwise.
+// Vertices returns the polygon vertices in order starting from angle 0, counter-clockwise.
 func (rp RegularPolygon[T]) Vertices() []Point[T] {
 	initAngle := 0.0
 	angleStep := 2 * math.Pi / float64(rp.N)
