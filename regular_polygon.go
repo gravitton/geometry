@@ -64,7 +64,27 @@ func (rp RegularPolygon[T]) Vertices() []Point[T] {
 	return vertices
 }
 
+// Bounds returns the axis-aligned bounding rectangle.
+func (rp RegularPolygon[T]) Bounds() Rectangle[T] {
+	return Rectangle[T]{rp.Center, rp.Size}
+}
+
 // ToPolygon converts the regular polygon into a generic Polygon with computed vertices.
 func (rp RegularPolygon[T]) ToPolygon() Polygon[T] {
 	return Polygon[T]{rp.Vertices()}
+}
+
+// Equal checks if center point, size and number of vertices are equal.
+func (rp RegularPolygon[T]) Equal(polygon RegularPolygon[T]) bool {
+	return rp.Center.Equal(polygon.Center) && rp.Size.Equal(polygon.Size) && rp.N == polygon.N
+}
+
+// IsZero checks if center point, size and number of vertices are zero.
+func (rp RegularPolygon[T]) IsZero() bool {
+	return rp.Center.IsZero() && rp.Size.IsZero() && rp.N == 0
+}
+
+// Empty checks if number of vertices is zero.
+func (rp RegularPolygon[T]) Empty() bool {
+	return rp.N == 0
 }

@@ -23,11 +23,6 @@ func RectangleFromMinMax[T Number](min, max Point[T]) Rectangle[T] {
 	return RectangleFromMin(min, S(max.Subtract(min).XY()))
 }
 
-// RectangleFromSize creates a Rectangle from zero point and size.
-func RectangleFromSize[T Number](size Size[T]) Rectangle[T] {
-	return Rectangle[T]{P[T](0, 0), size}
-}
-
 // Translate creates a new Rectangle translated by the given vector.
 func (r Rectangle[T]) Translate(vector Vector[T]) Rectangle[T] {
 	return Rectangle[T]{r.Center.Add(vector), r.Size}
@@ -147,9 +142,19 @@ func (r Rectangle[T]) AspectRatio() float64 {
 	return r.Size.AspectRatio()
 }
 
+// Bounds returns the axis-aligned bounding rectangle.
+func (r Rectangle[T]) Bounds() Rectangle[T] {
+	return r
+}
+
 // Equal checks for equal center and size values using tolerant numeric comparison.
 func (r Rectangle[T]) Equal(other Rectangle[T]) bool {
 	return r.Center.Equal(other.Center) && r.Size.Equal(other.Size)
+}
+
+// IsZero checks if center point and size are zero.
+func (r Rectangle[T]) IsZero() bool {
+	return r.Center.IsZero() && r.Size.IsZero()
 }
 
 // Contains reports whether the given point lies within or on the rectangle bounds.

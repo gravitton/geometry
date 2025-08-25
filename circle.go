@@ -71,6 +71,11 @@ func (c Circle[T]) Equal(circle Circle[T]) bool {
 	return c.Center.Equal(circle.Center) && Equal(c.Radius, circle.Radius)
 }
 
+// IsZero checks if center point and radius are zero.
+func (c Circle[T]) IsZero() bool {
+	return c.Center.IsZero() && Equal(c.Radius, 0)
+}
+
 // Contains checks if the given point lies inside the circle.
 func (c Circle[T]) Contains(point Point[T]) bool {
 	return c.Center.Subtract(point).Less(c.Radius)

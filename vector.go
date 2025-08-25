@@ -82,7 +82,7 @@ func (v Vector[T]) Resize(length float64) Vector[T] {
 
 // Normalize creates a new Vector resized to a length of 1.
 func (v Vector[T]) Normalize() Vector[T] {
-	if v.Zero() {
+	if v.IsZero() {
 		return Vector[T]{1, 0}
 	}
 
@@ -129,8 +129,8 @@ func (v Vector[T]) Equal(vector Vector[T]) bool {
 	return Equal(v.X, vector.X) && Equal(v.Y, vector.Y)
 }
 
-// Zero checks if X and Y values are 0.
-func (v Vector[T]) Zero() bool {
+// IsZero checks if X and Y values are 0.
+func (v Vector[T]) IsZero() bool {
 	return v.Equal(Vector[T]{})
 }
 

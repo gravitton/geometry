@@ -75,15 +75,15 @@ func TestPoint_Equal(t *testing.T) {
 	assert.True(t, P(0.4, -0.25).Equal(P(0.4, -0.250001)))
 }
 
-func TestPoint_Zero(t *testing.T) {
-	assert.False(t, P(1, 2).Zero())
-	assert.True(t, P(0, -0).Zero())
-	assert.True(t, ZeroPoint[int]().Zero())
+func TestPoint_IsZero(t *testing.T) {
+	assert.False(t, P(1, 2).IsZero())
+	assert.True(t, P(0, -0).IsZero())
+	assert.True(t, ZeroPoint[int]().IsZero())
 
-	assert.False(t, P(0.4, -0.25).Zero())
-	assert.True(t, P(0.0, 0.0).Zero())
-	assert.True(t, P(0.0, 0.000001).Zero())
-	assert.True(t, ZeroPoint[float64]().Zero())
+	assert.False(t, P(0.4, -0.25).IsZero())
+	assert.True(t, P(0.0, 0.0).IsZero())
+	assert.True(t, P(0.0, 0.000001).IsZero())
+	assert.True(t, ZeroPoint[float64]().IsZero())
 }
 
 func TestPoint_XY(t *testing.T) {

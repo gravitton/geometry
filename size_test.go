@@ -56,10 +56,10 @@ func TestSize_Equal(t *testing.T) {
 	assert.True(t, S(0.4, -0.25).Equal(S(0.4, -0.250001)))
 }
 
-func TestSize_Zero(t *testing.T) {
-	assert.False(t, S(1, 2).Zero())
-	assert.True(t, S(0, 0).Zero())
-	assert.True(t, S[float64](0.0, 0.000001).Zero())
+func TestSize_IsZero(t *testing.T) {
+	assert.False(t, S(1, 2).IsZero())
+	assert.True(t, S(0, 0).IsZero())
+	assert.True(t, S[float64](0.0, 0.000001).IsZero())
 }
 
 func TestSize_XY(t *testing.T) {

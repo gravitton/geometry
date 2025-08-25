@@ -115,14 +115,14 @@ func TestVector_Equal(t *testing.T) {
 }
 
 func TestVector_Zero(t *testing.T) {
-	assert.False(t, V(1, 2).Zero())
-	assert.True(t, V(0, 0).Zero())
-	assert.True(t, ZeroVector[int]().Zero())
+	assert.False(t, V(1, 2).IsZero())
+	assert.True(t, V(0, 0).IsZero())
+	assert.True(t, ZeroVector[int]().IsZero())
 
-	assert.False(t, V(0.4, -0.25).Zero())
-	assert.True(t, V(0.0, 0.0).Zero())
-	assert.True(t, V(0.0, 0.000001).Zero())
-	assert.True(t, ZeroVector[float64]().Zero())
+	assert.False(t, V(0.4, -0.25).IsZero())
+	assert.True(t, V(0.0, 0.0).IsZero())
+	assert.True(t, V(0.0, 0.000001).IsZero())
+	assert.True(t, ZeroVector[float64]().IsZero())
 }
 
 func TestVector_Unit(t *testing.T) {

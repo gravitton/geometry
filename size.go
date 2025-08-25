@@ -1,6 +1,8 @@
 package geom
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // Size is a 2D size.
 type Size[T Number] struct {
@@ -63,8 +65,8 @@ func (s Size[T]) Equal(other Size[T]) bool {
 	return Equal(s.Width, other.Width) && Equal(s.Height, other.Height)
 }
 
-// Zero checks if width and height values are 0.
-func (s Size[T]) Zero() bool {
+// IsZero checks if width and height values are 0.
+func (s Size[T]) IsZero() bool {
 	return s.Equal(Size[T]{})
 }
 

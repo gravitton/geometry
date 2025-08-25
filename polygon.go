@@ -43,3 +43,8 @@ func (p Polygon[T]) ScaleXY(factorX, factorY float64) Polygon[T] {
 		return center.Add(point.Subtract(center).MultiplyXY(factorX, factorY))
 	})}
 }
+
+// Empty checks if number of vertices is zero.
+func (p Polygon[T]) Empty() bool {
+	return len(p.Vertices) == 0
+}

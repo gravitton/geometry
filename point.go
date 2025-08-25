@@ -80,8 +80,8 @@ func (p Point[T]) Equal(point Point[T]) bool {
 	return Equal(p.X, point.X) && Equal(p.Y, point.Y)
 }
 
-// Zero checks if X and Y values are 0.
-func (p Point[T]) Zero() bool {
+// IsZero checks if X and Y values are 0.
+func (p Point[T]) IsZero() bool {
 	return p.Equal(Point[T]{})
 }
 

@@ -65,7 +65,7 @@ func (p Point[T]) AngleTo(point Point[T]) float64
 
 // Utilities
 func (p Point[T]) Equal(point Point[T]) bool
-func (p Point[T]) Zero() bool
+func (p Point[T]) IsZero() bool
 ```
 
 ### Vector
@@ -105,7 +105,7 @@ func (v Vector[T]) Abs() Vector[T]
 
 // Utilities
 func (v Vector[T]) Equal(vector Vector[T]) bool
-func (v Vector[T]) Zero() bool
+func (v Vector[T]) IsZero() bool
 func (v Vector[T]) Unit() bool
 func (v Vector[T]) Less(value T) bool
 func (v Vector[T]) String() string
@@ -134,7 +134,7 @@ func (s Size[T]) ShrinkXY(amountX, amountY T) Size[T]
 
 // Utilities
 func (s Size[T]) Equal(other Size[T]) bool
-func (s Size[T]) Zero() bool
+func (s Size[T]) IsZero() bool
 func (s Size[T]) String() string
 ```
 
@@ -150,7 +150,6 @@ type Circle[T Number] struct {
 func (c Circle[T]) Area() float64
 func (c Circle[T]) Circumference() float64
 func (c Circle[T]) Diameter() T
-func (c Circle[T]) Bounds() Rectangle[T]
 
 // Transformations
 func (c Circle[T]) Translate(vector Vector[T]) Circle[T]
@@ -167,6 +166,8 @@ func (c Circle[T]) Contains(point Point[T]) bool
 
 // Utilities
 func (c Circle[T]) Equal(circle Circle[T]) bool
+func (c Circle[T]) IsZero() bool
+func (c Circle[T]) Bounds() Rectangle[T]
 func (c Circle[T]) String() string
 ```
 
@@ -211,6 +212,8 @@ func (r Rectangle[T]) Contains(point Point[T]) bool
 
 // Utilities
 func (r Rectangle[T]) Equal(other Rectangle[T]) bool
+func (r Rectangle[T]) IsZero() bool
+func (r Rectangle[T]) Bounds() Rectangle[T]
 func (r Rectangle[T]) ToPolygon() Polygon[T]
 func (r Rectangle[T]) String() string
 ```
@@ -235,6 +238,8 @@ func (l Line[T]) Length() float64
 
 // Utilities
 func (l Line[T]) Equal(other Line[T]) bool
+func (l Line[T]) IsZero() bool
+func (l Line[T]) Bounds() Rectangle[T]
 func (l Line[T]) String() string
 ```
 
@@ -253,6 +258,9 @@ func (p Polygon[T]) Translate(vector Vector[T]) Polygon[T]
 func (p Polygon[T]) MoveTo(center Point[T]) Polygon[T]
 func (p Polygon[T]) Scale(factor float64) Polygon[T]
 func (p Polygon[T]) ScaleXY(factorX, factorY float64) Polygon[T]
+
+// Utilities
+func (p Polygon[T]) Empty() bool
 ```
 
 ### Regular Polygon
@@ -274,6 +282,10 @@ func (rp RegularPolygon[T]) Scale(factor float64) RegularPolygon[T]
 func (rp RegularPolygon[T]) ScaleXY(factorX, factorY float64) RegularPolygon[T]
 
 // Utilities
+func (rp RegularPolygon[T]) Equal(polygon RegularPolygon[T]) bool
+func (rp RegularPolygon[T]) IsZero() bool
+func (rp RegularPolygon[T]) Empty() bool
+func (rp RegularPolygon[T]) Bounds() Rectangle[T]
 func (rp RegularPolygon[T]) ToPolygon() Polygon[T]
 ```
 
