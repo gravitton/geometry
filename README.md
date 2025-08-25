@@ -48,8 +48,8 @@ type Point[T Number] struct{
 func (p Point[T]) XY() (T, T)
 
 // Mathematical operations
-func (p Point[T]) Add(vector Vector[T]) Point[T
-func (p Point[T]) AddXY(deltaX, deltaY T) Point[T
+func (p Point[T]) Add(vector Vector[T]) Point[T]
+func (p Point[T]) AddXY(deltaX, deltaY T) Point[T]
 func (p Point[T]) Subtract(other Point[T]) Vector[T] 
 func (p Point[T]) Multiply(scale float64) Point[T]
 func (p Point[T]) MultiplyXY(scaleX, scaleY float64) Point[T]
@@ -90,20 +90,20 @@ func (v Vector[T]) DivideXY(scaleX, scaleY float64) Vector[T]
 func (v Vector[T]) Negate() Vector[T]
 
 // Vector operations
-func (v Vector) Dot(vector Vector[T]) float64
-func (v Vector) Cross(vector Vector[T]) float64
-func (v Vector) Length() float64
-func (v Vector) LengthSquared() T
-func (v Vector) Normalize() Vector[T]
-func (v Vector) Angle() float64
+func (v Vector[T]) Dot(vector Vector[T]) float64
+func (v Vector[T]) Cross(vector Vector[T]) float64
+func (v Vector[T]) Length() float64
+func (v Vector[T]) LengthSquared() T
+func (v Vector[T]) Normalize() Vector[T]
+func (v Vector[T]) Angle() float64
 
 // Transformations
-func (v Vector) Rotate(angle float64) Vector[T]
-func (v Vector) Normal() Vector[T]
+func (v Vector[T]) Rotate(angle float64) Vector[T]
+func (v Vector[T]) Normal() Vector[T]
 
 // Utilities
-func (v Vector) Equal(vector Vector) bool
-func (v Vector) Zero() bool
+func (v Vector[T]) Equal(vector Vector) bool
+func (v Vector[T]) Zero() bool
 ```
 
 ### Size
@@ -124,11 +124,11 @@ func (s Size[T]) AspectRatio() float64
 func (s Size[T]) Scaled(factor float64) Size[T]
 func (s Size[T]) ScaledXY(scaleX, scaleY float64) Size[T]
 func (s Size[T]) Expand(deltaWidth, deltaHeight T) Size[T]
-func (s Size[T]) Shrunk(deltaWidth, deltaHeight T) Size [T]
+func (s Size[T]) Shrunk(deltaWidth, deltaHeight T) Size[T]
 
 // Utilities
-func (s Size) Equal(other Size[T]) bool
-func (s Size) Zero() bool
+func (s Size[T]) Equal(other Size[T]) bool
+func (s Size[T]) Zero() bool
 ```
 
 ### Circle
@@ -146,8 +146,8 @@ func (c Circle[T]) Diameter() T
 func (c Circle[T]) Bounds() Rectangle[T]
 
 // Transformations
-func (c Circle[T]) Translate(vector Vector) Circle[T]
-func (c Circle[T]) MoveTo(center Point) Circle[T]
+func (c Circle[T]) Translate(vector Vector[T]) Circle[T]
+func (c Circle[T]) MoveTo(center Point[T]) Circle[T]
 func (c Circle[T]) Scale(factor float64) Circle[T]
 
 // Size operations
@@ -159,7 +159,7 @@ func (c Circle[T]) Shrunk(amount T) Circle[T]
 func (c Circle[T]) Contains(point Point[T]) bool
 
 // Utilities
-func (c Circle) Equal(circle Circle) bool
+func (c Circle[T]) Equal(circle Circle) bool
 ```
 
 ### Rectangle
@@ -203,13 +203,13 @@ type RegularPolygon[T Number] struct {
 Short constructors for convenience
 
 ```go
-func P(x, y T) Point[T]
-func V(x, y T) Vector[T]
-func S(w, h T) Size[T]
-func C(center Point[T], radius T) Circle[T]
-func R(center Point[T], size Size[T]) Rectangle[T]
-func L(start, end Point[T]) Line[T]
-func RP(center Point[T], size Size[T], n int) RegularPolygon[T]
+func P[T Number](x, y T) Point[T]
+func V[T Number](x, y T) Vector[T]
+func S[T Number](w, h T) Size[T]
+func C[T Number](center Point[T], radius T) Circle[T]
+func R[T Number](center Point[T], size Size[T]) Rectangle[T]
+func L[T Number](start, end Point[T]) Line[T]
+func RP[T Number](center Point[T], size Size[T], n int) RegularPolygon[T]
 ```
 
 

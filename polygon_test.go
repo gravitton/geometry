@@ -6,43 +6,40 @@ import (
 	"github.com/gravitton/assert"
 )
 
-func TestPolygon_Center(t *testing.T) {
-	p := Polygon[int]{Vertices: []Point[int]{P(0, 0), P(2, 0), P(2, 2), P(0, 2)}}
-	testPoint(t, p.Center(), 1, 1)
+func TestPolygon_New(t *testing.T) {
+	vertices := []Point[int]{P(0, 0), P(2, 0), P(2, 2), P(0, 2)}
 
-	pf := Polygon[float64]{Vertices: []Point[float64]{P(0.0, 0.0), P(2.0, 0.0), P(2.0, 1.0)}}
-	cx, cy := pf.Center().XY()
-	assert.EqualDelta(t, cx, 4.0/3.0, Delta)
-	assert.EqualDelta(t, cy, 1.0/3.0, Delta)
+	testPolygon(t, Polygon[int]{vertices}, vertices)
 }
 
-func TestPolygon_Translate_MoveTo(t *testing.T) {
-	p := Polygon[int]{Vertices: []Point[int]{P(0, 0), P(2, 0)}}
-	p2 := p.Translate(V(1, -1))
-	testPoint(t, p2.Vertices[0], 1, -1)
-	testPoint(t, p2.Vertices[1], 3, -1)
+func TestPolygon_Center(t *testing.T) {
+	testPoint(t, Polygon[int]{[]Point[int]{P(0, 0), P(2, 0), P(2, 2), P(0, 2)}}.Center(), 1, 1)
+	testPoint(t, Polygon[float64]{[]Point[float64]{P(0.0, 0.0), P(2.0, 0.0), P(2.0, 1.0)}}.Center(), 4.0/3.0, 1.0/3.0)
+}
 
-	p3 := p.MoveTo(P(10, 10))
-	testPoint(t, p3.Center(), 10, 10)
+func TestPolygon_Translate(t *testing.T) {
+	testPolygon(t, Polygon[int]{[]Point[int]{P(0, 0), P(2, 0)}}.Translate(V(1, -1)), []Point[int]{
+		P(1, -1),
+		P(3, -1),
+	})
+}
+
+func TestPolygon_MoveTo(t *testing.T) {
+	testPolygon(t, Polygon[int]{Vertices: []Point[int]{P(0, 0), P(2, 0)}}.MoveTo(P(10, 10)), []Point[int]{
+		P(9, 10),
+		P(11, 10),
+	})
 }
 
 func TestPolygon_Scale(t *testing.T) {
-	p := Polygon[float64]{Vertices: []Point[float64]{P(1.0, 0.0), P(0.0, 1.0), P(-1.0, 0.0), P(0.0, -1.0)}}
-	center := p.Center()
-	assert.True(t, center.Equal(P(0.0, 0.0)))
-
-	p2 := p.Scale(2)
-	// Every point should double its distance from center (0,0).
-	assert.EqualDelta(t, p2.Vertices[0].X, 2.0, Delta)
-	assert.EqualDelta(t, p2.Vertices[0].Y, 0.0, Delta)
-	assert.EqualDelta(t, p2.Vertices[1].X, 0.0, Delta)
-	assert.EqualDelta(t, p2.Vertices[1].Y, 2.0, Delta)
-
-	p3 := p.ScaleXY(2, 0.5)
-	assert.EqualDelta(t, p3.Vertices[0].X, 2.0, Delta)
-	assert.EqualDelta(t, p3.Vertices[0].Y, 0.0, Delta)
-	assert.EqualDelta(t, p3.Vertices[1].X, 0.0, Delta)
-	assert.EqualDelta(t, p3.Vertices[1].Y, 0.5, Delta)
+	testPolygon(t, Polygon[int]{Vertices: []Point[int]{P(0, 0), P(2, 0)}}.Scale(2), []Point[int]{
+		P(-1, 0),
+		P(3, 0),
+	})
+	testPolygon(t, Polygon[float64]{Vertices: []Point[float64]{P(0.0, 0.0), P(2.0, 1.0)}}.ScaleXY(0.5, 2.5), []Point[float64]{
+		P(0.5, -0.75),
+		P(1.5, 1.75),
+	})
 }
 
 func TestPolygon_Immutable(t *testing.T) {
@@ -53,7 +50,6 @@ func TestPolygon_Immutable(t *testing.T) {
 	p.Scale(2)
 	p.ScaleXY(2, 3)
 
-	// unchanged
 	testPoint(t, p.Vertices[0], 0, 0)
 	testPoint(t, p.Vertices[1], 2, 0)
 }
