@@ -47,6 +47,9 @@ type Point[T Number] struct{
 // Properties
 func (p Point[T]) XY() (T, T)
 
+// Transformations
+func (p Point[T]) Transform(matrix Matrix) Point[T]
+
 // Mathematical operations
 func (p Point[T]) Add(vector Vector[T]) Point[T]
 func (p Point[T]) AddXY(deltaX, deltaY T) Point[T]
@@ -66,6 +69,7 @@ func (p Point[T]) AngleTo(point Point[T]) float64
 // Utilities
 func (p Point[T]) Equal(point Point[T]) bool
 func (p Point[T]) IsZero() bool
+func (p Point[T]) String() string
 ```
 
 ### Vector
@@ -77,6 +81,9 @@ type Vector[T Number] struct {
 
 // Properties
 func (v Vector[T]) XY() (T, T)
+
+// Transformations
+func (v Vector[T]) Transform(matrix Matrix) Vector[T]
 
 // Mathematical operations
 func (v Vector[T]) Add(vector Vector[T]) Vector[T]
@@ -109,6 +116,30 @@ func (v Vector[T]) IsZero() bool
 func (v Vector[T]) Unit() bool
 func (v Vector[T]) Less(value T) bool
 func (v Vector[T]) String() string
+```
+
+### Matrix
+
+```go
+type Matrix struct {
+    A, B, C float64 // scale X, shear Y, translate X
+    D, E, F float64 // shear X, scale Y, translate Y
+    // [0 0 1] implicit third row
+}
+
+// Operations
+func (m Matrix) Multiply(n Matrix) Matrix
+func (m Matrix) Inverse() Matrix
+func (m Matrix) Determinant() float64
+
+// Transform builders
+func (m Matrix) Translate(deltaX, deltaY float64) Matrix
+func (m Matrix) Rotate(angle float64) Matrix
+func (m Matrix) Scale(factorX, factorY float64) Matrix
+
+// Utilities
+func (m Matrix) Equal(matrix Matrix) bool
+func (m Matrix) IsZero() bool
 ```
 
 ### Size
@@ -270,6 +301,7 @@ type RegularPolygon[T Number] struct {
     Center Point[T]
     Size   Size[T]
     N      int
+    Angle  float64
 }
 
 // Properties
@@ -280,6 +312,7 @@ func (rp RegularPolygon[T]) Translate(vector Vector[T]) RegularPolygon[T]
 func (rp RegularPolygon[T]) MoveTo(center Point[T]) RegularPolygon[T]
 func (rp RegularPolygon[T]) Scale(factor float64) RegularPolygon[T]
 func (rp RegularPolygon[T]) ScaleXY(factorX, factorY float64) RegularPolygon[T]
+func (rp RegularPolygon[T]) Rotate(angle float64) RegularPolygon[T]
 
 // Utilities
 func (rp RegularPolygon[T]) Equal(polygon RegularPolygon[T]) bool
@@ -300,7 +333,8 @@ func S[T Number](w, h T) Size[T]
 func C[T Number](center Point[T], radius T) Circle[T]
 func R[T Number](center Point[T], size Size[T]) Rectangle[T]
 func L[T Number](start, end Point[T]) Line[T]
-func RP[T Number](center Point[T], size Size[T], n int) RegularPolygon[T]
+func RP[T Number](center Point[T], size Size[T], n int, angle float64) RegularPolygon[T]
+func M(a, b, c, d, e, f float64) Matrix
 ```
 
 

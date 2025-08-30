@@ -67,8 +67,8 @@ func (m Matrix) Scale(factorX, factorY float64) Matrix {
 }
 
 // Equal checks for equal values.
-func (m Matrix) Equal(other Matrix) bool {
-	return Equal(m.A, other.A) && Equal(m.B, other.B) && Equal(m.C, other.C) && Equal(m.D, other.D) && Equal(m.E, other.E) && Equal(m.F, other.F)
+func (m Matrix) Equal(matrix Matrix) bool {
+	return Equal(m.A, matrix.A) && Equal(m.B, matrix.B) && Equal(m.C, matrix.C) && Equal(m.D, matrix.D) && Equal(m.E, matrix.E) && Equal(m.F, matrix.F)
 }
 
 // IsZero checks if values are zero.
