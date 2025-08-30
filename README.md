@@ -320,7 +320,7 @@ The MIT License (MIT). Please see [License File][link-licence] for more informat
 [ico-release]:              https://img.shields.io/github/v/release/gravitton/geometry?style=flat-square&colorB=blue
 [ico-go-dev-reference]:     https://img.shields.io/badge/go.dev-reference-blue?style=flat-square
 [ico-go-report-card]:       https://goreportcard.com/badge/github.com/gravitton/geometry?style=flat-square
-[ico-coverage]:             https://img.shields.io/coverallsCoverage/github/gravitton/assert?style=flat-square
+[ico-coverage]:             https://img.shields.io/coverallsCoverage/github/gravitton/geometry?style=flat-square
 
 [link-author]:              https://github.com/gravitton
 [link-release]:             https://github.com/gravitton/geometry/releases
