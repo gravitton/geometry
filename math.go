@@ -10,8 +10,7 @@ const (
 
 	Delta float64 = 1e-6
 
-	Sqrt3          = 1.732050807568877293527446341505872367
-	OneOverSqrtTwo = 1 / math.Sqrt2
+	Sqrt3 = 1.732050807568877293527446341505872367
 )
 
 // ToRadians converts degrees to radians
@@ -78,14 +77,4 @@ func EqualDelta[T Number](a, b T, delta float64) bool {
 
 func equalDelta(a, b, delta float64) bool {
 	return math.Abs(a-b) <= delta
-}
-
-// Transform applies a function to each element in a slice and returns a new slice.
-func Transform[S ~[]E, E any, T any](input S, fn func(E) T) []T {
-	output := make([]T, len(input))
-	for i, v := range input {
-		output[i] = fn(v)
-	}
-
-	return output
 }

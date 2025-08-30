@@ -16,11 +16,12 @@ func V[T Number](x, y T) Vector[T] {
 	return Vector[T]{x, y}
 }
 
-// VecFromAngle is shorthand for V(1,0).Rotate(angle)
-func VecFromAngle[T Number](angle float64, length T) Vector[T] {
-	sin, cos := math.Sincos(angle)
-
-	return Vector[T]{Cast[T](float64(length) * cos), Cast[T](float64(length) * sin)}
+// Transform creates a new Point by applying the given matrix to the current point.
+func (v Vector[T]) Transform(matrix Matrix) Vector[T] {
+	return Vector[T]{
+		Cast[T](matrix.A*float64(v.X) + matrix.B*float64(v.Y)),
+		Cast[T](matrix.D*float64(v.X) + matrix.E*float64(v.Y)),
+	}
 }
 
 // Add creates a new Vector by adding the given vector to the current vector.
@@ -129,7 +130,7 @@ func (v Vector[T]) Equal(vector Vector[T]) bool {
 	return Equal(v.X, vector.X) && Equal(v.Y, vector.Y)
 }
 
-// IsZero checks if X and Y values are 0.
+// IsZero checks if X and Y values are zero.
 func (v Vector[T]) IsZero() bool {
 	return v.Equal(Vector[T]{})
 }
@@ -182,4 +183,11 @@ func RightVector[T Number]() Vector[T] {
 // LeftVector creates a new Vector with left (-x) direction (-1,0)
 func LeftVector[T Number]() Vector[T] {
 	return Vector[T]{-1, 0}
+}
+
+// VecFromAngle is shorthand for V(1,0).Rotate(angle)
+func VecFromAngle[T Number](angle float64, length T) Vector[T] {
+	sin, cos := math.Sincos(angle)
+
+	return Vector[T]{Cast[T](float64(length) * cos), Cast[T](float64(length) * sin)}
 }

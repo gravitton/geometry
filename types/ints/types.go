@@ -1,6 +1,9 @@
 package ints
 
-import geom "github.com/gravitton/geometry"
+import (
+	geom "github.com/gravitton/geometry"
+	"github.com/gravitton/geometry/internal"
+)
 
 type Point = geom.Point[int]
 type Vector = geom.Vector[int]
@@ -36,7 +39,7 @@ func ToRectangle[T geom.Number](rectangle geom.Rectangle[T]) Rectangle {
 }
 
 func ToPolygon[T geom.Number](polygon geom.Polygon[T]) Polygon {
-	return Polygon{Vertices: geom.Transform(polygon.Vertices, func(point geom.Point[T]) Point {
+	return Polygon{Vertices: internal.Map(polygon.Vertices, func(point geom.Point[T]) Point {
 		return ToPoint(point)
 	})}
 }

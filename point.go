@@ -15,6 +15,14 @@ func P[T Number](x, y T) Point[T] {
 	return Point[T]{x, y}
 }
 
+// Transform creates a new Point by applying the given matrix to the current point.
+func (p Point[T]) Transform(matrix Matrix) Point[T] {
+	return Point[T]{
+		Cast[T](matrix.A*float64(p.X) + matrix.B*float64(p.Y) + matrix.C),
+		Cast[T](matrix.D*float64(p.X) + matrix.E*float64(p.Y) + matrix.F),
+	}
+}
+
 // Add creates a new Point by adding the given vector to the current point.
 func (p Point[T]) Add(vector Vector[T]) Point[T] {
 	return Point[T]{p.X + vector.X, p.Y + vector.Y}
@@ -80,7 +88,7 @@ func (p Point[T]) Equal(point Point[T]) bool {
 	return Equal(p.X, point.X) && Equal(p.Y, point.Y)
 }
 
-// IsZero checks if X and Y values are 0.
+// IsZero checks if X and Y values are zero.
 func (p Point[T]) IsZero() bool {
 	return p.Equal(Point[T]{})
 }

@@ -65,7 +65,7 @@ func (s Size[T]) Equal(other Size[T]) bool {
 	return Equal(s.Width, other.Width) && Equal(s.Height, other.Height)
 }
 
-// IsZero checks if width and height values are 0.
+// IsZero checks if width and height values are zero.
 func (s Size[T]) IsZero() bool {
 	return s.Equal(Size[T]{})
 }
