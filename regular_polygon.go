@@ -27,12 +27,12 @@ func (rp RegularPolygon[T]) MoveTo(point Point[T]) RegularPolygon[T] {
 	return RegularPolygon[T]{point, rp.Size, rp.N, rp.Angle}
 }
 
-// Multiple creates a new RegularPolygon with size scaled by the given factor.
+// Scale creates a new RegularPolygon with size scaled by the given factor.
 func (rp RegularPolygon[T]) Scale(factor float64) RegularPolygon[T] {
 	return RegularPolygon[T]{rp.Center, rp.Size.Scale(factor), rp.N, rp.Angle}
 }
 
-// Multiple creates a new RegularPolygon with size scaled by the given factors.
+// ScaleXY creates a new RegularPolygon with size scaled by the given factors.
 func (rp RegularPolygon[T]) ScaleXY(factorX, factorY float64) RegularPolygon[T] {
 	return RegularPolygon[T]{rp.Center, rp.Size.ScaleXY(factorX, factorY), rp.N, rp.Angle}
 }

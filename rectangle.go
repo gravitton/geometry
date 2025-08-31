@@ -25,7 +25,7 @@ func RectangleFromMinMax[T Number](min, max Point[T]) Rectangle[T] {
 
 // RectangleFromSize creates a Rectangle from zero point and size.
 func RectangleFromSize[T Number](size Size[T]) Rectangle[T] {
-	return Rectangle[T]{P[T](0, 0), size}
+	return RectangleFromMin(P[T](0, 0), size)
 }
 
 // Translate creates a new Rectangle translated by the given vector.
@@ -38,7 +38,7 @@ func (r Rectangle[T]) MoveTo(point Point[T]) Rectangle[T] {
 	return Rectangle[T]{point, r.Size}
 }
 
-// Multiple creates a new Rectangle with size uniformly scaled by the factor.
+// Scale creates a new Rectangle with size uniformly scaled by the factor.
 func (r Rectangle[T]) Scale(factor float64) Rectangle[T] {
 	return Rectangle[T]{r.Center, r.Size.Scale(factor)}
 }
@@ -68,7 +68,7 @@ func (r Rectangle[T]) Shrink(amount T) Rectangle[T] {
 	return Rectangle[T]{r.Center, r.Size.Shrink(amount)}
 }
 
-// Shrink creates a new Rectangle with size reduced by the given amounts along X and Y.
+// ShrinkXY creates a new Rectangle with size reduced by the given amounts along X and Y.
 func (r Rectangle[T]) ShrinkXY(amountX, amountY T) Rectangle[T] {
 	return Rectangle[T]{r.Center, r.Size.ShrinkXY(amountX, amountY)}
 }
@@ -117,9 +117,19 @@ func (r Rectangle[T]) TopRight() Point[T] {
 	return r.Max()
 }
 
-// Edges returns the rectangle edges as lines.
+// Edges returns the rectangle edges as lines in clockwise order starting from BottomLeft.
 func (r Rectangle[T]) Edges() []Line[T] {
-	return []Line[T]{}
+	bl := r.BottomLeft()
+	br := r.BottomRight()
+	tr := r.TopRight()
+	tl := r.TopLeft()
+
+	return []Line[T]{
+		L(bl, br),
+		L(br, tr),
+		L(tr, tl),
+		L(tl, bl),
+	}
 }
 
 // Vertices returns the polygon vertices in order starting Min point, counter-clockwise.

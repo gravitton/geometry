@@ -23,12 +23,12 @@ func ToDegrees(radians float64) float64 {
 	return radians * RadToDeg
 }
 
-// Multiple multiple number by scale factor
+// Multiply multiplies a number by a scale factor
 func Multiple[T Number](a T, factor float64) T {
 	return Cast[T](float64(a) * factor)
 }
 
-// Divide divide number by scale factor
+// Divide divides a number by a scale factor; if scale is zero, returns the original value
 func Divide[T Number](a T, scale float64) T {
 	if scale == 0 {
 		return a
