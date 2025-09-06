@@ -1,8 +1,9 @@
 package geom
 
 import (
-	"github.com/gravitton/assert"
 	"testing"
+
+	"github.com/gravitton/assert"
 )
 
 func TestMidpoint(t *testing.T) {
