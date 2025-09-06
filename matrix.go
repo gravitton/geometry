@@ -56,14 +56,43 @@ func (m Matrix) Translate(deltaX, deltaY float64) Matrix {
 	return m.Multiply(TranslationMatrix(deltaX, deltaY))
 }
 
+// Untranslate creates a new matrix by translating the current matrix with inverse delta.
+func (m Matrix) Untranslate(deltaX, deltaY float64) Matrix {
+	return m.Multiply(TranslationMatrix(-deltaX, -deltaY))
+}
+
+// PreTranslate creates a new matrix by translating the current matrix with inverse delta.
+func (m Matrix) PreTranslate(deltaX, deltaY float64) Matrix {
+	return TranslationMatrix(deltaX, deltaY).Multiply(m)
+}
+
 // Rotate creates a new matrix by rotating the current matrix.
 func (m Matrix) Rotate(angle float64) Matrix {
 	return m.Multiply(RotationMatrix(angle))
 }
 
+// PreRotate creates a new matrix by rotating the current matrix with inverse angle.
+func (m Matrix) PreRotate(angle float64) Matrix {
+	return RotationMatrix(angle).Multiply(m)
+}
+
 // Scale creates a new matrix by scaling the current matrix.
 func (m Matrix) Scale(factorX, factorY float64) Matrix {
 	return m.Multiply(ScaleMatrix(factorX, factorY))
+}
+
+// UnScale creates a new matrix by scaling the current matrix with inverse factors.
+func (m Matrix) Unscale(factorX, factorY float64) Matrix {
+	if factorX == 0 && factorY == 0 {
+		return m
+	}
+
+	return m.Multiply(ScaleMatrix(1/factorX, 1/factorY))
+}
+
+// PrecomposeScale creates a new matrix by left-multiplying the current matrix with scale matrix.
+func (m Matrix) PreScale(factorX, factorY float64) Matrix {
+	return ScaleMatrix(factorX, factorY).Multiply(m)
 }
 
 // Equal checks for equal values.
@@ -73,6 +102,10 @@ func (m Matrix) Equal(matrix Matrix) bool {
 
 // IsZero checks if values are zero.
 func (m Matrix) IsZero() bool { return m.Equal(Matrix{}) }
+
+//func (m Matrix) String() string {
+//	return fmt.Sprintf("[[%.2f, %.2f, %.2f], [%.2f, %.2f, %.2f]]", m.A, m.B, m.C, m.D, m.E, m.F)
+//}
 
 // IdentityMatrix creates a new identity matrix.
 func IdentityMatrix() Matrix {
