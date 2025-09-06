@@ -162,6 +162,13 @@ func (r Rectangle[T]) Bounds() Rectangle[T] {
 	return r
 }
 
+// Clamp creates a new point clamped to the rectangle.
+func (r Rectangle[T]) Clamp(point Point[T]) Point[T] {
+	minPoint, maxPoint := r.Min(), r.Max()
+
+	return Point[T]{Clamp(point.X, minPoint.X, maxPoint.X), Clamp(point.Y, minPoint.Y, maxPoint.Y)}
+}
+
 // Equal checks for equal center and size values using tolerant numeric comparison.
 func (r Rectangle[T]) Equal(other Rectangle[T]) bool {
 	return r.Center.Equal(other.Center) && r.Size.Equal(other.Size)

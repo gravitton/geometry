@@ -65,6 +65,17 @@ func lerp(a, b, t float64) float64 {
 	return a*(1-t) + b*t
 }
 
+// Clamp adjusts the given value to be between the given minimum and maximum value.
+func Clamp[T Number](value, min, max T) T {
+	if value < min {
+		return min
+	}
+	if value > max {
+		return max
+	}
+	return value
+}
+
 // Equal checks for nearly-equal values in Delta
 func Equal[T Number](a, b T) bool {
 	return EqualDelta(a, b, Delta)
