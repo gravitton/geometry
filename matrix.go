@@ -51,37 +51,44 @@ func (m Matrix) Determinant() float64 {
 	return m.A*m.E - m.B*m.D
 }
 
-// Translate creates a new matrix by translating the current matrix.
+// Translate creates a new matrix by right-multiplying a translation matrix.
+// Composition order: result = m * m_T(deltaX,deltaY).
 func (m Matrix) Translate(deltaX, deltaY float64) Matrix {
 	return m.Multiply(TranslationMatrix(deltaX, deltaY))
 }
 
-// Untranslate creates a new matrix by translating the current matrix with inverse delta.
+// Untranslate creates a new matrix by right-multiplying a translation matrix with negative deltas.
+// Composition order: result = m * m_T(-deltaX,-deltaY).
 func (m Matrix) Untranslate(deltaX, deltaY float64) Matrix {
 	return m.Multiply(TranslationMatrix(-deltaX, -deltaY))
 }
 
-// PreTranslate creates a new matrix by translating the current matrix with inverse delta.
+// PreTranslate creates a new matrix by left-multiplying a translation matrix.
+// Composition order: result = m_T(deltaX,deltaY) * m.
 func (m Matrix) PreTranslate(deltaX, deltaY float64) Matrix {
 	return TranslationMatrix(deltaX, deltaY).Multiply(m)
 }
 
-// Rotate creates a new matrix by rotating the current matrix.
+// Rotate creates a new matrix by right-multiplying a rotation matrix (angle in radians) .
+// Composition order: result = m * m_R(angle).
 func (m Matrix) Rotate(angle float64) Matrix {
 	return m.Multiply(RotationMatrix(angle))
 }
 
-// PreRotate creates a new matrix by rotating the current matrix with inverse angle.
+// PreRotate creates a new matrix by left-multiplying a rotation matrix (angle in radians) .
+// Composition order: result = m_R(angle) * m.
 func (m Matrix) PreRotate(angle float64) Matrix {
 	return RotationMatrix(angle).Multiply(m)
 }
 
-// Scale creates a new matrix by scaling the current matrix.
+// Scale creates a new matrix by right-multiplying a scale matrix.
+// Composition order: result = m * m_S(factorX,factorY).
 func (m Matrix) Scale(factorX, factorY float64) Matrix {
 	return m.Multiply(ScaleMatrix(factorX, factorY))
 }
 
-// UnScale creates a new matrix by scaling the current matrix with inverse factors.
+// Unscale creates a new matrix by right-multiplying a scale matrix with inverse factors.
+// Composition order: result = m * m_S(1/factorX,1/factorY).
 func (m Matrix) Unscale(factorX, factorY float64) Matrix {
 	if factorX == 0 && factorY == 0 {
 		return m
@@ -90,7 +97,8 @@ func (m Matrix) Unscale(factorX, factorY float64) Matrix {
 	return m.Multiply(ScaleMatrix(1/factorX, 1/factorY))
 }
 
-// PrecomposeScale creates a new matrix by left-multiplying the current matrix with scale matrix.
+// PreScale creates a new matrix by left-multiplying a scale matrix with inverse factors.
+// Composition order: result = m * m_S(factorX,factorY).
 func (m Matrix) PreScale(factorX, factorY float64) Matrix {
 	return ScaleMatrix(factorX, factorY).Multiply(m)
 }
