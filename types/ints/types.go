@@ -13,61 +13,78 @@ type Line = geom.Line[int]
 type Rectangle = geom.Rectangle[int]
 type Polygon = geom.Polygon[int]
 type RegularPolygon = geom.RegularPolygon[int]
+type Padding = geom.Padding[int]
 
-func P[T geom.Number](x, y T) Point {
+func Pt[T geom.Number](x, y T) Point {
 	return Point{X: geom.Cast[int](float64(x)), Y: geom.Cast[int](float64(y))}
 }
 
 func ToPoint[T geom.Number](point geom.Point[T]) Point {
-	return Point{X: geom.Cast[int](float64(point.X)), Y: geom.Cast[int](float64(point.Y))}
+	return Pt(point.X, point.Y)
 }
 
-func V[T geom.Number](x, y T) Vector {
+func Vec[T geom.Number](x, y T) Vector {
 	return Vector{X: geom.Cast[int](float64(x)), Y: geom.Cast[int](float64(y))}
 }
 
 func ToVector[T geom.Number](vector geom.Vector[T]) Vector {
-	return Vector{X: geom.Cast[int](float64(vector.X)), Y: geom.Cast[int](float64(vector.Y))}
+	return Vec(vector.X, vector.Y)
 }
 
-func S[T geom.Number](width, height T) Size {
+func Sz[T geom.Number](width, height T) Size {
 	return Size{Width: geom.Cast[int](float64(width)), Height: geom.Cast[int](float64(height))}
 }
 
 func ToSize[T geom.Number](size geom.Size[T]) Size {
-	return Size{Width: geom.Cast[int](float64(size.Width)), Height: geom.Cast[int](float64(size.Height))}
+	return Sz(size.Width, size.Height)
 }
 
-func C[T geom.Number](center geom.Point[T], radius T) Circle {
+func Circ[T geom.Number](center geom.Point[T], radius T) Circle {
 	return Circle{Center: ToPoint(center), Radius: geom.Cast[int](float64(radius))}
 }
 
 func ToCircle[T geom.Number](circle geom.Circle[T]) Circle {
-	return Circle{Center: ToPoint(circle.Center), Radius: geom.Cast[int](float64(circle.Radius))}
+	return Circ(circle.Center, circle.Radius)
 }
 
-func L[T geom.Number](start, end geom.Point[T]) Line {
+func Ln[T geom.Number](start, end geom.Point[T]) Line {
 	return Line{Start: ToPoint(start), End: ToPoint(end)}
 }
 
 func ToLine[T geom.Number](line geom.Line[T]) Line {
-	return Line{Start: ToPoint(line.Start), End: ToPoint(line.End)}
+	return Ln(line.Start, line.End)
 }
 
-func R[T geom.Number](center geom.Point[T], size geom.Size[T]) Rectangle {
+func Rect[T geom.Number](center geom.Point[T], size geom.Size[T]) Rectangle {
 	return Rectangle{Center: ToPoint(center), Size: ToSize(size)}
 }
 
 func ToRectangle[T geom.Number](rectangle geom.Rectangle[T]) Rectangle {
-	return Rectangle{Center: ToPoint(rectangle.Center), Size: ToSize(rectangle.Size)}
+	return Rect(rectangle.Center, rectangle.Size)
 }
 
-func ToPolygon[T geom.Number](polygon geom.Polygon[T]) Polygon {
-	return Polygon{Vertices: internal.Map(polygon.Vertices, func(point geom.Point[T]) Point {
+func Pol[T geom.Number](Vertices []geom.Point[T]) Polygon {
+	return Polygon{Vertices: internal.Map(Vertices, func(point geom.Point[T]) Point {
 		return ToPoint(point)
 	})}
 }
 
+func ToPolygon[T geom.Number](polygon geom.Polygon[T]) Polygon {
+	return Pol(polygon.Vertices)
+}
+
+func RegPol[T geom.Number](center geom.Point[T], size geom.Size[T], n int, angle float64) RegularPolygon {
+	return RegularPolygon{Center: ToPoint(center), Size: ToSize(size), N: n, Angle: angle}
+}
+
 func ToRegularPolygon[T geom.Number](polygon geom.RegularPolygon[T]) RegularPolygon {
-	return RegularPolygon{Center: ToPoint(polygon.Center), Size: ToSize(polygon.Size), N: polygon.N}
+	return RegPol(polygon.Center, polygon.Size, polygon.N, polygon.Angle)
+}
+
+func Pd[T geom.Number](top, right, bottom, left T) Padding {
+	return Padding{Top: geom.Cast[int](float64(top)), Right: geom.Cast[int](float64(right)), Bottom: geom.Cast[int](float64(bottom)), Left: geom.Cast[int](float64(left))}
+}
+
+func ToPadding[T geom.Number](padding geom.Padding[T]) Padding {
+	return Pd(padding.Top, padding.Right, padding.Bottom, padding.Left)
 }

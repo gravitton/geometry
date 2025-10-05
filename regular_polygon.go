@@ -12,8 +12,8 @@ type RegularPolygon[T Number] struct {
 	Angle  float64
 }
 
-// RP is shorthand for RegularPolygon{center, size, n, angle}.
-func RP[T Number](center Point[T], size Size[T], n int, angle float64) RegularPolygon[T] {
+// RegPol is shorthand for RegularPolygon{center, size, n, angle}.
+func RegPol[T Number](center Point[T], size Size[T], n int, angle float64) RegularPolygon[T] {
 	return RegularPolygon[T]{center, size, n, angle}
 }
 
@@ -50,7 +50,7 @@ func (rp RegularPolygon[T]) Vertices() []Point[T] {
 
 	vertices := make([]Point[T], rp.N)
 	for i := 0; i < rp.N; i++ {
-		// TODO: V(1,0).Rotate(angle)
+		// TODO: Vec(1,0).Rotate(angle)
 		vertices[i] = rp.Center.Add(VecFromAngle[T](initAngle+float64(i)*angleStep, 1).MultiplyXY(float64(rp.Size.Width), float64(rp.Size.Height)))
 	}
 

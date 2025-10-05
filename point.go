@@ -10,8 +10,8 @@ type Point[T Number] struct {
 	Y T `json:"y"`
 }
 
-// P is shorthand for Point{x, y}.
-func P[T Number](x, y T) Point[T] {
+// Pt is shorthand for Point{x, y}.
+func Pt[T Number](x, y T) Point[T] {
 	return Point[T]{x, y}
 }
 

@@ -7,46 +7,46 @@ import (
 )
 
 func TestPolygon_New(t *testing.T) {
-	vertices := []Point[int]{P(0, 0), P(2, 0), P(2, 2), P(0, 2)}
+	vertices := []Point[int]{Pt(0, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2)}
 
-	testPolygon(t, Polygon[int]{vertices}, vertices)
+	testPolygon(t, Pol(vertices), vertices)
 }
 
 func TestPolygon_Center(t *testing.T) {
-	testPoint(t, Polygon[int]{[]Point[int]{P(0, 0), P(2, 0), P(2, 2), P(0, 2)}}.Center(), 1, 1)
-	testPoint(t, Polygon[float64]{[]Point[float64]{P(0.0, 0.0), P(2.0, 0.0), P(2.0, 1.0)}}.Center(), 4.0/3.0, 1.0/3.0)
+	testPoint(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2)}).Center(), 1, 1)
+	testPoint(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(2.0, 0.0), Pt(2.0, 1.0)}).Center(), 4.0/3.0, 1.0/3.0)
 }
 
 func TestPolygon_Translate(t *testing.T) {
-	testPolygon(t, Polygon[int]{[]Point[int]{P(0, 0), P(2, 0)}}.Translate(V(1, -1)), []Point[int]{
-		P(1, -1),
-		P(3, -1),
+	testPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 0)}).Translate(Vec(1, -1)), []Point[int]{
+		Pt(1, -1),
+		Pt(3, -1),
 	})
 }
 
 func TestPolygon_MoveTo(t *testing.T) {
-	testPolygon(t, Polygon[int]{Vertices: []Point[int]{P(0, 0), P(2, 0)}}.MoveTo(P(10, 10)), []Point[int]{
-		P(9, 10),
-		P(11, 10),
+	testPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 0)}).MoveTo(Pt(10, 10)), []Point[int]{
+		Pt(9, 10),
+		Pt(11, 10),
 	})
 }
 
 func TestPolygon_Scale(t *testing.T) {
-	testPolygon(t, Polygon[int]{Vertices: []Point[int]{P(0, 0), P(2, 0)}}.Scale(2), []Point[int]{
-		P(-1, 0),
-		P(3, 0),
+	testPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 0)}).Scale(2), []Point[int]{
+		Pt(-1, 0),
+		Pt(3, 0),
 	})
-	testPolygon(t, Polygon[float64]{Vertices: []Point[float64]{P(0.0, 0.0), P(2.0, 1.0)}}.ScaleXY(0.5, 2.5), []Point[float64]{
-		P(0.5, -0.75),
-		P(1.5, 1.75),
+	testPolygon(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(2.0, 1.0)}).ScaleXY(0.5, 2.5), []Point[float64]{
+		Pt(0.5, -0.75),
+		Pt(1.5, 1.75),
 	})
 }
 
 func TestPolygon_Immutable(t *testing.T) {
-	p := Polygon[int]{Vertices: []Point[int]{P(0, 0), P(2, 0)}}
+	p := Pol([]Point[int]{Pt(0, 0), Pt(2, 0)})
 
-	p.Translate(V(1, -1))
-	p.MoveTo(P(10, 10))
+	p.Translate(Vec(1, -1))
+	p.MoveTo(Pt(10, 10))
 	p.Scale(2)
 	p.ScaleXY(2, 3)
 

@@ -8,24 +8,9 @@ type Rectangle[T Number] struct {
 	Size   Size[T]
 }
 
-// R is shorthand for Rectangle{center, size}.
-func R[T Number](center Point[T], size Size[T]) Rectangle[T] {
+// Rect is shorthand for Rectangle{center, size}.
+func Rect[T Number](center Point[T], size Size[T]) Rectangle[T] {
 	return Rectangle[T]{center, size}
-}
-
-// RectangleFromMin creates a Rectangle from min point and size.
-func RectangleFromMin[T Number](min Point[T], size Size[T]) Rectangle[T] {
-	return Rectangle[T]{min.AddXY(size.Scale(0.5).XY()), size}
-}
-
-// RectangleFromMinMax creates a Rectangle from min and max points.
-func RectangleFromMinMax[T Number](min, max Point[T]) Rectangle[T] {
-	return RectangleFromMin(min, S(max.Subtract(min).XY()))
-}
-
-// RectangleFromSize creates a Rectangle from zero point and size.
-func RectangleFromSize[T Number](size Size[T]) Rectangle[T] {
-	return RectangleFromMin(P[T](0, 0), size)
 }
 
 // Translate creates a new Rectangle translated by the given vector.
@@ -73,6 +58,20 @@ func (r Rectangle[T]) ShrinkXY(amountX, amountY T) Rectangle[T] {
 	return Rectangle[T]{r.Center, r.Size.ShrinkXY(amountX, amountY)}
 }
 
+// Shrink creates a new Rectangle with size reduced by the same amount in both dimensions.
+func (r Rectangle[T]) Inset(padding Padding[T]) Rectangle[T] {
+	return Rectangle[T]{
+		r.Center.AddXY(
+			Divide(padding.Left-padding.Right, 2),
+			Divide(padding.Bottom-padding.Top, 2),
+		),
+		r.Size.ShrinkXY(
+			padding.Left+padding.Right,
+			padding.Top+padding.Bottom,
+		),
+	}
+}
+
 // Width returns the rectangle width.
 func (r Rectangle[T]) Width() T {
 	return r.Size.Width
@@ -97,48 +96,48 @@ func (r Rectangle[T]) Max() Point[T] {
 	return r.Center.AddXY(w-w/2, h-h/2)
 }
 
+// TopLeft returns the top-left corner.
+func (r Rectangle[T]) TopLeft() Point[T] {
+	return r.Min()
+}
+
 // BottomLeft returns the bottom-left corner.
 func (r Rectangle[T]) BottomLeft() Point[T] {
-	return r.Min()
+	return Point[T]{r.Min().X, r.Max().Y}
 }
 
 // BottomRight returns the bottom-right corner.
 func (r Rectangle[T]) BottomRight() Point[T] {
-	return Point[T]{r.Max().X, r.Min().Y}
-}
-
-// TopLeft returns the top-left corner.
-func (r Rectangle[T]) TopLeft() Point[T] {
-	return Point[T]{r.Min().X, r.Max().Y}
+	return r.Max()
 }
 
 // TopRight returns the top-right corner.
 func (r Rectangle[T]) TopRight() Point[T] {
-	return r.Max()
+	return Point[T]{r.Max().X, r.Min().Y}
 }
 
 // Edges returns the rectangle edges as lines in clockwise order starting from BottomLeft.
 func (r Rectangle[T]) Edges() []Line[T] {
+	tl := r.TopLeft()
 	bl := r.BottomLeft()
 	br := r.BottomRight()
 	tr := r.TopRight()
-	tl := r.TopLeft()
 
 	return []Line[T]{
-		L(bl, br),
-		L(br, tr),
-		L(tr, tl),
-		L(tl, bl),
+		Ln(tl, bl),
+		Ln(bl, br),
+		Ln(br, tr),
+		Ln(tr, tl),
 	}
 }
 
 // Vertices returns the polygon vertices in order starting Min point, counter-clockwise.
 func (r Rectangle[T]) Vertices() []Point[T] {
 	return []Point[T]{
+		r.TopLeft(),
 		r.BottomLeft(),
 		r.BottomRight(),
 		r.TopRight(),
-		r.TopLeft(),
 	}
 }
 
@@ -194,4 +193,19 @@ func (r Rectangle[T]) ToPolygon() Polygon[T] {
 // String returns a string representation of the Rectangle using min and max.
 func (r Rectangle[T]) String() string {
 	return fmt.Sprintf("%s-%s", r.Min().String(), r.Max().String())
+}
+
+// RectFromMin creates a Rectangle from min point and size.
+func RectFromMin[T Number](min Point[T], size Size[T]) Rectangle[T] {
+	return Rectangle[T]{min.AddXY(size.Scale(0.5).XY()), size}
+}
+
+// RectFromMinMax creates a Rectangle from min and max points.
+func RectFromMinMax[T Number](min, max Point[T]) Rectangle[T] {
+	return RectFromMin(min, Sz(max.Subtract(min).XY()))
+}
+
+// RectFromSize creates a Rectangle from zero point and size.
+func RectFromSize[T Number](size Size[T]) Rectangle[T] {
+	return RectFromMin(Pt[T](0, 0), size)
 }

@@ -9,6 +9,8 @@
 
 Generic immutable 2D geometry library for game development.
 
+This library use top-left origin with +Y down and -Y up. It only affect human-readable getters like `(Top|Bottom)Left()`, `(Top|Bottom)Right()` and `(Up/Down)Vector`.
+
 
 ## Installation
 
@@ -25,6 +27,17 @@ package main
 import (
 	geom "github.com/gravitton/geometry"
 )
+
+type HexLayout struct {
+	Origin    geom.Point[float64]
+	Size      geom.Size[float64]
+	FromPixel geom.Matrix
+}
+
+// FromPoint converts a pixel point to a fractional hex (Q, R)
+func (l HexLayout) FromPixel(point geom.Point[float64]) (Q, R float64) {
+	return point.Subtract(l.Origin).DivideXY(l.Size.XY()).Transform(l.FromPixel).XY()
+}
 ```
 
 ## API
@@ -327,14 +340,15 @@ func (rp RegularPolygon[T]) ToPolygon() Polygon[T]
 Short constructors for convenience
 
 ```go
-func P[T Number](x, y T) Point[T]
-func V[T Number](x, y T) Vector[T]
-func S[T Number](w, h T) Size[T]
-func C[T Number](center Point[T], radius T) Circle[T]
-func R[T Number](center Point[T], size Size[T]) Rectangle[T]
-func L[T Number](start, end Point[T]) Line[T]
-func RP[T Number](center Point[T], size Size[T], n int, angle float64) RegularPolygon[T]
-func M(a, b, c, d, e, f float64) Matrix
+func Pt[T Number](x, y T) Point[T]
+func Vec[T Number](x, y T) Vector[T]
+func Sz[T Number](w, h T) Size[T]
+func Circ[T Number](center Point[T], radius T) Circle[T]
+func Rect[T Number](center Point[T], size Size[T]) Rectangle[T]
+func Ln[T Number](start, end Point[T]) Line[T]
+func Pol[T Number](vertices []Point[T]) Polygon[T]
+func RegPol[T Number](center Point[T], size Size[T], n int, angle float64) RegularPolygon[T]
+func Mat(a, b, c, d, e, f float64) Matrix
 ```
 
 

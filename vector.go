@@ -11,8 +11,8 @@ type Vector[T Number] struct {
 	Y T `json:"y"`
 }
 
-// V is shorthand for Vector{x, y}.
-func V[T Number](x, y T) Vector[T] {
+// Vec is shorthand for Vector{x, y}.
+func Vec[T Number](x, y T) Vector[T] {
 	return Vector[T]{x, y}
 }
 
@@ -125,6 +125,11 @@ func (v Vector[T]) Angle() float64 {
 	return math.Atan2(float64(v.Y), float64(v.X))
 }
 
+// Lerp creates a new Vector in linear interpolation towards given vector.
+func (v Vector[T]) Lerp(vector Vector[T], t float64) Vector[T] {
+	return Vector[T]{Lerp(v.X, vector.X, t), Lerp(v.Y, vector.Y, t)}
+}
+
 // Equal checks for equal X and Y values with given vector.
 func (v Vector[T]) Equal(vector Vector[T]) bool {
 	return Equal(v.X, vector.X) && Equal(v.Y, vector.Y)
@@ -165,14 +170,14 @@ func IdentityVector[T Number]() Vector[T] {
 	return Vector[T]{1, 1}
 }
 
-// UpVector creates a new Vector with up (+y) direction (0,+1)
+// UpVector creates a new Vector with up (-y) direction (0,-1)
 func UpVector[T Number]() Vector[T] {
-	return Vector[T]{0, 1}
+	return Vector[T]{0, -1}
 }
 
-// DownVector creates a new Vector with down (-y) direction (0,-1)
+// DownVector creates a new Vector with down (+y) direction (0,+1)
 func DownVector[T Number]() Vector[T] {
-	return Vector[T]{0, -1}
+	return Vector[T]{0, 1}
 }
 
 // RightVector creates a new Vector with right (+x) direction (+1,0)
@@ -185,7 +190,7 @@ func LeftVector[T Number]() Vector[T] {
 	return Vector[T]{-1, 0}
 }
 
-// VecFromAngle is shorthand for V(1,0).Rotate(angle)
+// VecFromAngle is shorthand for Vec(1,0).Rotate(angle)
 func VecFromAngle[T Number](angle float64, length T) Vector[T] {
 	sin, cos := math.Sincos(angle)
 

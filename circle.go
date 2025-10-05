@@ -11,8 +11,8 @@ type Circle[T Number] struct {
 	Radius T        `json:"r"`
 }
 
-// C is shorthand for Circle{center, radius}.
-func C[T Number](center Point[T], radius T) Circle[T] {
+// Circ is shorthand for Circle{center, radius}.
+func Circ[T Number](center Point[T], radius T) Circle[T] {
 	return Circle[T]{center, radius}
 }
 

@@ -11,8 +11,8 @@ type Matrix struct {
 	// [0 0 1] implicit third row
 }
 
-// M is shorthand for Matrix{a, b, c, d, e, f}.
-func M(a, b, c, d, e, f float64) Matrix {
+// Mat is shorthand for Matrix{a, b, c, d, e, f}.
+func Mat(a, b, c, d, e, f float64) Matrix {
 	return Matrix{a, b, c, d, e, f}
 }
 
@@ -112,7 +112,7 @@ func (m Matrix) Equal(matrix Matrix) bool {
 func (m Matrix) IsZero() bool { return m.Equal(Matrix{}) }
 
 //func (m Matrix) String() string {
-//	return fmt.Sprintf("[[%.2f, %.2f, %.2f], [%.2f, %.2f, %.2f]]", m.A, m.B, m.C, m.D, m.E, m.F)
+//	return fmt.Sprintf("[[%.2f, %.2f, %.2f], [%.2f, %.2f, %.2f]]", m.A, m.B, m.Circ, m.D, m.E, m.F)
 //}
 
 // IdentityMatrix creates a new identity matrix.

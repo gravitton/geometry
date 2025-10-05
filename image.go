@@ -14,9 +14,9 @@ func SizeFromImage[T Number](r image.Rectangle) Size[T] {
 	return Size[T]{T(r.Dx()), T(r.Dy())}
 }
 
-// RectangleFromImage converts a Rectangle from an image.Rectangle.
-func RectangleFromImage[T Number](r image.Rectangle) Rectangle[T] {
-	return RectangleFromMin(PointFromImage[T](r.Min), SizeFromImage[T](r))
+// RectFromImage converts a Rectangle from an image.Rectangle.
+func RectFromImage[T Number](r image.Rectangle) Rectangle[T] {
+	return RectFromMin(PointFromImage[T](r.Min), SizeFromImage[T](r))
 }
 
 // ToImagePoint converts a Point to an image.Point.

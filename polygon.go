@@ -7,6 +7,11 @@ type Polygon[T Number] struct {
 	Vertices []Point[T]
 }
 
+// Pol is shorthand for Polygon{vertices}.
+func Pol[T Number](Vertices []Point[T]) Polygon[T] {
+	return Polygon[T]{Vertices}
+}
+
 // Center returns the polygon centroid computed as the average of its vertices.
 func (p Polygon[T]) Center() Point[T] {
 	var x, y T

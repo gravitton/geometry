@@ -10,9 +10,14 @@ type Size[T Number] struct {
 	Height T `json:"h"`
 }
 
-// S is shorthand for Size{width, height}.
-func S[T Number](width, height T) Size[T] {
+// Sz is shorthand for Size{width, height}.
+func Sz[T Number](width, height T) Size[T] {
 	return Size[T]{width, height}
+}
+
+// SzU is shorthand for Size{size, size}.
+func SzU[T Number](size T) Size[T] {
+	return Size[T]{size, size}
 }
 
 // Scale creates a new Size scaled by the given factor in both dimensions.
