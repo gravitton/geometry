@@ -170,24 +170,44 @@ func IdentityVector[T Number]() Vector[T] {
 	return Vector[T]{1, 1}
 }
 
-// UpVector creates a new Vector with up (-y) direction (0,-1)
+// UpVector creates a new unit Vector with up (-y) direction (0,-1)
 func UpVector[T Number]() Vector[T] {
 	return Vector[T]{0, -1}
 }
 
-// DownVector creates a new Vector with down (+y) direction (0,+1)
+// DownVector creates a new unit Vector with down (+y) direction (0,+1)
 func DownVector[T Number]() Vector[T] {
 	return Vector[T]{0, 1}
 }
 
-// RightVector creates a new Vector with right (+x) direction (+1,0)
+// RightVector creates a new unit Vector with right (+x) direction (+1,0)
 func RightVector[T Number]() Vector[T] {
 	return Vector[T]{1, 0}
 }
 
-// LeftVector creates a new Vector with left (-x) direction (-1,0)
+// LeftVector creates a new unit Vector with left (-x) direction (-1,0)
 func LeftVector[T Number]() Vector[T] {
 	return Vector[T]{-1, 0}
+}
+
+// UpLeftVector creates a new unit Vector with up (-y) and left (-x) directions.
+func UpLeftVector() Vector[float64] {
+	return Vector[float64]{-OneOverSqrt2, -OneOverSqrt2}
+}
+
+// UpRightVector creates a new unit Vector with up (-y) and right (+x) directions.
+func UpRightVector() Vector[float64] {
+	return Vector[float64]{OneOverSqrt2, -OneOverSqrt2}
+}
+
+// DownLeftVector creates a new unit Vector with down (+y) and left (-x) directions.
+func DownLeftVector() Vector[float64] {
+	return Vector[float64]{-OneOverSqrt2, OneOverSqrt2}
+}
+
+// DownRightVector creates a new unit Vector with down (+y) and right (+x) directions.
+func DownRightVector() Vector[float64] {
+	return Vector[float64]{OneOverSqrt2, OneOverSqrt2}
 }
 
 // VecFromAngle is shorthand for Vec(1,0).Rotate(angle)
