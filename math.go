@@ -10,7 +10,8 @@ const (
 
 	Delta float64 = 1e-6
 
-	Sqrt3 = 1.732050807568877293527446341505872367
+	Sqrt3        = 1.732050807568877293527446341505872367
+	OneOverSqrt2 = 1 / math.Sqrt2
 )
 
 // ToRadians converts degrees to radians
