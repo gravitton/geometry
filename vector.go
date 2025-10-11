@@ -140,6 +140,11 @@ func (v Vector[T]) IsZero() bool {
 	return v.Equal(Vector[T]{})
 }
 
+// Identity check if X and Y values are (1,1).
+func (v Vector[T]) Identity() bool {
+	return v.Equal(Vector[T]{1, 1})
+}
+
 // Unit checks if Vector is normalized.
 func (v Vector[T]) Unit() bool {
 	return Equal(v.LengthSquared(), 1.0)
