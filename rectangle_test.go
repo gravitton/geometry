@@ -18,6 +18,10 @@ func TestRectangle_New(t *testing.T) {
 
 	testRect(t, RectFromSize(Sz(4, 2)), 2, 1, 4, 2)
 	testRect(t, RectFromSize(Sz(1.0, 3.0)), 0.5, 1.5, 1.0, 3.0)
+
+	// int(1x1) rectangle
+	testRect(t, Rect(Pt(0, 0), Sz(1, 1)), 0, 0, 1, 1)
+	testRect(t, RectFromMin(Pt(0, 0), Sz(1, 1)), 0, 0, 1, 1)
 }
 
 func TestRectangle_Translate(t *testing.T) {

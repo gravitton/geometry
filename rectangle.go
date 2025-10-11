@@ -197,7 +197,9 @@ func (r Rectangle[T]) String() string {
 
 // RectFromMin creates a Rectangle from min point and size.
 func RectFromMin[T Number](min Point[T], size Size[T]) Rectangle[T] {
-	return Rectangle[T]{min.AddXY(size.Scale(0.5).XY()), size}
+	// must be same calculation (in reverse) as in Min() method
+	w, h := size.XY()
+	return Rectangle[T]{min.AddXY(w/2, h/2), size}
 }
 
 // RectFromMinMax creates a Rectangle from min and max points.
