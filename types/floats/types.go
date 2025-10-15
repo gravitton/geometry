@@ -2,7 +2,7 @@ package floats
 
 import (
 	geom "github.com/gravitton/geometry"
-	"github.com/gravitton/geometry/internal"
+	"github.com/gravitton/x/slices"
 )
 
 type Point = geom.Point[float64]
@@ -61,7 +61,7 @@ func ToRectangle[T geom.Number](rectangle geom.Rectangle[T]) Rectangle {
 }
 
 func Pol[T geom.Number](Vertices []geom.Point[T]) Polygon {
-	return Polygon{Vertices: internal.Map(Vertices, func(point geom.Point[T]) Point {
+	return Polygon{Vertices: slices.Map(Vertices, func(point geom.Point[T]) Point {
 		return ToPoint(point)
 	})}
 }

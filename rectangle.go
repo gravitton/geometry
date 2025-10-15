@@ -1,6 +1,8 @@
 package geom
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // Rectangle is a 2D axis-aligned rectangle represented by its center and size.
 type Rectangle[T Number] struct {

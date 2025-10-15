@@ -1,6 +1,8 @@
 package geom
 
-import "github.com/gravitton/geometry/internal"
+import (
+	"github.com/gravitton/x/slices"
+)
 
 // Polygon is a 2D polygon with 3+ vertices.
 type Polygon[T Number] struct {
@@ -25,7 +27,7 @@ func (p Polygon[T]) Center() Point[T] {
 
 // Translate creates a new Polygon translated by the given vector (applied to all vertices).
 func (p Polygon[T]) Translate(vector Vector[T]) Polygon[T] {
-	return Polygon[T]{internal.Map(p.Vertices, func(e Point[T]) Point[T] {
+	return Polygon[T]{slices.Map(p.Vertices, func(e Point[T]) Point[T] {
 		return e.Add(vector)
 	})}
 }
@@ -38,7 +40,7 @@ func (p Polygon[T]) MoveTo(point Point[T]) Polygon[T] {
 // Scale creates a new Polygon uniformly scaled about its centroid by the factor.
 func (p Polygon[T]) Scale(factor float64) Polygon[T] {
 	center := p.Center()
-	return Polygon[T]{internal.Map(p.Vertices, func(point Point[T]) Point[T] {
+	return Polygon[T]{slices.Map(p.Vertices, func(point Point[T]) Point[T] {
 		return center.Add(point.Subtract(center).Multiply(factor))
 	})}
 }
@@ -46,7 +48,7 @@ func (p Polygon[T]) Scale(factor float64) Polygon[T] {
 // ScaleXY creates a new Polygon scaled about its centroid by the factors.
 func (p Polygon[T]) ScaleXY(factorX, factorY float64) Polygon[T] {
 	center := p.Center()
-	return Polygon[T]{internal.Map(p.Vertices, func(point Point[T]) Point[T] {
+	return Polygon[T]{slices.Map(p.Vertices, func(point Point[T]) Point[T] {
 		return center.Add(point.Subtract(center).MultiplyXY(factorX, factorY))
 	})}
 }
