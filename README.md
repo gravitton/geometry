@@ -34,9 +34,8 @@ type HexLayout struct {
 	FromPixel geom.Matrix
 }
 
-// FromPoint converts a pixel point to a fractional hex (Q, R)
-func (l HexLayout) FromPixel(point geom.Point[float64]) (Q, R float64) {
-	return point.Subtract(l.Origin).DivideXY(l.Size.XY()).Transform(l.FromPixel).XY()
+func (l HexLayout) FromPixel(pixel geom.Point[float64]) (Q, R float64) {
+	return pixel.Subtract(l.Origin).DivideXY(l.Size.XY()).Transform(l.FromPixel).XY()
 }
 ```
 
@@ -46,7 +45,7 @@ All types and methods are generic and can be used with any numeric type.
 
 ```go
 type Number interface {
-    ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~float32 | ~float64
+	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~float32 | ~float64
 }
 ```
 
@@ -115,6 +114,7 @@ func (v Vector[T]) Cross(vector Vector[T]) T
 func (v Vector[T]) Length() float64
 func (v Vector[T]) LengthSquared() T
 func (v Vector[T]) Angle() float64
+func (v Vector[T]) Lerp(vector Vector[T], t float64) Vector[T]
 
 // Transformations
 func (v Vector[T]) Rotate(angle float64) Vector[T]
@@ -135,9 +135,9 @@ func (v Vector[T]) String() string
 
 ```go
 type Matrix struct {
-    A, B, C float64 // scale X, shear Y, translate X
-    D, E, F float64 // shear X, scale Y, translate Y
-    // [0 0 1] implicit third row
+	A, B, C float64 // scale X, shear Y, translate X
+	D, E, F float64 // shear X, scale Y, translate Y
+	// [0 0 1] implicit third row
 }
 
 // Operations
@@ -186,8 +186,8 @@ func (s Size[T]) String() string
 
 ```go
 type Circle[T Number] struct { 
-    Center Point[T]
-    Radius T
+	Center Point[T]
+	Radius T
 }
 
 // Properties
@@ -219,8 +219,8 @@ func (c Circle[T]) String() string
 
 ```go
 type Rectangle[T Number] struct{
-    Center Point[T]
-    Size   Size[T]
+	Center Point[T]
+	Size   Size[T]
 }
 
 // Properties
@@ -266,8 +266,8 @@ func (r Rectangle[T]) String() string
 
 ```go
 type Line[T Number] struct{
-    Start Point[T]
-    End   Point[T]
+	Start Point[T]
+	End   Point[T]
 }
 
 // Transformations
@@ -291,7 +291,7 @@ func (l Line[T]) String() string
 
 ```go
 type Polygon[T Number] struct{
-    Vertices []Point[T]
+	Vertices []Point[T]
 }
 
 // Properties
@@ -311,10 +311,10 @@ func (p Polygon[T]) Empty() bool
 
 ```go
 type RegularPolygon[T Number] struct {
-    Center Point[T]
-    Size   Size[T]
-    N      int
-    Angle  float64
+	Center Point[T]
+	Size   Size[T]
+	N      int
+	Angle  float64
 }
 
 // Properties
