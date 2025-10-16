@@ -97,7 +97,7 @@ func (p Point[T]) XY() (T, T) {
 
 // Vector converts the point to a Vector.
 func (p Point[T]) Vector() Vector[T] {
-	return Vector[T]{p.X, p.Y}
+	return Vector[T](p)
 }
 
 // Int converts the point to a [int] point.

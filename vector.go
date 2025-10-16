@@ -159,7 +159,7 @@ func (v Vector[T]) XY() (T, T) {
 
 // Vector converts the vector to a Point.
 func (v Vector[T]) Point() Point[T] {
-	return Point[T]{v.X, v.Y}
+	return Point[T](v)
 }
 
 // Vector converts the vector to a Size.
