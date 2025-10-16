@@ -73,7 +73,7 @@ func TestRegularPolygon_Vertices(t *testing.T) {
 
 func TestRegularPolygon_ToPolygon(t *testing.T) {
 	rp := RegPol(Pt(0.0, 0.0), Sz(1.0, 1.0), 5, 0)
-	p := rp.ToPolygon()
+	p := rp.Polygon()
 
 	assert.Equal(t, p.Vertices, rp.Vertices())
 	assert.NotSame(t, p.Vertices, rp.Vertices())

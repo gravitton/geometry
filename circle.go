@@ -83,5 +83,5 @@ func (c Circle[T]) Contains(point Point[T]) bool {
 
 // String returns a string representation of the Circle.
 func (c Circle[T]) String() string {
-	return fmt.Sprintf("C(%s;%s)", c.Center.String(), ToString(c.Radius))
+	return fmt.Sprintf("C(%s;%s)", c.Center.String(), String(c.Radius))
 }

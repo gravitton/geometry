@@ -80,12 +80,12 @@ func (s Size[T]) XY() (T, T) {
 	return s.Width, s.Height
 }
 
-// ToVector converts the size to a Vector.
-func (s Size[T]) ToVector() Vector[T] {
+// Vector converts the size to a Vector.
+func (s Size[T]) Vector() Vector[T] {
 	return Vector[T]{s.Width, s.Height}
 }
 
 // String returns a string in the form "WxH" using the underlying number formatting.
 func (s Size[T]) String() string {
-	return fmt.Sprintf("%sx%s", ToString(s.Width), ToString(s.Height))
+	return fmt.Sprintf("%sx%s", String(s.Width), String(s.Height))
 }

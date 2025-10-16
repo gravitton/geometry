@@ -64,8 +64,8 @@ func (rp RegularPolygon[T]) Bounds() Rectangle[T] {
 	return Rectangle[T]{rp.Center, rp.Size.ScaleXY(2.0*maxAbsCos, 2.0*maxAbsSin)}
 }
 
-// ToPolygon converts the regular polygon into a generic Polygon with computed vertices.
-func (rp RegularPolygon[T]) ToPolygon() Polygon[T] {
+// Polygon converts the regular polygon into a generic Polygon with computed vertices.
+func (rp RegularPolygon[T]) Polygon() Polygon[T] {
 	return Polygon[T]{rp.Vertices()}
 }
 

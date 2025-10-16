@@ -7,21 +7,21 @@ import (
 )
 
 func TestPadding_New(t *testing.T) {
-	testPadding(t, Pd(2, 4, 3, 5), 2, 4, 3, 5)
-	testPadding(t, PdU(20.0), 20.0, 20.0, 20.0, 20.0)
-	testPadding(t, Pd(2.1, 4.0, 3.3, 5.4), 2.1, 4.0, 3.3, 5.4)
+	testPadding(t, Pad(2, 4, 3, 5), 2, 4, 3, 5)
+	testPadding(t, PadU(20.0), 20.0, 20.0, 20.0, 20.0)
+	testPadding(t, Pad(2.1, 4.0, 3.3, 5.4), 2.1, 4.0, 3.3, 5.4)
 }
 
 func TestPadding_Width(t *testing.T) {
-	assert.Equal(t, Pd(2, 4, 3, 5).Width(), 9)
+	assert.Equal(t, Pad(2, 4, 3, 5).Width(), 9)
 }
 
 func TestPadding_Height(t *testing.T) {
-	assert.Equal(t, Pd(2, 4, 3, 5).Height(), 5)
+	assert.Equal(t, Pad(2, 4, 3, 5).Height(), 5)
 }
 
 func TestPadding_XY(t *testing.T) {
-	w1, h1 := Pd(2, 4, 3, 5).XY()
+	w1, h1 := Pad(2, 4, 3, 5).XY()
 	assert.Equal(t, w1, 9)
 	assert.Equal(t, h1, 5)
 }

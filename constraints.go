@@ -19,8 +19,8 @@ func Cast[T Number](a float64) T {
 	return T(a)
 }
 
-// ToString format Number as numeric string
-func ToString[T Number](value T) string {
+// String format Number as numeric string
+func String[T Number](value T) string {
 	if isIntValue(value) {
 		return fmt.Sprintf("%d", int64(value))
 	} else {

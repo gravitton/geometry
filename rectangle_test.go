@@ -61,9 +61,9 @@ func TestRectangle_Shrink(t *testing.T) {
 }
 
 func TestRectangle_Inset(t *testing.T) {
-	testRect(t, Rect(Pt(0, 0), Sz(10, 10)).Inset(Pd(1, 1, 1, 1)), 0, 0, 8, 8)
-	testRect(t, Rect(Pt(0, 0), Sz(10, 10)).Inset(Pd(3, 1, 1, 5)), 2, -1, 4, 6)
-	testRect(t, Rect(Pt(0.0, 0.0), Sz(10.0, 10.0)).Inset(Pd(1.5, -2.0, 0.0, 1.0)), 1.5, -0.75, 11.0, 8.5)
+	testRect(t, Rect(Pt(0, 0), Sz(10, 10)).Inset(Pad(1, 1, 1, 1)), 0, 0, 8, 8)
+	testRect(t, Rect(Pt(0, 0), Sz(10, 10)).Inset(Pad(3, 1, 1, 5)), 2, -1, 4, 6)
+	testRect(t, Rect(Pt(0.0, 0.0), Sz(10.0, 10.0)).Inset(Pad(1.5, -2.0, 0.0, 1.0)), 1.5, -0.75, 11.0, 8.5)
 }
 
 func TestRectangle_Width(t *testing.T) {

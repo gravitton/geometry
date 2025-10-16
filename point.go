@@ -17,10 +17,7 @@ func Pt[T Number](x, y T) Point[T] {
 
 // Transform creates a new Point by applying the given matrix to the current point.
 func (p Point[T]) Transform(matrix Matrix) Point[T] {
-	return Point[T]{
-		Cast[T](matrix.A*float64(p.X) + matrix.B*float64(p.Y) + matrix.C),
-		Cast[T](matrix.D*float64(p.X) + matrix.E*float64(p.Y) + matrix.F),
-	}
+	return Point[T]{Cast[T](matrix.A*float64(p.X) + matrix.B*float64(p.Y) + matrix.C), Cast[T](matrix.D*float64(p.X) + matrix.E*float64(p.Y) + matrix.F)}
 }
 
 // Add creates a new Point by adding the given vector to the current point.
@@ -98,9 +95,14 @@ func (p Point[T]) XY() (T, T) {
 	return p.X, p.Y
 }
 
+// Vector converts the sipointze to a Vector.
+func (p Point[T]) Vector() Vector[T] {
+	return Vector[T]{p.X, p.Y}
+}
+
 // String returns a string representing the point.
 func (p Point[T]) String() string {
-	return fmt.Sprintf("(%s,%s)", ToString(p.X), ToString(p.Y))
+	return fmt.Sprintf("(%s,%s)", String(p.X), String(p.Y))
 }
 
 // ZeroPoint creates a new Point with zero values (0,0).

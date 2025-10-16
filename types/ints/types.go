@@ -1,3 +1,4 @@
+// Package ints provides type aliases and constructors for geometry objects with [int] type argument.
 package ints
 
 import (

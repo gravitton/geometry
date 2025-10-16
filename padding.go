@@ -5,14 +5,19 @@ type Padding[T Number] struct {
 	Top, Right, Bottom, Left T
 }
 
-// Pd is shorthand for Padding{top, right, bottom, left}.
-func Pd[T Number](top, right, bottom, left T) Padding[T] {
+// Pad is shorthand for Padding{top, right, bottom, left}.
+func Pad[T Number](top, right, bottom, left T) Padding[T] {
 	return Padding[T]{top, right, bottom, left}
 }
 
-// PdU is shorthand for Padding{padding, padding, padding, padding}.
-func PdU[T Number](padding T) Padding[T] {
+// PadU is shorthand for Padding{padding, padding, padding, padding}.
+func PadU[T Number](padding T) Padding[T] {
 	return Padding[T]{padding, padding, padding, padding}
+}
+
+// PadXY is shorthand for Padding{topBottom, leftRight, topBottom, leftRight}.
+func PadXY[T Number](topBottom, leftRight T) Padding[T] {
+	return Padding[T]{topBottom, leftRight, topBottom, leftRight}
 }
 
 // Width returns the width of the padding.
@@ -28,4 +33,9 @@ func (p Padding[T]) Height() T {
 // XY returns the width and height of the padding.
 func (p Padding[T]) XY() (T, T) {
 	return p.Width(), p.Height()
+}
+
+// Size converts the padding to a Size.
+func (p Padding[T]) Size() Size[T] {
+	return Size[T]{p.Width(), p.Height()}
 }

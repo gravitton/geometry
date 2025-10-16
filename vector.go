@@ -18,10 +18,7 @@ func Vec[T Number](x, y T) Vector[T] {
 
 // Transform creates a new Point by applying the given matrix to the current point.
 func (v Vector[T]) Transform(matrix Matrix) Vector[T] {
-	return Vector[T]{
-		Cast[T](matrix.A*float64(v.X) + matrix.B*float64(v.Y)),
-		Cast[T](matrix.D*float64(v.X) + matrix.E*float64(v.Y)),
-	}
+	return Vector[T]{Cast[T](matrix.A*float64(v.X) + matrix.B*float64(v.Y)), Cast[T](matrix.D*float64(v.X) + matrix.E*float64(v.Y))}
 }
 
 // Add creates a new Vector by adding the given vector to the current vector.
@@ -140,13 +137,13 @@ func (v Vector[T]) IsZero() bool {
 	return v.Equal(Vector[T]{})
 }
 
-// Identity check if X and Y values are (1,1).
-func (v Vector[T]) Identity() bool {
+// IsOne check if X and Y values are (1,1).
+func (v Vector[T]) IsOne() bool {
 	return v.Equal(Vector[T]{1, 1})
 }
 
-// Unit checks if Vector is normalized.
-func (v Vector[T]) Unit() bool {
+// IsNormalized checks if Vector is normalized.
+func (v Vector[T]) IsNormalized() bool {
 	return Equal(v.LengthSquared(), 1.0)
 }
 
@@ -160,9 +157,19 @@ func (v Vector[T]) XY() (T, T) {
 	return v.X, v.Y
 }
 
+// Vector converts the vector to a Point.
+func (v Vector[T]) Point() Point[T] {
+	return Point[T]{v.X, v.Y}
+}
+
+// Vector converts the vector to a Size.
+func (v Vector[T]) Size() Size[T] {
+	return Size[T]{v.X, v.Y}
+}
+
 // String returns a string representing the vector.
 func (v Vector[T]) String() string {
-	return fmt.Sprintf("⟨%s,%s⟩", ToString(v.X), ToString(v.Y))
+	return fmt.Sprintf("⟨%s,%s⟩", String(v.X), String(v.Y))
 }
 
 // ZeroVector creates a new Vector with zero values (0,0).

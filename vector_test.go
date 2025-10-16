@@ -126,17 +126,17 @@ func TestVector_Zero(t *testing.T) {
 }
 
 func TestVector_Unit(t *testing.T) {
-	assert.False(t, Vec(1, 2).Unit())
-	assert.True(t, Vec(1, 2).Normalize().Unit())
-	assert.True(t, Vec(1.1, 2.1).Normalize().Unit())
-	assert.False(t, Vec(0, 0).Unit())
-	assert.True(t, Vec(1, 0).Unit())
-	assert.True(t, Vec(1/math.Sqrt2, 1/math.Sqrt2).Unit())
+	assert.False(t, Vec(1, 2).IsNormalized())
+	assert.True(t, Vec(1, 2).Normalize().IsNormalized())
+	assert.True(t, Vec(1.1, 2.1).Normalize().IsNormalized())
+	assert.False(t, Vec(0, 0).IsNormalized())
+	assert.True(t, Vec(1, 0).IsNormalized())
+	assert.True(t, Vec(1/math.Sqrt2, 1/math.Sqrt2).IsNormalized())
 
-	assert.True(t, UpVector[float64]().Unit())
-	assert.True(t, DownVector[float64]().Unit())
-	assert.True(t, LeftVector[float64]().Unit())
-	assert.True(t, RightVector[float64]().Unit())
+	assert.True(t, UpVector[float64]().IsNormalized())
+	assert.True(t, DownVector[float64]().IsNormalized())
+	assert.True(t, LeftVector[float64]().IsNormalized())
+	assert.True(t, RightVector[float64]().IsNormalized())
 }
 
 func TestVector_Less(t *testing.T) {

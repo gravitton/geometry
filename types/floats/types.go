@@ -1,3 +1,4 @@
+// Package ints provides type aliases and constructors for geometry objects with [float64] type argument.
 package floats
 
 import (
@@ -22,6 +23,7 @@ func Pt[T geom.Number](x, y T) Point {
 func ToPoint[T geom.Number](point geom.Point[T]) Point {
 	return Pt(point.X, point.Y)
 }
+
 func Vec[T geom.Number](x, y T) Vector {
 	return Vector{X: float64(x), Y: float64(y)}
 }
@@ -29,6 +31,7 @@ func Vec[T geom.Number](x, y T) Vector {
 func ToVector[T geom.Number](vector geom.Vector[T]) Vector {
 	return Vec(vector.X, vector.Y)
 }
+
 func Sz[T geom.Number](width, height T) Size {
 	return Size{Width: float64(width), Height: float64(height)}
 }

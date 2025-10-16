@@ -15,7 +15,7 @@ func CollisionRectangleCircle[T Number](r Rectangle[T], c Circle[T]) bool {
 	// TODO: support rotation
 
 	distance := c.Center.Subtract(r.Center).Abs()
-	extends := r.Size.Scale(0.5).ToVector()
+	extends := r.Size.Scale(0.5).Vector()
 
 	// circle center is more than size outside rectangle borders
 	if distance.X > extends.X+c.Radius || distance.Y > extends.Y+c.Radius {

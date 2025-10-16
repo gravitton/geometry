@@ -110,5 +110,5 @@ func testCast[T Number](t *testing.T, value float64, expected T) {
 func testToString[T Number](t *testing.T, value T, expected string) {
 	t.Helper()
 
-	assert.Equal(t, ToString(value), expected)
+	assert.Equal(t, String(value), expected)
 }
