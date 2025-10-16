@@ -81,6 +81,7 @@ func Ln[T Number](start, end Point[T]) Line[T]
 func Pol[T Number](vertices []Point[T]) Polygon[T]
 func RegPol[T Number](center Point[T], size Size[T], n int, angle float64) RegularPolygon[T]
 func Mat(a, b, c, d, e, f float64) Matrix
+func Pad[T Number](top, right, bottom, left T) Padding[T]
 ```
 
 ### Point
@@ -183,19 +184,24 @@ type Matrix struct {
 	// [0 0 1] implicit third row
 }
 
-// Operations
+// Matrix operations
 func (m Matrix) Multiply(n Matrix) Matrix
 func (m Matrix) Inverse() Matrix
 func (m Matrix) Determinant() float64
 
-// Transform builders
-func Translate(deltaX, deltaY float64) Matrix
+// Transformations
+func (m Matrix) Translate(deltaX, deltaY float64) Matrix
+func (m Matrix) Untranslate(deltaX, deltaY float64) Matrix
+func (m Matrix) PreTranslate(deltaX, deltaY float64)
 func (m Matrix) Rotate(angle float64) Matrix
+func (m Matrix) PreRotate(angle float64) Matrix
 func (m Matrix) Scale(factorX, factorY float64) Matrix
+func (m Matrix) Unscale(factorX, factorY float64) Matrix
 
 // Utilities
 func (m Matrix) Equal(matrix Matrix) bool
 func (m Matrix) IsZero() bool
+func (m Matrix) String() string
 ```
 
 ### Size

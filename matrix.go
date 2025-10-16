@@ -1,6 +1,7 @@
 package geom
 
 import (
+	"fmt"
 	"math"
 )
 
@@ -111,9 +112,10 @@ func (m Matrix) Equal(matrix Matrix) bool {
 // IsZero checks if values are zero.
 func (m Matrix) IsZero() bool { return m.Equal(Matrix{}) }
 
-//func (m Matrix) String() string {
-//	return fmt.Sprintf("[[%.2f, %.2f, %.2f], [%.2f, %.2f, %.2f]]", m.A, m.B, m.Circ, m.D, m.E, m.F)
-//}
+// String returns a string representation of the Matrix.
+func (m Matrix) String() string {
+	return fmt.Sprintf("[[%.2f, %.2f, %.2f], [%.2f, %.2f, %.2f]]", m.A, m.B, m.C, m.D, m.E, m.F)
+}
 
 // IdentityMatrix creates a new identity matrix.
 func IdentityMatrix() Matrix {
