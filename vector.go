@@ -167,6 +167,16 @@ func (v Vector[T]) Size() Size[T] {
 	return Size[T]{v.X, v.Y}
 }
 
+// Int converts the vector to a [int] vector.
+func (v Vector[T]) Int() Vector[int] {
+	return Vector[int]{Cast[int](float64(v.X)), Cast[int](float64(v.Y))}
+}
+
+// Float converts the vector to a [float64] vector.
+func (v Vector[T]) Float() Vector[float64] {
+	return Vector[float64]{float64(v.X), float64(v.Y)}
+}
+
 // String returns a string representing the vector.
 func (v Vector[T]) String() string {
 	return fmt.Sprintf("⟨%s,%s⟩", String(v.X), String(v.Y))

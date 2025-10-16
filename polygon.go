@@ -57,3 +57,13 @@ func (p Polygon[T]) ScaleXY(factorX, factorY float64) Polygon[T] {
 func (p Polygon[T]) Empty() bool {
 	return len(p.Vertices) == 0
 }
+
+// Int converts the polygon to a [int] polygon.
+func (p Polygon[T]) Int() Polygon[int] {
+	return Polygon[int]{slices.Map(p.Vertices, (Point[T]).Int)}
+}
+
+// Float converts the polygon to a [float64] polygon.
+func (p Polygon[T]) Float() Polygon[float64] {
+	return Polygon[float64]{slices.Map(p.Vertices, (Point[T]).Float)}
+}

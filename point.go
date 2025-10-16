@@ -95,9 +95,19 @@ func (p Point[T]) XY() (T, T) {
 	return p.X, p.Y
 }
 
-// Vector converts the sipointze to a Vector.
+// Vector converts the point to a Vector.
 func (p Point[T]) Vector() Vector[T] {
 	return Vector[T]{p.X, p.Y}
+}
+
+// Int converts the point to a [int] point.
+func (p Point[T]) Int() Point[int] {
+	return Point[int]{Cast[int](float64(p.X)), Cast[int](float64(p.Y))}
+}
+
+// Float converts the point to a [float64] point.
+func (p Point[T]) Float() Point[float64] {
+	return Point[float64]{float64(p.X), float64(p.Y)}
 }
 
 // String returns a string representing the point.

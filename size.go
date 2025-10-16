@@ -85,6 +85,16 @@ func (s Size[T]) Vector() Vector[T] {
 	return Vector[T]{s.Width, s.Height}
 }
 
+// Int converts the size to a [int] size.
+func (s Size[T]) Int() Size[int] {
+	return Size[int]{Cast[int](float64(s.Width)), Cast[int](float64(s.Height))}
+}
+
+// Float converts the size to a [float64] size.
+func (s Size[T]) Float() Size[float64] {
+	return Size[float64]{float64(s.Width), float64(s.Height)}
+}
+
 // String returns a string in the form "WxH" using the underlying number formatting.
 func (s Size[T]) String() string {
 	return fmt.Sprintf("%sx%s", String(s.Width), String(s.Height))

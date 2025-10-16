@@ -3,7 +3,6 @@ package floats
 
 import (
 	geom "github.com/gravitton/geometry"
-	"github.com/gravitton/x/slices"
 )
 
 type Point = geom.Point[float64]
@@ -16,75 +15,47 @@ type Polygon = geom.Polygon[float64]
 type RegularPolygon = geom.RegularPolygon[float64]
 type Padding = geom.Padding[float64]
 
+// Pt is shorthand for geom.Pt(x, y).Float()
 func Pt[T geom.Number](x, y T) Point {
-	return Point{X: float64(x), Y: float64(y)}
+	return geom.Pt(x, y).Float()
 }
 
-func ToPoint[T geom.Number](point geom.Point[T]) Point {
-	return Pt(point.X, point.Y)
-}
-
+// Vec is shorthand for geom.Vec(x, y).Float()
 func Vec[T geom.Number](x, y T) Vector {
-	return Vector{X: float64(x), Y: float64(y)}
+	return geom.Vec(x, y).Float()
 }
 
-func ToVector[T geom.Number](vector geom.Vector[T]) Vector {
-	return Vec(vector.X, vector.Y)
-}
-
+// Sz is shorthand for geom.Sz(width, height).Float()
 func Sz[T geom.Number](width, height T) Size {
-	return Size{Width: float64(width), Height: float64(height)}
+	return geom.Sz(width, height).Float()
 }
 
-func ToSize[T geom.Number](size geom.Size[T]) Size {
-	return Sz(size.Width, size.Height)
-}
-
+// Circ is shorthand for geom.Circ(center, radius).Float()
 func Circ[T geom.Number](center geom.Point[T], radius T) Circle {
-	return Circle{Center: ToPoint(center), Radius: float64(radius)}
+	return geom.Circ(center, radius).Float()
 }
 
-func ToCircle[T geom.Number](circle geom.Circle[T]) Circle {
-	return Circ(circle.Center, circle.Radius)
-}
-
+// Ln is shorthand for geom.Ln(start, end).Float()
 func Ln[T geom.Number](start, end geom.Point[T]) Line {
-	return Line{Start: ToPoint(start), End: ToPoint(end)}
+	return geom.Ln(start, end).Float()
 }
 
-func ToLine[T geom.Number](line geom.Line[T]) Line {
-	return Ln(line.Start, line.End)
-}
+// Rect is shorthand for geom.Rect(center, size).Float()
 func Rect[T geom.Number](center geom.Point[T], size geom.Size[T]) Rectangle {
-	return Rectangle{Center: ToPoint(center), Size: ToSize(size)}
+	return geom.Rect(center, size).Float()
 }
 
-func ToRectangle[T geom.Number](rectangle geom.Rectangle[T]) Rectangle {
-	return Rect(rectangle.Center, rectangle.Size)
+// Pol is shorthand for geom.Pol(vertices).Float()
+func Pol[T geom.Number](vertices []geom.Point[T]) Polygon {
+	return geom.Pol(vertices).Float()
 }
 
-func Pol[T geom.Number](Vertices []geom.Point[T]) Polygon {
-	return Polygon{Vertices: slices.Map(Vertices, func(point geom.Point[T]) Point {
-		return ToPoint(point)
-	})}
-}
-
-func ToPolygon[T geom.Number](polygon geom.Polygon[T]) Polygon {
-	return Pol(polygon.Vertices)
-}
-
+// RegPol is shorthand for geom.RegPol(center, size, n, angle).Float()
 func RegPol[T geom.Number](center geom.Point[T], size geom.Size[T], n int, angle float64) RegularPolygon {
-	return RegularPolygon{Center: ToPoint(center), Size: ToSize(size), N: n, Angle: angle}
+	return geom.RegPol(center, size, n, angle).Float()
 }
 
-func ToRegularPolygon[T geom.Number](polygon geom.RegularPolygon[T]) RegularPolygon {
-	return RegPol(polygon.Center, polygon.Size, polygon.N, polygon.Angle)
-}
-
-func Pd[T geom.Number](top, right, bottom, left T) Padding {
-	return Padding{Top: float64(top), Right: float64(right), Bottom: float64(bottom), Left: float64(left)}
-}
-
-func ToPadding[T geom.Number](padding geom.Padding[T]) Padding {
-	return Pd(padding.Top, padding.Right, padding.Bottom, padding.Left)
+// Pad is shorthand for geom.Pad(top, right, bottom, left).Float()
+func Pad[T geom.Number](top, right, bottom, left T) Padding {
+	return geom.Pad(top, right, bottom, left).Float()
 }

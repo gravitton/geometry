@@ -187,9 +187,19 @@ func (r Rectangle[T]) Contains(point Point[T]) bool {
 	return minPoint.X <= point.X && point.X <= maxPoint.X && minPoint.Y <= point.Y && point.Y <= maxPoint.Y
 }
 
-// ToPolygon converts the rectangle into a generic Polygon with computed vertices.
-func (r Rectangle[T]) ToPolygon() Polygon[T] {
+// Polygon converts the rectangle into a generic Polygon with computed vertices.
+func (r Rectangle[T]) Polygon() Polygon[T] {
 	return Polygon[T]{r.Vertices()}
+}
+
+// Int converts the rectangle to a [int] rectangle.
+func (r Rectangle[T]) Int() Rectangle[int] {
+	return Rectangle[int]{r.Center.Int(), r.Size.Int()}
+}
+
+// Float converts the rectangle to a [float64] rectangle.
+func (r Rectangle[T]) Float() Rectangle[float64] {
+	return Rectangle[float64]{r.Center.Float(), r.Size.Float()}
 }
 
 // String returns a string representation of the Rectangle using min and max.

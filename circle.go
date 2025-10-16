@@ -81,6 +81,16 @@ func (c Circle[T]) Contains(point Point[T]) bool {
 	return c.Center.Subtract(point).Less(c.Radius)
 }
 
+// Int converts the circle to a [int] circle.
+func (c Circle[T]) Int() Circle[int] {
+	return Circle[int]{c.Center.Int(), Cast[int](float64(c.Radius))}
+}
+
+// Float converts the circle to a [float64] circle.
+func (c Circle[T]) Float() Circle[float64] {
+	return Circle[float64]{c.Center.Float(), float64(c.Radius)}
+}
+
 // String returns a string representation of the Circle.
 func (c Circle[T]) String() string {
 	return fmt.Sprintf("C(%s;%s)", c.Center.String(), String(c.Radius))

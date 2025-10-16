@@ -137,7 +137,7 @@ func TestRectangle_Contains(t *testing.T) {
 
 func TestRectangle_ToPolygon(t *testing.T) {
 	r := Rect(Pt(0, 0), Sz(2, 2))
-	p := r.ToPolygon()
+	p := r.Polygon()
 
 	assert.Equal(t, p.Vertices, r.Vertices())
 	assert.NotSame(t, p.Vertices, r.Vertices())

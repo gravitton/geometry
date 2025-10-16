@@ -60,6 +60,16 @@ func (l Line[T]) IsZero() bool {
 	return l.Start.IsZero() && l.End.IsZero()
 }
 
+// Int converts the line to a [int] line.
+func (l Line[T]) Int() Line[int] {
+	return Line[int]{l.Start.Int(), l.End.Int()}
+}
+
+// Float converts the line to a [float64] line.
+func (l Line[T]) Float() Line[float64] {
+	return Line[float64]{l.Start.Float(), l.End.Float()}
+}
+
 // String returns a string representation of the Line.
 func (l Line[T]) String() string {
 	return fmt.Sprintf("L(%s;%s)", l.Start.String(), l.End.String())
