@@ -1,6 +1,7 @@
 package geom
 
 import (
+	"fmt"
 	"math"
 )
 
@@ -51,7 +52,7 @@ func (rp RegularPolygon[T]) Vertices() []Point[T] {
 	vertices := make([]Point[T], rp.N)
 	for i := 0; i < rp.N; i++ {
 		// TODO: Vec(1,0).Rotate(angle)
-		vertices[i] = rp.Center.Add(VecFromAngle[T](initAngle+float64(i)*angleStep, 1).MultiplyXY(float64(rp.Size.Width), float64(rp.Size.Height)))
+		vertices[i] = rp.Center.Add(VectorFromAngle[T](initAngle+float64(i)*angleStep, 1).MultiplyXY(float64(rp.Size.Width), float64(rp.Size.Height)))
 	}
 
 	return vertices
@@ -92,6 +93,11 @@ func (rp RegularPolygon[T]) Int() RegularPolygon[int] {
 // Float converts the regular polygon to a [float64] regular polygon.
 func (rp RegularPolygon[T]) Float() RegularPolygon[float64] {
 	return RegularPolygon[float64]{rp.Center.Float(), rp.Size.Float(), rp.N, rp.Angle}
+}
+
+// String returns a string representation of the RegularPolygon.
+func (rp RegularPolygon[T]) String() string {
+	return fmt.Sprintf("RegPol(%s;%s;%s;%s)", rp.Center.String(), rp.Size.String(), String(rp.N), String(rp.Angle))
 }
 
 type Orientation int

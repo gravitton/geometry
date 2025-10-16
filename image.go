@@ -4,19 +4,19 @@ import (
 	"image"
 )
 
-// PtFromImage converts a Point from an image.Point.
-func PtFromImage[T Number](p image.Point) Point[T] {
+// PointFromImage converts a Point from an image.Point.
+func PointFromImage[T Number](p image.Point) Point[T] {
 	return Point[T]{T(p.X), T(p.Y)}
 }
 
-// SzFromImage converts a Size from an image.Rectangle.
-func SzFromImage[T Number](r image.Rectangle) Size[T] {
+// SizeFromImage converts a Size from an image.Rectangle.
+func SizeFromImage[T Number](r image.Rectangle) Size[T] {
 	return Size[T]{T(r.Dx()), T(r.Dy())}
 }
 
 // RectFromImage converts a Rectangle from an image.Rectangle.
 func RectFromImage[T Number](r image.Rectangle) Rectangle[T] {
-	return RectFromMin(PtFromImage[T](r.Min), SzFromImage[T](r))
+	return RectFromMin(PointFromImage[T](r.Min), SizeFromImage[T](r))
 }
 
 // Point converts a Point to an image.Point.

@@ -1,6 +1,9 @@
 package geom
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/gravitton/x/slices"
 )
 
@@ -60,10 +63,15 @@ func (p Polygon[T]) Empty() bool {
 
 // Int converts the polygon to a [int] polygon.
 func (p Polygon[T]) Int() Polygon[int] {
-	return Polygon[int]{slices.Map(p.Vertices, (Point[T]).Int)}
+	return Polygon[int]{slices.Map(p.Vertices, Point[T].Int)}
 }
 
 // Float converts the polygon to a [float64] polygon.
 func (p Polygon[T]) Float() Polygon[float64] {
-	return Polygon[float64]{slices.Map(p.Vertices, (Point[T]).Float)}
+	return Polygon[float64]{slices.Map(p.Vertices, Point[T].Float)}
+}
+
+// String returns a string representation of the Polygon.
+func (p Polygon[T]) String() string {
+	return fmt.Sprintf("Pol(%s)", strings.Join(slices.Map(p.Vertices, Point[T].String), ", "))
 }

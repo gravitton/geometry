@@ -13,7 +13,7 @@ func TestVector_New(t *testing.T) {
 	testVector(t, Vec[float64](0.16, 204), 0.16, 204.0)
 
 	testVector(t, ZeroVector[int](), 0, 0)
-	testVector(t, IdentityVector[float64](), 1, 1)
+	testVector(t, OneVector[float64](), 1, 1)
 	testVector(t, UpVector[float64](), 0, -1)
 	testVector(t, DownVector[float64](), 0, 1)
 	testVector(t, RightVector[float64](), 1, 0)

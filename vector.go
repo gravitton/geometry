@@ -182,13 +182,20 @@ func (v Vector[T]) String() string {
 	return fmt.Sprintf("⟨%s,%s⟩", String(v.X), String(v.Y))
 }
 
+// VectorFromAngle is shorthand for Vec(1,0).Rotate(angle)
+func VectorFromAngle[T Number](angle float64, length T) Vector[T] {
+	sin, cos := math.Sincos(angle)
+
+	return Vector[T]{Cast[T](float64(length) * cos), Cast[T](float64(length) * sin)}
+}
+
 // ZeroVector creates a new Vector with zero values (0,0).
 func ZeroVector[T Number]() Vector[T] {
 	return Vector[T]{}
 }
 
-// IdentityVector creates a new Vector with identity values (+1,+1).
-func IdentityVector[T Number]() Vector[T] {
+// OneVector creates a new Vector with identity values (+1,+1).
+func OneVector[T Number]() Vector[T] {
 	return Vector[T]{1, 1}
 }
 
@@ -230,11 +237,4 @@ func DownLeftVector() Vector[float64] {
 // DownRightVector creates a new unit Vector with down (+y) and right (+x) directions.
 func DownRightVector() Vector[float64] {
 	return Vector[float64]{OneOverSqrt2, OneOverSqrt2}
-}
-
-// VecFromAngle is shorthand for Vec(1,0).Rotate(angle)
-func VecFromAngle[T Number](angle float64, length T) Vector[T] {
-	sin, cos := math.Sincos(angle)
-
-	return Vector[T]{Cast[T](float64(length) * cos), Cast[T](float64(length) * sin)}
 }

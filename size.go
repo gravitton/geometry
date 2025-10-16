@@ -15,11 +15,6 @@ func Sz[T Number](width, height T) Size[T] {
 	return Size[T]{width, height}
 }
 
-// SzU is shorthand for Size{size, size}.
-func SzU[T Number](size T) Size[T] {
-	return Size[T]{size, size}
-}
-
 // Scale creates a new Size scaled by the given factor in both dimensions.
 func (s Size[T]) Scale(factor float64) Size[T] {
 	return Size[T]{Multiple(s.Width, factor), Multiple(s.Height, factor)}
@@ -98,4 +93,9 @@ func (s Size[T]) Float() Size[float64] {
 // String returns a string in the form "WxH" using the underlying number formatting.
 func (s Size[T]) String() string {
 	return fmt.Sprintf("%sx%s", String(s.Width), String(s.Height))
+}
+
+// SzU is shorthand for Size{size, size}.
+func SzU[T Number](size T) Size[T] {
+	return Size[T]{size, size}
 }
