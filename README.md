@@ -39,7 +39,7 @@ func (l HexLayout) FromPixel(pixel geom.Point[float64]) (Q, R float64) {
 }
 ```
 
-It also provide packages for type aliases ([`ints`](./types/ints) for `int` and [`floats`](./types/floats) for `float64`).
+It also provide packages for type aliases ([`ints`](./types/ints/types.go) for `int` and [`floats`](./types/floats/types.go) for `float64`).
 
 ```go
 import (
@@ -69,7 +69,7 @@ type Number interface {
 
 ### Constructors
 
-All types have exported fields and can be created directly (`geom.Point[int]{X: 1, Y: 2}`), but there are also shortcut constructors (`geom.Pt(1, 2)`).
+All types have exported fields and can be created directly (`geom.Point[int]{X: 1, Y: 2}`), but there are also shorthand constructors (`geom.Pt(1, 2)`).
 
 ```go
 func Pt[T Number](x, y T) Point[T]
