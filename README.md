@@ -9,7 +9,9 @@
 
 Generic immutable 2D geometry library for game development.
 
-This library use top-left origin with +Y down and -Y up. It only affect human-readable getters like `(Top|Bottom)Left()`, `(Top|Bottom)Right()` and `(Up/Down)Vector`.
+> This library use top-left origin with `+Y` down and `-Y` up. 
+> 
+> It only affect human-readable getters (like `Up`, `Down`, `Top`, `Bottom`).
 
 
 ## Installation
@@ -22,8 +24,6 @@ go get github.com/gravitton/geometry
 ## Usage
 
 ```go
-package main
-
 import (
 	geom "github.com/gravitton/geometry"
 )
@@ -39,14 +39,48 @@ func (l HexLayout) FromPixel(pixel geom.Point[float64]) (Q, R float64) {
 }
 ```
 
+It also provide packages for type aliases ([`ints`](./types/ints) for `int` and [`floats`](./types/floats) for `float64`).
+
+```go
+import (
+    "github.com/gravitton/geometry/types/floats"
+    "github.com/gravitton/geometry/types/ints"
+)
+
+type Grid struct {
+    Size     ints.Size
+    CellSize floats.Size
+}
+
+func Bounds(grid *Grid, x, y int) floats.Size {
+    return geom.RectFromMin(floats.Pt(x, y), grid.CellSize.ScaleXY(grid.Size.Float().XY()))
+}
+```
+
 ## API
 
-All types and methods are generic and can be used with any numeric type.
+All types and methods are generic and can be used with any numeric type from `Number` type constraint.
 
 ```go
 type Number interface {
 	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~float32 | ~float64
 }
+```
+
+### Constructors
+
+All types have exported fields and can be created directly (`geom.Point[int]{X: 1, Y: 2}`), but there are also shortcut constructors (`geom.Pt(1, 2)`).
+
+```go
+func Pt[T Number](x, y T) Point[T]
+func Vec[T Number](x, y T) Vector[T]
+func Sz[T Number](w, h T) Size[T]
+func Circ[T Number](center Point[T], radius T) Circle[T]
+func Rect[T Number](center Point[T], size Size[T]) Rectangle[T]
+func Ln[T Number](start, end Point[T]) Line[T]
+func Pol[T Number](vertices []Point[T]) Polygon[T]
+func RegPol[T Number](center Point[T], size Size[T], n int, angle float64) RegularPolygon[T]
+func Mat(a, b, c, d, e, f float64) Matrix
 ```
 
 ### Point
@@ -81,6 +115,10 @@ func (p Point[T]) AngleTo(point Point[T]) float64
 // Utilities
 func (p Point[T]) Equal(point Point[T]) bool
 func (p Point[T]) IsZero() bool
+func (p Point[T]) Vector() Vector[T]
+func (p Point[T]) Point() image.Point
+func (p Point[T]) Int() Point[int]
+func (p Point[T]) Float() Point[float64]
 func (p Point[T]) String() string
 ```
 
@@ -126,8 +164,13 @@ func (v Vector[T]) Abs() Vector[T]
 // Utilities
 func (v Vector[T]) Equal(vector Vector[T]) bool
 func (v Vector[T]) IsZero() bool
-func (v Vector[T]) Unit() bool
+func (v Vector[T]) IsOne() bool
+func (v Vector[T]) IsNormalized() bool
 func (v Vector[T]) Less(value T) bool
+func (v Vector[T]) Point() Point[T] 
+func (v Vector[T]) Size() Size[T]
+func (v Vector[T]) Int() Vector[int]
+func (v Vector[T]) Float() Vector[float64]
 func (v Vector[T]) String() string
 ```
 
@@ -146,7 +189,7 @@ func (m Matrix) Inverse() Matrix
 func (m Matrix) Determinant() float64
 
 // Transform builders
-func (m Matrix) Translate(deltaX, deltaY float64) Matrix
+func Translate(deltaX, deltaY float64) Matrix
 func (m Matrix) Rotate(angle float64) Matrix
 func (m Matrix) Scale(factorX, factorY float64) Matrix
 
@@ -179,6 +222,9 @@ func (s Size[T]) ShrinkXY(amountX, amountY T) Size[T]
 // Utilities
 func (s Size[T]) Equal(other Size[T]) bool
 func (s Size[T]) IsZero() bool
+func (s Size[T]) Vector() Vector[T]
+func (s Size[T]) Int() Size[int]
+func (s Size[T]) Float() Size[float64]
 func (s Size[T]) String() string
 ```
 
@@ -212,6 +258,8 @@ func (c Circle[T]) Contains(point Point[T]) bool
 func (c Circle[T]) Equal(circle Circle[T]) bool
 func (c Circle[T]) IsZero() bool
 func (c Circle[T]) Bounds() Rectangle[T]
+func (c Circle[T]) Int() Circle[int]
+func (c Circle[T]) Float() Circle[float64]
 func (c Circle[T]) String() string
 ```
 
@@ -258,7 +306,10 @@ func (r Rectangle[T]) Contains(point Point[T]) bool
 func (r Rectangle[T]) Equal(other Rectangle[T]) bool
 func (r Rectangle[T]) IsZero() bool
 func (r Rectangle[T]) Bounds() Rectangle[T]
-func (r Rectangle[T]) ToPolygon() Polygon[T]
+func (r Rectangle[T]) Polygon() Polygon[T]
+func (r Rectangle[T]) Rectangle() image.Rectangle
+func (r Rectangle[T]) Int() Rectangle[int]
+func (r Rectangle[T]) Float() Rectangle[float64]
 func (r Rectangle[T]) String() string
 ```
 
@@ -266,8 +317,7 @@ func (r Rectangle[T]) String() string
 
 ```go
 type Line[T Number] struct{
-	Start Point[T]
-	End   Point[T]
+	Start, End Point[T]
 }
 
 // Transformations
@@ -284,6 +334,8 @@ func (l Line[T]) Length() float64
 func (l Line[T]) Equal(other Line[T]) bool
 func (l Line[T]) IsZero() bool
 func (l Line[T]) Bounds() Rectangle[T]
+func (l Line[T]) Int() Line[int]
+func (l Line[T]) Float() Line[float64]
 func (l Line[T]) String() string
 ```
 
@@ -305,6 +357,9 @@ func (p Polygon[T]) ScaleXY(factorX, factorY float64) Polygon[T]
 
 // Utilities
 func (p Polygon[T]) Empty() bool
+func (p Polygon[T]) Int() Polygon[int]
+func (p Polygon[T]) Float() Polygon[float64]
+func (p Polygon[T]) String() string
 ```
 
 ### Regular Polygon
@@ -332,23 +387,29 @@ func (rp RegularPolygon[T]) Equal(polygon RegularPolygon[T]) bool
 func (rp RegularPolygon[T]) IsZero() bool
 func (rp RegularPolygon[T]) Empty() bool
 func (rp RegularPolygon[T]) Bounds() Rectangle[T]
-func (rp RegularPolygon[T]) ToPolygon() Polygon[T]
+func (rp RegularPolygon[T]) Polygon() Polygon[T]
+func (rp RegularPolygon[T]) Int() RegularPolygon[int]
+func (rp RegularPolygon[T]) Float() RegularPolygon[float64]
+func (rp RegularPolygon[T]) String() string
 ```
 
-### Constructor Functions
-
-Short constructors for convenience
+### Padding
 
 ```go
-func Pt[T Number](x, y T) Point[T]
-func Vec[T Number](x, y T) Vector[T]
-func Sz[T Number](w, h T) Size[T]
-func Circ[T Number](center Point[T], radius T) Circle[T]
-func Rect[T Number](center Point[T], size Size[T]) Rectangle[T]
-func Ln[T Number](start, end Point[T]) Line[T]
-func Pol[T Number](vertices []Point[T]) Polygon[T]
-func RegPol[T Number](center Point[T], size Size[T], n int, angle float64) RegularPolygon[T]
-func Mat(a, b, c, d, e, f float64) Matrix
+type Padding[T Number] struct{
+	Top, Right, Bottom, Left T
+}
+
+// Properties
+func (p Padding[T]) XY() (T, T)
+func (p Padding[T]) Width() T
+func (p Padding[T]) Height() T
+
+// Utilities
+func (p Padding[T]) Size() Size[T]
+func (p Padding[T]) Int() Padding[int]
+func (p Padding[T]) Float() Padding[float64]
+func (p Padding[T]) String() string
 ```
 
 
