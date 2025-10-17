@@ -7,14 +7,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased](https://github.com/gravitton/geometry/compare/v1.0.0...master)
+
+
+## v1.0.0 (2025-10-17)
 ### Added
-- `Point`
-- `Vector`
-- `Size`
-- `Line`
-- `Circle`
-- `Rectangle`
-- `Polygon`
-- `RegularPolygon`
-- `Matrix`
-- `Padding`
+- Added new generic geometry primitives:
+  - `Point`
+  - `Vector`
+  - `Size`
+  - `Line`
+  - `Circle`
+  - `Rectangle`
+  - `Polygon`
+  - `RegularPolygon`
+  - `Matrix`
+  - `Padding`
+- Added type alias packages `ints` for `Int` and `floats` as `float64`
+- Added collision detection functions

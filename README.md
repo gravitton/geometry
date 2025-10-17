@@ -24,6 +24,8 @@ go get github.com/gravitton/geometry
 ## Usage
 
 ```go
+package main
+
 import (
 	geom "github.com/gravitton/geometry"
 )
@@ -42,6 +44,8 @@ func (l HexLayout) FromPixel(pixel geom.Point[float64]) (Q, R float64) {
 It also provide packages for type aliases ([`ints`](./types/ints/types.go) for `int` and [`floats`](./types/floats/types.go) for `float64`).
 
 ```go
+package main
+
 import (
     "github.com/gravitton/geometry/types/floats"
     "github.com/gravitton/geometry/types/ints"
@@ -226,7 +230,7 @@ func (s Size[T]) Shrink(amount T) Size[T]
 func (s Size[T]) ShrinkXY(amountX, amountY T) Size[T]
 
 // Utilities
-func (s Size[T]) Equal(other Size[T]) bool
+func (s Size[T]) Equal(size Size[T]) bool
 func (s Size[T]) IsZero() bool
 func (s Size[T]) Vector() Vector[T]
 func (s Size[T]) Int() Size[int]
@@ -304,12 +308,13 @@ func (r Rectangle[T]) Grow(amount T) Rectangle[T]
 func (r Rectangle[T]) GrowXY(amountX, amountY T) Rectangle[T]
 func (r Rectangle[T]) Shrink(amount T) Rectangle[T]
 func (r Rectangle[T]) ShrinkXY(amountX, amountY T) Rectangle[T]
+func (r Rectangle[T]) Inset(padding Padding[T]) Rectangle[T]
 
 // Geometric queries
 func (r Rectangle[T]) Contains(point Point[T]) bool
 
 // Utilities
-func (r Rectangle[T]) Equal(other Rectangle[T]) bool
+func (r Rectangle[T]) Equal(rectangle Rectangle[T]) bool
 func (r Rectangle[T]) IsZero() bool
 func (r Rectangle[T]) Bounds() Rectangle[T]
 func (r Rectangle[T]) Polygon() Polygon[T]
@@ -337,7 +342,7 @@ func (l Line[T]) Direction() Vector[T]
 func (l Line[T]) Length() float64
 
 // Utilities
-func (l Line[T]) Equal(other Line[T]) bool
+func (l Line[T]) Equal(line Line[T]) bool
 func (l Line[T]) IsZero() bool
 func (l Line[T]) Bounds() Rectangle[T]
 func (l Line[T]) Int() Line[int]
@@ -362,6 +367,8 @@ func (p Polygon[T]) Scale(factor float64) Polygon[T]
 func (p Polygon[T]) ScaleXY(factorX, factorY float64) Polygon[T]
 
 // Utilities
+func (p Polygon[T]) Equal(polygon Polygon[T]) bool
+func (p Polygon[T]) IsZero() bool
 func (p Polygon[T]) Empty() bool
 func (p Polygon[T]) Int() Polygon[int]
 func (p Polygon[T]) Float() Polygon[float64]
