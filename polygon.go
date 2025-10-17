@@ -1,6 +1,7 @@
 package geom
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -56,6 +57,26 @@ func (p Polygon[T]) ScaleXY(factorX, factorY float64) Polygon[T] {
 	})}
 }
 
+// Equal checks if two polygons have the same vertices.
+func (p Polygon[T]) Equal(polygon Polygon[T]) bool {
+	if len(p.Vertices) != len(polygon.Vertices) {
+		return false
+	}
+
+	for i, v := range p.Vertices {
+		if !v.Equal(polygon.Vertices[i]) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Empty checks if number of vertices is zero.
+func (p Polygon[T]) IsZero() bool {
+	return p.Vertices == nil
+}
+
 // Empty checks if number of vertices is zero.
 func (p Polygon[T]) Empty() bool {
 	return len(p.Vertices) == 0
@@ -74,4 +95,14 @@ func (p Polygon[T]) Float() Polygon[float64] {
 // String returns a string representation of the Polygon.
 func (p Polygon[T]) String() string {
 	return fmt.Sprintf("Pol(%s)", strings.Join(slices.Map(p.Vertices, Point[T].String), ", "))
+}
+
+// MarshalJSON implements json.Marshaler.
+func (p Polygon[T]) MarshalJSON() ([]byte, error) {
+	return json.Marshal(p.Vertices)
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (p Polygon[T]) UnmarshalJSON(bytes []byte) error {
+	return json.Unmarshal(bytes, &p.Vertices)
 }

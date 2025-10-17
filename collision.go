@@ -1,24 +1,28 @@
 package geom
 
 // CollisionRectangles checks if the given rectangles collide.
-func CollisionRectangles[T Number](r1 Rectangle[T], r2 Rectangle[T]) bool {
-	// TODO: support rotation
-
-	min1, max1 := r1.Min(), r1.Max()
-	min2, max2 := r2.Min(), r2.Max()
+func CollisionRectangles[T Number](rect1 Rectangle[T], rect2 Rectangle[T]) bool {
+	min1, max1 := rect1.Min(), rect1.Max()
+	min2, max2 := rect2.Min(), rect2.Max()
 
 	return min1.X <= max2.X && min2.X <= max1.X && min1.Y <= max2.Y && min2.Y <= max1.Y
 }
 
-// CollisionRectangleCircle checks if the given rectangle and circle collide.
-func CollisionRectangleCircle[T Number](r Rectangle[T], c Circle[T]) bool {
-	// TODO: support rotation
+// CollisionCircles checks if the given circles collide.
+func CollisionCircles[T Number](circle1 Circle[T], circle2 Circle[T]) bool {
+	distance := circle1.Center.Subtract(circle2.Center)
+	threshold := circle1.Radius + circle2.Radius
 
-	distance := c.Center.Subtract(r.Center).Abs()
-	extends := r.Size.Scale(0.5).Vector()
+	return distance.Less(threshold)
+}
+
+// CollisionRectangleCircle checks if the given rectangle and circle collide.
+func CollisionRectangleCircle[T Number](rect Rectangle[T], circle Circle[T]) bool {
+	distance := circle.Center.Subtract(rect.Center).Abs()
+	extends := rect.Size.Scale(0.5).Vector()
 
 	// circle center is more than size outside rectangle borders
-	if distance.X > extends.X+c.Radius || distance.Y > extends.Y+c.Radius {
+	if distance.X > extends.X+circle.Radius || distance.Y > extends.Y+circle.Radius {
 		return false
 	}
 
@@ -28,13 +32,5 @@ func CollisionRectangleCircle[T Number](r Rectangle[T], c Circle[T]) bool {
 	}
 
 	// circle center is less than its size outside nearest border
-	return distance.Subtract(extends).Less(c.Radius)
-}
-
-// CollisionCircles checks if the given circles collide.
-func CollisionCircles[T Number](c1 Circle[T], c2 Circle[T]) bool {
-	distance := c1.Center.Subtract(c2.Center)
-	threshold := c1.Radius + c2.Radius
-
-	return distance.Less(threshold)
+	return distance.Subtract(extends).Less(circle.Radius)
 }

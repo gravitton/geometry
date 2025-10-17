@@ -47,12 +47,14 @@ func (l Line[T]) Length() float64 {
 
 // Bounds returns the axis-aligned bounding rectangle.
 func (l Line[T]) Bounds() Rectangle[T] {
-	return Rectangle[T]{Center: l.Midpoint(), Size: Sz(l.Direction().Abs().XY())}
+	minPoint := Point[T]{min(l.Start.X, l.End.Y), min(l.Start.Y, l.End.Y)}
+
+	return RectFromMin(minPoint, l.Direction().Size())
 }
 
 // Equal checks if the start and end points of the lines are equal.
-func (l Line[T]) Equal(other Line[T]) bool {
-	return l.Start.Equal(other.Start) && l.End.Equal(other.End)
+func (l Line[T]) Equal(line Line[T]) bool {
+	return l.Start.Equal(line.Start) && l.End.Equal(line.End)
 }
 
 // IsZero checks if start and end points are zero.

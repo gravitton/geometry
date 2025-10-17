@@ -65,6 +65,10 @@ func TestIsIntType(t *testing.T) {
 	testIsIntType[int64](t, true)
 	testIsIntType[float32](t, false)
 	testIsIntType[float64](t, false)
+
+	// do not work with custom types
+	type custom float64
+	testIsIntType[custom](t, false)
 }
 
 func TestCast(t *testing.T) {

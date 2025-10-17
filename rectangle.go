@@ -118,7 +118,7 @@ func (r Rectangle[T]) TopRight() Point[T] {
 	return Point[T]{r.Max().X, r.Min().Y}
 }
 
-// Edges returns the rectangle edges as lines in clockwise order starting from BottomLeft.
+// Edges returns the rectangle edges as lines in order starting Min point, counter-clockwise.
 func (r Rectangle[T]) Edges() []Line[T] {
 	tl := r.TopLeft()
 	bl := r.BottomLeft()
@@ -133,7 +133,7 @@ func (r Rectangle[T]) Edges() []Line[T] {
 	}
 }
 
-// Vertices returns the polygon vertices in order starting Min point, counter-clockwise.
+// Vertices returns the rectangle vertices in order starting Min point, counter-clockwise.
 func (r Rectangle[T]) Vertices() []Point[T] {
 	return []Point[T]{
 		r.TopLeft(),
@@ -171,8 +171,8 @@ func (r Rectangle[T]) Clamp(point Point[T]) Point[T] {
 }
 
 // Equal checks for equal center and size values using tolerant numeric comparison.
-func (r Rectangle[T]) Equal(other Rectangle[T]) bool {
-	return r.Center.Equal(other.Center) && r.Size.Equal(other.Size)
+func (r Rectangle[T]) Equal(rectangle Rectangle[T]) bool {
+	return r.Center.Equal(rectangle.Center) && r.Size.Equal(rectangle.Size)
 }
 
 // IsZero checks if center point and size are zero.

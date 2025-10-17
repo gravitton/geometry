@@ -84,7 +84,19 @@ func (v Vector[T]) Normalize() Vector[T] {
 		return Vector[T]{1, 0}
 	}
 
-	return v.Resize(1)
+	unit := v.Resize(1)
+
+	if isIntType[T]() && unit.X == unit.Y {
+		if v.X > v.Y {
+			unit.X = 1
+			unit.Y = 0
+		} else {
+			unit.X = 0
+			unit.Y = 1
+		}
+	}
+
+	return unit
 }
 
 // Abs creates a new Vector with absolute X and Y.
@@ -142,6 +154,26 @@ func (v Vector[T]) IsOne() bool {
 	return v.Equal(Vector[T]{1, 1})
 }
 
+// IsUp check if vector is to up (-y) direction.
+func (v Vector[T]) IsUp() bool {
+	return v.Y < 0
+}
+
+// IsDown check if vector is to down (+y) direction.
+func (v Vector[T]) IsDown() bool {
+	return v.Y > 0
+}
+
+// IsLeft check if vector is to left (-x) direction.
+func (v Vector[T]) IsLeft() bool {
+	return v.X < 0
+}
+
+// IsRight check if vector is to right (+x) direction.
+func (v Vector[T]) IsRight() bool {
+	return v.X > 0
+}
+
 // IsNormalized checks if Vector is normalized.
 func (v Vector[T]) IsNormalized() bool {
 	return Equal(v.LengthSquared(), 1.0)
@@ -164,7 +196,7 @@ func (v Vector[T]) Point() Point[T] {
 
 // Vector converts the vector to a Size.
 func (v Vector[T]) Size() Size[T] {
-	return Size[T]{v.X, v.Y}
+	return Size[T]{Abs(v.X), Abs(v.Y)}
 }
 
 // Int converts the vector to a [int] vector.
@@ -209,14 +241,14 @@ func DownVector[T Number]() Vector[T] {
 	return Vector[T]{0, 1}
 }
 
-// RightVector creates a new unit Vector with right (+x) direction (+1,0)
-func RightVector[T Number]() Vector[T] {
-	return Vector[T]{1, 0}
-}
-
 // LeftVector creates a new unit Vector with left (-x) direction (-1,0)
 func LeftVector[T Number]() Vector[T] {
 	return Vector[T]{-1, 0}
+}
+
+// RightVector creates a new unit Vector with right (+x) direction (+1,0)
+func RightVector[T Number]() Vector[T] {
+	return Vector[T]{1, 0}
 }
 
 // UpLeftVector creates a new unit Vector with up (-y) and left (-x) directions.

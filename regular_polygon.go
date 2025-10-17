@@ -7,10 +7,10 @@ import (
 
 // RegularPolygon is a polygon with equally spaced vertices around a center.
 type RegularPolygon[T Number] struct {
-	Center Point[T]
-	Size   Size[T]
-	N      int
-	Angle  float64
+	Center Point[T] `json:",inline"`
+	Size   Size[T]  `json:",inline"`
+	N      int      `json:"n"`
+	Angle  float64  `json:"a"`
 }
 
 // RegPol is shorthand for RegularPolygon{center, size, n, angle}.

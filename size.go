@@ -61,8 +61,8 @@ func (s Size[T]) AspectRatio() float64 {
 }
 
 // Equal checks for equal width and height values with given size.
-func (s Size[T]) Equal(other Size[T]) bool {
-	return Equal(s.Width, other.Width) && Equal(s.Height, other.Height)
+func (s Size[T]) Equal(size Size[T]) bool {
+	return Equal(s.Width, size.Width) && Equal(s.Height, size.Height)
 }
 
 // IsZero checks if width and height values are zero.

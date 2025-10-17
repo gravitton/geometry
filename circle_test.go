@@ -8,76 +8,105 @@ import (
 	"github.com/gravitton/assert"
 )
 
+var (
+	circleInt   = Circle[int]{Point[int]{1, 2}, 10}
+	circleFloat = Circle[float64]{Point[float64]{0.6, -0.25}, 1.2}
+)
+
 func TestCircle_New(t *testing.T) {
-	testCircle(t, Circ(Pt(10, 16), 12), 10, 16, 12)
-	testCircle(t, Circ[float64](Pt(0.16, 204), 5.1), 0.16, 204.0, 5.1)
+	assertCircle(t, Circ(Pt(10, 16), 12), 10, 16, 12)
+	assertCircle(t, Circ(Pt(0.16, 204), 5.1), 0.16, 204.0, 5.1)
 }
 
 func TestCircle_Translate(t *testing.T) {
-	testCircle(t, Circ(Pt(1, 2), 10).Translate(Vec(3, -2)), 4, 0, 10)
-	testCircle(t, Circ(Pt(0.4, -0.25), 1.2).Translate(Vec(100.1, -0.1)), 100.5, -0.35, 1.2)
+	assertCircle(t, circleInt.Translate(Vec(3, -2)), 4, 0, 10)
+	assertCircle(t, circleFloat.Translate(Vec(100.1, -0.1)), 100.7, -0.35, 1.2)
 }
 
 func TestCircle_MoveTo(t *testing.T) {
-	testCircle(t, Circ(Pt(1, 2), 10).MoveTo(Pt(3, -2)), 3, -2, 10)
-	testCircle(t, Circ(Pt(0.4, -0.25), 1.2).MoveTo(Pt(100.1, -0.1)), 100.1, -0.1, 1.2)
+	assertCircle(t, circleInt.MoveTo(Pt(3, -2)), 3, -2, 10)
+	assertCircle(t, circleFloat.MoveTo(Pt(100.1, -0.1)), 100.1, -0.1, 1.2)
 }
 
 func TestCircle_Scale(t *testing.T) {
-	testCircle(t, Circ(Pt(1, 2), 10).Scale(2.5), 1, 2, 25)
-	testCircle(t, Circ(Pt(0.4, -0.25), 1.2).Scale(2.5), 0.4, -0.25, 3.0)
+	assertCircle(t, circleInt.Scale(2.5), 1, 2, 25)
+	assertCircle(t, circleFloat.Scale(2.5), 0.6, -0.25, 3.0)
 }
 
 func TestCircle_Resize(t *testing.T) {
-	testCircle(t, Circ(Pt(1, 2), 10).Resize(8), 1, 2, 8)
-	testCircle(t, Circ(Pt(0.4, -0.25), 1.2).Resize(3.1), 0.4, -0.25, 3.1)
+	assertCircle(t, circleInt.Resize(8), 1, 2, 8)
+	assertCircle(t, circleFloat.Resize(3.1), 0.6, -0.25, 3.1)
 }
 
 func TestCircle_Grow(t *testing.T) {
-	testCircle(t, Circ(Pt(1, 2), 10).Grow(8), 1, 2, 18)
-	testCircle(t, Circ(Pt(0.4, -0.25), 1.2).Grow(3.1), 0.4, -0.25, 4.3)
+	assertCircle(t, circleInt.Grow(8), 1, 2, 18)
+	assertCircle(t, circleFloat.Grow(3.1), 0.6, -0.25, 4.3)
 }
 
 func TestCircle_Shrink(t *testing.T) {
-	testCircle(t, Circ(Pt(1, 2), 10).Shrink(8), 1, 2, 2)
-	testCircle(t, Circ(Pt(0.4, -0.25), 1.2).Shrink(0.3), 0.4, -0.25, 0.9)
+	assertCircle(t, circleInt.Shrink(8), 1, 2, 2)
+	assertCircle(t, circleFloat.Shrink(0.3), 0.6, -0.25, 0.9)
 }
 
 func TestCircle_Area(t *testing.T) {
-	assert.EqualDelta(t, Circ(Pt(1, 2), 10).Area(), math.Pi*100.0, Delta)
-	assert.EqualDelta(t, Circ(Pt(0.4, -0.25), 1.2).Area(), math.Pi*1.44, Delta)
+	assert.EqualDelta(t, circleInt.Area(), math.Pi*100.0, Delta)
+	assert.EqualDelta(t, circleFloat.Area(), math.Pi*1.44, Delta)
 }
 
 func TestCircle_Circumference(t *testing.T) {
-	assert.EqualDelta(t, Circ(Pt(1, 2), 10).Circumference(), math.Pi*20.0, Delta)
-	assert.EqualDelta(t, Circ(Pt(0.4, -0.25), 1.2).Circumference(), math.Pi*2.4, Delta)
+	assert.EqualDelta(t, circleInt.Circumference(), math.Pi*20.0, Delta)
+	assert.EqualDelta(t, circleFloat.Circumference(), math.Pi*2.4, Delta)
 }
 
 func TestCircle_Diameter(t *testing.T) {
-	assert.Equal(t, Circ(Pt(1, 2), 10).Diameter(), 20)
-	assert.EqualDelta(t, Circ(Pt(0.4, -0.25), 1.2).Diameter(), 2.4, Delta)
+	assert.Equal(t, circleInt.Diameter(), 20)
+	assert.EqualDelta(t, circleFloat.Diameter(), 2.4, Delta)
 }
 
 func TestCircle_Bounds(t *testing.T) {
-	testRect(t, Circ(Pt(1, 2), 10).Bounds(), 1, 2, 10, 10)
-	testRect(t, Circ(Pt(0.4, -0.25), 1.2).Bounds(), 0.4, -0.25, 1.2, 1.2)
+	assertRect(t, circleInt.Bounds(), 1, 2, 10, 10)
+	assertRect(t, circleFloat.Bounds(), 0.6, -0.25, 1.2, 1.2)
 }
 
 func TestCircle_Equal(t *testing.T) {
-	assert.False(t, Circ(Pt(1, 2), 10).Equal(Circ(Pt(3, -3), 10)))
-	assert.True(t, Circ(Pt(1, 2), 10).Equal(Circ(Pt(1, 2), 10)))
+	assert.False(t, circleInt.Equal(Circ(Pt(3, -3), 10)))
+	assert.True(t, circleInt.Equal(circleInt))
 
-	assert.False(t, Circ(Pt(0.4, -0.25), 1.2).Equal(Circ(Pt(100.1, -0.1), 1.2)))
-	assert.True(t, Circ(Pt(0.4, -0.25), 1.2).Equal(Circ(Pt(0.4, -0.25), 1.2)))
-	assert.True(t, Circ(Pt(0.4, -0.25), 1.2).Equal(Circ(Pt(0.4, -0.250001), 1.2)))
+	assert.False(t, circleFloat.Equal(Circ(Pt(100.1, -0.1), 1.2)))
+	assert.True(t, circleFloat.Equal(Circ(Pt(0.6, -0.25), 1.2)))
+	assert.True(t, circleFloat.Equal(Circ(Pt(0.6, -0.250001), 1.2)))
+}
+
+func TestCircle_IsZero(t *testing.T) {
+	assert.True(t, Circle[int]{}.IsZero())
+	assert.True(t, Circ(Pt(0, 0), 0).IsZero())
+	assert.False(t, Circ(Pt(0, 0), 10).IsZero())
+	assert.False(t, Circ(Pt(2, 1), 0).IsZero())
+	assert.False(t, circleInt.IsZero())
+
+	assert.True(t, Circle[float64]{}.IsZero())
+	assert.True(t, Circ(Pt(0.0, 0.000001), 0.0).IsZero())
+	assert.False(t, Circ(Pt(0.0, 0.0), 10).IsZero())
+	assert.False(t, Circ(Pt(2.0, 1.0), 0.0).IsZero())
+	assert.False(t, Circ(Pt(1.0, 2.0), 10.0).IsZero())
 }
 
 func TestCircle_Contains(t *testing.T) {
-	assert.False(t, Circ(Pt(1, 2), 10).Contains(Pt(1, 12)))
-	assert.True(t, Circ(Pt(1, 2), 10).Contains(Pt(4, 4)))
+	assert.False(t, circleInt.Contains(Pt(1, 12)))
+	assert.True(t, circleInt.Contains(Pt(4, 4)))
 
-	assert.False(t, Circ(Pt(0.4, -0.25), 1.2).Contains(Pt(0.0, 1.7)))
-	assert.True(t, Circ(Pt(0.4, -0.25), 1.2).Contains(Pt(0.1, 0.8)))
+	assert.False(t, circleFloat.Contains(Pt(0.0, 1.7)))
+	assert.True(t, circleFloat.Contains(Pt(0.1, 0.8)))
+}
+
+func TestCircle_Int(t *testing.T) {
+	assertCircle(t, circleInt.Int(), 1, 2, 10)
+	assertCircle(t, circleFloat.Int(), 1, 0, 1)
+}
+
+func TestCircle_Float(t *testing.T) {
+	assertCircle(t, circleInt.Float(), 1.0, 2.0, 10.0)
+	assertCircle(t, circleFloat.Float(), 0.6, -0.25, 1.2)
 }
 
 func TestCircle_String(t *testing.T) {
@@ -93,15 +122,15 @@ func TestCircle_Marshall(t *testing.T) {
 func TestCircle_Unmarshall(t *testing.T) {
 	var p1 Circle[int]
 	assert.NoError(t, json.Unmarshal([]byte(`{"x":10,"y":16,"r":12}`), &p1))
-	testCircle(t, p1, 10, 16, 12)
+	assertCircle(t, p1, 10, 16, 12)
 
 	var p2 Circle[float64]
 	assert.NoError(t, json.Unmarshal([]byte(`{"x":10.1,"y":-34.0000115,"r":0.2}`), &p2))
-	testCircle(t, p2, 10.1, -34.0000115, 0.2)
+	assertCircle(t, p2, 10.1, -34.0000115, 0.2)
 }
 
 func TestCircle_Immutable(t *testing.T) {
-	c1 := Circ(Pt(1, 2), 10)
+	c1 := circleInt
 
 	c1.Translate(Vec(3, -2))
 	c1.MoveTo(Pt(4, 3))
@@ -110,12 +139,20 @@ func TestCircle_Immutable(t *testing.T) {
 	c1.Grow(1)
 	c1.Shrink(2)
 
-	testCircle(t, c1, 1, 2, 10)
+	assertCircle(t, c1, 1, 2, 10)
 }
 
-func testCircle[T Number](t *testing.T, c Circle[T], x, y, radius T) {
+func assertCircle[T Number](t *testing.T, c Circle[T], x, y, radius T) bool {
 	t.Helper()
 
-	testPoint(t, c.Center, x, y)
-	assert.EqualDelta(t, float64(c.Radius), float64(radius), Delta)
+	ok := true
+
+	if !assertPoint(t, c.Center, x, y, "Center.") {
+		ok = false
+	}
+	if !assert.EqualDelta(t, float64(c.Radius), float64(radius), Delta, "Radius: ") {
+		ok = false
+	}
+
+	return ok
 }

@@ -21,7 +21,7 @@ func RectFromImage[T Number](r image.Rectangle) Rectangle[T] {
 
 // Point converts a Point to an image.Point.
 func (p Point[T]) Point() image.Point {
-	return image.Point{int(p.X), int(p.Y)}
+	return image.Point(p.Int())
 }
 
 // Rectangle converts a Rectangle to an image.Rectangle.
