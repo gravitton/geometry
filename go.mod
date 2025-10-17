@@ -4,5 +4,5 @@ go 1.25
 
 require (
 	github.com/gravitton/assert v1.0.0
-	github.com/gravitton/x v0.2.0
+	github.com/gravitton/x v1.0.0
 )

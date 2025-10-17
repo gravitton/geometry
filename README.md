@@ -47,7 +47,7 @@ if r1.Contains(p2) {
 	// ...
 }
 
-hex1 := geom.Hexagon(p1, geom.SzU(2), FlatTop)
+hex1 := geom.Hexagon(p1, geom.SzU(2), geom.FlatTop)
 hex2 := hex1.MoveTo(geom.Vec(1, 2)).Rotate(90 * DegToRad).Scale(2)
 
 for _, p := range hex2.Vertices() {
