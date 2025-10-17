@@ -30,6 +30,40 @@ import (
 	geom "github.com/gravitton/geometry"
 )
 
+p1 := geom.Pt(1, 2)
+p2 := geom.Pt(3, 4)
+
+v1 := p2.Subtract(p1)
+v2 := geom.Vec(1, 2).Multiply(2)
+
+if v1.Equal(v2) || v1.IsZero() || v2.Length() > 5 {
+	// ...
+}
+
+r1 := geom.Rect(p1, geom.Sz(3, 4))
+r2 := geom.RectFromMin(p1, p2)
+
+if r1.Contains(p2) {
+	// ...
+}
+
+hex1 := geom.Hexagon(p1, geom.SzU(2), FlatTop)
+hex2 := hex1.MoveTo(geom.Vec(1, 2)).Rotate(90 * DegToRad).Scale(2)
+
+for _, p := range hex2.Vertices() {
+	// ...
+}
+```
+
+More complex calculation:
+
+```go
+package main
+
+import (
+	geom "github.com/gravitton/geometry"
+)
+
 type HexLayout struct {
 	Origin    geom.Point[float64]
 	Size      geom.Size[float64]
