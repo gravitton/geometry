@@ -2,7 +2,6 @@ package geom
 
 import (
 	"encoding/json"
-	"fmt"
 	"testing"
 
 	"github.com/gravitton/assert"
