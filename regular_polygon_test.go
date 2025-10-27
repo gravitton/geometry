@@ -18,15 +18,15 @@ func TestRegularPolygon_New(t *testing.T) {
 
 	triangle := Triangle(Pt(1, -1), Sz(3, 3), PointTop)
 	assertRegularPolygon(t, triangle, 1, -1, 3, 3, 3, RegularPolygonAngle(3, PointTop))
-	//assertVertices(t, triangle.Vertices(), []Point[float64]{{0, 0}})
+	//AssertVertices(t, triangle.Vertices(), []Point[float64]{{0, 0}})
 
 	square := Square(Pt(50.0, 50.0), Sz(100.0, 100.0), PointTop)
 	assertRegularPolygon(t, square, 50, 50, 100, 100, 4, RegularPolygonAngle(4, PointTop))
-	//assertVertices(t, square.Vertices(), []Point[float64]{{0, 0}})
+	//AssertVertices(t, square.Vertices(), []Point[float64]{{0, 0}})
 
 	hexagon := Hexagon(Pt(0, 0), Sz(10, 10), PointTop)
 	assertRegularPolygon(t, hexagon, 0, 0, 10, 10, 6, RegularPolygonAngle(6, PointTop))
-	//assertVertices(t, hexagon.Vertices(), []Point[float64]{{0, 0}})
+	//AssertVertices(t, hexagon.Vertices(), []Point[float64]{{0, 0}})
 }
 
 func TestRegularPolygonAngle(t *testing.T) {
@@ -58,19 +58,19 @@ func TestRegularPolygon_Rotate(t *testing.T) {
 }
 
 func TestRegularPolygon_Vertices(t *testing.T) {
-	assertVertices(t, RegPol(Pt(0, 0), Sz(1, 1), 4, 0).Vertices(), []Point[int]{
+	AssertVertices(t, RegPol(Pt(0, 0), Sz(1, 1), 4, 0).Vertices(), []Point[int]{
 		Pt(1, 0),
 		Pt(0, 1),
 		Pt(-1, 0),
 		Pt(0, -1),
 	})
-	assertVertices(t, RegPol(Pt(0, 0), Sz(2, 3), 4, 0).Vertices(), []Point[int]{
+	AssertVertices(t, RegPol(Pt(0, 0), Sz(2, 3), 4, 0).Vertices(), []Point[int]{
 		Pt(2, 0),
 		Pt(0, 3),
 		Pt(-2, 0),
 		Pt(0, -3),
 	})
-	assertVertices(t, RegPol(Pt(0.0, 0.0), Sz(2.0, 3.0), 6, 0).Vertices(), []Point[float64]{
+	AssertVertices(t, RegPol(Pt(0.0, 0.0), Sz(2.0, 3.0), 6, 0).Vertices(), []Point[float64]{
 		Pt(2.0, 0.0),
 		Pt(1.0, 1.5*Sqrt3),
 		Pt(-1.0, 1.5*Sqrt3),
@@ -81,7 +81,7 @@ func TestRegularPolygon_Vertices(t *testing.T) {
 }
 
 func TestRegularPolygon_Bounds(t *testing.T) {
-	assertRect(t, regPolygonInt.Bounds(), 1, 2, 4, 4)
+	AssertRect(t, regPolygonInt.Bounds(), 1, 2, 4, 4)
 }
 
 func TestRegularPolygon_Polygon(t *testing.T) {
@@ -142,21 +142,21 @@ func TestRegularPolygon_Unmarshall(t *testing.T) {
 	assertRegularPolygon(t, p1, 1, 2, 2, 2, 4, 0)
 }
 
-func assertRegularPolygon[T Number](t *testing.T, p RegularPolygon[T], x, y, w, h T, n int, angle float64) bool {
+func assertRegularPolygon[T Number](t *testing.T, p RegularPolygon[T], x, y, w, h T, n int, angle float64, messages ...string) bool {
 	t.Helper()
 
 	ok := true
 
-	if !assertPoint(t, p.Center, x, y, "Center.") {
+	if !AssertPoint(t, p.Center, x, y, append(messages, "Center.")...) {
 		ok = false
 	}
-	if !assertSize(t, p.Size, w, h, "Size.") {
+	if !AssertSize(t, p.Size, w, h, append(messages, "Size.")...) {
 		ok = false
 	}
-	if !assert.Equal(t, p.N, n, "N: ") {
+	if !assert.Equal(t, p.N, n, append(messages, "N: ")...) {
 		ok = false
 	}
-	if !assert.EqualDelta(t, p.Angle, angle, Delta, "Angle: ") {
+	if !assert.EqualDelta(t, p.Angle, angle, Delta, append(messages, "Angle: ")...) {
 		ok = false
 	}
 

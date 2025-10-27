@@ -14,33 +14,33 @@ var (
 )
 
 func TestLine_New(t *testing.T) {
-	assertLine(t, Ln(Pt(1, -1), Pt(2, 0)), 1, -1, 2, 0)
-	assertLine(t, Ln(Pt(0.5, -1.25), Pt(2.5, 3.75)), 0.5, -1.25, 2.5, 3.75)
+	AssertLine(t, Ln(Pt(1, -1), Pt(2, 0)), 1, -1, 2, 0)
+	AssertLine(t, Ln(Pt(0.5, -1.25), Pt(2.5, 3.75)), 0.5, -1.25, 2.5, 3.75)
 }
 
 func TestLine_Translate(t *testing.T) {
-	assertLine(t, lineInt.Translate(Vec(3, -2)), 4, 0, 6, 3)
-	assertLine(t, lineFloat.Translate(Vec(100.1, -0.1)), 100.7, -0.35, 101.3, 3.3)
+	AssertLine(t, lineInt.Translate(Vec(3, -2)), 4, 0, 6, 3)
+	AssertLine(t, lineFloat.Translate(Vec(100.1, -0.1)), 100.7, -0.35, 101.3, 3.3)
 }
 
 func TestLine_MoveTo(t *testing.T) {
-	assertLine(t, lineInt.MoveTo(Pt(3, -2)), 3, -2, 5, 1)
-	assertLine(t, lineFloat.MoveTo(Pt(100.1, -0.1)), 100.1, -0.1, 100.7, 3.55)
+	AssertLine(t, lineInt.MoveTo(Pt(3, -2)), 3, -2, 5, 1)
+	AssertLine(t, lineFloat.MoveTo(Pt(100.1, -0.1)), 100.1, -0.1, 100.7, 3.55)
 }
 
 func TestLine_Reversed(t *testing.T) {
-	assertLine(t, lineInt.Reversed(), 3, 5, 1, 2)
-	assertLine(t, lineFloat.Reversed(), 1.2, 3.4, 0.6, -0.25)
+	AssertLine(t, lineInt.Reversed(), 3, 5, 1, 2)
+	AssertLine(t, lineFloat.Reversed(), 1.2, 3.4, 0.6, -0.25)
 }
 
 func TestLine_Midpoint(t *testing.T) {
-	assertPoint(t, lineInt.Midpoint(), 2, 4)
-	assertPoint(t, lineFloat.Midpoint(), 0.9, 1.575)
+	AssertPoint(t, lineInt.Midpoint(), 2, 4)
+	AssertPoint(t, lineFloat.Midpoint(), 0.9, 1.575)
 }
 
 func TestLine_Direction(t *testing.T) {
-	assertVector(t, lineInt.Direction(), 2, 3)
-	assertVector(t, lineFloat.Direction(), 0.6, 3.65)
+	AssertVector(t, lineInt.Direction(), 2, 3)
+	AssertVector(t, lineFloat.Direction(), 0.6, 3.65)
 }
 
 func TestLine_Length(t *testing.T) {
@@ -49,11 +49,11 @@ func TestLine_Length(t *testing.T) {
 }
 
 func TestLine_Bounds(t *testing.T) {
-	assertRect(t, lineInt.Bounds(), 2, 3, 2, 3)
+	AssertRect(t, lineInt.Bounds(), 2, 3, 2, 3)
 	assert.Equal(t, lineInt.Start, lineInt.Bounds().Min())
 	assert.Equal(t, lineInt.End, lineInt.Bounds().Max())
 
-	assertRect(t, lineFloat.Bounds(), 0.9, 1.575, 0.6, 3.65)
+	AssertRect(t, lineFloat.Bounds(), 0.9, 1.575, 0.6, 3.65)
 }
 
 func TestLine_Equal(t *testing.T) {
@@ -76,13 +76,13 @@ func TestLine_IsZero(t *testing.T) {
 }
 
 func TestLine_Int(t *testing.T) {
-	assertLine(t, lineInt.Int(), 1, 2, 3, 5)
-	assertLine(t, lineFloat.Int(), 1, 0, 1, 3)
+	AssertLine(t, lineInt.Int(), 1, 2, 3, 5)
+	AssertLine(t, lineFloat.Int(), 1, 0, 1, 3)
 }
 
 func TestLine_Float(t *testing.T) {
-	assertLine(t, lineInt.Float(), 1.0, 2.0, 3.0, 5.0)
-	assertLine(t, lineFloat.Float(), 0.6, -0.25, 1.2, 3.4)
+	AssertLine(t, lineInt.Float(), 1.0, 2.0, 3.0, 5.0)
+	AssertLine(t, lineFloat.Float(), 0.6, -0.25, 1.2, 3.4)
 }
 
 func TestLine_String(t *testing.T) {
@@ -115,15 +115,15 @@ func TestLine_Immutable(t *testing.T) {
 	assert.True(t, l.Equal(lineInt))
 }
 
-func assertLine[T Number](t *testing.T, l Line[T], sx, sy, ex, ey T) bool {
+func AssertLine[T Number](t *testing.T, l Line[T], sx, sy, ex, ey T, messages ...string) bool {
 	t.Helper()
 
 	ok := true
 
-	if !assertPoint(t, l.Start, sx, sy, "Start.") {
+	if !AssertPoint(t, l.Start, sx, sy, append(messages, "Start.")...) {
 		ok = false
 	}
-	if !assertPoint(t, l.End, ex, ey, "End.") {
+	if !AssertPoint(t, l.End, ex, ey, append(messages, "End.")...) {
 		ok = false
 	}
 

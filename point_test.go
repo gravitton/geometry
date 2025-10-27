@@ -14,51 +14,51 @@ var (
 )
 
 func TestPoint_New(t *testing.T) {
-	assertPoint(t, Pt(10, 16), 10, 16)
-	assertPoint(t, Pt[float64](0.16, 204), 0.16, 204.0)
+	AssertPoint(t, Pt(10, 16), 10, 16)
+	AssertPoint(t, Pt[float64](0.16, 204), 0.16, 204.0)
 
-	assertPoint(t, ZeroPoint[int](), 0, 0)
+	AssertPoint(t, ZeroPoint[int](), 0, 0)
 }
 
 func TestPoint_Transform(t *testing.T) {
-	assertPoint(t, pointInt.Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), 9, 22)
-	assertPoint(t, pointFloat.Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), 3.385, 7.865)
+	AssertPoint(t, pointInt.Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), 9, 22)
+	AssertPoint(t, pointFloat.Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), 3.385, 7.865)
 }
 
 func TestPoint_Add(t *testing.T) {
-	assertPoint(t, pointInt.Add(Vec(3, -2)), 4, 0)
-	assertPoint(t, pointInt.AddXY(3, -2), 4, 0)
-	assertPoint(t, pointFloat.Add(Vec(100.1, -0.1)), 100.7, -0.35)
-	assertPoint(t, pointFloat.AddXY(100.1, -0.1), 100.7, -0.35)
+	AssertPoint(t, pointInt.Add(Vec(3, -2)), 4, 0)
+	AssertPoint(t, pointInt.AddXY(3, -2), 4, 0)
+	AssertPoint(t, pointFloat.Add(Vec(100.1, -0.1)), 100.7, -0.35)
+	AssertPoint(t, pointFloat.AddXY(100.1, -0.1), 100.7, -0.35)
 }
 
 func TestPoint_Subtract(t *testing.T) {
-	assertVector(t, pointInt.Subtract(Pt(3, -3)), -2, 5)
-	assertVector(t, pointFloat.Subtract(Pt(100.1, -0.1)), -99.5, -0.15)
+	AssertVector(t, pointInt.Subtract(Pt(3, -3)), -2, 5)
+	AssertVector(t, pointFloat.Subtract(Pt(100.1, -0.1)), -99.5, -0.15)
 }
 
 func TestPoint_Multiply(t *testing.T) {
-	assertPoint(t, pointInt.Multiply(3), 3, 6)
-	assertPoint(t, pointInt.MultiplyXY(3, 4), 3, 8)
-	assertPoint(t, pointFloat.Multiply(-1.5), -0.9, 0.375)
-	assertPoint(t, pointFloat.MultiplyXY(-1.5, 2), -0.9, -0.5)
+	AssertPoint(t, pointInt.Multiply(3), 3, 6)
+	AssertPoint(t, pointInt.MultiplyXY(3, 4), 3, 8)
+	AssertPoint(t, pointFloat.Multiply(-1.5), -0.9, 0.375)
+	AssertPoint(t, pointFloat.MultiplyXY(-1.5, 2), -0.9, -0.5)
 }
 
 func TestPoint_Divide(t *testing.T) {
-	assertPoint(t, Pt(5, 10).Divide(2), 3, 5)
-	assertPoint(t, Pt(5, 10).DivideXY(3, 2), 2, 5)
-	assertPoint(t, pointFloat.Divide(-2), -0.3, 0.125)
-	assertPoint(t, pointFloat.DivideXY(-4, 0.5), -0.15, -0.5)
+	AssertPoint(t, Pt(5, 10).Divide(2), 3, 5)
+	AssertPoint(t, Pt(5, 10).DivideXY(3, 2), 2, 5)
+	AssertPoint(t, pointFloat.Divide(-2), -0.3, 0.125)
+	AssertPoint(t, pointFloat.DivideXY(-4, 0.5), -0.15, -0.5)
 }
 
 func TestPoint_Midpoint(t *testing.T) {
-	assertPoint(t, pointInt.Midpoint(Pt(3, -3)), 2, -1)
-	assertPoint(t, pointFloat.Midpoint(Pt(100.1, -0.1)), 50.35, -0.175)
+	AssertPoint(t, pointInt.Midpoint(Pt(3, -3)), 2, -1)
+	AssertPoint(t, pointFloat.Midpoint(Pt(100.1, -0.1)), 50.35, -0.175)
 }
 
 func TestPoint_Lerp(t *testing.T) {
-	assertPoint(t, pointInt.Lerp(Pt(3, -3), 0.3), 2, 1)
-	assertPoint(t, pointFloat.Lerp(Pt(100.1, -0.1), 0.1), 10.55, -0.235)
+	AssertPoint(t, pointInt.Lerp(Pt(3, -3), 0.3), 2, 1)
+	AssertPoint(t, pointFloat.Lerp(Pt(100.1, -0.1), 0.1), 10.55, -0.235)
 }
 
 func TestPoint_DistanceTo(t *testing.T) {
@@ -107,18 +107,18 @@ func TestPoint_XY(t *testing.T) {
 }
 
 func TestPoint_Vector(t *testing.T) {
-	assertVector(t, pointInt.Vector(), 1, 2)
-	assertVector(t, pointFloat.Vector(), 0.6, -0.25)
+	AssertVector(t, pointInt.Vector(), 1, 2)
+	AssertVector(t, pointFloat.Vector(), 0.6, -0.25)
 }
 
 func TestPoint_Int(t *testing.T) {
-	assertPoint(t, pointInt.Int(), 1, 2)
-	assertPoint(t, pointFloat.Int(), 1, 0)
+	AssertPoint(t, pointInt.Int(), 1, 2)
+	AssertPoint(t, pointFloat.Int(), 1, 0)
 }
 
 func TestPoint_Float(t *testing.T) {
-	assertPoint(t, pointInt.Float(), 1.0, 2.0)
-	assertPoint(t, pointFloat.Float(), 0.6, -0.25)
+	AssertPoint(t, pointInt.Float(), 1.0, 2.0)
+	AssertPoint(t, pointFloat.Float(), 0.6, -0.25)
 }
 
 func TestPoint_String(t *testing.T) {
@@ -134,11 +134,11 @@ func TestPoint_Marshall(t *testing.T) {
 func TestPoint_Unmarshall(t *testing.T) {
 	var p1 Point[int]
 	assert.NoError(t, json.Unmarshal([]byte(`{"x":10,"y":16}`), &p1))
-	assertPoint(t, p1, 10, 16)
+	AssertPoint(t, p1, 10, 16)
 
 	var p2 Point[float64]
 	assert.NoError(t, json.Unmarshal([]byte(`{"x":10.1,"y":-34.0000115}`), &p2))
-	assertPoint(t, p2, 10.1, -34.0000115)
+	AssertPoint(t, p2, 10.1, -34.0000115)
 }
 
 func TestPoint_Immutable(t *testing.T) {
@@ -154,11 +154,11 @@ func TestPoint_Immutable(t *testing.T) {
 	p1.DivideXY(10, 100)
 	p1.Lerp(p2, 0.1)
 
-	assertPoint(t, p1, 1, 2)
-	assertPoint(t, p2, 3, -3)
+	AssertPoint(t, p1, 1, 2)
+	AssertPoint(t, p2, 3, -3)
 }
 
-func assertPoint[T Number](t *testing.T, p Point[T], x, y T, messages ...string) bool {
+func AssertPoint[T Number](t *testing.T, p Point[T], x, y T, messages ...string) bool {
 	t.Helper()
 
 	ok := true

@@ -15,63 +15,63 @@ var (
 )
 
 func TestRectangle_New(t *testing.T) {
-	assertRect(t, Rect(Pt(10, 16), Sz(3, 4)), 10, 16, 3, 4)
-	assertRect(t, Rect[float64](Pt(0.5, -1.25), Sz(2.5, 3.75)), 0.5, -1.25, 2.5, 3.75)
+	AssertRect(t, Rect(Pt(10, 16), Sz(3, 4)), 10, 16, 3, 4)
+	AssertRect(t, Rect[float64](Pt(0.5, -1.25), Sz(2.5, 3.75)), 0.5, -1.25, 2.5, 3.75)
 
-	assertRect(t, RectFromMin(Pt(0, 0), Sz(4, 2)), 2, 1, 4, 2)
-	assertRect(t, RectFromMin(Pt(0.0, 0.0), Sz(1.0, 3.0)), 0.5, 1.5, 1.0, 3.0)
+	AssertRect(t, RectFromMin(Pt(0, 0), Sz(4, 2)), 2, 1, 4, 2)
+	AssertRect(t, RectFromMin(Pt(0.0, 0.0), Sz(1.0, 3.0)), 0.5, 1.5, 1.0, 3.0)
 
-	assertRect(t, RectFromMinMax(Pt(0, 0), Pt(4, 2)), 2, 1, 4, 2)
-	assertRect(t, RectFromMinMax(Pt(0.0, 0.0), Pt(1.0, 3.0)), 0.5, 1.5, 1.0, 3.0)
+	AssertRect(t, RectFromMinMax(Pt(0, 0), Pt(4, 2)), 2, 1, 4, 2)
+	AssertRect(t, RectFromMinMax(Pt(0.0, 0.0), Pt(1.0, 3.0)), 0.5, 1.5, 1.0, 3.0)
 
-	assertRect(t, RectFromSize(Sz(4, 2)), 2, 1, 4, 2)
-	assertRect(t, RectFromSize(Sz(1.0, 3.0)), 0.5, 1.5, 1.0, 3.0)
+	AssertRect(t, RectFromSize(Sz(4, 2)), 2, 1, 4, 2)
+	AssertRect(t, RectFromSize(Sz(1.0, 3.0)), 0.5, 1.5, 1.0, 3.0)
 
 	// int(1x1) rectangle
-	assertRect(t, Rect(Pt(0, 0), Sz(1, 1)), 0, 0, 1, 1)
-	assertRect(t, RectFromMin(Pt(0, 0), Sz(1, 1)), 0, 0, 1, 1)
+	AssertRect(t, Rect(Pt(0, 0), Sz(1, 1)), 0, 0, 1, 1)
+	AssertRect(t, RectFromMin(Pt(0, 0), Sz(1, 1)), 0, 0, 1, 1)
 }
 
 func TestRectangle_Translate(t *testing.T) {
-	assertRect(t, rectInt.Translate(Vec(3, -2)), 4, 0, 2, 3)
-	assertRect(t, rectFloat.Translate(Vec(100.1, -0.1)), 100.7, -0.35, 1.2, 3.6)
+	AssertRect(t, rectInt.Translate(Vec(3, -2)), 4, 0, 2, 3)
+	AssertRect(t, rectFloat.Translate(Vec(100.1, -0.1)), 100.7, -0.35, 1.2, 3.6)
 }
 
 func TestRectangle_MoveTo(t *testing.T) {
-	assertRect(t, rectInt.MoveTo(Pt(3, -2)), 3, -2, 2, 3)
-	assertRect(t, rectFloat.MoveTo(Pt(100.1, -0.1)), 100.1, -0.1, 1.2, 3.6)
+	AssertRect(t, rectInt.MoveTo(Pt(3, -2)), 3, -2, 2, 3)
+	AssertRect(t, rectFloat.MoveTo(Pt(100.1, -0.1)), 100.1, -0.1, 1.2, 3.6)
 }
 
 func TestRectangle_Scale(t *testing.T) {
-	assertRect(t, rectInt.Scale(2.5), 1, 2, 5, 8)
-	assertRect(t, rectInt.ScaleXY(2, 3), 1, 2, 4, 9)
-	assertRect(t, rectFloat.Scale(2.5), 0.6, -0.25, 3.0, 9)
-	assertRect(t, rectFloat.ScaleXY(-1.5, 2), 0.6, -0.25, -1.8, 7.2)
+	AssertRect(t, rectInt.Scale(2.5), 1, 2, 5, 8)
+	AssertRect(t, rectInt.ScaleXY(2, 3), 1, 2, 4, 9)
+	AssertRect(t, rectFloat.Scale(2.5), 0.6, -0.25, 3.0, 9)
+	AssertRect(t, rectFloat.ScaleXY(-1.5, 2), 0.6, -0.25, -1.8, 7.2)
 }
 
 func TestRectangle_Resize(t *testing.T) {
-	assertRect(t, rectInt.Resize(Sz(8, 9)), 1, 2, 8, 9)
-	assertRect(t, rectFloat.Resize(Sz(3.1, 0.2)), 0.6, -0.25, 3.1, 0.2)
+	AssertRect(t, rectInt.Resize(Sz(8, 9)), 1, 2, 8, 9)
+	AssertRect(t, rectFloat.Resize(Sz(3.1, 0.2)), 0.6, -0.25, 3.1, 0.2)
 }
 
 func TestRectangle_Grow(t *testing.T) {
-	assertRect(t, rectInt.Grow(2), 1, 2, 4, 5)
-	assertRect(t, rectInt.GrowXY(2, 3), 1, 2, 4, 6)
-	assertRect(t, rectFloat.Grow(0.1), 0.6, -0.25, 1.3, 3.7)
-	assertRect(t, rectFloat.GrowXY(0.1, 0.2), 0.6, -0.25, 1.3, 3.8)
+	AssertRect(t, rectInt.Grow(2), 1, 2, 4, 5)
+	AssertRect(t, rectInt.GrowXY(2, 3), 1, 2, 4, 6)
+	AssertRect(t, rectFloat.Grow(0.1), 0.6, -0.25, 1.3, 3.7)
+	AssertRect(t, rectFloat.GrowXY(0.1, 0.2), 0.6, -0.25, 1.3, 3.8)
 }
 
 func TestRectangle_Shrink(t *testing.T) {
-	assertRect(t, rectInt.Shrink(1), 1, 2, 1, 2)
-	assertRect(t, rectInt.ShrinkXY(1, 2), 1, 2, 1, 1)
-	assertRect(t, rectFloat.Shrink(0.1), 0.6, -0.25, 1.1, 3.5)
-	assertRect(t, rectFloat.ShrinkXY(0.1, 0.2), 0.6, -0.25, 1.1, 3.4)
+	AssertRect(t, rectInt.Shrink(1), 1, 2, 1, 2)
+	AssertRect(t, rectInt.ShrinkXY(1, 2), 1, 2, 1, 1)
+	AssertRect(t, rectFloat.Shrink(0.1), 0.6, -0.25, 1.1, 3.5)
+	AssertRect(t, rectFloat.ShrinkXY(0.1, 0.2), 0.6, -0.25, 1.1, 3.4)
 }
 
 func TestRectangle_Inset(t *testing.T) {
-	assertRect(t, Rect(Pt(0, 0), Sz(10, 10)).Inset(Pad(1, 1, 1, 1)), 0, 0, 8, 8)
-	assertRect(t, Rect(Pt(0, 0), Sz(10, 10)).Inset(Pad(3, 1, 1, 5)), 2, -1, 4, 6)
-	assertRect(t, Rect(Pt(0.0, 0.0), Sz(10.0, 10.0)).Inset(Pad(1.5, -2.0, 0.0, 1.0)), 1.5, -0.75, 11.0, 8.5)
+	AssertRect(t, Rect(Pt(0, 0), Sz(10, 10)).Inset(Pad(1, 1, 1, 1)), 0, 0, 8, 8)
+	AssertRect(t, Rect(Pt(0, 0), Sz(10, 10)).Inset(Pad(3, 1, 1, 5)), 2, -1, 4, 6)
+	AssertRect(t, Rect(Pt(0.0, 0.0), Sz(10.0, 10.0)).Inset(Pad(1.5, -2.0, 0.0, 1.0)), 1.5, -0.75, 11.0, 8.5)
 }
 
 func TestRectangle_Width(t *testing.T) {
@@ -85,15 +85,15 @@ func TestRectangle_Height(t *testing.T) {
 }
 
 func TestRectangle_Min(t *testing.T) {
-	assertPoint(t, rectInt.Min(), 0, 1)
-	assertPoint(t, rectFloat.Min(), 0.0, -2.05)
+	AssertPoint(t, rectInt.Min(), 0, 1)
+	AssertPoint(t, rectFloat.Min(), 0.0, -2.05)
 
 	assert.Equal(t, rectInt.Min(), rectInt.TopLeft())
 }
 
 func TestRectangle_Max(t *testing.T) {
-	assertPoint(t, rectInt.Max(), 2, 4)
-	assertPoint(t, rectFloat.Max(), 1.2, 1.55)
+	AssertPoint(t, rectInt.Max(), 2, 4)
+	AssertPoint(t, rectFloat.Max(), 1.2, 1.55)
 
 	assert.Equal(t, rectInt.Max(), rectInt.BottomRight())
 }
@@ -103,10 +103,10 @@ func TestRectangle_Vertices(t *testing.T) {
 	vertices := r.Vertices()
 
 	assert.Equal(t, len(vertices), 4)
-	assertPoint(t, vertices[0], -1, -1)
-	assertPoint(t, vertices[1], -1, 1)
-	assertPoint(t, vertices[2], 1, 1)
-	assertPoint(t, vertices[3], 1, -1)
+	AssertPoint(t, vertices[0], -1, -1)
+	AssertPoint(t, vertices[1], -1, 1)
+	AssertPoint(t, vertices[2], 1, 1)
+	AssertPoint(t, vertices[3], 1, -1)
 
 	assert.Equal(t, vertices[0], r.TopLeft())
 	assert.Equal(t, vertices[1], r.BottomLeft())
@@ -119,10 +119,10 @@ func TestRectangle_Edges(t *testing.T) {
 	edges := r.Edges()
 
 	assert.Equal(t, len(edges), 4)
-	assertLine(t, edges[0], -1, -1, -1, 1)
-	assertLine(t, edges[1], -1, 1, 1, 1)
-	assertLine(t, edges[2], 1, 1, 1, -1)
-	assertLine(t, edges[3], 1, -1, -1, -1)
+	AssertLine(t, edges[0], -1, -1, -1, 1)
+	AssertLine(t, edges[1], -1, 1, 1, 1)
+	AssertLine(t, edges[2], 1, 1, 1, -1)
+	AssertLine(t, edges[3], 1, -1, -1, -1)
 
 	assert.Equal(t, edges[0].Start, r.TopLeft())
 	assert.Equal(t, edges[1].Start, r.BottomLeft())
@@ -146,14 +146,14 @@ func TestRectangle_AspectRatio(t *testing.T) {
 }
 
 func TestRectangle_Bounds(t *testing.T) {
-	assertRect(t, rectInt.Bounds(), 1, 2, 2, 3)
-	assertRect(t, rectFloat.Bounds(), 0.6, -0.25, 1.2, 3.6)
+	AssertRect(t, rectInt.Bounds(), 1, 2, 2, 3)
+	AssertRect(t, rectFloat.Bounds(), 0.6, -0.25, 1.2, 3.6)
 }
 
 func TestRectangle_Clamp(t *testing.T) {
-	assertPoint(t, rectInt.Clamp(Pt(2, 2)), 2, 2)
-	assertPoint(t, rectInt.Clamp(Pt(10, 10)), 2, 4)
-	assertPoint(t, rectFloat.Clamp(Pt(-1.0, 1.2)), 0.0, 1.2)
+	AssertPoint(t, rectInt.Clamp(Pt(2, 2)), 2, 2)
+	AssertPoint(t, rectInt.Clamp(Pt(10, 10)), 2, 4)
+	AssertPoint(t, rectFloat.Clamp(Pt(-1.0, 1.2)), 0.0, 1.2)
 }
 
 func TestRectangle_Equal(t *testing.T) {
@@ -191,13 +191,13 @@ func TestRectangle_Polygon(t *testing.T) {
 }
 
 func TestRectangle_Int(t *testing.T) {
-	assertRect(t, rectInt.Int(), 1, 2, 2, 3)
-	assertRect(t, rectFloat.Int(), 1, 0, 1, 4)
+	AssertRect(t, rectInt.Int(), 1, 2, 2, 3)
+	AssertRect(t, rectFloat.Int(), 1, 0, 1, 4)
 }
 
 func TestRectangle_Float(t *testing.T) {
-	assertRect(t, rectInt.Float(), 1.0, 2.0, 2.0, 3.0)
-	assertRect(t, rectFloat.Float(), 0.6, -0.25, 1.2, 3.6)
+	AssertRect(t, rectInt.Float(), 1.0, 2.0, 2.0, 3.0)
+	AssertRect(t, rectFloat.Float(), 0.6, -0.25, 1.2, 3.6)
 }
 
 func TestRectangle_String(t *testing.T) {
@@ -213,11 +213,11 @@ func TestRectangle_Marshall(t *testing.T) {
 func TestRectangle_Unmarshall(t *testing.T) {
 	var r1 Rectangle[int]
 	assert.NoError(t, json.Unmarshal([]byte(`{"x":1,"y":2,"w":2,"h":3}`), &r1))
-	assertRect(t, r1, 1, 2, 2, 3)
+	AssertRect(t, r1, 1, 2, 2, 3)
 
 	var r2 Rectangle[float64]
 	assert.NoError(t, json.Unmarshal([]byte(`{"x":0.60,"y":-0.25,"w":1.20,"h":3.60}`), &r2))
-	assertRect(t, r2, 0.6, -0.25, 1.2, 3.6)
+	AssertRect(t, r2, 0.6, -0.25, 1.2, 3.6)
 }
 
 func TestRectangle_Immutable(t *testing.T) {
@@ -233,18 +233,18 @@ func TestRectangle_Immutable(t *testing.T) {
 	r.Shrink(2)
 	r.ShrinkXY(2, 3)
 
-	assertRect(t, r, 1, 2, 2, 3)
+	AssertRect(t, r, 1, 2, 2, 3)
 }
 
-func assertRect[T Number](t *testing.T, r Rectangle[T], cx, cy, w, h T) bool {
+func AssertRect[T Number](t *testing.T, r Rectangle[T], cx, cy, w, h T, messages ...string) bool {
 	t.Helper()
 
 	ok := true
 
-	if !assertPoint(t, r.Center, cx, cy, "Center.") {
+	if !AssertPoint(t, r.Center, cx, cy, append(messages, "Center.")...) {
 		ok = false
 	}
-	if !assertSize(t, r.Size, w, h, "Size.") {
+	if !AssertSize(t, r.Size, w, h, append(messages, "Size.")...) {
 		ok = false
 	}
 

@@ -8,8 +8,8 @@ import (
 )
 
 func TestPoint_NewFromImage(t *testing.T) {
-	assertPoint(t, PointFromImage[int](image.Pt(1, 2)), 1, 2)
-	assertPoint(t, PointFromImage[float64](image.Pt(1, 2)), 1.0, 2.0)
+	AssertPoint(t, PointFromImage[int](image.Pt(1, 2)), 1, 2)
+	AssertPoint(t, PointFromImage[float64](image.Pt(1, 2)), 1.0, 2.0)
 }
 
 func TestPoint_Point(t *testing.T) {
@@ -23,11 +23,11 @@ func TestRectangle_Rectangle(t *testing.T) {
 }
 
 func TestSize_NewFromImage(t *testing.T) {
-	assertSize(t, SizeFromImage[int](image.Rect(0, 10, 55, 70)), 55, 60)
-	assertSize(t, SizeFromImage[float64](image.Rect(0, 10, 55, 70)), 55.0, 60.0)
+	AssertSize(t, SizeFromImage[int](image.Rect(0, 10, 55, 70)), 55, 60)
+	AssertSize(t, SizeFromImage[float64](image.Rect(0, 10, 55, 70)), 55.0, 60.0)
 }
 
 func TestRectangle_NewFromImage(t *testing.T) {
-	assertRect(t, RectFromImage[int](image.Rect(0, 10, 55, 70)), 27, 40, 55, 60)
-	assertRect(t, RectFromImage[float64](image.Rect(0, 10, 55, 70)), 27.5, 40, 55, 60)
+	AssertRect(t, RectFromImage[int](image.Rect(0, 10, 55, 70)), 27, 40, 55, 60)
+	AssertRect(t, RectFromImage[float64](image.Rect(0, 10, 55, 70)), 27.5, 40, 55, 60)
 }

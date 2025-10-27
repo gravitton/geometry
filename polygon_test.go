@@ -14,17 +14,17 @@ var (
 )
 
 func TestPolygon_New(t *testing.T) {
-	assertPolygon(t, polygonInt, polygonInt.Vertices)
-	assertPolygon(t, polygonFloat, polygonFloat.Vertices)
+	AssertPolygon(t, polygonInt, polygonInt.Vertices)
+	AssertPolygon(t, polygonFloat, polygonFloat.Vertices)
 }
 
 func TestPolygon_Center(t *testing.T) {
-	assertPoint(t, polygonInt.Center(), 1, 1)
-	assertPoint(t, polygonFloat.Center(), 1.5, 0.5)
+	AssertPoint(t, polygonInt.Center(), 1, 1)
+	AssertPoint(t, polygonFloat.Center(), 1.5, 0.5)
 }
 
 func TestPolygon_Translate(t *testing.T) {
-	assertPolygon(t, polygonInt.Translate(Vec(1, -1)), []Point[int]{
+	AssertPolygon(t, polygonInt.Translate(Vec(1, -1)), []Point[int]{
 		Pt(1, -1),
 		Pt(3, -1),
 		Pt(3, 1),
@@ -33,7 +33,7 @@ func TestPolygon_Translate(t *testing.T) {
 }
 
 func TestPolygon_MoveTo(t *testing.T) {
-	assertPolygon(t, polygonInt.MoveTo(Pt(10, 10)), []Point[int]{
+	AssertPolygon(t, polygonInt.MoveTo(Pt(10, 10)), []Point[int]{
 		Pt(9, 9),
 		Pt(11, 9),
 		Pt(11, 11),
@@ -42,13 +42,13 @@ func TestPolygon_MoveTo(t *testing.T) {
 }
 
 func TestPolygon_Scale(t *testing.T) {
-	assertPolygon(t, polygonInt.Scale(2), []Point[int]{
+	AssertPolygon(t, polygonInt.Scale(2), []Point[int]{
 		Pt(-1, -1),
 		Pt(3, -1),
 		Pt(3, 3),
 		Pt(-1, 3),
 	})
-	assertPolygon(t, polygonFloat.ScaleXY(0.5, 2.5), []Point[float64]{
+	AssertPolygon(t, polygonFloat.ScaleXY(0.5, 2.5), []Point[float64]{
 		Pt(0.75, -0.75),
 		Pt(2, 0.5),
 		Pt(1.75, 1.75),
@@ -76,13 +76,13 @@ func TestPolygon_Empty(t *testing.T) {
 }
 
 func TestPolygon_Int(t *testing.T) {
-	assertPolygon(t, polygonInt.Int(), []Point[int]{
+	AssertPolygon(t, polygonInt.Int(), []Point[int]{
 		Pt(0, 0),
 		Pt(2, 0),
 		Pt(2, 2),
 		Pt(0, 2),
 	})
-	assertPolygon(t, polygonFloat.Int(), []Point[int]{
+	AssertPolygon(t, polygonFloat.Int(), []Point[int]{
 		Pt(0, 0),
 		Pt(3, 1),
 		Pt(2, 1),
@@ -90,13 +90,13 @@ func TestPolygon_Int(t *testing.T) {
 }
 
 func TestPolygon_Float(t *testing.T) {
-	assertPolygon(t, polygonInt.Float(), []Point[float64]{
+	AssertPolygon(t, polygonInt.Float(), []Point[float64]{
 		Pt(0.0, 0.0),
 		Pt(2.0, 0.0),
 		Pt(2.0, 2.0),
 		Pt(0.0, 2.0),
 	})
-	assertPolygon(t, polygonFloat.Float(), []Point[float64]{
+	AssertPolygon(t, polygonFloat.Float(), []Point[float64]{
 		Pt(0.0, 0.0),
 		Pt(2.5, 0.5),
 		Pt(2.0, 1.0),
@@ -111,8 +111,8 @@ func TestPolygon_Immutable(t *testing.T) {
 	p.Scale(2)
 	p.ScaleXY(2, 3)
 
-	assertPoint(t, p.Vertices[0], 0, 0)
-	assertPoint(t, p.Vertices[1], 2, 0)
+	AssertPoint(t, p.Vertices[0], 0, 0)
+	AssertPoint(t, p.Vertices[1], 2, 0)
 }
 
 func TestPolygon_String(t *testing.T) {
@@ -128,29 +128,29 @@ func TestPolygon_Marshall(t *testing.T) {
 func TestPolygon_Unmarshall(t *testing.T) {
 	var p1 Polygon[int]
 	assert.NoError(t, json.Unmarshal([]byte(`[{"x":0,"y":0},{"x":2,"y":0},{"x":2,"y":2},{"x":0,"y":2}]`), &p1))
-	assertPolygon(t, p1, nil)
+	AssertPolygon(t, p1, nil)
 
 	var p2 Polygon[float64]
 	assert.NoError(t, json.Unmarshal([]byte(`[{"x":0,"y":0},{"x":2.5,"y":0.5},{"x":2,"y":1}]`), &p2))
-	assertPolygon(t, p2, nil)
+	AssertPolygon(t, p2, nil)
 }
 
-func assertPolygon[T Number](t *testing.T, p Polygon[T], vertices []Point[T]) bool {
+func AssertPolygon[T Number](t *testing.T, p Polygon[T], vertices []Point[T], messages ...string) bool {
 	t.Helper()
 
-	return assertVertices(t, p.Vertices, vertices)
+	return AssertVertices(t, p.Vertices, vertices, messages...)
 }
 
-func assertVertices[T Number](t *testing.T, vertices []Point[T], points []Point[T]) bool {
+func AssertVertices[T Number](t *testing.T, vertices []Point[T], points []Point[T], messages ...string) bool {
 	t.Helper()
 
-	if !assert.Equal(t, len(vertices), len(points), "Length: ") {
+	if !assert.Equal(t, len(vertices), len(points), append(messages, "Length: ")...) {
 		return false
 	}
 
 	ok := true
 	for i := 0; i < len(vertices); i++ {
-		if !assertPoint(t, vertices[i], points[i].X, points[i].Y, fmt.Sprintf("#%d.", i)) {
+		if !AssertPoint(t, vertices[i], points[i].X, points[i].Y, append(messages, fmt.Sprintf("#%d.", i))...) {
 			ok = false
 		}
 	}

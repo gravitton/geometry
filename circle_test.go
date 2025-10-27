@@ -14,38 +14,38 @@ var (
 )
 
 func TestCircle_New(t *testing.T) {
-	assertCircle(t, Circ(Pt(10, 16), 12), 10, 16, 12)
-	assertCircle(t, Circ(Pt(0.16, 204), 5.1), 0.16, 204.0, 5.1)
+	AssertCircle(t, Circ(Pt(10, 16), 12), 10, 16, 12)
+	AssertCircle(t, Circ(Pt(0.16, 204), 5.1), 0.16, 204.0, 5.1)
 }
 
 func TestCircle_Translate(t *testing.T) {
-	assertCircle(t, circleInt.Translate(Vec(3, -2)), 4, 0, 10)
-	assertCircle(t, circleFloat.Translate(Vec(100.1, -0.1)), 100.7, -0.35, 1.2)
+	AssertCircle(t, circleInt.Translate(Vec(3, -2)), 4, 0, 10)
+	AssertCircle(t, circleFloat.Translate(Vec(100.1, -0.1)), 100.7, -0.35, 1.2)
 }
 
 func TestCircle_MoveTo(t *testing.T) {
-	assertCircle(t, circleInt.MoveTo(Pt(3, -2)), 3, -2, 10)
-	assertCircle(t, circleFloat.MoveTo(Pt(100.1, -0.1)), 100.1, -0.1, 1.2)
+	AssertCircle(t, circleInt.MoveTo(Pt(3, -2)), 3, -2, 10)
+	AssertCircle(t, circleFloat.MoveTo(Pt(100.1, -0.1)), 100.1, -0.1, 1.2)
 }
 
 func TestCircle_Scale(t *testing.T) {
-	assertCircle(t, circleInt.Scale(2.5), 1, 2, 25)
-	assertCircle(t, circleFloat.Scale(2.5), 0.6, -0.25, 3.0)
+	AssertCircle(t, circleInt.Scale(2.5), 1, 2, 25)
+	AssertCircle(t, circleFloat.Scale(2.5), 0.6, -0.25, 3.0)
 }
 
 func TestCircle_Resize(t *testing.T) {
-	assertCircle(t, circleInt.Resize(8), 1, 2, 8)
-	assertCircle(t, circleFloat.Resize(3.1), 0.6, -0.25, 3.1)
+	AssertCircle(t, circleInt.Resize(8), 1, 2, 8)
+	AssertCircle(t, circleFloat.Resize(3.1), 0.6, -0.25, 3.1)
 }
 
 func TestCircle_Grow(t *testing.T) {
-	assertCircle(t, circleInt.Grow(8), 1, 2, 18)
-	assertCircle(t, circleFloat.Grow(3.1), 0.6, -0.25, 4.3)
+	AssertCircle(t, circleInt.Grow(8), 1, 2, 18)
+	AssertCircle(t, circleFloat.Grow(3.1), 0.6, -0.25, 4.3)
 }
 
 func TestCircle_Shrink(t *testing.T) {
-	assertCircle(t, circleInt.Shrink(8), 1, 2, 2)
-	assertCircle(t, circleFloat.Shrink(0.3), 0.6, -0.25, 0.9)
+	AssertCircle(t, circleInt.Shrink(8), 1, 2, 2)
+	AssertCircle(t, circleFloat.Shrink(0.3), 0.6, -0.25, 0.9)
 }
 
 func TestCircle_Area(t *testing.T) {
@@ -64,8 +64,8 @@ func TestCircle_Diameter(t *testing.T) {
 }
 
 func TestCircle_Bounds(t *testing.T) {
-	assertRect(t, circleInt.Bounds(), 1, 2, 10, 10)
-	assertRect(t, circleFloat.Bounds(), 0.6, -0.25, 1.2, 1.2)
+	AssertRect(t, circleInt.Bounds(), 1, 2, 10, 10)
+	AssertRect(t, circleFloat.Bounds(), 0.6, -0.25, 1.2, 1.2)
 }
 
 func TestCircle_Equal(t *testing.T) {
@@ -100,13 +100,13 @@ func TestCircle_Contains(t *testing.T) {
 }
 
 func TestCircle_Int(t *testing.T) {
-	assertCircle(t, circleInt.Int(), 1, 2, 10)
-	assertCircle(t, circleFloat.Int(), 1, 0, 1)
+	AssertCircle(t, circleInt.Int(), 1, 2, 10)
+	AssertCircle(t, circleFloat.Int(), 1, 0, 1)
 }
 
 func TestCircle_Float(t *testing.T) {
-	assertCircle(t, circleInt.Float(), 1.0, 2.0, 10.0)
-	assertCircle(t, circleFloat.Float(), 0.6, -0.25, 1.2)
+	AssertCircle(t, circleInt.Float(), 1.0, 2.0, 10.0)
+	AssertCircle(t, circleFloat.Float(), 0.6, -0.25, 1.2)
 }
 
 func TestCircle_String(t *testing.T) {
@@ -122,11 +122,11 @@ func TestCircle_Marshall(t *testing.T) {
 func TestCircle_Unmarshall(t *testing.T) {
 	var p1 Circle[int]
 	assert.NoError(t, json.Unmarshal([]byte(`{"x":10,"y":16,"r":12}`), &p1))
-	assertCircle(t, p1, 10, 16, 12)
+	AssertCircle(t, p1, 10, 16, 12)
 
 	var p2 Circle[float64]
 	assert.NoError(t, json.Unmarshal([]byte(`{"x":10.1,"y":-34.0000115,"r":0.2}`), &p2))
-	assertCircle(t, p2, 10.1, -34.0000115, 0.2)
+	AssertCircle(t, p2, 10.1, -34.0000115, 0.2)
 }
 
 func TestCircle_Immutable(t *testing.T) {
@@ -139,18 +139,18 @@ func TestCircle_Immutable(t *testing.T) {
 	c1.Grow(1)
 	c1.Shrink(2)
 
-	assertCircle(t, c1, 1, 2, 10)
+	AssertCircle(t, c1, 1, 2, 10)
 }
 
-func assertCircle[T Number](t *testing.T, c Circle[T], x, y, radius T) bool {
+func AssertCircle[T Number](t *testing.T, c Circle[T], x, y, radius T, messages ...string) bool {
 	t.Helper()
 
 	ok := true
 
-	if !assertPoint(t, c.Center, x, y, "Center.") {
+	if !AssertPoint(t, c.Center, x, y, append(messages, "Center.")...) {
 		ok = false
 	}
-	if !assert.EqualDelta(t, float64(c.Radius), float64(radius), Delta, "Radius: ") {
+	if !assert.EqualDelta(t, float64(c.Radius), float64(radius), Delta, append(messages, "Radius: ")...) {
 		ok = false
 	}
 
