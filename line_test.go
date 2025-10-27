@@ -114,18 +114,3 @@ func TestLine_Immutable(t *testing.T) {
 
 	assert.True(t, l.Equal(lineInt))
 }
-
-func AssertLine[T Number](t *testing.T, l Line[T], sx, sy, ex, ey T, messages ...string) bool {
-	t.Helper()
-
-	ok := true
-
-	if !AssertPoint(t, l.Start, sx, sy, append(messages, "Start.")...) {
-		ok = false
-	}
-	if !AssertPoint(t, l.End, ex, ey, append(messages, "End.")...) {
-		ok = false
-	}
-
-	return ok
-}

@@ -14,18 +14,18 @@ var (
 
 func TestRegularPolygon_New(t *testing.T) {
 	rp := RegPol(Pt(0, 0), Sz(2, 2), 4, 0)
-	assertRegularPolygon(t, rp, 0, 0, 2, 2, 4, 0)
+	AssertRegularPolygon(t, rp, 0, 0, 2, 2, 4, 0)
 
 	triangle := Triangle(Pt(1, -1), Sz(3, 3), PointTop)
-	assertRegularPolygon(t, triangle, 1, -1, 3, 3, 3, RegularPolygonAngle(3, PointTop))
+	AssertRegularPolygon(t, triangle, 1, -1, 3, 3, 3, RegularPolygonAngle(3, PointTop))
 	//AssertVertices(t, triangle.Vertices(), []Point[float64]{{0, 0}})
 
 	square := Square(Pt(50.0, 50.0), Sz(100.0, 100.0), PointTop)
-	assertRegularPolygon(t, square, 50, 50, 100, 100, 4, RegularPolygonAngle(4, PointTop))
+	AssertRegularPolygon(t, square, 50, 50, 100, 100, 4, RegularPolygonAngle(4, PointTop))
 	//AssertVertices(t, square.Vertices(), []Point[float64]{{0, 0}})
 
 	hexagon := Hexagon(Pt(0, 0), Sz(10, 10), PointTop)
-	assertRegularPolygon(t, hexagon, 0, 0, 10, 10, 6, RegularPolygonAngle(6, PointTop))
+	AssertRegularPolygon(t, hexagon, 0, 0, 10, 10, 6, RegularPolygonAngle(6, PointTop))
 	//AssertVertices(t, hexagon.Vertices(), []Point[float64]{{0, 0}})
 }
 
@@ -41,20 +41,20 @@ func TestRegularPolygonAngle(t *testing.T) {
 }
 
 func TestRegularPolygon_Translate(t *testing.T) {
-	assertRegularPolygon(t, regPolygonInt.Translate(Vec(1, -2)), 2, 0, 2, 2, 4, 0)
+	AssertRegularPolygon(t, regPolygonInt.Translate(Vec(1, -2)), 2, 0, 2, 2, 4, 0)
 }
 
 func TestRegularPolygon_MoveTo(t *testing.T) {
-	assertRegularPolygon(t, regPolygonInt.MoveTo(Pt(-3, 5)), -3, 5, 2, 2, 4, 0)
+	AssertRegularPolygon(t, regPolygonInt.MoveTo(Pt(-3, 5)), -3, 5, 2, 2, 4, 0)
 }
 
 func TestRegularPolygon_Scale(t *testing.T) {
-	assertRegularPolygon(t, regPolygonInt.Scale(0.5), 1, 2, 1, 1, 4, 0)
-	assertRegularPolygon(t, regPolygonInt.ScaleXY(2, 3), 1, 2, 4, 6, 4, 0)
+	AssertRegularPolygon(t, regPolygonInt.Scale(0.5), 1, 2, 1, 1, 4, 0)
+	AssertRegularPolygon(t, regPolygonInt.ScaleXY(2, 3), 1, 2, 4, 6, 4, 0)
 }
 
 func TestRegularPolygon_Rotate(t *testing.T) {
-	assertRegularPolygon(t, regPolygonInt.Rotate(math.Pi), 1, 2, 2, 2, 4, math.Pi)
+	AssertRegularPolygon(t, regPolygonInt.Rotate(math.Pi), 1, 2, 2, 2, 4, math.Pi)
 }
 
 func TestRegularPolygon_Vertices(t *testing.T) {
@@ -110,11 +110,11 @@ func TestRegularPolygon_Empty(t *testing.T) {
 }
 
 func TestRegularPolygon_Int(t *testing.T) {
-	assertRegularPolygon(t, regPolygonInt.Int(), 1, 2, 2, 2, 4, 0.0)
+	AssertRegularPolygon(t, regPolygonInt.Int(), 1, 2, 2, 2, 4, 0.0)
 }
 
 func TestRegularPolygon_Float(t *testing.T) {
-	assertRegularPolygon(t, regPolygonInt.Float(), 1.0, 2.0, 2.0, 2.0, 4, 0.0)
+	AssertRegularPolygon(t, regPolygonInt.Float(), 1.0, 2.0, 2.0, 2.0, 4, 0.0)
 }
 
 func TestRegularPolygon_Immutable(t *testing.T) {
@@ -125,7 +125,7 @@ func TestRegularPolygon_Immutable(t *testing.T) {
 	rp.Scale(2)
 	rp.ScaleXY(2, 3)
 
-	assertRegularPolygon(t, rp, 0, 1, 2, 3, 4, 0)
+	AssertRegularPolygon(t, rp, 0, 1, 2, 3, 4, 0)
 }
 
 func TestRegularPolygon_String(t *testing.T) {
@@ -139,26 +139,5 @@ func TestRegularPolygon_Marshall(t *testing.T) {
 func TestRegularPolygon_Unmarshall(t *testing.T) {
 	var p1 RegularPolygon[int]
 	assert.NoError(t, json.Unmarshal([]byte(`{"x":1,"y":2,"w":2,"h":2,"n":4,"a":0}`), &p1))
-	assertRegularPolygon(t, p1, 1, 2, 2, 2, 4, 0)
-}
-
-func assertRegularPolygon[T Number](t *testing.T, p RegularPolygon[T], x, y, w, h T, n int, angle float64, messages ...string) bool {
-	t.Helper()
-
-	ok := true
-
-	if !AssertPoint(t, p.Center, x, y, append(messages, "Center.")...) {
-		ok = false
-	}
-	if !AssertSize(t, p.Size, w, h, append(messages, "Size.")...) {
-		ok = false
-	}
-	if !assert.Equal(t, p.N, n, append(messages, "N: ")...) {
-		ok = false
-	}
-	if !assert.EqualDelta(t, p.Angle, angle, Delta, append(messages, "Angle: ")...) {
-		ok = false
-	}
-
-	return ok
+	AssertRegularPolygon(t, p1, 1, 2, 2, 2, 4, 0)
 }

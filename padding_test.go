@@ -74,24 +74,3 @@ func TestPadding_Unmarshall(t *testing.T) {
 	assert.NoError(t, json.Unmarshal([]byte(`{"t":0.10,"r":3,"b":0.60,"l":2.40}`), &p2))
 	AssertPadding(t, p2, 0.1, 3.0, 0.6, 2.4)
 }
-
-func AssertPadding[T Number](t *testing.T, p Padding[T], top, right, bottom, left T, messages ...string) bool {
-	t.Helper()
-
-	ok := true
-
-	if !assert.EqualDelta(t, float64(p.Top), float64(top), Delta, append(messages, "Top: ")...) {
-		ok = false
-	}
-	if !assert.EqualDelta(t, float64(p.Right), float64(right), Delta, append(messages, "Right: ")...) {
-		ok = false
-	}
-	if !assert.EqualDelta(t, float64(p.Bottom), float64(bottom), Delta, append(messages, "Bottom: ")...) {
-		ok = false
-	}
-	if !assert.EqualDelta(t, float64(p.Left), float64(left), Delta, append(messages, "Left: ")...) {
-		ok = false
-	}
-
-	return ok
-}

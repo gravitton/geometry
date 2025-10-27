@@ -157,18 +157,3 @@ func TestPoint_Immutable(t *testing.T) {
 	AssertPoint(t, p1, 1, 2)
 	AssertPoint(t, p2, 3, -3)
 }
-
-func AssertPoint[T Number](t *testing.T, p Point[T], x, y T, messages ...string) bool {
-	t.Helper()
-
-	ok := true
-
-	if !assert.EqualDelta(t, float64(p.X), float64(x), Delta, append(messages, "X: ")...) {
-		ok = false
-	}
-	if !assert.EqualDelta(t, float64(p.Y), float64(y), Delta, append(messages, "Y: ")...) {
-		ok = false
-	}
-
-	return ok
-}

@@ -120,18 +120,3 @@ func TestSize_Immutable(t *testing.T) {
 
 	AssertSize(t, s, 2, 3)
 }
-
-func AssertSize[T Number](t *testing.T, s Size[T], w, h T, messages ...string) bool {
-	t.Helper()
-
-	ok := true
-
-	if !assert.EqualDelta(t, float64(s.Width), float64(w), Delta, append(messages, "Width: ")...) {
-		ok = false
-	}
-	if !assert.EqualDelta(t, float64(s.Height), float64(h), Delta, append(messages, "Height: ")...) {
-		ok = false
-	}
-
-	return ok
-}

@@ -141,18 +141,3 @@ func TestCircle_Immutable(t *testing.T) {
 
 	AssertCircle(t, c1, 1, 2, 10)
 }
-
-func AssertCircle[T Number](t *testing.T, c Circle[T], x, y, radius T, messages ...string) bool {
-	t.Helper()
-
-	ok := true
-
-	if !AssertPoint(t, c.Center, x, y, append(messages, "Center.")...) {
-		ok = false
-	}
-	if !assert.EqualDelta(t, float64(c.Radius), float64(radius), Delta, append(messages, "Radius: ")...) {
-		ok = false
-	}
-
-	return ok
-}

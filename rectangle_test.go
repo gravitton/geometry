@@ -235,18 +235,3 @@ func TestRectangle_Immutable(t *testing.T) {
 
 	AssertRect(t, r, 1, 2, 2, 3)
 }
-
-func AssertRect[T Number](t *testing.T, r Rectangle[T], cx, cy, w, h T, messages ...string) bool {
-	t.Helper()
-
-	ok := true
-
-	if !AssertPoint(t, r.Center, cx, cy, append(messages, "Center.")...) {
-		ok = false
-	}
-	if !AssertSize(t, r.Size, w, h, append(messages, "Size.")...) {
-		ok = false
-	}
-
-	return ok
-}

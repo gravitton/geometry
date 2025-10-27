@@ -134,26 +134,3 @@ func TestPolygon_Unmarshall(t *testing.T) {
 	assert.NoError(t, json.Unmarshal([]byte(`[{"x":0,"y":0},{"x":2.5,"y":0.5},{"x":2,"y":1}]`), &p2))
 	AssertPolygon(t, p2, nil)
 }
-
-func AssertPolygon[T Number](t *testing.T, p Polygon[T], vertices []Point[T], messages ...string) bool {
-	t.Helper()
-
-	return AssertVertices(t, p.Vertices, vertices, messages...)
-}
-
-func AssertVertices[T Number](t *testing.T, vertices []Point[T], points []Point[T], messages ...string) bool {
-	t.Helper()
-
-	if !assert.Equal(t, len(vertices), len(points), append(messages, "Length: ")...) {
-		return false
-	}
-
-	ok := true
-	for i := 0; i < len(vertices); i++ {
-		if !AssertPoint(t, vertices[i], points[i].X, points[i].Y, append(messages, fmt.Sprintf("#%d.", i))...) {
-			ok = false
-		}
-	}
-
-	return ok
-}

@@ -291,18 +291,3 @@ func TestVector_Immutable(t *testing.T) {
 	AssertVector(t, p1, 10, 16)
 	AssertVector(t, p2, 3, -3)
 }
-
-func AssertVector[T Number](t *testing.T, p Vector[T], x, y T, messages ...string) bool {
-	t.Helper()
-
-	ok := true
-
-	if !assert.EqualDelta(t, float64(p.X), float64(x), Delta, append(messages, "X: ")...) {
-		ok = false
-	}
-	if !assert.EqualDelta(t, float64(p.Y), float64(y), Delta, append(messages, "Y: ")...) {
-		ok = false
-	}
-
-	return ok
-}
