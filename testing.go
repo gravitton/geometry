@@ -171,3 +171,34 @@ func AssertPadding[T Number](t *testing.T, p Padding[T], top, right, bottom, lef
 
 	return ok
 }
+
+// AssertMatrix asserts that m is equal to expected within Delta.
+func AssertMatrix(t *testing.T, m, expected Matrix, messages ...string) bool {
+	t.Helper()
+
+	ok := true
+
+	if !assert.EqualDelta(t, m.A, expected.A, Delta, append(messages, "A: ")...) {
+		ok = false
+	}
+
+	if !assert.EqualDelta(t, m.B, expected.B, Delta, append(messages, "B: ")...) {
+		ok = false
+	}
+
+	if !assert.EqualDelta(t, m.C, expected.C, Delta, append(messages, "C: ")...) {
+		ok = false
+	}
+
+	if !assert.EqualDelta(t, m.D, expected.D, Delta, append(messages, "D: ")...) {
+	}
+
+	if !assert.EqualDelta(t, m.E, expected.E, Delta, append(messages, "E: ")...) {
+		ok = false
+	}
+
+	if !assert.EqualDelta(t, m.F, expected.F, Delta, append(messages, "F: ")...) {
+		ok = false
+	}
+	return ok
+}

@@ -108,6 +108,27 @@ func TestSize_Unmarshall(t *testing.T) {
 	AssertSize(t, s2, 10.1, 34.0000115)
 }
 
+func TestSize_Unscale(t *testing.T) {
+	AssertSize(t, Sz(10, 20).Unscale(2.0), 5, 10)
+	AssertSize(t, Sz(10, 20).UnscaleXY(2.0, 4.0), 5, 5)
+	AssertSize(t, Sz(0.5, 2.5).Unscale(2.5), 0.2, 1.0)
+	AssertSize(t, Sz(10, 20).Unscale(0), 10, 20) // zero guard: no change
+}
+
+func TestSize_AtLeast(t *testing.T) {
+	AssertSize(t, Sz(2, 3).AtLeast(Sz(1, 5)), 2, 5)
+	AssertSize(t, Sz(2, 3).AtLeast(Sz(4, 1)), 4, 3)
+	AssertSize(t, Sz(2, 3).AtLeast(Sz(2, 3)), 2, 3)
+	AssertSize(t, Sz(0.5, 1.5).AtLeast(Sz(1.0, 1.0)), 1.0, 1.5)
+}
+
+func TestSize_AtMost(t *testing.T) {
+	AssertSize(t, Sz(2, 3).AtMost(Sz(1, 5)), 1, 3)
+	AssertSize(t, Sz(2, 3).AtMost(Sz(4, 1)), 2, 1)
+	AssertSize(t, Sz(2, 3).AtMost(Sz(2, 3)), 2, 3)
+	AssertSize(t, Sz(0.5, 1.5).AtMost(Sz(1.0, 1.0)), 0.5, 1.0)
+}
+
 func TestSize_Immutable(t *testing.T) {
 	s := Sz(2, 3)
 
