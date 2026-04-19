@@ -60,7 +60,7 @@ func (r Rectangle[T]) ShrinkXY(amountX, amountY T) Rectangle[T] {
 	return Rectangle[T]{r.Center, r.Size.ShrinkXY(amountX, amountY)}
 }
 
-// Shrink creates a new Rectangle with size reduced by the same amount in both dimensions.
+// Inset creates a new Rectangle inset by the given padding amounts.
 func (r Rectangle[T]) Inset(padding Padding[T]) Rectangle[T] {
 	return Rectangle[T]{
 		r.Center.AddXY(

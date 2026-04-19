@@ -56,6 +56,7 @@ func (p Point[T]) DivideXY(factorX, factorY float64) Point[T] {
 	return Point[T]{Divide(p.X, factorX), Divide(p.Y, factorY)}
 }
 
+// Abs creates a new Point with absolute X and Y.
 func (p Point[T]) Abs() Point[T] {
 	return Point[T]{Abs(p.X), Abs(p.Y)}
 }

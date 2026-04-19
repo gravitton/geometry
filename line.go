@@ -47,7 +47,7 @@ func (l Line[T]) Length() float64 {
 
 // Bounds returns the axis-aligned bounding rectangle.
 func (l Line[T]) Bounds() Rectangle[T] {
-	minPoint := Point[T]{min(l.Start.X, l.End.Y), min(l.Start.Y, l.End.Y)}
+	minPoint := Point[T]{min(l.Start.X, l.End.X), min(l.Start.Y, l.End.Y)}
 
 	return RectFromMin(minPoint, l.Direction().Size())
 }

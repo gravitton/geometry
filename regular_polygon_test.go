@@ -97,7 +97,7 @@ func TestRegularPolygon_Equal(t *testing.T) {
 	assert.False(t, regPolygonInt.Equal(RegPol(Pt(0, 0), Sz(2, 2), 6, 0)))
 }
 
-func TestRegularPolygon_IsZeo(t *testing.T) {
+func TestRegularPolygon_IsZero(t *testing.T) {
 	assert.False(t, regPolygonInt.IsZero())
 	assert.True(t, RegularPolygon[int]{}.Empty())
 }

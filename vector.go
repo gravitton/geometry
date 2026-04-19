@@ -149,27 +149,27 @@ func (v Vector[T]) IsZero() bool {
 	return v.Equal(Vector[T]{})
 }
 
-// IsOne check if X and Y values are (1,1).
+// IsOne checks if X and Y values are (1,1).
 func (v Vector[T]) IsOne() bool {
 	return v.Equal(Vector[T]{1, 1})
 }
 
-// IsUp check if vector is to up (-y) direction.
+// IsUp checks if vector is to up (-y) direction.
 func (v Vector[T]) IsUp() bool {
 	return v.Y < 0
 }
 
-// IsDown check if vector is to down (+y) direction.
+// IsDown checks if vector is to down (+y) direction.
 func (v Vector[T]) IsDown() bool {
 	return v.Y > 0
 }
 
-// IsLeft check if vector is to left (-x) direction.
+// IsLeft checks if vector is to left (-x) direction.
 func (v Vector[T]) IsLeft() bool {
 	return v.X < 0
 }
 
-// IsRight check if vector is to right (+x) direction.
+// IsRight checks if vector is to right (+x) direction.
 func (v Vector[T]) IsRight() bool {
 	return v.X > 0
 }
@@ -189,12 +189,12 @@ func (v Vector[T]) XY() (T, T) {
 	return v.X, v.Y
 }
 
-// Vector converts the vector to a Point.
+// Point converts the vector to a Point.
 func (v Vector[T]) Point() Point[T] {
 	return Point[T](v)
 }
 
-// Vector converts the vector to a Size.
+// Size converts the vector to a Size (using absolute component values).
 func (v Vector[T]) Size() Size[T] {
 	return Size[T]{Abs(v.X), Abs(v.Y)}
 }

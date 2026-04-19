@@ -14,8 +14,8 @@ type Polygon[T Number] struct {
 }
 
 // Pol is shorthand for Polygon{vertices}.
-func Pol[T Number](Vertices []Point[T]) Polygon[T] {
-	return Polygon[T]{Vertices}
+func Pol[T Number](vertices []Point[T]) Polygon[T] {
+	return Polygon[T]{vertices}
 }
 
 // Center returns the polygon centroid computed as the average of its vertices.
@@ -72,7 +72,7 @@ func (p Polygon[T]) Equal(polygon Polygon[T]) bool {
 	return true
 }
 
-// Empty checks if number of vertices is zero.
+// IsZero checks if the vertices slice is nil.
 func (p Polygon[T]) IsZero() bool {
 	return p.Vertices == nil
 }
@@ -103,6 +103,6 @@ func (p Polygon[T]) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (p Polygon[T]) UnmarshalJSON(bytes []byte) error {
+func (p *Polygon[T]) UnmarshalJSON(bytes []byte) error {
 	return json.Unmarshal(bytes, &p.Vertices)
 }

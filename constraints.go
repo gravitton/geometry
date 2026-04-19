@@ -19,7 +19,7 @@ func Cast[T Number](a float64) T {
 	return T(a)
 }
 
-// String format Number as numeric string
+// String formats a Number as a numeric string.
 func String[T Number](value T) string {
 	if isIntValue(value) {
 		return fmt.Sprintf("%d", int64(value))

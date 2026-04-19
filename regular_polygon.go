@@ -19,8 +19,8 @@ func RegPol[T Number](center Point[T], size Size[T], n int, angle float64) Regul
 }
 
 // Translate creates a new RegularPolygon translated by the given vector.
-func (rp RegularPolygon[T]) Translate(change Vector[T]) RegularPolygon[T] {
-	return RegularPolygon[T]{rp.Center.Add(change), rp.Size, rp.N, rp.Angle}
+func (rp RegularPolygon[T]) Translate(vector Vector[T]) RegularPolygon[T] {
+	return RegularPolygon[T]{rp.Center.Add(vector), rp.Size, rp.N, rp.Angle}
 }
 
 // MoveTo creates a new RegularPolygon with center at point.
@@ -107,6 +107,8 @@ const (
 	PointTop
 )
 
+// RegularPolygonAngle returns the initial vertex angle for a regular polygon with n sides
+// and the given orientation (FlatTop or PointTop).
 func RegularPolygonAngle(n int, orientation Orientation) float64 {
 	switch orientation {
 	case FlatTop:

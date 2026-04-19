@@ -61,7 +61,7 @@ func TestPolygon_Equal(t *testing.T) {
 	assert.True(t, polygonFloat.Equal(polygonFloat))
 }
 
-func TestPolygon_IsZeo(t *testing.T) {
+func TestPolygon_IsZero(t *testing.T) {
 	assert.False(t, polygonInt.IsZero())
 	assert.True(t, Polygon[int]{}.IsZero())
 	assert.False(t, Polygon[int]{[]Point[int]{}}.IsZero())
@@ -127,9 +127,9 @@ func TestPolygon_Marshall(t *testing.T) {
 func TestPolygon_Unmarshall(t *testing.T) {
 	var p1 Polygon[int]
 	assert.NoError(t, json.Unmarshal([]byte(`[{"x":0,"y":0},{"x":2,"y":0},{"x":2,"y":2},{"x":0,"y":2}]`), &p1))
-	AssertPolygon(t, p1, nil)
+	AssertPolygon(t, p1, []Point[int]{{0, 0}, {2, 0}, {2, 2}, {0, 2}})
 
 	var p2 Polygon[float64]
 	assert.NoError(t, json.Unmarshal([]byte(`[{"x":0,"y":0},{"x":2.5,"y":0.5},{"x":2,"y":1}]`), &p2))
-	AssertPolygon(t, p2, nil)
+	AssertPolygon(t, p2, []Point[float64]{{0.0, 0.0}, {2.5, 0.5}, {2.0, 1.0}})
 }
