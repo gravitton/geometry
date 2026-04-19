@@ -43,12 +43,12 @@ func (v Vector[T]) SubtractXY(deltaX, deltaY T) Vector[T] {
 
 // Multiply creates a new Vector by multiplying the given value to the current vector.
 func (v Vector[T]) Multiply(factor float64) Vector[T] {
-	return Vector[T]{Multiple(v.X, factor), Multiple(v.Y, factor)}
+	return Vector[T]{Multiply(v.X, factor), Multiply(v.Y, factor)}
 }
 
 // MultiplyXY creates a new Vector by multiplying the given values to the current vector.
 func (v Vector[T]) MultiplyXY(factorX, factorY float64) Vector[T] {
-	return Vector[T]{Multiple(v.X, factorX), Multiple(v.Y, factorY)}
+	return Vector[T]{Multiply(v.X, factorX), Multiply(v.Y, factorY)}
 }
 
 // Divide creates a new Vector by dividing the given value to the current vector.

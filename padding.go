@@ -56,6 +56,6 @@ func PadU[T Number](padding T) Padding[T] {
 }
 
 // PadXY is shorthand for Padding{topBottom, leftRight, topBottom, leftRight}.
-func PadXY[T Number](leftRight, topBottom T) Padding[T] {
+func PadXY[T Number](topBottom, leftRight T) Padding[T] {
 	return Padding[T]{topBottom, leftRight, topBottom, leftRight}
 }

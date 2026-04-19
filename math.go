@@ -24,8 +24,8 @@ func ToDegrees(radians float64) float64 {
 	return radians * RadToDeg
 }
 
-// Multiple multiplies a number by a scale factor.
-func Multiple[T Number](a T, factor float64) T {
+// Multiply multiplies a number by a scale factor.
+func Multiply[T Number](a T, factor float64) T {
 	return Cast[T](float64(a) * factor)
 }
 

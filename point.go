@@ -38,12 +38,12 @@ func (p Point[T]) Subtract(point Point[T]) Vector[T] {
 
 // Multiply creates a new Point by multiplying the given value to the current point.
 func (p Point[T]) Multiply(factor float64) Point[T] {
-	return Point[T]{Multiple(p.X, factor), Multiple(p.Y, factor)}
+	return Point[T]{Multiply(p.X, factor), Multiply(p.Y, factor)}
 }
 
 // MultiplyXY creates a new Point by multiplying the given values to the current point.
 func (p Point[T]) MultiplyXY(factorX, factorY float64) Point[T] {
-	return Point[T]{Multiple(p.X, factorX), Multiple(p.Y, factorY)}
+	return Point[T]{Multiply(p.X, factorX), Multiply(p.Y, factorY)}
 }
 
 // Divide creates a new Point by dividing the given value to the current point.

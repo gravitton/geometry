@@ -17,12 +17,12 @@ func Sz[T Number](width, height T) Size[T] {
 
 // Scale creates a new Size scaled by the given factor in both dimensions.
 func (s Size[T]) Scale(factor float64) Size[T] {
-	return Size[T]{Multiple(s.Width, factor), Multiple(s.Height, factor)}
+	return Size[T]{Multiply(s.Width, factor), Multiply(s.Height, factor)}
 }
 
 // ScaleXY creates a new Size scaled by the given factors along X and Y.
 func (s Size[T]) ScaleXY(factorX, factorY float64) Size[T] {
-	return Size[T]{Multiple(s.Width, factorX), Multiple(s.Height, factorY)}
+	return Size[T]{Multiply(s.Width, factorX), Multiply(s.Height, factorY)}
 }
 
 // Unscale creates a new Size scaled with inverse factor in both dimensions.
