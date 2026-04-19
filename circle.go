@@ -26,7 +26,7 @@ func (c Circle[T]) MoveTo(point Point[T]) Circle[T] {
 	return Circle[T]{point, c.Radius}
 }
 
-// Multiple creates a new Circle with radius scaled by the given factor.
+// Scale creates a new Circle with radius scaled by the given factor.
 func (c Circle[T]) Scale(factor float64) Circle[T] {
 	return Circle[T]{c.Center, Multiple(c.Radius, factor)}
 }

@@ -158,6 +158,9 @@ func (p Point[T]) Vector() Vector[T]
 func (p Point[T]) Point() image.Point
 func (p Point[T]) Int() Point[int]
 func (p Point[T]) Float() Point[float64]
+func (p Point[T]) Round() Point[T]
+func (p Point[T]) Floor() Point[T]
+func (p Point[T]) Ceil() Point[T]
 func (p Point[T]) String() string
 ```
 

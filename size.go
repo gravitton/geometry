@@ -25,6 +25,16 @@ func (s Size[T]) ScaleXY(factorX, factorY float64) Size[T] {
 	return Size[T]{Multiple(s.Width, factorX), Multiple(s.Height, factorY)}
 }
 
+// Unscale creates a new Size scaled with inverse factor in both dimensions.
+func (s Size[T]) Unscale(factor float64) Size[T] {
+	return Size[T]{Divide(s.Width, factor), Divide(s.Height, factor)}
+}
+
+// UnscaleXY creates a new Size scaled with inverse factors along X and Y.
+func (s Size[T]) UnscaleXY(factorX, factorY float64) Size[T] {
+	return Size[T]{Divide(s.Width, factorX), Divide(s.Height, factorY)}
+}
+
 // Grow creates a new Size expanded by the same delta in both dimensions.
 func (s Size[T]) Grow(amount T) Size[T] {
 	return Size[T]{s.Width + amount, s.Height + amount}
@@ -58,6 +68,16 @@ func (s Size[T]) Perimeter() T {
 // AspectRatio returns (width / height).
 func (s Size[T]) AspectRatio() float64 {
 	return float64(s.Width) / float64(s.Height)
+}
+
+// AtLeast creates a new Size with at least the given width and height values.
+func (s Size[T]) AtLeast(size Size[T]) Size[T] {
+	return Size[T]{max(s.Width, size.Width), max(s.Height, size.Height)}
+}
+
+// AtMost creates a new Size with at most the given width and height values.
+func (s Size[T]) AtMost(size Size[T]) Size[T] {
+	return Size[T]{min(s.Width, size.Width), min(s.Height, size.Height)}
 }
 
 // Equal checks for equal width and height values with given size.

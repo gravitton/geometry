@@ -7,7 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased](https://github.com/gravitton/geometry/compare/v1.1.1...master)
-
+# Added
+- Add new methods for `Point`
+  - `Round`
+  - `Floor`
+  - `Ceil`
+- Add new methods for `Size`
+  - `Unscale`
+  - `UnscaleXY`
 
 ## [v1.1.1 (2025-10-27)](https://github.com/gravitton/geometry/compare/v1.1.0...v1.1.1)
 ### Fixed

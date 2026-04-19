@@ -82,7 +82,7 @@ func Equal[T Number](a, b T) bool {
 	return EqualDelta(a, b, Delta)
 }
 
-// Equal checks for nearly-equal values in given delta
+// EqualDelta checks for nearly-equal values in given delta
 func EqualDelta[T Number](a, b T, delta float64) bool {
 	return equalDelta(float64(a), float64(b), delta)
 }

@@ -2,6 +2,7 @@ package geom
 
 import (
 	"fmt"
+	"math"
 )
 
 // Point is a 2D point.
@@ -53,6 +54,25 @@ func (p Point[T]) Divide(factor float64) Point[T] {
 // DivideXY creates a new Point by dividing the given values to the current point.
 func (p Point[T]) DivideXY(factorX, factorY float64) Point[T] {
 	return Point[T]{Divide(p.X, factorX), Divide(p.Y, factorY)}
+}
+
+func (p Point[T]) Abs() Point[T] {
+	return Point[T]{Abs(p.X), Abs(p.Y)}
+}
+
+// Round creates a new Point by rounding X, Y values to the nearest integer.
+func (p Point[T]) Round() Point[T] {
+	return Point[T]{T(math.Round(float64(p.X))), T(math.Round(float64(p.Y)))}
+}
+
+// Floor creates a new Point by rounding down X, Y values to the nearest integer.
+func (p Point[T]) Floor() Point[T] {
+	return Point[T]{T(math.Floor(float64(p.X))), T(math.Floor(float64(p.Y)))}
+}
+
+// Ceil creates a new Point by rounding up X, Y values to the nearest integer.
+func (p Point[T]) Ceil() Point[T] {
+	return Point[T]{T(math.Ceil(float64(p.X))), T(math.Ceil(float64(p.Y)))}
 }
 
 // DistanceTo return euclidean distance from the current point to the given point.
