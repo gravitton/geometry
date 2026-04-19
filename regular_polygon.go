@@ -106,18 +106,18 @@ type Orientation int
 const (
 	// FlatTop places a flat edge at the top of the polygon.
 	FlatTop Orientation = iota
-	// PointTop places a vertex at the top of the polygon.
-	PointTop
+	// PointyTop places a vertex at the top of the polygon.
+	PointyTop
 )
 
 // RegularPolygonAngle returns the initial vertex angle for a regular polygon with n sides
-// and the given orientation (FlatTop or PointTop).
+// and the given orientation (FlatTop or PointyTop).
 func RegularPolygonAngle(n int, orientation Orientation) float64 {
 	switch orientation {
 	case FlatTop:
 		// 90 - 180/n degrees
 		return math.Pi * float64(n-2) / (2 * float64(n))
-	case PointTop:
+	case PointyTop:
 		// 90 degrees
 		return math.Pi / 2
 	default:

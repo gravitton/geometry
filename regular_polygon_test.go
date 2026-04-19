@@ -16,27 +16,27 @@ func TestRegularPolygon_New(t *testing.T) {
 	rp := RegPol(Pt(0, 0), Sz(2, 2), 4, 0)
 	AssertRegularPolygon(t, rp, 0, 0, 2, 2, 4, 0)
 
-	triangle := Triangle(Pt(1, -1), Sz(3, 3), PointTop)
-	AssertRegularPolygon(t, triangle, 1, -1, 3, 3, 3, RegularPolygonAngle(3, PointTop))
+	triangle := Triangle(Pt(1, -1), Sz(3, 3), PointyTop)
+	AssertRegularPolygon(t, triangle, 1, -1, 3, 3, 3, RegularPolygonAngle(3, PointyTop))
 	//AssertVertices(t, triangle.Vertices(), []Point[float64]{{0, 0}})
 
-	square := Square(Pt(50.0, 50.0), Sz(100.0, 100.0), PointTop)
-	AssertRegularPolygon(t, square, 50, 50, 100, 100, 4, RegularPolygonAngle(4, PointTop))
+	square := Square(Pt(50.0, 50.0), Sz(100.0, 100.0), PointyTop)
+	AssertRegularPolygon(t, square, 50, 50, 100, 100, 4, RegularPolygonAngle(4, PointyTop))
 	//AssertVertices(t, square.Vertices(), []Point[float64]{{0, 0}})
 
-	hexagon := Hexagon(Pt(0, 0), Sz(10, 10), PointTop)
-	AssertRegularPolygon(t, hexagon, 0, 0, 10, 10, 6, RegularPolygonAngle(6, PointTop))
+	hexagon := Hexagon(Pt(0, 0), Sz(10, 10), PointyTop)
+	AssertRegularPolygon(t, hexagon, 0, 0, 10, 10, 6, RegularPolygonAngle(6, PointyTop))
 	//AssertVertices(t, hexagon.Vertices(), []Point[float64]{{0, 0}})
 }
 
 func TestRegularPolygonAngle(t *testing.T) {
-	assert.EqualDelta(t, RegularPolygonAngle(3, PointTop), 90*DegToRad, Delta)
+	assert.EqualDelta(t, RegularPolygonAngle(3, PointyTop), 90*DegToRad, Delta)
 	assert.EqualDelta(t, RegularPolygonAngle(3, FlatTop), 30*DegToRad, Delta)
 
-	assert.EqualDelta(t, RegularPolygonAngle(4, PointTop), 90*DegToRad, Delta)
+	assert.EqualDelta(t, RegularPolygonAngle(4, PointyTop), 90*DegToRad, Delta)
 	assert.EqualDelta(t, RegularPolygonAngle(4, FlatTop), 45*DegToRad, Delta)
 
-	assert.EqualDelta(t, RegularPolygonAngle(6, PointTop), 90*DegToRad, Delta)
+	assert.EqualDelta(t, RegularPolygonAngle(6, PointyTop), 90*DegToRad, Delta)
 	assert.EqualDelta(t, RegularPolygonAngle(6, FlatTop), 60*DegToRad, Delta)
 }
 
