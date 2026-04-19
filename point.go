@@ -76,12 +76,12 @@ func (p Point[T]) Ceil() Point[T] {
 	return Point[T]{T(math.Ceil(float64(p.X))), T(math.Ceil(float64(p.Y)))}
 }
 
-// DistanceTo return euclidean distance from the current point to the given point.
+// DistanceTo returns the Euclidean distance from the current point to the given point.
 func (p Point[T]) DistanceTo(point Point[T]) float64 {
 	return point.Subtract(p).Length()
 }
 
-// DistanceSquaredTo return euclidean distance squared (for faster comparison) from the current point to the given point.
+// DistanceSquaredTo returns the squared Euclidean distance to the given point (faster than DistanceTo for comparisons).
 func (p Point[T]) DistanceSquaredTo(point Point[T]) T {
 	return point.Subtract(p).LengthSquared()
 }
@@ -96,7 +96,7 @@ func (p Point[T]) Lerp(point Point[T], t float64) Point[T] {
 	return Point[T]{Lerp(p.X, point.X, t), Lerp(p.Y, point.Y, t)}
 }
 
-// AngleTo return angle between the current point to the given point.
+// AngleTo returns the angle in radians from the current point to the given point.
 func (p Point[T]) AngleTo(point Point[T]) float64 {
 	return point.Subtract(p).Angle()
 }

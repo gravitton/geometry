@@ -16,7 +16,7 @@ func Vec[T Number](x, y T) Vector[T] {
 	return Vector[T]{x, y}
 }
 
-// Transform creates a new Point by applying the given matrix to the current point.
+// Transform creates a new Vector by applying the given matrix to the current vector.
 func (v Vector[T]) Transform(matrix Matrix) Vector[T] {
 	return Vector[T]{Cast[T](matrix.A*float64(v.X) + matrix.B*float64(v.Y)), Cast[T](matrix.D*float64(v.X) + matrix.E*float64(v.Y))}
 }
@@ -129,7 +129,7 @@ func (v Vector[T]) LengthSquared() T {
 	return v.X*v.X + v.Y*v.Y
 }
 
-// Angle returns Vector's angle (in radian).
+// Angle returns the vector's angle in radians.
 func (v Vector[T]) Angle() float64 {
 	return math.Atan2(float64(v.Y), float64(v.X))
 }
@@ -154,22 +154,22 @@ func (v Vector[T]) IsOne() bool {
 	return v.Equal(Vector[T]{1, 1})
 }
 
-// IsUp checks if vector is to up (-y) direction.
+// IsUp checks whether the vector points upward (-Y).
 func (v Vector[T]) IsUp() bool {
 	return v.Y < 0
 }
 
-// IsDown checks if vector is to down (+y) direction.
+// IsDown checks whether the vector points downward (+Y).
 func (v Vector[T]) IsDown() bool {
 	return v.Y > 0
 }
 
-// IsLeft checks if vector is to left (-x) direction.
+// IsLeft checks whether the vector points leftward (-X).
 func (v Vector[T]) IsLeft() bool {
 	return v.X < 0
 }
 
-// IsRight checks if vector is to right (+x) direction.
+// IsRight checks whether the vector points rightward (+X).
 func (v Vector[T]) IsRight() bool {
 	return v.X > 0
 }
@@ -184,7 +184,7 @@ func (v Vector[T]) Less(value T) bool {
 	return v.LengthSquared() < value*value
 }
 
-// XY returns the point X, Y values in standard order.
+// XY returns the vector X, Y values in standard order.
 func (v Vector[T]) XY() (T, T) {
 	return v.X, v.Y
 }
@@ -214,7 +214,7 @@ func (v Vector[T]) String() string {
 	return fmt.Sprintf("⟨%s,%s⟩", String(v.X), String(v.Y))
 }
 
-// VectorFromAngle is shorthand for Vec(1,0).Rotate(angle)
+// VectorFromAngle returns a vector of the given length pointing in the direction of angle (in radians).
 func VectorFromAngle[T Number](angle float64, length T) Vector[T] {
 	sin, cos := math.Sincos(angle)
 
@@ -231,22 +231,22 @@ func OneVector[T Number]() Vector[T] {
 	return Vector[T]{1, 1}
 }
 
-// UpVector creates a new unit Vector with up (-y) direction (0,-1)
+// UpVector returns the unit vector pointing up: (0, -1).
 func UpVector[T Number]() Vector[T] {
 	return Vector[T]{0, -1}
 }
 
-// DownVector creates a new unit Vector with down (+y) direction (0,+1)
+// DownVector returns the unit vector pointing down: (0, +1).
 func DownVector[T Number]() Vector[T] {
 	return Vector[T]{0, 1}
 }
 
-// LeftVector creates a new unit Vector with left (-x) direction (-1,0)
+// LeftVector returns the unit vector pointing left: (-1, 0).
 func LeftVector[T Number]() Vector[T] {
 	return Vector[T]{-1, 0}
 }
 
-// RightVector creates a new unit Vector with right (+x) direction (+1,0)
+// RightVector returns the unit vector pointing right: (+1, 0).
 func RightVector[T Number]() Vector[T] {
 	return Vector[T]{1, 0}
 }

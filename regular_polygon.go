@@ -100,10 +100,13 @@ func (rp RegularPolygon[T]) String() string {
 	return fmt.Sprintf("RegPol(%s;%s;%s;%s)", rp.Center.String(), rp.Size.String(), String(rp.N), String(rp.Angle))
 }
 
+// Orientation defines the rotational alignment of a regular polygon.
 type Orientation int
 
 const (
+	// FlatTop places a flat edge at the top of the polygon.
 	FlatTop Orientation = iota
+	// PointTop places a vertex at the top of the polygon.
 	PointTop
 )
 

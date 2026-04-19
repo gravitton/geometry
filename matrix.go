@@ -70,13 +70,13 @@ func (m Matrix) PreTranslate(deltaX, deltaY float64) Matrix {
 	return TranslationMatrix(deltaX, deltaY).Multiply(m)
 }
 
-// Rotate creates a new matrix by right-multiplying a rotation matrix (angle in radians) .
+// Rotate creates a new matrix by right-multiplying a rotation matrix (angle in radians).
 // Composition order: result = m * m_R(angle).
 func (m Matrix) Rotate(angle float64) Matrix {
 	return m.Multiply(RotationMatrix(angle))
 }
 
-// PreRotate creates a new matrix by left-multiplying a rotation matrix (angle in radians) .
+// PreRotate creates a new matrix by left-multiplying a rotation matrix (angle in radians).
 // Composition order: result = m_R(angle) * m.
 func (m Matrix) PreRotate(angle float64) Matrix {
 	return RotationMatrix(angle).Multiply(m)
@@ -98,8 +98,8 @@ func (m Matrix) Unscale(factorX, factorY float64) Matrix {
 	return m.Multiply(ScaleMatrix(1/factorX, 1/factorY))
 }
 
-// PreScale creates a new matrix by left-multiplying a scale matrix with inverse factors.
-// Composition order: result = m * m_S(factorX,factorY).
+// PreScale creates a new matrix by left-multiplying a scale matrix.
+// Composition order: result = m_S(factorX,factorY) * m.
 func (m Matrix) PreScale(factorX, factorY float64) Matrix {
 	return ScaleMatrix(factorX, factorY).Multiply(m)
 }

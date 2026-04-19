@@ -163,7 +163,7 @@ func (r Rectangle[T]) Bounds() Rectangle[T] {
 	return r
 }
 
-// Clamp creates a new point clamped to the rectangle.
+// Clamp returns the given Point clamped to the rectangle bounds.
 func (r Rectangle[T]) Clamp(point Point[T]) Point[T] {
 	minPoint, maxPoint := r.Min(), r.Max()
 
