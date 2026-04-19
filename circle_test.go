@@ -46,6 +46,9 @@ func TestCircle_Grow(t *testing.T) {
 func TestCircle_Shrink(t *testing.T) {
 	AssertCircle(t, circleInt.Shrink(8), 1, 2, 2)
 	AssertCircle(t, circleFloat.Shrink(0.3), 0.6, -0.25, 0.9)
+
+	// clamped to zero — never negative radius
+	AssertCircle(t, circleInt.Shrink(100), 1, 2, 0)
 }
 
 func TestCircle_Area(t *testing.T) {

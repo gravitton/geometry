@@ -45,14 +45,14 @@ func (s Size[T]) GrowXY(amountX, amountY T) Size[T] {
 	return Size[T]{s.Width + amountX, s.Height + amountY}
 }
 
-// Shrink creates a new Size reduced by the same delta in both dimensions.
+// Shrink creates a new Size reduced by the same delta in both dimensions, clamped to zero.
 func (s Size[T]) Shrink(amount T) Size[T] {
-	return Size[T]{s.Width - amount, s.Height - amount}
+	return Size[T]{max(s.Width-amount, 0), max(s.Height-amount, 0)}
 }
 
-// ShrinkXY creates a new Size reduced by the given amounts along X and Y.
+// ShrinkXY creates a new Size reduced by the given amounts along X and Y, clamped to zero.
 func (s Size[T]) ShrinkXY(amountX, amountY T) Size[T] {
-	return Size[T]{s.Width - amountX, s.Height - amountY}
+	return Size[T]{max(s.Width-amountX, 0), max(s.Height-amountY, 0)}
 }
 
 // Area returns the size's area (width * height).

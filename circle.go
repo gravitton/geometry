@@ -41,9 +41,9 @@ func (c Circle[T]) Grow(amount T) Circle[T] {
 	return Circle[T]{c.Center, c.Radius + amount}
 }
 
-// Shrink creates a new Circle with radius decreased by amount.
+// Shrink creates a new Circle with radius decreased by amount, clamped to zero.
 func (c Circle[T]) Shrink(amount T) Circle[T] {
-	return Circle[T]{c.Center, c.Radius - amount}
+	return Circle[T]{c.Center, max(c.Radius-amount, 0)}
 }
 
 // Area returns the circle area: (π * radius^2)

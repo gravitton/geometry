@@ -66,6 +66,9 @@ func TestRectangle_Shrink(t *testing.T) {
 	AssertRect(t, rectInt.ShrinkXY(1, 2), 1, 2, 1, 1)
 	AssertRect(t, rectFloat.Shrink(0.1), 0.6, -0.25, 1.1, 3.5)
 	AssertRect(t, rectFloat.ShrinkXY(0.1, 0.2), 0.6, -0.25, 1.1, 3.4)
+
+	// clamped to zero — never negative size
+	AssertRect(t, rectInt.Shrink(100), 1, 2, 0, 0)
 }
 
 func TestRectangle_Inset(t *testing.T) {

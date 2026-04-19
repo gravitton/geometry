@@ -37,6 +37,10 @@ func TestSize_Shrink(t *testing.T) {
 	AssertSize(t, Sz(2, 3).ShrinkXY(1, 2), 1, 1)
 	AssertSize(t, Sz(0.4, 0.25).Shrink(0.1), 0.3, 0.15)
 	AssertSize(t, Sz(0.4, 0.25).ShrinkXY(0.1, 0.2), 0.3, 0.05)
+
+	// clamped to zero — never negative
+	AssertSize(t, Sz(2, 3).Shrink(5), 0, 0)
+	AssertSize(t, Sz(2, 3).ShrinkXY(5, 1), 0, 2)
 }
 
 func TestSize_Area(t *testing.T) {
