@@ -56,6 +56,7 @@ func TestSize_Perimeter(t *testing.T) {
 func TestSize_AspectRatio(t *testing.T) {
 	assert.EqualDelta(t, Sz(5, 3).AspectRatio(), 1.666666, Delta)
 	assert.EqualDelta(t, Sz(0.4, 0.25).AspectRatio(), 1.6, Delta)
+	assert.EqualDelta(t, Sz(16, 0).AspectRatio(), 0.0, Delta) // Height==0 → 0
 }
 
 func TestSize_Equal(t *testing.T) {

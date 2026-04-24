@@ -65,8 +65,11 @@ func (s Size[T]) Perimeter() T {
 	return 2 * (s.Width + s.Height)
 }
 
-// AspectRatio returns (width / height).
+// AspectRatio returns (width / height). Returns 0 when Height is zero.
 func (s Size[T]) AspectRatio() float64 {
+	if s.Height == 0 {
+		return 0
+	}
 	return float64(s.Width) / float64(s.Height)
 }
 
