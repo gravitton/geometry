@@ -39,9 +39,9 @@ func (rp RegularPolygon[T]) ScaleXY(factorX, factorY float64) RegularPolygon[T] 
 }
 
 // Rotate creates a new RegularPolygon rotated by the given angle (in radians).
+// The stored angle is normalized to [0, 2π) to prevent drift from repeated rotations.
 func (rp RegularPolygon[T]) Rotate(angle float64) RegularPolygon[T] {
-	// TODO: normalize angle to [0, 2*pi]
-	return RegularPolygon[T]{rp.Center, rp.Size, rp.N, rp.Angle + angle}
+	return RegularPolygon[T]{rp.Center, rp.Size, rp.N, NormalizeAngle(rp.Angle + angle)}
 }
 
 // Vertices returns the polygon vertices in order starting from angle 0, counter-clockwise.
@@ -58,11 +58,23 @@ func (rp RegularPolygon[T]) Vertices() []Point[T] {
 	return vertices
 }
 
-// Bounds returns the axis-aligned bounding rectangle.
+// Bounds returns the axis-aligned bounding rectangle computed from the polygon vertices.
 func (rp RegularPolygon[T]) Bounds() Rectangle[T] {
-	// TODO: calculate
-	maxAbsCos, maxAbsSin := 1.0, 1.0
-	return Rectangle[T]{rp.Center, rp.Size.ScaleXY(2.0*maxAbsCos, 2.0*maxAbsSin)}
+	vertices := rp.Vertices()
+	if len(vertices) == 0 {
+		return Rectangle[T]{rp.Center, Size[T]{}}
+	}
+
+	minX, maxX := vertices[0].X, vertices[0].X
+	minY, maxY := vertices[0].Y, vertices[0].Y
+	for _, v := range vertices[1:] {
+		minX = min(minX, v.X)
+		maxX = max(maxX, v.X)
+		minY = min(minY, v.Y)
+		maxY = max(maxY, v.Y)
+	}
+
+	return RectFromMinMax(Point[T]{minX, minY}, Point[T]{maxX, maxY})
 }
 
 // Polygon converts the regular polygon into a generic Polygon with computed vertices.

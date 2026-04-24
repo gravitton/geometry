@@ -58,6 +58,9 @@ func TestRegularPolygon_Scale(t *testing.T) {
 
 func TestRegularPolygon_Rotate(t *testing.T) {
 	AssertRegularPolygon(t, regPolygonInt.Rotate(math.Pi), 1, 2, 2, 2, 4, math.Pi)
+	// Normalization: angle wraps to [0, 2π).
+	AssertRegularPolygon(t, regPolygonInt.Rotate(3*math.Pi), 1, 2, 2, 2, 4, math.Pi)      // 0 + 3π → π
+	AssertRegularPolygon(t, regPolygonInt.Rotate(-math.Pi/2), 1, 2, 2, 2, 4, 3*math.Pi/2) // 0 − π/2 → 3π/2
 }
 
 func TestRegularPolygon_Vertices(t *testing.T) {
@@ -84,7 +87,14 @@ func TestRegularPolygon_Vertices(t *testing.T) {
 }
 
 func TestRegularPolygon_Bounds(t *testing.T) {
+	// Square-like (N=4, angle=0): vertices on axes, so bounds == 2×size centered.
 	AssertRect(t, regPolygonInt.Bounds(), 1, 2, 4, 4)
+
+	// Hexagon (float64): tight bounds from actual vertices; width = 2r, height = √3 * r.
+	hex := Hexagon(Pt(0.0, 0.0), Sz(2.0, 2.0), FlatTop)
+	b := hex.Bounds()
+	assert.EqualDelta(t, float64(b.Size.Width), 4.0, Delta)
+	assert.EqualDelta(t, float64(b.Size.Height), 2.0*Sqrt3, Delta)
 }
 
 func TestRegularPolygon_Polygon(t *testing.T) {

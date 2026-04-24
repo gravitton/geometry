@@ -7,6 +7,14 @@ import (
 	"github.com/gravitton/assert"
 )
 
+func TestNormalizeAngle(t *testing.T) {
+	assert.EqualDelta(t, NormalizeAngle(0), 0.0, Delta)
+	assert.EqualDelta(t, NormalizeAngle(math.Pi), math.Pi, Delta)
+	assert.EqualDelta(t, NormalizeAngle(3*math.Pi), math.Pi, Delta)      // wraps: 3π → π
+	assert.EqualDelta(t, NormalizeAngle(-math.Pi/2), 3*math.Pi/2, Delta) // negative → 3π/2
+	assert.EqualDelta(t, NormalizeAngle(2*math.Pi), 0.0, Delta)          // exactly 2π → 0
+}
+
 func TestToRadians(t *testing.T) {
 	assert.EqualDelta(t, ToRadians(0), 0.0, Delta)
 	assert.EqualDelta(t, ToRadians(90), math.Pi/2, Delta)

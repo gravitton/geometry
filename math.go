@@ -19,6 +19,15 @@ const (
 	OneOverSqrt2 = 1 / math.Sqrt2
 )
 
+// NormalizeAngle returns angle normalized to [0, 2π).
+func NormalizeAngle(angle float64) float64 {
+	a := math.Mod(angle, 2*math.Pi)
+	if a < 0 {
+		a += 2 * math.Pi
+	}
+	return a
+}
+
 // ToRadians converts degrees to radians.
 func ToRadians(degrees float64) float64 {
 	return degrees * DegToRad
