@@ -45,6 +45,8 @@ func (rp RegularPolygon[T]) Rotate(angle float64) RegularPolygon[T] {
 }
 
 // Vertices returns the polygon vertices in order starting from angle 0, counter-clockwise.
+// For integer T, each vertex component is rounded via VectorFromAngle[T]; at non-right-angle
+// positions the result may differ significantly from the true vertex. Use float64 for precision.
 func (rp RegularPolygon[T]) Vertices() []Point[T] {
 	initAngle := rp.Angle
 	angleStep := (2 * math.Pi) / float64(rp.N)

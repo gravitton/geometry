@@ -19,6 +19,8 @@ func Pol[T Number](vertices []Point[T]) Polygon[T] {
 }
 
 // Center returns the polygon centroid computed as the average of its vertices.
+// For integer T, the coordinate sums are divided using integer division and the
+// result is truncated; use float64 when centroid accuracy matters.
 func (p Polygon[T]) Center() Point[T] {
 	var x, y T
 	l := T(len(p.Vertices))

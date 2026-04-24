@@ -17,6 +17,8 @@ func Pt[T Number](x, y T) Point[T] {
 }
 
 // Transform creates a new Point by applying the given matrix to the current point.
+// For integer T, the float64 result of each component is rounded; rotations and
+// non-integer scales lose precision.
 func (p Point[T]) Transform(matrix Matrix) Point[T] {
 	return Point[T]{Cast[T](matrix.A*float64(p.X) + matrix.B*float64(p.Y) + matrix.C), Cast[T](matrix.D*float64(p.X) + matrix.E*float64(p.Y) + matrix.F)}
 }

@@ -17,6 +17,8 @@ func Vec[T Number](x, y T) Vector[T] {
 }
 
 // Transform creates a new Vector by applying the given matrix to the current vector.
+// For integer T, the float64 result of each component is rounded; rotations and
+// non-integer scales lose precision.
 func (v Vector[T]) Transform(matrix Matrix) Vector[T] {
 	return Vector[T]{Cast[T](matrix.A*float64(v.X) + matrix.B*float64(v.Y)), Cast[T](matrix.D*float64(v.X) + matrix.E*float64(v.Y))}
 }
@@ -67,6 +69,7 @@ func (v Vector[T]) Negate() Vector[T] {
 }
 
 // Rotate creates a new Vector rotated by the given angle (in radians).
+// For integer T, sin/cos components are rounded; only multiples of 90° give exact results.
 func (v Vector[T]) Rotate(angle float64) Vector[T] {
 	sin, cos := math.Sincos(angle)
 
@@ -74,11 +77,14 @@ func (v Vector[T]) Rotate(angle float64) Vector[T] {
 }
 
 // Resize creates a new Vector resized to the given length.
+// For integer T, the result is rounded and the actual length may differ from the requested value.
 func (v Vector[T]) Resize(length float64) Vector[T] {
 	return v.Multiply(length / v.Length())
 }
 
 // Normalize creates a new Vector resized to a length of 1.
+// For integer T, the result is one of the four axis-aligned unit vectors (±1,0)/(0,±1);
+// the zero vector returns (1,0) by convention.
 func (v Vector[T]) Normalize() Vector[T] {
 	if v.IsZero() {
 		return Vector[T]{1, 0}
@@ -215,6 +221,9 @@ func (v Vector[T]) String() string {
 }
 
 // VectorFromAngle returns a vector of the given length pointing in the direction of angle (in radians).
+// For integer T, each component is independently rounded after multiplying by length; angles
+// whose sin or cos falls near ±0.5 may round to 0 instead of ±1 due to float64 precision.
+// Use float64 when directional accuracy matters.
 func VectorFromAngle[T Number](angle float64, length T) Vector[T] {
 	sin, cos := math.Sincos(angle)
 
