@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased](https://github.com/gravitton/geometry/compare/v1.2.0...master)
+### Added
+- `NormalizeAngle(angle float64) float64` utility function — normalizes any angle to `[0, 2π)`
+- `GOEXPERIMENT=jsonv2` requirement documented in `README.md` and `CLAUDE.md`; `json:",inline"` struct tags are intentional and valid under jsonv2
+
+### Fixed
+- `RegularPolygon.Bounds` now computes the exact bounding rectangle from actual vertices instead of always returning the full bounding circle
+- `RegularPolygon.Rotate` normalizes the stored angle to `[0, 2π)` after each rotation to prevent floating-point drift
+- `Size.AspectRatio` returns `0` when `Height` is zero (previously returned `+Inf`)
+
+### Changed
+- Methods that produce imprecise results for integer `T` are now documented with a note in their comments: `Vector.Normalize`, `Vector.Rotate`, `Vector.Resize`, `VectorFromAngle`, `Point.Transform`, `Vector.Transform`, `RegularPolygon.Vertices`, `Polygon.Center`
+- `Rectangle.Max` comment clarifies the `w-w/2` formula used for correct pixel span with odd integer sizes
 
 
 ## [v1.2.0 (2026-04-19)](https://github.com/gravitton/geometry/compare/v1.1.1...v1.2.0)
