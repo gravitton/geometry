@@ -18,15 +18,18 @@ func TestRegularPolygon_New(t *testing.T) {
 
 	triangle := Triangle(Pt(1, -1), Sz(3, 3), PointyTop)
 	AssertRegularPolygon(t, triangle, 1, -1, 3, 3, 3, RegularPolygonAngle(3, PointyTop))
-	//AssertVertices(t, triangle.Vertices(), []Point[float64]{{0, 0}})
+	// Integer types: sin/cos of non-right angles are rounded; sin(7π/6) computes slightly above
+	// −0.5 in float64, rounding to 0 rather than −1, so vertex 1 Y = center.Y + 0 = −1.
+	AssertVertices(t, triangle.Vertices(), []Point[int]{Pt(1, 2), Pt(-2, -1), Pt(4, -4)})
 
 	square := Square(Pt(50.0, 50.0), Sz(100.0, 100.0), PointyTop)
 	AssertRegularPolygon(t, square, 50, 50, 100, 100, 4, RegularPolygonAngle(4, PointyTop))
-	//AssertVertices(t, square.Vertices(), []Point[float64]{{0, 0}})
+	AssertVertices(t, square.Vertices(), []Point[float64]{Pt(50.0, 150.0), Pt(-50.0, 50.0), Pt(50.0, -50.0), Pt(150.0, 50.0)})
 
 	hexagon := Hexagon(Pt(0, 0), Sz(10, 10), PointyTop)
 	AssertRegularPolygon(t, hexagon, 0, 0, 10, 10, 6, RegularPolygonAngle(6, PointyTop))
-	//AssertVertices(t, hexagon.Vertices(), []Point[float64]{{0, 0}})
+	// Vertices 2 and 5 (at 7π/6 and π/6) have sin rounded to 0 due to float64 precision.
+	AssertVertices(t, hexagon.Vertices(), []Point[int]{Pt(0, 10), Pt(-10, 10), Pt(-10, 0), Pt(0, -10), Pt(10, -10), Pt(10, 0)})
 }
 
 func TestRegularPolygonAngle(t *testing.T) {

@@ -191,6 +191,7 @@ func AssertMatrix(t *testing.T, m, expected Matrix, messages ...string) bool {
 	}
 
 	if !assert.EqualDelta(t, m.D, expected.D, Delta, append(messages, "D: ")...) {
+		ok = false
 	}
 
 	if !assert.EqualDelta(t, m.E, expected.E, Delta, append(messages, "E: ")...) {
@@ -200,5 +201,6 @@ func AssertMatrix(t *testing.T, m, expected Matrix, messages ...string) bool {
 	if !assert.EqualDelta(t, m.F, expected.F, Delta, append(messages, "F: ")...) {
 		ok = false
 	}
+
 	return ok
 }

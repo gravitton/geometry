@@ -92,6 +92,8 @@ func (r Rectangle[T]) Min() Point[T] {
 }
 
 // Max returns the maximum corner point of the rectangle.
+// For integer types with odd Width or Height, w-w/2 != w/2 due to truncation;
+// using (w-w/2) here keeps Min+Max spanning exactly w pixels (the extra pixel goes to Max).
 func (r Rectangle[T]) Max() Point[T] {
 	w, h := r.Size.XY()
 

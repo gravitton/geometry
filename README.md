@@ -11,13 +11,21 @@ Generic immutable 2D geometry library for game development.
 
 > Uses a top-left origin with +Y down. This only affects directional getters (`Top`, `Bottom`, `Up`, `Down`).
 
-
 ## Installation
 
 ```bash
 go get github.com/gravitton/geometry
 ```
 
+## Requirements
+
+Requires **`GOEXPERIMENT=jsonv2`** (Go 1.26+). This enables the JSON v2 experiment, which supports the `json:",inline"` struct tag used by several types to produce flat JSON objects instead of nested ones.
+
+Set the environment variable when running or testing:
+
+```bash
+GOEXPERIMENT=jsonv2 go test ./...
+```
 
 ## Usage
 
