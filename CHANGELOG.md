@@ -6,7 +6,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 
-## [Unreleased](https://github.com/gravitton/geometry/compare/v1.2.0...master)
+## [Unreleased](https://github.com/gravitton/geometry/compare/v1.3.0...master)
+
+## [v1.3.0 (2026-04-25)](https://github.com/gravitton/geometry/compare/v1.2.1...v1.3.0)
 ### Added
 - `NormalizeAngle(angle float64) float64` utility function — normalizes any angle to `[0, 2π)`
 - `GOEXPERIMENT=jsonv2` requirement documented in `README.md` and `CLAUDE.md`; `json:",inline"` struct tags are intentional and valid under jsonv2
