@@ -2,7 +2,6 @@ package geom
 
 import (
 	"fmt"
-	"math"
 )
 
 // Point is a 2D point.
@@ -65,17 +64,17 @@ func (p Point[T]) Abs() Point[T] {
 
 // Round creates a new Point by rounding X, Y values to the nearest integer.
 func (p Point[T]) Round() Point[T] {
-	return Point[T]{T(math.Round(float64(p.X))), T(math.Round(float64(p.Y)))}
+	return Point[T]{Round(p.X), Round(p.Y)}
 }
 
 // Floor creates a new Point by rounding down X, Y values to the nearest integer.
 func (p Point[T]) Floor() Point[T] {
-	return Point[T]{T(math.Floor(float64(p.X))), T(math.Floor(float64(p.Y)))}
+	return Point[T]{Floor(p.X), Floor(p.Y)}
 }
 
 // Ceil creates a new Point by rounding up X, Y values to the nearest integer.
 func (p Point[T]) Ceil() Point[T] {
-	return Point[T]{T(math.Ceil(float64(p.X))), T(math.Ceil(float64(p.Y)))}
+	return Point[T]{Ceil(p.X), Ceil(p.Y)}
 }
 
 // DistanceTo returns the Euclidean distance from the current point to the given point.
@@ -91,6 +90,22 @@ func (p Point[T]) DistanceSquaredTo(point Point[T]) T {
 // ManhattanDistanceTo returns the Manhattan (taxicab) distance from the current point to the given point.
 func (p Point[T]) ManhattanDistanceTo(point Point[T]) T {
 	return Abs(point.X-p.X) + Abs(point.Y-p.Y)
+}
+
+// ChebyshevDistanceTo returns the Chebyshev distance (chessboard distance) from the current point to the given point.
+// It is the maximum of the absolute differences of the coordinates: max(|dx|, |dy|).
+func (p Point[T]) ChebyshevDistanceTo(point Point[T]) T {
+	return max(Abs(point.X-p.X), Abs(point.Y-p.Y))
+}
+
+// OctileDistanceTo returns the Octile distance from the current point to the given point.
+// Used in grid-based pathfinding where cardinal moves cost 1 and diagonal moves cost √2.
+// It is: max(dx, dy) + (√2 - 1) * min(dx, dy).
+func (p Point[T]) OctileDistanceTo(point Point[T]) float64 {
+	dx := Abs(float64(point.X - p.X))
+	dy := Abs(float64(point.Y - p.Y))
+
+	return max(dx, dy) + (Sqrt2-1)*min(dx, dy)
 }
 
 // Midpoint creates a new Point between current and given points.

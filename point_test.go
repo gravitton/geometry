@@ -76,6 +76,16 @@ func TestPoint_ManhattanDistanceTo(t *testing.T) {
 	assert.EqualDelta(t, pointFloat.ManhattanDistanceTo(Pt(0.5, -0.35)), 0.2, Delta)
 }
 
+func TestPoint_ChebyshevDistanceTo(t *testing.T) {
+	assert.Equal(t, pointInt.ChebyshevDistanceTo(Pt(2, 3)), 1)
+	assert.EqualDelta(t, pointFloat.ChebyshevDistanceTo(Pt(0.5, -0.35)), 0.1, Delta)
+}
+
+func TestPoint_OctileDistanceTo(t *testing.T) {
+	assert.EqualDelta(t, pointInt.OctileDistanceTo(Pt(2, 3)), Sqrt2, Delta)
+	assert.EqualDelta(t, pointFloat.OctileDistanceTo(Pt(0.5, -0.35)), 0.1*Sqrt2, Delta)
+}
+
 func TestPoint_AngleTo(t *testing.T) {
 	assert.EqualDelta(t, Pt(2, 2).AngleTo(Pt(3, 2)), ToRadians(0), Delta)
 	assert.EqualDelta(t, pointFloat.AngleTo(Pt(0.7, -0.35)), ToRadians(-45), Delta)
