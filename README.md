@@ -30,7 +30,9 @@ GOEXPERIMENT=jsonv2 go test ./...
 ## Usage
 
 ```go
-import geom "github.com/gravitton/geometry"
+import (
+	geom "github.com/gravitton/geometry"
+)
 
 p1 := geom.Pt(1, 2)
 p2 := geom.Pt(3, 4)
