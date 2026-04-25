@@ -88,6 +88,11 @@ func (p Point[T]) DistanceSquaredTo(point Point[T]) T {
 	return point.Subtract(p).LengthSquared()
 }
 
+// ManhattanDistanceTo returns the Manhattan (taxicab) distance from the current point to the given point.
+func (p Point[T]) ManhattanDistanceTo(point Point[T]) T {
+	return Abs(point.X-p.X) + Abs(point.Y-p.Y)
+}
+
 // Midpoint creates a new Point between current and given points.
 func (p Point[T]) Midpoint(point Point[T]) Point[T] {
 	return Point[T]{Midpoint(p.X, point.X), Midpoint(p.Y, point.Y)}

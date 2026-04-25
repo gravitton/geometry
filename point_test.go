@@ -71,6 +71,11 @@ func TestPoint_DistanceSquaredTo(t *testing.T) {
 	assert.EqualDelta(t, pointFloat.DistanceSquaredTo(Pt(0.5, -0.35)), 0.02, Delta)
 }
 
+func TestPoint_ManhattanDistanceTo(t *testing.T) {
+	assert.Equal(t, pointInt.ManhattanDistanceTo(Pt(2, 3)), 2)
+	assert.EqualDelta(t, pointFloat.ManhattanDistanceTo(Pt(0.5, -0.35)), 0.2, Delta)
+}
+
 func TestPoint_AngleTo(t *testing.T) {
 	assert.EqualDelta(t, Pt(2, 2).AngleTo(Pt(3, 2)), ToRadians(0), Delta)
 	assert.EqualDelta(t, pointFloat.AngleTo(Pt(0.7, -0.35)), ToRadians(-45), Delta)
