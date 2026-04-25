@@ -1,7 +1,6 @@
 package geom
 
 import (
-	"math"
 	"testing"
 
 	"github.com/gravitton/assert"
@@ -9,24 +8,24 @@ import (
 
 func TestNormalizeAngle(t *testing.T) {
 	assert.EqualDelta(t, NormalizeAngle(0), 0.0, Delta)
-	assert.EqualDelta(t, NormalizeAngle(math.Pi), math.Pi, Delta)
-	assert.EqualDelta(t, NormalizeAngle(3*math.Pi), math.Pi, Delta)      // wraps: 3π → π
-	assert.EqualDelta(t, NormalizeAngle(-math.Pi/2), 3*math.Pi/2, Delta) // negative → 3π/2
-	assert.EqualDelta(t, NormalizeAngle(2*math.Pi), 0.0, Delta)          // exactly 2π → 0
+	assert.EqualDelta(t, NormalizeAngle(Pi), Pi, Delta)
+	assert.EqualDelta(t, NormalizeAngle(3*Pi), Pi, Delta)      // wraps: 3π → π
+	assert.EqualDelta(t, NormalizeAngle(-Pi/2), 3*Pi/2, Delta) // negative → 3π/2
+	assert.EqualDelta(t, NormalizeAngle(2*Pi), 0.0, Delta)     // exactly 2π → 0
 }
 
 func TestToRadians(t *testing.T) {
 	assert.EqualDelta(t, ToRadians(0), 0.0, Delta)
-	assert.EqualDelta(t, ToRadians(90), math.Pi/2, Delta)
-	assert.EqualDelta(t, ToRadians(180), math.Pi, Delta)
-	assert.EqualDelta(t, ToRadians(360), 2*math.Pi, Delta)
+	assert.EqualDelta(t, ToRadians(90), Pi/2, Delta)
+	assert.EqualDelta(t, ToRadians(180), Pi, Delta)
+	assert.EqualDelta(t, ToRadians(360), 2*Pi, Delta)
 }
 
 func TestToDegrees(t *testing.T) {
 	assert.EqualDelta(t, ToDegrees(0), 0.0, Delta)
-	assert.EqualDelta(t, ToDegrees(math.Pi/2), 90.0, Delta)
-	assert.EqualDelta(t, ToDegrees(math.Pi), 180.0, Delta)
-	assert.EqualDelta(t, ToDegrees(2*math.Pi), 360.0, Delta)
+	assert.EqualDelta(t, ToDegrees(Pi/2), 90.0, Delta)
+	assert.EqualDelta(t, ToDegrees(Pi), 180.0, Delta)
+	assert.EqualDelta(t, ToDegrees(2*Pi), 360.0, Delta)
 }
 
 func TestMultiply(t *testing.T) {

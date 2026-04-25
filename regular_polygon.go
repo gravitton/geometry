@@ -2,7 +2,6 @@ package geom
 
 import (
 	"fmt"
-	"math"
 )
 
 // RegularPolygon is a polygon with equally spaced vertices around a center.
@@ -49,7 +48,7 @@ func (rp RegularPolygon[T]) Rotate(angle float64) RegularPolygon[T] {
 // positions the result may differ significantly from the true vertex. Use float64 for precision.
 func (rp RegularPolygon[T]) Vertices() []Point[T] {
 	initAngle := rp.Angle
-	angleStep := (2 * math.Pi) / float64(rp.N)
+	angleStep := (2 * Pi) / float64(rp.N)
 
 	vertices := make([]Point[T], rp.N)
 	for i := 0; i < rp.N; i++ {
@@ -130,10 +129,10 @@ func RegularPolygonAngle(n int, orientation Orientation) float64 {
 	switch orientation {
 	case FlatTop:
 		// 90 - 180/n degrees
-		return math.Pi * float64(n-2) / (2 * float64(n))
+		return Pi * float64(n-2) / (2 * float64(n))
 	case PointyTop:
 		// 90 degrees
-		return math.Pi / 2
+		return Pi / 2
 	default:
 		return 0
 	}

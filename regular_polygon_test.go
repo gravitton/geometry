@@ -2,7 +2,6 @@ package geom
 
 import (
 	"encoding/json"
-	"math"
 	"testing"
 
 	"github.com/gravitton/assert"
@@ -57,10 +56,10 @@ func TestRegularPolygon_Scale(t *testing.T) {
 }
 
 func TestRegularPolygon_Rotate(t *testing.T) {
-	AssertRegularPolygon(t, regPolygonInt.Rotate(math.Pi), 1, 2, 2, 2, 4, math.Pi)
+	AssertRegularPolygon(t, regPolygonInt.Rotate(Pi), 1, 2, 2, 2, 4, Pi)
 	// Normalization: angle wraps to [0, 2π).
-	AssertRegularPolygon(t, regPolygonInt.Rotate(3*math.Pi), 1, 2, 2, 2, 4, math.Pi)      // 0 + 3π → π
-	AssertRegularPolygon(t, regPolygonInt.Rotate(-math.Pi/2), 1, 2, 2, 2, 4, 3*math.Pi/2) // 0 − π/2 → 3π/2
+	AssertRegularPolygon(t, regPolygonInt.Rotate(3*Pi), 1, 2, 2, 2, 4, Pi)      // 0 + 3π → π
+	AssertRegularPolygon(t, regPolygonInt.Rotate(-Pi/2), 1, 2, 2, 2, 4, 3*Pi/2) // 0 − π/2 → 3π/2
 }
 
 func TestRegularPolygon_Vertices(t *testing.T) {

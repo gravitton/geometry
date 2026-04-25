@@ -2,7 +2,6 @@ package geom
 
 import (
 	"fmt"
-	"math"
 )
 
 // Circle is a 2D circle.
@@ -48,12 +47,12 @@ func (c Circle[T]) Shrink(amount T) Circle[T] {
 
 // Area returns the circle area: (π * radius^2)
 func (c Circle[T]) Area() float64 {
-	return math.Pi * float64(c.Radius*c.Radius)
+	return Pi * float64(c.Radius*c.Radius)
 }
 
 // Circumference returns the circle circumference (2 * π * radius).
 func (c Circle[T]) Circumference() float64 {
-	return 2 * math.Pi * float64(c.Radius)
+	return 2 * Pi * float64(c.Radius)
 }
 
 // Diameter returns the circle diameter (2 * radius).

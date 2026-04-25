@@ -5,6 +5,8 @@ import (
 )
 
 const (
+	// Pi is the ratio of the circumference of a circle to its diameter.
+	Pi = math.Pi
 	// RadToDeg is the multiplier to convert radians to degrees (180/π).
 	RadToDeg float64 = 180.0 / math.Pi
 	// DegToRad is the multiplier to convert degrees to radians (π/180).
@@ -13,6 +15,8 @@ const (
 	// Delta is the tolerance used for floating-point equality comparisons.
 	Delta float64 = 1e-6
 
+	// Sqrt2 is the square root of 2.
+	Sqrt2 = math.Sqrt2
 	// Sqrt3 is the square root of 3.
 	Sqrt3 = 1.732050807568877293527446341505872367
 	// OneOverSqrt2 is 1/√2, the length of a unit diagonal vector component.
@@ -55,6 +59,21 @@ func Divide[T Number](x T, scale float64) T {
 // Abs returns the absolute value.
 func Abs[T Number](x T) T {
 	return Cast[T](math.Abs(float64(x)))
+}
+
+// Round returns x rounded to the nearest integer.
+func Round[T Number](x T) T {
+	return Cast[T](math.Round(float64(x)))
+}
+
+// Floor returns the largest integer value less than or equal to x.
+func Floor[T Number](x T) T {
+	return Cast[T](math.Floor(float64(x)))
+}
+
+// Ceil returns the smallest integer value greater than or equal to x.
+func Ceil[T Number](x T) T {
+	return Cast[T](math.Ceil(float64(x)))
 }
 
 // Midpoint calculates the midpoint between two values. Equivalent to Lerp(a, b, 0.5).

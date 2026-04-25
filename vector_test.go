@@ -65,7 +65,7 @@ func TestVector_Negate(t *testing.T) {
 
 func TestVector_Rotate(t *testing.T) {
 	AssertVector(t, Vec(1, 0).Rotate(ToRadians(90)), 0, 1)
-	AssertVector(t, vectorFloat.Rotate(math.Pi), -0.6, 0.25)
+	AssertVector(t, vectorFloat.Rotate(Pi), -0.6, 0.25)
 }
 
 func TestVector_Resize(t *testing.T) {

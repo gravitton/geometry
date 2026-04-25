@@ -1,7 +1,6 @@
 package geom
 
 import (
-	"math"
 	"testing"
 
 	"github.com/gravitton/assert"
@@ -13,7 +12,7 @@ func TestMatrix_New(t *testing.T) {
 	AssertMatrix(t, ScaleMatrix(2, 3), Mat(2, 0, 0, 0, 3, 0))
 	AssertMatrix(t, RotationMatrix(0), Mat(1, 0, 0, 0, 1, 0))
 
-	rot90 := RotationMatrix(math.Pi / 2)
+	rot90 := RotationMatrix(Pi / 2)
 	assert.EqualDelta(t, rot90.A, 0.0, Delta)
 	assert.EqualDelta(t, rot90.B, -1.0, Delta)
 	assert.EqualDelta(t, rot90.D, 1.0, Delta)
@@ -35,7 +34,7 @@ func TestMatrix_Multiply(t *testing.T) {
 func TestMatrix_Determinant(t *testing.T) {
 	assert.EqualDelta(t, IdentityMatrix().Determinant(), 1.0, Delta)
 	assert.EqualDelta(t, ScaleMatrix(2, 3).Determinant(), 6.0, Delta)
-	assert.EqualDelta(t, RotationMatrix(math.Pi/4).Determinant(), 1.0, Delta)
+	assert.EqualDelta(t, RotationMatrix(Pi/4).Determinant(), 1.0, Delta)
 	assert.EqualDelta(t, Mat(1, 2, 0, 3, 4, 0).Determinant(), -2.0, Delta) // 1*4 - 2*3
 }
 
@@ -71,7 +70,7 @@ func TestMatrix_Rotate(t *testing.T) {
 	AssertMatrix(t, IdentityMatrix().Rotate(0), IdentityMatrix())
 
 	// point (1,0) rotated 90° → (0,1)
-	p := Pt(1.0, 0.0).Transform(IdentityMatrix().Rotate(math.Pi / 2))
+	p := Pt(1.0, 0.0).Transform(IdentityMatrix().Rotate(Pi / 2))
 	assert.EqualDelta(t, p.X, 0.0, Delta)
 	assert.EqualDelta(t, p.Y, 1.0, Delta)
 }
@@ -80,8 +79,8 @@ func TestMatrix_PreRotate(t *testing.T) {
 	AssertMatrix(t, IdentityMatrix().PreRotate(0), IdentityMatrix())
 
 	// PreRotate(θ) * T differs from T * Rotate(θ)
-	m1 := TranslationMatrix(5, 0).PreRotate(math.Pi / 2)
-	m2 := TranslationMatrix(5, 0).Rotate(math.Pi / 2)
+	m1 := TranslationMatrix(5, 0).PreRotate(Pi / 2)
+	m2 := TranslationMatrix(5, 0).Rotate(Pi / 2)
 	assert.False(t, m1.Equal(m2))
 }
 

@@ -2,7 +2,6 @@ package geom
 
 import (
 	"encoding/json"
-	"math"
 	"testing"
 
 	"github.com/gravitton/assert"
@@ -52,13 +51,13 @@ func TestCircle_Shrink(t *testing.T) {
 }
 
 func TestCircle_Area(t *testing.T) {
-	assert.EqualDelta(t, circleInt.Area(), math.Pi*100.0, Delta)
-	assert.EqualDelta(t, circleFloat.Area(), math.Pi*1.44, Delta)
+	assert.EqualDelta(t, circleInt.Area(), Pi*100.0, Delta)
+	assert.EqualDelta(t, circleFloat.Area(), Pi*1.44, Delta)
 }
 
 func TestCircle_Circumference(t *testing.T) {
-	assert.EqualDelta(t, circleInt.Circumference(), math.Pi*20.0, Delta)
-	assert.EqualDelta(t, circleFloat.Circumference(), math.Pi*2.4, Delta)
+	assert.EqualDelta(t, circleInt.Circumference(), Pi*20.0, Delta)
+	assert.EqualDelta(t, circleFloat.Circumference(), Pi*2.4, Delta)
 }
 
 func TestCircle_Diameter(t *testing.T) {

@@ -132,6 +132,9 @@ Equal[T](a, b T) bool          // within Delta (1e-6)
 EqualDelta[T](a, b T, d float64) bool
 Midpoint[T](a, b T) T
 Abs[T](a T) T
+Round[T](a T) T
+Floor[T](a T) T
+Ceil[T](a T) T
 Multiply[T](a T, factor float64) T
 Divide[T](a T, factor float64) T
 ToRadians(deg float64) float64
