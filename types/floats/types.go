@@ -61,7 +61,12 @@ func Pad[T geom.Number](top, right, bottom, left T) Padding {
 	return geom.Pad(top, right, bottom, left).Float()
 }
 
-// Mat is shorthand for geom.Matrix(a, b, c, d, e, f).
-func Mat(a, b, c, d, e, f float64) Matrix {
-	return geom.Mat(a, b, c, d, e, f)
+// Mat is shorthand for geom.Matrix(a, b, c, d, e, f).Float()
+func Mat[T geom.Number](a, b, c, d, e, f T) Matrix {
+	return geom.Mat(a, b, c, d, e, f).Float()
+}
+
+// IdentityMatrix is shorthand for geom.IdentityMatrix[float64]()
+func IdentityMatrix() Matrix {
+	return geom.IdentityMatrix[float64]()
 }
