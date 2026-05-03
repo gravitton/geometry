@@ -1,4 +1,4 @@
-ě# Geometry
+# Geometry
 
 [![Latest Stable Version][ico-release]][link-release]
 [![Build Status][ico-workflow]][link-workflow]
