@@ -7,7 +7,7 @@ import (
 	"github.com/gravitton/assert"
 )
 
-func TestPoint_NewFromImage(t *testing.T) {
+func TestPoint_ConstructorFromImage(t *testing.T) {
 	AssertPoint(t, PointFromImage[int](image.Pt(1, 2)), 1, 2)
 	AssertPoint(t, PointFromImage[float64](image.Pt(1, 2)), 1.0, 2.0)
 }
@@ -22,12 +22,12 @@ func TestRectangle_Rectangle(t *testing.T) {
 	assert.Equal(t, rectFloat.Rectangle(), image.Rect(0, -2, 1, 2))
 }
 
-func TestSize_NewFromImage(t *testing.T) {
+func TestSize_ConstructorFromImage(t *testing.T) {
 	AssertSize(t, SizeFromImage[int](image.Rect(0, 10, 55, 70)), 55, 60)
 	AssertSize(t, SizeFromImage[float64](image.Rect(0, 10, 55, 70)), 55.0, 60.0)
 }
 
-func TestRectangle_NewFromImage(t *testing.T) {
+func TestRectangle_ConstructorFromImage(t *testing.T) {
 	AssertRect(t, RectFromImage[int](image.Rect(0, 10, 55, 70)), 27, 40, 55, 60)
 	AssertRect(t, RectFromImage[float64](image.Rect(0, 10, 55, 70)), 27.5, 40, 55, 60)
 }

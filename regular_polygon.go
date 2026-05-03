@@ -123,9 +123,9 @@ const (
 	PointyTop
 )
 
-// RegularPolygonAngle returns the initial vertex angle for a regular polygon with n sides
+// RegularPolygonOrientationAngle returns the initial vertex angle for a regular polygon with n sides
 // and the given orientation (FlatTop or PointyTop).
-func RegularPolygonAngle(n int, orientation Orientation) float64 {
+func RegularPolygonOrientationAngle(n int, orientation Orientation) float64 {
 	switch orientation {
 	case FlatTop:
 		// 90 - 180/n degrees
@@ -138,17 +138,22 @@ func RegularPolygonAngle(n int, orientation Orientation) float64 {
 	}
 }
 
+// RegularPolygonWithOrientation creates a RegularPolygon with the given orientation.
+func RegularPolygonWithOrientation[T Number](center Point[T], size Size[T], n int, orientation Orientation) RegularPolygon[T] {
+	return RegularPolygon[T]{center, size, n, RegularPolygonOrientationAngle(n, orientation)}
+}
+
 // Triangle creates a RegularPolygon with 3 vertices.
 func Triangle[T Number](center Point[T], size Size[T], orientation Orientation) RegularPolygon[T] {
-	return RegularPolygon[T]{center, size, 3, RegularPolygonAngle(3, orientation)}
+	return RegularPolygon[T]{center, size, 3, RegularPolygonOrientationAngle(3, orientation)}
 }
 
 // Square creates a RegularPolygon with 4 vertices.
 func Square[T Number](center Point[T], size Size[T], orientation Orientation) RegularPolygon[T] {
-	return RegularPolygon[T]{center, size, 4, RegularPolygonAngle(4, orientation)}
+	return RegularPolygon[T]{center, size, 4, RegularPolygonOrientationAngle(4, orientation)}
 }
 
 // Hexagon creates a RegularPolygon with 6 vertices.
 func Hexagon[T Number](center Point[T], size Size[T], orientation Orientation) RegularPolygon[T] {
-	return RegularPolygon[T]{center, size, 6, RegularPolygonAngle(6, orientation)}
+	return RegularPolygon[T]{center, size, 6, RegularPolygonOrientationAngle(6, orientation)}
 }

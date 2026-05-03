@@ -173,32 +173,32 @@ func AssertPadding[T Number](t *testing.T, p Padding[T], top, right, bottom, lef
 }
 
 // AssertMatrix asserts that m is equal to expected within Delta.
-func AssertMatrix(t *testing.T, m, expected Matrix, messages ...string) bool {
+func AssertMatrix[T Number](t *testing.T, m, expected Matrix[T], messages ...string) bool {
 	t.Helper()
 
 	ok := true
 
-	if !assert.EqualDelta(t, m.A, expected.A, Delta, append(messages, "A: ")...) {
+	if !assert.EqualDelta(t, float64(m.A), float64(expected.A), Delta, append(messages, "A: ")...) {
 		ok = false
 	}
 
-	if !assert.EqualDelta(t, m.B, expected.B, Delta, append(messages, "B: ")...) {
+	if !assert.EqualDelta(t, float64(m.B), float64(expected.B), Delta, append(messages, "B: ")...) {
 		ok = false
 	}
 
-	if !assert.EqualDelta(t, m.C, expected.C, Delta, append(messages, "C: ")...) {
+	if !assert.EqualDelta(t, float64(m.C), float64(expected.C), Delta, append(messages, "C: ")...) {
 		ok = false
 	}
 
-	if !assert.EqualDelta(t, m.D, expected.D, Delta, append(messages, "D: ")...) {
+	if !assert.EqualDelta(t, float64(m.D), float64(expected.D), Delta, append(messages, "D: ")...) {
 		ok = false
 	}
 
-	if !assert.EqualDelta(t, m.E, expected.E, Delta, append(messages, "E: ")...) {
+	if !assert.EqualDelta(t, float64(m.E), float64(expected.E), Delta, append(messages, "E: ")...) {
 		ok = false
 	}
 
-	if !assert.EqualDelta(t, m.F, expected.F, Delta, append(messages, "F: ")...) {
+	if !assert.EqualDelta(t, float64(m.F), float64(expected.F), Delta, append(messages, "F: ")...) {
 		ok = false
 	}
 

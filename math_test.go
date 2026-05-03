@@ -51,6 +51,47 @@ func TestAbs(t *testing.T) {
 	assert.EqualDelta(t, Abs(3.14), 3.14, Delta)
 }
 
+func TestRound(t *testing.T) {
+	assert.Equal(t, Round(1.4), 1.0)
+	assert.Equal(t, Round(1.5), 2.0)
+	assert.Equal(t, Round(-1.5), -2.0)
+	assert.Equal(t, Round(3), 3) // int: no-op
+}
+
+func TestFloor(t *testing.T) {
+	assert.Equal(t, Floor(1.9), 1.0)
+	assert.Equal(t, Floor(-1.1), -2.0)
+	assert.Equal(t, Floor(3), 3) // int: no-op
+}
+
+func TestCeil(t *testing.T) {
+	assert.Equal(t, Ceil(1.1), 2.0)
+	assert.Equal(t, Ceil(-1.9), -1.0)
+	assert.Equal(t, Ceil(3), 3) // int: no-op
+}
+
+func TestMidpoint(t *testing.T) {
+	assert.Equal(t, Midpoint(1, 3), 2)
+	assert.Equal(t, Midpoint(1, 4), 3)
+	assert.Equal(t, Midpoint(1, 5), 3)
+	assert.Equal(t, Midpoint(1, 6), 4)
+	assert.Equal(t, Midpoint(1, 7), 4)
+
+	assert.Equal(t, Midpoint(1.0, 6.0), 3.5)
+}
+
+func TestLerp(t *testing.T) {
+	assert.Equal(t, Lerp(1, 2, 0.25), 1)
+	assert.Equal(t, Lerp(1, 3, 0.25), 2)
+	assert.Equal(t, Lerp(1, 4, 0.25), 2)
+	assert.Equal(t, Lerp(1, 5, 0.25), 2)
+	assert.Equal(t, Lerp(1, 6, 0.25), 2)
+	assert.Equal(t, Lerp(1, 7, 0.25), 3)
+
+	assert.Equal(t, Lerp(1.0, 6.0, 0.25), 2.25)
+	assert.Equal(t, Lerp(1.0, 6.0, 0.75), 4.75)
+}
+
 func TestClamp(t *testing.T) {
 	assert.Equal(t, Clamp(5, 0, 10), 5)
 	assert.Equal(t, Clamp(-5, 0, 10), 0)
@@ -76,27 +117,4 @@ func TestEqualDelta(t *testing.T) {
 	assert.True(t, EqualDelta(1.0, 1.001, 0.01))
 	assert.False(t, EqualDelta(1.0, 1.02, 0.01))
 	assert.True(t, EqualDelta(5, 5, 0.0))
-}
-
-func TestMidpoint(t *testing.T) {
-	assert.Equal(t, Midpoint(1, 3), 2)
-	assert.Equal(t, Midpoint(1, 4), 3)
-	assert.Equal(t, Midpoint(1, 5), 3)
-	assert.Equal(t, Midpoint(1, 6), 4)
-	assert.Equal(t, Midpoint(1, 7), 4)
-
-	assert.Equal(t, Midpoint(1.0, 6.0), 3.5)
-}
-
-func TestLerp(t *testing.T) {
-	assert.Equal(t, Lerp(1, 2, 0.25), 1)
-	assert.Equal(t, Lerp(1, 3, 0.25), 2)
-	assert.Equal(t, Lerp(1, 4, 0.25), 2)
-	assert.Equal(t, Lerp(1, 5, 0.25), 2)
-	assert.Equal(t, Lerp(1, 6, 0.25), 2)
-	assert.Equal(t, Lerp(1, 7, 0.25), 3)
-
-	assert.Equal(t, Lerp(1.0, 6.0, 0.25), 2.25)
-	assert.Equal(t, Lerp(1.0, 6.0, 0.75), 4.75)
-
 }

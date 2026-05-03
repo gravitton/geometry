@@ -13,7 +13,7 @@ var (
 	pointFloat = Point[float64]{0.6, -0.25}
 )
 
-func TestPoint_New(t *testing.T) {
+func TestPoint_Constructor(t *testing.T) {
 	AssertPoint(t, Pt(10, 16), 10, 16)
 	AssertPoint(t, Pt[float64](0.16, 204), 0.16, 204.0)
 
@@ -49,6 +49,31 @@ func TestPoint_Divide(t *testing.T) {
 	AssertPoint(t, Pt(5, 10).DivideXY(3, 2), 2, 5)
 	AssertPoint(t, pointFloat.Divide(-2), -0.3, 0.125)
 	AssertPoint(t, pointFloat.DivideXY(-4, 0.5), -0.15, -0.5)
+}
+
+func TestPoint_Abs(t *testing.T) {
+	AssertPoint(t, Pt(-3, -4).Abs(), 3, 4)
+	AssertPoint(t, Pt(3, -4).Abs(), 3, 4)
+	AssertPoint(t, Pt(0, 0).Abs(), 0, 0)
+	AssertPoint(t, Pt(-1.5, 2.5).Abs(), 1.5, 2.5)
+}
+
+func TestPoint_Round(t *testing.T) {
+	AssertPoint(t, Pt(1.4, 2.5).Round(), 1.0, 3.0)
+	AssertPoint(t, Pt(-1.5, -2.4).Round(), -2.0, -2.0)
+	AssertPoint(t, Pt(3, 4).Round(), 3, 4) // int: no-op
+}
+
+func TestPoint_Floor(t *testing.T) {
+	AssertPoint(t, Pt(1.9, 2.1).Floor(), 1.0, 2.0)
+	AssertPoint(t, Pt(-1.1, -2.9).Floor(), -2.0, -3.0)
+	AssertPoint(t, Pt(3, 4).Floor(), 3, 4) // int: no-op
+}
+
+func TestPoint_Ceil(t *testing.T) {
+	AssertPoint(t, Pt(1.1, 2.9).Ceil(), 2.0, 3.0)
+	AssertPoint(t, Pt(-1.9, -2.1).Ceil(), -1.0, -2.0)
+	AssertPoint(t, Pt(3, 4).Ceil(), 3, 4) // int: no-op
 }
 
 func TestPoint_Midpoint(t *testing.T) {

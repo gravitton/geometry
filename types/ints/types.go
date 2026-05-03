@@ -14,6 +14,7 @@ type Rectangle = geom.Rectangle[int]
 type Polygon = geom.Polygon[int]
 type RegularPolygon = geom.RegularPolygon[int]
 type Padding = geom.Padding[int]
+type Matrix = geom.Matrix[int]
 
 // Pt is shorthand for geom.Pt(x, y).Int()
 func Pt[T geom.Number](x, y T) Point {
@@ -58,4 +59,9 @@ func RegPol[T geom.Number](center geom.Point[T], size geom.Size[T], n int, angle
 // Pad is shorthand for geom.Pad(top, right, bottom, left).Int()
 func Pad[T geom.Number](top, right, bottom, left T) Padding {
 	return geom.Pad(top, right, bottom, left).Int()
+}
+
+// Mat is shorthand for geom.Matrix(a, b, c, d, e, f).
+func Mat(a, b, c, d, e, f int) Matrix {
+	return geom.Mat(a, b, c, d, e, f)
 }

@@ -11,35 +11,49 @@ var (
 	regPolygonInt = RegularPolygon[int]{Point[int]{1, 2}, Size[int]{2, 2}, 4, 0}
 )
 
-func TestRegularPolygon_New(t *testing.T) {
+func TestRegularPolygon_Constructor(t *testing.T) {
 	rp := RegPol(Pt(0, 0), Sz(2, 2), 4, 0)
 	AssertRegularPolygon(t, rp, 0, 0, 2, 2, 4, 0)
 
 	triangle := Triangle(Pt(1, -1), Sz(3, 3), PointyTop)
-	AssertRegularPolygon(t, triangle, 1, -1, 3, 3, 3, RegularPolygonAngle(3, PointyTop))
+	AssertRegularPolygon(t, triangle, 1, -1, 3, 3, 3, RegularPolygonOrientationAngle(3, PointyTop))
 	// Integer types: sin/cos of non-right angles are rounded; sin(7π/6) computes slightly above
 	// −0.5 in float64, rounding to 0 rather than −1, so vertex 1 Y = center.Y + 0 = −1.
 	AssertVertices(t, triangle.Vertices(), []Point[int]{Pt(1, 2), Pt(-2, -1), Pt(4, -4)})
 
 	square := Square(Pt(50.0, 50.0), Sz(100.0, 100.0), PointyTop)
-	AssertRegularPolygon(t, square, 50, 50, 100, 100, 4, RegularPolygonAngle(4, PointyTop))
+	AssertRegularPolygon(t, square, 50, 50, 100, 100, 4, RegularPolygonOrientationAngle(4, PointyTop))
 	AssertVertices(t, square.Vertices(), []Point[float64]{Pt(50.0, 150.0), Pt(-50.0, 50.0), Pt(50.0, -50.0), Pt(150.0, 50.0)})
 
 	hexagon := Hexagon(Pt(0, 0), Sz(10, 10), PointyTop)
-	AssertRegularPolygon(t, hexagon, 0, 0, 10, 10, 6, RegularPolygonAngle(6, PointyTop))
+	AssertRegularPolygon(t, hexagon, 0, 0, 10, 10, 6, RegularPolygonOrientationAngle(6, PointyTop))
 	// Vertices 2 and 5 (at 7π/6 and π/6) have sin rounded to 0 due to float64 precision.
 	AssertVertices(t, hexagon.Vertices(), []Point[int]{Pt(0, 10), Pt(-10, 10), Pt(-10, 0), Pt(0, -10), Pt(10, -10), Pt(10, 0)})
 }
 
-func TestRegularPolygonAngle(t *testing.T) {
-	assert.EqualDelta(t, RegularPolygonAngle(3, PointyTop), 90*DegToRad, Delta)
-	assert.EqualDelta(t, RegularPolygonAngle(3, FlatTop), 30*DegToRad, Delta)
+func TestRegularPolygon_OrientationAngle(t *testing.T) {
+	assert.EqualDelta(t, RegularPolygonOrientationAngle(3, PointyTop), 90*DegToRad, Delta)
+	assert.EqualDelta(t, RegularPolygonOrientationAngle(3, FlatTop), 30*DegToRad, Delta)
 
-	assert.EqualDelta(t, RegularPolygonAngle(4, PointyTop), 90*DegToRad, Delta)
-	assert.EqualDelta(t, RegularPolygonAngle(4, FlatTop), 45*DegToRad, Delta)
+	assert.EqualDelta(t, RegularPolygonOrientationAngle(4, PointyTop), 90*DegToRad, Delta)
+	assert.EqualDelta(t, RegularPolygonOrientationAngle(4, FlatTop), 45*DegToRad, Delta)
 
-	assert.EqualDelta(t, RegularPolygonAngle(6, PointyTop), 90*DegToRad, Delta)
-	assert.EqualDelta(t, RegularPolygonAngle(6, FlatTop), 60*DegToRad, Delta)
+	assert.EqualDelta(t, RegularPolygonOrientationAngle(6, PointyTop), 90*DegToRad, Delta)
+	assert.EqualDelta(t, RegularPolygonOrientationAngle(6, FlatTop), 60*DegToRad, Delta)
+}
+
+func TestRegularPolygon_WithOrientation(t *testing.T) {
+	center := Pt(0, 0)
+	size := Sz(10, 10)
+
+	rp := RegularPolygonWithOrientation(center, size, 6, PointyTop)
+	AssertRegularPolygon(t, rp, 0, 0, 10, 10, 6, RegularPolygonOrientationAngle(6, PointyTop))
+
+	rpFlat := RegularPolygonWithOrientation(center, size, 6, FlatTop)
+	AssertRegularPolygon(t, rpFlat, 0, 0, 10, 10, 6, RegularPolygonOrientationAngle(6, FlatTop))
+
+	// angle differs between orientations
+	assert.NotEqual(t, rp.Angle, rpFlat.Angle)
 }
 
 func TestRegularPolygon_Translate(t *testing.T) {

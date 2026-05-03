@@ -12,7 +12,7 @@ var (
 	sizeFloat = Size[float64]{1.2, 3.6}
 )
 
-func TestSize_New(t *testing.T) {
+func TestSize_Constructor(t *testing.T) {
 	AssertSize(t, Sz(10, 16), 10, 16)
 	AssertSize(t, Sz(0.16, 204), 0.16, 204.0)
 	AssertSize(t, SzU(0.2), 0.2, 0.2)
@@ -91,6 +91,11 @@ func TestSize_Int(t *testing.T) {
 func TestSize_Float(t *testing.T) {
 	AssertSize(t, sizeInt.Float(), 2.0, 3.0)
 	AssertSize(t, sizeFloat.Float(), 1.2, 3.6)
+}
+
+func TestSize_Vector(t *testing.T) {
+	AssertVector(t, Sz(10, 16).Vector(), 10, 16)
+	AssertVector(t, Sz(1.5, -2.5).Vector(), 1.5, -2.5)
 }
 
 func TestSize_String(t *testing.T) {

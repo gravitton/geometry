@@ -14,7 +14,7 @@ var (
 	rectFloat = Rectangle[float64]{Point[float64]{0.6, -0.25}, Size[float64]{1.2, 3.6}}
 )
 
-func TestRectangle_New(t *testing.T) {
+func TestRectangle_Constructor(t *testing.T) {
 	AssertRect(t, Rect(Pt(10, 16), Sz(3, 4)), 10, 16, 3, 4)
 	AssertRect(t, Rect[float64](Pt(0.5, -1.25), Sz(2.5, 3.75)), 0.5, -1.25, 2.5, 3.75)
 

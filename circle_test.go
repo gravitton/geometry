@@ -12,7 +12,7 @@ var (
 	circleFloat = Circle[float64]{Point[float64]{0.6, -0.25}, 1.2}
 )
 
-func TestCircle_New(t *testing.T) {
+func TestCircle_Constructor(t *testing.T) {
 	AssertCircle(t, Circ(Pt(10, 16), 12), 10, 16, 12)
 	AssertCircle(t, Circ(Pt(0.16, 204), 5.1), 0.16, 204.0, 5.1)
 }

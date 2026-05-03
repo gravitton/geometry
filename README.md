@@ -1,4 +1,4 @@
-# Geometry
+ě# Geometry
 
 [![Latest Stable Version][ico-release]][link-release]
 [![Build Status][ico-workflow]][link-workflow]
@@ -50,7 +50,7 @@ for _, vertex := range hex.Vertices() { ... }
 Matrix transforms:
 
 ```go
-m := geom.IdentityMatrix().Rotate(math.Pi / 4).Scale(2, 2)
+m := geom.IdentityMatrix[float64]().Rotate(math.Pi / 4).Scale(2, 2)
 p := geom.Pt(1.0, 0.0).Transform(m)
 ```
 
@@ -94,7 +94,7 @@ Full documentation is available at [pkg.go.dev/github.com/gravitton/geometry][li
 | `Polygon[T]` | `Pol(vertices)` | Arbitrary polygon |
 | `RegularPolygon[T]` | `RegPol(center, size, n, angle)`, `Triangle`, `Square`, `Hexagon` | Regular polygon |
 | `Padding[T]` | `Pad(t,r,b,l)`, `PadU(n)`, `PadXY(tb, lr)` | Top/Right/Bottom/Left padding |
-| `Matrix` | `Mat(a,b,c,d,e,f)`, `IdentityMatrix()`, `TranslationMatrix`, `RotationMatrix`, `ScaleMatrix` | 2D affine matrix (float64) |
+| `Matrix[T]` | `Mat(a,b,c,d,e,f)`, `IdentityMatrix[T]()`, `TranslationMatrix`, `RotationMatrix[T]`, `ScaleMatrix` | 2D affine matrix |
 
 ### Conventions
 

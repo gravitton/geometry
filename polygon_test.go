@@ -12,7 +12,7 @@ var (
 	polygonFloat = Polygon[float64]{[]Point[float64]{{0.0, 0.0}, {2.5, 0.5}, {2.0, 1.0}}}
 )
 
-func TestPolygon_New(t *testing.T) {
+func TestPolygon_Constructor(t *testing.T) {
 	AssertPolygon(t, polygonInt, polygonInt.Vertices)
 	AssertPolygon(t, polygonFloat, polygonFloat.Vertices)
 }

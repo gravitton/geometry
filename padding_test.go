@@ -12,7 +12,7 @@ var (
 	paddingFloat = Padding[float64]{0.1, 3.0, 0.6, 2.4}
 )
 
-func TestPadding_New(t *testing.T) {
+func TestPadding_Constructor(t *testing.T) {
 	AssertPadding(t, paddingInt, 2, 4, 3, 5)
 	AssertPadding(t, paddingFloat, 0.1, 3.0, 0.6, 2.4)
 

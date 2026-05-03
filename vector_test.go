@@ -13,7 +13,7 @@ var (
 	vectorFloat = Vector[float64]{0.6, -0.25}
 )
 
-func TestVector_New(t *testing.T) {
+func TestVector_Constructor(t *testing.T) {
 	AssertVector(t, vectorInt, 10, 16)
 	AssertVector(t, Vec[float64](0.16, 204), 0.16, 204.0)
 
@@ -23,6 +23,21 @@ func TestVector_New(t *testing.T) {
 	AssertVector(t, DownVector[float64](), 0, 1)
 	AssertVector(t, RightVector[float64](), 1, 0)
 	AssertVector(t, LeftVector[float64](), -1, 0)
+}
+
+func TestVector_FromAngle(t *testing.T) {
+	// angle 0 → (length, 0)
+	AssertVector(t, VectorFromAngle(0, 5.0), 5.0, 0.0)
+	// angle π/2 → (0, length)
+	v := VectorFromAngle(Pi/2, 1.0)
+	assert.EqualDelta(t, v.X, 0.0, Delta)
+	assert.EqualDelta(t, v.Y, 1.0, Delta)
+	// angle π → (-length, 0)
+	v2 := VectorFromAngle(Pi, 1.0)
+	assert.EqualDelta(t, v2.X, -1.0, Delta)
+	assert.EqualDelta(t, v2.Y, 0.0, Delta)
+	// integer: cos(π/2)≈6e-17→0, sin(π/2)=1→1
+	AssertVector(t, VectorFromAngle(Pi/2, 4), 0, 4)
 }
 
 func TestVector_Transform(t *testing.T) {
@@ -270,24 +285,24 @@ func TestVector_Marshall(t *testing.T) {
 }
 
 func TestVector_Unmarshall(t *testing.T) {
-	var p1 Vector[int]
-	assert.NoError(t, json.Unmarshal([]byte(`{"x":10,"y":16}`), &p1))
-	AssertVector(t, p1, 10, 16)
+	var v1 Vector[int]
+	assert.NoError(t, json.Unmarshal([]byte(`{"x":10,"y":16}`), &v1))
+	AssertVector(t, v1, 10, 16)
 
-	var p2 Vector[float64]
-	assert.NoError(t, json.Unmarshal([]byte(`{"x":10.1,"y":-34.0000115}`), &p2))
-	AssertVector(t, p2, 10.1, -34.0000115)
+	var v2 Vector[float64]
+	assert.NoError(t, json.Unmarshal([]byte(`{"x":10.1,"y":-34.0000115}`), &v2))
+	AssertVector(t, v2, 10.1, -34.0000115)
 }
 
 func TestVector_Immutable(t *testing.T) {
-	p1 := vectorInt
-	p2 := Vec(3, -3)
+	v1 := vectorInt
+	v2 := Vec(3, -3)
 
-	p1.Add(Vec(3, -2))
-	p1.Subtract(p2)
-	p1.Multiply(2)
-	p1.MultiplyXY(3, 4)
+	v1.Add(Vec(3, -2))
+	v1.Subtract(v2)
+	v1.Multiply(2)
+	v1.MultiplyXY(3, 4)
 
-	AssertVector(t, p1, 10, 16)
-	AssertVector(t, p2, 3, -3)
+	AssertVector(t, v1, 10, 16)
+	AssertVector(t, v2, 3, -3)
 }

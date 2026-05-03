@@ -13,7 +13,7 @@ var (
 	lineFloat = Line[float64]{Point[float64]{0.6, -0.25}, Point[float64]{1.2, 3.4}}
 )
 
-func TestLine_New(t *testing.T) {
+func TestLine_Constructor(t *testing.T) {
 	AssertLine(t, Ln(Pt(1, -1), Pt(2, 0)), 1, -1, 2, 0)
 	AssertLine(t, Ln(Pt(0.5, -1.25), Pt(2.5, 3.75)), 0.5, -1.25, 2.5, 3.75)
 }
