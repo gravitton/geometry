@@ -104,6 +104,21 @@ func TestVector_Abs(t *testing.T) {
 	AssertVector(t, vectorFloat.Abs(), 0.6, 0.25)
 }
 
+func TestVector_Round(t *testing.T) {
+	AssertVector(t, Vec(1.4, -1.5).Round(), 1.0, -2.0)
+	AssertVector(t, Vec(3, -2).Round(), 3, -2)
+}
+
+func TestVector_Floor(t *testing.T) {
+	AssertVector(t, Vec(1.9, -1.1).Floor(), 1.0, -2.0)
+	AssertVector(t, Vec(3, -2).Floor(), 3, -2)
+}
+
+func TestVector_Ceil(t *testing.T) {
+	AssertVector(t, Vec(1.1, -1.9).Ceil(), 2.0, -1.0)
+	AssertVector(t, Vec(3, -2).Ceil(), 3, -2)
+}
+
 func TestVector_Dot(t *testing.T) {
 	assert.Equal(t, vectorInt.Dot(Vec(3, -3)), -18)
 	assert.EqualDelta(t, vectorFloat.Dot(Vec(100.1, -0.1)), 60.085, Delta)

@@ -110,6 +110,21 @@ func (v Vector[T]) Abs() Vector[T] {
 	return Vector[T]{Abs(v.X), Abs(v.Y)}
 }
 
+// Round creates a new Vector by rounding X, Y values to the nearest integer.
+func (v Vector[T]) Round() Vector[T] {
+	return Vector[T]{Round(v.X), Round(v.Y)}
+}
+
+// Floor creates a new Vector by rounding down X, Y values to the nearest integer.
+func (v Vector[T]) Floor() Vector[T] {
+	return Vector[T]{Floor(v.X), Floor(v.Y)}
+}
+
+// Ceil creates a new Vector by rounding up X, Y values to the nearest integer.
+func (v Vector[T]) Ceil() Vector[T] {
+	return Vector[T]{Ceil(v.X), Ceil(v.Y)}
+}
+
 // Dot returns dot (scalar) product of two vectors.
 func (v Vector[T]) Dot(vector Vector[T]) T {
 	return v.X*vector.X + v.Y*vector.Y
