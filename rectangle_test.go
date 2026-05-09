@@ -19,7 +19,12 @@ func TestRectangle_Constructor(t *testing.T) {
 	AssertRect(t, Rect[float64](Pt(0.5, -1.25), Sz(2.5, 3.75)), 0.5, -1.25, 2.5, 3.75)
 
 	AssertRect(t, RectFromMin(Pt(0, 0), Sz(4, 2)), 2, 1, 4, 2)
+	AssertRect(t, RectFromMin(Pt(0, 0), Sz(5, 3)), 2, 1, 5, 3)
 	AssertRect(t, RectFromMin(Pt(0.0, 0.0), Sz(1.0, 3.0)), 0.5, 1.5, 1.0, 3.0)
+
+	AssertRect(t, RectFromMax(Pt(4, 2), Sz(4, 2)), 2, 1, 4, 2)
+	AssertRect(t, RectFromMax(Pt(5, 3), Sz(5, 3)), 2, 1, 5, 3)
+	AssertRect(t, RectFromMax(Pt(1.0, 3.0), Sz(1.0, 3.0)), 0.5, 1.5, 1.0, 3.0)
 
 	AssertRect(t, RectFromMinMax(Pt(0, 0), Pt(4, 2)), 2, 1, 4, 2)
 	AssertRect(t, RectFromMinMax(Pt(0.0, 0.0), Pt(1.0, 3.0)), 0.5, 1.5, 1.0, 3.0)

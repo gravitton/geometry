@@ -216,6 +216,12 @@ func RectFromMin[T Number](min Point[T], size Size[T]) Rectangle[T] {
 	return Rectangle[T]{min.AddXY(w/2, h/2), size}
 }
 
+// RectFromMax creates a Rectangle from max point and size.
+func RectFromMax[T Number](max Point[T], size Size[T]) Rectangle[T] {
+	w, h := size.XY()
+	return Rectangle[T]{max.AddXY(-w+w/2, -h+h/2), size}
+}
+
 // RectFromMinMax creates a Rectangle from min and max points.
 func RectFromMinMax[T Number](min, max Point[T]) Rectangle[T] {
 	return RectFromMin(min, Sz(max.Subtract(min).XY()))
