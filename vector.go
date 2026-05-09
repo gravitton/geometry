@@ -294,3 +294,34 @@ func DownLeftVector() Vector[float64] {
 func DownRightVector() Vector[float64] {
 	return Vector[float64]{OneOverSqrt2, OneOverSqrt2}
 }
+
+// DirectionFromAxes returns the unit direction vector for the given axis inputs,
+// canceling opposite directions (e.g. left+right = zero). Diagonals are normalized.
+func DirectionFromAxes(up, down, left, right bool) Vector[float64] {
+	if left && right {
+		left, right = false, false
+	}
+	if up && down {
+		up, down = false, false
+	}
+	switch {
+	case up && left:
+		return UpLeftVector()
+	case up && right:
+		return UpRightVector()
+	case down && left:
+		return DownLeftVector()
+	case down && right:
+		return DownRightVector()
+	case up:
+		return UpVector[float64]()
+	case down:
+		return DownVector[float64]()
+	case left:
+		return LeftVector[float64]()
+	case right:
+		return RightVector[float64]()
+	default:
+		return ZeroVector[float64]()
+	}
+}
