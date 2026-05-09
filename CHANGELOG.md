@@ -6,7 +6,16 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 
-## [Unreleased](https://github.com/gravitton/geometry/compare/v1.6.0...master)
+## [Unreleased](https://github.com/gravitton/geometry/compare/v1.7.0...master)
+
+
+## [v1.7.0 (2026-05-09)](https://github.com/gravitton/geometry/compare/v1.6.0...v1.7.0)
+### Added
+- `RectFromMax` – constructor for `Rectangle` from max (bottom-right) point and size
+- `Direction[T](x T) T` – returns the sign of a number: `1`, `-1`, or `0`
+- `Vector.Round() Vector[T]` – returns a new vector with each component rounded to the nearest integer
+- `Vector.Floor() Vector[T]` – returns a new vector with each component rounded down
+- `Vector.Ceil() Vector[T]` – returns a new vector with each component rounded up
 
 
 ## [v1.6.0 (2026-05-03)](https://github.com/gravitton/geometry/compare/v1.5.0...v1.6.0)
