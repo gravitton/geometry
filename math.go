@@ -109,6 +109,18 @@ func Clamp[T Number](value, min, max T) T {
 	return value
 }
 
+// Direction returns the sign of x: 1 if x > 0, -1 if x < 0, or 0 if x == 0.
+func Direction[T Number](x T) T {
+	switch {
+	case x > 0:
+		return 1
+	case x < 0:
+		return -1
+	default:
+		return 0
+	}
+}
+
 // Equal reports whether a and b are equal within Delta.
 func Equal[T Number](a, b T) bool {
 	return EqualDelta(a, b, Delta)
