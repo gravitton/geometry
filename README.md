@@ -88,7 +88,7 @@ Full documentation is available at [pkg.go.dev/github.com/gravitton/geometry][li
 | `Point[T]` | `Pt(x, y)` | 2D position |
 | `Vector[T]` | `Vec(x, y)` | 2D displacement |
 | `Size[T]` | `Sz(w, h)`, `SzU(n)` | Width and height |
-| `Rectangle[T]` | `Rect(center, size)`, `RectFromMin`, `RectFromMinMax`, `RectFromSize` | Axis-aligned rectangle (center + size) |
+| `Rectangle[T]` | `Rect(center, size)`, `RectFromMin`, `RectFromMax`, `RectFromMinMax`, `RectFromSize` | Axis-aligned rectangle (center + size) |
 | `Circle[T]` | `Circ(center, r)` | Circle (center + radius) |
 | `Line[T]` | `Ln(start, end)` | Line segment |
 | `Polygon[T]` | `Pol(vertices)` | Arbitrary polygon |
@@ -135,6 +135,7 @@ Abs[T](a T) T
 Round[T](a T) T
 Floor[T](a T) T
 Ceil[T](a T) T
+Direction[T](x T) T
 Multiply[T](a T, factor float64) T
 Divide[T](a T, factor float64) T
 ToRadians(deg float64) float64
