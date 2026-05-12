@@ -48,6 +48,11 @@ func TestLine_Length(t *testing.T) {
 	assert.EqualDelta(t, lineFloat.Length(), math.Sqrt(13.6825), Delta)
 }
 
+func TestLine_Vertices(t *testing.T) {
+	AssertVertices(t, lineInt.Vertices(), []Point[int]{{1, 2}, {3, 5}})
+	AssertVertices(t, lineFloat.Vertices(), []Point[float64]{{0.6, -0.25}, {1.2, 3.4}})
+}
+
 func TestLine_Bounds(t *testing.T) {
 	AssertRect(t, lineInt.Bounds(), 2, 3, 2, 3)
 	assert.Equal(t, lineInt.Start, lineInt.Bounds().Min())

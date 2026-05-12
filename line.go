@@ -45,6 +45,11 @@ func (l Line[T]) Length() float64 {
 	return l.Direction().Length()
 }
 
+// Vertices returns the start and end points as a slice.
+func (l Line[T]) Vertices() []Point[T] {
+	return []Point[T]{l.Start, l.End}
+}
+
 // Bounds returns the axis-aligned bounding rectangle.
 func (l Line[T]) Bounds() Rectangle[T] {
 	minPoint := Point[T]{min(l.Start.X, l.End.X), min(l.Start.Y, l.End.Y)}
