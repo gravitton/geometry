@@ -104,6 +104,8 @@ Every type exposes `.Int()`, `.Float()`, and implements `String()`, `Equal()`, `
 
 Types with spatial extent also implement `Bounds() Rectangle[T]`.
 
+`Line`, `Polygon`, and `RegularPolygon` also expose `Vertices() []Point[T]`.
+
 ### Collision
 
 ```go
