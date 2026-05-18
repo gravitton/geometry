@@ -17,28 +17,41 @@ func TestRegularPolygon_Constructor(t *testing.T) {
 
 	triangle := Triangle(Pt(1, -1), Sz(3, 3), PointyTop)
 	AssertRegularPolygon(t, triangle, 1, -1, 3, 3, 3, RegularPolygonOrientationAngle(3, PointyTop))
-	// Integer types: sin/cos of non-right angles are rounded; sin(7π/6) computes slightly above
-	// −0.5 in float64, rounding to 0 rather than −1, so vertex 1 Y = center.Y + 0 = −1.
-	AssertVertices(t, triangle.Vertices(), []Point[int]{Pt(1, 2), Pt(-2, -1), Pt(4, -4)})
+	// Integer precision asymmetry: sin(π/6) is in the increasing range so the float64 angle
+	// is slightly below true π/6 → sin rounds down to 0; vertex 1 Y = center.Y = −1.
+	// sin(5π/6) is in the decreasing range so the float64 angle is slightly below true 5π/6
+	// → sin rounds up to 1; vertex 2 Y = center.Y + 1×3 = 2.
+	AssertVertices(t, triangle.Vertices(), []Point[int]{Pt(1, -4), Pt(4, -1), Pt(-2, 2)})
 
 	square := Square(Pt(50.0, 50.0), Sz(100.0, 100.0), PointyTop)
 	AssertRegularPolygon(t, square, 50, 50, 100, 100, 4, RegularPolygonOrientationAngle(4, PointyTop))
-	AssertVertices(t, square.Vertices(), []Point[float64]{Pt(50.0, 150.0), Pt(-50.0, 50.0), Pt(50.0, -50.0), Pt(150.0, 50.0)})
+	// PointyTop: first vertex at visual top (Y = center.Y − size = −50), last at visual right.
+	AssertVertices(t, square.Vertices(), []Point[float64]{Pt(50.0, -50.0), Pt(150.0, 50.0), Pt(50.0, 150.0), Pt(-50.0, 50.0)})
 
-	hexagon := Hexagon(Pt(0, 0), Sz(10, 10), PointyTop)
-	AssertRegularPolygon(t, hexagon, 0, 0, 10, 10, 6, RegularPolygonOrientationAngle(6, PointyTop))
-	// Vertices 2 and 5 (at 7π/6 and π/6) have sin rounded to 0 due to float64 precision.
-	AssertVertices(t, hexagon.Vertices(), []Point[int]{Pt(0, 10), Pt(-10, 10), Pt(-10, 0), Pt(0, -10), Pt(10, -10), Pt(10, 0)})
+	// float64 avoids the int-rounding collapse where sin(±π/6) ≈ 0.4999 would truncate to 0.
+	hexagon := Hexagon(Pt(0.0, 0.0), Sz(10.0, 10.0), PointyTop)
+	AssertRegularPolygon(t, hexagon, 0.0, 0.0, 10.0, 10.0, 6, RegularPolygonOrientationAngle(6, PointyTop))
+	// PointyTop: V0 at top (0,−10), V3 at bottom (0,10); flat sides left and right.
+	AssertVertices(t, hexagon.Vertices(), []Point[float64]{
+		Pt(0.0, -10.0),
+		Pt(5*Sqrt3, -5.0),
+		Pt(5*Sqrt3, 5.0),
+		Pt(0.0, 10.0),
+		Pt(-5*Sqrt3, 5.0),
+		Pt(-5*Sqrt3, -5.0),
+	})
 }
 
 func TestRegularPolygon_OrientationAngle(t *testing.T) {
-	assert.EqualDelta(t, RegularPolygonOrientationAngle(3, PointyTop), 90*DegToRad, Delta)
+	// In +Y-down screen coordinates, "top" means minimum Y, so PointyTop requires the first
+	// vertex to point in the -Y direction: angle = -π/2.
+	assert.EqualDelta(t, RegularPolygonOrientationAngle(3, PointyTop), -90*DegToRad, Delta)
 	assert.EqualDelta(t, RegularPolygonOrientationAngle(3, FlatTop), 30*DegToRad, Delta)
 
-	assert.EqualDelta(t, RegularPolygonOrientationAngle(4, PointyTop), 90*DegToRad, Delta)
+	assert.EqualDelta(t, RegularPolygonOrientationAngle(4, PointyTop), -90*DegToRad, Delta)
 	assert.EqualDelta(t, RegularPolygonOrientationAngle(4, FlatTop), 45*DegToRad, Delta)
 
-	assert.EqualDelta(t, RegularPolygonOrientationAngle(6, PointyTop), 90*DegToRad, Delta)
+	assert.EqualDelta(t, RegularPolygonOrientationAngle(6, PointyTop), -90*DegToRad, Delta)
 	assert.EqualDelta(t, RegularPolygonOrientationAngle(6, FlatTop), 60*DegToRad, Delta)
 }
 
@@ -54,6 +67,12 @@ func TestRegularPolygon_WithOrientation(t *testing.T) {
 
 	// angle differs between orientations
 	assert.NotEqual(t, rp.Angle, rpFlat.Angle)
+
+	// In +Y-down coordinates, PointyTop places the first vertex above the center (Y < center.Y).
+	assert.True(t, rp.Vertices()[0].Y < center.Y)
+
+	// FlatTop first vertex is to the lower-right of center (Y > center.Y).
+	assert.True(t, rpFlat.Vertices()[0].Y > center.Y)
 }
 
 func TestRegularPolygon_Translate(t *testing.T) {

@@ -131,8 +131,8 @@ func RegularPolygonOrientationAngle(n int, orientation Orientation) float64 {
 		// 90 - 180/n degrees
 		return Pi * float64(n-2) / (2 * float64(n))
 	case PointyTop:
-		// 90 degrees
-		return Pi / 2
+		// -90 degrees
+		return -Pi / 2
 	default:
 		return 0
 	}
