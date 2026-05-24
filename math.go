@@ -1,7 +1,9 @@
 package geom
 
 import (
+	"fmt"
 	"math"
+	"strconv"
 )
 
 const (
@@ -133,4 +135,32 @@ func EqualDelta[T Number](a, b T, delta float64) bool {
 
 func equalDelta(a, b, delta float64) bool {
 	return math.Abs(a-b) <= delta
+}
+
+// Parse parses s into T using the parser and bit size appropriate for T:
+// int8/16/32/64/int use strconv.ParseInt, float32/64 use strconv.ParseFloat.
+func Parse[T Number](s string) (T, error) {
+	var zero T
+	switch any(zero).(type) {
+	case int8:
+		v, err := strconv.ParseInt(s, 10, 8)
+		return T(v), err
+	case int16:
+		v, err := strconv.ParseInt(s, 10, 16)
+		return T(v), err
+	case int32:
+		v, err := strconv.ParseInt(s, 10, 32)
+		return T(v), err
+	case int64, int:
+		v, err := strconv.ParseInt(s, 10, 64)
+		return T(v), err
+	case float32:
+		v, err := strconv.ParseFloat(s, 32)
+		return T(v), err
+	case float64:
+		v, err := strconv.ParseFloat(s, 64)
+		return T(v), err
+	default:
+		return 0, fmt.Errorf("unsupported number type %T", zero)
+	}
 }

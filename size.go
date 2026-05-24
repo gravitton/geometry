@@ -2,6 +2,7 @@ package geom
 
 import (
 	"fmt"
+	"strings"
 )
 
 // Size is a 2D size.
@@ -121,4 +122,24 @@ func (s Size[T]) String() string {
 // SzU is shorthand for Size{size, size}.
 func SzU[T Number](size T) Size[T] {
 	return Size[T]{size, size}
+}
+
+// ParseSize parses a size string in the form "WxH" (e.g. "16x16" or "23.0x12.1").
+// For integer T, float values are rounded to the nearest integer via Cast.
+func ParseSize[T Number](s string) (Size[T], error) {
+	parts := strings.SplitN(s, "x", 2)
+	if len(parts) != 2 {
+		return Size[T]{}, fmt.Errorf("invalid size format: %s", s)
+	}
+
+	x, err := Parse[T](parts[0])
+	if err != nil {
+		return Size[T]{}, fmt.Errorf("invalid width value: %s", parts[0])
+	}
+	y, err := Parse[T](parts[1])
+	if err != nil {
+		return Size[T]{}, fmt.Errorf("invalid height value: %s", parts[1])
+	}
+
+	return Size[T]{x, y}, nil
 }

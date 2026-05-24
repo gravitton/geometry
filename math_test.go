@@ -127,3 +127,50 @@ func TestEqualDelta(t *testing.T) {
 	assert.False(t, EqualDelta(1.0, 1.02, 0.01))
 	assert.True(t, EqualDelta(5, 5, 0.0))
 }
+
+func TestParseNumber(t *testing.T) {
+	// int — decimal only
+	v1, err := Parse[int]("42")
+	assert.NoError(t, err)
+	assert.Equal(t, v1, 42)
+
+	// int8 — respects 8-bit overflow
+	_, err = Parse[int8]("200")
+	assert.Error(t, err)
+
+	// int16
+	v2, err := Parse[int16]("32000")
+	assert.NoError(t, err)
+	assert.Equal(t, v2, int16(32000))
+
+	// int32
+	v3, err := Parse[int32]("2147483647")
+	assert.NoError(t, err)
+	assert.Equal(t, v3, int32(2147483647))
+
+	// int64
+	v4, err := Parse[int64]("9223372036854775807")
+	assert.NoError(t, err)
+	assert.Equal(t, v4, int64(9223372036854775807))
+
+	// int rejects float strings
+	_, err = Parse[int]("3.14")
+	assert.Error(t, err)
+
+	// float32
+	v5, err := Parse[float32]("3.14")
+	assert.NoError(t, err)
+	assert.EqualDelta(t, float64(v5), 3.14, 1e-5)
+
+	// float64
+	v6, err := Parse[float64]("23.0")
+	assert.NoError(t, err)
+	assert.EqualDelta(t, v6, 23.0, Delta)
+
+	// error: non-numeric
+	_, err = Parse[int]("abc")
+	assert.Error(t, err)
+
+	_, err = Parse[float64]("abc")
+	assert.Error(t, err)
+}

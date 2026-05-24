@@ -139,6 +139,39 @@ func TestSize_AtMost(t *testing.T) {
 	AssertSize(t, Sz(0.5, 1.5).AtMost(Sz(1.0, 1.0)), 0.5, 1.0)
 }
 
+func TestParseSize(t *testing.T) {
+	// int: exact integers
+	s1, err := ParseSize[int]("16x32")
+	assert.NoError(t, err)
+	AssertSize(t, s1, 16, 32)
+
+	// int: float strings are rejected
+	_, err = ParseSize[int]("23.5x12.4")
+	assert.Error(t, err)
+
+	// float64: integer strings
+	s3, err := ParseSize[float64]("16x32")
+	assert.NoError(t, err)
+	AssertSize(t, s3, 16.0, 32.0)
+
+	// float64: float strings
+	s4, err := ParseSize[float64]("23.0x12.1")
+	assert.NoError(t, err)
+	AssertSize(t, s4, 23.0, 12.1)
+
+	// error: missing separator
+	_, err = ParseSize[int]("16")
+	assert.Error(t, err)
+
+	// error: invalid width
+	_, err = ParseSize[int]("axb")
+	assert.Error(t, err)
+
+	// error: invalid height
+	_, err = ParseSize[float64]("1.0xb")
+	assert.Error(t, err)
+}
+
 func TestSize_Immutable(t *testing.T) {
 	s := Sz(2, 3)
 
