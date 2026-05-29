@@ -137,8 +137,7 @@ func equalDelta(a, b, delta float64) bool {
 	return math.Abs(a-b) <= delta
 }
 
-// Parse parses s into T using the parser and bit size appropriate for T:
-// int8/16/32/64/int use strconv.ParseInt, float32/64 use strconv.ParseFloat.
+// Parse parses s into T using the parser and bit size appropriate for Number type.
 func Parse[T Number](s string) (T, error) {
 	var zero T
 	switch any(zero).(type) {
