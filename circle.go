@@ -6,7 +6,7 @@ import (
 
 // Circle is a 2D circle.
 type Circle[T Number] struct {
-	Center Point[T] `json:",inline"`
+	Center Point[T] `json:",embed"`
 	Radius T        `json:"r"`
 }
 

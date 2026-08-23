@@ -6,8 +6,8 @@ import (
 
 // RegularPolygon is a polygon with equally spaced vertices around a center.
 type RegularPolygon[T Number] struct {
-	Center Point[T] `json:",inline"`
-	Size   Size[T]  `json:",inline"`
+	Center Point[T] `json:",embed"`
+	Size   Size[T]  `json:",embed"`
 	N      int      `json:"n"`
 	Angle  float64  `json:"a"`
 }

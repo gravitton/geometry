@@ -6,8 +6,8 @@ import (
 
 // Rectangle is a 2D axis-aligned rectangle represented by its center and size.
 type Rectangle[T Number] struct {
-	Center Point[T] `json:",inline"`
-	Size   Size[T]  `json:",inline"`
+	Center Point[T] `json:",embed"`
+	Size   Size[T]  `json:",embed"`
 }
 
 // Rect is shorthand for Rectangle{center, size}.
