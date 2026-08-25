@@ -70,6 +70,19 @@ func TestCeil(t *testing.T) {
 	assert.Equal(t, Ceil(3), 3) // int: no-op
 }
 
+func TestMod(t *testing.T) {
+	assert.Equal(t, Mod(5, 8), 5)
+	assert.Equal(t, Mod(8, 8), 0)
+	assert.Equal(t, Mod(9, 8), 1)
+	assert.Equal(t, Mod(-1, 8), 7)
+	assert.Equal(t, Mod(-8, 8), 0)
+	assert.Equal(t, Mod(-9, 8), 7)
+	assert.Equal(t, Mod(0, 8), 0)
+
+	assert.Equal(t, Mod(7, 6), 1)
+	assert.Equal(t, Mod(-1, 6), 5)
+}
+
 func TestMidpoint(t *testing.T) {
 	assert.Equal(t, Midpoint(1, 3), 2)
 	assert.Equal(t, Midpoint(1, 4), 3)

@@ -78,6 +78,11 @@ func Ceil[T Number](x T) T {
 	return Cast[T](math.Ceil(float64(x)))
 }
 
+// Mod wraps n into [0, m), correctly for negative n.
+func Mod(n, m int) int {
+	return ((n % m) + m) % m
+}
+
 // Lerp calculates the linear interpolation between a and b at a ratio t.
 func Lerp[T Number](a, b T, t float64) T {
 	return Cast[T](float64(a) + float64(b-a)*t)
