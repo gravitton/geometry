@@ -78,26 +78,14 @@ func Ceil[T Number](x T) T {
 	return Cast[T](math.Ceil(float64(x)))
 }
 
+// Lerp calculates the linear interpolation between a and b at a ratio t.
+func Lerp[T Number](a, b T, t float64) T {
+	return Cast[T](float64(a) + float64(b-a)*t)
+}
+
 // Midpoint calculates the midpoint between two values. Equivalent to Lerp(a, b, 0.5).
 func Midpoint[T Number](a, b T) T {
-	// return Cast(lerp(float64(a), float64(b), 0.5))
-	return Cast[T](midpoint(float64(a), float64(b)))
-}
-
-func midpoint(a, b float64) float64 {
-	// optimized `a + (b-a)/2.0`
-	// return lerp(a, b, 0.5)
-	return (a + b) / 2.0
-}
-
-// Lerp calculates the linear interpolation between a and b at ratio t.
-func Lerp[T Number](a, b T, t float64) T {
-	return Cast[T](lerp(float64(a), float64(b), t))
-}
-
-func lerp(a, b, t float64) float64 {
-	// optimized `a + (b-a)*t`
-	return a*(1-t) + b*t
+	return Lerp(a, b, 0.5)
 }
 
 // Clamp adjusts the given value to be between the given minimum and maximum value.
