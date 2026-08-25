@@ -28,9 +28,9 @@ func TestLine_MoveTo(t *testing.T) {
 	AssertLine(t, lineFloat.MoveTo(Pt(100.1, -0.1)), 100.1, -0.1, 100.7, 3.55)
 }
 
-func TestLine_Reversed(t *testing.T) {
-	AssertLine(t, lineInt.Reversed(), 3, 5, 1, 2)
-	AssertLine(t, lineFloat.Reversed(), 1.2, 3.4, 0.6, -0.25)
+func TestLine_Reverse(t *testing.T) {
+	AssertLine(t, lineInt.Reverse(), 3, 5, 1, 2)
+	AssertLine(t, lineFloat.Reverse(), 1.2, 3.4, 0.6, -0.25)
 }
 
 func TestLine_Midpoint(t *testing.T) {
@@ -38,9 +38,9 @@ func TestLine_Midpoint(t *testing.T) {
 	AssertPoint(t, lineFloat.Midpoint(), 0.9, 1.575)
 }
 
-func TestLine_Direction(t *testing.T) {
-	AssertVector(t, lineInt.Direction(), 2, 3)
-	AssertVector(t, lineFloat.Direction(), 0.6, 3.65)
+func TestLine_Vector(t *testing.T) {
+	AssertVector(t, lineInt.Vector(), 2, 3)
+	AssertVector(t, lineFloat.Vector(), 0.6, 3.65)
 }
 
 func TestLine_Length(t *testing.T) {
@@ -115,7 +115,7 @@ func TestLine_Immutable(t *testing.T) {
 
 	l.Translate(Vec(3, -2))
 	l.MoveTo(Pt(4, 3))
-	l.Reversed()
+	l.Reverse()
 
 	assert.True(t, l.Equal(lineInt))
 }

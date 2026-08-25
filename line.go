@@ -25,8 +25,8 @@ func (l Line[T]) MoveTo(point Point[T]) Line[T] {
 	return Line[T]{point, l.End.Add(point.Subtract(l.Start))}
 }
 
-// Reversed creates a new Line with the start and end points swapped.
-func (l Line[T]) Reversed() Line[T] {
+// Reverse creates a new Line with the start and end points swapped.
+func (l Line[T]) Reverse() Line[T] {
 	return Line[T]{l.End, l.Start}
 }
 
@@ -35,14 +35,14 @@ func (l Line[T]) Midpoint() Point[T] {
 	return l.Start.Midpoint(l.End)
 }
 
-// Direction returns the direction vector of the line.
-func (l Line[T]) Direction() Vector[T] {
+// Vector returns the line as a vector, from start to end.
+func (l Line[T]) Vector() Vector[T] {
 	return l.End.Subtract(l.Start)
 }
 
 // Length returns the length of the line.
 func (l Line[T]) Length() float64 {
-	return l.Direction().Length()
+	return l.Vector().Length()
 }
 
 // Vertices returns the start and end points as a slice.
@@ -54,7 +54,7 @@ func (l Line[T]) Vertices() []Point[T] {
 func (l Line[T]) Bounds() Rectangle[T] {
 	minPoint := Point[T]{min(l.Start.X, l.End.X), min(l.Start.Y, l.End.Y)}
 
-	return RectFromMin(minPoint, l.Direction().Size())
+	return RectFromMin(minPoint, l.Vector().Size())
 }
 
 // Equal checks if the start and end points of the lines are equal.
