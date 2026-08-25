@@ -81,6 +81,9 @@ func TestMod(t *testing.T) {
 
 	assert.Equal(t, Mod(7, 6), 1)
 	assert.Equal(t, Mod(-1, 6), 5)
+
+	type testInt int32
+	assert.Equal(t, Mod(testInt(12), 8), testInt(4))
 }
 
 func TestMidpoint(t *testing.T) {

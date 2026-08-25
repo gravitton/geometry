@@ -79,7 +79,7 @@ func Ceil[T Number](x T) T {
 }
 
 // Mod wraps n into [0, m), correctly for negative n.
-func Mod(n, m int) int {
+func Mod[T Integer](n, m T) T {
 	return ((n % m) + m) % m
 }
 

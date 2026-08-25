@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased](https://github.com/gravitton/geometry/compare/v1.9.0...master)
 ### Added
 - `Axis` – names one of the two coordinate axes, or `AxisNone`, with `Cross`, `Direction`, `IsNone`, `Vector`, `Size`, `Along`, `Across`, `Project`, and `ScaleAlong` for writing orientation-agnostic code in terms of "along" and "across"
-- `Mod(n, m int) int` – wraps `n` into `[0, m)`, correctly for negative `n`
+- `Integer` and `Float` constraints – split out of `Number`, which is now `Integer | Float`
+- `Mod[T Integer](n, m T) T` – wraps `n` into `[0, m)`, correctly for negative `n`
 
 ### Changed
 - Require Go 1.27

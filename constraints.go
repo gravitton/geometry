@@ -5,9 +5,19 @@ import (
 	"math"
 )
 
+// Integer is a generic integer type, supporting operations like modulo that floats don't.
+type Integer interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64
+}
+
+// Float is a generic floating-point type.
+type Float interface {
+	~float32 | ~float64
+}
+
 // Number is a generic number type supported by all types and functions in this package.
 type Number interface {
-	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~float32 | ~float64
+	Integer | Float
 }
 
 // Cast number to type, round integer values.
