@@ -8,9 +8,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased](https://github.com/gravitton/geometry/compare/v1.9.0...master)
 ### Changed
+- Require Go 1.27
 - `Direction[T](x T) T` renamed to `Sign[T](x T) T`, freeing the name for the new `Direction` type
 - `Line.Direction() Vector[T]` renamed to `Line.Vector()`, since it returns the start-to-end vector rather than a `Direction`
 - `Line.Reversed()` renamed to `Line.Reverse()`, matching the imperative naming of every other immutable method
+
 
 ## [v1.9.0 (2026-05-29)](https://github.com/gravitton/geometry/compare/v1.8.1...v1.9.0)
 ### Added

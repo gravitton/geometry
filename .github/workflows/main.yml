@@ -11,9 +11,7 @@ jobs:
     strategy:
       matrix:
         go:
-          - '1.26'
-    env:
-      GOEXPERIMENT: jsonv2
+          - '1.27'
 
     steps:
       - name: Checkout

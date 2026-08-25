@@ -3,7 +3,6 @@
 [![Latest Stable Version][ico-release]][link-release]
 [![Build Status][ico-workflow]][link-workflow]
 [![Coverage Status][ico-coverage]][link-coverage]
-[![Go Report Card][ico-go-report-card]][link-go-report-card]
 [![Go Dev Reference][ico-go-dev-reference]][link-go-dev-reference]
 [![Software License][ico-license]][link-licence]
 
@@ -15,16 +14,6 @@ Generic immutable 2D geometry library for game development.
 
 ```bash
 go get github.com/gravitton/geometry
-```
-
-## Requirements
-
-Requires **`GOEXPERIMENT=jsonv2`** (Go 1.26+). This enables the JSON v2 experiment, which supports the `json:",inline"` struct tag used by several types to produce flat JSON objects instead of nested ones.
-
-Set the environment variable when running or testing:
-
-```bash
-GOEXPERIMENT=jsonv2 go test ./...
 ```
 
 ## Usage
@@ -160,7 +149,6 @@ The MIT License (MIT). Please see [License File][link-licence] for more informat
 [ico-workflow]:             https://img.shields.io/github/actions/workflow/status/gravitton/geometry/main.yml?branch=main&style=flat-square
 [ico-release]:              https://img.shields.io/github/v/release/gravitton/geometry?style=flat-square&colorB=blue
 [ico-go-dev-reference]:     https://img.shields.io/badge/go.dev-reference-blue?style=flat-square
-[ico-go-report-card]:       https://goreportcard.com/badge/github.com/gravitton/geometry?style=flat-square
 [ico-coverage]:             https://img.shields.io/coverallsCoverage/github/gravitton/geometry?style=flat-square
 
 [link-author]:              https://github.com/gravitton
@@ -170,5 +158,4 @@ The MIT License (MIT). Please see [License File][link-licence] for more informat
 [link-changelog]:           ./CHANGELOG.md
 [link-workflow]:            https://github.com/gravitton/geometry/actions
 [link-go-dev-reference]:    https://pkg.go.dev/github.com/gravitton/geometry
-[link-go-report-card]:      https://goreportcard.com/report/github.com/gravitton/geometry
 [link-coverage]:            https://coveralls.io/github/gravitton/geometry
