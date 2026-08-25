@@ -92,13 +92,13 @@ func TestLerp(t *testing.T) {
 	assert.Equal(t, Lerp(1.0, 6.0, 0.75), 4.75)
 }
 
-func TestDirection(t *testing.T) {
-	assert.Equal(t, Direction(5), 1)
-	assert.Equal(t, Direction(-5), -1)
-	assert.Equal(t, Direction(0), 0)
-	assert.EqualDelta(t, Direction(3.14), 1.0, Delta)
-	assert.EqualDelta(t, Direction(-3.14), -1.0, Delta)
-	assert.EqualDelta(t, Direction(0.0), 0.0, Delta)
+func TestSign(t *testing.T) {
+	assert.Equal(t, Sign(5), 1)
+	assert.Equal(t, Sign(-5), -1)
+	assert.Equal(t, Sign(0), 0)
+	assert.EqualDelta(t, Sign(3.14), 1.0, Delta)
+	assert.EqualDelta(t, Sign(-3.14), -1.0, Delta)
+	assert.EqualDelta(t, Sign(0.0), 0.0, Delta)
 }
 
 func TestClamp(t *testing.T) {

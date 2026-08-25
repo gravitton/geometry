@@ -111,8 +111,8 @@ func Clamp[T Number](value, min, max T) T {
 	return value
 }
 
-// Direction returns the sign of x: 1 if x > 0, -1 if x < 0, or 0 if x == 0.
-func Direction[T Number](x T) T {
+// Sign returns the sign of x: 1 if x > 0, -1 if x < 0, or 0 if x == 0.
+func Sign[T Number](x T) T {
 	switch {
 	case x > 0:
 		return 1
