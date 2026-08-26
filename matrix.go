@@ -154,8 +154,8 @@ func (m Matrix[T]) IsZero() bool {
 // Int converts the matrix to a Matrix[int].
 func (m Matrix[T]) Int() Matrix[int] {
 	return Matrix[int]{
-		int(m.A), int(m.B), int(m.C),
-		int(m.D), int(m.E), int(m.F),
+		Cast[int](float64(m.A)), Cast[int](float64(m.B)), Cast[int](float64(m.C)),
+		Cast[int](float64(m.D)), Cast[int](float64(m.E)), Cast[int](float64(m.F)),
 	}
 }
 

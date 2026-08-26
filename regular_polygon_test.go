@@ -52,6 +52,9 @@ func TestRegularPolygon_OrientationAngle(t *testing.T) {
 
 	assert.EqualDelta(t, RegularPolygonOrientationAngle(6, PointyTop), -90*DegToRad, Delta)
 	assert.EqualDelta(t, RegularPolygonOrientationAngle(6, FlatTop), 60*DegToRad, Delta)
+
+	// an orientation outside the two constants has no initial angle
+	assert.EqualDelta(t, RegularPolygonOrientationAngle(6, Orientation(99)), 0.0, Delta)
 }
 
 func TestRegularPolygon_WithOrientation(t *testing.T) {
@@ -126,6 +129,9 @@ func TestRegularPolygon_Bounds(t *testing.T) {
 	b := hex.Bounds()
 	assert.EqualDelta(t, float64(b.Size.Width), 4.0, Delta)
 	assert.EqualDelta(t, float64(b.Size.Height), 2.0*Sqrt3, Delta)
+
+	// no vertices: the bounds collapse to the center with zero size
+	AssertRect(t, RegPol(Pt(3, 4), Sz(10, 10), 0, 0).Bounds(), 3, 4, 0, 0)
 }
 
 func TestRegularPolygon_Polygon(t *testing.T) {

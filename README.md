@@ -46,8 +46,14 @@ p := geom.Pt(1.0, 0.0).Transform(m)
 Directions:
 
 ```go
-p := geom.RectangleFromMax(p1, p2).Anchor(geom.Bottom)
-dir := geom.DirectionDownRight.Vector(5.0)
+dir := geom.DirectionDownRight
+v := dir.Vector(5.0)
+
+p := geom.RectangleFromMinMax(p1, p2).Anchor(geom.Bottom)
+
+axis := geom.AxisVertical
+length := axis.Along(size)          // Height, because the axis is vertical
+bar := axis.Size(length, thickness) // Size{thickness, length}
 ```
 
 Type aliases for common numeric types ([`ints`](./types/ints/types.go), [`floats`](./types/floats/types.go)):
@@ -112,8 +118,7 @@ alias for rectangle anchors:
 
 ### Axis
 
-`Axis` is `AxisHorizontal`, `AxisVertical`, or `AxisNone`. It exists to write orientation-agnostic code in terms of
-"along" and "across" instead of branching on X and Y:
+`Axis` is `AxisHorizontal`, `AxisVertical`, or `AxisNone`. It exists to write orientation-agnostic code in terms of "along" and "across".
 
 ### Conventions
 

@@ -189,4 +189,9 @@ func TestParseNumber(t *testing.T) {
 
 	_, err = Parse[float64]("abc")
 	assert.Error(t, err)
+
+	// named types satisfy Number via ~int, but the type switch matches exact types only,
+	// so they are rejected rather than silently parsed
+	_, err = Parse[Direction]("3")
+	assert.Error(t, err)
 }

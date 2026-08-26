@@ -178,8 +178,9 @@ func TestMatrix_IsZero(t *testing.T) {
 func TestMatrix_Int(t *testing.T) {
 	AssertMatrix(t, IdentityMatrix[float64]().Int(), IdentityMatrix[int]())
 	AssertMatrix(t, TranslationMatrix(5, 3).Int(), TranslationMatrix(5, 3))
-	// truncates toward zero
-	AssertMatrix(t, TranslationMatrix(5.9, 3.1).Int(), TranslationMatrix(5, 3))
+	// rounds to nearest, like every other Int() conversion
+	AssertMatrix(t, TranslationMatrix(5.9, 3.1).Int(), TranslationMatrix(6, 3))
+	AssertMatrix(t, TranslationMatrix(-5.9, -3.1).Int(), TranslationMatrix(-6, -3))
 }
 
 func TestMatrix_Float(t *testing.T) {

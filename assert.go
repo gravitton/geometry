@@ -2,13 +2,12 @@ package geom
 
 import (
 	"fmt"
-	"testing"
 
 	"github.com/gravitton/assert"
 )
 
 // AssertPoint asserts that p has the given X and Y values within Delta.
-func AssertPoint[T Number](t *testing.T, p Point[T], x, y T, messages ...string) bool {
+func AssertPoint[T Number](t assert.Testing, p Point[T], x, y T, messages ...string) bool {
 	t.Helper()
 
 	ok := true
@@ -24,7 +23,7 @@ func AssertPoint[T Number](t *testing.T, p Point[T], x, y T, messages ...string)
 }
 
 // AssertVector asserts that v has the given X and Y values within Delta.
-func AssertVector[T Number](t *testing.T, p Vector[T], x, y T, messages ...string) bool {
+func AssertVector[T Number](t assert.Testing, p Vector[T], x, y T, messages ...string) bool {
 	t.Helper()
 
 	ok := true
@@ -40,7 +39,7 @@ func AssertVector[T Number](t *testing.T, p Vector[T], x, y T, messages ...strin
 }
 
 // AssertSize asserts that s has the given Width and Height values within Delta.
-func AssertSize[T Number](t *testing.T, s Size[T], w, h T, messages ...string) bool {
+func AssertSize[T Number](t assert.Testing, s Size[T], w, h T, messages ...string) bool {
 	t.Helper()
 
 	ok := true
@@ -56,7 +55,7 @@ func AssertSize[T Number](t *testing.T, s Size[T], w, h T, messages ...string) b
 }
 
 // AssertCircle asserts that c has the given center (x, y) and radius within Delta.
-func AssertCircle[T Number](t *testing.T, c Circle[T], x, y, radius T, messages ...string) bool {
+func AssertCircle[T Number](t assert.Testing, c Circle[T], x, y, radius T, messages ...string) bool {
 	t.Helper()
 
 	ok := true
@@ -72,7 +71,7 @@ func AssertCircle[T Number](t *testing.T, c Circle[T], x, y, radius T, messages 
 }
 
 // AssertLine asserts that l has the given start (sx, sy) and end (ex, ey) points within Delta.
-func AssertLine[T Number](t *testing.T, l Line[T], sx, sy, ex, ey T, messages ...string) bool {
+func AssertLine[T Number](t assert.Testing, l Line[T], sx, sy, ex, ey T, messages ...string) bool {
 	t.Helper()
 
 	ok := true
@@ -88,7 +87,7 @@ func AssertLine[T Number](t *testing.T, l Line[T], sx, sy, ex, ey T, messages ..
 }
 
 // AssertRect asserts that r has the given center (cx, cy) and size (w, h) within Delta.
-func AssertRect[T Number](t *testing.T, r Rectangle[T], cx, cy, w, h T, messages ...string) bool {
+func AssertRect[T Number](t assert.Testing, r Rectangle[T], cx, cy, w, h T, messages ...string) bool {
 	t.Helper()
 
 	ok := true
@@ -104,14 +103,14 @@ func AssertRect[T Number](t *testing.T, r Rectangle[T], cx, cy, w, h T, messages
 }
 
 // AssertPolygon asserts that p has the given vertices within Delta.
-func AssertPolygon[T Number](t *testing.T, p Polygon[T], vertices []Point[T], messages ...string) bool {
+func AssertPolygon[T Number](t assert.Testing, p Polygon[T], vertices []Point[T], messages ...string) bool {
 	t.Helper()
 
 	return AssertVertices(t, p.Vertices, vertices, messages...)
 }
 
 // AssertVertices asserts that vertices matches points element-by-element within Delta.
-func AssertVertices[T Number](t *testing.T, vertices []Point[T], points []Point[T], messages ...string) bool {
+func AssertVertices[T Number](t assert.Testing, vertices []Point[T], points []Point[T], messages ...string) bool {
 	t.Helper()
 
 	if !assert.Equal(t, len(vertices), len(points), append(messages, "Length: ")...) {
@@ -129,7 +128,7 @@ func AssertVertices[T Number](t *testing.T, vertices []Point[T], points []Point[
 }
 
 // AssertRegularPolygon asserts that p has the given center (x, y), size (w, h), vertex count n, and angle within Delta.
-func AssertRegularPolygon[T Number](t *testing.T, p RegularPolygon[T], x, y, w, h T, n int, angle float64, messages ...string) bool {
+func AssertRegularPolygon[T Number](t assert.Testing, p RegularPolygon[T], x, y, w, h T, n int, angle float64, messages ...string) bool {
 	t.Helper()
 
 	ok := true
@@ -151,7 +150,7 @@ func AssertRegularPolygon[T Number](t *testing.T, p RegularPolygon[T], x, y, w, 
 }
 
 // AssertPadding asserts that p has the given Top, Right, Bottom, and Left values within Delta.
-func AssertPadding[T Number](t *testing.T, p Padding[T], top, right, bottom, left T, messages ...string) bool {
+func AssertPadding[T Number](t assert.Testing, p Padding[T], top, right, bottom, left T, messages ...string) bool {
 	t.Helper()
 
 	ok := true
@@ -173,7 +172,7 @@ func AssertPadding[T Number](t *testing.T, p Padding[T], top, right, bottom, lef
 }
 
 // AssertMatrix asserts that m is equal to expected within Delta.
-func AssertMatrix[T Number](t *testing.T, m, expected Matrix[T], messages ...string) bool {
+func AssertMatrix[T Number](t assert.Testing, m, expected Matrix[T], messages ...string) bool {
 	t.Helper()
 
 	ok := true
