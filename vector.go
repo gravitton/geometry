@@ -26,7 +26,8 @@ func OneVector[T Number]() Vector[T] {
 	return Vector[T]{1, 1}
 }
 
-// VectorFromAngle creates a new Vector of the given length pointing at the given angle (in radians).
+// VectorFromAngle creates a new Vector of the given length pointing at the given angle (in
+// radians), measured in the standard math convention where Y grows upward.
 // For integer T, both components are rounded; only multiples of 90° give exact results.
 func VectorFromAngle[T Number](angle float64, length T) Vector[T] {
 	return VectorFromAngleSize(angle, SzU(length))
@@ -93,7 +94,9 @@ func (v Vector[T]) Negate() Vector[T] {
 	return Vector[T]{-v.X, -v.Y}
 }
 
-// Rotate creates a new Vector rotated by the given angle (in radians).
+// Rotate creates a new Vector rotated by the given angle (in radians), in the standard math
+// convention where Y grows upward. On a screen with Y pointing down a positive angle therefore
+// appears clockwise — the opposite sense to a positive Direction.Rotate step.
 // For integer T, sin/cos components are rounded; only multiples of 90° give exact results.
 func (v Vector[T]) Rotate(angle float64) Vector[T] {
 	sin, cos := math.Sincos(angle)

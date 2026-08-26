@@ -84,12 +84,31 @@ func TestDirection_Opposite(t *testing.T) {
 }
 
 func TestDirection_Rotate(t *testing.T) {
-	assert.Equal(t, DirectionRight.Rotate(1), DirectionUpRight)
-	assert.Equal(t, DirectionRight.Rotate(2), DirectionUp)
+	// positive steps increase the angle: clockwise as drawn, counterclockwise in math coordinates
+	assert.Equal(t, DirectionRight.Rotate(1), DirectionDownRight)
+	assert.Equal(t, DirectionRight.Rotate(2), DirectionDown)
 	assert.Equal(t, DirectionRight.Rotate(8), DirectionRight)
-	assert.Equal(t, DirectionRight.Rotate(-1), DirectionDownRight)
-	assert.Equal(t, DirectionRight.Rotate(-9), DirectionDownRight)
-	assert.Equal(t, DirectionUp.Rotate(-2), DirectionRight)
+	assert.Equal(t, DirectionRight.Rotate(-1), DirectionUpRight)
+	assert.Equal(t, DirectionRight.Rotate(-9), DirectionUpRight)
+	assert.Equal(t, DirectionUp.Rotate(2), DirectionRight)
+}
+
+// TestDirection_AngleConvention locks Direction ordering to the angle convention: stepping a
+// direction must agree with advancing its angle, and with rotating its offset as a vector.
+func TestDirection_AngleConvention(t *testing.T) {
+	for _, d := range Directions {
+		// Angle and DirectionFromAngle round-trip
+		assert.Equal(t, DirectionFromAngle(d.Angle()), d, d.String())
+
+		for steps := -8; steps <= 8; steps++ {
+			// one step is one eighth-turn of increasing angle
+			assert.Equal(t, DirectionFromAngle(d.Angle()+float64(steps)*Pi/4), d.Rotate(steps), d.String())
+		}
+
+		// a positive Vector.Rotate angle turns the same way as a positive Direction step
+		rotated := d.Offset[float64]().Rotate(Pi / 2)
+		assert.Equal(t, rotated.Direction(), d.Rotate(2), d.String())
+	}
 }
 
 func TestDirection_Axis(t *testing.T) {
@@ -199,5 +218,5 @@ func TestDirection_String(t *testing.T) {
 	assert.Equal(t, DirectionDown.String(), "Down")
 	assert.Equal(t, DirectionDownRight.String(), "DownRight")
 	assert.Equal(t, DirectionNone.String(), "None")
-	assert.Equal(t, Direction(9).String(), "UpRight")
+	assert.Equal(t, Direction(9).String(), "DownRight")
 }

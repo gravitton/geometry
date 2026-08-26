@@ -5,17 +5,21 @@ import (
 )
 
 // Direction is one of the eight neighbor directions on a square lattice.
+//
+// Directions are numbered by increasing angle, matching Angle and Vector.Angle: counterclockwise
+// in the standard math convention where Y grows upward, which appears clockwise as drawn on a
+// screen with Y pointing down. A negative step or angle is therefore counterclockwise on screen.
 type Direction int
 
 const (
 	DirectionRight Direction = iota
-	DirectionUpRight
-	DirectionUp
-	DirectionUpLeft
-	DirectionLeft
-	DirectionDownLeft
-	DirectionDown
 	DirectionDownRight
+	DirectionDown
+	DirectionDownLeft
+	DirectionLeft
+	DirectionUpLeft
+	DirectionUp
+	DirectionUpRight
 
 	// DirectionNone is the absence of a direction.
 	DirectionNone Direction = -1
@@ -45,30 +49,30 @@ const (
 	BottomRight = DirectionDownRight
 )
 
-// Directions lists all eight directions ordered counterclockwise from DirectionRight.
-var Directions = [8]Direction{DirectionRight, DirectionUpRight, DirectionUp, DirectionUpLeft, DirectionLeft, DirectionDownLeft, DirectionDown, DirectionDownRight}
+// Directions lists all eight directions ordered by increasing angle from DirectionRight.
+var Directions = [8]Direction{DirectionRight, DirectionDownRight, DirectionDown, DirectionDownLeft, DirectionLeft, DirectionUpLeft, DirectionUp, DirectionUpRight}
 
-// CardinalDirections lists the four cardinal directions ordered counterclockwise from DirectionRight.
-var CardinalDirections = [4]Direction{DirectionRight, DirectionUp, DirectionLeft, DirectionDown}
+// CardinalDirections lists the four cardinal directions ordered by increasing angle from DirectionRight.
+var CardinalDirections = [4]Direction{DirectionRight, DirectionDown, DirectionLeft, DirectionUp}
 
-// DiagonalDirections lists the four diagonal directions ordered counterclockwise from DirectionUpRight.
-var DiagonalDirections = [4]Direction{DirectionUpRight, DirectionUpLeft, DirectionDownLeft, DirectionDownRight}
+// DiagonalDirections lists the four diagonal directions ordered by increasing angle from DirectionDownRight.
+var DiagonalDirections = [4]Direction{DirectionDownRight, DirectionDownLeft, DirectionUpLeft, DirectionUpRight}
 
 // directionOffsets lists the lattice step of each direction, indexed by direction.
 var directionOffsets = [8]Vector[int]{
 	{1, 0},   // Right
-	{1, -1},  // UpRight
-	{0, -1},  // Up
-	{-1, -1}, // UpLeft
-	{-1, 0},  // Left
-	{-1, 1},  // DownLeft
-	{0, 1},   // Down
 	{1, 1},   // DownRight
+	{0, 1},   // Down
+	{-1, 1},  // DownLeft
+	{-1, 0},  // Left
+	{-1, -1}, // UpLeft
+	{0, -1},  // Up
+	{1, -1},  // UpRight
 }
 
 // DirectionFromAngle returns the direction nearest to the given angle in radians.
 func DirectionFromAngle(angle float64) Direction {
-	return Mod(Direction(math.Round(-angle/(Pi/4))), 8)
+	return Mod(Direction(math.Round(angle/(Pi/4))), 8)
 }
 
 // DirectionFromAxes returns the direction for the given axis inputs, canceling opposite
@@ -108,8 +112,9 @@ func (d Direction) Opposite() Direction {
 	return d.Rotate(4)
 }
 
-// Rotate advances the direction by steps eighth-turns counterclockwise.
-// On screens with Y pointing down, positive steps appear clockwise. Negative steps go the other way.
+// Rotate advances the direction by steps eighth-turns of increasing angle, the same sense as a
+// positive Vector.Rotate angle: counterclockwise in math coordinates, clockwise as drawn on a
+// screen with Y pointing down. Negative steps go the other way.
 func (d Direction) Rotate(steps int) Direction {
 	if d.IsNone() {
 		return DirectionNone
@@ -155,7 +160,9 @@ func (d Direction) Vector[T Number](length T) Vector[T] {
 	return d.Offset[T]().Resize(float64(length))
 }
 
-// Angle returns the angle of the direction in radians.
+// Angle returns the angle of the direction in radians, measured in the standard math
+// convention where Y grows upward — so DirectionUp is -Pi/2, not +Pi/2. Direction ordering
+// follows this angle, so DirectionFromAngle and Angle round-trip for every direction.
 func (d Direction) Angle() float64 {
 	return d.Offset[float64]().Angle()
 }

@@ -112,14 +112,14 @@ func TestRectangle_Vertices(t *testing.T) {
 
 	assert.Equal(t, len(vertices), 4)
 	AssertPoint(t, vertices[0], -1, -1)
-	AssertPoint(t, vertices[1], -1, 1)
+	AssertPoint(t, vertices[1], 1, -1)
 	AssertPoint(t, vertices[2], 1, 1)
-	AssertPoint(t, vertices[3], 1, -1)
+	AssertPoint(t, vertices[3], -1, 1)
 
 	assert.Equal(t, vertices[0], r.TopLeft())
-	assert.Equal(t, vertices[1], r.BottomLeft())
+	assert.Equal(t, vertices[1], r.TopRight())
 	assert.Equal(t, vertices[2], r.BottomRight())
-	assert.Equal(t, vertices[3], r.TopRight())
+	assert.Equal(t, vertices[3], r.BottomLeft())
 }
 
 func TestRectangle_Edges(t *testing.T) {
@@ -127,21 +127,31 @@ func TestRectangle_Edges(t *testing.T) {
 	edges := r.Edges()
 
 	assert.Equal(t, len(edges), 4)
-	AssertLine(t, edges[0], -1, -1, -1, 1)
-	AssertLine(t, edges[1], -1, 1, 1, 1)
-	AssertLine(t, edges[2], 1, 1, 1, -1)
-	AssertLine(t, edges[3], 1, -1, -1, -1)
+	AssertLine(t, edges[0], -1, -1, 1, -1)
+	AssertLine(t, edges[1], 1, -1, 1, 1)
+	AssertLine(t, edges[2], 1, 1, -1, 1)
+	AssertLine(t, edges[3], -1, 1, -1, -1)
 
 	assert.Equal(t, edges[0].Start, r.TopLeft())
-	assert.Equal(t, edges[1].Start, r.BottomLeft())
+	assert.Equal(t, edges[1].Start, r.TopRight())
 	assert.Equal(t, edges[2].Start, r.BottomRight())
-	assert.Equal(t, edges[3].Start, r.TopRight())
+	assert.Equal(t, edges[3].Start, r.BottomLeft())
 
 	// Edges agrees with the dedicated accessors, in the same order
-	assert.Equal(t, edges[0], r.LeftEdge())
-	assert.Equal(t, edges[1], r.BottomEdge())
-	assert.Equal(t, edges[2], r.RightEdge())
-	assert.Equal(t, edges[3], r.TopEdge())
+	assert.Equal(t, edges[0], r.TopEdge())
+	assert.Equal(t, edges[1], r.RightEdge())
+	assert.Equal(t, edges[2], r.BottomEdge())
+	assert.Equal(t, edges[3], r.LeftEdge())
+
+	// the edges form a closed chain: each starts where the previous ends
+	for i, edge := range edges {
+		assert.Equal(t, edge.Start, edges[(i+3)%4].End)
+	}
+
+	// vertices and edge starts agree
+	for i, vertex := range r.Vertices() {
+		assert.Equal(t, edges[i].Start, vertex)
+	}
 }
 
 func TestRectangle_Anchor(t *testing.T) {
@@ -160,7 +170,7 @@ func TestRectangle_Anchor(t *testing.T) {
 	AssertPoint(t, r.Anchor(DirectionNone), 5, 10)
 
 	// garbage input still wraps to a meaningful direction
-	AssertPoint(t, r.Anchor(Direction(99)), r.TopLeft().X, r.TopLeft().Y)
+	AssertPoint(t, r.Anchor(Direction(99)), r.BottomLeft().X, r.BottomLeft().Y)
 
 	// corners and edge midpoints agree with the dedicated accessors
 	assert.True(t, r.Anchor(TopLeft).Equal(r.TopLeft()))

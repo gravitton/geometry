@@ -188,43 +188,47 @@ func (r Rectangle[T]) Anchor(direction Direction) Point[T] {
 	}
 }
 
-// LeftEdge returns the left edge, from the top-left to the bottom-left corner.
-func (r Rectangle[T]) LeftEdge() Line[T] {
-	return Ln(r.TopLeft(), r.BottomLeft())
-}
-
-// BottomEdge returns the bottom edge, from the bottom-left to the bottom-right corner.
-func (r Rectangle[T]) BottomEdge() Line[T] {
-	return Ln(r.BottomLeft(), r.BottomRight())
-}
-
-// RightEdge returns the right edge, from the bottom-right to the top-right corner.
-func (r Rectangle[T]) RightEdge() Line[T] {
-	return Ln(r.BottomRight(), r.TopRight())
-}
-
-// TopEdge returns the top edge, from the top-right to the top-left corner.
+// TopEdge returns the top edge, from the top-left to the top-right corner.
 func (r Rectangle[T]) TopEdge() Line[T] {
-	return Ln(r.TopRight(), r.TopLeft())
+	return Ln(r.TopLeft(), r.TopRight())
 }
 
-// Edges returns the rectangle edges as lines in order starting Min point, counter-clockwise.
+// RightEdge returns the right edge, from the top-right to the bottom-right corner.
+func (r Rectangle[T]) RightEdge() Line[T] {
+	return Ln(r.TopRight(), r.BottomRight())
+}
+
+// BottomEdge returns the bottom edge, from the bottom-right to the bottom-left corner.
+func (r Rectangle[T]) BottomEdge() Line[T] {
+	return Ln(r.BottomRight(), r.BottomLeft())
+}
+
+// LeftEdge returns the left edge, from the bottom-left to the top-left corner.
+func (r Rectangle[T]) LeftEdge() Line[T] {
+	return Ln(r.BottomLeft(), r.TopLeft())
+}
+
+// Edges returns the rectangle edges as lines in order starting Min point, by increasing angle —
+// the same winding as Directions and RegularPolygon.Vertices, and clockwise as drawn on a screen
+// with Y pointing down. Each edge starts where the previous one ends.
 func (r Rectangle[T]) Edges() []Line[T] {
 	return []Line[T]{
-		r.LeftEdge(),
-		r.BottomEdge(),
-		r.RightEdge(),
 		r.TopEdge(),
+		r.RightEdge(),
+		r.BottomEdge(),
+		r.LeftEdge(),
 	}
 }
 
-// Vertices returns the rectangle vertices in order starting Min point, counter-clockwise.
+// Vertices returns the rectangle vertices in order starting Min point, by increasing angle —
+// the same winding as Directions and RegularPolygon.Vertices, and clockwise as drawn on a screen
+// with Y pointing down.
 func (r Rectangle[T]) Vertices() []Point[T] {
 	return []Point[T]{
 		r.TopLeft(),
-		r.BottomLeft(),
-		r.BottomRight(),
 		r.TopRight(),
+		r.BottomRight(),
+		r.BottomLeft(),
 	}
 }
 
