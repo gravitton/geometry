@@ -45,7 +45,7 @@ func (c Circle[T]) Shrink(amount T) Circle[T] {
 	return Circle[T]{c.Center, max(c.Radius-amount, 0)}
 }
 
-// Area returns the circle area: (π * radius^2)
+// Area returns the circle area (π * radius^2).
 func (c Circle[T]) Area() float64 {
 	return Pi * float64(c.Radius*c.Radius)
 }

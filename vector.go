@@ -16,6 +16,31 @@ func Vec[T Number](x, y T) Vector[T] {
 	return Vector[T]{x, y}
 }
 
+// ZeroVector creates a new Vector with zero values (0,0).
+func ZeroVector[T Number]() Vector[T] {
+	return Vector[T]{}
+}
+
+// OneVector creates a new Vector with identity values (+1,+1).
+func OneVector[T Number]() Vector[T] {
+	return Vector[T]{1, 1}
+}
+
+// VectorFromAngle creates a new Vector of the given length pointing at the given angle (in radians).
+// For integer T, both components are rounded; only multiples of 90° give exact results.
+func VectorFromAngle[T Number](angle float64, length T) Vector[T] {
+	return VectorFromAngleSize(angle, SzU(length))
+}
+
+// VectorFromAngleSize creates a new Vector at the given angle (in radians) on an ellipse
+// with the given size as its semi-axes: (width*cos(angle), height*sin(angle)).
+// For integer T, both components are rounded; only multiples of 90° give exact results.
+func VectorFromAngleSize[T Number](angle float64, size Size[T]) Vector[T] {
+	sin, cos := math.Sincos(angle)
+
+	return Vector[T]{Cast[T](float64(size.Width) * cos), Cast[T](float64(size.Height) * sin)}
+}
+
 // Transform creates a new Vector by applying the given matrix to the current vector.
 // For integer T, the float64 result of each component is rounded; rotations and
 // non-integer scales lose precision.
@@ -242,24 +267,4 @@ func (v Vector[T]) Float() Vector[float64] {
 // String returns a string representing the vector.
 func (v Vector[T]) String() string {
 	return fmt.Sprintf("⟨%s,%s⟩", String(v.X), String(v.Y))
-}
-
-// VectorFromAngle returns a vector of the given length pointing in the direction of angle (in radians).
-// For integer T, each component is independently rounded after multiplying by length; angles
-// whose sin or cos falls near ±0.5 may round to 0 instead of ±1 due to float64 precision.
-// Use float64 when directional accuracy matters.
-func VectorFromAngle[T Number](angle float64, length T) Vector[T] {
-	sin, cos := math.Sincos(angle)
-
-	return Vector[T]{Cast[T](float64(length) * cos), Cast[T](float64(length) * sin)}
-}
-
-// ZeroVector creates a new Vector with zero values (0,0).
-func ZeroVector[T Number]() Vector[T] {
-	return Vector[T]{}
-}
-
-// OneVector creates a new Vector with identity values (+1,+1).
-func OneVector[T Number]() Vector[T] {
-	return Vector[T]{1, 1}
 }

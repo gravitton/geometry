@@ -15,6 +15,11 @@ func Pt[T Number](x, y T) Point[T] {
 	return Point[T]{x, y}
 }
 
+// ZeroPoint creates a new Point with zero values (0,0).
+func ZeroPoint[T Number]() Point[T] {
+	return Point[T]{}
+}
+
 // Transform creates a new Point by applying the given matrix to the current point.
 // For integer T, the float64 result of each component is rounded; rotations and
 // non-integer scales lose precision.
@@ -156,9 +161,4 @@ func (p Point[T]) Float() Point[float64] {
 // String returns a string representing the point.
 func (p Point[T]) String() string {
 	return fmt.Sprintf("(%s,%s)", String(p.X), String(p.Y))
-}
-
-// ZeroPoint creates a new Point with zero values (0,0).
-func ZeroPoint[T Number]() Point[T] {
-	return Point[T]{}
 }

@@ -17,11 +17,10 @@ func TestRegularPolygon_Constructor(t *testing.T) {
 
 	triangle := Triangle(Pt(1, -1), Sz(3, 3), PointyTop)
 	AssertRegularPolygon(t, triangle, 1, -1, 3, 3, 3, RegularPolygonOrientationAngle(3, PointyTop))
-	// Integer precision asymmetry: sin(π/6) is in the increasing range so the float64 angle
-	// is slightly below true π/6 → sin rounds down to 0; vertex 1 Y = center.Y = −1.
-	// sin(5π/6) is in the decreasing range so the float64 angle is slightly below true 5π/6
-	// → sin rounds up to 1; vertex 2 Y = center.Y + 1×3 = 2.
-	AssertVertices(t, triangle.Vertices(), []Point[int]{Pt(1, -4), Pt(4, -1), Pt(-2, 2)})
+	// Integer rounding happens after scaling by the size, so vertices 1 and 2 land within one
+	// unit of the exact (3.598, 0.5) and (-1.598, 0.5); their Y of 0.5 falls just below the
+	// .5 tie in float64 and rounds down to 0 and up to 1 respectively.
+	AssertVertices(t, triangle.Vertices(), []Point[int]{Pt(1, -4), Pt(4, 0), Pt(-2, 1)})
 
 	square := Square(Pt(50.0, 50.0), Sz(100.0, 100.0), PointyTop)
 	AssertRegularPolygon(t, square, 50, 50, 100, 100, 4, RegularPolygonOrientationAngle(4, PointyTop))

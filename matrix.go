@@ -21,6 +21,39 @@ func Mat[T Number](a, b, c, d, e, f T) Matrix[T] {
 	return Matrix[T]{a, b, c, d, e, f}
 }
 
+// IdentityMatrix creates a new identity matrix.
+func IdentityMatrix[T Number]() Matrix[T] {
+	return Matrix[T]{
+		1, 0, 0,
+		0, 1, 0,
+	}
+}
+
+// TranslationMatrix creates a new translation matrix.
+func TranslationMatrix[T Number](deltaX, deltaY T) Matrix[T] {
+	return Matrix[T]{
+		1, 0, deltaX,
+		0, 1, deltaY,
+	}
+}
+
+// RotationMatrix creates a new rotation matrix.
+func RotationMatrix[T Number](angle float64) Matrix[T] {
+	sin, cos := math.Sincos(angle)
+	return Matrix[T]{
+		Cast[T](cos), Cast[T](-sin), 0,
+		Cast[T](sin), Cast[T](cos), 0,
+	}
+}
+
+// ScaleMatrix creates a new scale matrix.
+func ScaleMatrix[T Number](factorX, factorY T) Matrix[T] {
+	return Matrix[T]{
+		factorX, 0, 0,
+		0, factorY, 0,
+	}
+}
+
 // Multiply creates a new matrix by multiplying the current matrix with given matrix.
 func (m Matrix[T]) Multiply(matrix Matrix[T]) Matrix[T] {
 	return Matrix[T]{
@@ -137,37 +170,4 @@ func (m Matrix[T]) Float() Matrix[float64] {
 // String returns a string representation of the Matrix[T].
 func (m Matrix[T]) String() string {
 	return fmt.Sprintf("[[%s, %s, %s], [%s, %s, %s]]", String(m.A), String(m.B), String(m.C), String(m.D), String(m.E), String(m.F))
-}
-
-// IdentityMatrix creates a new identity matrix.
-func IdentityMatrix[T Number]() Matrix[T] {
-	return Matrix[T]{
-		1, 0, 0,
-		0, 1, 0,
-	}
-}
-
-// TranslationMatrix creates a new translation matrix.
-func TranslationMatrix[T Number](deltaX, deltaY T) Matrix[T] {
-	return Matrix[T]{
-		1, 0, deltaX,
-		0, 1, deltaY,
-	}
-}
-
-// RotationMatrix creates a new rotation matrix.
-func RotationMatrix[T Number](angle float64) Matrix[T] {
-	sin, cos := math.Sincos(angle)
-	return Matrix[T]{
-		Cast[T](cos), Cast[T](-sin), 0,
-		Cast[T](sin), Cast[T](cos), 0,
-	}
-}
-
-// ScaleMatrix creates a new scale matrix.
-func ScaleMatrix[T Number](factorX, factorY T) Matrix[T] {
-	return Matrix[T]{
-		factorX, 0, 0,
-		0, factorY, 0,
-	}
 }

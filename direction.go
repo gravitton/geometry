@@ -120,10 +120,10 @@ func (d Direction) Rotate(steps int) Direction {
 
 // Axis returns the axis the direction runs on, or AxisNone for diagonals and DirectionNone.
 func (d Direction) Axis() Axis {
-	switch d.normalized() {
-	case Right, Left:
+	switch d.normalize() {
+	case DirectionRight, DirectionLeft:
 		return AxisHorizontal
-	case Top, Bottom:
+	case DirectionUp, DirectionDown:
 		return AxisVertical
 	default:
 		return AxisNone
@@ -165,19 +165,10 @@ func (d Direction) IsNone() bool {
 	return d == DirectionNone
 }
 
-// normalized returns d wrapped into [DirectionRight, DirectionDownRight], preserving DirectionNone.
-func (d Direction) normalized() Direction {
-	if d.IsNone() {
-		return DirectionNone
-	}
-
-	return Mod(d, 8)
-}
-
 // IsCardinal reports whether the direction is one of DirectionRight, DirectionUp, DirectionLeft, or DirectionDown.
 func (d Direction) IsCardinal() bool {
-	switch d.normalized() {
-	case Right, Top, Left, Bottom:
+	switch d.normalize() {
+	case DirectionRight, DirectionUp, DirectionLeft, DirectionDown:
 		return true
 	default:
 		return false
@@ -186,7 +177,7 @@ func (d Direction) IsCardinal() bool {
 
 // IsDiagonal reports whether the direction is one of DirectionUpRight, DirectionUpLeft, DirectionDownLeft, or DirectionDownRight.
 func (d Direction) IsDiagonal() bool {
-	switch d.normalized() {
+	switch d.normalize() {
 	case DirectionUpRight, DirectionUpLeft, DirectionDownLeft, DirectionDownRight:
 		return true
 	default:
@@ -198,8 +189,8 @@ func (d Direction) IsDiagonal() bool {
 // DirectionRight and DirectionDown, since Y grows downward.
 // It is false for DirectionNone and for diagonals, which run on neither axis.
 func (d Direction) IsPositive() bool {
-	switch d.normalized() {
-	case Right, Bottom:
+	switch d.normalize() {
+	case DirectionRight, DirectionDown:
 		return true
 	default:
 		return false
@@ -208,7 +199,7 @@ func (d Direction) IsPositive() bool {
 
 // String returns the name of the direction constant.
 func (d Direction) String() string {
-	switch d.normalized() {
+	switch d.normalize() {
 	case DirectionRight:
 		return "Right"
 	case DirectionUpRight:
@@ -230,11 +221,21 @@ func (d Direction) String() string {
 	}
 }
 
+// normalize returns the direction wrapped into [DirectionRight, DirectionDownRight],
+// preserving DirectionNone.
+func (d Direction) normalize() Direction {
+	if d.IsNone() {
+		return DirectionNone
+	}
+
+	return Mod(d, 8)
+}
+
 // offset returns the lattice step of the direction, or a zero step for DirectionNone.
 func (d Direction) offset() Vector[int] {
 	if d.IsNone() {
 		return Vector[int]{}
 	}
 
-	return directionOffsets[d.normalized()]
+	return directionOffsets[d.normalize()]
 }

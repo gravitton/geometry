@@ -28,6 +28,6 @@ func TestSize_ConstructorFromImage(t *testing.T) {
 }
 
 func TestRectangle_ConstructorFromImage(t *testing.T) {
-	AssertRect(t, RectFromImage[int](image.Rect(0, 10, 55, 70)), 27, 40, 55, 60)
-	AssertRect(t, RectFromImage[float64](image.Rect(0, 10, 55, 70)), 27.5, 40, 55, 60)
+	AssertRect(t, RectangleFromImage[int](image.Rect(0, 10, 55, 70)), 27, 40, 55, 60)
+	AssertRect(t, RectangleFromImage[float64](image.Rect(0, 10, 55, 70)), 27.5, 40, 55, 60)
 }

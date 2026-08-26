@@ -8,7 +8,7 @@
 
 Generic immutable 2D geometry library for game development.
 
-> Uses a top-left origin with +Y down. This only affects directional getters (`Top`, `Bottom`, `Up`, `Down`).
+> Uses a top-left origin with +Y down. This only affects directional getters (`Top`, `Bottom`, `Up`, `Down`) and rotation: positive steps are counterclockwise in the standard mathematical sense, which appears clockwise on screen.
 
 ## Installation
 
@@ -43,6 +43,13 @@ m := geom.IdentityMatrix[float64]().Rotate(math.Pi / 4).Scale(2, 2)
 p := geom.Pt(1.0, 0.0).Transform(m)
 ```
 
+Directions:
+
+```go
+p := geom.RectangleFromMax(p1, p2).Anchor(geom.Bottom)
+dir := geom.DirectionDownRight.Vector(5.0)
+```
+
 Type aliases for common numeric types ([`ints`](./types/ints/types.go), [`floats`](./types/floats/types.go)):
 
 ```go
@@ -57,39 +64,64 @@ type Grid struct {
 }
 ```
 
-
 ## API
 
 All types are generic over the `Number` constraint:
 
 ```go
-type Number interface {
-    ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~float32 | ~float64
-}
+type Integer interface { ~int | ~int8 | ~int16 | ~int32 | ~int64 }
+type Float   interface { ~float32 | ~float64 }
+type Number  interface { Integer | Float }
 ```
 
 Full documentation is available at [pkg.go.dev/github.com/gravitton/geometry][link-go-dev-reference].
 
 ### Types
 
-| Type | Constructor | Description |
-|---|---|---|
-| `Point[T]` | `Pt(x, y)` | 2D position |
-| `Vector[T]` | `Vec(x, y)` | 2D displacement |
-| `Size[T]` | `Sz(w, h)`, `SzU(n)` | Width and height |
-| `Rectangle[T]` | `Rect(center, size)`, `RectFromMin`, `RectFromMax`, `RectFromMinMax`, `RectFromSize` | Axis-aligned rectangle (center + size) |
-| `Circle[T]` | `Circ(center, r)` | Circle (center + radius) |
-| `Line[T]` | `Ln(start, end)` | Line segment |
-| `Polygon[T]` | `Pol(vertices)` | Arbitrary polygon |
-| `RegularPolygon[T]` | `RegPol(center, size, n, angle)`, `Triangle`, `Square`, `Hexagon` | Regular polygon |
-| `Padding[T]` | `Pad(t,r,b,l)`, `PadU(n)`, `PadXY(tb, lr)` | Top/Right/Bottom/Left padding |
-| `Matrix[T]` | `Mat(a,b,c,d,e,f)`, `IdentityMatrix[T]()`, `TranslationMatrix`, `RotationMatrix[T]`, `ScaleMatrix` | 2D affine matrix |
+| Type                | Constructor                                                                                              | Description                            |
+|---------------------|----------------------------------------------------------------------------------------------------------|----------------------------------------|
+| `Point[T]`          | `Pt(x, y)`                                                                                               | 2D position                            |
+| `Vector[T]`         | `Vec(x, y)`, `VectorFromAngle`, `VectorFromAngleSize`                                                    | 2D displacement                        |
+| `Size[T]`           | `Sz(w, h)`, `SzU(n)`, `ParseSize("WxH")`                                                                 | Width and height                       |
+| `Rectangle[T]`      | `Rect(center, size)`, `RectangleFromMin`, `RectangleFromMax`, `RectangleFromMinMax`, `RectangleFromSize` | Axis-aligned rectangle (center + size) |
+| `Circle[T]`         | `Circ(center, r)`                                                                                        | Circle (center + radius)               |
+| `Line[T]`           | `Ln(start, end)`                                                                                         | Line segment                           |
+| `Polygon[T]`        | `Pol(vertices)`                                                                                          | Arbitrary polygon                      |
+| `RegularPolygon[T]` | `RegPol(center, size, n, angle)`, `Triangle`, `Square`, `Hexagon`                                        | Regular polygon                        |
+| `Padding[T]`        | `Pad(t,r,b,l)`, `PadU(n)`, `PadXY(tb, lr)`                                                               | Top/Right/Bottom/Left padding          |
+| `Matrix[T]`         | `Mat(a,b,c,d,e,f)`, `IdentityMatrix`, `TranslationMatrix`, `RotationMatrix`, `ScaleMatrix`               | 2D affine matrix                       |
+
+### Direction
+
+`Direction` names one of the eight neighbor directions on a square lattice, or `DirectionNone`. Constants are ordered
+counterclockwise from `DirectionRight`. Any other integer wraps into range, so `Rotate` accepts any step count.
+
+Three names exist for each direction — the canonical one, a compass alias for lattice and map code, and an edge/corner
+alias for rectangle anchors:
+
+| Canonical            | Compass     | Rectangle     |
+|----------------------|-------------|---------------|
+| `DirectionRight`     | `East`      | `Right`       |
+| `DirectionUpRight`   | `NorthEast` | `TopRight`    |
+| `DirectionUp`        | `North`     | `Top`         |
+| `DirectionUpLeft`    | `NorthWest` | `TopLeft`     |
+| `DirectionLeft`      | `West`      | `Left`        |
+| `DirectionDownLeft`  | `SouthWest` | `BottomLeft`  |
+| `DirectionDown`      | `South`     | `Bottom`      |
+| `DirectionDownRight` | `SouthEast` | `BottomRight` |
+
+### Axis
+
+`Axis` is `AxisHorizontal`, `AxisVertical`, or `AxisNone`. It exists to write orientation-agnostic code in terms of
+"along" and "across" instead of branching on X and Y:
 
 ### Conventions
 
 All methods return new values — no mutation.
 
-Every type exposes `.Int()`, `.Float()`, and implements `String()`, `Equal()`, `IsZero()`.
+Every shape type exposes `.Int()`, `.Float()`, and implements `String()`, `Equal()`, `IsZero()`. 
+
+The `Direction` and `Axis` enums implement `String()` and `IsNone()` instead.
 
 Types with spatial extent also implement `Bounds() Rectangle[T]`.
 
@@ -108,7 +140,7 @@ CollisionRectangleCircle[T](r Rectangle[T], c Circle[T]) bool
 ```go
 PointFromImage[T](p image.Point) Point[T]
 SizeFromImage[T](r image.Rectangle) Size[T]
-RectFromImage[T](r image.Rectangle) Rectangle[T]
+RectangleFromImage[T](r image.Rectangle) Rectangle[T]
 
 (Point[T]).Point() image.Point
 (Rectangle[T]).Rectangle() image.Rectangle
@@ -119,26 +151,27 @@ RectFromImage[T](r image.Rectangle) Rectangle[T]
 ```go
 Lerp[T](a, b T, t float64) T
 Clamp[T](v, min, max T) T
-Equal[T](a, b T) bool          // within Delta (1e-6)
+Equal[T](a, b T) bool // within Delta (1e-6)
 EqualDelta[T](a, b T, d float64) bool
 Midpoint[T](a, b T) T
 Abs[T](a T) T
 Round[T](a T) T
 Floor[T](a T) T
 Ceil[T](a T) T
-Direction[T](x T) T
+Sign[T](x T) T // 1, -1, or 0
+Mod[T Integer](n, m T) T // wraps into [0, m), correct for negative n
 Multiply[T](a T, factor float64) T
 Divide[T](a T, factor float64) T
+Parse[T](s string) (T, error)
 ToRadians(deg float64) float64
 ToDegrees(rad float64) float64
+NormalizeAngle(angle float64) float64 // into [0, 2π)
 ```
-
 
 ## Credits
 
 - [Tomáš Novotný](https://github.com/tomas-novotny)
 - [All Contributors][link-contributors]
-
 
 ## License
 

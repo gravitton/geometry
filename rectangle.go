@@ -15,6 +15,29 @@ func Rect[T Number](center Point[T], size Size[T]) Rectangle[T] {
 	return Rectangle[T]{center, size}
 }
 
+// RectangleFromMin creates a Rectangle from min point and size.
+func RectangleFromMin[T Number](min Point[T], size Size[T]) Rectangle[T] {
+	// must be same calculation (in reverse) as in Min() method
+	w, h := size.XY()
+	return Rectangle[T]{min.AddXY(w/2, h/2), size}
+}
+
+// RectangleFromMax creates a Rectangle from max point and size.
+func RectangleFromMax[T Number](max Point[T], size Size[T]) Rectangle[T] {
+	w, h := size.XY()
+	return Rectangle[T]{max.AddXY(-w+w/2, -h+h/2), size}
+}
+
+// RectangleFromMinMax creates a Rectangle from min and max points.
+func RectangleFromMinMax[T Number](min, max Point[T]) Rectangle[T] {
+	return RectangleFromMin(min, Sz(max.Subtract(min).XY()))
+}
+
+// RectangleFromSize creates a Rectangle from zero point and size.
+func RectangleFromSize[T Number](size Size[T]) Rectangle[T] {
+	return RectangleFromMin(Pt[T](0, 0), size)
+}
+
 // Translate creates a new Rectangle translated by the given vector.
 func (r Rectangle[T]) Translate(vector Vector[T]) Rectangle[T] {
 	return Rectangle[T]{r.Center.Add(vector), r.Size}
@@ -143,22 +166,22 @@ func (r Rectangle[T]) Right() Point[T] {
 // Anchor returns the point on the rectangle in the given direction from its center:
 // a corner for diagonals and the midpoint of an edge for cardinals.
 func (r Rectangle[T]) Anchor(direction Direction) Point[T] {
-	switch direction.normalized() {
-	case DirectionUpLeft:
+	switch direction.normalize() {
+	case TopLeft:
 		return r.TopLeft()
-	case DirectionUp:
+	case Top:
 		return r.Top()
-	case DirectionUpRight:
+	case TopRight:
 		return r.TopRight()
-	case DirectionRight:
+	case Right:
 		return r.Right()
-	case DirectionDownRight:
+	case BottomRight:
 		return r.BottomRight()
-	case DirectionDown:
+	case Bottom:
 		return r.Bottom()
-	case DirectionDownLeft:
+	case BottomLeft:
 		return r.BottomLeft()
-	case DirectionLeft:
+	case Left:
 		return r.Left()
 	default:
 		return r.Center
@@ -267,27 +290,4 @@ func (r Rectangle[T]) Float() Rectangle[float64] {
 // String returns a string representation of the Rectangle using min and max.
 func (r Rectangle[T]) String() string {
 	return fmt.Sprintf("%s-%s", r.Min().String(), r.Max().String())
-}
-
-// RectFromMin creates a Rectangle from min point and size.
-func RectFromMin[T Number](min Point[T], size Size[T]) Rectangle[T] {
-	// must be same calculation (in reverse) as in Min() method
-	w, h := size.XY()
-	return Rectangle[T]{min.AddXY(w/2, h/2), size}
-}
-
-// RectFromMax creates a Rectangle from max point and size.
-func RectFromMax[T Number](max Point[T], size Size[T]) Rectangle[T] {
-	w, h := size.XY()
-	return Rectangle[T]{max.AddXY(-w+w/2, -h+h/2), size}
-}
-
-// RectFromMinMax creates a Rectangle from min and max points.
-func RectFromMinMax[T Number](min, max Point[T]) Rectangle[T] {
-	return RectFromMin(min, Sz(max.Subtract(min).XY()))
-}
-
-// RectFromSize creates a Rectangle from zero point and size.
-func RectFromSize[T Number](size Size[T]) Rectangle[T] {
-	return RectFromMin(Pt[T](0, 0), size)
 }

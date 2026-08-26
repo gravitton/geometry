@@ -36,6 +36,30 @@ func TestVector_FromAngle(t *testing.T) {
 	AssertVector(t, VectorFromAngle(Pi/2, 4), 0, 4)
 }
 
+func TestVector_FromAngleSize(t *testing.T) {
+	// traces the ellipse (width*cos, height*sin)
+	AssertVector(t, VectorFromAngleSize(0, Sz(3.0, 5.0)), 3.0, 0.0)
+
+	v := VectorFromAngleSize(Pi/2, Sz(3.0, 5.0))
+	assert.EqualDelta(t, v.X, 0.0, Delta)
+	assert.EqualDelta(t, v.Y, 5.0, Delta)
+
+	v2 := VectorFromAngleSize(Pi, Sz(3.0, 5.0))
+	assert.EqualDelta(t, v2.X, -3.0, Delta)
+	assert.EqualDelta(t, v2.Y, 0.0, Delta)
+
+	// a square size is equivalent to VectorFromAngle with that length
+	for _, angle := range []float64{0, Pi / 6, Pi / 4, 2, -1.5} {
+		a := VectorFromAngleSize(angle, SzU(7.0))
+		b := VectorFromAngle(angle, 7.0)
+		assert.True(t, a.Equal(b))
+	}
+
+	// integer T rounds only after scaling: (3*cos(π/6), 3*sin(π/6)) = (2.598, 1.5) → (3, 2).
+	// Rounding the unit vector first would have given (1, 1) scaled to (3, 3).
+	AssertVector(t, VectorFromAngleSize(Pi/6, Sz(3, 3)), 3, 2)
+}
+
 func TestVector_Transform(t *testing.T) {
 	AssertVector(t, vectorInt.Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), 48, 132)
 	AssertVector(t, vectorFloat.Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), 0.085, 1.265)

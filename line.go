@@ -54,7 +54,7 @@ func (l Line[T]) Vertices() []Point[T] {
 func (l Line[T]) Bounds() Rectangle[T] {
 	minPoint := Point[T]{min(l.Start.X, l.End.X), min(l.Start.Y, l.End.Y)}
 
-	return RectFromMin(minPoint, l.Vector().Size())
+	return RectangleFromMin(minPoint, l.Vector().Size())
 }
 
 // Equal checks if the start and end points of the lines are equal.

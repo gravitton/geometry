@@ -15,6 +15,16 @@ func Pad[T Number](top, right, bottom, left T) Padding[T] {
 	return Padding[T]{top, right, bottom, left}
 }
 
+// PadU is shorthand for Padding{padding, padding, padding, padding}.
+func PadU[T Number](padding T) Padding[T] {
+	return Padding[T]{padding, padding, padding, padding}
+}
+
+// PadXY is shorthand for Padding{topBottom, leftRight, topBottom, leftRight}.
+func PadXY[T Number](topBottom, leftRight T) Padding[T] {
+	return Padding[T]{topBottom, leftRight, topBottom, leftRight}
+}
+
 // Width returns the width of the padding.
 func (p Padding[T]) Width() T {
 	return p.Left + p.Right
@@ -48,14 +58,4 @@ func (p Padding[T]) Float() Padding[float64] {
 // String returns a string representation of the Padding.
 func (p Padding[T]) String() string {
 	return fmt.Sprintf("Pad(%s;%s;%s;%s)", String(p.Top), String(p.Right), String(p.Bottom), String(p.Left))
-}
-
-// PadU is shorthand for Padding{padding, padding, padding, padding}.
-func PadU[T Number](padding T) Padding[T] {
-	return Padding[T]{padding, padding, padding, padding}
-}
-
-// PadXY is shorthand for Padding{topBottom, leftRight, topBottom, leftRight}.
-func PadXY[T Number](topBottom, leftRight T) Padding[T] {
-	return Padding[T]{topBottom, leftRight, topBottom, leftRight}
 }

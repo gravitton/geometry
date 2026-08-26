@@ -18,23 +18,23 @@ func TestRectangle_Constructor(t *testing.T) {
 	AssertRect(t, Rect(Pt(10, 16), Sz(3, 4)), 10, 16, 3, 4)
 	AssertRect(t, Rect[float64](Pt(0.5, -1.25), Sz(2.5, 3.75)), 0.5, -1.25, 2.5, 3.75)
 
-	AssertRect(t, RectFromMin(Pt(0, 0), Sz(4, 2)), 2, 1, 4, 2)
-	AssertRect(t, RectFromMin(Pt(0, 0), Sz(5, 3)), 2, 1, 5, 3)
-	AssertRect(t, RectFromMin(Pt(0.0, 0.0), Sz(1.0, 3.0)), 0.5, 1.5, 1.0, 3.0)
+	AssertRect(t, RectangleFromMin(Pt(0, 0), Sz(4, 2)), 2, 1, 4, 2)
+	AssertRect(t, RectangleFromMin(Pt(0, 0), Sz(5, 3)), 2, 1, 5, 3)
+	AssertRect(t, RectangleFromMin(Pt(0.0, 0.0), Sz(1.0, 3.0)), 0.5, 1.5, 1.0, 3.0)
 
-	AssertRect(t, RectFromMax(Pt(4, 2), Sz(4, 2)), 2, 1, 4, 2)
-	AssertRect(t, RectFromMax(Pt(5, 3), Sz(5, 3)), 2, 1, 5, 3)
-	AssertRect(t, RectFromMax(Pt(1.0, 3.0), Sz(1.0, 3.0)), 0.5, 1.5, 1.0, 3.0)
+	AssertRect(t, RectangleFromMax(Pt(4, 2), Sz(4, 2)), 2, 1, 4, 2)
+	AssertRect(t, RectangleFromMax(Pt(5, 3), Sz(5, 3)), 2, 1, 5, 3)
+	AssertRect(t, RectangleFromMax(Pt(1.0, 3.0), Sz(1.0, 3.0)), 0.5, 1.5, 1.0, 3.0)
 
-	AssertRect(t, RectFromMinMax(Pt(0, 0), Pt(4, 2)), 2, 1, 4, 2)
-	AssertRect(t, RectFromMinMax(Pt(0.0, 0.0), Pt(1.0, 3.0)), 0.5, 1.5, 1.0, 3.0)
+	AssertRect(t, RectangleFromMinMax(Pt(0, 0), Pt(4, 2)), 2, 1, 4, 2)
+	AssertRect(t, RectangleFromMinMax(Pt(0.0, 0.0), Pt(1.0, 3.0)), 0.5, 1.5, 1.0, 3.0)
 
-	AssertRect(t, RectFromSize(Sz(4, 2)), 2, 1, 4, 2)
-	AssertRect(t, RectFromSize(Sz(1.0, 3.0)), 0.5, 1.5, 1.0, 3.0)
+	AssertRect(t, RectangleFromSize(Sz(4, 2)), 2, 1, 4, 2)
+	AssertRect(t, RectangleFromSize(Sz(1.0, 3.0)), 0.5, 1.5, 1.0, 3.0)
 
 	// int(1x1) rectangle
 	AssertRect(t, Rect(Pt(0, 0), Sz(1, 1)), 0, 0, 1, 1)
-	AssertRect(t, RectFromMin(Pt(0, 0), Sz(1, 1)), 0, 0, 1, 1)
+	AssertRect(t, RectangleFromMin(Pt(0, 0), Sz(1, 1)), 0, 0, 1, 1)
 }
 
 func TestRectangle_Translate(t *testing.T) {
@@ -145,7 +145,7 @@ func TestRectangle_Edges(t *testing.T) {
 }
 
 func TestRectangle_Anchor(t *testing.T) {
-	r := RectFromMin(Pt(0, 0), Sz(10, 20))
+	r := RectangleFromMin(Pt(0, 0), Sz(10, 20))
 
 	AssertPoint(t, r.Anchor(TopLeft), 0, 0)
 	AssertPoint(t, r.Anchor(TopRight), 10, 0)
@@ -172,7 +172,7 @@ func TestRectangle_Anchor(t *testing.T) {
 	assert.True(t, r.Anchor(DirectionNone).Equal(r.Center))
 
 	// odd integer extents split the way Min and Max do
-	odd := RectFromMin(Pt(0, 0), Sz(3, 3))
+	odd := RectangleFromMin(Pt(0, 0), Sz(3, 3))
 	AssertPoint(t, odd.Anchor(TopLeft), 0, 0)
 	AssertPoint(t, odd.Anchor(BottomRight), 3, 3)
 	AssertPoint(t, odd.Top(), 1, 0)

@@ -60,22 +60,22 @@ func Divide[T Number](x T, scale float64) T {
 
 // Abs returns the absolute value.
 func Abs[T Number](x T) T {
-	return Cast[T](math.Abs(float64(x)))
+	return T(math.Abs(float64(x)))
 }
 
 // Round returns x rounded to the nearest integer.
 func Round[T Number](x T) T {
-	return Cast[T](math.Round(float64(x)))
+	return T(math.Round(float64(x)))
 }
 
 // Floor returns the largest integer value less than or equal to x.
 func Floor[T Number](x T) T {
-	return Cast[T](math.Floor(float64(x)))
+	return T(math.Floor(float64(x)))
 }
 
 // Ceil returns the smallest integer value greater than or equal to x.
 func Ceil[T Number](x T) T {
-	return Cast[T](math.Ceil(float64(x)))
+	return T(math.Ceil(float64(x)))
 }
 
 // Mod wraps n into [0, m), correctly for negative n.
@@ -123,11 +123,7 @@ func Equal[T Number](a, b T) bool {
 
 // EqualDelta reports whether a and b are equal within the given delta.
 func EqualDelta[T Number](a, b T, delta float64) bool {
-	return equalDelta(float64(a), float64(b), delta)
-}
-
-func equalDelta(a, b, delta float64) bool {
-	return math.Abs(a-b) <= delta
+	return math.Abs(float64(a-b)) <= delta
 }
 
 // Parse parses s into T using the parser and bit size appropriate for Number type.

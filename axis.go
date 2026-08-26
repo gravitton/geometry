@@ -1,6 +1,6 @@
 package geom
 
-// Axis is one of the two main coordinate axes
+// Axis is one of the two main coordinate axes.
 type Axis int
 
 const (
