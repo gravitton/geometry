@@ -19,10 +19,6 @@ func TestVector_Constructor(t *testing.T) {
 
 	AssertVector(t, ZeroVector[int](), 0, 0)
 	AssertVector(t, OneVector[float64](), 1, 1)
-	AssertVector(t, UpVector[float64](), 0, -1)
-	AssertVector(t, DownVector[float64](), 0, 1)
-	AssertVector(t, RightVector[float64](), 1, 0)
-	AssertVector(t, LeftVector[float64](), -1, 0)
 }
 
 func TestVector_FromAngle(t *testing.T) {
@@ -145,8 +141,18 @@ func TestVector_LengthSquared(t *testing.T) {
 }
 
 func TestVector_Angle(t *testing.T) {
+	assert.EqualDelta(t, Vec(0, 0).Angle(), 0, Delta)
 	assert.EqualDelta(t, Vec(2, 2).Angle(), ToRadians(45), Delta)
 	assert.EqualDelta(t, vectorFloat.Angle(), -0.39479111, Delta)
+}
+
+func TestVector_Direction(t *testing.T) {
+	assert.Equal(t, Vec(3, 0).Direction(), DirectionRight)
+	assert.Equal(t, Vec(2.0, -2.0).Direction(), DirectionUpRight)
+
+	// a nearly-horizontal vector still snaps to Right
+	assert.Equal(t, Vec(10.0, 1.0).Direction(), DirectionRight)
+	assert.Equal(t, Vec(0, 0).Direction(), DirectionNone)
 }
 
 func TestVector_Lerp(t *testing.T) {
@@ -186,52 +192,52 @@ func TestVector_IsOne(t *testing.T) {
 func TestVector_IsUp(t *testing.T) {
 	assert.False(t, ZeroVector[int]().IsUp())
 	assert.False(t, OneVector[int]().IsUp())
-	assert.True(t, UpVector[int]().IsUp())
-	assert.False(t, DownVector[int]().IsUp())
-	assert.False(t, LeftVector[int]().IsUp())
-	assert.False(t, RightVector[int]().IsUp())
-	assert.True(t, UpLeftVector().IsUp())
-	assert.True(t, UpRightVector().IsUp())
-	assert.False(t, DownLeftVector().IsUp())
-	assert.False(t, DownRightVector().IsUp())
+	assert.True(t, DirectionUp.Unit[int]().IsUp())
+	assert.False(t, DirectionDown.Unit[int]().IsUp())
+	assert.False(t, DirectionLeft.Unit[int]().IsUp())
+	assert.False(t, DirectionRight.Unit[int]().IsUp())
+	assert.True(t, DirectionUpLeft.Unit[float64]().IsUp())
+	assert.True(t, DirectionUpRight.Unit[float64]().IsUp())
+	assert.False(t, DirectionDownLeft.Unit[float64]().IsUp())
+	assert.False(t, DirectionDownRight.Unit[float64]().IsUp())
 }
 
 func TestVector_IsDown(t *testing.T) {
 	assert.False(t, ZeroVector[int]().IsDown())
 	assert.True(t, OneVector[int]().IsDown())
-	assert.False(t, UpVector[int]().IsDown())
-	assert.True(t, DownVector[int]().IsDown())
-	assert.False(t, LeftVector[int]().IsDown())
-	assert.False(t, RightVector[int]().IsDown())
-	assert.False(t, UpLeftVector().IsDown())
-	assert.False(t, UpRightVector().IsDown())
-	assert.True(t, DownLeftVector().IsDown())
-	assert.True(t, DownRightVector().IsDown())
+	assert.False(t, DirectionUp.Unit[int]().IsDown())
+	assert.True(t, DirectionDown.Unit[int]().IsDown())
+	assert.False(t, DirectionLeft.Unit[int]().IsDown())
+	assert.False(t, DirectionRight.Unit[int]().IsDown())
+	assert.False(t, DirectionUpLeft.Unit[float64]().IsDown())
+	assert.False(t, DirectionUpRight.Unit[float64]().IsDown())
+	assert.True(t, DirectionDownLeft.Unit[float64]().IsDown())
+	assert.True(t, DirectionDownRight.Unit[float64]().IsDown())
 }
 
 func TestVector_IsLeft(t *testing.T) {
 	assert.False(t, ZeroVector[int]().IsLeft())
 	assert.False(t, OneVector[int]().IsLeft())
-	assert.False(t, UpVector[int]().IsLeft())
-	assert.False(t, DownVector[int]().IsLeft())
-	assert.True(t, LeftVector[int]().IsLeft())
-	assert.False(t, RightVector[int]().IsLeft())
-	assert.True(t, UpLeftVector().IsLeft())
-	assert.False(t, UpRightVector().IsLeft())
-	assert.True(t, DownLeftVector().IsLeft())
-	assert.False(t, DownRightVector().IsLeft())
+	assert.False(t, DirectionUp.Unit[int]().IsLeft())
+	assert.False(t, DirectionDown.Unit[int]().IsLeft())
+	assert.True(t, DirectionLeft.Unit[int]().IsLeft())
+	assert.False(t, DirectionRight.Unit[int]().IsLeft())
+	assert.True(t, DirectionUpLeft.Unit[float64]().IsLeft())
+	assert.False(t, DirectionUpRight.Unit[float64]().IsLeft())
+	assert.True(t, DirectionDownLeft.Unit[float64]().IsLeft())
+	assert.False(t, DirectionDownRight.Unit[float64]().IsLeft())
 }
 func TestVector_IsRight(t *testing.T) {
 	assert.False(t, ZeroVector[int]().IsRight())
 	assert.True(t, OneVector[int]().IsRight())
-	assert.False(t, UpVector[int]().IsRight())
-	assert.False(t, DownVector[int]().IsRight())
-	assert.False(t, LeftVector[int]().IsRight())
-	assert.True(t, RightVector[int]().IsRight())
-	assert.False(t, UpLeftVector().IsRight())
-	assert.True(t, UpRightVector().IsRight())
-	assert.False(t, DownLeftVector().IsRight())
-	assert.True(t, DownRightVector().IsRight())
+	assert.False(t, DirectionUp.Unit[int]().IsRight())
+	assert.False(t, DirectionDown.Unit[int]().IsRight())
+	assert.False(t, DirectionLeft.Unit[int]().IsRight())
+	assert.True(t, DirectionRight.Unit[int]().IsRight())
+	assert.False(t, DirectionUpLeft.Unit[float64]().IsRight())
+	assert.True(t, DirectionUpRight.Unit[float64]().IsRight())
+	assert.False(t, DirectionDownLeft.Unit[float64]().IsRight())
+	assert.True(t, DirectionDownRight.Unit[float64]().IsRight())
 }
 
 func TestVector_IsNormalized(t *testing.T) {
@@ -242,14 +248,9 @@ func TestVector_IsNormalized(t *testing.T) {
 	assert.True(t, Vec(1, 0).IsNormalized())
 	assert.True(t, Vec(OneOverSqrt2, OneOverSqrt2).IsNormalized())
 
-	assert.True(t, UpVector[float64]().IsNormalized())
-	assert.True(t, DownVector[float64]().IsNormalized())
-	assert.True(t, LeftVector[float64]().IsNormalized())
-	assert.True(t, RightVector[float64]().IsNormalized())
-	assert.True(t, UpLeftVector().IsNormalized())
-	assert.True(t, UpRightVector().IsNormalized())
-	assert.True(t, DownLeftVector().IsNormalized())
-	assert.True(t, DownRightVector().IsNormalized())
+	for _, direction := range Directions {
+		assert.True(t, direction.Unit[float64]().IsNormalized(), direction.String())
+	}
 }
 func TestVector_Less(t *testing.T) {
 	assert.False(t, vectorInt.Less(18))

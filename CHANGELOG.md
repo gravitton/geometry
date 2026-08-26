@@ -8,15 +8,28 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased](https://github.com/gravitton/geometry/compare/v1.9.0...master)
 ### Added
-- `Axis` – names one of the two coordinate axes, or `AxisNone`, with `Cross`, `Direction`, `IsNone`, `Vector`, `Size`, `Along`, `Across`, `Project`, and `ScaleAlong` for writing orientation-agnostic code in terms of "along" and "across"
 - `Integer` and `Float` constraints – split out of `Number`, which is now `Integer | Float`
 - `Mod[T Integer](n, m T) T` – wraps `n` into `[0, m)`, correctly for negative `n`
+- `Axis` – names one of the two coordinate axes, or `AxisNone`, with methods for writing orientation-agnostic code in terms of "along" and "across"
+- `Direction` – one of the eight neighbor directions on a square lattice, or `DirectionNone`, ordered counterclockwise from `DirectionRight`
+- `East`/`North`/`West`/`South` (and diagonals) and `Top`/`Bottom`/`Left`/`Right`/`TopLeft`/`TopRight`/`BottomLeft`/`BottomRight` – aliases for lattice code and edge/corner aliases for rectangle anchors
+- `Directions`, `CardinalDirections`, `DiagonalDirections`, `Axes` – the direction and axis sets in counterclockwise order
+- `DirectionFromAngle(angle float64) Direction` – returns the direction nearest to an angle
+- `Vector.Direction() Direction` – returns the direction nearest to a vector, or `DirectionNone` for the zero vector
+- `Rectangle.Anchor(direction Direction) Point[T]` – returns a corner for diagonals and an edge midpoint for cardinals, unifying `TopLeft`, `TopRight`, `BottomLeft`, and `BottomRight`
+- `Rectangle.Top()`, `Rectangle.Bottom()`, `Rectangle.Left()`, `Rectangle.Right()` – edge-midpoint accessors completing the corner accessor family
+- `Rectangle.TopEdge()`, `Rectangle.BottomEdge()`, `Rectangle.LeftEdge()`, `Rectangle.RightEdge()` – dedicated edge accessors, which `Edges()` now composes
+- `Circle.Anchor(direction Direction) Point[T]` – returns the boundary point in the given direction from the center, or the center for `DirectionNone`
 
 ### Changed
 - Require Go 1.27
 - `Direction[T](x T) T` renamed to `Sign[T](x T) T`, freeing the name for the new `Direction` type
 - `Line.Direction() Vector[T]` renamed to `Line.Vector()`, since it returns the start-to-end vector rather than a `Direction`
 - `Line.Reversed()` renamed to `Line.Reverse()`, matching the imperative naming of every other immutable method
+- `DirectionFromAxes(up, down, left, right bool)` now returns `Direction` instead of `Vector[float64]` (**breaking**)
+
+### Removed
+- `UpVector`, `DownVector`, `LeftVector`, `RightVector`, `UpLeftVector`, `UpRightVector`, `DownLeftVector`, `DownRightVector` – superseded by `DirectionX.Unit[T]()` (**breaking**)
 
 
 ## [v1.9.0 (2026-05-29)](https://github.com/gravitton/geometry/compare/v1.8.1...v1.9.0)

@@ -98,12 +98,12 @@ func (rp RegularPolygon[T]) Empty() bool {
 	return rp.N == 0
 }
 
-// Int converts the regular polygon to a [int] regular polygon.
+// Int converts the regular polygon to a RegularPolygon[int].
 func (rp RegularPolygon[T]) Int() RegularPolygon[int] {
 	return RegularPolygon[int]{rp.Center.Int(), rp.Size.Int(), rp.N, rp.Angle}
 }
 
-// Float converts the regular polygon to a [float64] regular polygon.
+// Float converts the regular polygon to a RegularPolygon[float64].
 func (rp RegularPolygon[T]) Float() RegularPolygon[float64] {
 	return RegularPolygon[float64]{rp.Center.Float(), rp.Size.Float(), rp.N, rp.Angle}
 }

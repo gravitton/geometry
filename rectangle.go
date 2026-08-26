@@ -120,18 +120,78 @@ func (r Rectangle[T]) TopRight() Point[T] {
 	return Point[T]{r.Max().X, r.Min().Y}
 }
 
+// Top returns the midpoint of the top edge.
+func (r Rectangle[T]) Top() Point[T] {
+	return Point[T]{r.Center.X, r.Min().Y}
+}
+
+// Bottom returns the midpoint of the bottom edge.
+func (r Rectangle[T]) Bottom() Point[T] {
+	return Point[T]{r.Center.X, r.Max().Y}
+}
+
+// Left returns the midpoint of the left edge.
+func (r Rectangle[T]) Left() Point[T] {
+	return Point[T]{r.Min().X, r.Center.Y}
+}
+
+// Right returns the midpoint of the right edge.
+func (r Rectangle[T]) Right() Point[T] {
+	return Point[T]{r.Max().X, r.Center.Y}
+}
+
+// Anchor returns the point on the rectangle in the given direction from its center:
+// a corner for diagonals and the midpoint of an edge for cardinals.
+func (r Rectangle[T]) Anchor(direction Direction) Point[T] {
+	switch direction.normalized() {
+	case DirectionUpLeft:
+		return r.TopLeft()
+	case DirectionUp:
+		return r.Top()
+	case DirectionUpRight:
+		return r.TopRight()
+	case DirectionRight:
+		return r.Right()
+	case DirectionDownRight:
+		return r.BottomRight()
+	case DirectionDown:
+		return r.Bottom()
+	case DirectionDownLeft:
+		return r.BottomLeft()
+	case DirectionLeft:
+		return r.Left()
+	default:
+		return r.Center
+	}
+}
+
+// LeftEdge returns the left edge, from the top-left to the bottom-left corner.
+func (r Rectangle[T]) LeftEdge() Line[T] {
+	return Ln(r.TopLeft(), r.BottomLeft())
+}
+
+// BottomEdge returns the bottom edge, from the bottom-left to the bottom-right corner.
+func (r Rectangle[T]) BottomEdge() Line[T] {
+	return Ln(r.BottomLeft(), r.BottomRight())
+}
+
+// RightEdge returns the right edge, from the bottom-right to the top-right corner.
+func (r Rectangle[T]) RightEdge() Line[T] {
+	return Ln(r.BottomRight(), r.TopRight())
+}
+
+// TopEdge returns the top edge, from the top-right to the top-left corner.
+func (r Rectangle[T]) TopEdge() Line[T] {
+	return Ln(r.TopRight(), r.TopLeft())
+}
+
 // Edges returns the rectangle edges as lines in order starting Min point, counter-clockwise.
 func (r Rectangle[T]) Edges() []Line[T] {
-	tl := r.TopLeft()
-	bl := r.BottomLeft()
-	br := r.BottomRight()
-	tr := r.TopRight()
-
 	return []Line[T]{
-		Ln(tl, bl),
-		Ln(bl, br),
-		Ln(br, tr),
-		Ln(tr, tl),
+		r.LeftEdge(),
+		r.BottomEdge(),
+		r.RightEdge(),
+		r.TopEdge(),
 	}
 }
 
@@ -194,12 +254,12 @@ func (r Rectangle[T]) Polygon() Polygon[T] {
 	return Polygon[T]{r.Vertices()}
 }
 
-// Int converts the rectangle to a [int] rectangle.
+// Int converts the rectangle to a Rectangle[int].
 func (r Rectangle[T]) Int() Rectangle[int] {
 	return Rectangle[int]{r.Center.Int(), r.Size.Int()}
 }
 
-// Float converts the rectangle to a [float64] rectangle.
+// Float converts the rectangle to a Rectangle[float64].
 func (r Rectangle[T]) Float() Rectangle[float64] {
 	return Rectangle[float64]{r.Center.Float(), r.Size.Float()}
 }

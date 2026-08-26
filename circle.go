@@ -65,6 +65,12 @@ func (c Circle[T]) Bounds() Rectangle[T] {
 	return Rectangle[T]{c.Center, Size[T]{c.Radius, c.Radius}}
 }
 
+// Anchor returns the point on the circle boundary in the given direction from its center,
+// or the center itself for DirectionNone.
+func (c Circle[T]) Anchor(direction Direction) Point[T] {
+	return c.Center.Add(direction.Vector(c.Radius))
+}
+
 // Equal checks for equal center and radius with given circle.
 func (c Circle[T]) Equal(circle Circle[T]) bool {
 	return c.Center.Equal(circle.Center) && Equal(c.Radius, circle.Radius)
@@ -80,12 +86,12 @@ func (c Circle[T]) Contains(point Point[T]) bool {
 	return c.Center.Subtract(point).Less(c.Radius)
 }
 
-// Int converts the circle to a [int] circle.
+// Int converts the circle to a Circle[int].
 func (c Circle[T]) Int() Circle[int] {
 	return Circle[int]{c.Center.Int(), Cast[int](float64(c.Radius))}
 }
 
-// Float converts the circle to a [float64] circle.
+// Float converts the circle to a Circle[float64].
 func (c Circle[T]) Float() Circle[float64] {
 	return Circle[float64]{c.Center.Float(), float64(c.Radius)}
 }

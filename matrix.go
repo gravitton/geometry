@@ -118,7 +118,7 @@ func (m Matrix[T]) IsZero() bool {
 	return m.Equal(Matrix[T]{})
 }
 
-// Int converts the matrix to a [int] matrix.
+// Int converts the matrix to a Matrix[int].
 func (m Matrix[T]) Int() Matrix[int] {
 	return Matrix[int]{
 		int(m.A), int(m.B), int(m.C),
@@ -126,7 +126,7 @@ func (m Matrix[T]) Int() Matrix[int] {
 	}
 }
 
-// Float converts the matrix to a [float64] matrix.
+// Float converts the matrix to a Matrix[float64].
 func (m Matrix[T]) Float() Matrix[float64] {
 	return Matrix[float64]{
 		float64(m.A), float64(m.B), float64(m.C),

@@ -29,7 +29,7 @@ func TestAxis_Direction(t *testing.T) {
 			direction := axis.Direction(positive)
 
 			assert.Equal(t, direction.Axis(), axis, direction.String())
-			assert.Equal(t, direction.Positive(), positive, direction.String())
+			assert.Equal(t, direction.IsPositive(), positive, direction.String())
 		}
 	}
 }
@@ -89,4 +89,5 @@ func TestAxis_String(t *testing.T) {
 	assert.Equal(t, AxisHorizontal.String(), "Horizontal")
 	assert.Equal(t, AxisVertical.String(), "Vertical")
 	assert.Equal(t, AxisNone.String(), "None")
+	assert.Equal(t, Axis(2).String(), "None")
 }

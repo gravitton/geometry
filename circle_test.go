@@ -70,6 +70,19 @@ func TestCircle_Bounds(t *testing.T) {
 	AssertRect(t, circleFloat.Bounds(), 0.6, -0.25, 1.2, 1.2)
 }
 
+func TestCircle_Anchor(t *testing.T) {
+	c := Circ(Pt(10.0, 10.0), 5.0)
+
+	AssertPoint(t, c.Anchor(Right), 15, 10)
+	AssertPoint(t, c.Anchor(Left), 5, 10)
+	AssertPoint(t, c.Anchor(Top), 10, 5)
+	AssertPoint(t, c.Anchor(Bottom), 10, 15)
+	AssertPoint(t, c.Anchor(DirectionNone), 10, 10)
+
+	// diagonals land on the boundary too, unlike Rectangle's corners
+	assert.EqualDelta(t, c.Center.DistanceTo(c.Anchor(DirectionUpRight)), c.Radius, Delta)
+}
+
 func TestCircle_Equal(t *testing.T) {
 	assert.False(t, circleInt.Equal(Circ(Pt(3, -3), 10)))
 	assert.True(t, circleInt.Equal(circleInt))

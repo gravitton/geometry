@@ -35,12 +35,12 @@ func (p Padding[T]) Size() Size[T] {
 	return Size[T]{p.Width(), p.Height()}
 }
 
-// Int converts the padding to a [int] padding.
+// Int converts the padding to a Padding[int].
 func (p Padding[T]) Int() Padding[int] {
 	return Padding[int]{Cast[int](float64(p.Top)), Cast[int](float64(p.Right)), Cast[int](float64(p.Bottom)), Cast[int](float64(p.Left))}
 }
 
-// Float converts the padding to a [float64] padding.
+// Float converts the padding to a Padding[float64].
 func (p Padding[T]) Float() Padding[float64] {
 	return Padding[float64]{float64(p.Top), float64(p.Right), float64(p.Bottom), float64(p.Left)}
 }

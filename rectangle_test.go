@@ -136,6 +136,49 @@ func TestRectangle_Edges(t *testing.T) {
 	assert.Equal(t, edges[1].Start, r.BottomLeft())
 	assert.Equal(t, edges[2].Start, r.BottomRight())
 	assert.Equal(t, edges[3].Start, r.TopRight())
+
+	// Edges agrees with the dedicated accessors, in the same order
+	assert.Equal(t, edges[0], r.LeftEdge())
+	assert.Equal(t, edges[1], r.BottomEdge())
+	assert.Equal(t, edges[2], r.RightEdge())
+	assert.Equal(t, edges[3], r.TopEdge())
+}
+
+func TestRectangle_Anchor(t *testing.T) {
+	r := RectFromMin(Pt(0, 0), Sz(10, 20))
+
+	AssertPoint(t, r.Anchor(TopLeft), 0, 0)
+	AssertPoint(t, r.Anchor(TopRight), 10, 0)
+	AssertPoint(t, r.Anchor(BottomLeft), 0, 20)
+	AssertPoint(t, r.Anchor(BottomRight), 10, 20)
+
+	AssertPoint(t, r.Anchor(Top), 5, 0)
+	AssertPoint(t, r.Anchor(Bottom), 5, 20)
+	AssertPoint(t, r.Anchor(DirectionLeft), 0, 10)
+	AssertPoint(t, r.Anchor(DirectionRight), 10, 10)
+
+	AssertPoint(t, r.Anchor(DirectionNone), 5, 10)
+
+	// garbage input still wraps to a meaningful direction
+	AssertPoint(t, r.Anchor(Direction(99)), r.TopLeft().X, r.TopLeft().Y)
+
+	// corners and edge midpoints agree with the dedicated accessors
+	assert.True(t, r.Anchor(TopLeft).Equal(r.TopLeft()))
+	assert.True(t, r.Anchor(BottomRight).Equal(r.BottomRight()))
+	assert.True(t, r.Anchor(Top).Equal(r.Top()))
+	assert.True(t, r.Anchor(Bottom).Equal(r.Bottom()))
+	assert.True(t, r.Anchor(DirectionLeft).Equal(r.Left()))
+	assert.True(t, r.Anchor(DirectionRight).Equal(r.Right()))
+	assert.True(t, r.Anchor(DirectionNone).Equal(r.Center))
+
+	// odd integer extents split the way Min and Max do
+	odd := RectFromMin(Pt(0, 0), Sz(3, 3))
+	AssertPoint(t, odd.Anchor(TopLeft), 0, 0)
+	AssertPoint(t, odd.Anchor(BottomRight), 3, 3)
+	AssertPoint(t, odd.Top(), 1, 0)
+	AssertPoint(t, odd.Bottom(), 1, 3)
+	AssertPoint(t, odd.Left(), 0, 1)
+	AssertPoint(t, odd.Right(), 3, 1)
 }
 
 func TestRectangle_Area(t *testing.T) {

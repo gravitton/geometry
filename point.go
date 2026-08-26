@@ -143,12 +143,12 @@ func (p Point[T]) Vector() Vector[T] {
 	return Vector[T](p)
 }
 
-// Int converts the point to a [int] point.
+// Int converts the point to a Point[int].
 func (p Point[T]) Int() Point[int] {
 	return Point[int]{Cast[int](float64(p.X)), Cast[int](float64(p.Y))}
 }
 
-// Float converts the point to a [float64] point.
+// Float converts the point to a Point[float64].
 func (p Point[T]) Float() Point[float64] {
 	return Point[float64]{float64(p.X), float64(p.Y)}
 }
