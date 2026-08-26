@@ -6,7 +6,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 
-## [Unreleased](https://github.com/gravitton/geometry/compare/v1.9.0...master)
+## [Unreleased](https://github.com/gravitton/geometry/compare/v1.10.0...master)
+
+
+## [v1.10.0 (2026-08-26)](https://github.com/gravitton/geometry/compare/v1.9.0...v1.10.0)
 ### Added
 - `Integer` and `Float` constraints – split out of `Number`, which is now `Integer | Float`
 - `Mod[T Integer](n, m T) T` – wraps `n` into `[0, m)`, correctly for negative `n`
