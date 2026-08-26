@@ -89,7 +89,8 @@ func (rp RegularPolygon[T]) Rotate(angle float64) RegularPolygon[T] {
 }
 
 // Vertices returns the polygon vertices in order starting from angle 0, by increasing angle —
-// the same order as Directions, and clockwise as drawn on a screen with Y pointing down.
+// the same winding as Directions and Rectangle.Vertices, and clockwise as drawn on a screen
+// with Y pointing down.
 // For integer T, each vertex component is rounded to the nearest integer, so vertices at
 // non-right angles may be off by up to half a unit. Use float64 for exact positions.
 func (rp RegularPolygon[T]) Vertices() []Point[T] {

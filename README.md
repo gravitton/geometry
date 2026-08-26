@@ -8,7 +8,7 @@
 
 Generic immutable 2D geometry library for game development.
 
-> Uses a top-left origin with +Y down. This only affects directional getters (`Top`, `Bottom`, `Up`, `Down`) and rotation: positive steps are counterclockwise in the standard mathematical sense, which appears clockwise on screen.
+> Uses a top-left origin with +Y down. This only affects directional getters (`Top`, `Bottom`, `Up`, `Down`) and rotation. Angles follow the standard mathematical convention, so a positive angle or step is counterclockwise in math coordinates and appears clockwise on screen; a negative one appears counterclockwise on screen. Direction order and polygon winding follow the same rule.
 
 ## Installation
 
@@ -99,22 +99,26 @@ Full documentation is available at [pkg.go.dev/github.com/gravitton/geometry][li
 
 ### Direction
 
-`Direction` names one of the eight neighbor directions on a square lattice, or `DirectionNone`. Constants are ordered
-counterclockwise from `DirectionRight`. Any other integer wraps into range, so `Rotate` accepts any step count.
+`Direction` names one of the eight neighbor directions on a square lattice, or `DirectionNone`. Constants are ordered by
+increasing angle from `DirectionRight`, so `Rotate(1)` and a `Vector.Rotate` of `+π/4` turn the same way. Any other
+integer wraps into range, so `Rotate` accepts any step count.
 
 Three names exist for each direction — the canonical one, a compass alias for lattice and map code, and an edge/corner
 alias for rectangle anchors:
 
-| Canonical            | Compass     | Rectangle     |
-|----------------------|-------------|---------------|
-| `DirectionRight`     | `East`      | `Right`       |
-| `DirectionUpRight`   | `NorthEast` | `TopRight`    |
-| `DirectionUp`        | `North`     | `Top`         |
-| `DirectionUpLeft`    | `NorthWest` | `TopLeft`     |
-| `DirectionLeft`      | `West`      | `Left`        |
-| `DirectionDownLeft`  | `SouthWest` | `BottomLeft`  |
-| `DirectionDown`      | `South`     | `Bottom`      |
-| `DirectionDownRight` | `SouthEast` | `BottomRight` |
+| Index | Angle   | Canonical            | Compass     | Rectangle     |
+|-------|---------|----------------------|-------------|---------------|
+| 0     | `0°`    | `DirectionRight`     | `East`      | `Right`       |
+| 1     | `45°`   | `DirectionDownRight` | `SouthEast` | `BottomRight` |
+| 2     | `90°`   | `DirectionDown`      | `South`     | `Bottom`      |
+| 3     | `135°`  | `DirectionDownLeft`  | `SouthWest` | `BottomLeft`  |
+| 4     | `180°`  | `DirectionLeft`      | `West`      | `Left`        |
+| 5     | `-135°` | `DirectionUpLeft`    | `NorthWest` | `TopLeft`     |
+| 6     | `-90°`  | `DirectionUp`        | `North`     | `Top`         |
+| 7     | `-45°`  | `DirectionUpRight`   | `NorthEast` | `TopRight`    |
+
+`Angle()` reports the angle in radians over `atan2`'s `(-π, π]` range, which is why the last three rows are negative
+rather than `225°`–`315°`. `DirectionFromAngle` is its inverse and the two round-trip for every direction.
 
 ### Axis
 
@@ -131,6 +135,9 @@ The `Direction` and `Axis` enums implement `String()` and `IsNone()` instead.
 Types with spatial extent also implement `Bounds() Rectangle[T]`.
 
 `Line`, `Polygon`, and `RegularPolygon` also expose `Vertices() []Point[T]`.
+
+`Rectangle.Vertices`, `Rectangle.Edges`, and `RegularPolygon.Vertices` all wind by increasing angle, the same order as
+`Directions` — clockwise as drawn.
 
 ### Collision
 

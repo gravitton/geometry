@@ -95,8 +95,8 @@ func (v Vector[T]) Negate() Vector[T] {
 }
 
 // Rotate creates a new Vector rotated by the given angle (in radians), in the standard math
-// convention where Y grows upward. On a screen with Y pointing down a positive angle therefore
-// appears clockwise — the opposite sense to a positive Direction.Rotate step.
+// convention where Y grows upward, so a positive angle appears clockwise on a screen with Y
+// pointing down. This is the same sense as a positive Direction.Rotate step.
 // For integer T, sin/cos components are rounded; only multiples of 90° give exact results.
 func (v Vector[T]) Rotate(angle float64) Vector[T] {
 	sin, cos := math.Sincos(angle)

@@ -65,7 +65,7 @@ func TestDirection_Order(t *testing.T) {
 		assert.Equal(t, int(direction), i)
 	}
 
-	// each step is an eighth turn counterclockwise, so the offset rotates accordingly
+	// each step is an eighth turn of increasing angle, so the offset advances accordingly
 	for i, direction := range Directions {
 		AssertVector(t, direction.Offset[int](), directionOffsets[i].X, directionOffsets[i].Y, direction.String())
 	}
