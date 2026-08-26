@@ -1,6 +1,7 @@
 package geom
 
 import (
+	"cmp"
 	"fmt"
 )
 
@@ -131,6 +132,16 @@ func (p Point[T]) AngleTo(point Point[T]) float64 {
 // Equal checks for equal X and Y values with given point.
 func (p Point[T]) Equal(point Point[T]) bool {
 	return Equal(p.X, point.X) && Equal(p.Y, point.Y)
+}
+
+// Compare returns -1, 0, or +1 as p sorts before, with, or after point, ordering by
+// X and then by Y. It follows the [cmp.Compare] convention.
+func (p Point[T]) Compare(point Point[T]) int {
+	if c := cmp.Compare(p.X, point.X); c != 0 {
+		return c
+	}
+
+	return cmp.Compare(p.Y, point.Y)
 }
 
 // IsZero checks if X and Y values are zero.

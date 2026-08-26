@@ -3,6 +3,7 @@ package geom
 import (
 	"encoding/json"
 	"math"
+	"slices"
 	"testing"
 
 	"github.com/gravitton/assert"
@@ -123,6 +124,56 @@ func TestPoint_Equal(t *testing.T) {
 	assert.False(t, pointFloat.Equal(Pt(100.1, -0.1)))
 	assert.True(t, pointFloat.Equal(pointFloat))
 	assert.True(t, pointFloat.Equal(Pt(0.6, -0.250001)))
+}
+
+func TestPoint_Compare(t *testing.T) {
+	t.Run("orders by x first", func(t *testing.T) {
+		assert.Equal(t, Pt(1, 9).Compare(Pt(2, 0)), -1)
+		assert.Equal(t, Pt(2, 0).Compare(Pt(1, 9)), 1)
+	})
+	t.Run("falls back to y", func(t *testing.T) {
+		assert.Equal(t, Pt(1, 1).Compare(Pt(1, 2)), -1)
+		assert.Equal(t, Pt(1, 2).Compare(Pt(1, 1)), 1)
+	})
+	t.Run("equal", func(t *testing.T) {
+		assert.Equal(t, Pt(1, 2).Compare(Pt(1, 2)), 0)
+		assert.Equal(t, pointFloat.Compare(pointFloat), 0)
+	})
+	t.Run("negative coordinates", func(t *testing.T) {
+		assert.Equal(t, Pt(-2, 0).Compare(Pt(-1, 0)), -1)
+		assert.Equal(t, Pt(0, -2).Compare(Pt(0, -1)), -1)
+	})
+	t.Run("antisymmetric and transitive", func(t *testing.T) {
+		points := []Point[int]{Pt(0, 0), Pt(0, 1), Pt(1, -1), Pt(1, 0), Pt(-1, 5)}
+		for _, a := range points {
+			for _, b := range points {
+				assert.Equal(t, a.Compare(b), -b.Compare(a))
+
+				for _, c := range points {
+					if a.Compare(b) < 0 && b.Compare(c) < 0 {
+						assert.True(t, a.Compare(c) < 0)
+					}
+				}
+			}
+		}
+	})
+	t.Run("sorts", func(t *testing.T) {
+		points := []Point[int]{Pt(1, 2), Pt(-1, 0), Pt(1, -3), Pt(0, 7)}
+		slices.SortFunc(points, Point[int].Compare)
+
+		assert.Equal(t, points, []Point[int]{Pt(-1, 0), Pt(0, 7), Pt(1, -3), Pt(1, 2)})
+
+		index, found := slices.BinarySearchFunc(points, Pt(1, -3), Point[int].Compare)
+		assert.True(t, found)
+		assert.Equal(t, index, 2)
+	})
+	t.Run("exact, unlike Equal", func(t *testing.T) {
+		// within Delta, so Equal reports true while Compare still orders them
+		a, b := Pt(0.0, 0.0), Pt(0.0, Delta/2)
+
+		assert.True(t, a.Equal(b))
+		assert.Equal(t, a.Compare(b), -1)
+	})
 }
 
 func TestPoint_IsZero(t *testing.T) {
