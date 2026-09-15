@@ -316,7 +316,7 @@ func TestVector_Float(t *testing.T) {
 
 func TestVector_String(t *testing.T) {
 	assert.Equal(t, vectorInt.String(), "⟨10,16⟩")
-	assert.Equal(t, Vec(100, -34.0000115).String(), "⟨100,-34.00⟩")
+	assert.Equal(t, Vec(100, -34.0000115).String(), "⟨100.00,-34.00⟩")
 }
 
 func TestVector_Marshall(t *testing.T) {

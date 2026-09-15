@@ -1,7 +1,6 @@
 package geom
 
 import (
-	"fmt"
 	"math"
 	"strconv"
 )
@@ -126,29 +125,36 @@ func EqualDelta[T Number](a, b T, delta float64) bool {
 	return math.Abs(float64(a-b)) <= delta
 }
 
-// Parse parses s into T using the parser and bit size appropriate for Number type.
+// Parse parses s into T: an integer T with strconv.ParseInt, a float T with strconv.ParseFloat.
+// Parsing is done in int64 or float64 and narrowed to T, so defined types over those kinds
+// (type Coord int) parse like their underlying type. A value outside the range of T is an error,
+// never a wrapped integer or an infinity.
 func Parse[T Number](s string) (T, error) {
-	var zero T
-	switch any(zero).(type) {
-	case int8:
-		v, err := strconv.ParseInt(s, 10, 8)
-		return T(v), err
-	case int16:
-		v, err := strconv.ParseInt(s, 10, 16)
-		return T(v), err
-	case int32:
-		v, err := strconv.ParseInt(s, 10, 32)
-		return T(v), err
-	case int64, int:
+	if isIntType[T]() {
 		v, err := strconv.ParseInt(s, 10, 64)
-		return T(v), err
-	case float32:
-		v, err := strconv.ParseFloat(s, 32)
-		return T(v), err
-	case float64:
-		v, err := strconv.ParseFloat(s, 64)
-		return T(v), err
-	default:
-		return 0, fmt.Errorf("unsupported number type %T", zero)
+		if err != nil {
+			return 0, err
+		}
+
+		if int64(T(v)) != v {
+			return 0, rangeError(s)
+		}
+
+		return T(v), nil
 	}
+
+	v, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	if math.IsInf(float64(T(v)), 0) && !math.IsInf(v, 0) {
+		return 0, rangeError(s)
+	}
+
+	return T(v), nil
+}
+
+func rangeError(s string) error {
+	return &strconv.NumError{Func: "Parse", Num: s, Err: strconv.ErrRange}
 }

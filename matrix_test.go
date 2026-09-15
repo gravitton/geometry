@@ -189,8 +189,11 @@ func TestMatrix_Float(t *testing.T) {
 }
 
 func TestMatrix_String(t *testing.T) {
-	assert.Equal(t, IdentityMatrix[float64]().String(), "[[1, 0, 0], [0, 1, 0]]")
-	assert.Equal(t, TranslationMatrix(5.1, 3).String(), "[[1, 0, 5.10], [0, 1, 3]]")
+	assert.Equal(t, IdentityMatrix[float64]().String(), "[[1.00, 0.00, 0.00], [0.00, 1.00, 0.00]]")
+	assert.Equal(t, TranslationMatrix(5.1, 3).String(), "[[1.00, 0.00, 5.10], [0.00, 1.00, 3.00]]")
+
+	assert.Equal(t, IdentityMatrix[float32]().String(), "[[1.00, 0.00, 0.00], [0.00, 1.00, 0.00]]")
+	assert.Equal(t, TranslationMatrix[float32](5, 3).String(), "[[1.00, 0.00, 5.00], [0.00, 1.00, 3.00]]")
 
 	assert.Equal(t, IdentityMatrix[int]().String(), "[[1, 0, 0], [0, 1, 0]]")
 	assert.Equal(t, TranslationMatrix(5, 3).String(), "[[1, 0, 5], [0, 1, 3]]")

@@ -190,8 +190,23 @@ func TestParseNumber(t *testing.T) {
 	_, err = Parse[float64]("abc")
 	assert.Error(t, err)
 
-	// named types satisfy Number via ~int, but the type switch matches exact types only,
-	// so they are rejected rather than silently parsed
-	_, err = Parse[Direction]("3")
+	// defined types over int/float parse like their underlying type
+	v7, err := Parse[Direction]("3")
+	assert.NoError(t, err)
+	assert.Equal(t, v7, DirectionDownLeft)
+
+	v8, err := Parse[namedFloat32]("3.14")
+	assert.NoError(t, err)
+	assert.EqualDelta(t, float64(v8), 3.14, 1e-5)
+
+	// range is checked against T, not int64/float64
+	_, err = Parse[namedInt8]("200")
 	assert.Error(t, err)
+
+	_, err = Parse[float32]("1e39")
+	assert.Error(t, err)
+
+	v9, err := Parse[float64]("1e39")
+	assert.NoError(t, err)
+	assert.Equal(t, v9, 1e39)
 }

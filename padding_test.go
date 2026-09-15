@@ -57,7 +57,7 @@ func TestPadding_Float(t *testing.T) {
 
 func TestPadding_String(t *testing.T) {
 	assert.Equal(t, paddingInt.String(), "Pad(2;4;3;5)")
-	assert.Equal(t, paddingFloat.String(), "Pad(0.10;3;0.60;2.40)")
+	assert.Equal(t, paddingFloat.String(), "Pad(0.10;3.00;0.60;2.40)")
 }
 
 func TestPadding_Marshall(t *testing.T) {

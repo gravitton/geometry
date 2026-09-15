@@ -100,7 +100,7 @@ func TestSize_Vector(t *testing.T) {
 
 func TestSize_String(t *testing.T) {
 	assert.Equal(t, Sz(10, 16).String(), "10x16")
-	assert.Equal(t, Sz(100, -34.0000115).String(), "100x-34.00")
+	assert.Equal(t, Sz(100, -34.0000115).String(), "100.00x-34.00")
 }
 
 func TestSize_Marshall(t *testing.T) {
@@ -170,6 +170,30 @@ func TestParseSize(t *testing.T) {
 	// error: invalid height
 	_, err = ParseSize[float64]("1.0xb")
 	assert.Error(t, err)
+}
+
+func TestSize_StringRoundTrip(t *testing.T) {
+	testSizeRoundTrip(t, Sz(16, 32))
+	testSizeRoundTrip(t, Sz(0, -34))
+	testSizeRoundTrip(t, Sz[int32](7, 9))
+	testSizeRoundTrip(t, Sz(1.2, 3.6))
+	testSizeRoundTrip(t, Sz(100.0, -34.25))
+	testSizeRoundTrip(t, Sz[float32](0.5, -0.75))
+	testSizeRoundTrip(t, Sz[namedInt](5, 7))
+
+	// String keeps two decimals, so only sizes on that grid survive: 1.005 formats as "1.00"
+	s, err := ParseSize[float64](Sz(1.005, -34.0000115).String())
+	assert.NoError(t, err)
+	AssertSize(t, s, 1.0, -34.0)
+}
+
+func testSizeRoundTrip[T Number](t *testing.T, size Size[T]) {
+	t.Helper()
+
+	parsed, err := ParseSize[T](size.String())
+	if assert.NoError(t, err) {
+		assert.True(t, parsed.Equal(size))
+	}
 }
 
 func TestSize_Immutable(t *testing.T) {

@@ -92,7 +92,7 @@ func TestLine_Float(t *testing.T) {
 
 func TestLine_String(t *testing.T) {
 	assert.Equal(t, Ln(Pt(10, 16), Pt(1, 2)).String(), "L((10,16);(1,2))")
-	assert.Equal(t, Ln(Pt(100, -34.0000115), Pt(0.2, 0.4)).String(), "L((100,-34.00);(0.20,0.40))")
+	assert.Equal(t, Ln(Pt(100, -34.0000115), Pt(0.2, 0.4)).String(), "L((100.00,-34.00);(0.20,0.40))")
 }
 
 func TestLine_Marshal(t *testing.T) {

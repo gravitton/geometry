@@ -1,23 +1,19 @@
 package geom
 
 import (
-	"math"
 	"testing"
 
 	"github.com/gravitton/assert"
 )
 
-func BenchmarkIsIntValue_Int(b *testing.B) {
-	for b.Loop() {
-		isIntValue(23)
-	}
-}
-
-func BenchmarkIsIntValue_Float64(b *testing.B) {
-	for b.Loop() {
-		isIntValue(0.5)
-	}
-}
+// Named types over the constraint's underlying types: the ~ in Number admits them,
+// so every type-level predicate has to recognize them as their underlying kind.
+type (
+	namedInt     int
+	namedInt8    int8
+	namedFloat32 float32
+	namedFloat64 float64
+)
 
 func BenchmarkIsIntType_Int(b *testing.B) {
 	for b.Loop() {
@@ -42,21 +38,6 @@ func BenchmarkCast_Float64(b *testing.B) {
 	}
 }
 
-func TestIsIntValue(t *testing.T) {
-	testIsIntValue(t, 1, true)
-	testIsIntValue(t, int32(1), true)
-	testIsIntValue(t, -2, true)
-	testIsIntValue(t, 986, true)
-	testIsIntValue(t, float32(1.000), true)
-	testIsIntValue(t, -2.0, true)
-	testIsIntValue(t, 189.2, false)
-	testIsIntValue(t, float32(-9.3333), false)
-	testIsIntValue(t, 1.000001, false)
-	testIsIntValue(t, 23.0000000, true)
-	testIsIntValue(t, math.NaN(), false)
-	testIsIntValue(t, math.Inf(1), false)
-}
-
 func TestIsIntType(t *testing.T) {
 	testIsIntType[int](t, true)
 	testIsIntType[int8](t, true)
@@ -66,9 +47,10 @@ func TestIsIntType(t *testing.T) {
 	testIsIntType[float32](t, false)
 	testIsIntType[float64](t, false)
 
-	// do not work with custom types
-	type custom float64
-	testIsIntType[custom](t, false)
+	testIsIntType[namedInt](t, true)
+	testIsIntType[namedInt8](t, true)
+	testIsIntType[namedFloat32](t, false)
+	testIsIntType[namedFloat64](t, false)
 }
 
 func TestCast(t *testing.T) {
@@ -80,23 +62,33 @@ func TestCast(t *testing.T) {
 	testCast[float64](t, 1.0, 1.0)
 	testCast[float64](t, 1.6, 1.6)
 	testCast[float64](t, -15.68, -15.68)
+
+	testCast[namedInt](t, 1.6, 2)
+	testCast[namedInt](t, -0.51, -1)
+	testCast[namedInt8](t, 1.2, 1)
+	testCast[namedFloat64](t, 1.6, 1.6)
+	testCast[namedFloat32](t, -15.5, -15.5)
 }
 
 func TestToString(t *testing.T) {
 	testToString(t, 3, "3")
 	testToString(t, -2, "-2")
-	testToString(t, 0.0000, "0")
-	testToString(t, 1.00, "1")
 	testToString(t, 29.59, "29.59")
 	testToString(t, 1.001, "1.00")
 	testToString(t, 1.009, "1.01")
 	testToString(t, -1.011, "-1.01")
-}
 
-func testIsIntValue[T Number](t *testing.T, value T, expected bool) {
-	t.Helper()
+	// the format follows T, not the value: a whole float still prints with decimals
+	testToString(t, 8.0, "8.00")
+	testToString(t, 8.1, "8.10")
+	testToString(t, 0.0000, "0.00")
+	testToString(t, float32(1), "1.00")
+	testToString(t, 8, "8")
 
-	assert.Equal(t, isIntValue(value), expected)
+	testToString(t, namedInt(3), "3")
+	testToString(t, namedInt8(-2), "-2")
+	testToString(t, namedFloat64(29.59), "29.59")
+	testToString(t, namedFloat32(1.00), "1.00")
 }
 
 func testIsIntType[T Number](t *testing.T, expected bool) {

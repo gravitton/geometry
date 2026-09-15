@@ -116,7 +116,7 @@ func TestPolygon_Immutable(t *testing.T) {
 
 func TestPolygon_String(t *testing.T) {
 	assert.Equal(t, polygonInt.String(), "Pol((0,0), (2,0), (2,2), (0,2))")
-	assert.Equal(t, polygonFloat.String(), "Pol((0,0), (2.50,0.50), (2,1))")
+	assert.Equal(t, polygonFloat.String(), "Pol((0.00,0.00), (2.50,0.50), (2.00,1.00))")
 }
 
 func TestPolygon_Marshall(t *testing.T) {

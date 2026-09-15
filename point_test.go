@@ -214,7 +214,7 @@ func TestPoint_Float(t *testing.T) {
 
 func TestPoint_String(t *testing.T) {
 	assert.Equal(t, Pt(10, 16).String(), "(10,16)")
-	assert.Equal(t, Pt(100, -34.0000115).String(), "(100,-34.00)")
+	assert.Equal(t, Pt(100, -34.0000115).String(), "(100.00,-34.00)")
 }
 
 func TestPoint_Marshall(t *testing.T) {

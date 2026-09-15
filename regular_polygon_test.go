@@ -179,7 +179,7 @@ func TestRegularPolygon_Immutable(t *testing.T) {
 }
 
 func TestRegularPolygon_String(t *testing.T) {
-	assert.Equal(t, regPolygonInt.String(), "RegPol((1,2);2x2;4;0)")
+	assert.Equal(t, regPolygonInt.String(), "RegPol((1,2);2x2;4;0.00)")
 }
 
 func TestRegularPolygon_Marshall(t *testing.T) {

@@ -22,7 +22,7 @@ func SzU[T Number](size T) Size[T] {
 }
 
 // ParseSize parses a size string in the form "WxH" (e.g. "16x16" or "23.0x12.1").
-// For integer T, float values are rounded to the nearest integer via Cast.
+// For integer T, only integer strings parse; a fractional value is an error, not a rounded size.
 func ParseSize[T Number](s string) (Size[T], error) {
 	parts := strings.SplitN(s, "x", 2)
 	if len(parts) != 2 {

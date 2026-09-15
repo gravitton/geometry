@@ -263,7 +263,7 @@ func TestRectangle_Float(t *testing.T) {
 
 func TestRectangle_String(t *testing.T) {
 	assert.Equal(t, rectInt.String(), "(0,1)-(2,4)")
-	assert.Equal(t, rectFloat.String(), "(0,-2.05)-(1.20,1.55)")
+	assert.Equal(t, rectFloat.String(), "(0.00,-2.05)-(1.20,1.55)")
 }
 
 func TestRectangle_Marshall(t *testing.T) {
