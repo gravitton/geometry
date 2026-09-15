@@ -23,8 +23,21 @@ func TestMatrix_Constructor(t *testing.T) {
 	assert.EqualDelta(t, rot90.D, 1.0, Delta)
 	assert.EqualDelta(t, rot90.E, 0.0, Delta)
 
+	// the angle is always computed in float64 and narrowed afterwards
+	rot90f32 := RotationMatrix[float32](Pi / 2.0)
+	assert.EqualDelta(t, rot90f32.B, float32(-1.0), float32(Delta))
+	assert.EqualDelta(t, rot90f32.D, float32(1.0), float32(Delta))
+
+	// integer storage: translation, scale and quarter turns are exact
+	AssertMatrix(t, IdentityMatrix[int](), Mat(1, 0, 0, 0, 1, 0))
+	AssertMatrix(t, TranslationMatrix(5, 3), Mat(1, 0, 5, 0, 1, 3))
+	AssertMatrix(t, ScaleMatrix(2, 3), Mat(2, 0, 0, 0, 3, 0))
 	// cos(π/2) ≈ 6e-17 rounds to 0; sin(π/2) = 1 exactly
 	AssertMatrix(t, RotationMatrix[int](Pi/2), Mat(0, -1, 0, 1, 0, 0))
+	AssertMatrix(t, RotationMatrix[int](Pi), Mat(-1, 0, 0, 0, -1, 0))
+
+	// anything else is not a rotation: π/6 rounds to a √2 scale plus shear
+	AssertMatrix(t, RotationMatrix[int](Pi/6), Mat(1, -1, 0, 1, 1, 0))
 }
 
 func TestMatrix_Multiply(t *testing.T) {
@@ -38,7 +51,11 @@ func TestMatrix_Multiply(t *testing.T) {
 	// two scales compose multiplicatively
 	AssertMatrix(t, ScaleMatrix(2.0, 3.0).Multiply(ScaleMatrix(4.0, 2.0)), ScaleMatrix(8.0, 6.0))
 
-	// integer types
+	// float32
+	AssertMatrix(t, TranslationMatrix[float32](5, 3).Multiply(TranslationMatrix[float32](2, 1)), TranslationMatrix[float32](7, 4))
+	AssertMatrix(t, ScaleMatrix[float32](2, 3).Multiply(ScaleMatrix[float32](4, 2)), ScaleMatrix[float32](8, 6))
+
+	// integer composition is exact
 	AssertMatrix(t, IdentityMatrix[int]().Multiply(TranslationMatrix(5, 3)), TranslationMatrix(5, 3))
 	AssertMatrix(t, TranslationMatrix(5, 3).Multiply(TranslationMatrix(2, 1)), TranslationMatrix(7, 4))
 	AssertMatrix(t, ScaleMatrix(2, 3).Multiply(ScaleMatrix(4, 2)), ScaleMatrix(8, 6))
@@ -49,6 +66,8 @@ func TestMatrix_Determinant(t *testing.T) {
 	assert.EqualDelta(t, ScaleMatrix(2.0, 3.0).Determinant(), 6.0, Delta)
 	assert.EqualDelta(t, RotationMatrix[float64](Pi/4).Determinant(), 1.0, Delta)
 	assert.EqualDelta(t, Mat(1.0, 2.0, 0.0, 3.0, 4.0, 0.0).Determinant(), -2.0, Delta) // 1*4 - 2*3
+
+	assert.EqualDelta(t, ScaleMatrix[float32](2, 3).Determinant(), float32(6), float32(Delta))
 
 	assert.Equal(t, IdentityMatrix[int]().Determinant(), 1)
 	assert.Equal(t, ScaleMatrix(2, 3).Determinant(), 6)
@@ -64,11 +83,16 @@ func TestMatrix_Inverse(t *testing.T) {
 	zero := Mat(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
 	AssertMatrix(t, zero.Inverse(), zero)
 
-	// integer: inverse uses Cast[int] which rounds; det=1 → exact
+	// float32 inverts exactly too – the fractions are not rounded away
+	AssertMatrix(t, ScaleMatrix[float32](2, 4).Inverse(), ScaleMatrix[float32](0.5, 0.25))
+	AssertMatrix(t, TranslationMatrix[float32](5, 3).Inverse(), TranslationMatrix[float32](-5, -3))
+
+	// integer: exact only for |det| = 1
 	AssertMatrix(t, IdentityMatrix[int]().Inverse(), IdentityMatrix[int]())
 	AssertMatrix(t, TranslationMatrix(5, 3).Inverse(), TranslationMatrix(-5, -3))
+	AssertMatrix(t, RotationMatrix[int](Pi/2).Inverse(), RotationMatrix[int](-Pi/2))
 
-	// det=4, invDet=0.25 → scale component Cast[int](2*0.25)=Cast[int](0.5)=1 (rounds)
+	// det=4, invDet=0.25 → Cast[int](2*0.25) = Cast[int](0.5) = 1, so the inverse does not undo it
 	AssertMatrix(t, ScaleMatrix(2, 2).Inverse(), IdentityMatrix[int]())
 }
 
@@ -76,7 +100,8 @@ func TestMatrix_Translate(t *testing.T) {
 	AssertMatrix(t, IdentityMatrix[float64]().Translate(5.0, 3.0), TranslationMatrix(5.0, 3.0))
 	AssertMatrix(t, IdentityMatrix[float64]().Translate(2.0, 1.0).Translate(3.0, 2.0), TranslationMatrix(5.0, 3.0))
 
-	AssertMatrix(t, IdentityMatrix[int]().Translate(5, 3), TranslationMatrix(5, 3))
+	AssertMatrix(t, IdentityMatrix[float32]().Translate(2, 1).Translate(3, 2), TranslationMatrix[float32](5, 3))
+
 	AssertMatrix(t, IdentityMatrix[int]().Translate(2, 1).Translate(3, 2), TranslationMatrix(5, 3))
 }
 
@@ -84,7 +109,8 @@ func TestMatrix_Untranslate(t *testing.T) {
 	AssertMatrix(t, TranslationMatrix(5.0, 3.0).Untranslate(5.0, 3.0), IdentityMatrix[float64]())
 	AssertMatrix(t, TranslationMatrix(5.0, 3.0).Untranslate(2.0, 1.0), TranslationMatrix(3.0, 2.0))
 
-	AssertMatrix(t, TranslationMatrix(5, 3).Untranslate(5, 3), IdentityMatrix[int]())
+	AssertMatrix(t, TranslationMatrix[float32](5, 3).Untranslate(2, 1), TranslationMatrix[float32](3, 2))
+
 	AssertMatrix(t, TranslationMatrix(5, 3).Untranslate(2, 1), TranslationMatrix(3, 2))
 }
 
@@ -95,7 +121,8 @@ func TestMatrix_PreTranslate(t *testing.T) {
 	got := ScaleMatrix(2.0, 2.0).PreTranslate(5.0, 3.0)
 	AssertMatrix(t, got, Mat(2.0, 0.0, 5.0, 0.0, 2.0, 3.0))
 
-	AssertMatrix(t, IdentityMatrix[int]().PreTranslate(5, 3), TranslationMatrix(5, 3))
+	AssertMatrix(t, ScaleMatrix[float32](2, 2).PreTranslate(5, 3), Mat[float32](2, 0, 5, 0, 2, 3))
+
 	AssertMatrix(t, ScaleMatrix(2, 2).PreTranslate(5, 3), Mat(2, 0, 5, 0, 2, 3))
 }
 
@@ -107,7 +134,12 @@ func TestMatrix_Rotate(t *testing.T) {
 	assert.EqualDelta(t, p.X, 0.0, Delta)
 	assert.EqualDelta(t, p.Y, 1.0, Delta)
 
-	// integer: only multiples of 90° are lossless since cos/sin are then exact 0 or ±1
+	// an int point keeps its integer coordinates; the matrix carries the fractions
+	AssertPoint(t, Pt(3, 0).Transform(IdentityMatrix[float64]().Rotate(Pi/6)), 3, 2)
+
+	AssertMatrix(t, IdentityMatrix[float32]().Rotate(Pi), Mat[float32](-1, 0, 0, 0, -1, 0))
+
+	// integer: only quarter turns
 	AssertMatrix(t, IdentityMatrix[int]().Rotate(0), IdentityMatrix[int]())
 	AssertMatrix(t, IdentityMatrix[int]().Rotate(Pi/2), Mat(0, -1, 0, 1, 0, 0))
 	AssertMatrix(t, IdentityMatrix[int]().Rotate(Pi), Mat(-1, 0, 0, 0, -1, 0))
@@ -126,7 +158,8 @@ func TestMatrix_Scale(t *testing.T) {
 	AssertMatrix(t, IdentityMatrix[float64]().Scale(2.0, 3.0), ScaleMatrix(2.0, 3.0))
 	AssertMatrix(t, ScaleMatrix(2.0, 2.0).Scale(3.0, 3.0), ScaleMatrix(6.0, 6.0))
 
-	AssertMatrix(t, IdentityMatrix[int]().Scale(2, 3), ScaleMatrix(2, 3))
+	AssertMatrix(t, ScaleMatrix[float32](2, 2).Scale(3, 3), ScaleMatrix[float32](6, 6))
+
 	AssertMatrix(t, ScaleMatrix(2, 2).Scale(3, 3), ScaleMatrix(6, 6))
 }
 
@@ -134,12 +167,18 @@ func TestMatrix_Unscale(t *testing.T) {
 	AssertMatrix(t, ScaleMatrix(2.0, 3.0).Unscale(2.0, 3.0), IdentityMatrix[float64]())
 	AssertMatrix(t, ScaleMatrix(4.0, 6.0).Unscale(2.0, 3.0), ScaleMatrix(2.0, 2.0))
 
-	// zero guard: no change
+	// a zero factor leaves its own axis alone, like Divide – the other axis still unscales
 	m := ScaleMatrix(2.0, 3.0)
 	AssertMatrix(t, m.Unscale(0.0, 0.0), m)
+	AssertMatrix(t, m.Unscale(0.0, 3.0), ScaleMatrix(2.0, 1.0))
+	AssertMatrix(t, m.Unscale(2.0, 0.0), ScaleMatrix(1.0, 3.0))
 
-	// integer: 1/1=1 is exact; useful for unscaling scale-1 matrices
-	AssertMatrix(t, ScaleMatrix(1, 1).Unscale(1, 1), IdentityMatrix[int]())
+	AssertMatrix(t, ScaleMatrix[float32](4, 6).Unscale(2, 3), ScaleMatrix[float32](2, 2))
+
+	// integer: 1/1 is the only representable inverse factor
+	AssertMatrix(t, ScaleMatrix(4, 6).Unscale(1, 1), ScaleMatrix(4, 6))
+	// 1/2 rounds up to 1, so X is not undone; 1/3 rounds down to 0 and collapses Y
+	AssertMatrix(t, ScaleMatrix(4, 6).Unscale(2, 3), ScaleMatrix(4, 0))
 }
 
 func TestMatrix_PreScale(t *testing.T) {
@@ -153,7 +192,8 @@ func TestMatrix_PreScale(t *testing.T) {
 	assert.EqualDelta(t, p.X, 12.0, Delta)
 	assert.EqualDelta(t, p.Y, 14.0, Delta)
 
-	AssertMatrix(t, IdentityMatrix[int]().PreScale(2, 3), ScaleMatrix(2, 3))
+	AssertMatrix(t, TranslationMatrix[float32](5, 5).PreScale(2, 2), Mat[float32](2, 0, 10, 0, 2, 10))
+
 	AssertMatrix(t, TranslationMatrix(5, 5).PreScale(2, 2), Mat(2, 0, 10, 0, 2, 10))
 }
 
@@ -162,14 +202,17 @@ func TestMatrix_Equal(t *testing.T) {
 	assert.False(t, IdentityMatrix[float64]().Equal(ScaleMatrix(2.0, 2.0)))
 	assert.True(t, Mat(1.0, 2.0, 3.0, 4.0, 5.0, 6.0).Equal(Mat(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)))
 
-	assert.True(t, IdentityMatrix[int]().Equal(IdentityMatrix[int]()))
-	assert.False(t, IdentityMatrix[int]().Equal(ScaleMatrix(2, 2)))
+	assert.True(t, IdentityMatrix[float32]().Equal(IdentityMatrix[float32]()))
+	assert.False(t, IdentityMatrix[float32]().Equal(ScaleMatrix[float32](2, 2)))
+
 	assert.True(t, Mat(1, 2, 3, 4, 5, 6).Equal(Mat(1, 2, 3, 4, 5, 6)))
+	assert.False(t, IdentityMatrix[int]().Equal(ScaleMatrix(2, 2)))
 }
 
 func TestMatrix_IsZero(t *testing.T) {
 	assert.True(t, Matrix[float64]{}.IsZero())
 	assert.False(t, IdentityMatrix[float64]().IsZero())
+	assert.True(t, Matrix[float32]{}.IsZero())
 	assert.False(t, IdentityMatrix[float32]().IsZero())
 	assert.True(t, Matrix[int]{}.IsZero())
 	assert.False(t, IdentityMatrix[int]().IsZero())
@@ -185,7 +228,8 @@ func TestMatrix_Int(t *testing.T) {
 
 func TestMatrix_Float(t *testing.T) {
 	AssertMatrix(t, IdentityMatrix[int]().Float(), IdentityMatrix[float64]())
-	AssertMatrix(t, TranslationMatrix(5, 3).Float(), TranslationMatrix(5.0, 3.0))
+	AssertMatrix(t, IdentityMatrix[float32]().Float(), IdentityMatrix[float64]())
+	AssertMatrix(t, TranslationMatrix[float32](5, 3).Float(), TranslationMatrix(5.0, 3.0))
 }
 
 func TestMatrix_String(t *testing.T) {
@@ -201,6 +245,7 @@ func TestMatrix_String(t *testing.T) {
 
 func TestMatrix_Marshall(t *testing.T) {
 	assert.JSON(t, Mat[float64](1.0, 2.1, 3.2, 4.0, 5.3, 6.4), `{"a":1,"b":2.1,"c":3.2,"d":4,"e":5.3,"f":6.4}`)
+	assert.JSON(t, Mat[float32](1, 2, 3, 4, 5, 6), `{"a":1,"b":2,"c":3,"d":4,"e":5,"f":6}`)
 	assert.JSON(t, Mat[int](1, 2, 3, 4, 5, 6), `{"a":1,"b":2,"c":3,"d":4,"e":5,"f":6}`)
 }
 

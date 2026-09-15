@@ -63,6 +63,9 @@ func TestVector_FromAngleSize(t *testing.T) {
 func TestVector_Transform(t *testing.T) {
 	AssertVector(t, vectorInt.Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), 48, 132)
 	AssertVector(t, vectorFloat.Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), 0.085, 1.265)
+
+	AssertVector(t, vectorInt.Transform(Mat(1, 2, 3, 4, 5, 6).Float()), 42, 120)
+	AssertVector(t, vectorFloat.Transform(Mat[float32](1, 2, 3, 4, 5, 6)), 0.1, 1.15)
 }
 
 func TestVector_Add(t *testing.T) {

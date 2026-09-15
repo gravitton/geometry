@@ -22,10 +22,10 @@ func ZeroPoint[T Number]() Point[T] {
 }
 
 // Transform creates a new Point by applying the given matrix to the current point.
-// For integer T, the float64 result of each component is rounded; rotations and
-// non-integer scales lose precision.
-func (p Point[T]) Transform(matrix Matrix[float64]) Point[T] {
-	return Point[T]{Cast[T](matrix.A*float64(p.X) + matrix.B*float64(p.Y) + matrix.C), Cast[T](matrix.D*float64(p.X) + matrix.E*float64(p.Y) + matrix.F)}
+// The matrix is float-only, like an angle: convert an integer matrix with Matrix.Float first.
+// For integer T, the float64 result of each component is rounded; rotations and non-integer scales lose precision.
+func (p Point[T]) Transform[M Float](matrix Matrix[M]) Point[T] {
+	return Point[T]{Cast[T](float64(matrix.A)*float64(p.X) + float64(matrix.B)*float64(p.Y) + float64(matrix.C)), Cast[T](float64(matrix.D)*float64(p.X) + float64(matrix.E)*float64(p.Y) + float64(matrix.F))}
 }
 
 // Add creates a new Point by adding the given vector to the current point.
@@ -38,7 +38,7 @@ func (p Point[T]) AddXY(deltaX, deltaY T) Point[T] {
 	return Point[T]{p.X + deltaX, p.Y + deltaY}
 }
 
-// Subtract creates a new Vector from given point to current point.
+// Subtract creates a new Vector from a given point to the current point.
 func (p Point[T]) Subtract(point Point[T]) Vector[T] {
 	return Vector[T]{p.X - point.X, p.Y - point.Y}
 }

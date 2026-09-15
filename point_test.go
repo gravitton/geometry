@@ -24,6 +24,9 @@ func TestPoint_Constructor(t *testing.T) {
 func TestPoint_Transform(t *testing.T) {
 	AssertPoint(t, pointInt.Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), 9, 22)
 	AssertPoint(t, pointFloat.Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), 3.385, 7.865)
+
+	AssertPoint(t, pointInt.Transform(Mat(1, 2, 3, 4, 5, 6).Float()), 8, 20)
+	AssertPoint(t, pointFloat.Transform(Mat[float32](1, 2, 3, 4, 5, 6)), 3.1, 7.15)
 }
 
 func TestPoint_Add(t *testing.T) {

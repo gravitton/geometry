@@ -5,7 +5,12 @@ import (
 	"math"
 )
 
-// Matrix is a 2D matrix.
+// Matrix is a 2D affine matrix.
+//
+// For integer T, the matrix stores and composes lattice transforms – translation, integer scaling,
+// reflection, quarter turns – exactly. The rest are not closed over the integers and round into a
+// different matrix: rotation by anything but a multiple of 90° (see RotationMatrix), Inverse, and
+// Unscale.
 type Matrix[T Number] struct {
 	A T `json:"a"` // scale X
 	B T `json:"b"` // shear Y
@@ -37,7 +42,9 @@ func TranslationMatrix[T Number](deltaX, deltaY T) Matrix[T] {
 	}
 }
 
-// RotationMatrix creates a new rotation matrix.
+// RotationMatrix creates a new rotation matrix (angle in radians).
+// For integer T, sin/cos components are rounded; only multiples of 90° give exact results.
+// Any other angle is not a rotation at all: π/6 rounds to [[1, -1], [1, 1]], scaling by √2 and shearing.
 func RotationMatrix[T Number](angle float64) Matrix[T] {
 	sin, cos := math.Sincos(angle)
 	return Matrix[T]{
@@ -67,6 +74,9 @@ func (m Matrix[T]) Multiply(matrix Matrix[T]) Matrix[T] {
 }
 
 // Inverse creates a new inverse affine matrix. If non-invertible (det ~ 0), returns the same matrix.
+// For integer T, all six components are rounded; only |det| = 1 gives exact results, which covers
+// translations, reflections and quarter turns. Otherwise the inverse does not undo the matrix:
+// ScaleMatrix(2, 2).Inverse() rounds 0.5 back up to identity.
 func (m Matrix[T]) Inverse() Matrix[T] {
 	det := m.Determinant()
 	if Equal(det, 0.0) {
@@ -109,12 +119,14 @@ func (m Matrix[T]) PreTranslate(deltaX, deltaY T) Matrix[T] {
 
 // Rotate creates a new matrix by right-multiplying a rotation matrix (angle in radians).
 // Composition order: result = m * m_R(angle).
+// For integer T, see RotationMatrix: only multiples of 90° give exact results.
 func (m Matrix[T]) Rotate(angle float64) Matrix[T] {
 	return m.Multiply(RotationMatrix[T](angle))
 }
 
 // PreRotate creates a new matrix by left-multiplying a rotation matrix (angle in radians).
 // Composition order: result = m_R(angle) * m.
+// For integer T, see RotationMatrix: only multiples of 90° give exact results.
 func (m Matrix[T]) PreRotate(angle float64) Matrix[T] {
 	return RotationMatrix[T](angle).Multiply(m)
 }
@@ -127,12 +139,10 @@ func (m Matrix[T]) Scale(factorX, factorY T) Matrix[T] {
 
 // Unscale creates a new matrix by right-multiplying a scale matrix with inverse factors.
 // Composition order: result = m * m_S(1/factorX,1/factorY).
+// Each axis is inverted on its own, following Divide: a zero factor leaves that axis unchanged.
+// For integer T, each inverse factor is rounded; only ±1 gives exact results.
 func (m Matrix[T]) Unscale(factorX, factorY T) Matrix[T] {
-	if factorX == 0 && factorY == 0 {
-		return m
-	}
-
-	return m.Multiply(ScaleMatrix[T](1.0/factorX, 1.0/factorY))
+	return m.Multiply(ScaleMatrix(Divide[T](1, float64(factorX)), Divide[T](1, float64(factorY))))
 }
 
 // PreScale creates a new matrix by left-multiplying a scale matrix.
@@ -151,7 +161,7 @@ func (m Matrix[T]) IsZero() bool {
 	return m.Equal(Matrix[T]{})
 }
 
-// Int converts the matrix to a Matrix[int].
+// Int converts the matrix to a Matrix[int], rounding each component.
 func (m Matrix[T]) Int() Matrix[int] {
 	return Matrix[int]{
 		Cast[int](float64(m.A)), Cast[int](float64(m.B)), Cast[int](float64(m.C)),

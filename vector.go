@@ -43,10 +43,10 @@ func VectorFromAngleSize[T Number](angle float64, size Size[T]) Vector[T] {
 }
 
 // Transform creates a new Vector by applying the given matrix to the current vector.
-// For integer T, the float64 result of each component is rounded; rotations and
-// non-integer scales lose precision.
-func (v Vector[T]) Transform(matrix Matrix[float64]) Vector[T] {
-	return Vector[T]{Cast[T](matrix.A*float64(v.X) + matrix.B*float64(v.Y)), Cast[T](matrix.D*float64(v.X) + matrix.E*float64(v.Y))}
+// The matrix is float-only, like an angle: convert an integer matrix with Matrix.Float first.
+// For integer T, the float64 result of each component is rounded; rotations and non-integer scales lose precision.
+func (v Vector[T]) Transform[M Float](matrix Matrix[M]) Vector[T] {
+	return Vector[T]{Cast[T](float64(matrix.A)*float64(v.X) + float64(matrix.B)*float64(v.Y)), Cast[T](float64(matrix.D)*float64(v.X) + float64(matrix.E)*float64(v.Y))}
 }
 
 // Add creates a new Vector by adding the given vector to the current vector.
