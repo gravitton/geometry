@@ -30,8 +30,7 @@ func Cast[T Number](a float64) T {
 }
 
 // String formats a Number as a numeric string: integer types without a decimal point,
-// float types with two decimals. The formatting follows T, not the value, so a float 8.0
-// and 8.1 print alike.
+// float types with two decimals. The formatting follows T, not the value.
 func String[T Number](value T) string {
 	if isIntType[T]() {
 		return fmt.Sprintf("%d", int64(value))
