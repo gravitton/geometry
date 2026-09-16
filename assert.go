@@ -6,8 +6,7 @@ import (
 	"github.com/gravitton/assert"
 )
 
-// Testing is the subset of *testing.T the helpers need. It is an interface
-// rather than testing.TB so a test can pass its own recorder.
+// Testing is the subset of *testing.T the helpers need.
 type Testing interface {
 	Helper()
 	Errorf(format string, args ...any)

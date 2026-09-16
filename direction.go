@@ -143,6 +143,8 @@ func (d Direction) Offset[T Number]() Vector[T] {
 }
 
 // Unit creates a new normalized Vector in the direction, and the zero vector for DirectionNone.
+// For integer T, only the four axis-aligned vectors have length 1, so a diagonal collapses onto
+// one of them; use Offset for the lattice step (±1,±1) that keeps the diagonal.
 func (d Direction) Unit[T Number]() Vector[T] {
 	if d.IsNone() {
 		return Vector[T]{}

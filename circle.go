@@ -60,9 +60,10 @@ func (c Circle[T]) Diameter() T {
 	return c.Radius * 2
 }
 
-// Bounds returns the axis-aligned bounding rectangle.
+// Bounds returns the axis-aligned bounding rectangle: the square of side Diameter
+// centered on the circle.
 func (c Circle[T]) Bounds() Rectangle[T] {
-	return Rectangle[T]{c.Center, Size[T]{c.Radius, c.Radius}}
+	return Rectangle[T]{c.Center, Size[T]{c.Diameter(), c.Diameter()}}
 }
 
 // Anchor returns the point on the circle boundary in the given direction from its center,

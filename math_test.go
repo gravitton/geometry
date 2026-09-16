@@ -7,126 +7,195 @@ import (
 	"github.com/gravitton/assert"
 )
 
+// negativeZero is -0.0; writing it as a literal would fold to +0.0 at compile time.
+var negativeZero = math.Copysign(0, -1)
+
 func TestNormalizeAngle(t *testing.T) {
-	assert.EqualDelta(t, NormalizeAngle(0), 0.0, Delta)
-	assert.EqualDelta(t, NormalizeAngle(Pi), Pi, Delta)
-	assert.EqualDelta(t, NormalizeAngle(3*Pi), Pi, Delta)      // wraps: 3π → π
-	assert.EqualDelta(t, NormalizeAngle(-Pi/2), 3*Pi/2, Delta) // negative → 3π/2
-	assert.EqualDelta(t, NormalizeAngle(2*Pi), 0.0, Delta)     // exactly 2π → 0
+	t.Run("inside the unit turn", func(t *testing.T) {
+		AssertNumber(t, NormalizeAngle(0), 0.0)
+		AssertNumber(t, NormalizeAngle(Pi), Pi)
+	})
+	t.Run("wraps above a full turn", func(t *testing.T) {
+		AssertNumber(t, NormalizeAngle(3*Pi), Pi)
+		AssertNumber(t, NormalizeAngle(2*Pi), 0.0)
+	})
+	t.Run("negative angles come back positive", func(t *testing.T) {
+		AssertNumber(t, NormalizeAngle(-Pi/2), 3*Pi/2)
+	})
 }
 
 func TestToRadians(t *testing.T) {
-	assert.EqualDelta(t, ToRadians(0), 0.0, Delta)
-	assert.EqualDelta(t, ToRadians(90), Pi/2, Delta)
-	assert.EqualDelta(t, ToRadians(180), Pi, Delta)
-	assert.EqualDelta(t, ToRadians(360), 2*Pi, Delta)
+	AssertNumber(t, ToRadians(0), 0.0)
+	AssertNumber(t, ToRadians(90), Pi/2)
+	AssertNumber(t, ToRadians(180), Pi)
+	AssertNumber(t, ToRadians(360), 2*Pi)
 }
 
 func TestToDegrees(t *testing.T) {
-	assert.EqualDelta(t, ToDegrees(0), 0.0, Delta)
-	assert.EqualDelta(t, ToDegrees(Pi/2), 90.0, Delta)
-	assert.EqualDelta(t, ToDegrees(Pi), 180.0, Delta)
-	assert.EqualDelta(t, ToDegrees(2*Pi), 360.0, Delta)
+	t.Run("converts", func(t *testing.T) {
+		AssertNumber(t, ToDegrees(0), 0.0)
+		AssertNumber(t, ToDegrees(Pi/2), 90.0)
+		AssertNumber(t, ToDegrees(Pi), 180.0)
+		AssertNumber(t, ToDegrees(2*Pi), 360.0)
+	})
+	t.Run("inverts ToRadians", func(t *testing.T) {
+		for _, degrees := range []float64{0, 30, 45, 90, 179.5, -270} {
+			AssertNumber(t, ToDegrees(ToRadians(degrees)), degrees)
+		}
+	})
 }
 
 func TestMultiply(t *testing.T) {
-	assert.Equal(t, Multiply(5, 2.0), 10)
-	assert.Equal(t, Multiply(3, 0.5), 2) // int: 1.5 rounds to 2
-	assert.Equal(t, Multiply(-4, 1.5), -6)
-	assert.EqualDelta(t, Multiply(4.0, 2.5), 10.0, Delta)
-	assert.EqualDelta(t, Multiply(0.4, 0.5), 0.2, Delta)
+	t.Run("int rounds", func(t *testing.T) {
+		AssertNumber(t, Multiply(5, 2.0), 10)
+		AssertNumber(t, Multiply(3, 0.5), 2) // int: 1.5 rounds to 2
+		AssertNumber(t, Multiply(-4, 1.5), -6)
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Multiply(4.0, 2.5), 10.0)
+		AssertNumber(t, Multiply(0.4, 0.5), 0.2)
+	})
 }
 
 func TestDivide(t *testing.T) {
-	assert.Equal(t, Divide(10, 2.0), 5)
-	assert.Equal(t, Divide(10, 0.0), 10) // zero guard: returns original
-	assert.EqualDelta(t, Divide(7.5, 2.5), 3.0, Delta)
-	assert.EqualDelta(t, Divide(1.0, 3.0), 0.333333, Delta)
+	t.Run("int rounds", func(t *testing.T) {
+		AssertNumber(t, Divide(10, 2.0), 5)
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Divide(7.5, 2.5), 3.0)
+		AssertNumber(t, Divide(1.0, 3.0), 1.0/3.0)
+	})
+	t.Run("zero scale returns the original", func(t *testing.T) {
+		AssertNumber(t, Divide(10, 0.0), 10)
+		AssertNumber(t, Divide(2.5, 0.0), 2.5)
+	})
 }
 
 func TestAbs(t *testing.T) {
-	assert.Equal(t, Abs(-5), 5)
-	assert.Equal(t, Abs(5), 5)
-	assert.Equal(t, Abs(0), 0)
-	assert.EqualDelta(t, Abs(-3.14), 3.14, Delta)
-	assert.EqualDelta(t, Abs(3.14), 3.14, Delta)
+	t.Run("negative", func(t *testing.T) {
+		AssertNumber(t, Abs(-5), 5)
+		AssertNumber(t, Abs(-3.14), 3.14)
+	})
+	t.Run("non-negative is unchanged", func(t *testing.T) {
+		AssertNumber(t, Abs(5), 5)
+		AssertNumber(t, Abs(0), 0)
+		AssertNumber(t, Abs(3.14), 3.14)
+	})
 }
 
 func TestRound(t *testing.T) {
-	assert.Equal(t, Round(1.4), 1.0)
-	assert.Equal(t, Round(1.5), 2.0)
-	assert.Equal(t, Round(-1.5), -2.0)
-	assert.Equal(t, Round(3), 3) // int: no-op
+	t.Run("float rounds half away from zero", func(t *testing.T) {
+		AssertNumber(t, Round(1.4), 1.0)
+		AssertNumber(t, Round(1.5), 2.0)
+		AssertNumber(t, Round(-1.5), -2.0)
+	})
+	t.Run("int is a no-op", func(t *testing.T) {
+		AssertNumber(t, Round(3), 3)
+	})
 }
 
 func TestFloor(t *testing.T) {
-	assert.Equal(t, Floor(1.9), 1.0)
-	assert.Equal(t, Floor(-1.1), -2.0)
-	assert.Equal(t, Floor(3), 3) // int: no-op
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Floor(1.9), 1.0)
+		AssertNumber(t, Floor(-1.1), -2.0)
+	})
+	t.Run("int is a no-op", func(t *testing.T) {
+		AssertNumber(t, Floor(3), 3)
+	})
 }
 
 func TestCeil(t *testing.T) {
-	assert.Equal(t, Ceil(1.1), 2.0)
-	assert.Equal(t, Ceil(-1.9), -1.0)
-	assert.Equal(t, Ceil(3), 3) // int: no-op
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Ceil(1.1), 2.0)
+		AssertNumber(t, Ceil(-1.9), -1.0)
+	})
+	t.Run("int is a no-op", func(t *testing.T) {
+		AssertNumber(t, Ceil(3), 3)
+	})
 }
 
 func TestMod(t *testing.T) {
-	assert.Equal(t, Mod(5, 8), 5)
-	assert.Equal(t, Mod(8, 8), 0)
-	assert.Equal(t, Mod(9, 8), 1)
-	assert.Equal(t, Mod(-1, 8), 7)
-	assert.Equal(t, Mod(-8, 8), 0)
-	assert.Equal(t, Mod(-9, 8), 7)
-	assert.Equal(t, Mod(0, 8), 0)
-
-	assert.Equal(t, Mod(7, 6), 1)
-	assert.Equal(t, Mod(-1, 6), 5)
-
-	type testInt int32
-	assert.Equal(t, Mod(testInt(12), 8), testInt(4))
-}
-
-func TestMidpoint(t *testing.T) {
-	assert.Equal(t, Midpoint(1, 3), 2)
-	assert.Equal(t, Midpoint(1, 4), 3)
-	assert.Equal(t, Midpoint(1, 5), 3)
-	assert.Equal(t, Midpoint(1, 6), 4)
-	assert.Equal(t, Midpoint(1, 7), 4)
-
-	assert.Equal(t, Midpoint(1.0, 6.0), 3.5)
+	t.Run("non-negative operands", func(t *testing.T) {
+		AssertNumber(t, Mod(5, 8), 5)
+		AssertNumber(t, Mod(8, 8), 0)
+		AssertNumber(t, Mod(9, 8), 1)
+		AssertNumber(t, Mod(0, 8), 0)
+		AssertNumber(t, Mod(7, 6), 1)
+	})
+	t.Run("negative operands stay in range", func(t *testing.T) {
+		AssertNumber(t, Mod(-1, 8), 7)
+		AssertNumber(t, Mod(-8, 8), 0)
+		AssertNumber(t, Mod(-9, 8), 7)
+		AssertNumber(t, Mod(-1, 6), 5)
+	})
+	t.Run("defined integer types", func(t *testing.T) {
+		AssertNumber(t, Mod(namedInt(12), 8), namedInt(4))
+	})
 }
 
 func TestLerp(t *testing.T) {
-	assert.Equal(t, Lerp(1, 2, 0.25), 1)
-	assert.Equal(t, Lerp(1, 3, 0.25), 2)
-	assert.Equal(t, Lerp(1, 4, 0.25), 2)
-	assert.Equal(t, Lerp(1, 5, 0.25), 2)
-	assert.Equal(t, Lerp(1, 6, 0.25), 2)
-	assert.Equal(t, Lerp(1, 7, 0.25), 3)
-
-	assert.Equal(t, Lerp(1.0, 6.0, 0.25), 2.25)
-	assert.Equal(t, Lerp(1.0, 6.0, 0.75), 4.75)
+	t.Run("int rounds", func(t *testing.T) {
+		AssertNumber(t, Lerp(1, 2, 0.25), 1)
+		AssertNumber(t, Lerp(1, 3, 0.25), 2)
+		AssertNumber(t, Lerp(1, 5, 0.25), 2)
+		AssertNumber(t, Lerp(1, 7, 0.25), 3)
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Lerp(1.0, 6.0, 0.25), 2.25)
+		AssertNumber(t, Lerp(1.0, 6.0, 0.75), 4.75)
+	})
+	t.Run("endpoints", func(t *testing.T) {
+		AssertNumber(t, Lerp(1.0, 6.0, 0), 1.0)
+		AssertNumber(t, Lerp(1.0, 6.0, 1), 6.0)
+	})
 }
 
-func TestSign(t *testing.T) {
-	assert.Equal(t, Sign(5), 1)
-	assert.Equal(t, Sign(-5), -1)
-	assert.Equal(t, Sign(0), 0)
-	assert.EqualDelta(t, Sign(3.14), 1.0, Delta)
-	assert.EqualDelta(t, Sign(-3.14), -1.0, Delta)
-	assert.EqualDelta(t, Sign(0.0), 0.0, Delta)
+func TestMidpoint(t *testing.T) {
+	t.Run("int rounds", func(t *testing.T) {
+		AssertNumber(t, Midpoint(1, 3), 2)
+		AssertNumber(t, Midpoint(1, 4), 3)
+		AssertNumber(t, Midpoint(1, 5), 3)
+		AssertNumber(t, Midpoint(1, 6), 4)
+		AssertNumber(t, Midpoint(1, 7), 4)
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Midpoint(1.0, 6.0), 3.5)
+	})
+	t.Run("is lerp at one half", func(t *testing.T) {
+		for _, pair := range [][2]float64{{1, 6}, {-3.5, 0.25}, {7, 7}, {12.5, -0.1}} {
+			AssertNumber(t, Midpoint(pair[0], pair[1]), Lerp(pair[0], pair[1], 0.5))
+		}
+	})
 }
 
 func TestClamp(t *testing.T) {
-	assert.Equal(t, Clamp(5, 0, 10), 5)
-	assert.Equal(t, Clamp(-5, 0, 10), 0)
-	assert.Equal(t, Clamp(15, 0, 10), 10)
-	assert.Equal(t, Clamp(0, 0, 10), 0)
-	assert.Equal(t, Clamp(10, 0, 10), 10)
-	assert.EqualDelta(t, Clamp(0.5, 0.0, 1.0), 0.5, Delta)
-	assert.EqualDelta(t, Clamp(-0.5, 0.0, 1.0), 0.0, Delta)
-	assert.EqualDelta(t, Clamp(1.5, 0.0, 1.0), 1.0, Delta)
+	t.Run("inside the range", func(t *testing.T) {
+		AssertNumber(t, Clamp(5, 0, 10), 5)
+		AssertNumber(t, Clamp(0.5, 0.0, 1.0), 0.5)
+	})
+	t.Run("outside the range", func(t *testing.T) {
+		AssertNumber(t, Clamp(-5, 0, 10), 0)
+		AssertNumber(t, Clamp(15, 0, 10), 10)
+		AssertNumber(t, Clamp(-0.5, 0.0, 1.0), 0.0)
+		AssertNumber(t, Clamp(1.5, 0.0, 1.0), 1.0)
+	})
+	t.Run("the bounds are inclusive", func(t *testing.T) {
+		AssertNumber(t, Clamp(0, 0, 10), 0)
+		AssertNumber(t, Clamp(10, 0, 10), 10)
+	})
+}
+
+func TestSign(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertNumber(t, Sign(5), 1)
+		AssertNumber(t, Sign(-5), -1)
+		AssertNumber(t, Sign(0), 0)
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Sign(3.14), 1.0)
+		AssertNumber(t, Sign(-3.14), -1.0)
+		AssertNumber(t, Sign(0.0), 0.0)
+	})
 }
 
 func TestEqual(t *testing.T) {
@@ -154,15 +223,19 @@ func TestEqual(t *testing.T) {
 	})
 }
 
-func TestEpsilon(t *testing.T) {
-	assert.Equal(t, Epsilon[int](), 0.0)
-	assert.Equal(t, Epsilon[int8](), 0.0)
-	assert.Equal(t, Epsilon[float32](), Delta32)
-	assert.Equal(t, Epsilon[float64](), Delta)
-
-	assert.Equal(t, Epsilon[namedInt](), 0.0)
-	assert.Equal(t, Epsilon[namedFloat32](), Delta32)
-	assert.Equal(t, Epsilon[namedFloat64](), Delta)
+func TestEqualDelta(t *testing.T) {
+	t.Run("within the delta", func(t *testing.T) {
+		assert.True(t, EqualDelta(1, 2, 1.5))
+		assert.True(t, EqualDelta(1.0, 1.001, 0.01))
+	})
+	t.Run("outside the delta", func(t *testing.T) {
+		assert.False(t, EqualDelta(1, 3, 1.5))
+		assert.False(t, EqualDelta(1.0, 1.02, 0.01))
+	})
+	t.Run("a zero delta asks for exact equality", func(t *testing.T) {
+		assert.True(t, EqualDelta(5, 5, 0.0))
+		assert.False(t, EqualDelta(5, 6, 0.0))
+	})
 }
 
 func TestEqualRelative(t *testing.T) {
@@ -170,7 +243,7 @@ func TestEqualRelative(t *testing.T) {
 		assert.True(t, EqualRelative(1, 1))
 		assert.False(t, EqualRelative(1, 2))
 	})
-	t.Run("near zero matches Equal", func(t *testing.T) {
+	t.Run("near zero it matches Equal", func(t *testing.T) {
 		assert.True(t, EqualRelative(1.0000005, 1.0))
 		assert.False(t, EqualRelative(1.0000015, 1.0))
 		assert.True(t, EqualRelative(0.0, 0.0))
@@ -192,87 +265,99 @@ func TestEqualRelative(t *testing.T) {
 	})
 }
 
-func TestRelativeEpsilon(t *testing.T) {
-	assert.Equal(t, EpsilonRelative(0.0, 0.5), Delta) // floored at Epsilon near zero
-	assert.Equal(t, EpsilonRelative(100.0, 0.0), 100*Delta)
-	assert.Equal(t, EpsilonRelative(0.0, -100.0), 100*Delta) // larger magnitude wins
-	assert.Equal(t, EpsilonRelative[float32](100, 0), 100*Delta32)
-	assert.Equal(t, EpsilonRelative(5, 5), 0.0) // int
+func TestEpsilon(t *testing.T) {
+	t.Run("int compares exactly", func(t *testing.T) {
+		AssertNumber(t, Epsilon[int](), 0.0)
+		AssertNumber(t, Epsilon[int8](), 0.0)
+		AssertNumber(t, Epsilon[namedInt](), 0.0)
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Epsilon[float32](), Delta32)
+		AssertNumber(t, Epsilon[float64](), Delta)
+	})
+	t.Run("defined types follow their underlying kind", func(t *testing.T) {
+		AssertNumber(t, Epsilon[namedFloat32](), Delta32)
+		AssertNumber(t, Epsilon[namedFloat64](), Delta)
+	})
 }
 
-func TestEqualDelta(t *testing.T) {
-	assert.True(t, EqualDelta(1, 2, 1.5))
-	assert.False(t, EqualDelta(1, 3, 1.5))
-	assert.True(t, EqualDelta(1.0, 1.001, 0.01))
-	assert.False(t, EqualDelta(1.0, 1.02, 0.01))
-	assert.True(t, EqualDelta(5, 5, 0.0))
+func TestEpsilonRelative(t *testing.T) {
+	t.Run("floored at Epsilon near zero", func(t *testing.T) {
+		AssertNumber(t, EpsilonRelative(0.0, 0.5), Delta)
+	})
+	t.Run("scales with the larger magnitude", func(t *testing.T) {
+		AssertNumber(t, EpsilonRelative(100.0, 0.0), 100*Delta)
+		AssertNumber(t, EpsilonRelative(0.0, -100.0), 100*Delta)
+		AssertNumber(t, EpsilonRelative[float32](100, 0), 100*Delta32)
+	})
+	t.Run("int stays exact at any magnitude", func(t *testing.T) {
+		AssertNumber(t, EpsilonRelative(5, 5), 0.0)
+		AssertNumber(t, EpsilonRelative(1000000, 0), 0.0)
+	})
 }
 
-func TestParseNumber(t *testing.T) {
-	// int — decimal only
-	v1, err := Parse[int]("42")
-	assert.NoError(t, err)
-	assert.Equal(t, v1, 42)
+func TestParse(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		v, err := Parse[int]("42")
+		assert.NoError(t, err)
+		AssertNumber(t, v, 42)
+	})
+	t.Run("every integer width", func(t *testing.T) {
+		v16, err := Parse[int16]("32000")
+		assert.NoError(t, err)
+		AssertNumber(t, v16, int16(32000))
 
-	// int8 — respects 8-bit overflow
-	_, err = Parse[int8]("200")
-	assert.Error(t, err)
+		v32, err := Parse[int32]("2147483647")
+		assert.NoError(t, err)
+		AssertNumber(t, v32, int32(2147483647))
 
-	// int16
-	v2, err := Parse[int16]("32000")
-	assert.NoError(t, err)
-	assert.Equal(t, v2, int16(32000))
+		v64, err := Parse[int64]("9223372036854775807")
+		assert.NoError(t, err)
+		AssertNumber(t, v64, int64(9223372036854775807))
+	})
+	t.Run("float", func(t *testing.T) {
+		v32, err := Parse[float32]("3.14")
+		assert.NoError(t, err)
+		AssertNumber(t, v32, float32(3.14))
 
-	// int32
-	v3, err := Parse[int32]("2147483647")
-	assert.NoError(t, err)
-	assert.Equal(t, v3, int32(2147483647))
+		v64, err := Parse[float64]("23.0")
+		assert.NoError(t, err)
+		AssertNumber(t, v64, 23.0)
+	})
+	t.Run("defined types parse like their underlying type", func(t *testing.T) {
+		direction, err := Parse[Direction]("3")
+		assert.NoError(t, err)
+		assert.Equal(t, direction, DirectionDownLeft)
 
-	// int64
-	v4, err := Parse[int64]("9223372036854775807")
-	assert.NoError(t, err)
-	assert.Equal(t, v4, int64(9223372036854775807))
+		named, err := Parse[namedFloat32]("3.14")
+		assert.NoError(t, err)
+		AssertNumber(t, named, namedFloat32(3.14))
+	})
+	t.Run("int rejects float strings", func(t *testing.T) {
+		_, err := Parse[int]("3.14")
+		assert.Error(t, err)
+	})
+	t.Run("the range is checked against T", func(t *testing.T) {
+		_, err := Parse[int8]("200")
+		assert.Error(t, err)
 
-	// int rejects float strings
-	_, err = Parse[int]("3.14")
-	assert.Error(t, err)
+		_, err = Parse[namedInt8]("200")
+		assert.Error(t, err)
 
-	// float32
-	v5, err := Parse[float32]("3.14")
-	assert.NoError(t, err)
-	assert.EqualDelta(t, float64(v5), 3.14, 1e-5)
+		_, err = Parse[float32]("1e39")
+		assert.Error(t, err)
 
-	// float64
-	v6, err := Parse[float64]("23.0")
-	assert.NoError(t, err)
-	assert.EqualDelta(t, v6, 23.0, Delta)
+		v, err := Parse[float64]("1e39")
+		assert.NoError(t, err)
+		AssertNumber(t, v, 1e39)
+	})
+	t.Run("non-numeric input", func(t *testing.T) {
+		_, err := Parse[int]("abc")
+		assert.Error(t, err)
 
-	// error: non-numeric
-	_, err = Parse[int]("abc")
-	assert.Error(t, err)
-
-	_, err = Parse[float64]("abc")
-	assert.Error(t, err)
-
-	// defined types over int/float parse like their underlying type
-	v7, err := Parse[Direction]("3")
-	assert.NoError(t, err)
-	assert.Equal(t, v7, DirectionDownLeft)
-
-	v8, err := Parse[namedFloat32]("3.14")
-	assert.NoError(t, err)
-	assert.EqualDelta(t, float64(v8), 3.14, 1e-5)
-
-	// range is checked against T, not int64/float64
-	_, err = Parse[namedInt8]("200")
-	assert.Error(t, err)
-
-	_, err = Parse[float32]("1e39")
-	assert.Error(t, err)
-
-	v9, err := Parse[float64]("1e39")
-	assert.NoError(t, err)
-	assert.Equal(t, v9, 1e39)
+		_, err = Parse[float64]("abc")
+		assert.Error(t, err)
+	})
 }
 
 func BenchmarkEqual_Float64(b *testing.B) {

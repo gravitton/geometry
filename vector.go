@@ -111,26 +111,23 @@ func (v Vector[T]) Resize(length float64) Vector[T] {
 }
 
 // Normalize creates a new Vector resized to a length of 1.
-// For integer T, the result is one of the four axis-aligned unit vectors (±1,0)/(0,±1);
-// the zero vector returns (1,0) by convention.
+// For integer T, the only vectors of length 1 are the four axis-aligned unit vectors, so the
+// result snaps to the longer axis and keeps its sign, X winning a tie; the zero vector
+// returns (1,0) by convention.
 func (v Vector[T]) Normalize() Vector[T] {
 	if v.IsZero() {
 		return Vector[T]{1, 0}
 	}
 
-	unit := v.Resize(1)
-
-	if isIntType[T]() && unit.X == unit.Y {
-		if v.X > v.Y {
-			unit.X = 1
-			unit.Y = 0
-		} else {
-			unit.X = 0
-			unit.Y = 1
+	if isIntType[T]() {
+		if Abs(v.X) >= Abs(v.Y) {
+			return Vector[T]{Sign(v.X), 0}
 		}
+
+		return Vector[T]{0, Sign(v.Y)}
 	}
 
-	return unit
+	return v.Resize(1)
 }
 
 // Abs creates a new Vector with absolute X and Y.

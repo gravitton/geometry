@@ -1,67 +1,74 @@
 package geom
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/gravitton/assert"
 )
 
 func TestAxis_Cross(t *testing.T) {
-	assert.Equal(t, AxisHorizontal.Cross(), AxisVertical)
-	assert.Equal(t, AxisVertical.Cross(), AxisHorizontal)
-
-	for _, axis := range Axes {
-		assert.Equal(t, axis.Cross().Cross(), axis, axis.String())
-	}
-
-	assert.Equal(t, AxisNone.Cross(), AxisNone)
+	t.Run("swaps the two axes", func(t *testing.T) {
+		assert.Equal(t, AxisHorizontal.Cross(), AxisVertical)
+		assert.Equal(t, AxisVertical.Cross(), AxisHorizontal)
+	})
+	t.Run("none has no cross", func(t *testing.T) {
+		assert.Equal(t, AxisNone.Cross(), AxisNone)
+		assert.Equal(t, Axis(2).Cross(), AxisNone)
+	})
 }
 
 func TestAxis_Direction(t *testing.T) {
-	assert.Equal(t, AxisHorizontal.Direction(true), DirectionRight)
-	assert.Equal(t, AxisHorizontal.Direction(false), DirectionLeft)
-	assert.Equal(t, AxisVertical.Direction(true), DirectionDown)
-	assert.Equal(t, AxisVertical.Direction(false), DirectionUp)
-	assert.Equal(t, AxisNone.Direction(true), DirectionNone)
-
-	for _, axis := range Axes {
-		for _, positive := range []bool{true, false} {
-			direction := axis.Direction(positive)
-
-			assert.Equal(t, direction.Axis(), axis, direction.String())
-			assert.Equal(t, direction.IsPositive(), positive, direction.String())
-		}
-	}
+	t.Run("positive points right and down", func(t *testing.T) {
+		assert.Equal(t, AxisHorizontal.Direction(true), DirectionRight)
+		assert.Equal(t, AxisVertical.Direction(true), DirectionDown)
+	})
+	t.Run("negative points left and up", func(t *testing.T) {
+		assert.Equal(t, AxisHorizontal.Direction(false), DirectionLeft)
+		assert.Equal(t, AxisVertical.Direction(false), DirectionUp)
+	})
+	t.Run("none has no direction", func(t *testing.T) {
+		assert.Equal(t, AxisNone.Direction(true), DirectionNone)
+		assert.Equal(t, AxisNone.Direction(false), DirectionNone)
+	})
 }
 
-func TestAxis_AlongAcross(t *testing.T) {
+func TestAxis_Along(t *testing.T) {
 	size := Sz(10, 20)
 
 	assert.Equal(t, AxisHorizontal.Along(size), 10)
-	assert.Equal(t, AxisHorizontal.Across(size), 20)
 	assert.Equal(t, AxisVertical.Along(size), 20)
+	assert.Equal(t, AxisNone.Along(size), 0)
+}
+
+func TestAxis_Across(t *testing.T) {
+	size := Sz(10, 20)
+
+	assert.Equal(t, AxisHorizontal.Across(size), 20)
 	assert.Equal(t, AxisVertical.Across(size), 10)
-
-	// Size and Along are inverses on both axes
-	for _, axis := range Axes {
-		built := axis.Size(1.0, 2.0)
-
-		assert.EqualDelta(t, axis.Along(built), 1.0, Delta, axis.String())
-		assert.EqualDelta(t, axis.Across(built), 2.0, Delta, axis.String())
-	}
+	assert.Equal(t, AxisNone.Across(size), 0)
 }
 
 func TestAxis_Project(t *testing.T) {
-	assert.Equal(t, AxisHorizontal.Project(Vec(3, 4)), 3)
-	assert.Equal(t, AxisVertical.Project(Vec(3, 4)), 4)
-	assert.Equal(t, AxisVertical.Project(DirectionRight.Offset[int]()), 0)
-	assert.Equal(t, AxisVertical.Project(DirectionDown.Offset[int]()), 1)
+	t.Run("picks the component on the main axis", func(t *testing.T) {
+		assert.Equal(t, AxisHorizontal.Project(Vec(3, 4)), 3)
+		assert.Equal(t, AxisVertical.Project(Vec(3, 4)), 4)
+	})
+	t.Run("a perpendicular direction projects to zero", func(t *testing.T) {
+		assert.Equal(t, AxisVertical.Project(DirectionRight.Offset[int]()), 0)
+		assert.Equal(t, AxisVertical.Project(DirectionDown.Offset[int]()), 1)
+	})
 }
 
 func TestAxis_ScaleAlong(t *testing.T) {
-	AssertSize(t, AxisHorizontal.ScaleAlong(Sz(10, 20), 0.5), Sz(5, 20))
-	AssertSize(t, AxisVertical.ScaleAlong(Sz(10, 20), 0.5), Sz(10, 10))
-	AssertSize(t, AxisHorizontal.ScaleAlong(Sz(1.0, 2.0), 3), Sz(3.0, 2.0))
+	t.Run("leaves the cross axis alone", func(t *testing.T) {
+		AssertSize(t, AxisHorizontal.ScaleAlong(Sz(10, 20), 0.5), Sz(5, 20))
+		AssertSize(t, AxisVertical.ScaleAlong(Sz(10, 20), 0.5), Sz(10, 10))
+		AssertSize(t, AxisHorizontal.ScaleAlong(Sz(1.0, 2.0), 3), Sz(3.0, 2.0))
+	})
+	t.Run("none scales nothing", func(t *testing.T) {
+		AssertSize(t, AxisNone.ScaleAlong(Sz(10, 20), 0.5), Sz(0, 0))
+	})
 }
 
 func TestAxis_Vector(t *testing.T) {
@@ -77,12 +84,15 @@ func TestAxis_Size(t *testing.T) {
 }
 
 func TestAxis_IsNone(t *testing.T) {
-	assert.False(t, AxisHorizontal.IsNone())
-	assert.False(t, AxisVertical.IsNone())
-	assert.True(t, AxisNone.IsNone())
-	assert.True(t, Axis(2).IsNone())
-
-	assert.Equal(t, Axis(0), AxisHorizontal)
+	t.Run("the two axes", func(t *testing.T) {
+		assert.False(t, AxisHorizontal.IsNone())
+		assert.False(t, AxisVertical.IsNone())
+		assert.Equal(t, Axis(0), AxisHorizontal)
+	})
+	t.Run("anything else", func(t *testing.T) {
+		assert.True(t, AxisNone.IsNone())
+		assert.True(t, Axis(2).IsNone())
+	})
 }
 
 func TestAxis_String(t *testing.T) {
@@ -90,4 +100,45 @@ func TestAxis_String(t *testing.T) {
 	assert.Equal(t, AxisVertical.String(), "Vertical")
 	assert.Equal(t, AxisNone.String(), "None")
 	assert.Equal(t, Axis(2).String(), "None")
+}
+
+func TestAxis_Properties(t *testing.T) {
+	t.Run("cross is its own inverse", func(t *testing.T) {
+		for _, axis := range Axes {
+			assert.Equal(t, axis.Cross().Cross(), axis, axis.String()+": ")
+		}
+	})
+	t.Run("along and across swap on the cross axis", func(t *testing.T) {
+		size := Sz(10.0, 20.0)
+
+		for _, axis := range Axes {
+			AssertNumber(t, axis.Cross().Along(size), axis.Across(size), axis.String()+": ")
+			AssertNumber(t, axis.Cross().Across(size), axis.Along(size), axis.String()+": ")
+		}
+	})
+	t.Run("size and along are inverse", func(t *testing.T) {
+		for _, axis := range Axes {
+			built := axis.Size(1.0, 2.0)
+
+			AssertNumber(t, axis.Along(built), 1.0, axis.String()+": ")
+			AssertNumber(t, axis.Across(built), 2.0, axis.String()+": ")
+		}
+	})
+	t.Run("direction round-trips through axis and sign", func(t *testing.T) {
+		for _, axis := range Axes {
+			for _, positive := range []bool{true, false} {
+				direction := axis.Direction(positive)
+
+				assert.Equal(t, direction.Axis(), axis, direction.String()+": ")
+				assert.Equal(t, direction.IsPositive(), positive, direction.String()+": ")
+			}
+		}
+	})
+	t.Run("project is the component of the vector", func(t *testing.T) {
+		for _, axis := range Axes {
+			for _, vector := range vectorFixtures {
+				AssertNumber(t, axis.Project(vector), axis.Along(vector.Size()), fmt.Sprintf("%s → %s: ", axis, vector))
+			}
+		}
+	})
 }
