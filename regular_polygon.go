@@ -28,15 +28,17 @@ const (
 )
 
 // RegularPolygonOrientationAngle returns the initial vertex angle for a regular polygon with n sides
-// and the given orientation (FlatTop or PointyTop), normalized to [0, 2π) like Rotate.
+// and the given orientation, normalized to [0, 2π) like Rotate. PointyTop puts the first vertex at
+// the top (-Y, 3π/2); FlatTop puts the midpoint of an edge there, so the first vertex sits half a
+// step before it at 3π/2 - π/n.
 func RegularPolygonOrientationAngle(n int, orientation Orientation) float64 {
+	top := 3 * Pi / 2
+
 	switch orientation {
 	case FlatTop:
-		// 90 - 180/n degrees
-		return Pi * float64(n-2) / (2 * float64(n))
+		return NormalizeAngle(top - Pi/float64(n))
 	case PointyTop:
-		// -90 degrees, pointing at -Y
-		return 3 * Pi / 2
+		return top
 	default:
 		return 0
 	}
@@ -108,23 +110,14 @@ func (rp RegularPolygon[T]) Vertices() []Point[T] {
 	return vertices
 }
 
-// Bounds returns the axis-aligned bounding rectangle computed from the polygon vertices.
+// Bounds returns the axis-aligned bounding rectangle computed from the polygon vertices,
+// or a zero-size rectangle at the center for a polygon without vertices.
 func (rp RegularPolygon[T]) Bounds() Rectangle[T] {
-	vertices := rp.Vertices()
-	if len(vertices) == 0 {
+	if rp.Empty() {
 		return Rectangle[T]{rp.Center, Size[T]{}}
 	}
 
-	minX, maxX := vertices[0].X, vertices[0].X
-	minY, maxY := vertices[0].Y, vertices[0].Y
-	for _, v := range vertices[1:] {
-		minX = min(minX, v.X)
-		maxX = max(maxX, v.X)
-		minY = min(minY, v.Y)
-		maxY = max(maxY, v.Y)
-	}
-
-	return RectangleFromMinMax(Point[T]{minX, minY}, Point[T]{maxX, maxY})
+	return rp.Polygon().Bounds()
 }
 
 // Polygon converts the regular polygon into a generic Polygon with computed vertices.

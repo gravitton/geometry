@@ -13,6 +13,8 @@ func TestDirectionFromAngle(t *testing.T) {
 		assert.Equal(t, DirectionFromAngle(-Pi/2), DirectionUp)
 		assert.Equal(t, DirectionFromAngle(Pi/2), DirectionDown)
 		assert.Equal(t, DirectionFromAngle(Pi), DirectionLeft)
+		assert.Equal(t, DirectionFromAngle(4*Pi), DirectionRight)
+		assert.Equal(t, DirectionFromAngle(1e300), DirectionFromAngle(NormalizeAngle(1e300)))
 		assert.Equal(t, DirectionFromAngle(-Pi), DirectionLeft)
 	})
 	t.Run("diagonal angles", func(t *testing.T) {

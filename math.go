@@ -95,7 +95,7 @@ func Ceil[T Number](x T) T {
 	return T(math.Ceil(float64(x)))
 }
 
-// Mod wraps n into [0, m), correctly for negative n.
+// Mod wraps n into [0, m), correctly for negative n. Like the % operator it panics for m == 0.
 func Mod[T Integer](n, m T) T {
 	return ((n % m) + m) % m
 }

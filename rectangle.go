@@ -68,12 +68,12 @@ func (r Rectangle[T]) Resize(size Size[T]) Rectangle[T] {
 	return Rectangle[T]{r.Center, size}
 }
 
-// Grow creates a new Rectangle with size expanded by the same amount in both dimensions.
+// Grow creates a new Rectangle with size expanded by the same amount in both dimensions, clamped to zero.
 func (r Rectangle[T]) Grow(amount T) Rectangle[T] {
 	return Rectangle[T]{r.Center, r.Size.Grow(amount)}
 }
 
-// GrowXY creates a new Rectangle with size expanded by the given amounts along X and Y.
+// GrowXY creates a new Rectangle with size expanded by the given amounts along X and Y, clamped to zero.
 func (r Rectangle[T]) GrowXY(amountX, amountY T) Rectangle[T] {
 	return Rectangle[T]{r.Center, r.Size.GrowXY(amountX, amountY)}
 }

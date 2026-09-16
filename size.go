@@ -63,14 +63,14 @@ func (s Size[T]) UnscaleXY(factorX, factorY float64) Size[T] {
 	return Size[T]{Divide(s.Width, factorX), Divide(s.Height, factorY)}
 }
 
-// Grow creates a new Size expanded by the same delta in both dimensions.
+// Grow creates a new Size expanded by the same delta in both dimensions, clamped to zero.
 func (s Size[T]) Grow(amount T) Size[T] {
-	return Size[T]{s.Width + amount, s.Height + amount}
+	return Size[T]{max(s.Width+amount, 0), max(s.Height+amount, 0)}
 }
 
-// GrowXY creates a new Size expanded by the given amounts along X and Y.
+// GrowXY creates a new Size expanded by the given amounts along X and Y, clamped to zero.
 func (s Size[T]) GrowXY(amountX, amountY T) Size[T] {
-	return Size[T]{s.Width + amountX, s.Height + amountY}
+	return Size[T]{max(s.Width+amountX, 0), max(s.Height+amountY, 0)}
 }
 
 // Shrink creates a new Size reduced by the same delta in both dimensions, clamped to zero.

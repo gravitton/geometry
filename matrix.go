@@ -103,10 +103,11 @@ func (m Matrix[T]) Inverse() Matrix[T] {
 	}
 }
 
-// IsInvertible reports whether the matrix has an inverse: its determinant is not zero
-// (within Epsilon of T).
+// IsInvertible reports whether the matrix has an inverse: its determinant is not exactly zero.
+// No tolerance is applied, since a determinant scales with the square of the matrix and a small
+// one only means a large inverse, not a missing one: ScaleMatrix(0.001, 0.001) is invertible.
 func (m Matrix[T]) IsInvertible() bool {
-	return !Equal(m.Determinant(), 0.0)
+	return m.Determinant() != 0
 }
 
 // Determinant calculates the determinant of the 2x2 matrix.

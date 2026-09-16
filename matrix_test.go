@@ -69,9 +69,11 @@ func TestMatrix_Inverse(t *testing.T) {
 		AssertMatrix(t, IdentityMatrix[float64]().Inverse(), IdentityMatrix[float64]())
 		AssertMatrix(t, TranslationMatrix(5.0, 3.0).Inverse(), TranslationMatrix(-5.0, -3.0))
 		AssertMatrix(t, ScaleMatrix(2.0, 4.0).Inverse(), ScaleMatrix(0.5, 0.25))
+		AssertMatrix(t, ScaleMatrix(0.0005, 0.0005).Inverse(), ScaleMatrix(2000.0, 2000.0))
 
 		// float32 inverts exactly too — the fractions are not rounded away
 		AssertMatrix(t, ScaleMatrix[float32](2, 4).Inverse(), ScaleMatrix[float32](0.5, 0.25))
+		AssertMatrix(t, ScaleMatrix[float32](0.005, 0.005).Inverse(), ScaleMatrix[float32](200, 200))
 		AssertMatrix(t, TranslationMatrix[float32](5, 3).Inverse(), TranslationMatrix[float32](-5, -3))
 	})
 	t.Run("singular matrix returns itself", func(t *testing.T) {
@@ -96,6 +98,8 @@ func TestMatrix_IsInvertible(t *testing.T) {
 	t.Run("non-zero determinant", func(t *testing.T) {
 		assert.True(t, IdentityMatrix[int]().IsInvertible())
 		assert.True(t, ScaleMatrix(2.0, 0.5).IsInvertible())
+		assert.True(t, ScaleMatrix(0.0005, 0.0005).IsInvertible())
+		assert.True(t, ScaleMatrix[float32](0.005, 0.005).IsInvertible())
 	})
 	t.Run("zero determinant", func(t *testing.T) {
 		assert.False(t, Matrix[int]{}.IsInvertible())

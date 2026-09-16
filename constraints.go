@@ -52,6 +52,9 @@ func isIntType[T Number]() bool {
 // (1.2e-7) and the float64 one (2.2e-16), so adding it to one is a no-op for float32 alone.
 // It is built by division because T(1e-10) does not compile when T may be an integer, and a
 // constant above 127 overflows int8 at compile time even where the line never runs.
+//
+// The arithmetic detection is deliberate: unsafe.Sizeof would be more direct, but the package
+// stays free of the unsafe import.
 func isFloat32[T Number]() bool {
 	if isIntType[T]() {
 		return false

@@ -91,6 +91,7 @@ func TestSize_Grow(t *testing.T) {
 	t.Run("uniform amount", func(t *testing.T) {
 		AssertSize(t, Sz(2, 3).Grow(2), Sz(4, 5))
 		AssertSize(t, Sz(0.4, 0.25).Grow(0.1), Sz(0.5, 0.35))
+		AssertSize(t, Sz(2, 3).Grow(-5), Sz(0, 0))
 	})
 	t.Run("per-axis amount", func(t *testing.T) {
 		AssertSize(t, Sz(2, 3).GrowXY(2, 3), Sz(4, 6))

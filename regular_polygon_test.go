@@ -3,6 +3,7 @@ package geom
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"testing"
 
 	"github.com/gravitton/assert"
@@ -25,10 +26,18 @@ func TestRegularPolygonOrientationAngle(t *testing.T) {
 		AssertNumber(t, RegularPolygonOrientationAngle(4, PointyTop), 270*DegToRad)
 		AssertNumber(t, RegularPolygonOrientationAngle(6, PointyTop), 270*DegToRad)
 	})
-	t.Run("flat top offsets by half a step", func(t *testing.T) {
-		AssertNumber(t, RegularPolygonOrientationAngle(3, FlatTop), 30*DegToRad)
-		AssertNumber(t, RegularPolygonOrientationAngle(4, FlatTop), 45*DegToRad)
-		AssertNumber(t, RegularPolygonOrientationAngle(6, FlatTop), 60*DegToRad)
+	t.Run("flat top sits half a step before the top", func(t *testing.T) {
+		AssertNumber(t, RegularPolygonOrientationAngle(3, FlatTop), 210*DegToRad)
+		AssertNumber(t, RegularPolygonOrientationAngle(4, FlatTop), 225*DegToRad)
+		AssertNumber(t, RegularPolygonOrientationAngle(5, FlatTop), 234*DegToRad)
+		AssertNumber(t, RegularPolygonOrientationAngle(6, FlatTop), 240*DegToRad)
+	})
+	t.Run("flat top puts an edge midpoint at the top for any n", func(t *testing.T) {
+		for n := 3; n <= 9; n++ {
+			vertices := RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), n, FlatTop).Vertices()
+
+			AssertPoint(t, vertices[0].Midpoint(vertices[1]), Pt(0.0, -10*math.Cos(Pi/float64(n))), fmt.Sprintf("n=%d: ", n))
+		}
 	})
 	t.Run("unknown orientation has no initial angle", func(t *testing.T) {
 		AssertNumber(t, RegularPolygonOrientationAngle(6, Orientation(99)), 0.0)
@@ -49,8 +58,11 @@ func TestRegularPolygonWithOrientation(t *testing.T) {
 	t.Run("pointy top starts above the center", func(t *testing.T) {
 		assert.True(t, pointy.Vertices()[0].Y < center.Y)
 	})
-	t.Run("flat top starts below the center", func(t *testing.T) {
-		assert.True(t, flat.Vertices()[0].Y > center.Y)
+	t.Run("flat top starts left of and above the center", func(t *testing.T) {
+		first := flat.Vertices()[0]
+
+		assert.True(t, first.X < center.X)
+		assert.True(t, first.Y < center.Y)
 	})
 }
 

@@ -77,7 +77,7 @@ func DirectionFromAngle(angle float64) Direction {
 		return DirectionNone
 	}
 
-	return Mod(Direction(math.Round(angle/(Pi/4))), 8)
+	return Mod(Direction(math.Round(NormalizeAngle(angle)/(Pi/4))), 8)
 }
 
 // DirectionFromAxes returns the direction for the given axis inputs, canceling opposite

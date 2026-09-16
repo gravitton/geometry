@@ -34,6 +34,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `Vector.Resize`, `Normalize` and `Direction` treat only the exact zero vector as directionless. Previously they used the tolerant `IsZero`, so any vector shorter than `Delta` (`1e-6`) or `Delta32` (`1e-4`) snapped to `(1,0)` or `DirectionNone` and lost its direction
 - `RegularPolygon.Equal` compares angles normalized to `[0, 2π)`, so a polygon equals itself after `Rotate(0)` or a full turn; `RegularPolygonOrientationAngle` returns `3π/2` instead of `-π/2` for `PointyTop`, the same normalized form `Rotate` stores
 - `Axis.ScaleAlong` on `AxisNone` returns the size unchanged instead of a zero size
+- `Size.Grow`, `Size.GrowXY`, `Rectangle.Grow`, `Rectangle.GrowXY`, and `Circle.Grow` clamp to zero for a negative amount, the same way `Shrink` already did, so no method can produce the negative size `Size` documents as unsupported (**breaking**)
+- `AssertRegularPolygon` compares angles normalized to `[0, 2π)`, like `RegularPolygon.Equal`, so a polygon asserts equal to itself after a full turn
+- `Mod` documents that it panics for `m == 0`, like the `%` operator
 - `ParseSize` wraps the underlying parse error with `%w`, so `errors.Is(err, strconv.ErrRange)` and `ErrSyntax` work
 - `Integer` and `Matrix` document that `int8` and `int16` are storage-only: products such as `LengthSquared`, `Less`, `Circle.Contains`, `Size.Area` and `Matrix.Multiply` compute in `T` and overflow there. `Size` documents that a negative width or height is unsupported, and `Axis.IsNone` that every value outside the two axes counts as none
 
@@ -53,6 +56,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `Matrix`, `RotationMatrix`, `Rotate`, `PreRotate`, `Inverse`, and `Unscale` document what an integer `T` cannot represent: only quarter turns are rotations, only `|det| = 1` inverts, and only a factor of ±1 unscales. An integer matrix is for storing and composing lattice transforms
 - `Rectangle.Inset` on an integer rectangle with an odd asymmetric padding no longer leaks outside the original: the center shift rounded `0.5` up while `Min` truncated, so `Rect(Pt(0,0), Sz(10,10)).Inset(Pad(0,0,0,1))` spanned `-3..6` instead of `-4..5`. The inset is now derived from the padded `Min` corner
 - `DirectionFromAngle(±Inf)` returns `DirectionNone` instead of a platform-dependent direction
+- `RegularPolygonOrientationAngle` with `FlatTop` placed a flat edge at the *bottom* (`π/2 - π/n`), which only coincides with a flat top for an even `n`. A flat-top triangle or pentagon therefore had a vertex at the top and was indistinguishable from `PointyTop`. It now puts an edge midpoint at the top for every `n`: `3π/2 - π/n`, half a step before the `PointyTop` vertex. For an even `n` the shape is unchanged but the first vertex moves by 180°, so `Vertices()` starts on the opposite side and `Equal` against a hard-coded angle changes (**breaking**)
+- `DirectionFromAngle` normalizes the angle before rounding it to a step, so a very large angle no longer converts an out-of-range float to an integer with platform-dependent results
 
 
 ## [v1.12.0 (2026-08-26)](https://github.com/gravitton/geometry/compare/v1.11.0...v1.12.0)

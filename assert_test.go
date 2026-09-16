@@ -130,6 +130,9 @@ func TestAssertRegularPolygon(t *testing.T) {
 	t.Run("equal", func(t *testing.T) {
 		assertHelper(t, AssertRegularPolygon, p, RegPol(Pt(1, 2), Sz(3, 4), 5, 0.5), true)
 	})
+	t.Run("angle is compared normalized", func(t *testing.T) {
+		assertHelper(t, AssertRegularPolygon, p, RegPol(Pt(1, 2), Sz(3, 4), 5, 0.5+2*Pi), true)
+	})
 	t.Run("one field differs", func(t *testing.T) {
 		assertHelper(t, AssertRegularPolygon, p, RegPol(Pt(9, 2), Sz(3, 4), 5, 0.5), false, "center")
 		assertHelper(t, AssertRegularPolygon, p, RegPol(Pt(1, 2), Sz(9, 4), 5, 0.5), false, "size")

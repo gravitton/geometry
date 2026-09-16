@@ -56,6 +56,7 @@ func TestCircle_Resize(t *testing.T) {
 func TestCircle_Grow(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		AssertCircle(t, Circ(Pt(1, 2), 10).Grow(8), Circ(Pt(1, 2), 18))
+		AssertCircle(t, Circ(Pt(1, 2), 10).Grow(-12), Circ(Pt(1, 2), 0))
 	})
 	t.Run("float", func(t *testing.T) {
 		AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).Grow(3.1), Circ(Pt(0.6, -0.25), 4.3))
