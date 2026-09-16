@@ -105,10 +105,11 @@ func (v Vector[T]) Rotate(angle float64) Vector[T] {
 }
 
 // Resize creates a new Vector resized to the given length. The zero vector has no direction
-// and resizes along +X to (length,0), the same convention Normalize follows.
+// and resizes along +X to (length,0), the same convention Normalize follows. Only the exact
+// zero vector is treated this way: a vector shorter than Epsilon keeps its direction.
 // For integer T, the result is rounded and the actual length may differ from the requested value.
 func (v Vector[T]) Resize(length float64) Vector[T] {
-	if v.IsZero() {
+	if !v.hasDirection() {
 		return Vector[T]{Cast[T](length), 0}
 	}
 
@@ -117,10 +118,10 @@ func (v Vector[T]) Resize(length float64) Vector[T] {
 
 // Normalize creates a new Vector resized to a length of 1.
 // For integer T, the only vectors of length 1 are the four axis-aligned unit vectors, so the
-// result snaps to the longer axis and keeps its sign, X winning a tie; the zero vector
+// result snaps to the longer axis and keeps its sign, X winning a tie; the exact zero vector
 // returns (1,0) by convention.
 func (v Vector[T]) Normalize() Vector[T] {
-	if v.IsZero() {
+	if !v.hasDirection() {
 		return Vector[T]{1, 0}
 	}
 
@@ -185,9 +186,9 @@ func (v Vector[T]) Angle() float64 {
 	return math.Atan2(float64(v.Y), float64(v.X))
 }
 
-// Direction returns the direction nearest to the vector, or DirectionNone for the zero vector.
+// Direction returns the direction nearest to the vector, or DirectionNone for the exact zero vector.
 func (v Vector[T]) Direction() Direction {
-	if v.IsZero() {
+	if !v.hasDirection() {
 		return DirectionNone
 	}
 
@@ -207,6 +208,12 @@ func (v Vector[T]) Equal(vector Vector[T]) bool {
 // IsZero checks if X and Y values are zero.
 func (v Vector[T]) IsZero() bool {
 	return v.Equal(Vector[T]{})
+}
+
+// hasDirection reports whether the vector points somewhere: only the exact zero vector does not.
+// It deliberately ignores Epsilon, since a vector shorter than the tolerance still has a direction.
+func (v Vector[T]) hasDirection() bool {
+	return v.X != 0 || v.Y != 0
 }
 
 // IsOne checks if X and Y values are (1,1).

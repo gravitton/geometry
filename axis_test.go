@@ -81,8 +81,8 @@ func TestAxis_ScaleAlong(t *testing.T) {
 		AssertSize(t, AxisVertical.ScaleAlong(Sz(10, 20), 0.5), Sz(10, 10))
 		AssertSize(t, AxisHorizontal.ScaleAlong(Sz(1.0, 2.0), 3), Sz(3.0, 2.0))
 	})
-	t.Run("none scales nothing", func(t *testing.T) {
-		AssertSize(t, AxisNone.ScaleAlong(Sz(10, 20), 0.5), Sz(0, 0))
+	t.Run("none leaves the size unchanged", func(t *testing.T) {
+		AssertSize(t, AxisNone.ScaleAlong(Sz(10, 20), 0.5), Sz(10, 20))
 	})
 }
 

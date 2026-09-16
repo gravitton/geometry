@@ -45,6 +45,16 @@ func (p Padding[T]) Size() Size[T] {
 	return Size[T]{p.Width(), p.Height()}
 }
 
+// Equal checks for equal edge values with given padding.
+func (p Padding[T]) Equal(padding Padding[T]) bool {
+	return Equal(p.Top, padding.Top) && Equal(p.Right, padding.Right) && Equal(p.Bottom, padding.Bottom) && Equal(p.Left, padding.Left)
+}
+
+// IsZero checks if all edge values are zero.
+func (p Padding[T]) IsZero() bool {
+	return p.Equal(Padding[T]{})
+}
+
 // Int converts the padding to a Padding[int].
 func (p Padding[T]) Int() Padding[int] {
 	return Padding[int]{Cast[int](float64(p.Top)), Cast[int](float64(p.Right)), Cast[int](float64(p.Bottom)), Cast[int](float64(p.Left))}

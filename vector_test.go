@@ -161,12 +161,17 @@ func TestVector_Resize(t *testing.T) {
 		AssertVector(t, ZeroVector[float64]().Resize(5), Vec(5.0, 0.0))
 		AssertVector(t, ZeroVector[int]().Resize(2.4), Vec(2, 0))
 	})
+	t.Run("a vector shorter than Epsilon keeps its direction", func(t *testing.T) {
+		AssertVector(t, Vec(1e-7, 1e-7).Resize(5), Vec(5*OneOverSqrt2, 5*OneOverSqrt2))
+		AssertVector(t, Vec[float32](0, -1e-5).Resize(2), Vec[float32](0, -2))
+	})
 }
 
 func TestVector_Normalize(t *testing.T) {
 	t.Run("float keeps the direction", func(t *testing.T) {
 		AssertVector(t, Vec(0.6, -0.25).Normalize(), Vec(0.923076, -0.384615))
 		AssertNumber(t, Vec(0.6, -0.25).Normalize().Length(), 1.0)
+		AssertVector(t, Vec(1e-7, 1e-7).Normalize(), Vec(OneOverSqrt2, OneOverSqrt2))
 	})
 	t.Run("int snaps to the longer axis", func(t *testing.T) {
 		AssertVector(t, Vec(10, 16).Normalize(), Vec(0, 1))
@@ -296,6 +301,9 @@ func TestVector_Direction(t *testing.T) {
 	})
 	t.Run("zero vector has no direction", func(t *testing.T) {
 		assert.Equal(t, Vec(0, 0).Direction(), DirectionNone)
+	})
+	t.Run("a vector shorter than Epsilon still has one", func(t *testing.T) {
+		assert.Equal(t, Vec(-1e-7, 0.0).Direction(), DirectionLeft)
 	})
 	t.Run("NaN has no direction", func(t *testing.T) {
 		assert.Equal(t, Vec(math.NaN(), 1.0).Direction(), DirectionNone)

@@ -65,6 +65,22 @@ func (p Polygon[T]) ScaleXY(factorX, factorY float64) Polygon[T] {
 	})}
 }
 
+// Bounds returns the axis-aligned bounding rectangle of the vertices, or the zero rectangle
+// for a polygon without vertices.
+func (p Polygon[T]) Bounds() Rectangle[T] {
+	if p.Empty() {
+		return Rectangle[T]{}
+	}
+
+	minPoint, maxPoint := p.Vertices[0], p.Vertices[0]
+	for _, v := range p.Vertices[1:] {
+		minPoint = Point[T]{min(minPoint.X, v.X), min(minPoint.Y, v.Y)}
+		maxPoint = Point[T]{max(maxPoint.X, v.X), max(maxPoint.Y, v.Y)}
+	}
+
+	return RectangleFromMinMax(minPoint, maxPoint)
+}
+
 // Equal checks if two polygons have the same vertices.
 func (p Polygon[T]) Equal(polygon Polygon[T]) bool {
 	if len(p.Vertices) != len(polygon.Vertices) {

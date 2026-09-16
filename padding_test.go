@@ -63,6 +63,28 @@ func TestPadding_Size(t *testing.T) {
 	})
 }
 
+func TestPadding_Equal(t *testing.T) {
+	t.Run("same padding", func(t *testing.T) {
+		assert.True(t, Pad(1, 2, 3, 4).Equal(Pad(1, 2, 3, 4)))
+		assert.True(t, Pad(0.1, 0.2, 0.3, 0.4).Equal(Pad(0.1, 0.2, 0.3, 0.4000001)))
+	})
+	t.Run("different padding", func(t *testing.T) {
+		assert.False(t, Pad(1, 2, 3, 4).Equal(Pad(4, 3, 2, 1)))
+		assert.False(t, Pad(0.1, 0.2, 0.3, 0.4).Equal(Pad(0.1, 0.2, 0.3, 0.5)))
+	})
+}
+
+func TestPadding_IsZero(t *testing.T) {
+	t.Run("zero", func(t *testing.T) {
+		assert.True(t, PadU(0).IsZero())
+		assert.True(t, Padding[float64]{}.IsZero())
+	})
+	t.Run("non-zero", func(t *testing.T) {
+		assert.False(t, Pad(0, 0, 0, 1).IsZero())
+		assert.False(t, PadU(0.5).IsZero())
+	})
+}
+
 func TestPadding_Int(t *testing.T) {
 	t.Run("int is a no-op", func(t *testing.T) {
 		AssertPadding(t, Pad(2, 4, 3, 5).Int(), Pad(2, 4, 3, 5))

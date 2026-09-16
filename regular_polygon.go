@@ -28,15 +28,15 @@ const (
 )
 
 // RegularPolygonOrientationAngle returns the initial vertex angle for a regular polygon with n sides
-// and the given orientation (FlatTop or PointyTop).
+// and the given orientation (FlatTop or PointyTop), normalized to [0, 2π) like Rotate.
 func RegularPolygonOrientationAngle(n int, orientation Orientation) float64 {
 	switch orientation {
 	case FlatTop:
 		// 90 - 180/n degrees
 		return Pi * float64(n-2) / (2 * float64(n))
 	case PointyTop:
-		// -90 degrees
-		return -Pi / 2
+		// -90 degrees, pointing at -Y
+		return 3 * Pi / 2
 	default:
 		return 0
 	}
@@ -132,9 +132,10 @@ func (rp RegularPolygon[T]) Polygon() Polygon[T] {
 	return Polygon[T]{rp.Vertices()}
 }
 
-// Equal checks if center point, size, number of vertices and angle are equal.
+// Equal checks if center point, size, number of vertices and angle are equal. Angles are
+// compared normalized to [0, 2π), so a full turn or the sign of an angle does not matter.
 func (rp RegularPolygon[T]) Equal(polygon RegularPolygon[T]) bool {
-	return rp.Center.Equal(polygon.Center) && rp.Size.Equal(polygon.Size) && rp.N == polygon.N && Equal(rp.Angle, polygon.Angle)
+	return rp.Center.Equal(polygon.Center) && rp.Size.Equal(polygon.Size) && rp.N == polygon.N && Equal(NormalizeAngle(rp.Angle), NormalizeAngle(polygon.Angle))
 }
 
 // IsZero checks if center point, size, number of vertices and angle are zero.

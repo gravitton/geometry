@@ -2,7 +2,9 @@ package geom
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/gravitton/assert"
@@ -37,6 +39,13 @@ func TestParseSize(t *testing.T) {
 	t.Run("int rejects fractional values", func(t *testing.T) {
 		_, err := ParseSize[int]("23.5x12.4")
 		assert.Error(t, err)
+	})
+	t.Run("the parse error is wrapped", func(t *testing.T) {
+		_, err := ParseSize[int8]("300x1")
+		assert.True(t, errors.Is(err, strconv.ErrRange))
+
+		_, err = ParseSize[int]("1xb")
+		assert.True(t, errors.Is(err, strconv.ErrSyntax))
 	})
 	t.Run("malformed input", func(t *testing.T) {
 		_, err := ParseSize[int]("16")

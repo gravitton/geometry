@@ -92,6 +92,18 @@ func TestMatrix_Inverse(t *testing.T) {
 	})
 }
 
+func TestMatrix_IsInvertible(t *testing.T) {
+	t.Run("non-zero determinant", func(t *testing.T) {
+		assert.True(t, IdentityMatrix[int]().IsInvertible())
+		assert.True(t, ScaleMatrix(2.0, 0.5).IsInvertible())
+	})
+	t.Run("zero determinant", func(t *testing.T) {
+		assert.False(t, Matrix[int]{}.IsInvertible())
+		assert.False(t, ScaleMatrix(1.0, 0.0).IsInvertible())
+		assert.False(t, Mat(1.0, 2.0, 0.0, 2.0, 4.0, 0.0).IsInvertible())
+	})
+}
+
 func TestMatrix_Determinant(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
 		AssertNumber(t, IdentityMatrix[float64]().Determinant(), 1.0)
@@ -348,8 +360,8 @@ func TestMatrix_Properties(t *testing.T) {
 	})
 	t.Run("inverse undoes the transform", func(t *testing.T) {
 		for _, matrix := range matrixFixtures {
-			if Equal(matrix.Determinant(), 0) {
-				continue // singular matrices have no inverse
+			if !matrix.IsInvertible() {
+				continue
 			}
 
 			assert.True(t, matrix.Multiply(matrix.Inverse()).Equal(IdentityMatrix[float64]()), fmt.Sprintf("%s: ", matrix))

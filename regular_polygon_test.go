@@ -20,10 +20,10 @@ func TestRegularPolygon_Constructor(t *testing.T) {
 func TestRegularPolygonOrientationAngle(t *testing.T) {
 	t.Run("pointy top points at -Y", func(t *testing.T) {
 		// in +Y-down screen coordinates, "top" means minimum Y, so the first vertex
-		// has to point in the -Y direction: angle = -π/2
-		AssertNumber(t, RegularPolygonOrientationAngle(3, PointyTop), -90*DegToRad)
-		AssertNumber(t, RegularPolygonOrientationAngle(4, PointyTop), -90*DegToRad)
-		AssertNumber(t, RegularPolygonOrientationAngle(6, PointyTop), -90*DegToRad)
+		// has to point in the -Y direction: angle = -π/2, stored normalized as 3π/2
+		AssertNumber(t, RegularPolygonOrientationAngle(3, PointyTop), 270*DegToRad)
+		AssertNumber(t, RegularPolygonOrientationAngle(4, PointyTop), 270*DegToRad)
+		AssertNumber(t, RegularPolygonOrientationAngle(6, PointyTop), 270*DegToRad)
 	})
 	t.Run("flat top offsets by half a step", func(t *testing.T) {
 		AssertNumber(t, RegularPolygonOrientationAngle(3, FlatTop), 30*DegToRad)
@@ -62,8 +62,8 @@ func TestTriangle(t *testing.T) {
 	})
 	t.Run("integer vertices round after scaling", func(t *testing.T) {
 		// vertices 1 and 2 land within one unit of the exact (3.598, 0.5) and (-1.598, 0.5);
-		// their Y of 0.5 falls just below the .5 tie in float64 and rounds down to 0 and up to 1
-		AssertVertices(t, triangle.Vertices(), []Point[int]{Pt(1, -4), Pt(4, 0), Pt(-2, 1)})
+		// their Y of 0.5 falls just below the .5 tie in float64 and rounds down to 0
+		AssertVertices(t, triangle.Vertices(), []Point[int]{Pt(1, -4), Pt(4, 0), Pt(-2, 0)})
 	})
 }
 
@@ -199,6 +199,13 @@ func TestRegularPolygon_Equal(t *testing.T) {
 	t.Run("the angle is compared", func(t *testing.T) {
 		assert.False(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Equal(RegPol(Pt(1, 2), Sz(2, 2), 4, Pi)))
 		assert.True(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0.5).Equal(RegPol(Pt(1, 2), Sz(2, 2), 4, 0.5)))
+	})
+	t.Run("the angle is compared normalized", func(t *testing.T) {
+		hexagon := Hexagon(Pt(0.0, 0.0), SzU(10.0), PointyTop)
+
+		assert.True(t, hexagon.Equal(hexagon.Rotate(0)))
+		assert.True(t, hexagon.Equal(hexagon.Rotate(2*Pi)))
+		assert.True(t, RegPol(Pt(1, 2), Sz(2, 2), 4, -Pi/2).Equal(RegPol(Pt(1, 2), Sz(2, 2), 4, 3*Pi/2)))
 	})
 }
 

@@ -27,7 +27,9 @@ func TestDirectionFromAngle(t *testing.T) {
 		assert.Equal(t, DirectionFromAngle(Pi/4+0.1), DirectionDownRight)
 		assert.Equal(t, DirectionFromAngle(Pi/4-0.1), DirectionDownRight)
 	})
-	t.Run("NaN has no direction", func(t *testing.T) {
+	t.Run("NaN and Inf have no direction", func(t *testing.T) {
+		assert.Equal(t, DirectionFromAngle(math.Inf(1)), DirectionNone)
+		assert.Equal(t, DirectionFromAngle(math.Inf(-1)), DirectionNone)
 		assert.Equal(t, DirectionFromAngle(math.NaN()), DirectionNone)
 	})
 }

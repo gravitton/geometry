@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `EqualRelative(a, b)` and `EpsilonRelative(a, b)` – equality within a tolerance that scales with magnitude, for values far from zero where an absolute tolerance falls below one ulp. Measured at ~1.1 ns against ~0.6 ns for `Equal`, which is why it is a separate function rather than a change to `Equal`
 - `AssertNumber(t, actual, expected)` – asserts a bare coordinate with the same integer/float rule as the shape helpers
 - `Vector.LessOrEqual(length)` – reports whether the vector is at most the given length, the closed counterpart of `Less`
+- `Padding.Equal` and `Padding.IsZero`, so `Padding` has the same equality pair as every other type
+- `Polygon.Bounds` – the axis-aligned bounding rectangle of the vertices, the zero rectangle for an empty polygon; every shape now has `Bounds()`
+- `Matrix.IsInvertible` – reports whether the determinant is non-zero, so a caller can tell a real inverse from the unchanged matrix `Inverse` returns for a singular one
 
 ### Changed
 - `Equal` compares an integer `T` exactly and a float `T` within `Epsilon[T]()`, so a `float32` now gets a tolerance matched to its precision instead of the `float64` one. The comparison stays absolute, and therefore stays a subtract and a compare for hot paths
@@ -28,6 +31,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `Polygon.Center` returns the zero point for a polygon without vertices instead of dividing by zero, and `RegularPolygon.Vertices` returns no vertices for `N < 1` instead of panicking in `make`; `RegularPolygon.Empty` is true for any `N < 1`
 - `DirectionFromAngle(NaN)` and therefore `Vector.Direction` on a NaN vector return `DirectionNone` instead of `DirectionRight`
 - `Rectangle` documents that it is closed and that an integer rectangle of width `w` spans `w+1` lattice columns from `Min` to `Max` inclusive, while `Image()` yields the half-open pixel rectangle of exactly `w` pixels
+- `Vector.Resize`, `Normalize` and `Direction` treat only the exact zero vector as directionless. Previously they used the tolerant `IsZero`, so any vector shorter than `Delta` (`1e-6`) or `Delta32` (`1e-4`) snapped to `(1,0)` or `DirectionNone` and lost its direction
+- `RegularPolygon.Equal` compares angles normalized to `[0, 2π)`, so a polygon equals itself after `Rotate(0)` or a full turn; `RegularPolygonOrientationAngle` returns `3π/2` instead of `-π/2` for `PointyTop`, the same normalized form `Rotate` stores
+- `Axis.ScaleAlong` on `AxisNone` returns the size unchanged instead of a zero size
+- `ParseSize` wraps the underlying parse error with `%w`, so `errors.Is(err, strconv.ErrRange)` and `ErrSyntax` work
+- `Integer` and `Matrix` document that `int8` and `int16` are storage-only: products such as `LengthSquared`, `Less`, `Circle.Contains`, `Size.Area` and `Matrix.Multiply` compute in `T` and overflow there. `Size` documents that a negative width or height is unsupported, and `Axis.IsNone` that every value outside the two axes counts as none
 
 ### Fixed
 - `Circle.Bounds` returns a square of side `Diameter` instead of `Radius`, so the rectangle actually bounds the circle. Previously it was half the required size and clipped the circle at every anchor, and `CollisionRectangleCircle(c.Bounds(), c)` could miss (**breaking**)
@@ -43,6 +51,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `ParseSize` documented that "float values are rounded to the nearest integer via Cast" for an integer `T`; it has always rejected them – `ParseSize[int]("23.5x12.4")` is an error
 - `isIntType` reported `false` for defined types over an integer (`type Coord int`), so `Cast[Coord]` truncated instead of rounding. It now tests integer division directly, which works for every type the `~` constraints admit
 - `Matrix`, `RotationMatrix`, `Rotate`, `PreRotate`, `Inverse`, and `Unscale` document what an integer `T` cannot represent: only quarter turns are rotations, only `|det| = 1` inverts, and only a factor of ±1 unscales. An integer matrix is for storing and composing lattice transforms
+- `Rectangle.Inset` on an integer rectangle with an odd asymmetric padding no longer leaks outside the original: the center shift rounded `0.5` up while `Min` truncated, so `Rect(Pt(0,0), Sz(10,10)).Inset(Pad(0,0,0,1))` spanned `-3..6` instead of `-4..5`. The inset is now derived from the padded `Min` corner
+- `DirectionFromAngle(±Inf)` returns `DirectionNone` instead of a platform-dependent direction
 
 
 ## [v1.12.0 (2026-08-26)](https://github.com/gravitton/geometry/compare/v1.11.0...v1.12.0)

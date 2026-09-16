@@ -71,9 +71,9 @@ var directionOffsets = [8]Vector[int]{
 }
 
 // DirectionFromAngle returns the direction nearest to the given angle in radians,
-// or DirectionNone for NaN.
+// or DirectionNone for NaN and ±Inf.
 func DirectionFromAngle(angle float64) Direction {
-	if math.IsNaN(angle) {
+	if math.IsNaN(angle) || math.IsInf(angle, 0) {
 		return DirectionNone
 	}
 

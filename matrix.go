@@ -11,6 +11,9 @@ import (
 // reflection, quarter turns – exactly. The rest are not closed over the integers and round into a
 // different matrix: rotation by anything but a multiple of 90° (see RotationMatrix), Inverse, and
 // Unscale.
+//
+// Multiply, Determinant and Inverse compute in T. They are meant for int and int64; a narrow
+// integer T such as int8 or int16 overflows in ordinary products and is not supported.
 type Matrix[T Number] struct {
 	A T `json:"a"` // scale X
 	B T `json:"b"` // shear X (contribution of y to x')
@@ -73,15 +76,18 @@ func (m Matrix[T]) Multiply(matrix Matrix[T]) Matrix[T] {
 	}
 }
 
-// Inverse creates a new inverse affine matrix. If non-invertible (det ~ 0), returns the same matrix.
+// Inverse creates a new inverse affine matrix. A singular matrix has no inverse and is returned
+// unchanged, the same convention Divide follows for a zero scale; check IsInvertible first when
+// that matters.
 // For integer T, all six components are rounded; only |det| = 1 gives exact results, which covers
 // translations, reflections and quarter turns. Otherwise the inverse does not undo the matrix:
 // ScaleMatrix(2, 2).Inverse() rounds 0.5 back up to identity.
 func (m Matrix[T]) Inverse() Matrix[T] {
-	det := m.Determinant()
-	if Equal(det, 0.0) {
+	if !m.IsInvertible() {
 		return m
 	}
+
+	det := m.Determinant()
 
 	a, b, c := float64(m.A), float64(m.B), float64(m.C)
 	d, e, f := float64(m.D), float64(m.E), float64(m.F)
@@ -95,6 +101,12 @@ func (m Matrix[T]) Inverse() Matrix[T] {
 		Cast[T](a * invDet),
 		Cast[T]((c*d - a*f) * invDet),
 	}
+}
+
+// IsInvertible reports whether the matrix has an inverse: its determinant is not zero
+// (within Epsilon of T).
+func (m Matrix[T]) IsInvertible() bool {
+	return !Equal(m.Determinant(), 0.0)
 }
 
 // Determinant calculates the determinant of the 2x2 matrix.

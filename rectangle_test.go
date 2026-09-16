@@ -106,6 +106,19 @@ func TestRectangle_Inset(t *testing.T) {
 	t.Run("asymmetric padding shifts the center", func(t *testing.T) {
 		AssertRect(t, Rect(Pt(0, 0), Sz(10, 10)).Inset(Pad(3, 1, 1, 5)), Rect(Pt(2, 1), Sz(4, 6)))
 	})
+	t.Run("odd integer padding stays inside the rectangle", func(t *testing.T) {
+		r := Rect(Pt(0, 0), Sz(10, 10))
+
+		AssertPoint(t, r.Inset(Pad(0, 0, 0, 1)).Min(), r.Min().AddXY(1, 0))
+		AssertPoint(t, r.Inset(Pad(0, 0, 0, 1)).Max(), r.Max())
+		AssertPoint(t, r.Inset(Pad(0, 3, 1, 0)).Min(), r.Min())
+		AssertPoint(t, r.Inset(Pad(0, 3, 1, 0)).Max(), r.Max().AddXY(-3, -1))
+	})
+	t.Run("padding beyond the size collapses at the padded corner", func(t *testing.T) {
+		r := Rect(Pt(0, 0), Sz(10, 10))
+
+		AssertRect(t, r.Inset(Pad(0, 0, 0, 20)), Rect(Pt(15, 0), Sz(0, 10)))
+	})
 	t.Run("negative padding grows the edge", func(t *testing.T) {
 		AssertRect(t, Rect(Pt(0.0, 0.0), Sz(10.0, 10.0)).Inset(Pad(1.5, -2.0, 0.0, 1.0)), Rect(Pt(1.5, 0.75), Sz(11.0, 8.5)))
 	})

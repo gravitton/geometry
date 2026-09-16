@@ -6,6 +6,10 @@ import (
 )
 
 // Integer is a generic integer type, supporting operations like modulo that floats don't.
+//
+// The narrow types int8 and int16 are admitted for storage, not arithmetic: products such as
+// Vector.LengthSquared, Vector.Less, Circle.Contains, Size.Area and Matrix.Multiply are
+// computed in T and overflow at ordinary magnitudes there. Use int or int64 for math.
 type Integer interface {
 	~int | ~int8 | ~int16 | ~int32 | ~int64
 }
@@ -23,7 +27,7 @@ type Number interface {
 // Cast number to type, round integer values.
 func Cast[T Number](a float64) T {
 	if isIntType[T]() {
-		return T(math.Round(float64(a)))
+		return T(math.Round(a))
 	}
 
 	return T(a)

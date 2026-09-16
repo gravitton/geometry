@@ -5,7 +5,9 @@ import (
 	"strings"
 )
 
-// Size is a 2D size.
+// Size is a 2D size. Width and Height are expected to be non-negative: the constructors do not
+// check it, and shapes built on a negative size have Min beyond Max, so Contains, Clamp and the
+// collision functions give no meaningful answer for them.
 type Size[T Number] struct {
 	Width  T `json:"w"`
 	Height T `json:"h"`
@@ -31,11 +33,11 @@ func ParseSize[T Number](s string) (Size[T], error) {
 
 	x, err := Parse[T](parts[0])
 	if err != nil {
-		return Size[T]{}, fmt.Errorf("invalid width value: %s", parts[0])
+		return Size[T]{}, fmt.Errorf("invalid width value: %w", err)
 	}
 	y, err := Parse[T](parts[1])
 	if err != nil {
-		return Size[T]{}, fmt.Errorf("invalid height value: %s", parts[1])
+		return Size[T]{}, fmt.Errorf("invalid height value: %w", err)
 	}
 
 	return Size[T]{x, y}, nil

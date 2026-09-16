@@ -87,7 +87,12 @@ func (a Axis) Project[T Number](vector Vector[T]) T {
 }
 
 // ScaleAlong creates a new Size scaled by the given factor on the main axis only.
+// AxisNone has no axis to scale along and returns the size unchanged.
 func (a Axis) ScaleAlong[T Number](size Size[T], factor float64) Size[T] {
+	if a.IsNone() {
+		return size
+	}
+
 	return a.Size(Multiply(a.Along(size), factor), a.Across(size))
 }
 
@@ -110,7 +115,9 @@ func (a Axis) Size[T Number](along, across T) Size[T] {
 	return a.Vector(along, across).Size()
 }
 
-// IsNone reports whether the axis is AxisNone.
+// IsNone reports whether the axis is neither AxisHorizontal nor AxisVertical. Unlike
+// Direction, which wraps any value into the eight directions, an Axis outside the two
+// constants is not normalized, so every such value counts as AxisNone.
 func (a Axis) IsNone() bool {
 	return a != AxisHorizontal && a != AxisVertical
 }

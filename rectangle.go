@@ -90,16 +90,10 @@ func (r Rectangle[T]) ShrinkXY(amountX, amountY T) Rectangle[T] {
 
 // Inset creates a new Rectangle inset by the given padding amounts.
 func (r Rectangle[T]) Inset(padding Padding[T]) Rectangle[T] {
-	return Rectangle[T]{
-		r.Center.AddXY(
-			Divide(padding.Left-padding.Right, 2),
-			Divide(padding.Top-padding.Bottom, 2),
-		),
-		r.Size.ShrinkXY(
-			padding.Left+padding.Right,
-			padding.Top+padding.Bottom,
-		),
-	}
+	return RectangleFromMin(
+		r.Min().AddXY(padding.Left, padding.Top),
+		r.Size.ShrinkXY(padding.Left+padding.Right, padding.Top+padding.Bottom),
+	)
 }
 
 // Width returns the rectangle width.
