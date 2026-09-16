@@ -6,56 +6,76 @@ import (
 	"github.com/gravitton/assert"
 )
 
-// AssertPoint asserts that p has the given X and Y values within Delta.
-func AssertPoint[T Number](t assert.Testing, p Point[T], x, y T, messages ...string) bool {
+// Testing is the subset of *testing.T the helpers need. It is an interface
+// rather than testing.TB so a test can pass its own recorder.
+type Testing interface {
+	Helper()
+	Errorf(format string, args ...any)
+}
+
+// AssertNumber asserts that actual equals expected: exactly for an integer T, and for a
+// float T within [EpsilonRelative], so the tolerance holds at any magnitude. Assertions use
+// the scaled comparison rather than the absolute one [Equal] applies in hot paths.
+func AssertNumber[T Number](t Testing, actual, expected T, messages ...string) bool {
+	t.Helper()
+
+	if isIntType[T]() {
+		return assert.Equal(t, actual, expected, messages...)
+	}
+
+	return assert.EqualDelta(t, float64(actual), float64(expected), EpsilonRelative(actual, expected), messages...)
+}
+
+// AssertPoint asserts that p has the given X and Y values (exactly for an integer T, within [EpsilonRelative] for a float T).
+func AssertPoint[T Number](t Testing, p Point[T], x, y T, messages ...string) bool {
 	t.Helper()
 
 	ok := true
 
-	if !assert.EqualDelta(t, float64(p.X), float64(x), Delta, append(messages, "X: ")...) {
+	if !AssertNumber(t, p.X, x, append(messages, "X: ")...) {
 		ok = false
 	}
-	if !assert.EqualDelta(t, float64(p.Y), float64(y), Delta, append(messages, "Y: ")...) {
+	if !AssertNumber(t, p.Y, y, append(messages, "Y: ")...) {
 		ok = false
 	}
 
 	return ok
 }
 
-// AssertVector asserts that v has the given X and Y values within Delta.
-func AssertVector[T Number](t assert.Testing, p Vector[T], x, y T, messages ...string) bool {
+// AssertVector asserts that v has the given X and Y values (exactly for an integer T, within [EpsilonRelative] for a float T).
+func AssertVector[T Number](t Testing, p Vector[T], x, y T, messages ...string) bool {
 	t.Helper()
 
 	ok := true
 
-	if !assert.EqualDelta(t, float64(p.X), float64(x), Delta, append(messages, "X: ")...) {
+	if !AssertNumber(t, p.X, x, append(messages, "X: ")...) {
 		ok = false
 	}
-	if !assert.EqualDelta(t, float64(p.Y), float64(y), Delta, append(messages, "Y: ")...) {
+	if !AssertNumber(t, p.Y, y, append(messages, "Y: ")...) {
 		ok = false
 	}
 
 	return ok
 }
 
-// AssertSize asserts that s has the given Width and Height values within Delta.
-func AssertSize[T Number](t assert.Testing, s Size[T], w, h T, messages ...string) bool {
+// AssertSize asserts that s has the given Width and Height values (exactly for an integer T, within [EpsilonRelative] for a float T).
+func AssertSize[T Number](t Testing, s Size[T], w, h T, messages ...string) bool {
 	t.Helper()
 
 	ok := true
 
-	if !assert.EqualDelta(t, float64(s.Width), float64(w), Delta, append(messages, "Width: ")...) {
+	if !AssertNumber(t, s.Width, w, append(messages, "Width: ")...) {
 		ok = false
 	}
-	if !assert.EqualDelta(t, float64(s.Height), float64(h), Delta, append(messages, "Height: ")...) {
+	if !AssertNumber(t, s.Height, h, append(messages, "Height: ")...) {
 		ok = false
 	}
 
 	return ok
 }
 
-// AssertCircle asserts that c has the given center (x, y) and radius within Delta.
-func AssertCircle[T Number](t assert.Testing, c Circle[T], x, y, radius T, messages ...string) bool {
+// AssertCircle asserts that c has the given center (x, y) and radius (exactly for an integer T, within [EpsilonRelative] for a float T).
+func AssertCircle[T Number](t Testing, c Circle[T], x, y, radius T, messages ...string) bool {
 	t.Helper()
 
 	ok := true
@@ -63,15 +83,15 @@ func AssertCircle[T Number](t assert.Testing, c Circle[T], x, y, radius T, messa
 	if !AssertPoint(t, c.Center, x, y, append(messages, "Center.")...) {
 		ok = false
 	}
-	if !assert.EqualDelta(t, float64(c.Radius), float64(radius), Delta, append(messages, "Radius: ")...) {
+	if !AssertNumber(t, c.Radius, radius, append(messages, "Radius: ")...) {
 		ok = false
 	}
 
 	return ok
 }
 
-// AssertLine asserts that l has the given start (sx, sy) and end (ex, ey) points within Delta.
-func AssertLine[T Number](t assert.Testing, l Line[T], sx, sy, ex, ey T, messages ...string) bool {
+// AssertLine asserts that l has the given start (sx, sy) and end (ex, ey) points (exactly for an integer T, within [EpsilonRelative] for a float T).
+func AssertLine[T Number](t Testing, l Line[T], sx, sy, ex, ey T, messages ...string) bool {
 	t.Helper()
 
 	ok := true
@@ -86,8 +106,8 @@ func AssertLine[T Number](t assert.Testing, l Line[T], sx, sy, ex, ey T, message
 	return ok
 }
 
-// AssertRect asserts that r has the given center (cx, cy) and size (w, h) within Delta.
-func AssertRect[T Number](t assert.Testing, r Rectangle[T], cx, cy, w, h T, messages ...string) bool {
+// AssertRect asserts that r has the given center (cx, cy) and size (w, h) (exactly for an integer T, within [EpsilonRelative] for a float T).
+func AssertRect[T Number](t Testing, r Rectangle[T], cx, cy, w, h T, messages ...string) bool {
 	t.Helper()
 
 	ok := true
@@ -102,15 +122,15 @@ func AssertRect[T Number](t assert.Testing, r Rectangle[T], cx, cy, w, h T, mess
 	return ok
 }
 
-// AssertPolygon asserts that p has the given vertices within Delta.
-func AssertPolygon[T Number](t assert.Testing, p Polygon[T], vertices []Point[T], messages ...string) bool {
+// AssertPolygon asserts that p has the given vertices (exactly for an integer T, within [EpsilonRelative] for a float T).
+func AssertPolygon[T Number](t Testing, p Polygon[T], vertices []Point[T], messages ...string) bool {
 	t.Helper()
 
 	return AssertVertices(t, p.Vertices, vertices, messages...)
 }
 
-// AssertVertices asserts that vertices matches points element-by-element within Delta.
-func AssertVertices[T Number](t assert.Testing, vertices []Point[T], points []Point[T], messages ...string) bool {
+// AssertVertices asserts that vertices matches points element-by-element (exactly for an integer T, within [EpsilonRelative] for a float T).
+func AssertVertices[T Number](t Testing, vertices []Point[T], points []Point[T], messages ...string) bool {
 	t.Helper()
 
 	if !assert.Equal(t, len(vertices), len(points), append(messages, "Length: ")...) {
@@ -127,8 +147,8 @@ func AssertVertices[T Number](t assert.Testing, vertices []Point[T], points []Po
 	return ok
 }
 
-// AssertRegularPolygon asserts that p has the given center (x, y), size (w, h), vertex count n, and angle within Delta.
-func AssertRegularPolygon[T Number](t assert.Testing, p RegularPolygon[T], x, y, w, h T, n int, angle float64, messages ...string) bool {
+// AssertRegularPolygon asserts that p has the given center (x, y), size (w, h), vertex count n, and angle (exactly for an integer T, within [EpsilonRelative] for a float T).
+func AssertRegularPolygon[T Number](t Testing, p RegularPolygon[T], x, y, w, h T, n int, angle float64, messages ...string) bool {
 	t.Helper()
 
 	ok := true
@@ -142,62 +162,62 @@ func AssertRegularPolygon[T Number](t assert.Testing, p RegularPolygon[T], x, y,
 	if !assert.Equal(t, p.N, n, append(messages, "N: ")...) {
 		ok = false
 	}
-	if !assert.EqualDelta(t, p.Angle, angle, Delta, append(messages, "Angle: ")...) {
+	if !AssertNumber(t, p.Angle, angle, append(messages, "Angle: ")...) {
 		ok = false
 	}
 
 	return ok
 }
 
-// AssertPadding asserts that p has the given Top, Right, Bottom, and Left values within Delta.
-func AssertPadding[T Number](t assert.Testing, p Padding[T], top, right, bottom, left T, messages ...string) bool {
+// AssertPadding asserts that p has the given Top, Right, Bottom, and Left values (exactly for an integer T, within [EpsilonRelative] for a float T).
+func AssertPadding[T Number](t Testing, p Padding[T], top, right, bottom, left T, messages ...string) bool {
 	t.Helper()
 
 	ok := true
 
-	if !assert.EqualDelta(t, float64(p.Top), float64(top), Delta, append(messages, "Top: ")...) {
+	if !AssertNumber(t, p.Top, top, append(messages, "Top: ")...) {
 		ok = false
 	}
-	if !assert.EqualDelta(t, float64(p.Right), float64(right), Delta, append(messages, "Right: ")...) {
+	if !AssertNumber(t, p.Right, right, append(messages, "Right: ")...) {
 		ok = false
 	}
-	if !assert.EqualDelta(t, float64(p.Bottom), float64(bottom), Delta, append(messages, "Bottom: ")...) {
+	if !AssertNumber(t, p.Bottom, bottom, append(messages, "Bottom: ")...) {
 		ok = false
 	}
-	if !assert.EqualDelta(t, float64(p.Left), float64(left), Delta, append(messages, "Left: ")...) {
+	if !AssertNumber(t, p.Left, left, append(messages, "Left: ")...) {
 		ok = false
 	}
 
 	return ok
 }
 
-// AssertMatrix asserts that m is equal to expected within Delta.
-func AssertMatrix[T Number](t assert.Testing, m, expected Matrix[T], messages ...string) bool {
+// AssertMatrix asserts that m is equal to expected (exactly for an integer T, within [EpsilonRelative] for a float T).
+func AssertMatrix[T Number](t Testing, m, expected Matrix[T], messages ...string) bool {
 	t.Helper()
 
 	ok := true
 
-	if !assert.EqualDelta(t, float64(m.A), float64(expected.A), Delta, append(messages, "A: ")...) {
+	if !AssertNumber(t, m.A, expected.A, append(messages, "A: ")...) {
 		ok = false
 	}
 
-	if !assert.EqualDelta(t, float64(m.B), float64(expected.B), Delta, append(messages, "B: ")...) {
+	if !AssertNumber(t, m.B, expected.B, append(messages, "B: ")...) {
 		ok = false
 	}
 
-	if !assert.EqualDelta(t, float64(m.C), float64(expected.C), Delta, append(messages, "C: ")...) {
+	if !AssertNumber(t, m.C, expected.C, append(messages, "C: ")...) {
 		ok = false
 	}
 
-	if !assert.EqualDelta(t, float64(m.D), float64(expected.D), Delta, append(messages, "D: ")...) {
+	if !AssertNumber(t, m.D, expected.D, append(messages, "D: ")...) {
 		ok = false
 	}
 
-	if !assert.EqualDelta(t, float64(m.E), float64(expected.E), Delta, append(messages, "E: ")...) {
+	if !AssertNumber(t, m.E, expected.E, append(messages, "E: ")...) {
 		ok = false
 	}
 
-	if !assert.EqualDelta(t, float64(m.F), float64(expected.F), Delta, append(messages, "F: ")...) {
+	if !AssertNumber(t, m.F, expected.F, append(messages, "F: ")...) {
 		ok = false
 	}
 

@@ -91,6 +91,23 @@ func TestToString(t *testing.T) {
 	testToString(t, namedFloat32(1.00), "1.00")
 }
 
+func TestIsFloat32(t *testing.T) {
+	testIsFloat32[float32](t, true)
+	testIsFloat32[float64](t, false)
+	testIsFloat32[int](t, false)
+	testIsFloat32[int32](t, false) // same width, but an integer
+
+	testIsFloat32[namedFloat32](t, true)
+	testIsFloat32[namedFloat64](t, false)
+	testIsFloat32[namedInt](t, false)
+}
+
+func testIsFloat32[T Number](t *testing.T, expected bool) {
+	t.Helper()
+
+	assert.Equal(t, isFloat32[T](), expected)
+}
+
 func testIsIntType[T Number](t *testing.T, expected bool) {
 	t.Helper()
 

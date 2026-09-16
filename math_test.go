@@ -1,6 +1,7 @@
 package geom
 
 import (
+	"math"
 	"testing"
 
 	"github.com/gravitton/assert"
@@ -129,11 +130,74 @@ func TestClamp(t *testing.T) {
 }
 
 func TestEqual(t *testing.T) {
-	assert.True(t, Equal(1, 1))
-	assert.False(t, Equal(1, 2))
-	assert.True(t, Equal(1.0000005, 1.0)) // within Delta (1e-6)
-	assert.False(t, Equal(1.0000015, 1.0))
-	assert.True(t, Equal(0.0, 0.0))
+	t.Run("int is exact", func(t *testing.T) {
+		assert.True(t, Equal(1, 1))
+		assert.False(t, Equal(1, 2))
+	})
+	t.Run("float64 within Delta", func(t *testing.T) {
+		assert.True(t, Equal(1.0000005, 1.0))
+		assert.False(t, Equal(1.0000015, 1.0))
+		assert.True(t, Equal(0.0, 0.0))
+	})
+	t.Run("float32 within Delta32", func(t *testing.T) {
+		assert.True(t, Equal[float32](1.00005, 1.0))
+		assert.False(t, Equal[float32](1.0005, 1.0))
+	})
+	t.Run("absolute, so it degenerates far from zero", func(t *testing.T) {
+		// one float32 ulp at 1e4 is 9.8e-4, above Delta32, so Equal asks for bit-exact
+		// equality from here up. This is the documented cost of the fast path.
+		const far float32 = 1e4
+		next := math.Nextafter32(far, math.MaxFloat32)
+
+		assert.False(t, Equal(far, next))
+		assert.True(t, EqualRelative(far, next))
+	})
+}
+
+func TestEpsilon(t *testing.T) {
+	assert.Equal(t, Epsilon[int](), 0.0)
+	assert.Equal(t, Epsilon[int8](), 0.0)
+	assert.Equal(t, Epsilon[float32](), Delta32)
+	assert.Equal(t, Epsilon[float64](), Delta)
+
+	assert.Equal(t, Epsilon[namedInt](), 0.0)
+	assert.Equal(t, Epsilon[namedFloat32](), Delta32)
+	assert.Equal(t, Epsilon[namedFloat64](), Delta)
+}
+
+func TestEqualRelative(t *testing.T) {
+	t.Run("int is exact", func(t *testing.T) {
+		assert.True(t, EqualRelative(1, 1))
+		assert.False(t, EqualRelative(1, 2))
+	})
+	t.Run("near zero matches Equal", func(t *testing.T) {
+		assert.True(t, EqualRelative(1.0000005, 1.0))
+		assert.False(t, EqualRelative(1.0000015, 1.0))
+		assert.True(t, EqualRelative(0.0, 0.0))
+	})
+	t.Run("scales with magnitude", func(t *testing.T) {
+		assert.True(t, EqualRelative(1e6, 1e6+0.5))
+		assert.False(t, EqualRelative(1e6, 1e6+2.0))
+		assert.True(t, EqualRelative[float32](1e4, 1e4+0.05))
+	})
+	t.Run("a full turn in float32 returns to its start", func(t *testing.T) {
+		v := Vec[float32](1000, 0)
+		for range 8 {
+			v = v.Rotate(Pi / 4)
+		}
+
+		// one ulp out at magnitude 1e3, which Delta32 still covers
+		assert.True(t, EqualRelative(v.X, 1000))
+		assert.True(t, Equal(v.X, 1000))
+	})
+}
+
+func TestRelativeEpsilon(t *testing.T) {
+	assert.Equal(t, EpsilonRelative(0.0, 0.5), Delta) // floored at Epsilon near zero
+	assert.Equal(t, EpsilonRelative(100.0, 0.0), 100*Delta)
+	assert.Equal(t, EpsilonRelative(0.0, -100.0), 100*Delta) // larger magnitude wins
+	assert.Equal(t, EpsilonRelative[float32](100, 0), 100*Delta32)
+	assert.Equal(t, EpsilonRelative(5, 5), 0.0) // int
 }
 
 func TestEqualDelta(t *testing.T) {
@@ -210,3 +274,23 @@ func TestParseNumber(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, v9, 1e39)
 }
+
+func BenchmarkEqual_Float64(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		sinkBool = Equal(float64(i), float64(i))
+	}
+}
+
+func BenchmarkEqual_Float32(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		sinkBool = Equal(float32(i), float32(i))
+	}
+}
+
+func BenchmarkEqualRelative_Float64(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		sinkBool = EqualRelative(float64(i), float64(i))
+	}
+}
+
+var sinkBool bool

@@ -13,8 +13,10 @@ const (
 	// DegToRad is the multiplier to convert degrees to radians (π/180).
 	DegToRad float64 = math.Pi / 180.0
 
-	// Delta is the tolerance used for floating-point equality comparisons.
+	// Delta is the tolerance used for float64 equality comparisons.
 	Delta float64 = 1e-6
+	// Delta32 is the tolerance used for float32 equality comparisons.
+	Delta32 float64 = 1e-4
 
 	// Sqrt2 is the square root of 2.
 	Sqrt2 = math.Sqrt2
@@ -115,14 +117,56 @@ func Sign[T Number](x T) T {
 	}
 }
 
-// Equal reports whether a and b are equal within Delta.
+// Equal reports whether a and b are equal within Epsilon of T: exactly for an integer T,
+// within Delta32 for float32, within Delta for float64.
+//
+// The tolerance is absolute, which keeps the comparison to a subtraction and a compare
+// for hot paths. It therefore falls below one ulp for values far from zero — beyond ~1e3
+// for float32 and ~1e10 for float64 — where it degenerates into exact equality.
+// Use EqualRelative when the magnitude is large or unknown.
 func Equal[T Number](a, b T) bool {
-	return EqualDelta(a, b, Delta)
+	if isIntType[T]() {
+		return a == b
+	}
+
+	return EqualDelta(a, b, Epsilon[T]())
 }
 
 // EqualDelta reports whether a and b are equal within the given delta.
 func EqualDelta[T Number](a, b T, delta float64) bool {
 	return math.Abs(float64(a-b)) <= delta
+}
+
+// EqualRelative reports whether a and b are equal within a tolerance that scales with
+// their magnitude: Epsilon of T near zero, and Epsilon of T times the larger magnitude
+// above it. Unlike Equal it holds at any scale, at the cost of the extra arithmetic.
+func EqualRelative[T Number](a, b T) bool {
+	if isIntType[T]() {
+		return a == b
+	}
+
+	return EqualDelta(a, b, EpsilonRelative(a, b))
+}
+
+// Epsilon returns the equality tolerance for T: zero for an integer T, which is
+// compared exactly, Delta32 for float32, and Delta for float64. It is a property of
+// the type, so the compiler folds it to a constant at each instantiation.
+func Epsilon[T Number]() float64 {
+	if isIntType[T]() {
+		return 0
+	}
+
+	if isFloat32[T]() {
+		return Delta32
+	}
+
+	return Delta
+}
+
+// EpsilonRelative returns the tolerance EqualRelative applies to a and b: Epsilon of T
+// scaled by the larger magnitude, and never less than Epsilon of T itself.
+func EpsilonRelative[T Number](a, b T) float64 {
+	return Epsilon[T]() * max(1, math.Abs(float64(a)), math.Abs(float64(b)))
 }
 
 // Parse parses s into T: an integer T with strconv.ParseInt, a float T with strconv.ParseFloat.

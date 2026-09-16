@@ -39,6 +39,23 @@ func String[T Number](value T) string {
 	return fmt.Sprintf("%.2f", float64(value))
 }
 
+// isIntType reports whether T is an integer type.
 func isIntType[T Number]() bool {
 	return T(1)/T(2) == 0
+}
+
+// isFloat32 reports whether T is a 32-bit float. 1e-10 lies between the float32 epsilon
+// (1.2e-7) and the float64 one (2.2e-16), so adding it to one is a no-op for float32 alone.
+// It is built by division because T(1e-10) does not compile when T may be an integer, and a
+// constant above 127 overflows int8 at compile time even where the line never runs.
+func isFloat32[T Number]() bool {
+	if isIntType[T]() {
+		return false
+	}
+
+	const step = 100
+
+	one := T(1)
+
+	return one+one/step/step/step/step/step == one
 }
