@@ -78,6 +78,10 @@ func TestMatrix_Inverse(t *testing.T) {
 		zero := Mat(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
 		AssertMatrix(t, zero.Inverse(), zero)
 	})
+	t.Run("large translations do not overflow", func(t *testing.T) {
+		m := Mat[int64](1, 0, 1<<40, 0, 1, 1<<40)
+		AssertMatrix(t, m.Inverse(), Mat[int64](1, 0, -(1<<40), 0, 1, -(1<<40)))
+	})
 	t.Run("integer is exact only for unit determinant", func(t *testing.T) {
 		AssertMatrix(t, IdentityMatrix[int]().Inverse(), IdentityMatrix[int]())
 		AssertMatrix(t, TranslationMatrix(5, 3).Inverse(), TranslationMatrix(-5, -3))

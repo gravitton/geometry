@@ -129,8 +129,12 @@ func TestVector_Divide(t *testing.T) {
 }
 
 func TestVector_Negate(t *testing.T) {
-	AssertVector(t, Vec(10, 16).Negate(), Vec(-10, -16))
-	AssertVector(t, Vec(0.6, -0.25).Negate(), Vec(-0.6, 0.25))
+	t.Run("int", func(t *testing.T) {
+		AssertVector(t, Vec(10, 16).Negate(), Vec(-10, -16))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertVector(t, Vec(0.6, -0.25).Negate(), Vec(-0.6, 0.25))
+	})
 }
 
 func TestVector_Rotate(t *testing.T) {
@@ -147,8 +151,16 @@ func TestVector_Rotate(t *testing.T) {
 }
 
 func TestVector_Resize(t *testing.T) {
-	AssertVector(t, Vec(10, 16).Resize(5), Vec(3, 4))
-	AssertVector(t, Vec(0.6, -0.25).Resize(5), Vec(4.615384, -1.923076))
+	t.Run("int rounds", func(t *testing.T) {
+		AssertVector(t, Vec(10, 16).Resize(5), Vec(3, 4))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertVector(t, Vec(0.6, -0.25).Resize(5), Vec(4.615384, -1.923076))
+	})
+	t.Run("the zero vector resizes along +X", func(t *testing.T) {
+		AssertVector(t, ZeroVector[float64]().Resize(5), Vec(5.0, 0.0))
+		AssertVector(t, ZeroVector[int]().Resize(2.4), Vec(2, 0))
+	})
 }
 
 func TestVector_Normalize(t *testing.T) {
@@ -240,18 +252,30 @@ func TestVector_Cross(t *testing.T) {
 }
 
 func TestVector_Normal(t *testing.T) {
-	AssertVector(t, Vec(10, 16).Normal(), Vec(-16, 10))
-	AssertVector(t, Vec(0.6, -0.25).Normal(), Vec(0.25, 0.6))
+	t.Run("int", func(t *testing.T) {
+		AssertVector(t, Vec(10, 16).Normal(), Vec(-16, 10))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertVector(t, Vec(0.6, -0.25).Normal(), Vec(0.25, 0.6))
+	})
 }
 
 func TestVector_Length(t *testing.T) {
-	AssertNumber(t, Vec(10, 16).Length(), math.Sqrt(356))
-	AssertNumber(t, Vec(0.6, -0.25).Length(), 0.65)
+	t.Run("int", func(t *testing.T) {
+		AssertNumber(t, Vec(10, 16).Length(), math.Sqrt(356))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Vec(0.6, -0.25).Length(), 0.65)
+	})
 }
 
 func TestVector_LengthSquared(t *testing.T) {
-	AssertNumber(t, Vec(10, 16).LengthSquared(), 356)
-	AssertNumber(t, Vec(0.6, -0.25).LengthSquared(), 0.4225)
+	t.Run("int", func(t *testing.T) {
+		AssertNumber(t, Vec(10, 16).LengthSquared(), 356)
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Vec(0.6, -0.25).LengthSquared(), 0.4225)
+	})
 }
 
 func TestVector_Angle(t *testing.T) {
@@ -272,6 +296,9 @@ func TestVector_Direction(t *testing.T) {
 	})
 	t.Run("zero vector has no direction", func(t *testing.T) {
 		assert.Equal(t, Vec(0, 0).Direction(), DirectionNone)
+	})
+	t.Run("NaN has no direction", func(t *testing.T) {
+		assert.Equal(t, Vec(math.NaN(), 1.0).Direction(), DirectionNone)
 	})
 }
 
@@ -444,6 +471,25 @@ func TestVector_Less(t *testing.T) {
 		assert.False(t, Vec(10, 16).Less(18))
 		assert.False(t, Vec(0.6, -0.25).Less(0.1))
 	})
+	t.Run("nothing is shorter than a non-positive length", func(t *testing.T) {
+		assert.False(t, Vec(10, 16).Less(-19))
+		assert.False(t, ZeroVector[int]().Less(0))
+	})
+}
+
+func TestVector_LessOrEqual(t *testing.T) {
+	t.Run("shorter or equal", func(t *testing.T) {
+		assert.True(t, Vec(3, 4).LessOrEqual(5))
+		assert.True(t, Vec(3, 4).LessOrEqual(6))
+		assert.True(t, ZeroVector[float64]().LessOrEqual(0))
+	})
+	t.Run("longer", func(t *testing.T) {
+		assert.False(t, Vec(3, 4).LessOrEqual(4))
+		assert.False(t, Vec(0.6, -0.25).LessOrEqual(0.1))
+	})
+	t.Run("nothing is at most a negative length", func(t *testing.T) {
+		assert.False(t, ZeroVector[int]().LessOrEqual(-1))
+	})
 }
 
 func TestVector_XY(t *testing.T) {
@@ -460,8 +506,12 @@ func TestVector_XY(t *testing.T) {
 }
 
 func TestVector_Point(t *testing.T) {
-	AssertPoint(t, Vec(10, 16).Point(), Pt(10, 16))
-	AssertPoint(t, Vec(0.6, -0.25).Point(), Pt(0.6, -0.25))
+	t.Run("int", func(t *testing.T) {
+		AssertPoint(t, Vec(10, 16).Point(), Pt(10, 16))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertPoint(t, Vec(0.6, -0.25).Point(), Pt(0.6, -0.25))
+	})
 }
 
 func TestVector_Size(t *testing.T) {

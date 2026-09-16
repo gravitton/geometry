@@ -18,15 +18,21 @@ func Pol[T Number](vertices []Point[T]) Polygon[T] {
 	return Polygon[T]{vertices}
 }
 
-// Center returns the polygon centroid computed as the average of its vertices.
+// Center returns the polygon centroid computed as the average of its vertices,
+// or the zero point for a polygon without vertices.
 // For integer T, the coordinate sums are divided using integer division and the
 // result is truncated; use float64 when centroid accuracy matters.
 func (p Polygon[T]) Center() Point[T] {
+	if p.Empty() {
+		return Point[T]{}
+	}
+
 	var x, y T
-	l := T(len(p.Vertices))
 	for _, v := range p.Vertices {
 		x, y = x+v.X, y+v.Y
 	}
+
+	l := T(len(p.Vertices))
 
 	return Point[T]{x / l, y / l}
 }

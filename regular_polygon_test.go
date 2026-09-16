@@ -9,8 +9,12 @@ import (
 )
 
 func TestRegularPolygon_Constructor(t *testing.T) {
-	AssertRegularPolygon(t, RegPol(Pt(0, 0), Sz(2, 2), 4, 0), RegularPolygon[int]{Center: Pt(0, 0), Size: Sz(2, 2), N: 4, Angle: 0})
-	AssertRegularPolygon(t, RegPol(Pt(0.5, -1.25), Sz(2.5, 3.75), 6, Pi/3), RegularPolygon[float64]{Center: Pt(0.5, -1.25), Size: Sz(2.5, 3.75), N: 6, Angle: Pi / 3})
+	t.Run("int", func(t *testing.T) {
+		AssertRegularPolygon(t, RegPol(Pt(0, 0), Sz(2, 2), 4, 0), RegularPolygon[int]{Center: Pt(0, 0), Size: Sz(2, 2), N: 4, Angle: 0})
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertRegularPolygon(t, RegPol(Pt(0.5, -1.25), Sz(2.5, 3.75), 6, Pi/3), RegularPolygon[float64]{Center: Pt(0.5, -1.25), Size: Sz(2.5, 3.75), N: 6, Angle: Pi / 3})
+	})
 }
 
 func TestRegularPolygonOrientationAngle(t *testing.T) {
@@ -53,37 +57,43 @@ func TestRegularPolygonWithOrientation(t *testing.T) {
 func TestTriangle(t *testing.T) {
 	triangle := Triangle(Pt(1, -1), Sz(3, 3), PointyTop)
 
-	AssertRegularPolygon(t, triangle, RegPol(Pt(1, -1), Sz(3, 3), 3, RegularPolygonOrientationAngle(3, PointyTop)))
-
-	// integer rounding happens after scaling by the size, so vertices 1 and 2 land within one
-	// unit of the exact (3.598, 0.5) and (-1.598, 0.5); their Y of 0.5 falls just below the
-	// .5 tie in float64 and rounds down to 0 and up to 1 respectively
-	AssertVertices(t, triangle.Vertices(), []Point[int]{Pt(1, -4), Pt(4, 0), Pt(-2, 1)})
+	t.Run("has three sides at the orientation angle", func(t *testing.T) {
+		AssertRegularPolygon(t, triangle, RegPol(Pt(1, -1), Sz(3, 3), 3, RegularPolygonOrientationAngle(3, PointyTop)))
+	})
+	t.Run("integer vertices round after scaling", func(t *testing.T) {
+		// vertices 1 and 2 land within one unit of the exact (3.598, 0.5) and (-1.598, 0.5);
+		// their Y of 0.5 falls just below the .5 tie in float64 and rounds down to 0 and up to 1
+		AssertVertices(t, triangle.Vertices(), []Point[int]{Pt(1, -4), Pt(4, 0), Pt(-2, 1)})
+	})
 }
 
 func TestSquare(t *testing.T) {
 	square := Square(Pt(50.0, 50.0), Sz(100.0, 100.0), PointyTop)
 
-	AssertRegularPolygon(t, square, RegPol(Pt(50.0, 50.0), Sz(100.0, 100.0), 4, RegularPolygonOrientationAngle(4, PointyTop)))
-
-	// PointyTop: first vertex at the visual top (Y = center.Y − size), last at the visual right
-	AssertVertices(t, square.Vertices(), []Point[float64]{Pt(50.0, -50.0), Pt(150.0, 50.0), Pt(50.0, 150.0), Pt(-50.0, 50.0)})
+	t.Run("has four sides at the orientation angle", func(t *testing.T) {
+		AssertRegularPolygon(t, square, RegPol(Pt(50.0, 50.0), Sz(100.0, 100.0), 4, RegularPolygonOrientationAngle(4, PointyTop)))
+	})
+	t.Run("pointy top starts at the visual top and winds to the right", func(t *testing.T) {
+		AssertVertices(t, square.Vertices(), []Point[float64]{Pt(50.0, -50.0), Pt(150.0, 50.0), Pt(50.0, 150.0), Pt(-50.0, 50.0)})
+	})
 }
 
 func TestHexagon(t *testing.T) {
 	// float64 avoids the int-rounding collapse where sin(±π/6) ≈ 0.4999 would truncate to 0
 	hexagon := Hexagon(Pt(0.0, 0.0), Sz(10.0, 10.0), PointyTop)
 
-	AssertRegularPolygon(t, hexagon, RegPol(Pt(0.0, 0.0), Sz(10.0, 10.0), 6, RegularPolygonOrientationAngle(6, PointyTop)))
-
-	// PointyTop: V0 at the top (0,−10), V3 at the bottom (0,10); flat sides left and right
-	AssertVertices(t, hexagon.Vertices(), []Point[float64]{
-		Pt(0.0, -10.0),
-		Pt(5*Sqrt3, -5.0),
-		Pt(5*Sqrt3, 5.0),
-		Pt(0.0, 10.0),
-		Pt(-5*Sqrt3, 5.0),
-		Pt(-5*Sqrt3, -5.0),
+	t.Run("has six sides at the orientation angle", func(t *testing.T) {
+		AssertRegularPolygon(t, hexagon, RegPol(Pt(0.0, 0.0), Sz(10.0, 10.0), 6, RegularPolygonOrientationAngle(6, PointyTop)))
+	})
+	t.Run("pointy top has vertices at top and bottom and flat sides left and right", func(t *testing.T) {
+		AssertVertices(t, hexagon.Vertices(), []Point[float64]{
+			Pt(0.0, -10.0),
+			Pt(5*Sqrt3, -5.0),
+			Pt(5*Sqrt3, 5.0),
+			Pt(0.0, 10.0),
+			Pt(-5*Sqrt3, 5.0),
+			Pt(-5*Sqrt3, -5.0),
+		})
 	})
 }
 
@@ -115,6 +125,10 @@ func TestRegularPolygon_Rotate(t *testing.T) {
 }
 
 func TestRegularPolygon_Vertices(t *testing.T) {
+	t.Run("fewer than one side has no vertices", func(t *testing.T) {
+		AssertVertices(t, RegPol(Pt(0, 0), Sz(1, 1), 0, 0).Vertices(), []Point[int]{})
+		AssertVertices(t, RegPol(Pt(0.0, 0.0), Sz(1.0, 1.0), -3, 0).Vertices(), []Point[float64]{})
+	})
 	t.Run("int", func(t *testing.T) {
 		AssertVertices(t, RegPol(Pt(0, 0), Sz(1, 1), 4, 0).Vertices(), []Point[int]{
 			Pt(1, 0),
@@ -166,8 +180,12 @@ func TestRegularPolygon_Polygon(t *testing.T) {
 	rp := RegPol(Pt(0.0, 0.0), Sz(1.0, 1.0), 5, 0)
 	p := rp.Polygon()
 
-	AssertVertices(t, p.Vertices, rp.Vertices())
-	assert.NotSame(t, p.Vertices, rp.Vertices())
+	t.Run("carries the vertices", func(t *testing.T) {
+		AssertVertices(t, p.Vertices, rp.Vertices())
+	})
+	t.Run("owns its slice", func(t *testing.T) {
+		assert.NotSame(t, p.Vertices, rp.Vertices())
+	})
 }
 
 func TestRegularPolygon_Equal(t *testing.T) {
@@ -178,8 +196,9 @@ func TestRegularPolygon_Equal(t *testing.T) {
 		assert.False(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Equal(RegPol(Pt(0, 0), Sz(2, 2), 6, 0)))
 		assert.False(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Equal(RegPol(Pt(1, 2), Sz(3, 3), 4, 0)))
 	})
-	t.Run("the angle is not compared", func(t *testing.T) {
-		assert.True(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Equal(RegPol(Pt(1, 2), Sz(2, 2), 4, Pi)))
+	t.Run("the angle is compared", func(t *testing.T) {
+		assert.False(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Equal(RegPol(Pt(1, 2), Sz(2, 2), 4, Pi)))
+		assert.True(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0.5).Equal(RegPol(Pt(1, 2), Sz(2, 2), 4, 0.5)))
 	})
 }
 
@@ -192,6 +211,7 @@ func TestRegularPolygon_IsZero(t *testing.T) {
 		assert.False(t, RegPol(Pt(0, 0), Sz(0, 0), 4, 0).IsZero())
 		assert.False(t, RegPol(Pt(1, 2), Sz(0, 0), 0, 0).IsZero())
 		assert.False(t, RegPol(Pt(0, 0), Sz(2, 2), 0, 0).IsZero())
+		assert.False(t, RegPol(Pt(0, 0), Sz(0, 0), 0, 1).IsZero())
 	})
 	t.Run("non-zero polygon", func(t *testing.T) {
 		assert.False(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).IsZero())
@@ -202,6 +222,7 @@ func TestRegularPolygon_Empty(t *testing.T) {
 	t.Run("no sides", func(t *testing.T) {
 		assert.True(t, RegularPolygon[int]{}.Empty())
 		assert.True(t, RegPol(Pt(1, 2), Sz(2, 2), 0, 0).Empty())
+		assert.True(t, RegPol(Pt(1, 2), Sz(2, 2), -1, 0).Empty())
 	})
 	t.Run("with sides", func(t *testing.T) {
 		assert.False(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Empty())

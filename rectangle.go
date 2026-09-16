@@ -5,6 +5,11 @@ import (
 )
 
 // Rectangle is a 2D axis-aligned rectangle represented by its center and size.
+//
+// The rectangle is closed: Contains, Clamp and the collision functions include the boundary.
+// For integer T the corners are lattice points on that boundary, so a rectangle of width w
+// spans w+1 lattice columns from Min to Max inclusive. The image.Rectangle returned by Rectangle
+// is half-open as the image package requires, and therefore spans exactly w pixels.
 type Rectangle[T Number] struct {
 	Center Point[T] `json:",embed"`
 	Size   Size[T]  `json:",embed"`
@@ -88,7 +93,7 @@ func (r Rectangle[T]) Inset(padding Padding[T]) Rectangle[T] {
 	return Rectangle[T]{
 		r.Center.AddXY(
 			Divide(padding.Left-padding.Right, 2),
-			Divide(padding.Bottom-padding.Top, 2),
+			Divide(padding.Top-padding.Bottom, 2),
 		),
 		r.Size.ShrinkXY(
 			padding.Left+padding.Right,
@@ -116,7 +121,7 @@ func (r Rectangle[T]) Min() Point[T] {
 
 // Max returns the maximum corner point of the rectangle.
 // For integer types with odd Width or Height, w-w/2 != w/2 due to truncation;
-// using (w-w/2) here keeps Min+Max spanning exactly w pixels (the extra pixel goes to Max).
+// using (w-w/2) here keeps Max-Min equal to exactly w (the extra unit goes to Max).
 func (r Rectangle[T]) Max() Point[T] {
 	w, h := r.Size.XY()
 
@@ -269,7 +274,7 @@ func (r Rectangle[T]) IsZero() bool {
 	return r.Center.IsZero() && r.Size.IsZero()
 }
 
-// Contains reports whether the given point lies within or on the rectangle bounds.
+// Contains reports whether the given point lies within the rectangle, boundary included.
 func (r Rectangle[T]) Contains(point Point[T]) bool {
 	minPoint, maxPoint := r.Min(), r.Max()
 

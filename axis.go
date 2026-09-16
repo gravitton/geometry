@@ -72,9 +72,18 @@ func (a Axis) Across[T Number](size Size[T]) T {
 	return a.Cross().Along(size)
 }
 
-// Project returns the component of the given vector on the main axis.
+// Project returns the signed component of the given vector on the main axis.
 func (a Axis) Project[T Number](vector Vector[T]) T {
-	return a.Along(vector.Size())
+	var component T
+
+	switch a {
+	case AxisHorizontal:
+		component = vector.X
+	case AxisVertical:
+		component = vector.Y
+	}
+
+	return component
 }
 
 // ScaleAlong creates a new Size scaled by the given factor on the main axis only.

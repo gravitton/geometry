@@ -9,33 +9,57 @@ import (
 )
 
 func TestCircle_Constructor(t *testing.T) {
-	AssertCircle(t, Circ(Pt(10, 16), 12), Circle[int]{Center: Pt(10, 16), Radius: 12})
-	AssertCircle(t, Circ(Pt(0.16, 204), 5.1), Circle[float64]{Center: Pt(0.16, 204.0), Radius: 5.1})
+	t.Run("int", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(10, 16), 12), Circle[int]{Center: Pt(10, 16), Radius: 12})
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(0.16, 204), 5.1), Circle[float64]{Center: Pt(0.16, 204.0), Radius: 5.1})
+	})
 }
 
 func TestCircle_Translate(t *testing.T) {
-	AssertCircle(t, Circ(Pt(1, 2), 10).Translate(Vec(3, -2)), Circ(Pt(4, 0), 10))
-	AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).Translate(Vec(100.1, -0.1)), Circ(Pt(100.7, -0.35), 1.2))
+	t.Run("int", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(1, 2), 10).Translate(Vec(3, -2)), Circ(Pt(4, 0), 10))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).Translate(Vec(100.1, -0.1)), Circ(Pt(100.7, -0.35), 1.2))
+	})
 }
 
 func TestCircle_MoveTo(t *testing.T) {
-	AssertCircle(t, Circ(Pt(1, 2), 10).MoveTo(Pt(3, -2)), Circ(Pt(3, -2), 10))
-	AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).MoveTo(Pt(100.1, -0.1)), Circ(Pt(100.1, -0.1), 1.2))
+	t.Run("int", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(1, 2), 10).MoveTo(Pt(3, -2)), Circ(Pt(3, -2), 10))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).MoveTo(Pt(100.1, -0.1)), Circ(Pt(100.1, -0.1), 1.2))
+	})
 }
 
 func TestCircle_Scale(t *testing.T) {
-	AssertCircle(t, Circ(Pt(1, 2), 10).Scale(2.5), Circ(Pt(1, 2), 25))
-	AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).Scale(2.5), Circ(Pt(0.6, -0.25), 3.0))
+	t.Run("int", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(1, 2), 10).Scale(2.5), Circ(Pt(1, 2), 25))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).Scale(2.5), Circ(Pt(0.6, -0.25), 3.0))
+	})
 }
 
 func TestCircle_Resize(t *testing.T) {
-	AssertCircle(t, Circ(Pt(1, 2), 10).Resize(8), Circ(Pt(1, 2), 8))
-	AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).Resize(3.1), Circ(Pt(0.6, -0.25), 3.1))
+	t.Run("int", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(1, 2), 10).Resize(8), Circ(Pt(1, 2), 8))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).Resize(3.1), Circ(Pt(0.6, -0.25), 3.1))
+	})
 }
 
 func TestCircle_Grow(t *testing.T) {
-	AssertCircle(t, Circ(Pt(1, 2), 10).Grow(8), Circ(Pt(1, 2), 18))
-	AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).Grow(3.1), Circ(Pt(0.6, -0.25), 4.3))
+	t.Run("int", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(1, 2), 10).Grow(8), Circ(Pt(1, 2), 18))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).Grow(3.1), Circ(Pt(0.6, -0.25), 4.3))
+	})
 }
 
 func TestCircle_Shrink(t *testing.T) {
@@ -50,23 +74,42 @@ func TestCircle_Shrink(t *testing.T) {
 }
 
 func TestCircle_Area(t *testing.T) {
-	AssertNumber(t, Circ(Pt(1, 2), 10).Area(), Pi*100.0)
-	AssertNumber(t, Circ(Pt(0.6, -0.25), 1.2).Area(), Pi*1.44)
+	t.Run("int", func(t *testing.T) {
+		AssertNumber(t, Circ(Pt(1, 2), 10).Area(), Pi*100.0)
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Circ(Pt(0.6, -0.25), 1.2).Area(), Pi*1.44)
+	})
+	t.Run("large integer radius does not overflow", func(t *testing.T) {
+		AssertNumber(t, Circ(Pt(0, 0), 3037000500).Area(), Pi*3037000500*3037000500)
+	})
 }
 
 func TestCircle_Circumference(t *testing.T) {
-	AssertNumber(t, Circ(Pt(1, 2), 10).Circumference(), Pi*20.0)
-	AssertNumber(t, Circ(Pt(0.6, -0.25), 1.2).Circumference(), Pi*2.4)
+	t.Run("int", func(t *testing.T) {
+		AssertNumber(t, Circ(Pt(1, 2), 10).Circumference(), Pi*20.0)
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Circ(Pt(0.6, -0.25), 1.2).Circumference(), Pi*2.4)
+	})
 }
 
 func TestCircle_Diameter(t *testing.T) {
-	AssertNumber(t, Circ(Pt(1, 2), 10).Diameter(), 20)
-	AssertNumber(t, Circ(Pt(0.6, -0.25), 1.2).Diameter(), 2.4)
+	t.Run("int", func(t *testing.T) {
+		AssertNumber(t, Circ(Pt(1, 2), 10).Diameter(), 20)
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Circ(Pt(0.6, -0.25), 1.2).Diameter(), 2.4)
+	})
 }
 
 func TestCircle_Bounds(t *testing.T) {
-	AssertRect(t, Circ(Pt(1, 2), 10).Bounds(), Rect(Pt(1, 2), Sz(20, 20)))
-	AssertRect(t, Circ(Pt(0.6, -0.25), 1.2).Bounds(), Rect(Pt(0.6, -0.25), Sz(2.4, 2.4)))
+	t.Run("int", func(t *testing.T) {
+		AssertRect(t, Circ(Pt(1, 2), 10).Bounds(), Rect(Pt(1, 2), Sz(20, 20)))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertRect(t, Circ(Pt(0.6, -0.25), 1.2).Bounds(), Rect(Pt(0.6, -0.25), Sz(2.4, 2.4)))
+	})
 }
 
 func TestCircle_Anchor(t *testing.T) {
@@ -129,14 +172,15 @@ func TestCircle_Contains(t *testing.T) {
 		assert.True(t, Circ(Pt(0.6, -0.25), 1.2).Contains(Pt(0.1, 0.8)))
 	})
 	t.Run("outside", func(t *testing.T) {
-		assert.False(t, Circ(Pt(1, 2), 10).Contains(Pt(1, 12)))
+		assert.False(t, Circ(Pt(1, 2), 10).Contains(Pt(1, 13)))
 		assert.False(t, Circ(Pt(0.6, -0.25), 1.2).Contains(Pt(0.0, 1.7)))
 	})
-	t.Run("the center is inside, the boundary is not", func(t *testing.T) {
+	t.Run("the center and the boundary are inside", func(t *testing.T) {
 		c := Circ(Pt(1, 2), 10)
 
 		assert.True(t, c.Contains(c.Center))
-		assert.False(t, c.Contains(c.Anchor(Right)))
+		assert.True(t, c.Contains(c.Anchor(Right)))
+		assert.False(t, c.Contains(c.Anchor(Right).AddXY(1, 0)))
 	})
 }
 
@@ -221,10 +265,10 @@ func TestCircle_Properties(t *testing.T) {
 		}
 	})
 	t.Run("contains matches the distance to the center", func(t *testing.T) {
-		// the boundary is excluded, unlike Rectangle.Contains
+		// the boundary is included, like Rectangle.Contains
 		for _, c := range circleFixtures {
 			for _, point := range pointFixtures {
-				inside := c.Center.DistanceTo(point) < c.Radius
+				inside := c.Center.DistanceTo(point) <= c.Radius
 
 				assert.Equal(t, c.Contains(point), inside, fmt.Sprintf("%s → %s: ", c, point))
 			}

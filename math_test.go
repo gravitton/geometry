@@ -81,6 +81,10 @@ func TestAbs(t *testing.T) {
 		AssertNumber(t, Abs(0), 0)
 		AssertNumber(t, Abs(3.14), 3.14)
 	})
+	t.Run("wide integers stay exact", func(t *testing.T) {
+		AssertNumber(t, Abs(int64(-(1<<53 + 1))), int64(1<<53+1))
+		AssertNumber(t, Abs(int64(1<<53+1)), int64(1<<53+1))
+	})
 }
 
 func TestRound(t *testing.T) {
@@ -91,6 +95,7 @@ func TestRound(t *testing.T) {
 	})
 	t.Run("int is a no-op", func(t *testing.T) {
 		AssertNumber(t, Round(3), 3)
+		AssertNumber(t, Round(int64(1<<53+1)), int64(1<<53+1))
 	})
 }
 
@@ -101,6 +106,7 @@ func TestFloor(t *testing.T) {
 	})
 	t.Run("int is a no-op", func(t *testing.T) {
 		AssertNumber(t, Floor(3), 3)
+		AssertNumber(t, Floor(int64(1<<53+1)), int64(1<<53+1))
 	})
 }
 
@@ -111,6 +117,7 @@ func TestCeil(t *testing.T) {
 	})
 	t.Run("int is a no-op", func(t *testing.T) {
 		AssertNumber(t, Ceil(3), 3)
+		AssertNumber(t, Ceil(int64(1<<53+1)), int64(1<<53+1))
 	})
 }
 
@@ -139,6 +146,10 @@ func TestLerp(t *testing.T) {
 		AssertNumber(t, Lerp(1, 3, 0.25), 2)
 		AssertNumber(t, Lerp(1, 5, 0.25), 2)
 		AssertNumber(t, Lerp(1, 7, 0.25), 3)
+	})
+	t.Run("narrow integers do not overflow", func(t *testing.T) {
+		AssertNumber(t, Lerp[int8](-100, 100, 0.5), 0)
+		AssertNumber(t, Lerp[int8](-128, 127, 1), 127)
 	})
 	t.Run("float", func(t *testing.T) {
 		AssertNumber(t, Lerp(1.0, 6.0, 0.25), 2.25)
@@ -235,6 +246,10 @@ func TestEqualDelta(t *testing.T) {
 	t.Run("a zero delta asks for exact equality", func(t *testing.T) {
 		assert.True(t, EqualDelta(5, 5, 0.0))
 		assert.False(t, EqualDelta(5, 6, 0.0))
+	})
+	t.Run("narrow integers do not overflow", func(t *testing.T) {
+		assert.False(t, EqualDelta[int8](127, -128, 1))
+		assert.True(t, EqualDelta[int8](127, -128, 255))
 	})
 }
 

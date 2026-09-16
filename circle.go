@@ -47,7 +47,9 @@ func (c Circle[T]) Shrink(amount T) Circle[T] {
 
 // Area returns the circle area (π * radius^2).
 func (c Circle[T]) Area() float64 {
-	return Pi * float64(c.Radius*c.Radius)
+	radius := float64(c.Radius)
+
+	return Pi * radius * radius
 }
 
 // Circumference returns the circle circumference (2 * π * radius).
@@ -82,9 +84,10 @@ func (c Circle[T]) IsZero() bool {
 	return c.Center.IsZero() && Equal(c.Radius, 0)
 }
 
-// Contains checks if the given point lies inside the circle.
+// Contains reports whether the given point lies within the circle, boundary included,
+// the same closed convention as Rectangle.Contains.
 func (c Circle[T]) Contains(point Point[T]) bool {
-	return c.Center.Subtract(point).Less(c.Radius)
+	return c.Center.Subtract(point).LessOrEqual(c.Radius)
 }
 
 // Int converts the circle to a Circle[int].

@@ -41,8 +41,9 @@ func TestCollisionCircles(t *testing.T) {
 	t.Run("apart", func(t *testing.T) {
 		assert.False(t, CollisionCircles(circle, Circ(Pt(210.0, 0.0), 100.0)))
 	})
-	t.Run("exactly touching does not count", func(t *testing.T) {
-		assert.False(t, CollisionCircles(circle, Circ(Pt(200.0, 0.0), 100.0)))
+	t.Run("exactly touching counts as a collision", func(t *testing.T) {
+		assert.True(t, CollisionCircles(circle, Circ(Pt(200.0, 0.0), 100.0)))
+		assert.False(t, CollisionCircles(circle, Circ(Pt(201.0, 0.0), 100.0)))
 	})
 	t.Run("one contained in the other", func(t *testing.T) {
 		assert.True(t, CollisionCircles(circle, Circ(Pt(0.0, 0.0), 50.0)))
@@ -72,6 +73,16 @@ func TestCollisionRectangleCircle(t *testing.T) {
 	t.Run("touching the edge from outside counts", func(t *testing.T) {
 		assert.True(t, CollisionRectangleCircle(rectangle, Circ(Pt(200.0, 0.0), 100.0)))
 		assert.False(t, CollisionRectangleCircle(rectangle, Circ(Pt(201.0, 0.0), 100.0)))
+	})
+	t.Run("touching the corner from outside counts", func(t *testing.T) {
+		assert.True(t, CollisionRectangleCircle(rectangle, Circ(Pt(103.0, 54.0), 5.0)))
+		assert.False(t, CollisionRectangleCircle(rectangle, Circ(Pt(104.0, 54.0), 5.0)))
+	})
+	t.Run("odd integer sizes keep exact half extents", func(t *testing.T) {
+		odd := Rect(Pt(0, 0), Sz(3, 3))
+
+		assert.True(t, CollisionRectangleCircle(odd, Circ(Pt(3, 0), 1)))
+		assert.False(t, CollisionRectangleCircle(odd, Circ(Pt(4, 0), 1)))
 	})
 	t.Run("circle fully inside the rectangle", func(t *testing.T) {
 		assert.True(t, CollisionRectangleCircle(rectangle, Circ(Pt(0.0, 0.0), 10.0)))

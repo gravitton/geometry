@@ -9,8 +9,12 @@ import (
 )
 
 func TestPolygon_Constructor(t *testing.T) {
-	AssertPolygon(t, Pol(squareVertices()), Polygon[int]{Vertices: squareVertices()})
-	AssertPolygon(t, Pol(triangleVertices()), Polygon[float64]{Vertices: triangleVertices()})
+	t.Run("int", func(t *testing.T) {
+		AssertPolygon(t, Pol(squareVertices()), Polygon[int]{Vertices: squareVertices()})
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertPolygon(t, Pol(triangleVertices()), Polygon[float64]{Vertices: triangleVertices()})
+	})
 }
 
 func TestPolygon_Center(t *testing.T) {
@@ -19,6 +23,10 @@ func TestPolygon_Center(t *testing.T) {
 	})
 	t.Run("float", func(t *testing.T) {
 		AssertPoint(t, Pol(triangleVertices()).Center(), Pt(1.5, 0.5))
+	})
+	t.Run("empty is the zero point", func(t *testing.T) {
+		AssertPoint(t, Pol([]Point[int]{}).Center(), Pt(0, 0))
+		AssertPoint(t, Polygon[float64]{}.Center(), Pt(0.0, 0.0))
 	})
 }
 

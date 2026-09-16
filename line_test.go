@@ -10,43 +10,75 @@ import (
 )
 
 func TestLine_Constructor(t *testing.T) {
-	AssertLine(t, Ln(Pt(1, -1), Pt(2, 0)), Line[int]{Start: Pt(1, -1), End: Pt(2, 0)})
-	AssertLine(t, Ln(Pt(0.5, -1.25), Pt(2.5, 3.75)), Line[float64]{Start: Pt(0.5, -1.25), End: Pt(2.5, 3.75)})
+	t.Run("int", func(t *testing.T) {
+		AssertLine(t, Ln(Pt(1, -1), Pt(2, 0)), Line[int]{Start: Pt(1, -1), End: Pt(2, 0)})
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertLine(t, Ln(Pt(0.5, -1.25), Pt(2.5, 3.75)), Line[float64]{Start: Pt(0.5, -1.25), End: Pt(2.5, 3.75)})
+	})
 }
 
 func TestLine_Translate(t *testing.T) {
-	AssertLine(t, Ln(Pt(1, 2), Pt(3, 5)).Translate(Vec(3, -2)), Ln(Pt(4, 0), Pt(6, 3)))
-	AssertLine(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Translate(Vec(100.1, -0.1)), Ln(Pt(100.7, -0.35), Pt(101.3, 3.3)))
+	t.Run("int", func(t *testing.T) {
+		AssertLine(t, Ln(Pt(1, 2), Pt(3, 5)).Translate(Vec(3, -2)), Ln(Pt(4, 0), Pt(6, 3)))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertLine(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Translate(Vec(100.1, -0.1)), Ln(Pt(100.7, -0.35), Pt(101.3, 3.3)))
+	})
 }
 
 func TestLine_MoveTo(t *testing.T) {
-	AssertLine(t, Ln(Pt(1, 2), Pt(3, 5)).MoveTo(Pt(3, -2)), Ln(Pt(3, -2), Pt(5, 1)))
-	AssertLine(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).MoveTo(Pt(100.1, -0.1)), Ln(Pt(100.1, -0.1), Pt(100.7, 3.55)))
+	t.Run("int", func(t *testing.T) {
+		AssertLine(t, Ln(Pt(1, 2), Pt(3, 5)).MoveTo(Pt(3, -2)), Ln(Pt(3, -2), Pt(5, 1)))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertLine(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).MoveTo(Pt(100.1, -0.1)), Ln(Pt(100.1, -0.1), Pt(100.7, 3.55)))
+	})
 }
 
 func TestLine_Reverse(t *testing.T) {
-	AssertLine(t, Ln(Pt(1, 2), Pt(3, 5)).Reverse(), Ln(Pt(3, 5), Pt(1, 2)))
-	AssertLine(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Reverse(), Ln(Pt(1.2, 3.4), Pt(0.6, -0.25)))
+	t.Run("int", func(t *testing.T) {
+		AssertLine(t, Ln(Pt(1, 2), Pt(3, 5)).Reverse(), Ln(Pt(3, 5), Pt(1, 2)))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertLine(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Reverse(), Ln(Pt(1.2, 3.4), Pt(0.6, -0.25)))
+	})
 }
 
 func TestLine_Midpoint(t *testing.T) {
-	AssertPoint(t, Ln(Pt(1, 2), Pt(3, 5)).Midpoint(), Pt(2, 4)) // int: 3.5 rounds to 4
-	AssertPoint(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Midpoint(), Pt(0.9, 1.575))
+	t.Run("int rounds the half away from zero", func(t *testing.T) {
+		AssertPoint(t, Ln(Pt(1, 2), Pt(3, 5)).Midpoint(), Pt(2, 4))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertPoint(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Midpoint(), Pt(0.9, 1.575))
+	})
 }
 
 func TestLine_Vector(t *testing.T) {
-	AssertVector(t, Ln(Pt(1, 2), Pt(3, 5)).Vector(), Vec(2, 3))
-	AssertVector(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Vector(), Vec(0.6, 3.65))
+	t.Run("int", func(t *testing.T) {
+		AssertVector(t, Ln(Pt(1, 2), Pt(3, 5)).Vector(), Vec(2, 3))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertVector(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Vector(), Vec(0.6, 3.65))
+	})
 }
 
 func TestLine_Length(t *testing.T) {
-	AssertNumber(t, Ln(Pt(1, 2), Pt(3, 5)).Length(), math.Sqrt(13))
-	AssertNumber(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Length(), math.Sqrt(13.6825))
+	t.Run("int", func(t *testing.T) {
+		AssertNumber(t, Ln(Pt(1, 2), Pt(3, 5)).Length(), math.Sqrt(13))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Length(), math.Sqrt(13.6825))
+	})
 }
 
 func TestLine_Vertices(t *testing.T) {
-	AssertVertices(t, Ln(Pt(1, 2), Pt(3, 5)).Vertices(), []Point[int]{{1, 2}, {3, 5}})
-	AssertVertices(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Vertices(), []Point[float64]{{0.6, -0.25}, {1.2, 3.4}})
+	t.Run("int", func(t *testing.T) {
+		AssertVertices(t, Ln(Pt(1, 2), Pt(3, 5)).Vertices(), []Point[int]{{1, 2}, {3, 5}})
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertVertices(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Vertices(), []Point[float64]{{0.6, -0.25}, {1.2, 3.4}})
+	})
 }
 
 func TestLine_Bounds(t *testing.T) {

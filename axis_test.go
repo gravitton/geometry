@@ -36,17 +36,25 @@ func TestAxis_Direction(t *testing.T) {
 func TestAxis_Along(t *testing.T) {
 	size := Sz(10, 20)
 
-	assert.Equal(t, AxisHorizontal.Along(size), 10)
-	assert.Equal(t, AxisVertical.Along(size), 20)
-	assert.Equal(t, AxisNone.Along(size), 0)
+	t.Run("picks the extent on the axis", func(t *testing.T) {
+		assert.Equal(t, AxisHorizontal.Along(size), 10)
+		assert.Equal(t, AxisVertical.Along(size), 20)
+	})
+	t.Run("none has no extent", func(t *testing.T) {
+		assert.Equal(t, AxisNone.Along(size), 0)
+	})
 }
 
 func TestAxis_Across(t *testing.T) {
 	size := Sz(10, 20)
 
-	assert.Equal(t, AxisHorizontal.Across(size), 20)
-	assert.Equal(t, AxisVertical.Across(size), 10)
-	assert.Equal(t, AxisNone.Across(size), 0)
+	t.Run("picks the extent on the axis", func(t *testing.T) {
+		assert.Equal(t, AxisHorizontal.Across(size), 20)
+		assert.Equal(t, AxisVertical.Across(size), 10)
+	})
+	t.Run("none has no extent", func(t *testing.T) {
+		assert.Equal(t, AxisNone.Across(size), 0)
+	})
 }
 
 func TestAxis_Project(t *testing.T) {
@@ -57,6 +65,13 @@ func TestAxis_Project(t *testing.T) {
 	t.Run("a perpendicular direction projects to zero", func(t *testing.T) {
 		assert.Equal(t, AxisVertical.Project(DirectionRight.Offset[int]()), 0)
 		assert.Equal(t, AxisVertical.Project(DirectionDown.Offset[int]()), 1)
+	})
+	t.Run("keeps the sign", func(t *testing.T) {
+		assert.Equal(t, AxisHorizontal.Project(Vec(-3, 2)), -3)
+		assert.Equal(t, AxisVertical.Project(Vec(3, -4.5)), -4.5)
+	})
+	t.Run("none projects to zero", func(t *testing.T) {
+		assert.Equal(t, AxisNone.Project(Vec(3, 4)), 0)
 	})
 }
 
@@ -72,15 +87,23 @@ func TestAxis_ScaleAlong(t *testing.T) {
 }
 
 func TestAxis_Vector(t *testing.T) {
-	AssertVector(t, AxisHorizontal.Vector(3, 4), Vec(3, 4))
-	AssertVector(t, AxisVertical.Vector(3, 4), Vec(4, 3))
-	AssertVector(t, AxisVertical.Vector(1.5, 2.5), Vec(2.5, 1.5))
+	t.Run("horizontal keeps the order", func(t *testing.T) {
+		AssertVector(t, AxisHorizontal.Vector(3, 4), Vec(3, 4))
+	})
+	t.Run("vertical swaps it", func(t *testing.T) {
+		AssertVector(t, AxisVertical.Vector(3, 4), Vec(4, 3))
+		AssertVector(t, AxisVertical.Vector(1.5, 2.5), Vec(2.5, 1.5))
+	})
 }
 
 func TestAxis_Size(t *testing.T) {
-	AssertSize(t, AxisHorizontal.Size(3, 4), Sz(3, 4))
-	AssertSize(t, AxisVertical.Size(3, 4), Sz(4, 3))
-	AssertSize(t, AxisVertical.Size(1.5, 2.5), Sz(2.5, 1.5))
+	t.Run("horizontal keeps the order", func(t *testing.T) {
+		AssertSize(t, AxisHorizontal.Size(3, 4), Sz(3, 4))
+	})
+	t.Run("vertical swaps it", func(t *testing.T) {
+		AssertSize(t, AxisVertical.Size(3, 4), Sz(4, 3))
+		AssertSize(t, AxisVertical.Size(1.5, 2.5), Sz(2.5, 1.5))
+	})
 }
 
 func TestAxis_IsNone(t *testing.T) {
@@ -96,10 +119,14 @@ func TestAxis_IsNone(t *testing.T) {
 }
 
 func TestAxis_String(t *testing.T) {
-	assert.Equal(t, AxisHorizontal.String(), "Horizontal")
-	assert.Equal(t, AxisVertical.String(), "Vertical")
-	assert.Equal(t, AxisNone.String(), "None")
-	assert.Equal(t, Axis(2).String(), "None")
+	t.Run("named axes", func(t *testing.T) {
+		assert.Equal(t, AxisHorizontal.String(), "Horizontal")
+		assert.Equal(t, AxisVertical.String(), "Vertical")
+	})
+	t.Run("none and out of range", func(t *testing.T) {
+		assert.Equal(t, AxisNone.String(), "None")
+		assert.Equal(t, Axis(2).String(), "None")
+	})
 }
 
 func TestAxis_Properties(t *testing.T) {
@@ -137,7 +164,7 @@ func TestAxis_Properties(t *testing.T) {
 	t.Run("project is the component of the vector", func(t *testing.T) {
 		for _, axis := range Axes {
 			for _, vector := range vectorFixtures {
-				AssertNumber(t, axis.Project(vector), axis.Along(vector.Size()), fmt.Sprintf("%s → %s: ", axis, vector))
+				AssertNumber(t, axis.Project(vector), axis.Along(Sz(vector.X, vector.Y)), fmt.Sprintf("%s → %s: ", axis, vector))
 			}
 		}
 	})

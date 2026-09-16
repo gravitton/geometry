@@ -1,6 +1,7 @@
 package geom
 
 import (
+	"math"
 	"testing"
 
 	"github.com/gravitton/assert"
@@ -25,6 +26,9 @@ func TestDirectionFromAngle(t *testing.T) {
 		assert.Equal(t, DirectionFromAngle(-Pi/2-0.1), DirectionUp)
 		assert.Equal(t, DirectionFromAngle(Pi/4+0.1), DirectionDownRight)
 		assert.Equal(t, DirectionFromAngle(Pi/4-0.1), DirectionDownRight)
+	})
+	t.Run("NaN has no direction", func(t *testing.T) {
+		assert.Equal(t, DirectionFromAngle(math.NaN()), DirectionNone)
 	})
 }
 

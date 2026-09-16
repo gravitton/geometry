@@ -13,12 +13,12 @@ import (
 // Unscale.
 type Matrix[T Number] struct {
 	A T `json:"a"` // scale X
-	B T `json:"b"` // shear Y
+	B T `json:"b"` // shear X (contribution of y to x')
 	C T `json:"c"` // translate X
-	D T `json:"d"` // shear X
+	D T `json:"d"` // shear Y (contribution of x to y')
 	E T `json:"e"` // scale Y
 	F T `json:"f"` // translate Y
-	// [0 0 1] implicit third row
+	// [0 0 1] implicit third row: x' = A*x + B*y + C, y' = D*x + E*y + F
 }
 
 // Mat is shorthand for Matrix{a, b, c, d, e, f}.
@@ -83,14 +83,17 @@ func (m Matrix[T]) Inverse() Matrix[T] {
 		return m
 	}
 
+	a, b, c := float64(m.A), float64(m.B), float64(m.C)
+	d, e, f := float64(m.D), float64(m.E), float64(m.F)
 	invDet := 1.0 / float64(det)
+
 	return Matrix[T]{
-		Cast[T](float64(m.E) * invDet),
-		Cast[T](float64(-m.B) * invDet),
-		Cast[T](float64(m.B*m.F-m.C*m.E) * invDet),
-		Cast[T](float64(-m.D) * invDet),
-		Cast[T](float64(m.A) * invDet),
-		Cast[T](float64(m.C*m.D-m.A*m.F) * invDet),
+		Cast[T](e * invDet),
+		Cast[T](-b * invDet),
+		Cast[T]((b*f - c*e) * invDet),
+		Cast[T](-d * invDet),
+		Cast[T](a * invDet),
+		Cast[T]((c*d - a*f) * invDet),
 	}
 }
 

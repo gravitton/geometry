@@ -90,16 +90,19 @@ func (rp RegularPolygon[T]) Rotate(angle float64) RegularPolygon[T] {
 
 // Vertices returns the polygon vertices in order starting from angle 0, by increasing angle —
 // the same winding as Directions and Rectangle.Vertices, and clockwise as drawn on a screen
-// with Y pointing down.
+// with Y pointing down. A polygon with N < 1 has no vertices.
 // For integer T, each vertex component is rounded to the nearest integer, so vertices at
 // non-right angles may be off by up to half a unit. Use float64 for exact positions.
 func (rp RegularPolygon[T]) Vertices() []Point[T] {
-	initAngle := rp.Angle
+	if rp.N < 1 {
+		return []Point[T]{}
+	}
+
 	angleStep := (2 * Pi) / float64(rp.N)
 
 	vertices := make([]Point[T], rp.N)
-	for i := 0; i < rp.N; i++ {
-		vertices[i] = rp.Center.Add(VectorFromAngleSize(initAngle+float64(i)*angleStep, rp.Size))
+	for i := range vertices {
+		vertices[i] = rp.Center.Add(VectorFromAngleSize(rp.Angle+float64(i)*angleStep, rp.Size))
 	}
 
 	return vertices
@@ -129,19 +132,19 @@ func (rp RegularPolygon[T]) Polygon() Polygon[T] {
 	return Polygon[T]{rp.Vertices()}
 }
 
-// Equal checks if center point, size and number of vertices are equal.
+// Equal checks if center point, size, number of vertices and angle are equal.
 func (rp RegularPolygon[T]) Equal(polygon RegularPolygon[T]) bool {
-	return rp.Center.Equal(polygon.Center) && rp.Size.Equal(polygon.Size) && rp.N == polygon.N
+	return rp.Center.Equal(polygon.Center) && rp.Size.Equal(polygon.Size) && rp.N == polygon.N && Equal(rp.Angle, polygon.Angle)
 }
 
-// IsZero checks if center point, size and number of vertices are zero.
+// IsZero checks if center point, size, number of vertices and angle are zero.
 func (rp RegularPolygon[T]) IsZero() bool {
-	return rp.Center.IsZero() && rp.Size.IsZero() && rp.N == 0
+	return rp.Center.IsZero() && rp.Size.IsZero() && rp.N == 0 && Equal(rp.Angle, 0)
 }
 
-// Empty checks if number of vertices is zero.
+// Empty checks if the polygon has no vertices.
 func (rp RegularPolygon[T]) Empty() bool {
-	return rp.N == 0
+	return rp.N < 1
 }
 
 // Int converts the regular polygon to a RegularPolygon[int].

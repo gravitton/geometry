@@ -2,6 +2,7 @@ package geom
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/gravitton/assert"
 )
@@ -31,10 +32,10 @@ func AssertPoint[T Number](t Testing, actual, expected Point[T], messages ...str
 
 	ok := true
 
-	if !AssertNumber(t, actual.X, expected.X, append(messages, "X: ")...) {
+	if !AssertNumber(t, actual.X, expected.X, prefixed(messages, "X: ")...) {
 		ok = false
 	}
-	if !AssertNumber(t, actual.Y, expected.Y, append(messages, "Y: ")...) {
+	if !AssertNumber(t, actual.Y, expected.Y, prefixed(messages, "Y: ")...) {
 		ok = false
 	}
 
@@ -47,10 +48,10 @@ func AssertVector[T Number](t Testing, actual, expected Vector[T], messages ...s
 
 	ok := true
 
-	if !AssertNumber(t, actual.X, expected.X, append(messages, "X: ")...) {
+	if !AssertNumber(t, actual.X, expected.X, prefixed(messages, "X: ")...) {
 		ok = false
 	}
-	if !AssertNumber(t, actual.Y, expected.Y, append(messages, "Y: ")...) {
+	if !AssertNumber(t, actual.Y, expected.Y, prefixed(messages, "Y: ")...) {
 		ok = false
 	}
 
@@ -63,10 +64,10 @@ func AssertSize[T Number](t Testing, actual, expected Size[T], messages ...strin
 
 	ok := true
 
-	if !AssertNumber(t, actual.Width, expected.Width, append(messages, "Width: ")...) {
+	if !AssertNumber(t, actual.Width, expected.Width, prefixed(messages, "Width: ")...) {
 		ok = false
 	}
-	if !AssertNumber(t, actual.Height, expected.Height, append(messages, "Height: ")...) {
+	if !AssertNumber(t, actual.Height, expected.Height, prefixed(messages, "Height: ")...) {
 		ok = false
 	}
 
@@ -79,10 +80,10 @@ func AssertCircle[T Number](t Testing, actual, expected Circle[T], messages ...s
 
 	ok := true
 
-	if !AssertPoint(t, actual.Center, expected.Center, append(messages, "Center.")...) {
+	if !AssertPoint(t, actual.Center, expected.Center, prefixed(messages, "Center.")...) {
 		ok = false
 	}
-	if !AssertNumber(t, actual.Radius, expected.Radius, append(messages, "Radius: ")...) {
+	if !AssertNumber(t, actual.Radius, expected.Radius, prefixed(messages, "Radius: ")...) {
 		ok = false
 	}
 
@@ -95,10 +96,10 @@ func AssertLine[T Number](t Testing, actual, expected Line[T], messages ...strin
 
 	ok := true
 
-	if !AssertPoint(t, actual.Start, expected.Start, append(messages, "Start.")...) {
+	if !AssertPoint(t, actual.Start, expected.Start, prefixed(messages, "Start.")...) {
 		ok = false
 	}
-	if !AssertPoint(t, actual.End, expected.End, append(messages, "End.")...) {
+	if !AssertPoint(t, actual.End, expected.End, prefixed(messages, "End.")...) {
 		ok = false
 	}
 
@@ -111,10 +112,10 @@ func AssertRect[T Number](t Testing, actual, expected Rectangle[T], messages ...
 
 	ok := true
 
-	if !AssertPoint(t, actual.Center, expected.Center, append(messages, "Center.")...) {
+	if !AssertPoint(t, actual.Center, expected.Center, prefixed(messages, "Center.")...) {
 		ok = false
 	}
-	if !AssertSize(t, actual.Size, expected.Size, append(messages, "Size.")...) {
+	if !AssertSize(t, actual.Size, expected.Size, prefixed(messages, "Size.")...) {
 		ok = false
 	}
 
@@ -132,13 +133,13 @@ func AssertPolygon[T Number](t Testing, actual, expected Polygon[T], messages ..
 func AssertVertices[T Number](t Testing, actual, expected []Point[T], messages ...string) bool {
 	t.Helper()
 
-	if !assert.Equal(t, len(actual), len(expected), append(messages, "Length: ")...) {
+	if !assert.Equal(t, len(actual), len(expected), prefixed(messages, "Length: ")...) {
 		return false
 	}
 
 	ok := true
 	for i := 0; i < len(actual); i++ {
-		if !AssertPoint(t, actual[i], expected[i], append(messages, fmt.Sprintf("#%d.", i))...) {
+		if !AssertPoint(t, actual[i], expected[i], prefixed(messages, fmt.Sprintf("#%d.", i))...) {
 			ok = false
 		}
 	}
@@ -152,16 +153,16 @@ func AssertRegularPolygon[T Number](t Testing, actual, expected RegularPolygon[T
 
 	ok := true
 
-	if !AssertPoint(t, actual.Center, expected.Center, append(messages, "Center.")...) {
+	if !AssertPoint(t, actual.Center, expected.Center, prefixed(messages, "Center.")...) {
 		ok = false
 	}
-	if !AssertSize(t, actual.Size, expected.Size, append(messages, "Size.")...) {
+	if !AssertSize(t, actual.Size, expected.Size, prefixed(messages, "Size.")...) {
 		ok = false
 	}
-	if !assert.Equal(t, actual.N, expected.N, append(messages, "N: ")...) {
+	if !assert.Equal(t, actual.N, expected.N, prefixed(messages, "N: ")...) {
 		ok = false
 	}
-	if !AssertNumber(t, actual.Angle, expected.Angle, append(messages, "Angle: ")...) {
+	if !AssertNumber(t, actual.Angle, expected.Angle, prefixed(messages, "Angle: ")...) {
 		ok = false
 	}
 
@@ -174,16 +175,16 @@ func AssertPadding[T Number](t Testing, actual, expected Padding[T], messages ..
 
 	ok := true
 
-	if !AssertNumber(t, actual.Top, expected.Top, append(messages, "Top: ")...) {
+	if !AssertNumber(t, actual.Top, expected.Top, prefixed(messages, "Top: ")...) {
 		ok = false
 	}
-	if !AssertNumber(t, actual.Right, expected.Right, append(messages, "Right: ")...) {
+	if !AssertNumber(t, actual.Right, expected.Right, prefixed(messages, "Right: ")...) {
 		ok = false
 	}
-	if !AssertNumber(t, actual.Bottom, expected.Bottom, append(messages, "Bottom: ")...) {
+	if !AssertNumber(t, actual.Bottom, expected.Bottom, prefixed(messages, "Bottom: ")...) {
 		ok = false
 	}
-	if !AssertNumber(t, actual.Left, expected.Left, append(messages, "Left: ")...) {
+	if !AssertNumber(t, actual.Left, expected.Left, prefixed(messages, "Left: ")...) {
 		ok = false
 	}
 
@@ -196,29 +197,35 @@ func AssertMatrix[T Number](t Testing, actual, expected Matrix[T], messages ...s
 
 	ok := true
 
-	if !AssertNumber(t, actual.A, expected.A, append(messages, "A: ")...) {
+	if !AssertNumber(t, actual.A, expected.A, prefixed(messages, "A: ")...) {
 		ok = false
 	}
 
-	if !AssertNumber(t, actual.B, expected.B, append(messages, "B: ")...) {
+	if !AssertNumber(t, actual.B, expected.B, prefixed(messages, "B: ")...) {
 		ok = false
 	}
 
-	if !AssertNumber(t, actual.C, expected.C, append(messages, "C: ")...) {
+	if !AssertNumber(t, actual.C, expected.C, prefixed(messages, "C: ")...) {
 		ok = false
 	}
 
-	if !AssertNumber(t, actual.D, expected.D, append(messages, "D: ")...) {
+	if !AssertNumber(t, actual.D, expected.D, prefixed(messages, "D: ")...) {
 		ok = false
 	}
 
-	if !AssertNumber(t, actual.E, expected.E, append(messages, "E: ")...) {
+	if !AssertNumber(t, actual.E, expected.E, prefixed(messages, "E: ")...) {
 		ok = false
 	}
 
-	if !AssertNumber(t, actual.F, expected.F, append(messages, "F: ")...) {
+	if !AssertNumber(t, actual.F, expected.F, prefixed(messages, "F: ")...) {
 		ok = false
 	}
 
 	return ok
+}
+
+// prefixed returns messages followed by prefix in a fresh slice, so nested helpers never
+// write into a backing array the caller still owns.
+func prefixed(messages []string, prefix string) []string {
+	return slices.Concat(messages, []string{prefix})
 }

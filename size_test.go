@@ -106,13 +106,21 @@ func TestSize_Shrink(t *testing.T) {
 }
 
 func TestSize_Area(t *testing.T) {
-	AssertNumber(t, Sz(5, 3).Area(), 15)
-	AssertNumber(t, Sz(0.4, 0.25).Area(), 0.1)
+	t.Run("int", func(t *testing.T) {
+		AssertNumber(t, Sz(5, 3).Area(), 15)
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Sz(0.4, 0.25).Area(), 0.1)
+	})
 }
 
 func TestSize_Perimeter(t *testing.T) {
-	AssertNumber(t, Sz(5, 3).Perimeter(), 16)
-	AssertNumber(t, Sz(0.4, 0.25).Perimeter(), 1.3)
+	t.Run("int", func(t *testing.T) {
+		AssertNumber(t, Sz(5, 3).Perimeter(), 16)
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Sz(0.4, 0.25).Perimeter(), 1.3)
+	})
 }
 
 func TestSize_AspectRatio(t *testing.T) {
@@ -196,8 +204,12 @@ func TestSize_XY(t *testing.T) {
 }
 
 func TestSize_Vector(t *testing.T) {
-	AssertVector(t, Sz(10, 16).Vector(), Vec(10, 16))
-	AssertVector(t, Sz(1.5, -2.5).Vector(), Vec(1.5, -2.5))
+	t.Run("int", func(t *testing.T) {
+		AssertVector(t, Sz(10, 16).Vector(), Vec(10, 16))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertVector(t, Sz(1.5, -2.5).Vector(), Vec(1.5, -2.5))
+	})
 }
 
 func TestSize_Int(t *testing.T) {

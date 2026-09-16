@@ -59,23 +59,39 @@ func Divide[T Number](x T, scale float64) T {
 	return Cast[T](float64(x) / scale)
 }
 
-// Abs returns the absolute value.
+// Abs returns the absolute value. It never leaves T, so integers of any width stay exact.
 func Abs[T Number](x T) T {
-	return T(math.Abs(float64(x)))
+	if x < 0 {
+		return -x
+	}
+
+	return x
 }
 
-// Round returns x rounded to the nearest integer.
+// Round returns x rounded to the nearest integer. An integer T is returned unchanged.
 func Round[T Number](x T) T {
+	if isIntType[T]() {
+		return x
+	}
+
 	return T(math.Round(float64(x)))
 }
 
-// Floor returns the largest integer value less than or equal to x.
+// Floor returns the largest integer value less than or equal to x. An integer T is returned unchanged.
 func Floor[T Number](x T) T {
+	if isIntType[T]() {
+		return x
+	}
+
 	return T(math.Floor(float64(x)))
 }
 
-// Ceil returns the smallest integer value greater than or equal to x.
+// Ceil returns the smallest integer value greater than or equal to x. An integer T is returned unchanged.
 func Ceil[T Number](x T) T {
+	if isIntType[T]() {
+		return x
+	}
+
 	return T(math.Ceil(float64(x)))
 }
 
@@ -85,8 +101,9 @@ func Mod[T Integer](n, m T) T {
 }
 
 // Lerp calculates the linear interpolation between a and b at a ratio t.
+// The difference is taken in float64, so it cannot overflow a narrow integer T.
 func Lerp[T Number](a, b T, t float64) T {
-	return Cast[T](float64(a) + float64(b-a)*t)
+	return Cast[T](float64(a) + (float64(b)-float64(a))*t)
 }
 
 // Midpoint calculates the midpoint between two values. Equivalent to Lerp(a, b, 0.5).
@@ -133,8 +150,9 @@ func Equal[T Number](a, b T) bool {
 }
 
 // EqualDelta reports whether a and b are equal within the given delta.
+// The difference is taken in float64, so it cannot overflow a narrow integer T.
 func EqualDelta[T Number](a, b T, delta float64) bool {
-	return math.Abs(float64(a-b)) <= delta
+	return math.Abs(float64(a)-float64(b)) <= delta
 }
 
 // EqualRelative reports whether a and b are equal within a tolerance that scales with
@@ -149,8 +167,8 @@ func EqualRelative[T Number](a, b T) bool {
 }
 
 // Epsilon returns the equality tolerance for T: zero for an integer T, which is
-// compared exactly, Delta32 for float32, and Delta for float64. It is a property of
-// the type, so the compiler folds it to a constant at each instantiation.
+// compared exactly, Delta32 for float32, and Delta for float64. It depends only on T,
+// never on the values compared.
 func Epsilon[T Number]() float64 {
 	if isIntType[T]() {
 		return 0

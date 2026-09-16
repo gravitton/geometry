@@ -55,8 +55,12 @@ func TestPadding_XY(t *testing.T) {
 }
 
 func TestPadding_Size(t *testing.T) {
-	AssertSize(t, Pad(2, 4, 3, 5).Size(), Sz(9, 5))
-	AssertSize(t, Pad(0.1, 3.0, 0.6, 2.4).Size(), Sz(5.4, 0.7))
+	t.Run("int", func(t *testing.T) {
+		AssertSize(t, Pad(2, 4, 3, 5).Size(), Sz(9, 5))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertSize(t, Pad(0.1, 3.0, 0.6, 2.4).Size(), Sz(5.4, 0.7))
+	})
 }
 
 func TestPadding_Int(t *testing.T) {

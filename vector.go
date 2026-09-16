@@ -104,9 +104,14 @@ func (v Vector[T]) Rotate(angle float64) Vector[T] {
 	return Vector[T]{Cast[T](float64(v.X)*cos - float64(v.Y)*sin), Cast[T](float64(v.X)*sin + float64(v.Y)*cos)}
 }
 
-// Resize creates a new Vector resized to the given length.
+// Resize creates a new Vector resized to the given length. The zero vector has no direction
+// and resizes along +X to (length,0), the same convention Normalize follows.
 // For integer T, the result is rounded and the actual length may differ from the requested value.
 func (v Vector[T]) Resize(length float64) Vector[T] {
+	if v.IsZero() {
+		return Vector[T]{Cast[T](length), 0}
+	}
+
 	return v.Multiply(length / v.Length())
 }
 
@@ -234,9 +239,16 @@ func (v Vector[T]) IsNormalized() bool {
 	return Equal(v.LengthSquared(), 1.0)
 }
 
-// Less checks if Vector length is less than given value.
-func (v Vector[T]) Less(value T) bool {
-	return v.LengthSquared() < value*value
+// Less reports whether the vector is shorter than the given length.
+// No vector is shorter than a non-positive length.
+func (v Vector[T]) Less(length T) bool {
+	return length > 0 && v.LengthSquared() < length*length
+}
+
+// LessOrEqual reports whether the vector is at most the given length.
+// No vector is at most a negative length.
+func (v Vector[T]) LessOrEqual(length T) bool {
+	return length >= 0 && v.LengthSquared() <= length*length
 }
 
 // XY returns the vector X, Y values in standard order.

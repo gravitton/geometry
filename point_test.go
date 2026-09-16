@@ -48,8 +48,12 @@ func TestPoint_Add(t *testing.T) {
 }
 
 func TestPoint_Subtract(t *testing.T) {
-	AssertVector(t, Pt(1, 2).Subtract(Pt(3, -3)), Vec(-2, 5))
-	AssertVector(t, Pt(0.6, -0.25).Subtract(Pt(100.1, -0.1)), Vec(-99.5, -0.15))
+	t.Run("int", func(t *testing.T) {
+		AssertVector(t, Pt(1, 2).Subtract(Pt(3, -3)), Vec(-2, 5))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertVector(t, Pt(0.6, -0.25).Subtract(Pt(100.1, -0.1)), Vec(-99.5, -0.15))
+	})
 }
 
 func TestPoint_Multiply(t *testing.T) {
@@ -203,8 +207,12 @@ var distanceFixtures = []struct {
 }
 
 func TestPoint_Midpoint(t *testing.T) {
-	AssertPoint(t, Pt(1, 2).Midpoint(Pt(3, -3)), Pt(2, -1)) // int: -0.5 rounds to -1
-	AssertPoint(t, Pt(0.6, -0.25).Midpoint(Pt(100.1, -0.1)), Pt(50.35, -0.175))
+	t.Run("int rounds the half away from zero", func(t *testing.T) {
+		AssertPoint(t, Pt(1, 2).Midpoint(Pt(3, -3)), Pt(2, -1))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertPoint(t, Pt(0.6, -0.25).Midpoint(Pt(100.1, -0.1)), Pt(50.35, -0.175))
+	})
 }
 
 func TestPoint_Lerp(t *testing.T) {
@@ -344,8 +352,12 @@ func TestPoint_XY(t *testing.T) {
 }
 
 func TestPoint_Vector(t *testing.T) {
-	AssertVector(t, Pt(1, 2).Vector(), Vec(1, 2))
-	AssertVector(t, Pt(0.6, -0.25).Vector(), Vec(0.6, -0.25))
+	t.Run("int", func(t *testing.T) {
+		AssertVector(t, Pt(1, 2).Vector(), Vec(1, 2))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertVector(t, Pt(0.6, -0.25).Vector(), Vec(0.6, -0.25))
+	})
 }
 
 func TestPoint_Int(t *testing.T) {
