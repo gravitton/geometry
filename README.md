@@ -23,8 +23,7 @@ Generic, immutable 2D geometry library for game development
 
 ## Features
 
-- **Generic** over all integer and float types, named ones included – `Int()` / `Float()` to convert, `ints` /
-  `floats` packages for the two common cases.
+- **Generic** over all integer and float types, named ones included.
 - **Immutable** – every method returns a new value.
 - **Shapes** – point, vector, size, rectangle, circle, line, polygon, regular polygon, padding, affine matrix.
 - **Directions and axes** as enums, with compass and rectangle-anchor aliases.
@@ -101,8 +100,7 @@ Matrix transforms:
 ```go
 m := geom.IdentityMatrix[float64]().Rotate(math.Pi / 4).Scale(2, 2)
 
-geom.Pt(1.0, 0.0).Transform(m)
-geom.Vec(3, 0).Transform(m) // int vector, float matrix – the result is rounded
+geom.Pt(1.0, 0.0).Transform(m) // Point{1.41, 1.41}
 ```
 
 `image` interop:
@@ -113,13 +111,17 @@ geom.Pt(3, 4).Point() // image.Point
 geom.RectangleFromMin(geom.Pt(0, 0), geom.Sz(4, 2)).Rectangle() // image.Rectangle
 ```
 
-Any type satisfying `Number` works, including named types:
+Any type satisfying `Number` works, including named types. `Int()` and `Float()` convert between them:
 
 ```go
 type Tile int32
 
 geom.Pt[Tile](3, 4).Add(geom.DirectionRight.Unit[Tile]()) // Point[Tile]{4, 4}
 geom.Circ(geom.Pt[float32](0, 0), 5).Contains(geom.Pt[float32](3, 4))
+
+geom.Pt(1.4, 2.6).Int()     // Point[int]{1, 3}, rounded
+geom.Sz(4, 2).Float()       // Size[float64]{4, 2}
+geom.Vec(3, 0).Transform(m) // an int vector through a float matrix, rounded
 ```
 
 The `ints` and `floats` packages alias the two common instantiations and add constructors that round or widen
@@ -162,30 +164,30 @@ Full reference: [pkg.go.dev][link-go-dev-reference].
 
 ## Conventions
 
-**Screen space.** The origin is top-left and `+Y` points down. Only the directional getters (`Top`, `Bottom`, `Up`,
+**Screen space:** The origin is top-left and `+Y` points down. Only the directional getters (`Top`, `Bottom`, `Up`,
 `Down`) and rotation depend on it.
 
-**Angles.** Angles follow the mathematical convention. A positive angle or step is counterclockwise in math
+**Angles:** Angles follow the mathematical convention. A positive angle or step is counterclockwise in math
 coordinates, which appears clockwise on screen. Direction order and polygon winding follow the same rule:
 `Rectangle.Vertices`, `Rectangle.Edges`, and `RegularPolygon.Vertices` wind by increasing angle, clockwise as drawn.
 
-**Directions.** `Direction` covers the eight neighbours on a square lattice plus `DirectionNone`. They are ordered by
+**Directions:** `Direction` covers the eight neighbours on a square lattice plus `DirectionNone`. They are ordered by
 increasing angle from `DirectionRight`. Each one has three names: canonical (`DirectionDownRight`), compass
 (`SouthEast`), and rectangle corner (`BottomRight`). `Angle()` reports in `atan2`'s `(-π, π]` range and
 `DirectionFromAngle` inverts it.
 
-**Matrices.** An integer `Matrix` composes lattice transforms exactly: translation, integer scale, reflection, quarter
+**Matrices:** An integer `Matrix` composes lattice transforms exactly: translation, integer scale, reflection, quarter
 turns. Rotation by any other angle, `Inverse`, and `Unscale` are not closed over the integers and round into a
 different matrix. Use a float `Matrix` there. `Transform` takes a `float32` or `float64` matrix, so convert an integer
 one with `Float()` at the call, the same way an angle is always `float64`.
 
-**Equality.** `Equal` compares an integer `T` exactly and a float `T` within `Epsilon[T]()`, a tolerance matched to
+**Equality:** `Equal` compares an integer `T` exactly and a float `T` within `Epsilon[T]()`, a tolerance matched to
 `float32` or `float64`. `EqualRelative` scales that tolerance for values far from zero.
 
-**Narrow integers.** `int8` and `int16` are admitted for storage. Products such as `LengthSquared` and `Area` overflow
+**Narrow integers:** `int8` and `int16` are admitted for storage. Products such as `LengthSquared` and `Area` overflow
 there, so use `int` or `int64` for arithmetic.
 
-**Common API.** Every shape exposes `Int()`, `Float()`, `String()`, `Equal()`, and `IsZero()`. Shapes with spatial
+**Common API:** Every shape exposes `Int()`, `Float()`, `String()`, `Equal()`, and `IsZero()`. Shapes with spatial
 extent add `Bounds()`. `Line`, `Polygon`, and `RegularPolygon` add `Vertices()`.
 
 ## Credits
