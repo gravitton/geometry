@@ -153,12 +153,18 @@ func (m Matrix[T]) Scale(factorX, factorY T) Matrix[T] {
 	return m.Multiply(ScaleMatrix(factorX, factorY))
 }
 
-// Unscale creates a new matrix by right-multiplying a scale matrix with inverse factors.
+// Unscale creates a new matrix equal to right-multiplying a scale matrix with inverse factors.
 // Composition order: result = m * m_S(1/factorX,1/factorY).
-// Each axis is inverted on its own, following Divide: a zero factor leaves that axis unchanged.
-// For integer T, each inverse factor is rounded; only ±1 gives exact results.
+// Each column is divided on its own, following Divide: a zero factor leaves that axis unchanged.
+// For integer T, each component is rounded, so the result is exact when the components of the
+// column are multiples of its factor: ScaleMatrix(4, 6).Unscale(2, 3) is ScaleMatrix(2, 2).
 func (m Matrix[T]) Unscale(factorX, factorY T) Matrix[T] {
-	return m.Multiply(ScaleMatrix(Divide[T](1, float64(factorX)), Divide[T](1, float64(factorY))))
+	x, y := float64(factorX), float64(factorY)
+
+	return Matrix[T]{
+		Divide(m.A, x), Divide(m.B, y), m.C,
+		Divide(m.D, x), Divide(m.E, y), m.F,
+	}
 }
 
 // PreScale creates a new matrix by left-multiplying a scale matrix.

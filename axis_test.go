@@ -104,6 +104,13 @@ func TestAxis_Size(t *testing.T) {
 		AssertSize(t, AxisVertical.Size(3, 4), Sz(4, 3))
 		AssertSize(t, AxisVertical.Size(1.5, 2.5), Sz(2.5, 1.5))
 	})
+	t.Run("keeps the sign, like Sz", func(t *testing.T) {
+		AssertSize(t, AxisHorizontal.Size(-3, 4), Sz(-3, 4))
+		AssertSize(t, AxisHorizontal.ScaleAlong(Sz(10, 4), -1), Sz(10, 4).ScaleXY(-1, 1))
+	})
+	t.Run("none has no extent", func(t *testing.T) {
+		AssertSize(t, AxisNone.Size(3, 4), Sz(0, 0))
+	})
 }
 
 func TestAxis_IsNone(t *testing.T) {

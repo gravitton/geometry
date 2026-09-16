@@ -148,7 +148,7 @@ func AssertVertices[T Number](t Testing, actual, expected []Point[T], messages .
 }
 
 // AssertRegularPolygon asserts that actual equals expected (exactly for an integer T, within [EpsilonRelative] for a float T).
-// Angles are compared normalized to [0, 2π), like RegularPolygon.Equal.
+// Angles are compared with EqualAngle, like RegularPolygon.Equal.
 func AssertRegularPolygon[T Number](t Testing, actual, expected RegularPolygon[T], messages ...string) bool {
 	t.Helper()
 
@@ -163,7 +163,7 @@ func AssertRegularPolygon[T Number](t Testing, actual, expected RegularPolygon[T
 	if !assert.Equal(t, actual.N, expected.N, prefixed(messages, "N: ")...) {
 		ok = false
 	}
-	if !AssertNumber(t, NormalizeAngle(actual.Angle), NormalizeAngle(expected.Angle), prefixed(messages, "Angle: ")...) {
+	if !assert.True(t, EqualAngle(actual.Angle, expected.Angle), prefixed(messages, fmt.Sprintf("Angle: %v should equal %v modulo 2π: ", actual.Angle, expected.Angle))...) {
 		ok = false
 	}
 

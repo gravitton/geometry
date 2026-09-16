@@ -9,6 +9,10 @@ import (
 )
 
 // Polygon is a 2D polygon with 3+ vertices.
+//
+// Vertices is shared, not copied: Pol keeps the slice it is given and every method that
+// returns a Polygon allocates a new one. The polygon is immutable as long as its caller does
+// not write into that slice.
 type Polygon[T Number] struct {
 	Vertices []Point[T]
 }

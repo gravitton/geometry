@@ -111,8 +111,18 @@ func (a Axis) Vector[T Number](along, across T) Vector[T] {
 }
 
 // Size creates a new Size measuring along on the main axis and across on the cross axis.
+// The values are stored as given, like Sz; a negative one is not made absolute.
 func (a Axis) Size[T Number](along, across T) Size[T] {
-	return a.Vector(along, across).Size()
+	var size Size[T]
+
+	switch a {
+	case AxisHorizontal:
+		size = Size[T]{along, across}
+	case AxisVertical:
+		size = Size[T]{across, along}
+	}
+
+	return size
 }
 
 // IsNone reports whether the axis is neither AxisHorizontal nor AxisVertical. Unlike

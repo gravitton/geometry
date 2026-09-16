@@ -159,7 +159,8 @@ func TestDirection_Angle(t *testing.T) {
 		AssertNumber(t, DirectionUpRight.Angle(), -Pi/4)
 	})
 	t.Run("none has no angle", func(t *testing.T) {
-		AssertNumber(t, DirectionNone.Angle(), 0.0)
+		assert.True(t, math.IsNaN(DirectionNone.Angle()))
+		assert.Equal(t, DirectionFromAngle(DirectionNone.Angle()), DirectionNone)
 	})
 }
 

@@ -219,12 +219,21 @@ func TestRegularPolygon_Equal(t *testing.T) {
 		assert.True(t, hexagon.Equal(hexagon.Rotate(2*Pi)))
 		assert.True(t, RegPol(Pt(1, 2), Sz(2, 2), 4, -Pi/2).Equal(RegPol(Pt(1, 2), Sz(2, 2), 4, 3*Pi/2)))
 	})
+	t.Run("the angle is compared across the seam", func(t *testing.T) {
+		hexagon := Hexagon(Pt(0.0, 0.0), SzU(10.0), PointyTop)
+
+		assert.True(t, hexagon.Equal(hexagon.Rotate(-1e-9)))
+		assert.True(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Equal(RegPol(Pt(1, 2), Sz(2, 2), 4, 2*Pi-1e-9)))
+	})
 }
 
 func TestRegularPolygon_IsZero(t *testing.T) {
 	t.Run("zero polygon", func(t *testing.T) {
 		assert.True(t, RegularPolygon[int]{}.IsZero())
 		assert.True(t, RegularPolygon[float64]{}.IsZero())
+	})
+	t.Run("a full turn is a zero angle, like Equal", func(t *testing.T) {
+		assert.True(t, RegPol(Pt(0, 0), Sz(0, 0), 0, 2*Pi).IsZero())
 	})
 	t.Run("only one field is zero", func(t *testing.T) {
 		assert.False(t, RegPol(Pt(0, 0), Sz(0, 0), 4, 0).IsZero())

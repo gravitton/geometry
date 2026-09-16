@@ -22,6 +22,50 @@ func TestNormalizeAngle(t *testing.T) {
 	t.Run("negative angles come back positive", func(t *testing.T) {
 		AssertNumber(t, NormalizeAngle(-Pi/2), 3*Pi/2)
 	})
+	t.Run("a tiny negative angle stays below a full turn", func(t *testing.T) {
+		assert.Less(t, NormalizeAngle(-1e-17), 2*Pi)
+		assert.GreaterOrEqual(t, NormalizeAngle(-1e-17), 0.0)
+	})
+	t.Run("NaN and Inf have no normal form", func(t *testing.T) {
+		assert.True(t, math.IsNaN(NormalizeAngle(math.NaN())))
+		assert.True(t, math.IsNaN(NormalizeAngle(math.Inf(1))))
+		assert.True(t, math.IsNaN(NormalizeAngle(math.Inf(-1))))
+	})
+}
+
+func TestAngleDistance(t *testing.T) {
+	t.Run("same angle", func(t *testing.T) {
+		AssertNumber(t, AngleDistance(1, 1), 0.0)
+		AssertNumber(t, AngleDistance(1, 1+2*Pi), 0.0)
+	})
+	t.Run("shortest way around", func(t *testing.T) {
+		AssertNumber(t, AngleDistance(0, Pi/2), Pi/2)
+		AssertNumber(t, AngleDistance(Pi/2, 0), Pi/2)
+		AssertNumber(t, AngleDistance(0, 3*Pi/2), Pi/2)
+		AssertNumber(t, AngleDistance(0, Pi), Pi)
+	})
+	t.Run("across the seam", func(t *testing.T) {
+		AssertNumber(t, AngleDistance(-0.1, 0.1), 0.2)
+		AssertNumber(t, AngleDistance(2*Pi-0.1, 0.1), 0.2)
+	})
+}
+
+func TestEqualAngle(t *testing.T) {
+	t.Run("same angle", func(t *testing.T) {
+		assert.True(t, EqualAngle(0.5, 0.5))
+		assert.True(t, EqualAngle(0.5, 0.5+2*Pi))
+		assert.True(t, EqualAngle(-Pi/2, 3*Pi/2))
+	})
+	t.Run("across the seam", func(t *testing.T) {
+		assert.True(t, EqualAngle(0, -1e-9))
+		assert.True(t, EqualAngle(0, 2*Pi-1e-9))
+		assert.True(t, EqualAngle(-1e-9, 1e-9))
+	})
+	t.Run("different angle", func(t *testing.T) {
+		assert.False(t, EqualAngle(0, 1e-3))
+		assert.False(t, EqualAngle(0, Pi))
+		assert.False(t, EqualAngle(0, math.NaN()))
+	})
 }
 
 func TestToRadians(t *testing.T) {

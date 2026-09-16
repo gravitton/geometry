@@ -216,11 +216,14 @@ func TestMatrix_Unscale(t *testing.T) {
 		AssertMatrix(t, m.Unscale(0.0, 3.0), ScaleMatrix(2.0, 1.0))
 		AssertMatrix(t, m.Unscale(2.0, 0.0), ScaleMatrix(1.0, 3.0))
 	})
-	t.Run("integer has no representable fractional inverse", func(t *testing.T) {
+	t.Run("integer divides each column", func(t *testing.T) {
 		AssertMatrix(t, ScaleMatrix(4, 6).Unscale(1, 1), ScaleMatrix(4, 6))
-
-		// 1/2 rounds up to 1, so X is not undone; 1/3 rounds down to 0 and collapses Y
-		AssertMatrix(t, ScaleMatrix(4, 6).Unscale(2, 3), ScaleMatrix(4, 0))
+		AssertMatrix(t, ScaleMatrix(4, 6).Unscale(2, 3), ScaleMatrix(2, 2))
+		AssertMatrix(t, ScaleMatrix(2, 3).Unscale(2, 3), IdentityMatrix[int]())
+		AssertMatrix(t, Mat(4, 6, 8, 2, 9, 5).Unscale(2, 3), Mat(2, 2, 8, 1, 3, 5))
+	})
+	t.Run("integer rounds a component that does not divide", func(t *testing.T) {
+		AssertMatrix(t, ScaleMatrix(3, 5).Unscale(2, 2), ScaleMatrix(2, 3))
 	})
 }
 

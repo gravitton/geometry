@@ -26,13 +26,30 @@ const (
 	OneOverSqrt2 = 1 / math.Sqrt2
 )
 
-// NormalizeAngle returns angle normalized to [0, 2π).
+// NormalizeAngle returns angle normalized to [0, 2π). NaN and ±Inf are returned as NaN.
 func NormalizeAngle(angle float64) float64 {
 	a := math.Mod(angle, 2*math.Pi)
 	if a < 0 {
 		a += 2 * math.Pi
 	}
+	if a >= 2*math.Pi {
+		a = 0
+	}
+
 	return a
+}
+
+// AngleDistance returns the shortest angular distance between a and b, in [0, π].
+func AngleDistance(a, b float64) float64 {
+	d := NormalizeAngle(a - b)
+
+	return min(d, 2*math.Pi-d)
+}
+
+// EqualAngle reports whether a and b are the same angle within Delta, a full turn or the
+// sign of an angle aside. Unlike comparing normalized angles it holds across the 0/2π seam.
+func EqualAngle(a, b float64) bool {
+	return EqualDelta(AngleDistance(a, b), 0, Delta)
 }
 
 // ToRadians converts degrees to radians.
@@ -190,7 +207,8 @@ func EpsilonRelative[T Number](a, b T) float64 {
 // Parse parses s into T: an integer T with strconv.ParseInt, a float T with strconv.ParseFloat.
 // Parsing is done in int64 or float64 and narrowed to T, so defined types over those kinds
 // (type Coord int) parse like their underlying type. A value outside the range of T is an error,
-// never a wrapped integer or an infinity.
+// never a wrapped integer or an overflowed infinity. The literals strconv.ParseFloat accepts,
+// "NaN" and "Inf" among them, parse into a float T as they would into float64.
 func Parse[T Number](s string) (T, error) {
 	if isIntType[T]() {
 		v, err := strconv.ParseInt(s, 10, 64)

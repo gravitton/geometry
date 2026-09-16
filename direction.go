@@ -12,13 +12,21 @@ import (
 type Direction int
 
 const (
+	// DirectionRight points along +X, at angle 0.
 	DirectionRight Direction = iota
+	// DirectionDownRight points along +X and +Y, at angle π/4.
 	DirectionDownRight
+	// DirectionDown points along +Y, at angle π/2.
 	DirectionDown
+	// DirectionDownLeft points along -X and +Y, at angle 3π/4.
 	DirectionDownLeft
+	// DirectionLeft points along -X, at angle π.
 	DirectionLeft
+	// DirectionUpLeft points along -X and -Y, at angle -3π/4.
 	DirectionUpLeft
+	// DirectionUp points along -Y, at angle -π/2.
 	DirectionUp
+	// DirectionUpRight points along +X and -Y, at angle -π/4.
 	DirectionUpRight
 
 	// DirectionNone is the absence of a direction.
@@ -168,9 +176,14 @@ func (d Direction) Vector[T Number](length T) Vector[T] {
 }
 
 // Angle returns the angle of the direction in radians, measured in the standard math
-// convention where Y grows upward — so DirectionUp is -Pi/2, not +Pi/2. Direction ordering
-// follows this angle, so DirectionFromAngle and Angle round-trip for every direction.
+// convention where Y grows upward — so DirectionUp is -Pi/2, not +Pi/2, and NaN for
+// DirectionNone, which has no angle. Direction ordering follows this angle, so
+// DirectionFromAngle and Angle round-trip for every direction, DirectionNone included.
 func (d Direction) Angle() float64 {
+	if d.IsNone() {
+		return math.NaN()
+	}
+
 	return d.Offset[float64]().Angle()
 }
 

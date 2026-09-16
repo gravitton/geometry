@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 
-## [Unreleased](https://github.com/gravitton/geometry/compare/v1.12.0...master)
+## [Unreleased](https://github.com/gravitton/geometry/compare/v1.12.0...main)
 ### Added
 - `Delta32` – the equality tolerance for `float32`, `1e-4`. A `float32` ulp reaches 6e-5 at magnitude 1e3, so `Delta` sat below one ulp across the coordinate range `float32` is normally chosen for and asked for bit-exact equality there
 - `Epsilon[T]()` – the tolerance for `T`: zero for an integer `T`, `Delta32` for `float32`, `Delta` for `float64`. It depends only on the type, never on the values compared, so `Equal` costs what it did before
@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `Padding.Equal` and `Padding.IsZero`, so `Padding` has the same equality pair as every other type
 - `Polygon.Bounds` – the axis-aligned bounding rectangle of the vertices, the zero rectangle for an empty polygon; every shape now has `Bounds()`
 - `Matrix.IsInvertible` – reports whether the determinant is non-zero, so a caller can tell a real inverse from the unchanged matrix `Inverse` returns for a singular one
+- `AngleDistance(a, b)` – the shortest angular distance between two angles, in `[0, π]`
+- `EqualAngle(a, b)` – reports whether two angles are equal modulo a full turn within `Delta`, holding across the `0`/`2π` seam where comparing normalized angles does not
 
 ### Changed
 - `Equal` compares an integer `T` exactly and a float `T` within `Epsilon[T]()`, so a `float32` now gets a tolerance matched to its precision instead of the `float64` one. The comparison stays absolute, and therefore stays a subtract and a compare for hot paths
@@ -26,19 +28,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `String` (and therefore every `String()` on a geometry type) formats by `T` rather than by value: a float `8.0` now prints as `8.00`, like `8.1`, instead of `8`. Previously a single value could mix both forms – `Pt(100, -34.0000115).String()` gave `(100,-34.00)` (**breaking**)
 - `Circle.Contains`, `CollisionCircles`, and `CollisionRectangleCircle` include the boundary, the same closed convention `Rectangle.Contains` and `CollisionRectangles` already followed; touching shapes now collide (**breaking**)
 - `CollisionRectangleCircle` tests the point of the rectangle closest to the circle center, so it shares the exact `Min`/`Max` bounds of the other rectangle predicates instead of rounding the half extents of an odd integer size
-- `RegularPolygon.Equal` and `IsZero` compare the angle as well, so two polygons that produce different vertices no longer compare equal, matching `AssertRegularPolygon` (**breaking**)
+- `RegularPolygon.Equal`, `RegularPolygon.IsZero` and `AssertRegularPolygon` compare the angle as well, with `EqualAngle`, so two polygons that produce different vertices no longer compare equal, while a full turn, the sign of an angle, or the `0`/`2π` seam does not matter: a polygon equals itself after `Rotate(0)`, `Rotate(2π)` or `Rotate(-1e-9)` (**breaking**)
 - `Vector.Resize` on the zero vector returns `(length,0)` instead of NaN, the same +X convention `Normalize` uses; `Vector.Less` is false for a non-positive length instead of squaring the sign away
 - `Polygon.Center` returns the zero point for a polygon without vertices instead of dividing by zero, and `RegularPolygon.Vertices` returns no vertices for `N < 1` instead of panicking in `make`; `RegularPolygon.Empty` is true for any `N < 1`
-- `DirectionFromAngle(NaN)` and therefore `Vector.Direction` on a NaN vector return `DirectionNone` instead of `DirectionRight`
-- `Rectangle` documents that it is closed and that an integer rectangle of width `w` spans `w+1` lattice columns from `Min` to `Max` inclusive, while `Image()` yields the half-open pixel rectangle of exactly `w` pixels
+- `DirectionFromAngle` returns `DirectionNone` for `NaN` and `±Inf` instead of `DirectionRight` or a platform-dependent direction, so `Vector.Direction` on a NaN vector is `DirectionNone`; it also normalizes the angle before rounding it to a step, so a very large angle no longer converts an out-of-range float to an integer with platform-dependent results
+- `Rectangle` documents that it is closed and that an integer rectangle of width `w` spans `w+1` lattice columns from `Min` to `Max` inclusive, while `Rectangle()` yields the half-open pixel rectangle of exactly `w` pixels for an integer `T`, and rounds the two corners independently of `Size.Int` for a float one
 - `Vector.Resize`, `Normalize` and `Direction` treat only the exact zero vector as directionless. Previously they used the tolerant `IsZero`, so any vector shorter than `Delta` (`1e-6`) or `Delta32` (`1e-4`) snapped to `(1,0)` or `DirectionNone` and lost its direction
-- `RegularPolygon.Equal` compares angles normalized to `[0, 2π)`, so a polygon equals itself after `Rotate(0)` or a full turn; `RegularPolygonOrientationAngle` returns `3π/2` instead of `-π/2` for `PointyTop`, the same normalized form `Rotate` stores
+- `RegularPolygonOrientationAngle` returns `3π/2` instead of `-π/2` for `PointyTop`, the same normalized form `Rotate` stores
 - `Axis.ScaleAlong` on `AxisNone` returns the size unchanged instead of a zero size
 - `Size.Grow`, `Size.GrowXY`, `Rectangle.Grow`, `Rectangle.GrowXY`, and `Circle.Grow` clamp to zero for a negative amount, the same way `Shrink` already did, so no method can produce the negative size `Size` documents as unsupported (**breaking**)
-- `AssertRegularPolygon` compares angles normalized to `[0, 2π)`, like `RegularPolygon.Equal`, so a polygon asserts equal to itself after a full turn
 - `Mod` documents that it panics for `m == 0`, like the `%` operator
 - `ParseSize` wraps the underlying parse error with `%w`, so `errors.Is(err, strconv.ErrRange)` and `ErrSyntax` work
 - `Integer` and `Matrix` document that `int8` and `int16` are storage-only: products such as `LengthSquared`, `Less`, `Circle.Contains`, `Size.Area` and `Matrix.Multiply` compute in `T` and overflow there. `Size` documents that a negative width or height is unsupported, and `Axis.IsNone` that every value outside the two axes counts as none
+- `Direction.Angle` returns `NaN` for `DirectionNone` instead of `0`, which was indistinguishable from `DirectionRight`; `DirectionFromAngle(NaN)` is `DirectionNone`, so the two round-trip for every direction (**breaking**)
+- `Axis.Size` stores the values as given, like `Sz`, instead of routing through `Vector.Size` and taking their absolute value; `Axis.ScaleAlong` with a negative factor now flips the sign the way `Size.ScaleXY` does
+- `Polygon` documents that `Pol` shares the vertices slice it is given, `Parse` that the `NaN` and `Inf` literals parse into a float `T`, and every `Direction` constant has a doc comment; the package doc and README state the integer rounding rule and its `Rectangle` exception, and the README notes that the flat JSON shape needs the v2-backed `encoding/json`
 
 ### Fixed
 - `Circle.Bounds` returns a square of side `Diameter` instead of `Radius`, so the rectangle actually bounds the circle. Previously it was half the required size and clipped the circle at every anchor, and `CollisionRectangleCircle(c.Bounds(), c)` could miss (**breaking**)
@@ -49,15 +53,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `EqualDelta` and `Lerp` take the difference in `float64`, so a narrow integer `T` no longer wraps: `EqualDelta[int8](127, -128, 1)` was true and `Lerp[int8](-100, 100, 0.5)` gave `-128`
 - `Abs` stays in `T` and `Round`, `Floor`, `Ceil` return an integer `T` unchanged, so an `int64` beyond 2^53 is no longer rounded through `float64`
 - `Circle.Area` and `Matrix.Inverse` square and cross-multiply in `float64`, so a large integer radius or translation no longer overflows before the conversion
-- `Matrix.Unscale` inverts each axis on its own, following `Divide`: a zero factor leaves that axis unchanged instead of the whole matrix. Previously the guard only triggered when *both* factors were zero, so `ScaleMatrix(2, 3).Unscale(0, 3)` divided by zero and produced `[[+Inf, 0, 0], [NaN, 1, 0]]`
+- `Matrix.Unscale` divides each column by its own factor, following `Divide`, instead of multiplying by a rounded inverse scale. A zero factor leaves that axis unchanged: previously the guard only triggered when *both* factors were zero, so `ScaleMatrix(2, 3).Unscale(0, 3)` produced `[[+Inf, 0, 0], [NaN, 1, 0]]`. An integer matrix now unscales exactly when its components divide: `ScaleMatrix(4, 6).Unscale(2, 3)` is `ScaleMatrix(2, 2)` instead of the singular `ScaleMatrix(4, 0)` the rounded inverse `1/3 → 0` gave (**breaking** for integer `T`)
 - `Parse` rejected defined types over an integer or float (`Parse[Direction]("3")`, `ParseSize[Coord]`) with "unsupported number type". It now parses in `int64`/`float64` and narrows to `T`, checking the result is in range, so every type the `~` constraints admit parses like its underlying type. A `strconv` error now returns the zero value instead of the out-of-range value strconv reports alongside it
 - `ParseSize` documented that "float values are rounded to the nearest integer via Cast" for an integer `T`; it has always rejected them – `ParseSize[int]("23.5x12.4")` is an error
 - `isIntType` reported `false` for defined types over an integer (`type Coord int`), so `Cast[Coord]` truncated instead of rounding. It now tests integer division directly, which works for every type the `~` constraints admit
-- `Matrix`, `RotationMatrix`, `Rotate`, `PreRotate`, `Inverse`, and `Unscale` document what an integer `T` cannot represent: only quarter turns are rotations, only `|det| = 1` inverts, and only a factor of ±1 unscales. An integer matrix is for storing and composing lattice transforms
+- `Matrix`, `RotationMatrix`, `Rotate`, `PreRotate`, and `Inverse` document what an integer `T` cannot represent: only quarter turns are rotations and only `|det| = 1` inverts. An integer matrix is for storing and composing lattice transforms
 - `Rectangle.Inset` on an integer rectangle with an odd asymmetric padding no longer leaks outside the original: the center shift rounded `0.5` up while `Min` truncated, so `Rect(Pt(0,0), Sz(10,10)).Inset(Pad(0,0,0,1))` spanned `-3..6` instead of `-4..5`. The inset is now derived from the padded `Min` corner
-- `DirectionFromAngle(±Inf)` returns `DirectionNone` instead of a platform-dependent direction
 - `RegularPolygonOrientationAngle` with `FlatTop` placed a flat edge at the *bottom* (`π/2 - π/n`), which only coincides with a flat top for an even `n`. A flat-top triangle or pentagon therefore had a vertex at the top and was indistinguishable from `PointyTop`. It now puts an edge midpoint at the top for every `n`: `3π/2 - π/n`, half a step before the `PointyTop` vertex. For an even `n` the shape is unchanged but the first vertex moves by 180°, so `Vertices()` starts on the opposite side and `Equal` against a hard-coded angle changes (**breaking**)
-- `DirectionFromAngle` normalizes the angle before rounding it to a step, so a very large angle no longer converts an out-of-range float to an integer with platform-dependent results
+- `NormalizeAngle` could return exactly `2π` for a tiny negative angle, violating its `[0, 2π)` contract, because adding `2π` to `-1e-17` rounds to `2π`; it now returns `0` there, and `NaN` for `NaN` and `±Inf` input
 
 
 ## [v1.12.0 (2026-08-26)](https://github.com/gravitton/geometry/compare/v1.11.0...v1.12.0)

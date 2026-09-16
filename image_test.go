@@ -51,6 +51,12 @@ func TestRectangle_Image(t *testing.T) {
 	t.Run("float rounds", func(t *testing.T) {
 		assert.Equal(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Rectangle(), image.Rect(0, -2, 1, 2))
 	})
+	t.Run("float corners round independently of the size", func(t *testing.T) {
+		r := Rect(Pt(0.4, 0.4), SzU(0.2))
+
+		assert.Equal(t, r.Rectangle(), image.Rect(0, 0, 1, 1))
+		AssertSize(t, r.Size.Int(), Sz(0, 0))
+	})
 	t.Run("round-trips through the image package", func(t *testing.T) {
 		// only rectangles on the integer lattice with even extents survive: the center is
 		// stored, so an odd extent cannot be halved exactly

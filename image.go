@@ -24,7 +24,9 @@ func (p Point[T]) Point() image.Point {
 	return image.Point(p.Int())
 }
 
-// Rectangle converts the rectangle to a half-open image.Rectangle spanning Width by Height pixels.
+// Rectangle converts the rectangle to a half-open image.Rectangle from the rounded Min to the
+// rounded Max. For an integer T it spans exactly Width by Height pixels; for a float T the two
+// corners round independently, so the span can differ from Size.Int by one pixel.
 func (r Rectangle[T]) Rectangle() image.Rectangle {
 	return image.Rectangle{r.Min().Point(), r.Max().Point()}
 }

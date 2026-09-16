@@ -206,7 +206,12 @@ different matrix. Use a float `Matrix` there. `Transform` takes a `float32` or `
 one with `Float()` at the call, the same way an angle is always `float64`.
 
 **Equality:** `Equal` compares an integer `T` exactly and a float `T` within `Epsilon[T]()`, a tolerance matched to
-`float32` or `float64`. `EqualRelative` scales that tolerance for values far from zero.
+`float32` or `float64`. `EqualRelative` scales that tolerance for values far from zero. `EqualAngle` compares angles
+modulo a full turn, across the `0`/`2π` seam, and is what `RegularPolygon.Equal` uses.
+
+**Integer rounding:** A float result stored into an integer `T` rounds half away from zero, so
+`Pt(0, 0).Midpoint(Pt(5, 5))` is `(3,3)`. `Rectangle` is the exception: its center truncates half the size toward
+`Min` so that `Max-Min` stays exactly the size, so `RectangleFromMinMax(Pt(0, 0), Pt(5, 5)).Center` is `(2,2)`.
 
 **Narrow integers:** `int8` and `int16` are admitted for storage. Products such as `LengthSquared` and `Area` overflow
 there, so use `int` or `int64` for arithmetic.

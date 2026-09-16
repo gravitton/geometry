@@ -126,14 +126,15 @@ func (rp RegularPolygon[T]) Polygon() Polygon[T] {
 }
 
 // Equal checks if center point, size, number of vertices and angle are equal. Angles are
-// compared normalized to [0, 2π), so a full turn or the sign of an angle does not matter.
+// compared with EqualAngle, so a full turn or the sign of an angle does not matter.
 func (rp RegularPolygon[T]) Equal(polygon RegularPolygon[T]) bool {
-	return rp.Center.Equal(polygon.Center) && rp.Size.Equal(polygon.Size) && rp.N == polygon.N && Equal(NormalizeAngle(rp.Angle), NormalizeAngle(polygon.Angle))
+	return rp.Center.Equal(polygon.Center) && rp.Size.Equal(polygon.Size) && rp.N == polygon.N && EqualAngle(rp.Angle, polygon.Angle)
 }
 
-// IsZero checks if center point, size, number of vertices and angle are zero.
+// IsZero checks if center point, size, number of vertices and angle are zero, comparing
+// the angle like Equal so that a full turn counts as zero.
 func (rp RegularPolygon[T]) IsZero() bool {
-	return rp.Center.IsZero() && rp.Size.IsZero() && rp.N == 0 && Equal(rp.Angle, 0)
+	return rp.Equal(RegularPolygon[T]{})
 }
 
 // Empty checks if the polygon has no vertices.
