@@ -1,4 +1,12 @@
-# Geometry
+<div align="center" width="100%">
+
+<a href="https://github.com/gravitton">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/logo-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/logo-light.svg">
+  <img alt="Gravitton geometry" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/logo-light.svg" width="300">
+</picture>
+</a>
 
 [![Latest Stable Version][ico-release]][link-release]
 [![Build Status][ico-workflow]][link-workflow]
@@ -6,179 +14,179 @@
 [![Go Dev Reference][ico-go-dev-reference]][link-go-dev-reference]
 [![Software License][ico-license]][link-licence]
 
-Generic immutable 2D geometry library for game development.
+Generic, immutable 2D geometry library for game development
 
-> Uses a top-left origin with +Y down. This only affects directional getters (`Top`, `Bottom`, `Up`, `Down`) and rotation. Angles follow the standard mathematical convention, so a positive angle or step is counterclockwise in math coordinates and appears clockwise on screen; a negative one appears counterclockwise on screen. Direction order and polygon winding follow the same rule.
+<hr>
+
+</div>
+
+
+## Features
+
+- **Generic** over all integer and float types, named ones included – `Int()` / `Float()` to convert, `ints` /
+  `floats` packages for the two common cases.
+- **Immutable** – every method returns a new value.
+- **Shapes** – point, vector, size, rectangle, circle, line, polygon, regular polygon, padding, affine matrix.
+- **Directions and axes** as enums, with compass and rectangle-anchor aliases.
+- **Screen space** – top-left origin, `+Y` down, one winding order everywhere.
+- **Extras** – `image` interop, JSON tags, string parsing, numeric helpers, test assertions.
 
 ## Installation
 
-```bash
+```shell
 go get github.com/gravitton/geometry
 ```
 
 ## Usage
 
 ```go
-import (
-	geom "github.com/gravitton/geometry"
-)
+import geom "github.com/gravitton/geometry"
+```
 
-p1 := geom.Pt(1, 2)
-p2 := geom.Pt(3, 4)
+Points and vectors:
 
-v := p2.Subtract(p1) // Vector
-if v.Equal(geom.Vec(2, 2)) { ... }
+```go
+p := geom.Pt(1, 2)
+v := geom.Pt(4, 6).Subtract(p) // Vector{3, 4}
 
-r := geom.Rect(p1, geom.Sz(10, 5))
-if r.Contains(p2) { ... }
+v.Length()          // 5
+v.Normal()          // Vector{-4, 3}, perpendicular
+p.Add(v.Resize(10)) // Point
+```
 
-hex := geom.Hexagon(p1, geom.SzU(20), geom.FlatTop)
+Rectangles:
+
+```go
+r := geom.Rect(geom.Pt(50, 50), geom.Sz(20, 10)) // center + size
+
+r.Contains(geom.Pt(55, 52))                 // true
+r.Inset(geom.PadU(2)).Anchor(geom.TopRight) // Point
+r.Clamp(geom.Pt(80, 0))                     // nearest point inside
+```
+
+Circles, lines, polygons:
+
+```go
+c := geom.Circ(geom.Pt(0.0, 0.0), 5.0)
+c.Anchor(geom.Bottom) // Point{0, 5}
+
+geom.Ln(geom.Pt(0, 0), geom.Pt(3, 4)).Length() // 5
+
+hex := geom.Hexagon(geom.Pt(0, 0), geom.SzU(20), geom.FlatTop)
 for _, vertex := range hex.Vertices() { ... }
+```
+
+Collisions:
+
+```go
+geom.CollisionRectangles(a, b)
+geom.CollisionCircles(a, b)
+geom.CollisionRectangleCircle(r, c)
+```
+
+Directions and axes:
+
+```go
+dir := geom.DirectionUp
+dir.Rotate(2)   // DirectionRight, two 45° steps
+dir.Vector(5.0) // Vector{0, -5}
+
+axis := geom.AxisVertical
+axis.Along(size)             // Height, because the axis is vertical
+axis.Size(length, thickness) // Size{thickness, length}
 ```
 
 Matrix transforms:
 
 ```go
 m := geom.IdentityMatrix[float64]().Rotate(math.Pi / 4).Scale(2, 2)
-p := geom.Pt(1.0, 0.0).Transform(m)
+
+geom.Pt(1.0, 0.0).Transform(m)
+geom.Vec(3, 0).Transform(m) // int vector, float matrix – the result is rounded
 ```
 
-Directions:
+`image` interop:
 
 ```go
-dir := geom.DirectionDownRight
-v := dir.Vector(5.0)
-
-p := geom.RectangleFromMinMax(p1, p2).Anchor(geom.Bottom)
-
-axis := geom.AxisVertical
-length := axis.Along(size)          // Height, because the axis is vertical
-bar := axis.Size(length, thickness) // Size{thickness, length}
+geom.RectangleFromImage[int](img.Bounds())
+geom.Pt(3, 4).Point() // image.Point
+geom.RectangleFromMin(geom.Pt(0, 0), geom.Sz(4, 2)).Rectangle() // image.Rectangle
 ```
 
-Type aliases for common numeric types ([`ints`](./types/ints/types.go), [`floats`](./types/floats/types.go)):
+Any type satisfying `Number` works, including named types:
+
+```go
+type Tile int32
+
+geom.Pt[Tile](3, 4).Add(geom.DirectionRight.Unit[Tile]()) // Point[Tile]{4, 4}
+geom.Circ(geom.Pt[float32](0, 0), 5).Contains(geom.Pt[float32](3, 4))
+```
+
+The `ints` and `floats` packages alias the two common instantiations and add constructors that round or widen
+from any `Number`:
 
 ```go
 import (
-    "github.com/gravitton/geometry/types/floats"
-    "github.com/gravitton/geometry/types/ints"
+	"github.com/gravitton/geometry/types/floats"
+	"github.com/gravitton/geometry/types/ints"
 )
 
 type Grid struct {
-    Size     ints.Size
-    CellSize floats.Size
+	Size     ints.Size   // geom.Size[int]
+	CellSize floats.Size // geom.Size[float64]
 }
+
+ints.Pt(1.4, 2.6)   // Point[int]{1, 3}
+floats.Sz(4, 2)     // Size[float64]{4, 2}
+ints.IdentityMatrix()
 ```
 
-## API
-
-All types are generic over the `Number` constraint:
+JSON and string parsing:
 
 ```go
-type Integer interface { ~int | ~int8 | ~int16 | ~int32 | ~int64 }
-type Float   interface { ~float32 | ~float64 }
-type Number  interface { Integer | Float }
+json.Marshal(geom.Rect(geom.Pt(1, 2), geom.Sz(3, 4))) // {"x":1,"y":2,"w":3,"h":4}
+json.Marshal(geom.Circ(geom.Pt(1, 2), 3))             // {"x":1,"y":2,"r":3}
+
+geom.ParseSize[int]("4x2") // Size{4, 2}
 ```
 
-Full documentation is available at [pkg.go.dev/github.com/gravitton/geometry][link-go-dev-reference].
-
-### Types
-
-| Type                | Constructor                                                                                              | Description                            |
-|---------------------|----------------------------------------------------------------------------------------------------------|----------------------------------------|
-| `Point[T]`          | `Pt(x, y)`                                                                                               | 2D position                            |
-| `Vector[T]`         | `Vec(x, y)`, `VectorFromAngle`, `VectorFromAngleSize`                                                    | 2D displacement                        |
-| `Size[T]`           | `Sz(w, h)`, `SzU(n)`, `ParseSize("WxH")`                                                                 | Width and height                       |
-| `Rectangle[T]`      | `Rect(center, size)`, `RectangleFromMin`, `RectangleFromMax`, `RectangleFromMinMax`, `RectangleFromSize` | Axis-aligned rectangle (center + size) |
-| `Circle[T]`         | `Circ(center, r)`                                                                                        | Circle (center + radius)               |
-| `Line[T]`           | `Ln(start, end)`                                                                                         | Line segment                           |
-| `Polygon[T]`        | `Pol(vertices)`                                                                                          | Arbitrary polygon                      |
-| `RegularPolygon[T]` | `RegPol(center, size, n, angle)`, `Triangle`, `Square`, `Hexagon`                                        | Regular polygon                        |
-| `Padding[T]`        | `Pad(t,r,b,l)`, `PadU(n)`, `PadXY(tb, lr)`                                                               | Top/Right/Bottom/Left padding          |
-| `Matrix[T]`         | `Mat(a,b,c,d,e,f)`, `IdentityMatrix`, `TranslationMatrix`, `RotationMatrix`, `ScaleMatrix`               | 2D affine matrix                       |
-
-### Direction
-
-`Direction` names one of the eight neighbor directions on a square lattice, or `DirectionNone`. Constants are ordered by
-increasing angle from `DirectionRight`, so `Rotate(1)` and a `Vector.Rotate` of `+π/4` turn the same way. Any other
-integer wraps into range, so `Rotate` accepts any step count.
-
-Three names exist for each direction — the canonical one, a compass alias for lattice and map code, and an edge/corner
-alias for rectangle anchors:
-
-| Index | Angle   | Canonical            | Compass     | Rectangle     |
-|-------|---------|----------------------|-------------|---------------|
-| 0     | `0°`    | `DirectionRight`     | `East`      | `Right`       |
-| 1     | `45°`   | `DirectionDownRight` | `SouthEast` | `BottomRight` |
-| 2     | `90°`   | `DirectionDown`      | `South`     | `Bottom`      |
-| 3     | `135°`  | `DirectionDownLeft`  | `SouthWest` | `BottomLeft`  |
-| 4     | `180°`  | `DirectionLeft`      | `West`      | `Left`        |
-| 5     | `-135°` | `DirectionUpLeft`    | `NorthWest` | `TopLeft`     |
-| 6     | `-90°`  | `DirectionUp`        | `North`     | `Top`         |
-| 7     | `-45°`  | `DirectionUpRight`   | `NorthEast` | `TopRight`    |
-
-`Angle()` reports the angle in radians over `atan2`'s `(-π, π]` range, which is why the last three rows are negative
-rather than `225°`–`315°`. `DirectionFromAngle` is its inverse and the two round-trip for every direction.
-
-### Axis
-
-`Axis` is `AxisHorizontal`, `AxisVertical`, or `AxisNone`. It exists to write orientation-agnostic code in terms of "along" and "across".
-
-### Conventions
-
-All methods return new values — no mutation.
-
-Every shape type exposes `.Int()`, `.Float()`, and implements `String()`, `Equal()`, `IsZero()`. 
-
-The `Direction` and `Axis` enums implement `String()` and `IsNone()` instead.
-
-Types with spatial extent also implement `Bounds() Rectangle[T]`.
-
-`Line`, `Polygon`, and `RegularPolygon` also expose `Vertices() []Point[T]`.
-
-`Rectangle.Vertices`, `Rectangle.Edges`, and `RegularPolygon.Vertices` all wind by increasing angle, the same order as
-`Directions` — clockwise as drawn.
-
-### Collision
+Test assertions, one per shape, comparing with the tolerance of the asserted type:
 
 ```go
-CollisionRectangles[T](a, b Rectangle[T]) bool
-CollisionCircles[T](a, b Circle[T]) bool
-CollisionRectangleCircle[T](r Rectangle[T], c Circle[T]) bool
+geom.AssertPoint(t, got, geom.Pt(1.0, 2.0))
+geom.AssertRect(t, got, want, "after inset")
+geom.AssertVertices(t, hex.Vertices(), want)
 ```
 
-### Image interop
+Full reference: [pkg.go.dev][link-go-dev-reference].
 
-```go
-PointFromImage[T](p image.Point) Point[T]
-SizeFromImage[T](r image.Rectangle) Size[T]
-RectangleFromImage[T](r image.Rectangle) Rectangle[T]
+## Conventions
 
-(Point[T]).Point() image.Point
-(Rectangle[T]).Rectangle() image.Rectangle
-```
+**Screen space.** The origin is top-left and `+Y` points down. Only the directional getters (`Top`, `Bottom`, `Up`,
+`Down`) and rotation depend on it.
 
-### Math utilities
+**Angles.** Angles follow the mathematical convention. A positive angle or step is counterclockwise in math
+coordinates, which appears clockwise on screen. Direction order and polygon winding follow the same rule:
+`Rectangle.Vertices`, `Rectangle.Edges`, and `RegularPolygon.Vertices` wind by increasing angle, clockwise as drawn.
 
-```go
-Lerp[T](a, b T, t float64) T
-Clamp[T](v, min, max T) T
-Equal[T](a, b T) bool // within Delta (1e-6)
-EqualDelta[T](a, b T, d float64) bool
-Midpoint[T](a, b T) T
-Abs[T](a T) T
-Round[T](a T) T
-Floor[T](a T) T
-Ceil[T](a T) T
-Sign[T](x T) T // 1, -1, or 0
-Mod[T Integer](n, m T) T // wraps into [0, m), correct for negative n
-Multiply[T](a T, factor float64) T
-Divide[T](a T, factor float64) T
-Parse[T](s string) (T, error)
-ToRadians(deg float64) float64
-ToDegrees(rad float64) float64
-NormalizeAngle(angle float64) float64 // into [0, 2π)
-```
+**Directions.** `Direction` covers the eight neighbours on a square lattice plus `DirectionNone`. They are ordered by
+increasing angle from `DirectionRight`. Each one has three names: canonical (`DirectionDownRight`), compass
+(`SouthEast`), and rectangle corner (`BottomRight`). `Angle()` reports in `atan2`'s `(-π, π]` range and
+`DirectionFromAngle` inverts it.
+
+**Matrices.** An integer `Matrix` composes lattice transforms exactly: translation, integer scale, reflection, quarter
+turns. Rotation by any other angle, `Inverse`, and `Unscale` are not closed over the integers and round into a
+different matrix. Use a float `Matrix` there. `Transform` takes a `float32` or `float64` matrix, so convert an integer
+one with `Float()` at the call, the same way an angle is always `float64`.
+
+**Equality.** `Equal` compares an integer `T` exactly and a float `T` within `Epsilon[T]()`, a tolerance matched to
+`float32` or `float64`. `EqualRelative` scales that tolerance for values far from zero.
+
+**Narrow integers.** `int8` and `int16` are admitted for storage. Products such as `LengthSquared` and `Area` overflow
+there, so use `int` or `int64` for arithmetic.
+
+**Common API.** Every shape exposes `Int()`, `Float()`, `String()`, `Equal()`, and `IsZero()`. Shapes with spatial
+extent add `Bounds()`. `Line`, `Polygon`, and `RegularPolygon` add `Vertices()`.
 
 ## Credits
 
