@@ -8,6 +8,7 @@ import (
 )
 
 func TestMatrix_Constructor(t *testing.T) {
+	AssertMatrix(t, Mat(1, 2, 3, 4, 5, 6), Matrix[int]{A: 1, B: 2, C: 3, D: 4, E: 5, F: 6})
 	AssertMatrix(t, IdentityMatrix[float64](), Mat(1.0, 0.0, 0.0, 0.0, 1.0, 0.0))
 	AssertMatrix(t, IdentityMatrix[float32](), Mat(float32(1), float32(0), float32(0), float32(0), float32(1), float32(0)))
 	AssertMatrix(t, IdentityMatrix[int](), Mat(1, 0, 0, 0, 1, 0))
@@ -135,7 +136,7 @@ func TestMatrix_Rotate(t *testing.T) {
 	assert.EqualDelta(t, p.Y, 1.0, Delta)
 
 	// an int point keeps its integer coordinates; the matrix carries the fractions
-	AssertPoint(t, Pt(3, 0).Transform(IdentityMatrix[float64]().Rotate(Pi/6)), 3, 2)
+	AssertPoint(t, Pt(3, 0).Transform(IdentityMatrix[float64]().Rotate(Pi/6)), Pt(3, 2))
 
 	AssertMatrix(t, IdentityMatrix[float32]().Rotate(Pi), Mat[float32](-1, 0, 0, 0, -1, 0))
 

@@ -7,40 +7,35 @@ import (
 	"github.com/gravitton/assert"
 )
 
-var (
-	sizeInt   = Size[int]{2, 3}
-	sizeFloat = Size[float64]{1.2, 3.6}
-)
-
 func TestSize_Constructor(t *testing.T) {
-	AssertSize(t, Sz(10, 16), 10, 16)
-	AssertSize(t, Sz(0.16, 204), 0.16, 204.0)
-	AssertSize(t, SzU(0.2), 0.2, 0.2)
+	AssertSize(t, Sz(10, 16), Size[int]{Width: 10, Height: 16})
+	AssertSize(t, Sz(0.16, 204), Size[float64]{Width: 0.16, Height: 204})
+	AssertSize(t, SzU(0.2), Sz(0.2, 0.2))
 }
 
 func TestSize_Scale(t *testing.T) {
-	AssertSize(t, Sz(2, 3).Scale(2.5), 5, 8)
-	AssertSize(t, Sz(2, 3).ScaleXY(2, 3), 4, 9)
-	AssertSize(t, Sz(0.4, -0.25).Scale(2.5), 1.0, -0.625)
-	AssertSize(t, Sz(0.4, -0.25).ScaleXY(-1.5, 2), -0.6, -0.5)
+	AssertSize(t, Sz(2, 3).Scale(2.5), Sz(5, 8))
+	AssertSize(t, Sz(2, 3).ScaleXY(2, 3), Sz(4, 9))
+	AssertSize(t, Sz(0.4, -0.25).Scale(2.5), Sz(1.0, -0.625))
+	AssertSize(t, Sz(0.4, -0.25).ScaleXY(-1.5, 2), Sz(-0.6, -0.5))
 }
 
 func TestSize_Grow(t *testing.T) {
-	AssertSize(t, Sz(2, 3).Grow(2), 4, 5)
-	AssertSize(t, Sz(2, 3).GrowXY(2, 3), 4, 6)
-	AssertSize(t, Sz(0.4, 0.25).Grow(0.1), 0.5, 0.35)
-	AssertSize(t, Sz(0.4, 0.25).GrowXY(0.1, 0.2), 0.5, 0.45)
+	AssertSize(t, Sz(2, 3).Grow(2), Sz(4, 5))
+	AssertSize(t, Sz(2, 3).GrowXY(2, 3), Sz(4, 6))
+	AssertSize(t, Sz(0.4, 0.25).Grow(0.1), Sz(0.5, 0.35))
+	AssertSize(t, Sz(0.4, 0.25).GrowXY(0.1, 0.2), Sz(0.5, 0.45))
 }
 
 func TestSize_Shrink(t *testing.T) {
-	AssertSize(t, Sz(2, 3).Shrink(1), 1, 2)
-	AssertSize(t, Sz(2, 3).ShrinkXY(1, 2), 1, 1)
-	AssertSize(t, Sz(0.4, 0.25).Shrink(0.1), 0.3, 0.15)
-	AssertSize(t, Sz(0.4, 0.25).ShrinkXY(0.1, 0.2), 0.3, 0.05)
+	AssertSize(t, Sz(2, 3).Shrink(1), Sz(1, 2))
+	AssertSize(t, Sz(2, 3).ShrinkXY(1, 2), Sz(1, 1))
+	AssertSize(t, Sz(0.4, 0.25).Shrink(0.1), Sz(0.3, 0.15))
+	AssertSize(t, Sz(0.4, 0.25).ShrinkXY(0.1, 0.2), Sz(0.3, 0.05))
 
 	// clamped to zero — never negative
-	AssertSize(t, Sz(2, 3).Shrink(5), 0, 0)
-	AssertSize(t, Sz(2, 3).ShrinkXY(5, 1), 0, 2)
+	AssertSize(t, Sz(2, 3).Shrink(5), Sz(0, 0))
+	AssertSize(t, Sz(2, 3).ShrinkXY(5, 1), Sz(0, 2))
 }
 
 func TestSize_Area(t *testing.T) {
@@ -84,18 +79,18 @@ func TestSize_XY(t *testing.T) {
 }
 
 func TestSize_Int(t *testing.T) {
-	AssertSize(t, sizeInt.Int(), 2, 3)
-	AssertSize(t, sizeFloat.Int(), 1, 4)
+	AssertSize(t, Sz(2, 3).Int(), Sz(2, 3))
+	AssertSize(t, Sz(1.2, 3.6).Int(), Sz(1, 4))
 }
 
 func TestSize_Float(t *testing.T) {
-	AssertSize(t, sizeInt.Float(), 2.0, 3.0)
-	AssertSize(t, sizeFloat.Float(), 1.2, 3.6)
+	AssertSize(t, Sz(2, 3).Float(), Sz(2.0, 3.0))
+	AssertSize(t, Sz(1.2, 3.6).Float(), Sz(1.2, 3.6))
 }
 
 func TestSize_Vector(t *testing.T) {
-	AssertVector(t, Sz(10, 16).Vector(), 10, 16)
-	AssertVector(t, Sz(1.5, -2.5).Vector(), 1.5, -2.5)
+	AssertVector(t, Sz(10, 16).Vector(), Vec(10, 16))
+	AssertVector(t, Sz(1.5, -2.5).Vector(), Vec(1.5, -2.5))
 }
 
 func TestSize_String(t *testing.T) {
@@ -111,39 +106,39 @@ func TestSize_Marshall(t *testing.T) {
 func TestSize_Unmarshall(t *testing.T) {
 	var s1 Size[int]
 	assert.NoError(t, json.Unmarshal([]byte(`{"w":10,"h":16}`), &s1))
-	AssertSize(t, s1, 10, 16)
+	AssertSize(t, s1, Sz(10, 16))
 
 	var s2 Size[float64]
 	assert.NoError(t, json.Unmarshal([]byte(`{"w":10.1,"h":34.0000115}`), &s2))
-	AssertSize(t, s2, 10.1, 34.0000115)
+	AssertSize(t, s2, Sz(10.1, 34.0000115))
 }
 
 func TestSize_Unscale(t *testing.T) {
-	AssertSize(t, Sz(10, 20).Unscale(2.0), 5, 10)
-	AssertSize(t, Sz(10, 20).UnscaleXY(2.0, 4.0), 5, 5)
-	AssertSize(t, Sz(0.5, 2.5).Unscale(2.5), 0.2, 1.0)
-	AssertSize(t, Sz(10, 20).Unscale(0), 10, 20) // zero guard: no change
+	AssertSize(t, Sz(10, 20).Unscale(2.0), Sz(5, 10))
+	AssertSize(t, Sz(10, 20).UnscaleXY(2.0, 4.0), Sz(5, 5))
+	AssertSize(t, Sz(0.5, 2.5).Unscale(2.5), Sz(0.2, 1.0))
+	AssertSize(t, Sz(10, 20).Unscale(0), Sz(10, 20)) // zero guard: no change
 }
 
 func TestSize_AtLeast(t *testing.T) {
-	AssertSize(t, Sz(2, 3).AtLeast(Sz(1, 5)), 2, 5)
-	AssertSize(t, Sz(2, 3).AtLeast(Sz(4, 1)), 4, 3)
-	AssertSize(t, Sz(2, 3).AtLeast(Sz(2, 3)), 2, 3)
-	AssertSize(t, Sz(0.5, 1.5).AtLeast(Sz(1.0, 1.0)), 1.0, 1.5)
+	AssertSize(t, Sz(2, 3).AtLeast(Sz(1, 5)), Sz(2, 5))
+	AssertSize(t, Sz(2, 3).AtLeast(Sz(4, 1)), Sz(4, 3))
+	AssertSize(t, Sz(2, 3).AtLeast(Sz(2, 3)), Sz(2, 3))
+	AssertSize(t, Sz(0.5, 1.5).AtLeast(Sz(1.0, 1.0)), Sz(1.0, 1.5))
 }
 
 func TestSize_AtMost(t *testing.T) {
-	AssertSize(t, Sz(2, 3).AtMost(Sz(1, 5)), 1, 3)
-	AssertSize(t, Sz(2, 3).AtMost(Sz(4, 1)), 2, 1)
-	AssertSize(t, Sz(2, 3).AtMost(Sz(2, 3)), 2, 3)
-	AssertSize(t, Sz(0.5, 1.5).AtMost(Sz(1.0, 1.0)), 0.5, 1.0)
+	AssertSize(t, Sz(2, 3).AtMost(Sz(1, 5)), Sz(1, 3))
+	AssertSize(t, Sz(2, 3).AtMost(Sz(4, 1)), Sz(2, 1))
+	AssertSize(t, Sz(2, 3).AtMost(Sz(2, 3)), Sz(2, 3))
+	AssertSize(t, Sz(0.5, 1.5).AtMost(Sz(1.0, 1.0)), Sz(0.5, 1.0))
 }
 
 func TestParseSize(t *testing.T) {
 	// int: exact integers
 	s1, err := ParseSize[int]("16x32")
 	assert.NoError(t, err)
-	AssertSize(t, s1, 16, 32)
+	AssertSize(t, s1, Sz(16, 32))
 
 	// int: float strings are rejected
 	_, err = ParseSize[int]("23.5x12.4")
@@ -152,12 +147,12 @@ func TestParseSize(t *testing.T) {
 	// float64: integer strings
 	s3, err := ParseSize[float64]("16x32")
 	assert.NoError(t, err)
-	AssertSize(t, s3, 16.0, 32.0)
+	AssertSize(t, s3, Sz(16.0, 32.0))
 
 	// float64: float strings
 	s4, err := ParseSize[float64]("23.0x12.1")
 	assert.NoError(t, err)
-	AssertSize(t, s4, 23.0, 12.1)
+	AssertSize(t, s4, Sz(23.0, 12.1))
 
 	// error: missing separator
 	_, err = ParseSize[int]("16")
@@ -184,7 +179,7 @@ func TestSize_StringRoundTrip(t *testing.T) {
 	// String keeps two decimals, so only sizes on that grid survive: 1.005 formats as "1.00"
 	s, err := ParseSize[float64](Sz(1.005, -34.0000115).String())
 	assert.NoError(t, err)
-	AssertSize(t, s, 1.0, -34.0)
+	AssertSize(t, s, Sz(1.0, -34.0))
 }
 
 func testSizeRoundTrip[T Number](t *testing.T, size Size[T]) {
@@ -206,5 +201,5 @@ func TestSize_Immutable(t *testing.T) {
 	s.Shrink(1)
 	s.ShrinkXY(1, 2)
 
-	AssertSize(t, s, 2, 3)
+	AssertSize(t, s, Sz(2, 3))
 }

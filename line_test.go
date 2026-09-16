@@ -8,65 +8,62 @@ import (
 	"github.com/gravitton/assert"
 )
 
-var (
-	lineInt   = Line[int]{Point[int]{1, 2}, Point[int]{3, 5}}
-	lineFloat = Line[float64]{Point[float64]{0.6, -0.25}, Point[float64]{1.2, 3.4}}
-)
-
 func TestLine_Constructor(t *testing.T) {
-	AssertLine(t, Ln(Pt(1, -1), Pt(2, 0)), 1, -1, 2, 0)
-	AssertLine(t, Ln(Pt(0.5, -1.25), Pt(2.5, 3.75)), 0.5, -1.25, 2.5, 3.75)
+	AssertLine(t, Ln(Pt(1, -1), Pt(2, 0)), Line[int]{Start: Pt(1, -1), End: Pt(2, 0)})
+	AssertLine(t, Ln(Pt(0.5, -1.25), Pt(2.5, 3.75)), Line[float64]{Start: Pt(0.5, -1.25), End: Pt(2.5, 3.75)})
 }
 
 func TestLine_Translate(t *testing.T) {
-	AssertLine(t, lineInt.Translate(Vec(3, -2)), 4, 0, 6, 3)
-	AssertLine(t, lineFloat.Translate(Vec(100.1, -0.1)), 100.7, -0.35, 101.3, 3.3)
+	AssertLine(t, Ln(Pt(1, 2), Pt(3, 5)).Translate(Vec(3, -2)), Ln(Pt(4, 0), Pt(6, 3)))
+	AssertLine(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Translate(Vec(100.1, -0.1)), Ln(Pt(100.7, -0.35), Pt(101.3, 3.3)))
 }
 
 func TestLine_MoveTo(t *testing.T) {
-	AssertLine(t, lineInt.MoveTo(Pt(3, -2)), 3, -2, 5, 1)
-	AssertLine(t, lineFloat.MoveTo(Pt(100.1, -0.1)), 100.1, -0.1, 100.7, 3.55)
+	AssertLine(t, Ln(Pt(1, 2), Pt(3, 5)).MoveTo(Pt(3, -2)), Ln(Pt(3, -2), Pt(5, 1)))
+	AssertLine(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).MoveTo(Pt(100.1, -0.1)), Ln(Pt(100.1, -0.1), Pt(100.7, 3.55)))
 }
 
 func TestLine_Reverse(t *testing.T) {
-	AssertLine(t, lineInt.Reverse(), 3, 5, 1, 2)
-	AssertLine(t, lineFloat.Reverse(), 1.2, 3.4, 0.6, -0.25)
+	AssertLine(t, Ln(Pt(1, 2), Pt(3, 5)).Reverse(), Ln(Pt(3, 5), Pt(1, 2)))
+	AssertLine(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Reverse(), Ln(Pt(1.2, 3.4), Pt(0.6, -0.25)))
 }
 
 func TestLine_Midpoint(t *testing.T) {
-	AssertPoint(t, lineInt.Midpoint(), 2, 4)
-	AssertPoint(t, lineFloat.Midpoint(), 0.9, 1.575)
+	AssertPoint(t, Ln(Pt(1, 2), Pt(3, 5)).Midpoint(), Pt(2, 4))
+	AssertPoint(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Midpoint(), Pt(0.9, 1.575))
 }
 
 func TestLine_Vector(t *testing.T) {
-	AssertVector(t, lineInt.Vector(), 2, 3)
-	AssertVector(t, lineFloat.Vector(), 0.6, 3.65)
+	AssertVector(t, Ln(Pt(1, 2), Pt(3, 5)).Vector(), Vec(2, 3))
+	AssertVector(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Vector(), Vec(0.6, 3.65))
 }
 
 func TestLine_Length(t *testing.T) {
-	assert.EqualDelta(t, lineInt.Length(), math.Sqrt(13), Delta)
-	assert.EqualDelta(t, lineFloat.Length(), math.Sqrt(13.6825), Delta)
+	assert.EqualDelta(t, Ln(Pt(1, 2), Pt(3, 5)).Length(), math.Sqrt(13), Delta)
+	assert.EqualDelta(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Length(), math.Sqrt(13.6825), Delta)
 }
 
 func TestLine_Vertices(t *testing.T) {
-	AssertVertices(t, lineInt.Vertices(), []Point[int]{{1, 2}, {3, 5}})
-	AssertVertices(t, lineFloat.Vertices(), []Point[float64]{{0.6, -0.25}, {1.2, 3.4}})
+	AssertVertices(t, Ln(Pt(1, 2), Pt(3, 5)).Vertices(), []Point[int]{{1, 2}, {3, 5}})
+	AssertVertices(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Vertices(), []Point[float64]{{0.6, -0.25}, {1.2, 3.4}})
 }
 
 func TestLine_Bounds(t *testing.T) {
-	AssertRect(t, lineInt.Bounds(), 2, 3, 2, 3)
-	assert.Equal(t, lineInt.Start, lineInt.Bounds().Min())
-	assert.Equal(t, lineInt.End, lineInt.Bounds().Max())
+	l := Ln(Pt(1, 2), Pt(3, 5))
 
-	AssertRect(t, lineFloat.Bounds(), 0.9, 1.575, 0.6, 3.65)
+	AssertRect(t, l.Bounds(), Rect(Pt(2, 3), Sz(2, 3)))
+	assert.Equal(t, l.Start, l.Bounds().Min())
+	assert.Equal(t, l.End, l.Bounds().Max())
+
+	AssertRect(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Bounds(), Rect(Pt(0.9, 1.575), Sz(0.6, 3.65)))
 }
 
 func TestLine_Equal(t *testing.T) {
-	assert.False(t, lineInt.Equal(Ln(Pt(1, 2), Pt(3, 4))))
-	assert.True(t, lineInt.Equal(lineInt))
+	assert.False(t, Ln(Pt(1, 2), Pt(3, 5)).Equal(Ln(Pt(1, 2), Pt(3, 4))))
+	assert.True(t, Ln(Pt(1, 2), Pt(3, 5)).Equal(Ln(Pt(1, 2), Pt(3, 5))))
 
-	assert.False(t, lineFloat.Equal(Ln(Pt(0.5, -0.25), Pt(1.2, 3.4))))
-	assert.True(t, lineFloat.Equal(lineFloat))
+	assert.False(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Equal(Ln(Pt(0.5, -0.25), Pt(1.2, 3.4))))
+	assert.True(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Equal(Ln(Pt(0.6, -0.25), Pt(1.2, 3.4))))
 }
 
 func TestLine_IsZero(t *testing.T) {
@@ -74,20 +71,20 @@ func TestLine_IsZero(t *testing.T) {
 	assert.True(t, Ln(Pt(0, 0), Pt(0, 0)).IsZero())
 	assert.False(t, Ln(Pt(1, 0), Pt(0, 0)).IsZero())
 	assert.False(t, Ln(Pt(0, 0), Pt(0, 1)).IsZero())
-	assert.False(t, lineInt.IsZero())
+	assert.False(t, Ln(Pt(1, 2), Pt(3, 5)).IsZero())
 
 	assert.True(t, Line[float64]{}.IsZero())
-	assert.False(t, lineFloat.IsZero())
+	assert.False(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).IsZero())
 }
 
 func TestLine_Int(t *testing.T) {
-	AssertLine(t, lineInt.Int(), 1, 2, 3, 5)
-	AssertLine(t, lineFloat.Int(), 1, 0, 1, 3)
+	AssertLine(t, Ln(Pt(1, 2), Pt(3, 5)).Int(), Ln(Pt(1, 2), Pt(3, 5)))
+	AssertLine(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Int(), Ln(Pt(1, 0), Pt(1, 3)))
 }
 
 func TestLine_Float(t *testing.T) {
-	AssertLine(t, lineInt.Float(), 1.0, 2.0, 3.0, 5.0)
-	AssertLine(t, lineFloat.Float(), 0.6, -0.25, 1.2, 3.4)
+	AssertLine(t, Ln(Pt(1, 2), Pt(3, 5)).Float(), Ln(Pt(1.0, 2.0), Pt(3.0, 5.0)))
+	AssertLine(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Float(), Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)))
 }
 
 func TestLine_String(t *testing.T) {
@@ -111,11 +108,11 @@ func TestLine_Unmarshal(t *testing.T) {
 }
 
 func TestLine_Immutable(t *testing.T) {
-	l := lineInt
+	l := Ln(Pt(1, 2), Pt(3, 5))
 
 	l.Translate(Vec(3, -2))
 	l.MoveTo(Pt(4, 3))
 	l.Reverse()
 
-	assert.True(t, l.Equal(lineInt))
+	assert.True(t, l.Equal(Ln(Pt(1, 2), Pt(3, 5))))
 }

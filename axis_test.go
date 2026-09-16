@@ -59,21 +59,21 @@ func TestAxis_Project(t *testing.T) {
 }
 
 func TestAxis_ScaleAlong(t *testing.T) {
-	AssertSize(t, AxisHorizontal.ScaleAlong(Sz(10, 20), 0.5), 5, 20)
-	AssertSize(t, AxisVertical.ScaleAlong(Sz(10, 20), 0.5), 10, 10)
-	AssertSize(t, AxisHorizontal.ScaleAlong(Sz(1.0, 2.0), 3), 3.0, 2.0)
+	AssertSize(t, AxisHorizontal.ScaleAlong(Sz(10, 20), 0.5), Sz(5, 20))
+	AssertSize(t, AxisVertical.ScaleAlong(Sz(10, 20), 0.5), Sz(10, 10))
+	AssertSize(t, AxisHorizontal.ScaleAlong(Sz(1.0, 2.0), 3), Sz(3.0, 2.0))
 }
 
 func TestAxis_Vector(t *testing.T) {
-	AssertVector(t, AxisHorizontal.Vector(3, 4), 3, 4)
-	AssertVector(t, AxisVertical.Vector(3, 4), 4, 3)
-	AssertVector(t, AxisVertical.Vector(1.5, 2.5), 2.5, 1.5)
+	AssertVector(t, AxisHorizontal.Vector(3, 4), Vec(3, 4))
+	AssertVector(t, AxisVertical.Vector(3, 4), Vec(4, 3))
+	AssertVector(t, AxisVertical.Vector(1.5, 2.5), Vec(2.5, 1.5))
 }
 
 func TestAxis_Size(t *testing.T) {
-	AssertSize(t, AxisHorizontal.Size(3, 4), 3, 4)
-	AssertSize(t, AxisVertical.Size(3, 4), 4, 3)
-	AssertSize(t, AxisVertical.Size(1.5, 2.5), 2.5, 1.5)
+	AssertSize(t, AxisHorizontal.Size(3, 4), Sz(3, 4))
+	AssertSize(t, AxisVertical.Size(3, 4), Sz(4, 3))
+	AssertSize(t, AxisVertical.Size(1.5, 2.5), Sz(2.5, 1.5))
 }
 
 func TestAxis_IsNone(t *testing.T) {

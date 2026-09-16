@@ -67,7 +67,7 @@ func TestDirection_Order(t *testing.T) {
 
 	// each step is an eighth turn of increasing angle, so the offset advances accordingly
 	for i, direction := range Directions {
-		AssertVector(t, direction.Offset[int](), directionOffsets[i].X, directionOffsets[i].Y, direction.String())
+		AssertVector(t, direction.Offset[int](), Vec(directionOffsets[i].X, directionOffsets[i].Y), direction.String())
 	}
 }
 
@@ -75,7 +75,7 @@ func TestDirection_Opposite(t *testing.T) {
 	for _, direction := range Directions {
 		assert.Equal(t, direction.Opposite(), direction.Rotate(4), direction.String())
 		assert.Equal(t, direction.Opposite().Opposite(), direction, direction.String())
-		AssertVector(t, direction.Offset[int]().Add(direction.Opposite().Offset[int]()), 0, 0, direction.String())
+		AssertVector(t, direction.Offset[int]().Add(direction.Opposite().Offset[int]()), Vec(0, 0), direction.String())
 	}
 
 	assert.Equal(t, DirectionRight.Opposite(), DirectionLeft)
@@ -118,34 +118,34 @@ func TestDirection_Axis(t *testing.T) {
 }
 
 func TestDirection_Offset(t *testing.T) {
-	AssertVector(t, DirectionRight.Offset[int](), 1, 0)
-	AssertVector(t, DirectionUp.Offset[int](), 0, -1)
-	AssertVector(t, DirectionDownRight.Offset[int](), 1, 1)
+	AssertVector(t, DirectionRight.Offset[int](), Vec(1, 0))
+	AssertVector(t, DirectionUp.Offset[int](), Vec(0, -1))
+	AssertVector(t, DirectionDownRight.Offset[int](), Vec(1, 1))
 
 	// offsets stay exact for integers; diagonals are not normalized
-	AssertVector(t, DirectionUpLeft.Offset[float64](), -1, -1)
+	AssertVector(t, DirectionUpLeft.Offset[float64](), Vec(-1.0, -1.0))
 }
 
 func TestDirection_Unit(t *testing.T) {
-	AssertVector(t, DirectionRight.Unit[float64](), 1, 0)
-	AssertVector(t, DirectionUp.Unit[float64](), 0, -1)
-	AssertVector(t, DirectionUpRight.Unit[float64](), OneOverSqrt2, -OneOverSqrt2)
+	AssertVector(t, DirectionRight.Unit[float64](), Vec(1.0, 0.0))
+	AssertVector(t, DirectionUp.Unit[float64](), Vec(0.0, -1.0))
+	AssertVector(t, DirectionUpRight.Unit[float64](), Vec(OneOverSqrt2, -OneOverSqrt2))
 
 	for _, direction := range Directions {
 		assert.EqualDelta(t, direction.Unit[float64]().Length(), 1.0, Delta, direction.String())
 	}
 
-	AssertVector(t, DirectionRight.Unit[float32](), 1, 0)
+	AssertVector(t, DirectionRight.Unit[float32](), Vec[float32](1, 0))
 
 	// integer T: cardinals stay exact, diagonals snap to an axis-aligned unit vector
-	AssertVector(t, DirectionRight.Unit[int](), 1, 0)
-	AssertVector(t, DirectionUpRight.Unit[int](), 1, -1)
+	AssertVector(t, DirectionRight.Unit[int](), Vec(1, 0))
+	AssertVector(t, DirectionUpRight.Unit[int](), Vec(1, -1))
 }
 
 func TestDirection_Vector(t *testing.T) {
-	AssertVector(t, DirectionRight.Vector(5.0), 5, 0)
-	AssertVector(t, DirectionDown.Vector(5.0), 0, 5)
-	AssertVector(t, DirectionLeft.Vector(3), -3, 0)
+	AssertVector(t, DirectionRight.Vector(5.0), Vec(5.0, 0.0))
+	AssertVector(t, DirectionDown.Vector(5.0), Vec(0.0, 5.0))
+	AssertVector(t, DirectionLeft.Vector(3), Vec(-3, 0))
 
 	assert.EqualDelta(t, DirectionDownLeft.Vector(4.0).Length(), 4.0, Delta)
 }
@@ -172,9 +172,9 @@ func TestDirection_IsNone(t *testing.T) {
 	assert.False(t, DirectionNone.IsPositive())
 	assert.Equal(t, DirectionNone.Axis(), AxisNone)
 
-	AssertVector(t, DirectionNone.Offset[int](), 0, 0)
-	AssertVector(t, DirectionNone.Unit[float64](), 0, 0)
-	AssertVector(t, DirectionNone.Vector(5.0), 0, 0)
+	AssertVector(t, DirectionNone.Offset[int](), Vec(0, 0))
+	AssertVector(t, DirectionNone.Unit[float64](), Vec(0.0, 0.0))
+	AssertVector(t, DirectionNone.Vector(5.0), Vec(0.0, 0.0))
 	assert.EqualDelta(t, DirectionNone.Angle(), 0.0, Delta)
 
 	// the zero value is Right, so a zero-valued field means "rightward", not "unset"
