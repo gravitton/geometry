@@ -50,7 +50,22 @@ v := geom.Pt(4, 6).Subtract(p) // Vector{3, 4}
 
 v.Length()          // 5
 v.Normal()          // Vector{-4, 3}, perpendicular
-p.Add(v.Resize(10)) // Point
+p.Add(v.Resize(10)) // Point{7, 10}
+
+p.Lerp(geom.Pt(9, 10), 0.25)                 // Point{3, 4}
+p.ManhattanDistanceTo(geom.Pt(4, 5))         // 6, for grid pathfinding
+geom.Pt(0.0, 0.0).AngleTo(geom.Pt(1.0, 1.0)) // π/4
+```
+
+Sizes and padding:
+
+```go
+s := geom.Sz(1920, 1080)
+s.Scale(0.5)                // Size{960, 540}
+s.AtMost(geom.SzU(800))     // Size{800, 800}, clamped per axis
+s.AspectRatio()             // 1.78
+
+geom.PadXY(4, 8).Size()     // Size{16, 8}, horizontal and vertical total
 ```
 
 Rectangles:
@@ -59,8 +74,13 @@ Rectangles:
 r := geom.Rect(geom.Pt(50, 50), geom.Sz(20, 10)) // center + size
 
 r.Contains(geom.Pt(55, 52))                 // true
-r.Inset(geom.PadU(2)).Anchor(geom.TopRight) // Point
-r.Clamp(geom.Pt(80, 0))                     // nearest point inside
+r.Inset(geom.PadU(2)).Anchor(geom.TopRight) // Point{58, 47}
+r.Clamp(geom.Pt(80, 0))                     // Point{60, 45}, nearest point inside
+
+b := geom.RectangleFromMinMax(geom.Pt(0, 0), geom.Pt(8, 6))
+b.Scale(2)     // Rectangle (-4,-3)-(12,9), scaled around the center
+b.Edges()[0]   // Line (0,0)-(8,0), the top edge
+b.Vertices()   // clockwise from the top-left corner
 ```
 
 Circles, lines, polygons:
@@ -72,6 +92,7 @@ c.Anchor(geom.Bottom) // Point{0, 5}
 geom.Ln(geom.Pt(0, 0), geom.Pt(3, 4)).Length() // 5
 
 hex := geom.Hexagon(geom.Pt(0, 0), geom.SzU(20), geom.FlatTop)
+hex.Bounds() // Rectangle (-20,-17)-(20,17)
 for _, vertex := range hex.Vertices() { ... }
 ```
 
@@ -90,6 +111,9 @@ dir := geom.DirectionUp
 dir.Rotate(2)   // DirectionRight, two 45° steps
 dir.Vector(5.0) // Vector{0, -5}
 
+geom.DirectionFromAxes(up, down, left, right) // keyboard input to an 8-way direction
+geom.Vec(3, -7).Direction()                   // DirectionUpRight, nearest of the eight
+
 axis := geom.AxisVertical
 axis.Along(size)             // Height, because the axis is vertical
 axis.Size(length, thickness) // Size{thickness, length}
@@ -103,7 +127,7 @@ m := geom.IdentityMatrix[float64]().Rotate(math.Pi / 4).Scale(2, 2)
 geom.Pt(1.0, 0.0).Transform(m) // Point{1.41, 1.41}
 ```
 
-`image` interop:
+Interop with `image`:
 
 ```go
 geom.RectangleFromImage[int](img.Bounds())
