@@ -20,4 +20,6 @@
 // Divide, and every method built on it (Point.Divide, Size.Unscale, Matrix.Unscale), panics
 // for a zero factor, and Matrix.Inverse panics for a singular matrix, the same way the integer
 // / operator and Mod do. Check IsInvertible before inverting a matrix that may be singular.
+// These are the only panics: every other guard returns a value the type can express, such as
+// DirectionNone, an empty polygon, or the 0 that Size.AspectRatio gives for a zero height.
 package geom

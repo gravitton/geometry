@@ -93,7 +93,9 @@ func (s Size[T]) Perimeter() T {
 	return 2 * (s.Width + s.Height)
 }
 
-// AspectRatio returns (width / height). Returns 0 when Height is zero.
+// AspectRatio returns (width / height). A zero Height has no usable ratio and returns 0 rather
+// than an Inf or NaN that would poison later arithmetic; the same 0 a zero Width gives, since
+// neither degenerate size has a ratio worth distinguishing.
 func (s Size[T]) AspectRatio() float64 {
 	if s.Height == 0 {
 		return 0
