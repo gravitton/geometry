@@ -92,7 +92,7 @@ func (c Circle[T]) Contains(point Point[T]) bool {
 
 // Int converts the circle to a Circle[int].
 func (c Circle[T]) Int() Circle[int] {
-	return Circle[int]{c.Center.Int(), Cast[int](float64(c.Radius))}
+	return Circle[int]{c.Center.Int(), Int(c.Radius)}
 }
 
 // Float converts the circle to a Circle[float64].

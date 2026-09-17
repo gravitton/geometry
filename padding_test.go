@@ -113,7 +113,7 @@ func TestPadding_String(t *testing.T) {
 	})
 	t.Run("negative zero", func(t *testing.T) {
 		assert.Equal(t, Pad(-0, 0, 0, 0).String(), "Pad(0;0;0;0)")
-		assert.Equal(t, Pad(negativeZero, 0.0, 0.0, 0.0).String(), "Pad(-0.00;0.00;0.00;0.00)")
+		assert.Equal(t, Pad(negativeZero, 0.0, 0.0, 0.0).String(), "Pad(0.00;0.00;0.00;0.00)")
 	})
 }
 

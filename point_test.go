@@ -76,13 +76,13 @@ func TestPoint_Divide(t *testing.T) {
 		AssertPoint(t, Pt(5, 10).DivideXY(3, 2), Pt(2, 5)) // int: 1.66 rounds to 2
 		AssertPoint(t, Pt(0.6, -0.25).DivideXY(-4, 0.5), Pt(-0.15, -0.5))
 	})
-	t.Run("zero factor leaves the axis unchanged", func(t *testing.T) {
-		AssertPoint(t, Pt(5, 10).Divide(0), Pt(5, 10))
-		AssertPoint(t, Pt(0.6, -0.25).Divide(0), Pt(0.6, -0.25))
-
-		// the guard is per axis, so the other one still divides
-		AssertPoint(t, Pt(4, 8).DivideXY(0, 2), Pt(4, 4))
-		AssertPoint(t, Pt(0.6, -0.25).DivideXY(2, 0), Pt(0.3, -0.25))
+	t.Run("zero factor panics", func(t *testing.T) {
+		assert.Panics(t, func() {
+			Pt(5, 10).Divide(0)
+		}, "geom: division by zero")
+		assert.Panics(t, func() {
+			Pt(0.6, -0.25).DivideXY(2, 0)
+		}, "geom: division by zero")
 	})
 }
 
@@ -368,6 +368,9 @@ func TestPoint_Int(t *testing.T) {
 		AssertPoint(t, Pt(0.6, -0.25).Int(), Pt(1, 0))
 		AssertPoint(t, Pt(-1.5, 2.5).Int(), Pt(-2, 3))
 	})
+	t.Run("wide integer stays exact", func(t *testing.T) {
+		AssertPoint(t, Pt[int64](1<<53+1, -(1<<53+1)).Int(), Pt(1<<53+1, -(1<<53+1)))
+	})
 }
 
 func TestPoint_Float(t *testing.T) {
@@ -390,7 +393,7 @@ func TestPoint_String(t *testing.T) {
 	})
 	t.Run("negative zero", func(t *testing.T) {
 		assert.Equal(t, Pt(-0, 0).String(), "(0,0)")
-		assert.Equal(t, Pt(negativeZero, 0.0).String(), "(-0.00,0.00)")
+		assert.Equal(t, Pt(negativeZero, 0.0).String(), "(0.00,0.00)")
 	})
 }
 

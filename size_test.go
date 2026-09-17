@@ -79,11 +79,13 @@ func TestSize_Unscale(t *testing.T) {
 		AssertSize(t, Sz(10, 20).UnscaleXY(2.0, 4.0), Sz(5, 5))
 		AssertSize(t, Sz(0.5, 2.5).UnscaleXY(2.5, 0.5), Sz(0.2, 5.0))
 	})
-	t.Run("zero factor leaves the axis unchanged", func(t *testing.T) {
-		AssertSize(t, Sz(10, 20).Unscale(0), Sz(10, 20))
-
-		// the guard is per axis, so the other one still divides
-		AssertSize(t, Sz(10, 20).UnscaleXY(0, 2), Sz(10, 10))
+	t.Run("zero factor panics", func(t *testing.T) {
+		assert.Panics(t, func() {
+			Sz(10, 20).Unscale(0)
+		}, "geom: division by zero")
+		assert.Panics(t, func() {
+			Sz(10, 20).UnscaleXY(0, 2)
+		}, "geom: division by zero")
 	})
 }
 
@@ -252,7 +254,7 @@ func TestSize_String(t *testing.T) {
 	})
 	t.Run("negative zero", func(t *testing.T) {
 		assert.Equal(t, Sz(-0, 0).String(), "0x0")
-		assert.Equal(t, Sz(negativeZero, 0.0).String(), "-0.00x0.00")
+		assert.Equal(t, Sz(negativeZero, 0.0).String(), "0.00x0.00")
 	})
 }
 

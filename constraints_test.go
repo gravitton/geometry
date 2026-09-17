@@ -1,6 +1,7 @@
 package geom
 
 import (
+	"math"
 	"testing"
 
 	"github.com/gravitton/assert"
@@ -37,6 +38,19 @@ func TestCast(t *testing.T) {
 	})
 }
 
+func TestInt(t *testing.T) {
+	t.Run("integer converts directly", func(t *testing.T) {
+		assert.Equal(t, Int(3), 3)
+		assert.Equal(t, Int(namedInt8(-2)), -2)
+		assert.Equal(t, Int(int64(1<<53+1)), 1<<53+1)
+	})
+	t.Run("float rounds half away from zero", func(t *testing.T) {
+		assert.Equal(t, Int(2.5), 3)
+		assert.Equal(t, Int(-2.5), -3)
+		assert.Equal(t, Int(float32(1.4)), 1)
+	})
+}
+
 func TestString(t *testing.T) {
 	t.Run("int has no decimal point", func(t *testing.T) {
 		assertString(t, 3, "3")
@@ -54,6 +68,7 @@ func TestString(t *testing.T) {
 		assertString(t, 8.0, "8.00")
 		assertString(t, 8.1, "8.10")
 		assertString(t, 0.0000, "0.00")
+		assertString(t, math.Copysign(0, -1), "0.00")
 		assertString(t, float32(1), "1.00")
 	})
 	t.Run("defined types follow their underlying kind", func(t *testing.T) {

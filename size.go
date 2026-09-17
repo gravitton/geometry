@@ -133,7 +133,7 @@ func (s Size[T]) Vector() Vector[T] {
 
 // Int converts the size to a Size[int].
 func (s Size[T]) Int() Size[int] {
-	return Size[int]{Cast[int](float64(s.Width)), Cast[int](float64(s.Height))}
+	return Size[int]{Int(s.Width), Int(s.Height)}
 }
 
 // Float converts the size to a Size[float64].

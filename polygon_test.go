@@ -20,6 +20,7 @@ func TestPolygon_Constructor(t *testing.T) {
 func TestPolygon_Center(t *testing.T) {
 	t.Run("int truncates the average", func(t *testing.T) {
 		AssertPoint(t, Pol(squareVertices()).Center(), Pt(1, 1))
+		AssertPoint(t, Pol([]Point[int]{Pt(-1, -2), Pt(0, 0), Pt(0, 0)}).Center(), Pt(0, 0))
 	})
 	t.Run("float", func(t *testing.T) {
 		AssertPoint(t, Pol(triangleVertices()).Center(), Pt(1.5, 0.5))
@@ -46,6 +47,12 @@ func TestPolygon_MoveTo(t *testing.T) {
 		Pt(11, 11),
 		Pt(9, 11),
 	}))
+
+	t.Run("int can miss by one when the average crosses zero", func(t *testing.T) {
+		moved := Pol([]Point[int]{Pt(-1, 0), Pt(0, 0), Pt(0, 0)}).MoveTo(Pt(1, 0))
+
+		AssertPoint(t, moved.Center(), Pt(0, 0))
+	})
 }
 
 func TestPolygon_Scale(t *testing.T) {
@@ -103,6 +110,15 @@ func TestPolygon_IsZero(t *testing.T) {
 	})
 	t.Run("an empty slice is not nil", func(t *testing.T) {
 		assert.False(t, Polygon[int]{[]Point[int]{}}.IsZero())
+	})
+	t.Run("nil survives every mapping", func(t *testing.T) {
+		var polygon Polygon[float64]
+
+		assert.True(t, polygon.Translate(Vec(1.0, 1.0)).IsZero())
+		assert.True(t, polygon.Scale(2).IsZero())
+		assert.True(t, polygon.ScaleXY(2, 3).IsZero())
+		assert.True(t, polygon.Int().IsZero())
+		assert.True(t, polygon.Float().IsZero())
 	})
 	t.Run("non-zero polygon", func(t *testing.T) {
 		assert.False(t, Pol(squareVertices()).IsZero())

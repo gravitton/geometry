@@ -275,7 +275,7 @@ func (v Vector[T]) Size() Size[T] {
 
 // Int converts the vector to a Vector[int].
 func (v Vector[T]) Int() Vector[int] {
-	return Vector[int]{Cast[int](float64(v.X)), Cast[int](float64(v.Y))}
+	return Vector[int]{Int(v.X), Int(v.Y)}
 }
 
 // Float converts the vector to a Vector[float64].

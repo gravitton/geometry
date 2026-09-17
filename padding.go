@@ -57,7 +57,7 @@ func (p Padding[T]) IsZero() bool {
 
 // Int converts the padding to a Padding[int].
 func (p Padding[T]) Int() Padding[int] {
-	return Padding[int]{Cast[int](float64(p.Top)), Cast[int](float64(p.Right)), Cast[int](float64(p.Bottom)), Cast[int](float64(p.Left))}
+	return Padding[int]{Int(p.Top), Int(p.Right), Int(p.Bottom), Int(p.Left)}
 }
 
 // Float converts the padding to a Padding[float64].

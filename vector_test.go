@@ -120,11 +120,13 @@ func TestVector_Divide(t *testing.T) {
 		AssertVector(t, Vec(10, 16).DivideXY(3, 2), Vec(3, 8)) // int: 3.33 rounds to 3
 		AssertVector(t, Vec(0.6, -0.25).DivideXY(-4, 0.5), Vec(-0.15, -0.5))
 	})
-	t.Run("zero factor leaves the axis unchanged", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).Divide(0), Vec(10, 16))
-
-		// the guard is per axis, so the other one still divides
-		AssertVector(t, Vec(10, 16).DivideXY(0, 2), Vec(10, 8))
+	t.Run("zero factor panics", func(t *testing.T) {
+		assert.Panics(t, func() {
+			Vec(10, 16).Divide(0)
+		}, "geom: division by zero")
+		assert.Panics(t, func() {
+			Vec(10, 16).DivideXY(0, 2)
+		}, "geom: division by zero")
 	})
 }
 
@@ -561,7 +563,7 @@ func TestVector_String(t *testing.T) {
 	})
 	t.Run("negative zero", func(t *testing.T) {
 		assert.Equal(t, Vec(-0, 0).String(), "⟨0,0⟩")
-		assert.Equal(t, Vec(negativeZero, 0.0).String(), "⟨-0.00,0.00⟩")
+		assert.Equal(t, Vec(negativeZero, 0.0).String(), "⟨0.00,0.00⟩")
 	})
 }
 

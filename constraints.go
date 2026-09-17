@@ -33,14 +33,30 @@ func Cast[T Number](a float64) T {
 	return T(a)
 }
 
+// Int converts a Number to int: an integer T directly, so a wide value stays exact, and a
+// float T rounded through Cast.
+func Int[T Number](value T) int {
+	if isIntType[T]() {
+		return int(value)
+	}
+
+	return Cast[int](float64(value))
+}
+
 // String formats a Number as a numeric string: integer types without a decimal point,
-// float types with two decimals. The formatting follows T, not the value.
+// float types with two decimals. The formatting follows T, not the value. A negative zero
+// prints as 0.00.
 func String[T Number](value T) string {
 	if isIntType[T]() {
 		return fmt.Sprintf("%d", int64(value))
 	}
 
-	return fmt.Sprintf("%.2f", float64(value))
+	v := float64(value)
+	if v == 0 {
+		v = math.Abs(v)
+	}
+
+	return fmt.Sprintf("%.2f", v)
 }
 
 // isIntType reports whether T is an integer type.

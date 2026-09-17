@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased](https://github.com/gravitton/geometry/compare/v1.12.0...main)
 ### Added
+- `Int[T Number](value T) int` – converts a `Number` to `int`, an integer `T` directly and a float `T` rounded through `Cast`; the `Int()` methods are built on it
 - `Delta32` – the equality tolerance for `float32`, `1e-4`. A `float32` ulp reaches 6e-5 at magnitude 1e3, so `Delta` sat below one ulp across the coordinate range `float32` is normally chosen for and asked for bit-exact equality there
 - `Epsilon[T]()` – the tolerance for `T`: zero for an integer `T`, `Delta32` for `float32`, `Delta` for `float64`. It depends only on the type, never on the values compared, so `Equal` costs what it did before
 - `EqualRelative(a, b)` and `EpsilonRelative(a, b)` – equality within a tolerance that scales with magnitude, for values far from zero where an absolute tolerance falls below one ulp. Measured at ~1.1 ns against ~0.6 ns for `Equal`, which is why it is a separate function rather than a change to `Equal`
@@ -20,6 +21,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `EqualAngle(a, b)` – reports whether two angles are equal modulo a full turn within `Delta`, holding across the `0`/`2π` seam where comparing normalized angles does not
 
 ### Changed
+- `Divide` panics for a zero scale instead of returning the value unchanged, like the integer `/` operator and `Mod`, so `Point.Divide(0)`, `Vector.DivideXY(0, 2)`, `Size.Unscale(0)` and `Matrix.Unscale(0, 3)` panic instead of silently skipping the axis; `Matrix.Inverse` panics for a singular matrix instead of returning it, with `IsInvertible` as the check to run first (**breaking**)
+- `Matrix.Scale`, `PreScale` and `Unscale` take `float64` factors like every other `Scale` in the package, so an integer matrix can be scaled by `0.5`; each scaled component is rounded, following `Multiply`. `ScaleMatrix` keeps its `T` factors like `TranslationMatrix` (**breaking** for a `Matrix[int]` passing typed `int` factors)
+- `Triangle`, `Square` and `Hexagon` delegate to `RegularPolygonWithOrientation` instead of repeating its body; `Axis` methods return from each `switch` case directly, like `Direction`
+- `Clamp`, `RectangleFromMin`, `RectangleFromMax` and `RectangleFromMinMax` no longer name their parameters `min` and `max`, which shadowed the builtins the rest of the package uses
 - `Equal` compares an integer `T` exactly and a float `T` within `Epsilon[T]()`, so a `float32` now gets a tolerance matched to its precision instead of the `float64` one. The comparison stays absolute, and therefore stays a subtract and a compare for hot paths
 - `AssertNumber` and every `Assert*` helper compare an integer `T` exactly and a float `T` within `EpsilonRelative`, instead of within `Delta` for both. A tolerance only has meaning where rounding error can occur, so an integer assertion no longer accepts a neighbouring value, and a float assertion now holds at any magnitude – beyond the ~1e3 (`float32`) and ~1e10 (`float64`) limits of the absolute comparison
 - The `Assert*` helpers take a `Testing` interface declared by `geom` instead of `assert.Testing`, so no third-party type appears in the public API. `*testing.T` satisfies it unchanged, and unlike `testing.TB` a test can still pass its own recorder
@@ -42,9 +47,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `Integer` and `Matrix` document that `int8` and `int16` are storage-only: products such as `LengthSquared`, `Less`, `Circle.Contains`, `Size.Area` and `Matrix.Multiply` compute in `T` and overflow there. `Size` documents that a negative width or height is unsupported, and `Axis.IsNone` that every value outside the two axes counts as none
 - `Direction.Angle` returns `NaN` for `DirectionNone` instead of `0`, which was indistinguishable from `DirectionRight`; `DirectionFromAngle(NaN)` is `DirectionNone`, so the two round-trip for every direction (**breaking**)
 - `Axis.Size` stores the values as given, like `Sz`, instead of routing through `Vector.Size` and taking their absolute value; `Axis.ScaleAlong` with a negative factor now flips the sign the way `Size.ScaleXY` does
+- `Polygon.MoveTo` documents that on an integer polygon the moved centroid can miss the point by one unit when a coordinate sum crosses zero, since the truncating `Center` does not commute with translation
+- `Direction.Vector` documents that an integer diagonal is rounded and only approximates the requested length: `DirectionDownRight.Vector(5)` is `(4,4)`
 - `Polygon` documents that `Pol` shares the vertices slice it is given, `Parse` that the `NaN` and `Inf` literals parse into a float `T`, and every `Direction` constant has a doc comment; the package doc and README state the integer rounding rule and its `Rectangle` exception, and the README notes that the flat JSON shape needs the v2-backed `encoding/json`
 
 ### Fixed
+- `Point.Int`, `Vector.Int`, `Size.Int`, `Circle.Int`, `Padding.Int`, `Matrix.Int` and the shapes built on them convert an integer `T` directly instead of through `float64`, so an `int64` beyond 2^53 stays exact, like `Abs`, `Round`, `Floor` and `Ceil` already did
+- `Polygon.Translate`, `Scale`, `ScaleXY`, `Int` and `Float` keep a nil `Vertices` nil, so `IsZero` survives every mapping instead of flipping to false on the first one (requires `gravitton/x` v1.2.1, where `slices.Map` maps nil to nil)
+- `String` prints a float negative zero as `0.00` instead of `-0.00`, which `Matrix.Inverse` produced for every zero component it negated
 - `Circle.Bounds` returns a square of side `Diameter` instead of `Radius`, so the rectangle actually bounds the circle. Previously it was half the required size and clipped the circle at every anchor, and `CollisionRectangleCircle(c.Bounds(), c)` could miss (**breaking**)
 - `Vector.Normalize` snaps an integer vector to the longer axis and keeps its sign, so the result is always one of the four axis-aligned unit vectors, as documented. Previously it rounded each component of the resized vector and only corrected the result when both landed on the same value, so `Vec(-10, -16)` gave `(1,0)` – pointing the opposite way – and a mixed-sign vector like `Vec(-10, 16)` kept a diagonal `(-1,1)` of length √2. A tie between equal magnitudes now resolves to the X axis (**breaking**)
 - `Direction.Unit` follows the same rule, so an integer diagonal collapses onto an axis – `DirectionUpRight.Unit[int]()` is `(1,0)` instead of the `(1,-1)` it returned before, which had length √2 rather than 1. `Direction.Offset` still gives the lattice step `(±1,±1)` for callers that need the diagonal (**breaking**)

@@ -186,8 +186,8 @@ func (m Matrix[T]) IsZero() bool {
 // Int converts the matrix to a Matrix[int], rounding each component.
 func (m Matrix[T]) Int() Matrix[int] {
 	return Matrix[int]{
-		Cast[int](float64(m.A)), Cast[int](float64(m.B)), Cast[int](float64(m.C)),
-		Cast[int](float64(m.D)), Cast[int](float64(m.E)), Cast[int](float64(m.F)),
+		Int(m.A), Int(m.B), Int(m.C),
+		Int(m.D), Int(m.E), Int(m.F),
 	}
 }
 

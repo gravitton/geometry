@@ -212,6 +212,11 @@ modulo a full turn, across the `0`/`2π` seam, and is what `RegularPolygon.Equal
 **Integer rounding:** A float result stored into an integer `T` rounds half away from zero, so
 `Pt(0, 0).Midpoint(Pt(5, 5))` is `(3,3)`. `Rectangle` is the exception: its center truncates half the size toward
 `Min` so that `Max-Min` stays exactly the size, so `RectangleFromMinMax(Pt(0, 0), Pt(5, 5)).Center` is `(2,2)`.
+`Polygon.Center` truncates the vertex average toward zero, so an integer `MoveTo` can miss by one unit; this is a known
+exception.
+
+**Division by zero:** `Divide`, `Unscale`, and `Matrix.Inverse` on a singular matrix panic, like the integer `/`
+operator and `Mod`. Check `IsInvertible` first when a matrix may be singular.
 
 **Narrow integers:** `int8` and `int16` are admitted for storage. Products such as `LengthSquared` and `Area` overflow
 there, so use `int` or `int64` for arithmetic.

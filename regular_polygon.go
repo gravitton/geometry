@@ -51,17 +51,17 @@ func RegularPolygonWithOrientation[T Number](center Point[T], size Size[T], n in
 
 // Triangle creates a RegularPolygon with 3 vertices.
 func Triangle[T Number](center Point[T], size Size[T], orientation Orientation) RegularPolygon[T] {
-	return RegularPolygon[T]{center, size, 3, RegularPolygonOrientationAngle(3, orientation)}
+	return RegularPolygonWithOrientation(center, size, 3, orientation)
 }
 
 // Square creates a RegularPolygon with 4 vertices.
 func Square[T Number](center Point[T], size Size[T], orientation Orientation) RegularPolygon[T] {
-	return RegularPolygon[T]{center, size, 4, RegularPolygonOrientationAngle(4, orientation)}
+	return RegularPolygonWithOrientation(center, size, 4, orientation)
 }
 
 // Hexagon creates a RegularPolygon with 6 vertices.
 func Hexagon[T Number](center Point[T], size Size[T], orientation Orientation) RegularPolygon[T] {
-	return RegularPolygon[T]{center, size, 6, RegularPolygonOrientationAngle(6, orientation)}
+	return RegularPolygonWithOrientation(center, size, 6, orientation)
 }
 
 // Translate creates a new RegularPolygon translated by the given vector.
