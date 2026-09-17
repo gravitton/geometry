@@ -137,6 +137,7 @@ func Clamp[T Number](value, min, max T) T {
 	if value > max {
 		return max
 	}
+
 	return value
 }
 

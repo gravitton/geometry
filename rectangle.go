@@ -22,14 +22,15 @@ func Rect[T Number](center Point[T], size Size[T]) Rectangle[T] {
 
 // RectangleFromMin creates a Rectangle from min point and size.
 func RectangleFromMin[T Number](min Point[T], size Size[T]) Rectangle[T] {
-	// must be same calculation (in reverse) as in Min() method
 	w, h := size.XY()
+
 	return Rectangle[T]{min.AddXY(w/2, h/2), size}
 }
 
 // RectangleFromMax creates a Rectangle from max point and size.
 func RectangleFromMax[T Number](max Point[T], size Size[T]) Rectangle[T] {
 	w, h := size.XY()
+
 	return Rectangle[T]{max.AddXY(-w+w/2, -h+h/2), size}
 }
 
@@ -106,7 +107,7 @@ func (r Rectangle[T]) Height() T {
 	return r.Size.Height
 }
 
-// Min returns the minimum corner point of the rectangle.
+// Min returns the minimum corner point of the rectangle. RectangleFromMin is its inverse.
 func (r Rectangle[T]) Min() Point[T] {
 	w, h := r.Size.XY()
 
