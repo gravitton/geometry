@@ -63,28 +63,26 @@ func (s Size[T]) UnscaleXY(factorX, factorY float64) Size[T] {
 	return Size[T]{Divide(s.Width, factorX), Divide(s.Height, factorY)}
 }
 
-// Grow creates a new Size expanded by the same delta in both dimensions, clamped to zero.
-// The delta is the total change of each extent, not an amount per side: Grow(2) makes the size
-// two wider and two taller, where Rectangle.Outset(PadU(2)) adds two to every side.
+// Grow creates a new Size expanded by the same amount in both dimensions, clamped to zero.
+// The amount is the total change of each extent, not an amount per side.
 func (s Size[T]) Grow(amount T) Size[T] {
 	return Size[T]{max(s.Width+amount, 0), max(s.Height+amount, 0)}
 }
 
 // GrowXY creates a new Size expanded by the given amounts along X and Y, clamped to zero.
-// Each amount is the total change of that extent, not an amount per side.
+// Each amount is the total change of that extent, like Grow.
 func (s Size[T]) GrowXY(amountX, amountY T) Size[T] {
 	return Size[T]{max(s.Width+amountX, 0), max(s.Height+amountY, 0)}
 }
 
-// Shrink creates a new Size reduced by the same delta in both dimensions, clamped to zero.
-// The delta is the total change of each extent, not an amount per side: Shrink(2) makes the size
-// two narrower and two shorter, where Rectangle.Inset(PadU(2)) takes two off every side.
+// Shrink creates a new Size reduced by the same amount in both dimensions, clamped to zero.
+// The amount is the total change of each extent, not an amount per side.
 func (s Size[T]) Shrink(amount T) Size[T] {
 	return Size[T]{max(s.Width-amount, 0), max(s.Height-amount, 0)}
 }
 
 // ShrinkXY creates a new Size reduced by the given amounts along X and Y, clamped to zero.
-// Each amount is the total change of that extent, not an amount per side.
+// Each amount is the total change of that extent, like Shrink.
 func (s Size[T]) ShrinkXY(amountX, amountY T) Size[T] {
 	return Size[T]{max(s.Width-amountX, 0), max(s.Height-amountY, 0)}
 }

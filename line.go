@@ -72,7 +72,7 @@ func (l Line[T]) Contains(point Point[T]) bool {
 // wedge returns Start × End in float64, the term the shoelace formula sums per edge. Cross is
 // exact for parallel vectors, so a degenerate edge contributes exactly zero.
 func (l Line[T]) wedge() float64 {
-	return l.Start.Float().Vector().Cross(l.End.Vector().Float())
+	return l.Start.Vector().Float().Cross(l.End.Vector().Float())
 }
 
 // crossesRay reports whether a ray cast from the point along +X crosses the segment, counting

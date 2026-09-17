@@ -94,6 +94,23 @@ func TestPadding_Scale(t *testing.T) {
 	})
 }
 
+func TestPadding_Unscale(t *testing.T) {
+	t.Run("int rounds", func(t *testing.T) {
+		AssertPadding(t, Pad(3, 6, 9, 12).Unscale(2), Pad(2, 3, 5, 6))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertPadding(t, Pad(0.2, 0.4, 0.6, 0.8).Unscale(2), Pad(0.1, 0.2, 0.3, 0.4))
+	})
+	t.Run("undoes scale", func(t *testing.T) {
+		AssertPadding(t, Pad(1.5, 2.5, 3.5, 4.5).Scale(4).Unscale(4), Pad(1.5, 2.5, 3.5, 4.5))
+	})
+	t.Run("zero factor panics", func(t *testing.T) {
+		assert.Panics(t, func() {
+			Pad(1, 2, 3, 4).Unscale(0)
+		}, "geom: division by zero")
+	})
+}
+
 func TestPadding_Equal(t *testing.T) {
 	t.Run("same padding", func(t *testing.T) {
 		assert.True(t, Pad(1, 2, 3, 4).Equal(Pad(1, 2, 3, 4)))

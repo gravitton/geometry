@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `EqualAngle(a, b)` – angle equality modulo a full turn within `Delta`, holding across the `0`/`2π` seam
 - `AssertNumber(t, actual, expected)` – asserts a bare coordinate with the same integer/float rule as the shape helpers
 - `Vector.LessOrEqual(length)` – the closed counterpart of `Less`
-- `Padding.Equal`, `IsZero`, `Add`, `Negate` and `Scale`, so `Padding` has the same equality pair and arithmetic as the other types
+- `Padding.Equal`, `IsZero`, `Add`, `Negate`, `Scale` and `Unscale`, so `Padding` has the same equality pair and arithmetic as the other types
 - `Rectangle.Outset(padding)` – expands the rectangle by the padding, the inverse of `Inset`
 - `Polygon.Bounds` – the axis-aligned bounding rectangle of the vertices, the zero rectangle for an empty polygon; every shape now has `Bounds()`
 - `Matrix.IsInvertible` – reports whether the determinant is non-zero, the check to run before `Inverse`
@@ -31,6 +31,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `Rectangle.MinMaxString` – the rectangle by its corners, `(0,1)-(2,4)`, the form `String` printed before
 
 ### Changed
+- `Rectangle.Inset` stops an edge at its opposite edge, so a padding larger than the rectangle collapses it to a zero extent inside the original bounds; `Rect(Pt(0, 0), Sz(10, 10)).Inset(Pad(0, 0, 0, 20))` sits at `x = 5` instead of `x = 15`, outside the rectangle it was inset from (**breaking**)
+- `Rectangle.Grow`, `GrowXY`, `Shrink` and `ShrinkXY` document where an odd integer amount lands: on the `Min` side when the new extent is even and on the `Max` side when it is odd, so two `Grow(1)` calls move each side once
 - `Rectangle.Contains`, `Circle.Contains`, `Vector.LessOrEqual`, `CollisionRectangles`, `CollisionCircles` and `CollisionRectangleCircle` are closed within `Epsilon[T]()`: touching shapes collide, a float rectangle contains the corners it was built from even where `Min` is recomputed from `Center` with a rounding error, and a circle contains its anchors. `Vector.Less` stays strict, and `CollisionRectangleCircle` tests the point of the rectangle closest to the circle center instead of rounding the half extents of an odd integer size (**breaking**)
 - Every product, distance and interpolation is computed in `float64` and stored back through `Cast`: `Vector.Dot`, `Cross`, `LengthSquared`, `Less`, `LessOrEqual`, `IsNormalized`, `Point.ManhattanDistanceTo`, `ChebyshevDistanceTo`, `OctileDistanceTo`, `Size.Area`, `Perimeter`, `Circle.Area`, `Polygon.Center`, `Matrix.Multiply`, `Determinant`, `Inverse`, `IsInvertible`, `Lerp` and `EqualDelta`. A narrow `int8` or `int16` no longer overflows mid-computation – `EqualDelta[int8](127, -128, 1)` was true and `Lerp[int8](-100, 100, 0.5)` gave `-128` – while an `int64` beyond 2^53 loses precision instead (**breaking** for such values)
 - `Polygon.Center` returns the area centroid by the shoelace formula instead of the vertex average, so a vertex added in the middle of an edge no longer moves it and `Scale` and `MoveTo` pivot on the true center; a polygon enclosing no area, with fewer than three vertices or all collinear, falls back to the vertex average. The sum runs with the origin at the first vertex and rounds every product on its own, so a degenerate edge contributes exactly zero even where the compiler fuses multiply and add (**breaking**)
@@ -67,6 +69,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Internal: `Point.Transform` and `Vector.Transform` convert the matrix with `Matrix.Float` once; `ParseSize` splits with `strings.Cut`; `Triangle`, `Square` and `Hexagon` delegate to `RegularPolygonWithOrientation`; `Axis` methods return from each `switch` case directly
 
 ### Fixed
+- `Polygon.UnmarshalJSON` decodes into a fresh slice instead of the one the polygon holds, so decoding into `Pol(shared)` no longer writes the new vertices into `shared`
+- `String` prints a float that rounds to zero as `0.00` without a sign; `String(-0.004)` gave `-0.00` while a negative zero already printed unsigned
 - `LessOrEqual` compares an integer `T` in `T` instead of through `float64`, so `Rectangle[int64].Contains` and `CollisionRectangles` stay exact beyond 2^53, where `LessOrEqual[int64](1<<53+1, 1<<53)` was true
 - `CollisionCircles` sums the radii in `float64` instead of `T`, so two `Circle[int8]` of radius 100 no longer wrap the threshold to `-56` and report no collision while overlapping
 - `Vector.Resize` and `Normalize` divide each component by the current length before scaling it instead of multiplying by a ratio, so a subnormal vector such as `Vec(5e-324, 0)` resizes to `(length,0)` instead of `(+Inf,NaN)`

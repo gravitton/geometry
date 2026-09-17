@@ -17,7 +17,7 @@
 //
 // # Panics
 //
-// Divide, and every method built on it (Point.Divide, Size.Unscale, Matrix.Unscale), panics
+// Divide, and every method built on it (Point.Divide, Size.Unscale, Padding.Unscale, Matrix.Unscale), panics
 // for a zero factor, and Matrix.Inverse panics for a singular matrix, the same way the integer
 // / operator and Mod do. Check IsInvertible before inverting a matrix that may be singular.
 // Cast panics when a NaN or ±Inf would be stored into an integer T: Multiply, Lerp, Rotate,

@@ -85,6 +85,9 @@ func TestString(t *testing.T) {
 		assertString(t, 8.1, "8.10")
 		assertString(t, 0.0000, "0.00")
 		assertString(t, math.Copysign(0, -1), "0.00")
+		assertString(t, -0.004, "0.00")
+		assertString(t, float32(-0.004), "0.00")
+		assertString(t, -0.005, "-0.01")
 		assertString(t, float32(1), "1.00")
 	})
 	t.Run("defined types follow their underlying kind", func(t *testing.T) {

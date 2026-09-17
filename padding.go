@@ -40,6 +40,12 @@ func (p Padding[T]) Scale(factor float64) Padding[T] {
 	return Padding[T]{Multiply(p.Top, factor), Multiply(p.Right, factor), Multiply(p.Bottom, factor), Multiply(p.Left, factor)}
 }
 
+// Unscale creates a new Padding with every edge scaled by the inverse factor, the inverse of
+// Scale. Like Divide it panics for a zero factor.
+func (p Padding[T]) Unscale(factor float64) Padding[T] {
+	return Padding[T]{Divide(p.Top, factor), Divide(p.Right, factor), Divide(p.Bottom, factor), Divide(p.Left, factor)}
+}
+
 // Width returns the width of the padding.
 func (p Padding[T]) Width() T {
 	return p.Left + p.Right

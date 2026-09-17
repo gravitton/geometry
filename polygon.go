@@ -97,7 +97,7 @@ func (p Polygon[T]) Center() Point[T] {
 	return Point[T]{Cast[T](centroid.X), Cast[T](centroid.Y)}
 }
 
-// mean returns the average of the vertices, the Center falls back to when the
+// mean returns the average of the vertices, which Center falls back to when the
 // polygon encloses no area.
 func (p Polygon[T]) mean() Point[T] {
 	var x, y float64
@@ -249,7 +249,15 @@ func (p Polygon[T]) MarshalJSON() ([]byte, error) {
 	return json.Marshal(p.Vertices)
 }
 
-// UnmarshalJSON implements json.Unmarshaler.
+// UnmarshalJSON implements json.Unmarshaler. The vertices are decoded into a fresh slice, so a
+// slice the polygon shared before decoding is left untouched.
 func (p *Polygon[T]) UnmarshalJSON(bytes []byte) error {
-	return json.Unmarshal(bytes, &p.Vertices)
+	var vertices []Point[T]
+	if err := json.Unmarshal(bytes, &vertices); err != nil {
+		return err
+	}
+
+	p.Vertices = vertices
+
+	return nil
 }

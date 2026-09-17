@@ -214,6 +214,20 @@ func TestPolygon_JSON(t *testing.T) {
 		assert.NoError(t, json.Unmarshal([]byte(`[{"x":0,"y":0},{"x":2.5,"y":0.5},{"x":2,"y":1}]`), &p))
 		AssertPolygon(t, p, Pol(triangleVertices()))
 	})
+	t.Run("decoding leaves a shared slice untouched", func(t *testing.T) {
+		shared := squareVertices()
+		p := Pol(shared)
+
+		assert.NoError(t, json.Unmarshal([]byte(`[{"x":9,"y":9}]`), &p))
+		AssertVertices(t, shared, squareVertices())
+		AssertPolygon(t, p, Pol([]Point[int]{{9, 9}}))
+	})
+	t.Run("invalid input leaves the polygon untouched", func(t *testing.T) {
+		p := Pol(squareVertices())
+
+		assert.Error(t, json.Unmarshal([]byte(`[{"x":"nine"}]`), &p))
+		AssertPolygon(t, p, Pol(squareVertices()))
+	})
 	t.Run("round-trip", func(t *testing.T) {
 		for _, polygon := range polygonFixtures() {
 			data, err := json.Marshal(polygon)

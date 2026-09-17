@@ -72,38 +72,45 @@ func (r Rectangle[T]) Resize(size Size[T]) Rectangle[T] {
 }
 
 // Grow creates a new Rectangle with size expanded by the same amount in both dimensions, clamped to zero.
-// The amount is the total change of each extent, so each side moves out by half of it; Outset
-// moves every side by the full padding.
+// The amount is the total change of each extent, so each side moves out by half of it, where
+// Outset moves every side by the full padding.
+// For integer T an odd amount cannot be split evenly and lands on one side only: on Min when
+// the new extent is even, on Max when it is odd, as Min and Max place the center. Use Outset
+// to move a chosen side by a whole amount.
 func (r Rectangle[T]) Grow(amount T) Rectangle[T] {
 	return Rectangle[T]{r.Center, r.Size.Grow(amount)}
 }
 
 // GrowXY creates a new Rectangle with size expanded by the given amounts along X and Y, clamped to zero.
-// Each amount is the total change of that extent, so each side moves out by half of it.
+// Each amount is the total change of that extent and an odd integer one lands on one side only, like Grow.
 func (r Rectangle[T]) GrowXY(amountX, amountY T) Rectangle[T] {
 	return Rectangle[T]{r.Center, r.Size.GrowXY(amountX, amountY)}
 }
 
 // Shrink creates a new Rectangle with size reduced by the same amount in both dimensions, clamped to zero.
-// The amount is the total change of each extent, so each side moves in by half of it; Inset
-// moves every side by the full padding.
+// The amount is the total change of each extent, so each side moves in by half of it, where
+// Inset moves every side by the full padding. An odd integer amount comes off one side only, like Grow.
 func (r Rectangle[T]) Shrink(amount T) Rectangle[T] {
 	return Rectangle[T]{r.Center, r.Size.Shrink(amount)}
 }
 
 // ShrinkXY creates a new Rectangle with size reduced by the given amounts along X and Y, clamped to zero.
-// Each amount is the total change of that extent, so each side moves in by half of it.
+// Each amount is the total change of that extent and an odd integer one comes off one side only, like Shrink.
 func (r Rectangle[T]) ShrinkXY(amountX, amountY T) Rectangle[T] {
 	return Rectangle[T]{r.Center, r.Size.ShrinkXY(amountX, amountY)}
 }
 
-// Inset creates a new Rectangle inset by the given padding amounts, clamping the size to zero.
+// Inset creates a new Rectangle inset by the given padding amounts. An edge pushed past its
+// opposite stops there, so a padding larger than the rectangle collapses it to a zero extent
+// that still lies within the original bounds, at the last edge to move.
 // A negative padding outsets the rectangle, so Outset undoes Inset as long as nothing was clamped.
 func (r Rectangle[T]) Inset(padding Padding[T]) Rectangle[T] {
-	return RectangleFromMin(
-		r.Min().AddXY(padding.Left, padding.Top),
-		r.Size.ShrinkXY(padding.Left+padding.Right, padding.Top+padding.Bottom),
-	)
+	minPoint, maxPoint := r.Min(), r.Max()
+
+	insetMin := Point[T]{min(minPoint.X+padding.Left, maxPoint.X), min(minPoint.Y+padding.Top, maxPoint.Y)}
+	insetMax := Point[T]{max(maxPoint.X-padding.Right, insetMin.X), max(maxPoint.Y-padding.Bottom, insetMin.Y)}
+
+	return RectangleFromMinMax(insetMin, insetMax)
 }
 
 // Outset creates a new Rectangle expanded by the given padding amounts, the inverse of Inset.

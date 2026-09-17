@@ -130,10 +130,24 @@ func TestRectangle_Inset(t *testing.T) {
 		AssertPoint(t, r.Inset(Pad(0, 3, 1, 0)).Min(), r.Min())
 		AssertPoint(t, r.Inset(Pad(0, 3, 1, 0)).Max(), r.Max().AddXY(-3, -1))
 	})
-	t.Run("padding beyond the size collapses at the padded corner", func(t *testing.T) {
+	t.Run("padding beyond the size collapses inside the rectangle", func(t *testing.T) {
 		r := Rect(Pt(0, 0), Sz(10, 10))
 
-		AssertRect(t, r.Inset(Pad(0, 0, 0, 20)), Rect(Pt(15, 0), Sz(0, 10)))
+		AssertRect(t, r.Inset(Pad(0, 0, 0, 20)), Rect(Pt(5, 0), Sz(0, 10)))
+		AssertRect(t, r.Inset(Pad(0, 20, 0, 0)), Rect(Pt(-5, 0), Sz(0, 10)))
+		AssertRect(t, r.Inset(Pad(20, 0, 20, 0)), Rect(Pt(0, 5), Sz(10, 0)))
+		AssertRect(t, r.Inset(PadU(20)), Rect(Pt(5, 5), Sz(0, 0)))
+		AssertRect(t, Rect(Pt(0.0, 0.0), Sz(10.0, 10.0)).Inset(Pad(0.0, 0.0, 0.0, 12.5)), Rect(Pt(5.0, 0.0), Sz(0.0, 10.0)))
+	})
+	t.Run("a collapsed rectangle is contained by the original", func(t *testing.T) {
+		r := Rect(Pt(0, 0), Sz(10, 10))
+
+		for _, padding := range []Padding[int]{Pad(0, 0, 0, 20), Pad(0, 20, 0, 0), Pad(20, 0, 0, 0), Pad(0, 0, 20, 0), PadU(20), Pad(7, 7, 7, 7)} {
+			inset := r.Inset(padding)
+
+			assert.True(t, r.Contains(inset.Min()), fmt.Sprintf("%s min: ", padding))
+			assert.True(t, r.Contains(inset.Max()), fmt.Sprintf("%s max: ", padding))
+		}
 	})
 	t.Run("negative padding grows the edge", func(t *testing.T) {
 		AssertRect(t, Rect(Pt(0.0, 0.0), Sz(10.0, 10.0)).Inset(Pad(1.5, -2.0, 0.0, 1.0)), Rect(Pt(1.5, 0.75), Sz(11.0, 8.5)))

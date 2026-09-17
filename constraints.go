@@ -56,19 +56,19 @@ func Int[T Number](value T) int {
 }
 
 // String formats a Number as a numeric string: integer types without a decimal point,
-// float types with two decimals. The formatting follows T, not the value. A negative zero
-// prints as 0.00.
+// float types with two decimals. The formatting follows T, not the value. A value that rounds
+// to zero prints as 0.00 without a sign, whether it is a negative zero or a small negative.
 func String[T Number](value T) string {
 	if isIntType[T]() {
 		return fmt.Sprintf("%d", int64(value))
 	}
 
-	v := float64(value)
-	if v == 0 {
-		v = math.Abs(v)
+	s := fmt.Sprintf("%.2f", float64(value))
+	if s == "-0.00" {
+		return "0.00"
 	}
 
-	return fmt.Sprintf("%.2f", v)
+	return s
 }
 
 // isIntType reports whether T is an integer type.
