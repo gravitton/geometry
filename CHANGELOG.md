@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `Line.Intersects(line)`, `IntersectsCircle`, `IntersectsRectangle` and `IntersectsPolygon` – segment intersection, closed within `Epsilon[T]()` like `Contains`; touching endpoints, tangents and collinear overlaps intersect
 - `Polygon.Intersects(polygon)`, `IntersectsLine`, `IntersectsRectangle` and `IntersectsCircle` – a vertex of one inside the other or crossing edges, by the even-odd rule `Contains` uses; an empty polygon intersects nothing
 - `Rectangle.IntersectsLine`, `IntersectsPolygon`, `Circle.IntersectsLine` and `IntersectsPolygon` – the mirrors of the above, so every pair of shapes has an intersection test on both sides
+- `Line.Intersection(line)` – the point where two segments cross and whether they do; parallel segments have no single point and report false even where they overlap
+- `Rectangle.Intersection(rectangle)` – the common rectangle and whether there is one; touching rectangles give a zero-width or zero-height one
+- `Rectangle.Union(rectangle)` – the smallest rectangle containing both
 - `Polygon.Bounds` – the axis-aligned bounding rectangle of the vertices, the zero rectangle for an empty polygon; every shape now has `Bounds()`
 - `Matrix.IsInvertible` – reports whether the determinant is non-zero, the check to run before `Inverse`
 - `Line.DistanceTo(point)` – the distance to the nearest point of the segment, exactly zero for a lattice point on a lattice segment since the perpendicular distance comes from a cross product rather than a projection

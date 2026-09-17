@@ -320,6 +320,34 @@ func (r Rectangle[T]) Intersects(rectangle Rectangle[T]) bool {
 		LessOrEqual(a1.Y, b2.Y) && LessOrEqual(a2.Y, b1.Y)
 }
 
+// Intersection returns the rectangle common to both, and false when they do not intersect.
+// Touching rectangles intersect in a rectangle of zero width or height, within Epsilon of T,
+// the same closed convention as Intersects.
+func (r Rectangle[T]) Intersection(rectangle Rectangle[T]) (Rectangle[T], bool) {
+	if !r.Intersects(rectangle) {
+		return Rectangle[T]{}, false
+	}
+
+	a1, b1 := r.MinMax()
+	a2, b2 := rectangle.MinMax()
+
+	a := Point[T]{max(a1.X, a2.X), max(a1.Y, a2.Y)}
+	b := Point[T]{max(min(b1.X, b2.X), a.X), max(min(b1.Y, b2.Y), a.Y)}
+
+	return RectangleFromMinMax(a, b), true
+}
+
+// Union returns the smallest rectangle containing both.
+func (r Rectangle[T]) Union(rectangle Rectangle[T]) Rectangle[T] {
+	a1, b1 := r.MinMax()
+	a2, b2 := rectangle.MinMax()
+
+	return RectangleFromMinMax(
+		Point[T]{min(a1.X, a2.X), min(a1.Y, a2.Y)},
+		Point[T]{max(b1.X, b2.X), max(b1.Y, b2.Y)},
+	)
+}
+
 // IntersectsCircle reports whether the rectangle and the circle overlap: the point of the
 // rectangle closest to the circle center lies within the radius. Touching shapes intersect,
 // within Epsilon of T, and the rectangle bounds are the same Min and Max that Contains uses.

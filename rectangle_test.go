@@ -432,6 +432,89 @@ func TestRectangle_Intersects(t *testing.T) {
 	})
 }
 
+func TestRectangle_Intersection(t *testing.T) {
+	rectangle := Rect(Pt(0, 0), Sz(4, 4))
+
+	t.Run("overlapping", func(t *testing.T) {
+		overlap, ok := rectangle.Intersection(Rect(Pt(2, 2), Sz(4, 4)))
+
+		assert.True(t, ok)
+		AssertRect(t, overlap, RectangleFromMinMax(Pt(0, 0), Pt(2, 2)))
+	})
+	t.Run("apart", func(t *testing.T) {
+		_, ok := rectangle.Intersection(Rect(Pt(10, 10), Sz(4, 4)))
+
+		assert.False(t, ok)
+	})
+	t.Run("touching gives a zero extent", func(t *testing.T) {
+		overlap, ok := rectangle.Intersection(Rect(Pt(4, 0), Sz(4, 4)))
+
+		assert.True(t, ok)
+		AssertRect(t, overlap, RectangleFromMinMax(Pt(2, -2), Pt(2, 2)))
+	})
+	t.Run("one contained in the other", func(t *testing.T) {
+		inner := Rect(Pt(0, 0), Sz(2, 2))
+
+		overlap, ok := rectangle.Intersection(inner)
+
+		assert.True(t, ok)
+		AssertRect(t, overlap, inner)
+	})
+	t.Run("float", func(t *testing.T) {
+		overlap, ok := Rect(Pt(0.0, 0.0), Sz(3.0, 3.0)).Intersection(Rect(Pt(1.0, 1.0), Sz(3.0, 3.0)))
+
+		assert.True(t, ok)
+		AssertRect(t, overlap, RectangleFromMinMax(Pt(-0.5, -0.5), Pt(1.5, 1.5)))
+	})
+	t.Run("symmetric and contained by both", func(t *testing.T) {
+		for _, a := range rectFixtures {
+			for _, b := range rectFixtures {
+				ab, okAB := a.Intersection(b)
+				ba, okBA := b.Intersection(a)
+
+				assert.Equal(t, okAB, okBA, fmt.Sprintf("%s → %s: ", a, b))
+				assert.Equal(t, okAB, a.Intersects(b), fmt.Sprintf("%s → %s: ", a, b))
+				if !okAB {
+					continue
+				}
+
+				AssertRect(t, ab, ba, fmt.Sprintf("%s → %s: ", a, b))
+				assert.True(t, a.Contains(ab.Min()) && a.Contains(ab.Max()), fmt.Sprintf("%s → %s in a: ", a, b))
+				assert.True(t, b.Contains(ab.Min()) && b.Contains(ab.Max()), fmt.Sprintf("%s → %s in b: ", a, b))
+			}
+		}
+	})
+}
+
+func TestRectangle_Union(t *testing.T) {
+	rectangle := Rect(Pt(0, 0), Sz(4, 4))
+
+	t.Run("overlapping", func(t *testing.T) {
+		AssertRect(t, rectangle.Union(Rect(Pt(2, 2), Sz(4, 4))), RectangleFromMinMax(Pt(-2, -2), Pt(4, 4)))
+	})
+	t.Run("apart spans the gap", func(t *testing.T) {
+		AssertRect(t, rectangle.Union(Rect(Pt(10, 0), Sz(4, 4))), RectangleFromMinMax(Pt(-2, -2), Pt(12, 2)))
+	})
+	t.Run("one contained in the other", func(t *testing.T) {
+		AssertRect(t, rectangle.Union(Rect(Pt(0, 0), Sz(2, 2))), rectangle)
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertRect(t, Rect(Pt(0.0, 0.0), Sz(3.0, 3.0)).Union(Rect(Pt(1.0, 1.0), Sz(3.0, 3.0))), RectangleFromMinMax(Pt(-1.5, -1.5), Pt(2.5, 2.5)))
+	})
+	t.Run("symmetric and contains both", func(t *testing.T) {
+		for _, a := range rectFixtures {
+			for _, b := range rectFixtures {
+				union := a.Union(b)
+
+				AssertRect(t, union, b.Union(a), fmt.Sprintf("%s → %s: ", a, b))
+				for _, corner := range append(a.Vertices(), b.Vertices()...) {
+					assert.True(t, union.Contains(corner), fmt.Sprintf("%s → %s: %s: ", a, b, corner))
+				}
+			}
+		}
+	})
+}
+
 func TestRectangle_IntersectsCircle(t *testing.T) {
 	rectangle := Rect(Pt(0.0, 0.0), Sz(200.0, 100.0))
 

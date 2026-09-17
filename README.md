@@ -113,6 +113,10 @@ a.Intersects(b)        // Rectangle, Circle, Line and Polygon with their own kin
 r.IntersectsCircle(c)  // and IntersectsLine, IntersectsPolygon
 c.IntersectsRectangle(r)
 l.IntersectsPolygon(p)
+
+point, ok := l.Intersection(m)  // where two segments cross
+box, ok := a.Intersection(b)    // the overlap of two rectangles
+a.Union(b)                      // the smallest rectangle around both
 ```
 
 Directions and axes:

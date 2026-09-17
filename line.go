@@ -75,6 +75,29 @@ func (l Line[T]) Intersects(line Line[T]) bool {
 	return LessOrEqualDelta(l.distanceToLine(line), 0, Epsilon[T]())
 }
 
+// Intersection returns the point where the segments cross, and false when they do not.
+// Parallel segments have no single crossing point and return false even where they overlap,
+// which Intersects still reports. Touching at an endpoint counts, within Epsilon of T, the
+// same closed convention as Intersects. For integer T the crossing is rounded like every
+// other result stored into T.
+func (l Line[T]) Intersection(line Line[T]) (Point[T], bool) {
+	a, b := l.Float(), line.Float()
+
+	denominator := a.Vector().Cross(b.Vector())
+	if denominator == 0 {
+		return Point[T]{}, false
+	}
+
+	t := b.Start.Subtract(a.Start).Cross(b.Vector()) / denominator
+	point := a.Start.Add(a.Vector().Multiply(Clamp(t, 0, 1)))
+
+	if !LessOrEqualDelta(b.DistanceTo(point), 0, Epsilon[T]()) {
+		return Point[T]{}, false
+	}
+
+	return Point[T]{Cast[T](point.X), Cast[T](point.Y)}, true
+}
+
 // IntersectsCircle reports whether the segment and the circle share a point: the point of the
 // segment closest to the center lies within the radius. Touching shapes intersect, within
 // Epsilon of T.
@@ -82,11 +105,11 @@ func (l Line[T]) IntersectsCircle(circle Circle[T]) bool {
 	return circle.Radius >= 0 && LessOrEqualDelta(l.DistanceTo(circle.Center), float64(circle.Radius), Epsilon[T]())
 }
 
-// IntersectsRectangle reports whether the segment and the rectangle share a point: an endpoint
+// IntersectsRectangle reports whether the segment and the rectangle share a point: the start
 // lies within the rectangle, or the segment crosses one of its edges. Touching shapes intersect,
 // within Epsilon of T.
 func (l Line[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
-	if rectangle.Contains(l.Start) || rectangle.Contains(l.End) {
+	if rectangle.Contains(l.Start) {
 		return true
 	}
 

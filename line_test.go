@@ -350,6 +350,80 @@ func TestLine_Intersects(t *testing.T) {
 	})
 }
 
+func TestLine_Intersection(t *testing.T) {
+	diagonal := Ln(Pt(0, 0), Pt(4, 4))
+
+	t.Run("crossing", func(t *testing.T) {
+		point, ok := diagonal.Intersection(Ln(Pt(0, 4), Pt(4, 0)))
+
+		assert.True(t, ok)
+		AssertPoint(t, point, Pt(2, 2))
+	})
+	t.Run("apart", func(t *testing.T) {
+		_, ok := diagonal.Intersection(Ln(Pt(5, 0), Pt(5, 4)))
+
+		assert.False(t, ok)
+	})
+	t.Run("touching at an endpoint counts", func(t *testing.T) {
+		point, ok := diagonal.Intersection(Ln(Pt(4, 4), Pt(8, 0)))
+
+		assert.True(t, ok)
+		AssertPoint(t, point, Pt(4, 4))
+
+		point, ok = Ln(Pt(2, 2), Pt(2, 8)).Intersection(diagonal)
+
+		assert.True(t, ok)
+		AssertPoint(t, point, Pt(2, 2))
+	})
+	t.Run("parallel and collinear segments have no single point", func(t *testing.T) {
+		_, ok := diagonal.Intersection(Ln(Pt(0, 1), Pt(4, 5)))
+		assert.False(t, ok)
+
+		_, ok = diagonal.Intersection(Ln(Pt(2, 2), Pt(6, 6)))
+		assert.False(t, ok)
+	})
+	t.Run("the lines cross beyond a segment", func(t *testing.T) {
+		_, ok := diagonal.Intersection(Ln(Pt(5, 0), Pt(6, 4)))
+
+		assert.False(t, ok)
+	})
+	t.Run("int rounds the crossing", func(t *testing.T) {
+		point, ok := Ln(Pt(0, 0), Pt(3, 3)).Intersection(Ln(Pt(0, 3), Pt(3, 0)))
+
+		assert.True(t, ok)
+		AssertPoint(t, point, Pt(2, 2))
+	})
+	t.Run("float keeps the crossing", func(t *testing.T) {
+		point, ok := Ln(Pt(0.0, 0.0), Pt(3.0, 3.0)).Intersection(Ln(Pt(0.0, 3.0), Pt(3.0, 0.0)))
+
+		assert.True(t, ok)
+		AssertPoint(t, point, Pt(1.5, 1.5))
+	})
+	t.Run("float is tolerant", func(t *testing.T) {
+		l := Ln(Pt(0.0, 0.0), Pt(1.0, 0.0))
+
+		_, ok := l.Intersection(Ln(Pt(0.5, Delta/2), Pt(0.5, 1.0)))
+		assert.True(t, ok)
+
+		_, ok = l.Intersection(Ln(Pt(0.5, 2*Delta), Pt(0.5, 1.0)))
+		assert.False(t, ok)
+	})
+	t.Run("agrees with Intersects on crossing fixtures", func(t *testing.T) {
+		for _, a := range lineFixtures {
+			for _, b := range lineFixtures {
+				point, ok := a.Intersection(b)
+				if !ok {
+					continue
+				}
+
+				assert.True(t, a.Intersects(b), fmt.Sprintf("%s → %s: ", a, b))
+				assert.True(t, a.Contains(point), fmt.Sprintf("%s → %s on a: ", a, b))
+				assert.True(t, b.Contains(point), fmt.Sprintf("%s → %s on b: ", a, b))
+			}
+		}
+	})
+}
+
 func TestLine_IntersectsCircle(t *testing.T) {
 	circle := Circ(Pt(0.0, 0.0), 1.0)
 
