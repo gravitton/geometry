@@ -72,21 +72,27 @@ func (r Rectangle[T]) Resize(size Size[T]) Rectangle[T] {
 }
 
 // Grow creates a new Rectangle with size expanded by the same amount in both dimensions, clamped to zero.
+// The amount is the total change of each extent, so each side moves out by half of it; Outset
+// moves every side by the full padding.
 func (r Rectangle[T]) Grow(amount T) Rectangle[T] {
 	return Rectangle[T]{r.Center, r.Size.Grow(amount)}
 }
 
 // GrowXY creates a new Rectangle with size expanded by the given amounts along X and Y, clamped to zero.
+// Each amount is the total change of that extent, so each side moves out by half of it.
 func (r Rectangle[T]) GrowXY(amountX, amountY T) Rectangle[T] {
 	return Rectangle[T]{r.Center, r.Size.GrowXY(amountX, amountY)}
 }
 
 // Shrink creates a new Rectangle with size reduced by the same amount in both dimensions, clamped to zero.
+// The amount is the total change of each extent, so each side moves in by half of it; Inset
+// moves every side by the full padding.
 func (r Rectangle[T]) Shrink(amount T) Rectangle[T] {
 	return Rectangle[T]{r.Center, r.Size.Shrink(amount)}
 }
 
 // ShrinkXY creates a new Rectangle with size reduced by the given amounts along X and Y, clamped to zero.
+// Each amount is the total change of that extent, so each side moves in by half of it.
 func (r Rectangle[T]) ShrinkXY(amountX, amountY T) Rectangle[T] {
 	return Rectangle[T]{r.Center, r.Size.ShrinkXY(amountX, amountY)}
 }
@@ -280,8 +286,13 @@ func (r Rectangle[T]) IsZero() bool {
 // Contains reports whether the given point lies within the rectangle, boundary included within
 // Epsilon of T.
 func (r Rectangle[T]) Contains(point Point[T]) bool {
-	minPoint, maxPoint := r.Min(), r.Max()
+	return between(point, r.Min(), r.Max())
+}
 
+// between reports whether the point lies within the box spanned by the two corners, boundary
+// included within Epsilon of T. It is the check Rectangle.Contains makes, shared with
+// Polygon.Contains, which tests the extent of the vertices before walking the edges.
+func between[T Number](point, minPoint, maxPoint Point[T]) bool {
 	return LessOrEqual(minPoint.X, point.X) && LessOrEqual(point.X, maxPoint.X) &&
 		LessOrEqual(minPoint.Y, point.Y) && LessOrEqual(point.Y, maxPoint.Y)
 }

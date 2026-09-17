@@ -250,6 +250,14 @@ func TestVector_Dot(t *testing.T) {
 	t.Run("perpendicular vectors are zero", func(t *testing.T) {
 		AssertNumber(t, Vec(1, 0).Dot(Vec(0, 1)), 0)
 	})
+	t.Run("a float vector and its normal are exactly zero", func(t *testing.T) {
+		for _, v := range []Vector[float64]{Vec(0.1, 0.3), Vec(1.1, 3.3), Vec(2.5, 1e5+0.1)} {
+			assert.Equal(t, v.Dot(v.Normal()), 0.0, v.String())
+		}
+		for _, v := range []Vector[float32]{Vec[float32](0.1, 0.3), Vec[float32](1.1, 3.3)} {
+			assert.Equal(t, v.Dot(v.Normal()), float32(0), v.String())
+		}
+	})
 	t.Run("narrow integers do not overflow mid-computation", func(t *testing.T) {
 		AssertNumber(t, Vec[int8](100, 50).Dot(Vec[int8](2, -2)), 100)
 	})
@@ -262,6 +270,14 @@ func TestVector_Cross(t *testing.T) {
 	})
 	t.Run("parallel vectors are zero", func(t *testing.T) {
 		AssertNumber(t, Vec(2, 4).Cross(Vec(1, 2)), 0)
+	})
+	t.Run("a float vector with itself is exactly zero", func(t *testing.T) {
+		for _, v := range []Vector[float64]{Vec(0.1, 0.3), Vec(1.1, 3.3), Vec(2.5, 1e5+0.1)} {
+			assert.Equal(t, v.Cross(v), 0.0, v.String())
+		}
+		for _, v := range []Vector[float32]{Vec[float32](0.1, 0.3), Vec[float32](1.1, 3.3)} {
+			assert.Equal(t, v.Cross(v), float32(0), v.String())
+		}
 	})
 }
 

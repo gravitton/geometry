@@ -38,6 +38,11 @@ func TestPolygon_Center(t *testing.T) {
 
 		AssertPoint(t, reversed.Center(), Pt(1.0, 1.0))
 	})
+	t.Run("degenerate float vertices are their own center exactly", func(t *testing.T) {
+		repeated := Pol([]Point[float64]{Pt(13.5, 1.9), Pt(13.5, 1.9)})
+
+		assert.Equal(t, repeated.Center(), Pt(13.5, 1.9))
+	})
 	t.Run("collinear falls back to the vertex average", func(t *testing.T) {
 		AssertPoint(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(1.0, 1.0), Pt(3.0, 3.0)}).Center(), Pt(4.0/3, 4.0/3))
 		AssertPoint(t, Pol([]Point[int]{Pt(0, 0), Pt(4, 0)}).Center(), Pt(2, 0))
@@ -353,6 +358,10 @@ func TestPolygon_Area(t *testing.T) {
 		AssertNumber(t, Pol([]Point[int]{}).Area(), 0.0)
 		AssertNumber(t, Pol([]Point[int]{Pt(1, 1), Pt(4, 4)}).Area(), 0.0)
 	})
+	t.Run("degenerate float is exactly zero", func(t *testing.T) {
+		assert.Equal(t, Pol([]Point[float64]{Pt(13.5, 1.9), Pt(13.5, 1.9)}).Area(), 0.0)
+		assert.Equal(t, Pol([]Point[float64]{Pt(0.1, 0.2), Pt(0.3, 0.6), Pt(0.1, 0.2)}).Area(), 0.0)
+	})
 }
 
 func TestPolygon_Perimeter(t *testing.T) {
@@ -386,6 +395,19 @@ func TestPolygon_Contains(t *testing.T) {
 		assert.True(t, square.Contains(Pt(2, 1)))
 		assert.True(t, square.Contains(Pt(0, 0)))
 		assert.True(t, square.Contains(Pt(2, 2)))
+	})
+	t.Run("outside the extent is rejected on the point's own row", func(t *testing.T) {
+		assert.False(t, square.Contains(Pt(-1, 0)))
+		assert.False(t, square.Contains(Pt(3, 2)))
+	})
+	t.Run("edges running down and up count alike", func(t *testing.T) {
+		clockwise := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(2.0, 0.0), Pt(2.0, 2.0), Pt(0.0, 2.0)})
+		counter := Pol([]Point[float64]{Pt(0.0, 2.0), Pt(2.0, 2.0), Pt(2.0, 0.0), Pt(0.0, 0.0)})
+
+		for _, point := range []Point[float64]{Pt(1.0, 1.0), Pt(0.5, 1.5), Pt(1.9, 0.1)} {
+			assert.True(t, clockwise.Contains(point), point.String())
+			assert.True(t, counter.Contains(point), point.String())
+		}
 	})
 	t.Run("ray through a vertex is counted once", func(t *testing.T) {
 		diamond := Pol([]Point[int]{Pt(0, -2), Pt(2, 0), Pt(0, 2), Pt(-2, 0)})

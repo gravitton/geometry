@@ -164,13 +164,22 @@ func (v Vector[T]) Ceil() Vector[T] {
 }
 
 // Dot returns dot (scalar) product of two vectors.
+// The two products are rounded separately, which keeps a fused multiply-add from turning the
+// dot product of a vector with its own normal into a rounding error: perpendicular vectors give
+// exactly zero.
 func (v Vector[T]) Dot(vector Vector[T]) T {
-	return Cast[T](float64(v.X)*float64(vector.X) + float64(v.Y)*float64(vector.Y))
+	a, b := v.Float(), vector.Float()
+
+	return Cast[T](float64(a.X*b.X) + float64(a.Y*b.Y))
 }
 
 // Cross returns cross product of two vectors.
+// The two products are rounded separately, which keeps a fused multiply-add from turning the
+// cross product of a vector with itself into a rounding error: parallel vectors give exactly zero.
 func (v Vector[T]) Cross(vector Vector[T]) T {
-	return Cast[T](float64(v.X)*float64(vector.Y) - float64(v.Y)*float64(vector.X))
+	a, b := v.Float(), vector.Float()
+
+	return Cast[T](float64(a.X*b.Y) - float64(a.Y*b.X))
 }
 
 // Normal creates a new Vector as normal to current vector. Faster equivalent to Rotate(math.Pi/2).

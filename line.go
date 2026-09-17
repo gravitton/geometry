@@ -69,18 +69,19 @@ func (l Line[T]) Contains(point Point[T]) bool {
 	return LessOrEqualDelta(l.DistanceTo(point), 0, Epsilon[T]())
 }
 
-// wedge returns Start × End in float64, the term the shoelace formula sums per edge.
-// The two products are rounded separately, which keeps a fused multiply-add from turning the
-// wedge of two equal points into a rounding error: a degenerate edge contributes exactly zero.
+// wedge returns Start × End in float64, the term the shoelace formula sums per edge. Cross is
+// exact for parallel vectors, so a degenerate edge contributes exactly zero.
 func (l Line[T]) wedge() float64 {
-	start, end := l.Start.Float(), l.End.Float()
-
-	return float64(start.X*end.Y) - float64(start.Y*end.X)
+	return l.Start.Float().Vector().Cross(l.End.Vector().Float())
 }
 
 // crossesRay reports whether a ray cast from the point along +X crosses the segment, counting
 // an endpoint on the ray only when it is the lower one, so a ray through a vertex is counted
 // once by the two edges that share it. It is the step of the even-odd rule Polygon.Contains uses.
+//
+// The ray crosses when the point lies on the side of the segment facing -X: the left side of a
+// segment running toward +Y, the right side of one running toward -Y. The side comes from the
+// sign of a cross product, which needs no division by the segment's Y span.
 func (l Line[T]) crossesRay(point Point[T]) bool {
 	start, end, p := l.Start.Float(), l.End.Float(), point.Float()
 
@@ -88,7 +89,10 @@ func (l Line[T]) crossesRay(point Point[T]) bool {
 		return false
 	}
 
-	return p.X < start.X+(p.Y-start.Y)*(end.X-start.X)/(end.Y-start.Y)
+	upward := end.Y > start.Y
+	left := end.Subtract(start).Cross(p.Subtract(start)) > 0
+
+	return left == upward
 }
 
 // Vertices returns the start and end points as a slice.

@@ -163,13 +163,19 @@ func (p Polygon[T]) Bounds() Rectangle[T] {
 		return Rectangle[T]{}
 	}
 
+	return RectangleFromMinMax(p.extent())
+}
+
+// extent returns the minimum and maximum corner of the vertices, which must not be empty.
+// Bounds rounds them into a Rectangle; Contains tests them as they are.
+func (p Polygon[T]) extent() (Point[T], Point[T]) {
 	minPoint, maxPoint := p.Vertices[0], p.Vertices[0]
 	for _, v := range p.Vertices[1:] {
 		minPoint = Point[T]{min(minPoint.X, v.X), min(minPoint.Y, v.Y)}
 		maxPoint = Point[T]{max(maxPoint.X, v.X), max(maxPoint.Y, v.Y)}
 	}
 
-	return RectangleFromMinMax(minPoint, maxPoint)
+	return minPoint, maxPoint
 }
 
 // Equal checks if two polygons have the same vertices.
@@ -200,7 +206,16 @@ func (p Polygon[T]) Empty() bool {
 // Contains reports whether the given point lies within the polygon, boundary included within
 // Epsilon of T, the same closed convention as Rectangle.Contains. The interior follows the
 // even-odd rule, so a self-intersecting polygon excludes the regions it winds around twice.
+// A point outside the extent of the vertices is rejected before any edge is examined.
 func (p Polygon[T]) Contains(point Point[T]) bool {
+	if p.Empty() {
+		return false
+	}
+
+	if minPoint, maxPoint := p.extent(); !between(point, minPoint, maxPoint) {
+		return false
+	}
+
 	inside := false
 	for edge := range p.edges() {
 		if edge.Contains(point) {
