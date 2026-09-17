@@ -109,14 +109,18 @@ func (v Vector[T]) Rotate(angle float64) Vector[T] {
 
 // Resize creates a new Vector resized to the given length. The zero vector has no direction
 // and resizes along +X to (length,0), the same convention Normalize follows. Only the exact
-// zero vector is treated this way: a vector shorter than Epsilon keeps its direction.
+// zero vector is treated this way: a vector shorter than Epsilon keeps its direction, down to
+// the subnormal range, since each component is divided by the current length before it is
+// scaled; the single factor length/current would overflow to +Inf there.
 // For integer T, the result is rounded and the actual length may differ from the requested value.
 func (v Vector[T]) Resize(length float64) Vector[T] {
 	if !v.hasDirection() {
 		return Vector[T]{Cast[T](length), 0}
 	}
 
-	return v.Multiply(length / v.Length())
+	current := v.Length()
+
+	return Vector[T]{Cast[T](float64(v.X) / current * length), Cast[T](float64(v.Y) / current * length)}
 }
 
 // Normalize creates a new Vector resized to a length of 1.

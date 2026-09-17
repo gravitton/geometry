@@ -3,6 +3,7 @@ package geom
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/gravitton/x/slices"
@@ -88,6 +89,48 @@ func (p Polygon[T]) Bounds() Rectangle[T] {
 	}
 
 	return RectangleFromMinMax(minPoint, maxPoint)
+}
+
+// Edges returns the polygon edges in vertex order, each from a vertex to the next and the
+// last one closing back to the first. A single vertex yields one zero-length edge, and a nil
+// Vertices maps to nil edges like every other mapping.
+func (p Polygon[T]) Edges() []Line[T] {
+	next := 0
+
+	return slices.Map(p.Vertices, func(vertex Point[T]) Line[T] {
+		next = (next + 1) % len(p.Vertices)
+
+		return Line[T]{vertex, p.Vertices[next]}
+	})
+}
+
+// Area returns the area enclosed by the polygon, by the shoelace formula, regardless of winding.
+// It is a float64 even for an integer T, since a lattice polygon can enclose half a unit;
+// a self-intersecting polygon has its lobes cancel where they wind the opposite way.
+func (p Polygon[T]) Area() float64 {
+	return math.Abs(Sum(slices.Map(p.Edges(), Line[T].wedge))) / 2
+}
+
+// Perimeter returns the total length of the edges.
+func (p Polygon[T]) Perimeter() float64 {
+	return Sum(slices.Map(p.Edges(), Line[T].Length))
+}
+
+// Contains reports whether the given point lies within the polygon, boundary included within
+// Epsilon of T, the same closed convention as Rectangle.Contains. The interior follows the
+// even-odd rule, so a self-intersecting polygon excludes the regions it winds around twice.
+func (p Polygon[T]) Contains(point Point[T]) bool {
+	inside := false
+	for _, edge := range p.Edges() {
+		if edge.Contains(point) {
+			return true
+		}
+		if edge.crossesRay(point) {
+			inside = !inside
+		}
+	}
+
+	return inside
 }
 
 // Equal checks if two polygons have the same vertices.

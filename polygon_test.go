@@ -290,3 +290,104 @@ func ExamplePol() {
 	fmt.Println(Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(2, 2)}))
 	// Output: Pol((0,0), (2,0), (2,2))
 }
+
+func TestPolygon_Edges(t *testing.T) {
+	t.Run("closes back to the first vertex", func(t *testing.T) {
+		edges := Pol(squareVertices()).Edges()
+
+		assert.Equal(t, len(edges), 4)
+		AssertLine(t, edges[0], Ln(Pt(0, 0), Pt(2, 0)))
+		AssertLine(t, edges[3], Ln(Pt(0, 2), Pt(0, 0)))
+	})
+	t.Run("single vertex is one zero-length edge", func(t *testing.T) {
+		edges := Pol([]Point[int]{Pt(1, 1)}).Edges()
+
+		assert.Equal(t, len(edges), 1)
+		AssertLine(t, edges[0], Ln(Pt(1, 1), Pt(1, 1)))
+	})
+	t.Run("nil stays nil and empty stays empty", func(t *testing.T) {
+		assert.Nil(t, Pol[int](nil).Edges())
+		assert.Equal(t, len(Pol([]Point[int]{}).Edges()), 0)
+	})
+}
+
+func TestPolygon_Area(t *testing.T) {
+	t.Run("square", func(t *testing.T) {
+		AssertNumber(t, Pol(squareVertices()).Area(), 4.0)
+	})
+	t.Run("winding does not matter", func(t *testing.T) {
+		reversed := Pol([]Point[int]{Pt(0, 2), Pt(2, 2), Pt(2, 0), Pt(0, 0)})
+
+		AssertNumber(t, reversed.Area(), 4.0)
+	})
+	t.Run("lattice triangle encloses half units", func(t *testing.T) {
+		AssertNumber(t, Pol([]Point[int]{Pt(0, 0), Pt(1, 0), Pt(0, 1)}).Area(), 0.5)
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Pol(triangleVertices()).Area(), 0.75)
+	})
+	t.Run("degenerate is zero", func(t *testing.T) {
+		AssertNumber(t, Pol([]Point[int]{}).Area(), 0.0)
+		AssertNumber(t, Pol([]Point[int]{Pt(1, 1), Pt(4, 4)}).Area(), 0.0)
+	})
+}
+
+func TestPolygon_Perimeter(t *testing.T) {
+	t.Run("square", func(t *testing.T) {
+		AssertNumber(t, Pol(squareVertices()).Perimeter(), 8.0)
+	})
+	t.Run("right triangle", func(t *testing.T) {
+		AssertNumber(t, Pol([]Point[int]{Pt(0, 0), Pt(3, 0), Pt(0, 4)}).Perimeter(), 12.0)
+	})
+	t.Run("two vertices count the segment twice", func(t *testing.T) {
+		AssertNumber(t, Pol([]Point[int]{Pt(0, 0), Pt(3, 4)}).Perimeter(), 10.0)
+	})
+	t.Run("empty is zero", func(t *testing.T) {
+		AssertNumber(t, Polygon[float64]{}.Perimeter(), 0.0)
+	})
+}
+
+func TestPolygon_Contains(t *testing.T) {
+	square := Pol(squareVertices())
+
+	t.Run("inside", func(t *testing.T) {
+		assert.True(t, square.Contains(Pt(1, 1)))
+	})
+	t.Run("outside on every side", func(t *testing.T) {
+		assert.False(t, square.Contains(Pt(-1, 1)))
+		assert.False(t, square.Contains(Pt(3, 1)))
+		assert.False(t, square.Contains(Pt(1, -1)))
+		assert.False(t, square.Contains(Pt(1, 3)))
+	})
+	t.Run("boundary and vertices are included", func(t *testing.T) {
+		assert.True(t, square.Contains(Pt(2, 1)))
+		assert.True(t, square.Contains(Pt(0, 0)))
+		assert.True(t, square.Contains(Pt(2, 2)))
+	})
+	t.Run("ray through a vertex is counted once", func(t *testing.T) {
+		diamond := Pol([]Point[int]{Pt(0, -2), Pt(2, 0), Pt(0, 2), Pt(-2, 0)})
+
+		assert.True(t, diamond.Contains(Pt(-1, 0)))
+		assert.False(t, diamond.Contains(Pt(-3, 0)))
+		assert.False(t, diamond.Contains(Pt(3, 0)))
+	})
+	t.Run("concave notch is outside", func(t *testing.T) {
+		notched := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(2, 1), Pt(0, 4)})
+
+		assert.True(t, notched.Contains(Pt(1, 1)))
+		assert.False(t, notched.Contains(Pt(2, 3)))
+	})
+	t.Run("float is tolerant at the boundary", func(t *testing.T) {
+		triangle := Pol(triangleVertices())
+
+		assert.True(t, triangle.Contains(Pt(2.0, 0.5)))
+		assert.True(t, triangle.Contains(Pt(1.25, 0.25-Delta/2)))
+		assert.False(t, triangle.Contains(Pt(1.25, 0.25-2*Delta)))
+	})
+	t.Run("degenerate polygons contain only their points", func(t *testing.T) {
+		assert.False(t, Pol([]Point[int]{}).Contains(Pt(0, 0)))
+		assert.True(t, Pol([]Point[int]{Pt(1, 1)}).Contains(Pt(1, 1)))
+		assert.True(t, Pol([]Point[int]{Pt(0, 0), Pt(4, 0)}).Contains(Pt(2, 0)))
+		assert.False(t, Pol([]Point[int]{Pt(0, 0), Pt(4, 0)}).Contains(Pt(2, 1)))
+	})
+}

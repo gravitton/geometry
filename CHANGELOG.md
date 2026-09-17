@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `Epsilon[T]()` – the tolerance for `T`: zero for an integer `T`, `Delta32` for `float32`, `Delta` for `float64`; it depends only on the type, so `Equal` costs what it did before
 - `EqualRelative(a, b)` and `EpsilonRelative(a, b)` – equality within a tolerance that scales with magnitude, for values where an absolute tolerance falls below one ulp; ~1.1 ns against ~0.6 ns for `Equal`, which is why it is a separate function
 - `LessOrEqual(a, b)` and `LessOrEqualDelta(a, b, delta)` – the `<=` counterparts of `Equal` and `EqualDelta`; every closed boundary check is built on them
+- `Sum(values)` – adds a slice of `Number`, accumulating in `float64` and storing the total through `Cast`; `Polygon.Area` and `Perimeter` are built on it
 - `AngleDistance(a, b)` – the shortest angular distance between two angles, in `[0, π]`
 - `EqualAngle(a, b)` – angle equality modulo a full turn within `Delta`, holding across the `0`/`2π` seam
 - `AssertNumber(t, actual, expected)` – asserts a bare coordinate with the same integer/float rule as the shape helpers
@@ -21,6 +22,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `Rectangle.Outset(padding)` – expands the rectangle by the padding, the inverse of `Inset`
 - `Polygon.Bounds` – the axis-aligned bounding rectangle of the vertices, the zero rectangle for an empty polygon; every shape now has `Bounds()`
 - `Matrix.IsInvertible` – reports whether the determinant is non-zero, the check to run before `Inverse`
+- `Line.DistanceTo(point)` – the distance to the nearest point of the segment, exactly zero for a lattice point on a lattice segment since the perpendicular distance comes from a cross product rather than a projection
+- `Line.Contains(point)` – reports whether a point lies on the segment, closed within `Epsilon[T]()` like every other `Contains`
+- `Polygon.Edges` – the edges in vertex order, the last closing back to the first vertex; a nil `Vertices` maps to nil like every other mapping
+- `Polygon.Area` – the enclosed area by the shoelace formula regardless of winding; a `float64` even for an integer `T`, since a lattice polygon can enclose half a unit
+- `Polygon.Perimeter` – the total edge length
+- `Polygon.Contains(point)` – point-in-polygon by the even-odd rule, boundary included within `Epsilon[T]()`
+- `Rectangle.MinMaxString` – the rectangle by its corners, `(0,1)-(2,4)`, the form `String` printed before
 
 ### Changed
 - `Rectangle.Contains`, `Circle.Contains`, `Vector.LessOrEqual`, `CollisionRectangles`, `CollisionCircles` and `CollisionRectangleCircle` are closed within `Epsilon[T]()`: touching shapes collide, a float rectangle contains the corners it was built from even where `Min` is recomputed from `Center` with a rounding error, and a circle contains its anchors. `Vector.Less` stays strict, and `CollisionRectangleCircle` tests the point of the rectangle closest to the circle center instead of rounding the half extents of an odd integer size (**breaking**)
@@ -35,10 +43,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `AssertPoint`, `AssertVector`, `AssertSize`, `AssertCircle`, `AssertLine`, `AssertRect`, `AssertPolygon`, `AssertVertices`, `AssertRegularPolygon` and `AssertPadding` take the expected value as the type they assert on – `AssertPoint(t, p, Pt(1, 2))` instead of `AssertPoint(t, p, 1, 2)` – matching `AssertNumber` and `AssertMatrix` (**breaking**)
 - `Point.Transform` and `Vector.Transform` accept a `Matrix[M]` of any `Float` type instead of only `Matrix[float64]`, using a method type parameter (Go 1.27); an integer matrix converts with `Matrix.Float` at the call, the same way an angle is `float64`
 - `String` (and therefore every `String()` on a geometry type) formats by `T` rather than by value: a float `8.0` prints as `8.00`, like `8.1`, instead of `8`, so `Pt(100, -34.0000115).String()` no longer mixes both forms (**breaking**)
+- `Circle.String`, `Line.String` and `Rectangle.String` print in the form of their constructor, so every shape follows one rule: `Circ((10,16);5)` instead of `C(...)`, `Ln((10,16);(1,2))` instead of `L(...)`, and `Rect((1,2);2x3)` with center and size instead of the bare corners, which moved to `MinMaxString` (**breaking**)
 - `Line` marshals `Start` and `End` under the JSON keys `s` and `e` instead of `a` and `b`, the initials of the fields like every other key in the package (**breaking**)
 - `RegularPolygon.Equal`, `RegularPolygon.IsZero` and `AssertRegularPolygon` compare the angle as well, with `EqualAngle`, so two polygons that produce different vertices no longer compare equal while a full turn, the sign of an angle or the `0`/`2π` seam does not matter (**breaking**)
 - `RegularPolygonOrientationAngle` returns `3π/2` instead of `-π/2` for `PointyTop`, the same normalized form `Rotate` stores; returns the top angle for `n < 1` instead of dividing by `n` and storing a `NaN` angle; and panics for an `Orientation` other than `FlatTop` and `PointyTop` instead of returning `0`
 - `RegularPolygon.Vertices` returns nil for `N < 1` instead of panicking in `make`, so `RegularPolygon.Polygon()` of an empty polygon is zero like `Pol(nil)`; `RegularPolygon.Empty` is true for any `N < 1`
+- `RegularPolygon.Bounds` returns the zero rectangle for `N < 1`, the same answer `Polygon.Bounds` gives for no vertices, instead of a zero-size rectangle at the center (**breaking**)
 - `Directions`, `CardinalDirections`, `DiagonalDirections` and `Axes` are functions returning a fresh array instead of package-level variables an importer could write into (**breaking**)
 - `Vector.Resize` on the zero vector returns `(length,0)` instead of NaN, the same +X convention `Normalize` uses; `Vector.Less` is false for a non-positive length instead of squaring the sign away; `Resize`, `Normalize` and `Direction` treat only the exact zero vector as directionless, where the tolerant `IsZero` snapped any vector shorter than `Delta` to `(1,0)` or `DirectionNone`
 - `DirectionFromAngle` returns `DirectionNone` for `NaN` and `±Inf` instead of `DirectionRight` or a platform-dependent direction, and normalizes the angle before rounding it to a step; `Direction.Angle` returns `NaN` for `DirectionNone` instead of `0`, which was indistinguishable from `DirectionRight`, so the two round-trip for every direction (**breaking**)
@@ -49,6 +59,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Internal: `Point.Transform` and `Vector.Transform` convert the matrix with `Matrix.Float` once; `ParseSize` splits with `strings.Cut`; `Triangle`, `Square` and `Hexagon` delegate to `RegularPolygonWithOrientation`; `Axis` methods return from each `switch` case directly
 
 ### Fixed
+- `LessOrEqual` compares an integer `T` in `T` instead of through `float64`, so `Rectangle[int64].Contains` and `CollisionRectangles` stay exact beyond 2^53, where `LessOrEqual[int64](1<<53+1, 1<<53)` was true
+- `CollisionCircles` sums the radii in `float64` instead of `T`, so two `Circle[int8]` of radius 100 no longer wrap the threshold to `-56` and report no collision while overlapping
+- `Vector.Resize` and `Normalize` divide each component by the current length before scaling it instead of multiplying by a ratio, so a subnormal vector such as `Vec(5e-324, 0)` resizes to `(length,0)` instead of `(+Inf,NaN)`
 - `Point.Int`, `Vector.Int`, `Size.Int`, `Circle.Int`, `Padding.Int`, `Matrix.Int` and the shapes built on them convert an integer `T` directly instead of through `float64`, and `Abs`, `Round`, `Floor` and `Ceil` stay in `T`, so an `int64` beyond 2^53 stays exact
 - `Polygon.Translate`, `Scale`, `ScaleXY`, `Int` and `Float` keep a nil `Vertices` nil, so `IsZero` survives every mapping (requires `gravitton/x` v1.2.1, where `slices.Map` maps nil to nil)
 - `String` prints a float negative zero as `0.00` instead of `-0.00`, which `Matrix.Inverse` produced for every zero component it negated

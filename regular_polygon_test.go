@@ -194,8 +194,8 @@ func TestRegularPolygon_Bounds(t *testing.T) {
 		AssertNumber(t, bounds.Size.Width, 4.0)
 		AssertNumber(t, bounds.Size.Height, 2.0*Sqrt3)
 	})
-	t.Run("no vertices collapse to the center", func(t *testing.T) {
-		AssertRect(t, RegPol(Pt(3, 4), Sz(10, 10), 0, 0).Bounds(), Rect(Pt(3, 4), Sz(0, 0)))
+	t.Run("no vertices is the zero rectangle", func(t *testing.T) {
+		AssertRect(t, RegPol(Pt(3, 4), Sz(10, 10), 0, 0).Bounds(), Rectangle[int]{})
 	})
 }
 

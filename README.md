@@ -75,11 +75,11 @@ r := geom.Rect(geom.Pt(50, 50), geom.Sz(20, 10)) // center + size
 
 r.Contains(geom.Pt(55, 52))                 // true
 r.Inset(geom.PadU(2)).Anchor(geom.TopRight) // Point{58, 47}
-r.Outset(geom.PadXY(1, 2))                  // Rectangle (38,44)-(62,56)
+r.Outset(geom.PadXY(1, 2))                  // Rectangle (38,44)-(62,56) by MinMaxString
 r.Clamp(geom.Pt(80, 0))                     // Point{60, 45}, nearest point inside
 
 b := geom.RectangleFromMinMax(geom.Pt(0, 0), geom.Pt(8, 6))
-b.Scale(2)     // Rectangle (-4,-3)-(12,9), scaled around the center
+b.Scale(2)     // Rectangle (-4,-3)-(12,9) by MinMaxString, scaled around the center
 b.Edges()[0]   // Line (0,0)-(8,0), the top edge
 b.Vertices()   // clockwise from the top-left corner
 ```
@@ -90,10 +90,19 @@ Circles, lines, polygons:
 c := geom.Circ(geom.Pt(0.0, 0.0), 5.0)
 c.Anchor(geom.Bottom) // Point{0, 5}
 
-geom.Ln(geom.Pt(0, 0), geom.Pt(3, 4)).Length() // 5
+l := geom.Ln(geom.Pt(0, 0), geom.Pt(3, 4))
+l.Length()                  // 5
+l.DistanceTo(geom.Pt(3, 0)) // 2.4, to the nearest point of the segment
+l.Contains(geom.Pt(6, 8))   // false, the segment ends at (3,4)
+
+p := geom.Pol([]geom.Point[int]{{0, 0}, {4, 0}, {4, 4}, {2, 1}, {0, 4}})
+p.Area()                  // 10, by the shoelace formula
+p.Perimeter()             // 12 + 2√13
+p.Contains(geom.Pt(2, 3)) // false, inside the notch
+p.Edges()[4]              // Line (0,4)-(0,0), closing back to the first vertex
 
 hex := geom.Hexagon(geom.Pt(0, 0), geom.SzU(20), geom.FlatTop)
-hex.Bounds() // Rectangle (-20,-17)-(20,17)
+hex.Bounds() // Rectangle (-20,-17)-(20,17) by MinMaxString
 for _, vertex := range hex.Vertices() { ... }
 ```
 
@@ -226,12 +235,13 @@ operator and `Mod`. Check `IsInvertible` first when a matrix may be singular.
 narrow `int8` or `int16` never overflows mid-computation and only a result outside its range is lost. An `int64`
 beyond 2^53 loses precision on the way through `float64`.
 
-**Boundaries:** `Contains`, `Vector.LessOrEqual` and the collision functions are closed and tolerant: a point within
-`Epsilon[T]()` of the boundary counts as on it, so a float rectangle contains the corners it was built from and a
-circle contains its anchors. `Vector.Less` and `LessOrEqual`'s strict counterparts apply no tolerance.
+**Boundaries:** every `Contains`, `Vector.LessOrEqual` and the collision functions are closed and tolerant: a point
+within `Epsilon[T]()` of the boundary counts as on it, so a float rectangle contains the corners it was built from, a
+circle contains its anchors and a polygon contains its vertices. `Vector.Less` and `LessOrEqual`'s strict counterparts apply no tolerance.
 
 **Common API:** Every shape exposes `Int()`, `Float()`, `String()`, `Equal()`, and `IsZero()`. Shapes with spatial
-extent add `Bounds()`. `Line`, `Polygon`, and `RegularPolygon` add `Vertices()`.
+extent add `Bounds()`. `Line`, `Polygon`, and `RegularPolygon` add `Vertices()`; `Rectangle` and `Polygon` add
+`Edges()`, `Area()` and `Perimeter()`.
 
 ## Credits
 

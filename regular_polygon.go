@@ -118,12 +118,8 @@ func (rp RegularPolygon[T]) Vertices() []Point[T] {
 }
 
 // Bounds returns the axis-aligned bounding rectangle computed from the polygon vertices,
-// or a zero-size rectangle at the center for a polygon without vertices.
+// or the zero rectangle for a polygon without vertices, like Polygon.Bounds.
 func (rp RegularPolygon[T]) Bounds() Rectangle[T] {
-	if rp.Empty() {
-		return Rectangle[T]{rp.Center, Size[T]{}}
-	}
-
 	return rp.Polygon().Bounds()
 }
 

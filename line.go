@@ -2,6 +2,7 @@ package geom
 
 import (
 	"fmt"
+	"math"
 )
 
 // Line is a 2D line.
@@ -43,6 +44,49 @@ func (l Line[T]) Vector() Vector[T] {
 // Length returns the length of the line.
 func (l Line[T]) Length() float64 {
 	return l.Vector().Length()
+}
+
+// DistanceTo returns the distance from the given point to the nearest point of the segment.
+// A point on the segment is at distance 0 exactly, for an integer T, since the perpendicular
+// distance comes from a cross product that is exact in float64 rather than from a projection.
+func (l Line[T]) DistanceTo(point Point[T]) float64 {
+	direction, offset := l.Vector().Float(), point.Subtract(l.Start).Float()
+
+	along := offset.Dot(direction)
+	if along <= 0 {
+		return offset.Length()
+	}
+	if along >= direction.LengthSquared() {
+		return point.Subtract(l.End).Length()
+	}
+
+	return math.Abs(offset.Cross(direction)) / direction.Length()
+}
+
+// Contains reports whether the given point lies on the segment, within Epsilon of T, the same
+// closed convention as Rectangle.Contains.
+func (l Line[T]) Contains(point Point[T]) bool {
+	return LessOrEqualDelta(l.DistanceTo(point), 0, Epsilon[T]())
+}
+
+// wedge returns Start × End in float64, the term the shoelace formula sums per edge.
+func (l Line[T]) wedge() float64 {
+	start, end := l.Start.Float(), l.End.Float()
+
+	return start.X*end.Y - start.Y*end.X
+}
+
+// crossesRay reports whether a ray cast from the point along +X crosses the segment, counting
+// an endpoint on the ray only when it is the lower one, so a ray through a vertex is counted
+// once by the two edges that share it. It is the step of the even-odd rule Polygon.Contains uses.
+func (l Line[T]) crossesRay(point Point[T]) bool {
+	start, end, p := l.Start.Float(), l.End.Float(), point.Float()
+
+	if (start.Y > p.Y) == (end.Y > p.Y) {
+		return false
+	}
+
+	return p.X < start.X+(p.Y-start.Y)*(end.X-start.X)/(end.Y-start.Y)
 }
 
 // Vertices returns the start and end points as a slice.

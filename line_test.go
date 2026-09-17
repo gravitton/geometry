@@ -150,10 +150,10 @@ func TestLine_Float(t *testing.T) {
 
 func TestLine_String(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		assert.Equal(t, Ln(Pt(10, 16), Pt(1, 2)).String(), "L((10,16);(1,2))")
+		assert.Equal(t, Ln(Pt(10, 16), Pt(1, 2)).String(), "Ln((10,16);(1,2))")
 	})
 	t.Run("float", func(t *testing.T) {
-		assert.Equal(t, Ln(Pt(100, -34.0000115), Pt(0.2, 0.4)).String(), "L((100.00,-34.00);(0.20,0.40))")
+		assert.Equal(t, Ln(Pt(100, -34.0000115), Pt(0.2, 0.4)).String(), "Ln((100.00,-34.00);(0.20,0.40))")
 	})
 }
 
@@ -264,5 +264,48 @@ var lineFixtures = []Line[float64]{
 
 func ExampleLn() {
 	fmt.Println(Ln(Pt(1, 2), Pt(3, 5)))
-	// Output: L((1,2);(3,5))
+	// Output: Ln((1,2);(3,5))
+}
+
+func TestLine_DistanceTo(t *testing.T) {
+	l := Ln(Pt(0, 0), Pt(4, 0))
+
+	t.Run("perpendicular to the segment", func(t *testing.T) {
+		AssertNumber(t, l.DistanceTo(Pt(2, 3)), 3.0)
+		AssertNumber(t, l.DistanceTo(Pt(1, -2)), 2.0)
+	})
+	t.Run("beyond the start measures to the start", func(t *testing.T) {
+		AssertNumber(t, l.DistanceTo(Pt(-3, 4)), 5.0)
+	})
+	t.Run("beyond the end measures to the end", func(t *testing.T) {
+		AssertNumber(t, l.DistanceTo(Pt(7, 4)), 5.0)
+	})
+	t.Run("on the segment is exactly zero", func(t *testing.T) {
+		assert.Equal(t, Ln(Pt(0, 0), Pt(3, 3)).DistanceTo(Pt(1, 1)), 0.0)
+		assert.Equal(t, l.DistanceTo(Pt(4, 0)), 0.0)
+	})
+	t.Run("degenerate segment measures to the point", func(t *testing.T) {
+		AssertNumber(t, Ln(Pt(1, 1), Pt(1, 1)).DistanceTo(Pt(4, 5)), 5.0)
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Ln(Pt(0.0, 0.0), Pt(1.0, 1.0)).DistanceTo(Pt(1.0, 0.0)), OneOverSqrt2)
+	})
+}
+
+func TestLine_Contains(t *testing.T) {
+	t.Run("int is exact", func(t *testing.T) {
+		l := Ln(Pt(0, 0), Pt(6, 3))
+
+		assert.True(t, l.Contains(Pt(2, 1)))
+		assert.True(t, l.Contains(l.Start))
+		assert.True(t, l.Contains(l.End))
+		assert.False(t, l.Contains(Pt(2, 2)))
+		assert.False(t, l.Contains(Pt(8, 4)))
+	})
+	t.Run("float is tolerant", func(t *testing.T) {
+		l := Ln(Pt(0.0, 0.0), Pt(1.0, 1.0))
+
+		assert.True(t, l.Contains(Pt(0.5, 0.5+Delta/2)))
+		assert.False(t, l.Contains(Pt(0.5, 0.5+2*Delta)))
+	})
 }
