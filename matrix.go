@@ -76,18 +76,17 @@ func (m Matrix[T]) Multiply(matrix Matrix[T]) Matrix[T] {
 	}
 }
 
-// Inverse creates a new inverse affine matrix. A singular matrix has no inverse and is returned
-// unchanged, the same convention Divide follows for a zero scale; check IsInvertible first when
-// that matters.
+// Inverse creates a new inverse affine matrix. A singular matrix has no inverse and Inverse
+// panics for one, the same convention Divide follows for a zero scale; check IsInvertible first
+// when the matrix may be singular.
 // For integer T, all six components are rounded; only |det| = 1 gives exact results, which covers
 // translations, reflections and quarter turns. Otherwise the inverse does not undo the matrix:
 // ScaleMatrix(2, 2).Inverse() rounds 0.5 back up to identity.
 func (m Matrix[T]) Inverse() Matrix[T] {
-	if !m.IsInvertible() {
-		return m
-	}
-
 	det := m.Determinant()
+	if det == 0 {
+		panic("geom: inverse of a singular matrix")
+	}
 
 	a, b, c := float64(m.A), float64(m.B), float64(m.C)
 	d, e, f := float64(m.D), float64(m.E), float64(m.F)
@@ -147,30 +146,37 @@ func (m Matrix[T]) PreRotate(angle float64) Matrix[T] {
 	return RotationMatrix[T](angle).Multiply(m)
 }
 
-// Scale creates a new matrix by right-multiplying a scale matrix.
+// Scale creates a new matrix equal to right-multiplying a scale matrix.
 // Composition order: result = m * m_S(factorX,factorY).
-func (m Matrix[T]) Scale(factorX, factorY T) Matrix[T] {
-	return m.Multiply(ScaleMatrix(factorX, factorY))
+// The factors are float64 like every other Scale in the package; for integer T each scaled
+// component is rounded, following Multiply.
+func (m Matrix[T]) Scale(factorX, factorY float64) Matrix[T] {
+	return Matrix[T]{
+		Multiply(m.A, factorX), Multiply(m.B, factorY), m.C,
+		Multiply(m.D, factorX), Multiply(m.E, factorY), m.F,
+	}
 }
 
 // Unscale creates a new matrix equal to right-multiplying a scale matrix with inverse factors.
 // Composition order: result = m * m_S(1/factorX,1/factorY).
-// Each column is divided on its own, following Divide: a zero factor leaves that axis unchanged.
+// Each column is divided on its own, following Divide, which panics for a zero factor.
 // For integer T, each component is rounded, so the result is exact when the components of the
 // column are multiples of its factor: ScaleMatrix(4, 6).Unscale(2, 3) is ScaleMatrix(2, 2).
-func (m Matrix[T]) Unscale(factorX, factorY T) Matrix[T] {
-	x, y := float64(factorX), float64(factorY)
-
+func (m Matrix[T]) Unscale(factorX, factorY float64) Matrix[T] {
 	return Matrix[T]{
-		Divide(m.A, x), Divide(m.B, y), m.C,
-		Divide(m.D, x), Divide(m.E, y), m.F,
+		Divide(m.A, factorX), Divide(m.B, factorY), m.C,
+		Divide(m.D, factorX), Divide(m.E, factorY), m.F,
 	}
 }
 
-// PreScale creates a new matrix by left-multiplying a scale matrix.
+// PreScale creates a new matrix equal to left-multiplying a scale matrix.
 // Composition order: result = m_S(factorX,factorY) * m.
-func (m Matrix[T]) PreScale(factorX, factorY T) Matrix[T] {
-	return ScaleMatrix(factorX, factorY).Multiply(m)
+// The factors are float64 like Scale; for integer T each scaled component is rounded.
+func (m Matrix[T]) PreScale(factorX, factorY float64) Matrix[T] {
+	return Matrix[T]{
+		Multiply(m.A, factorX), Multiply(m.B, factorX), Multiply(m.C, factorX),
+		Multiply(m.D, factorY), Multiply(m.E, factorY), Multiply(m.F, factorY),
+	}
 }
 
 // Equal checks for equal values.

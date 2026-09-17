@@ -14,4 +14,10 @@
 // by truncating half the size toward Min so that Max-Min stays exactly the size:
 // RectangleFromMinMax(Pt(0, 0), Pt(5, 5)).Center is (2,2), and Line.Bounds().Center can
 // therefore differ from Line.Midpoint() by one unit on an odd span.
+//
+// # Division by zero
+//
+// Divide, and every method built on it (Point.Divide, Size.Unscale, Matrix.Unscale), panics
+// for a zero factor, and Matrix.Inverse panics for a singular matrix, the same way the integer
+// / operator and Mod do. Check IsInvertible before inverting a matrix that may be singular.
 package geom

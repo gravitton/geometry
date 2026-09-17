@@ -18,53 +18,49 @@ var Axes = [2]Axis{AxisHorizontal, AxisVertical}
 
 // Cross returns the perpendicular axis.
 func (a Axis) Cross() Axis {
-	var cross Axis
-
 	switch a {
 	case AxisHorizontal:
-		cross = AxisVertical
+		return AxisVertical
 	case AxisVertical:
-		cross = AxisHorizontal
+		return AxisHorizontal
 	default:
-		cross = AxisNone
+		return AxisNone
 	}
-
-	return cross
 }
 
 // Direction returns the axis direction with the given sign: positive is DirectionRight on the
 // horizontal axis and DirectionDown on the vertical one.
 func (a Axis) Direction(positive bool) Direction {
-	var direction Direction
-
-	switch a {
-	case AxisHorizontal:
-		direction = DirectionRight
-	case AxisVertical:
-		direction = DirectionDown
-	default:
-		direction = DirectionNone
-	}
-
+	direction := a.direction()
 	if !positive {
-		direction = direction.Opposite()
+		return direction.Opposite()
 	}
 
 	return direction
 }
 
-// Along returns the extent of the given size on the main axis.
-func (a Axis) Along[T Number](size Size[T]) T {
-	var along T
-
+// direction returns the direction of growing coordinates on the axis.
+func (a Axis) direction() Direction {
 	switch a {
 	case AxisHorizontal:
-		along = size.Width
+		return DirectionRight
 	case AxisVertical:
-		along = size.Height
+		return DirectionDown
+	default:
+		return DirectionNone
 	}
+}
 
-	return along
+// Along returns the extent of the given size on the main axis.
+func (a Axis) Along[T Number](size Size[T]) T {
+	switch a {
+	case AxisHorizontal:
+		return size.Width
+	case AxisVertical:
+		return size.Height
+	default:
+		return 0
+	}
 }
 
 // Across returns the extent of the given size on the cross axis.
@@ -74,16 +70,14 @@ func (a Axis) Across[T Number](size Size[T]) T {
 
 // Project returns the signed component of the given vector on the main axis.
 func (a Axis) Project[T Number](vector Vector[T]) T {
-	var component T
-
 	switch a {
 	case AxisHorizontal:
-		component = vector.X
+		return vector.X
 	case AxisVertical:
-		component = vector.Y
+		return vector.Y
+	default:
+		return 0
 	}
-
-	return component
 }
 
 // ScaleAlong creates a new Size scaled by the given factor on the main axis only.
@@ -98,31 +92,27 @@ func (a Axis) ScaleAlong[T Number](size Size[T], factor float64) Size[T] {
 
 // Vector creates a new Vector displaced by along on the main axis and across on the cross axis.
 func (a Axis) Vector[T Number](along, across T) Vector[T] {
-	var vector Vector[T]
-
 	switch a {
 	case AxisHorizontal:
-		vector = Vector[T]{along, across}
+		return Vector[T]{along, across}
 	case AxisVertical:
-		vector = Vector[T]{across, along}
+		return Vector[T]{across, along}
+	default:
+		return Vector[T]{}
 	}
-
-	return vector
 }
 
 // Size creates a new Size measuring along on the main axis and across on the cross axis.
 // The values are stored as given, like Sz; a negative one is not made absolute.
 func (a Axis) Size[T Number](along, across T) Size[T] {
-	var size Size[T]
-
 	switch a {
 	case AxisHorizontal:
-		size = Size[T]{along, across}
+		return Size[T]{along, across}
 	case AxisVertical:
-		size = Size[T]{across, along}
+		return Size[T]{across, along}
+	default:
+		return Size[T]{}
 	}
-
-	return size
 }
 
 // IsNone reports whether the axis is neither AxisHorizontal nor AxisVertical. Unlike

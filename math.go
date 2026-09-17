@@ -67,10 +67,11 @@ func Multiply[T Number](x T, factor float64) T {
 	return Cast[T](float64(x) * factor)
 }
 
-// Divide divides a number by a scale factor; if scale is zero, returns the original value.
+// Divide divides a number by a scale factor. Like the / operator on integers it panics for a
+// zero scale, rather than returning an infinity that an integer T could not hold.
 func Divide[T Number](x T, scale float64) T {
 	if scale == 0 {
-		return x
+		panic("geom: division by zero")
 	}
 
 	return Cast[T](float64(x) / scale)

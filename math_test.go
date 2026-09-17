@@ -109,9 +109,13 @@ func TestDivide(t *testing.T) {
 		AssertNumber(t, Divide(7.5, 2.5), 3.0)
 		AssertNumber(t, Divide(1.0, 3.0), 1.0/3.0)
 	})
-	t.Run("zero scale returns the original", func(t *testing.T) {
-		AssertNumber(t, Divide(10, 0.0), 10)
-		AssertNumber(t, Divide(2.5, 0.0), 2.5)
+	t.Run("zero scale panics", func(t *testing.T) {
+		assert.Panics(t, func() {
+			Divide(10, 0.0)
+		}, "geom: division by zero")
+		assert.Panics(t, func() {
+			Divide(2.5, 0.0)
+		}, "geom: division by zero")
 	})
 }
 

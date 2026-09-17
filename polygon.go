@@ -12,7 +12,8 @@ import (
 //
 // Vertices is shared, not copied: Pol keeps the slice it is given and every method that
 // returns a Polygon allocates a new one. The polygon is immutable as long as its caller does
-// not write into that slice.
+// not write into that slice. A nil Vertices stays nil through every method, so IsZero holds
+// after Translate, Scale, Int or Float.
 type Polygon[T Number] struct {
 	Vertices []Point[T]
 }
@@ -49,6 +50,10 @@ func (p Polygon[T]) Translate(vector Vector[T]) Polygon[T] {
 }
 
 // MoveTo creates a new Polygon whose centroid is moved to point, preserving shape.
+// For integer T this is a known exception to exactness: Center truncates toward zero, which does
+// not commute with translation, so the moved centroid can miss the point by one unit when a
+// coordinate sum crosses zero. Floor division would be exact but is deliberately not used, to
+// keep a single integer rounding rule; use float64 when the centroid must land exactly.
 func (p Polygon[T]) MoveTo(point Point[T]) Polygon[T] {
 	return p.Translate(point.Subtract(p.Center()))
 }

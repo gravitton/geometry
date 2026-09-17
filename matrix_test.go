@@ -76,9 +76,16 @@ func TestMatrix_Inverse(t *testing.T) {
 		AssertMatrix(t, ScaleMatrix[float32](0.005, 0.005).Inverse(), ScaleMatrix[float32](200, 200))
 		AssertMatrix(t, TranslationMatrix[float32](5, 3).Inverse(), TranslationMatrix[float32](-5, -3))
 	})
-	t.Run("singular matrix returns itself", func(t *testing.T) {
-		zero := Mat(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-		AssertMatrix(t, zero.Inverse(), zero)
+	t.Run("singular matrix panics", func(t *testing.T) {
+		assert.Panics(t, func() {
+			Mat(0.0, 0.0, 0.0, 0.0, 0.0, 0.0).Inverse()
+		}, "geom: inverse of a singular matrix")
+		assert.Panics(t, func() {
+			ScaleMatrix(1, 0).Inverse()
+		}, "geom: inverse of a singular matrix")
+	})
+	t.Run("negative zero prints as zero", func(t *testing.T) {
+		assert.Equal(t, ScaleMatrix(2.0, 4.0).Translate(1, 1).Inverse().String(), "[[0.50, 0.00, -1.00], [0.00, 0.25, -1.00]]")
 	})
 	t.Run("large translations do not overflow", func(t *testing.T) {
 		m := Mat[int64](1, 0, 1<<40, 0, 1, 1<<40)
@@ -199,6 +206,15 @@ func TestMatrix_Scale(t *testing.T) {
 		AssertMatrix(t, ScaleMatrix[float32](2, 2).Scale(3, 3), ScaleMatrix[float32](6, 6))
 		AssertMatrix(t, ScaleMatrix(2, 2).Scale(3, 3), ScaleMatrix(6, 6))
 	})
+	t.Run("float factors on an integer matrix round each column", func(t *testing.T) {
+		AssertMatrix(t, ScaleMatrix(4, 6).Scale(0.5, 0.5), ScaleMatrix(2, 3))
+		AssertMatrix(t, Mat(4, 6, 8, 2, 9, 5).Scale(0.5, 2), Mat(2, 12, 8, 1, 18, 5))
+	})
+	t.Run("equals right-multiplying a scale matrix", func(t *testing.T) {
+		m := Mat(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)
+
+		AssertMatrix(t, m.Scale(2.0, 3.0), m.Multiply(ScaleMatrix(2.0, 3.0)))
+	})
 }
 
 func TestMatrix_Unscale(t *testing.T) {
@@ -209,12 +225,15 @@ func TestMatrix_Unscale(t *testing.T) {
 		AssertMatrix(t, ScaleMatrix(4.0, 6.0).Unscale(2.0, 3.0), ScaleMatrix(2.0, 2.0))
 		AssertMatrix(t, ScaleMatrix[float32](4, 6).Unscale(2, 3), ScaleMatrix[float32](2, 2))
 	})
-	t.Run("zero factor leaves the axis unchanged", func(t *testing.T) {
+	t.Run("zero factor panics", func(t *testing.T) {
 		m := ScaleMatrix(2.0, 3.0)
 
-		AssertMatrix(t, m.Unscale(0.0, 0.0), m)
-		AssertMatrix(t, m.Unscale(0.0, 3.0), ScaleMatrix(2.0, 1.0))
-		AssertMatrix(t, m.Unscale(2.0, 0.0), ScaleMatrix(1.0, 3.0))
+		assert.Panics(t, func() {
+			m.Unscale(0.0, 3.0)
+		}, "geom: division by zero")
+		assert.Panics(t, func() {
+			m.Unscale(2.0, 0.0)
+		}, "geom: division by zero")
 	})
 	t.Run("integer divides each column", func(t *testing.T) {
 		AssertMatrix(t, ScaleMatrix(4, 6).Unscale(1, 1), ScaleMatrix(4, 6))
@@ -240,6 +259,14 @@ func TestMatrix_PreScale(t *testing.T) {
 
 		AssertMatrix(t, TranslationMatrix[float32](5, 5).PreScale(2, 2), Mat[float32](2, 0, 10, 0, 2, 10))
 		AssertMatrix(t, TranslationMatrix(5, 5).PreScale(2, 2), Mat(2, 0, 10, 0, 2, 10))
+	})
+	t.Run("float factors on an integer matrix round each row", func(t *testing.T) {
+		AssertMatrix(t, Mat(4, 6, 8, 2, 9, 5).PreScale(0.5, 2), Mat(2, 3, 4, 4, 18, 10))
+	})
+	t.Run("equals left-multiplying a scale matrix", func(t *testing.T) {
+		m := Mat(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)
+
+		AssertMatrix(t, m.PreScale(2.0, 3.0), ScaleMatrix(2.0, 3.0).Multiply(m))
 	})
 }
 

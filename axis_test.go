@@ -94,6 +94,9 @@ func TestAxis_Vector(t *testing.T) {
 		AssertVector(t, AxisVertical.Vector(3, 4), Vec(4, 3))
 		AssertVector(t, AxisVertical.Vector(1.5, 2.5), Vec(2.5, 1.5))
 	})
+	t.Run("none is the zero vector", func(t *testing.T) {
+		AssertVector(t, AxisNone.Vector(3, 4), Vec(0, 0))
+	})
 }
 
 func TestAxis_Size(t *testing.T) {
