@@ -407,6 +407,32 @@ func TestRectangle_Contains(t *testing.T) {
 	})
 }
 
+func TestRectangle_DistanceTo(t *testing.T) {
+	rectangle := Rect(Pt(0, 0), Sz(4, 4))
+
+	t.Run("beside an edge measures to the edge", func(t *testing.T) {
+		AssertNumber(t, rectangle.DistanceTo(Pt(5, 0)), 3.0)
+		AssertNumber(t, rectangle.DistanceTo(Pt(0, -6)), 4.0)
+	})
+	t.Run("beyond a corner measures to the corner", func(t *testing.T) {
+		AssertNumber(t, rectangle.DistanceTo(Pt(5, 6)), 5.0)
+	})
+	t.Run("inside and on the boundary are zero", func(t *testing.T) {
+		assert.Equal(t, rectangle.DistanceTo(Pt(1, -1)), 0.0)
+		assert.Equal(t, rectangle.DistanceTo(Pt(2, 2)), 0.0)
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).DistanceTo(Pt(2.0, 2.0)), Sqrt2)
+	})
+	t.Run("zero exactly where Contains holds", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, p := range pointFixtures {
+				assert.Equal(t, r.DistanceTo(p) == 0, r.Contains(p), fmt.Sprintf("%s → %s: ", r, p))
+			}
+		}
+	})
+}
+
 func TestRectangle_Intersects(t *testing.T) {
 	rectangle := Rect(Pt(0.0, 0.0), Sz(200.0, 100.0))
 

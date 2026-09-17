@@ -193,6 +193,30 @@ func TestCircle_Contains(t *testing.T) {
 	})
 }
 
+func TestCircle_DistanceTo(t *testing.T) {
+	circle := Circ(Pt(0, 0), 3)
+
+	t.Run("outside measures to the boundary", func(t *testing.T) {
+		AssertNumber(t, circle.DistanceTo(Pt(7, 0)), 4.0)
+		AssertNumber(t, circle.DistanceTo(Pt(3, 4)), 2.0)
+	})
+	t.Run("inside and on the boundary are zero", func(t *testing.T) {
+		assert.Equal(t, circle.DistanceTo(Pt(1, 1)), 0.0)
+		assert.Equal(t, circle.DistanceTo(Pt(3, 0)), 0.0)
+		assert.Equal(t, circle.DistanceTo(circle.Center), 0.0)
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Circ(Pt(0.0, 0.0), 1.0).DistanceTo(Pt(1.0, 1.0)), Sqrt2-1)
+	})
+	t.Run("zero exactly where Contains holds", func(t *testing.T) {
+		for _, c := range circleFixtures {
+			for _, p := range pointFixtures {
+				assert.Equal(t, c.DistanceTo(p) == 0, c.Contains(p), fmt.Sprintf("%s → %s: ", c, p))
+			}
+		}
+	})
+}
+
 func TestCircle_Intersects(t *testing.T) {
 	circle := Circ(Pt(0.0, 0.0), 100.0)
 

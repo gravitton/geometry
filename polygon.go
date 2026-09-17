@@ -27,6 +27,13 @@ func Pol[T Number](vertices []Point[T]) Polygon[T] {
 	return Polygon[T]{vertices}
 }
 
+// Transform creates a new Polygon by applying the given matrix to every vertex, like Point.Transform.
+func (p Polygon[T]) Transform[M Float](matrix Matrix[M]) Polygon[T] {
+	return Polygon[T]{xslices.Map(p.Vertices, func(point Point[T]) Point[T] {
+		return point.Transform(matrix)
+	})}
+}
+
 // Translate creates a new Polygon translated by the given vector (applied to all vertices).
 func (p Polygon[T]) Translate(vector Vector[T]) Polygon[T] {
 	return Polygon[T]{xslices.Map(p.Vertices, func(e Point[T]) Point[T] {
@@ -227,6 +234,22 @@ func (p Polygon[T]) Contains(point Point[T]) bool {
 	}
 
 	return inside
+}
+
+// DistanceTo returns the distance from the given point to the nearest point of the polygon:
+// zero for a point within it, the same closed convention as Contains, and otherwise the
+// distance to the nearest edge. An empty polygon is infinitely far from every point.
+func (p Polygon[T]) DistanceTo(point Point[T]) float64 {
+	if p.Contains(point) {
+		return 0
+	}
+
+	distance := math.Inf(1)
+	for edge := range p.edges() {
+		distance = min(distance, edge.DistanceTo(point))
+	}
+
+	return distance
 }
 
 // Intersects reports whether the polygons share a point: a vertex of one lies within the other,

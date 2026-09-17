@@ -124,6 +124,12 @@ func (c Circle[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 	return polygon.IntersectsCircle(c)
 }
 
+// DistanceTo returns the distance from the given point to the nearest point of the circle:
+// zero for a point within it, the same closed convention as Contains.
+func (c Circle[T]) DistanceTo(point Point[T]) float64 {
+	return max(c.Center.DistanceTo(point)-float64(c.Radius), 0)
+}
+
 // Int converts the circle to a Circle[int].
 func (c Circle[T]) Int() Circle[int] {
 	return Circle[int]{c.Center.Int(), Int(c.Radius)}

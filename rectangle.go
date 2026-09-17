@@ -310,6 +310,12 @@ func (r Rectangle[T]) Contains(point Point[T]) bool {
 	return point.Between(r.MinMax())
 }
 
+// DistanceTo returns the distance from the given point to the nearest point of the rectangle:
+// zero for a point within it, the same closed convention as Contains.
+func (r Rectangle[T]) DistanceTo(point Point[T]) float64 {
+	return r.Clamp(point).DistanceTo(point)
+}
+
 // Intersects reports whether the rectangles overlap. Touching rectangles intersect, within
 // Epsilon of T, the same closed convention as Contains.
 func (r Rectangle[T]) Intersects(rectangle Rectangle[T]) bool {

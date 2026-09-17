@@ -18,6 +18,17 @@ func TestLine_Constructor(t *testing.T) {
 	})
 }
 
+func TestLine_Transform(t *testing.T) {
+	t.Run("applies the matrix to both points", func(t *testing.T) {
+		matrix := Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)
+
+		AssertLine(t, Ln(Pt(1, 2), Pt(3, 4)).Transform(matrix), Ln(Pt(1, 2).Transform(matrix), Pt(3, 4).Transform(matrix)))
+	})
+	t.Run("float32 matrix", func(t *testing.T) {
+		AssertLine(t, Ln(Pt(1.0, 2.0), Pt(0.0, 0.0)).Transform(Mat[float32](1, 0, 1, 0, 1, 1)), Ln(Pt(2.0, 3.0), Pt(1.0, 1.0)))
+	})
+}
+
 func TestLine_Translate(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		AssertLine(t, Ln(Pt(1, 2), Pt(3, 5)).Translate(Vec(3, -2)), Ln(Pt(4, 0), Pt(6, 3)))
@@ -42,6 +53,34 @@ func TestLine_Reverse(t *testing.T) {
 	})
 	t.Run("float", func(t *testing.T) {
 		AssertLine(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Reverse(), Ln(Pt(1.2, 3.4), Pt(0.6, -0.25)))
+	})
+}
+
+func TestLine_Lerp(t *testing.T) {
+	line := Ln(Pt(0.0, 0.0), Pt(4.0, 2.0))
+
+	t.Run("endpoints at 0 and 1", func(t *testing.T) {
+		AssertPoint(t, line.Lerp(0), line.Start)
+		AssertPoint(t, line.Lerp(1), line.End)
+	})
+	t.Run("along the segment", func(t *testing.T) {
+		AssertPoint(t, line.Lerp(0.25), Pt(1.0, 0.5))
+		AssertPoint(t, line.Lerp(0.5), line.Midpoint())
+	})
+	t.Run("extrapolates beyond the segment", func(t *testing.T) {
+		AssertPoint(t, line.Lerp(-0.5), Pt(-2.0, -1.0))
+		AssertPoint(t, line.Lerp(1.5), Pt(6.0, 3.0))
+	})
+	t.Run("int rounds the half away from zero", func(t *testing.T) {
+		AssertPoint(t, Ln(Pt(0, 0), Pt(3, 3)).Lerp(0.5), Pt(2, 2))
+		AssertPoint(t, Ln(Pt(0, 0), Pt(-3, -3)).Lerp(0.5), Pt(-2, -2))
+	})
+	t.Run("lands on the segment", func(t *testing.T) {
+		for _, l := range lineFixtures {
+			for _, fraction := range []float64{0, 0.25, 0.5, 0.75, 1} {
+				assert.True(t, l.Contains(l.Lerp(fraction)), fmt.Sprintf("%s at %v: ", l, fraction))
+			}
+		}
 	})
 }
 

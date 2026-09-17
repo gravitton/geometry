@@ -16,6 +16,11 @@ func Ln[T Number](start, end Point[T]) Line[T] {
 	return Line[T]{start, end}
 }
 
+// Transform creates a new Line by applying the given matrix to both points, like Point.Transform.
+func (l Line[T]) Transform[M Float](matrix Matrix[M]) Line[T] {
+	return Line[T]{l.Start.Transform(matrix), l.End.Transform(matrix)}
+}
+
 // Translate creates a new Line translated by the given vector.
 func (l Line[T]) Translate(vector Vector[T]) Line[T] {
 	return Line[T]{l.Start.Add(vector), l.End.Add(vector)}
@@ -31,7 +36,13 @@ func (l Line[T]) Reverse() Line[T] {
 	return Line[T]{l.End, l.Start}
 }
 
-// Midpoint returns the midpoint of the line.
+// Lerp returns the point at the fraction t of the way from Start to End, extrapolating along
+// the line outside [0, 1] like Point.Lerp. Midpoint is Lerp(0.5).
+func (l Line[T]) Lerp(t float64) Point[T] {
+	return l.Start.Lerp(l.End, t)
+}
+
+// Midpoint returns the midpoint of the line, Lerp(0.5).
 func (l Line[T]) Midpoint() Point[T] {
 	return l.Start.Midpoint(l.End)
 }

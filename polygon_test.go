@@ -3,6 +3,7 @@ package geom
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"testing"
 
 	"github.com/gravitton/assert"
@@ -50,6 +51,18 @@ func TestPolygon_Center(t *testing.T) {
 	t.Run("empty is the zero point", func(t *testing.T) {
 		AssertPoint(t, Pol([]Point[int]{}).Center(), Pt(0, 0))
 		AssertPoint(t, Polygon[float64]{}.Center(), Pt(0.0, 0.0))
+	})
+}
+
+func TestPolygon_Transform(t *testing.T) {
+	t.Run("applies the matrix to every vertex", func(t *testing.T) {
+		matrix := Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)
+		square := Pol(squareVertices())
+
+		AssertPolygon(t, square.Transform(matrix), Pol([]Point[int]{Pt(3, 7), Pt(6, 15), Pt(10, 26), Pt(8, 18)}))
+	})
+	t.Run("nil stays nil", func(t *testing.T) {
+		assert.True(t, Pol[int](nil).Transform(IdentityMatrix[float64]()).IsZero())
 	})
 }
 
@@ -448,6 +461,37 @@ func TestPolygon_Contains(t *testing.T) {
 		assert.True(t, Pol([]Point[int]{Pt(1, 1)}).Contains(Pt(1, 1)))
 		assert.True(t, Pol([]Point[int]{Pt(0, 0), Pt(4, 0)}).Contains(Pt(2, 0)))
 		assert.False(t, Pol([]Point[int]{Pt(0, 0), Pt(4, 0)}).Contains(Pt(2, 1)))
+	})
+}
+
+func TestPolygon_DistanceTo(t *testing.T) {
+	square := Pol(squareVertices())
+
+	t.Run("beside an edge measures to the edge", func(t *testing.T) {
+		AssertNumber(t, square.DistanceTo(Pt(5, 1)), 3.0)
+		AssertNumber(t, square.DistanceTo(Pt(1, -2)), 2.0)
+	})
+	t.Run("beyond a vertex measures to the vertex", func(t *testing.T) {
+		AssertNumber(t, square.DistanceTo(Pt(5, 6)), 5.0)
+	})
+	t.Run("inside and on the boundary are zero", func(t *testing.T) {
+		assert.Equal(t, square.DistanceTo(Pt(1, 1)), 0.0)
+		assert.Equal(t, square.DistanceTo(Pt(2, 1)), 0.0)
+	})
+	t.Run("a concave notch measures to the notch edges", func(t *testing.T) {
+		notched := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(4.0, 4.0), Pt(2.0, 2.0), Pt(0.0, 4.0)})
+
+		AssertNumber(t, notched.DistanceTo(Pt(2.0, 4.0)), Sqrt2)
+	})
+	t.Run("an empty polygon is infinitely far", func(t *testing.T) {
+		assert.True(t, math.IsInf(Pol[int](nil).DistanceTo(Pt(0, 0)), 1))
+	})
+	t.Run("zero exactly where Contains holds", func(t *testing.T) {
+		for _, polygon := range polygonFixtures() {
+			for _, p := range pointFixtures {
+				assert.Equal(t, polygon.DistanceTo(p) == 0, polygon.Contains(p), fmt.Sprintf("%s → %s: ", polygon, p))
+			}
+		}
 	})
 }
 

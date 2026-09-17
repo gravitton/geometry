@@ -28,8 +28,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `Line.Intersection(line)` – the point where two segments cross and whether they do; parallel segments have no single point and report false even where they overlap
 - `Rectangle.Intersection(rectangle)` – the common rectangle and whether there is one; touching rectangles give a zero-width or zero-height one
 - `Rectangle.Union(rectangle)` – the smallest rectangle containing both
+- `Circle.DistanceTo(point)`, `Rectangle.DistanceTo(point)` and `Polygon.DistanceTo(point)` – the distance to the nearest point of the shape, zero within it, so every shape with `Contains` measures distance the way `Line` does; an empty polygon is infinitely far
+- `Line.Transform(matrix)` and `Polygon.Transform(matrix)` – apply a float matrix to every point, like `Point.Transform`
 - `Polygon.Bounds` – the axis-aligned bounding rectangle of the vertices, the zero rectangle for an empty polygon; every shape now has `Bounds()`
 - `Matrix.IsInvertible` – reports whether the determinant is non-zero, the check to run before `Inverse`
+- `Line.Lerp(t)` – the point at a fraction of the way from `Start` to `End`, extrapolating outside `[0, 1]` like `Point.Lerp`; `Midpoint` is `Lerp(0.5)`
 - `Line.DistanceTo(point)` – the distance to the nearest point of the segment, exactly zero for a lattice point on a lattice segment since the perpendicular distance comes from a cross product rather than a projection
 - `Line.Contains(point)` – reports whether a point lies on the segment, closed within `Epsilon[T]()` like every other `Contains`
 - `Polygon.Edges` – the edges in vertex order, the last closing back to the first vertex; a nil `Vertices` maps to nil like every other mapping
