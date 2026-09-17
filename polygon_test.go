@@ -450,3 +450,94 @@ func TestPolygon_Contains(t *testing.T) {
 		assert.False(t, Pol([]Point[int]{Pt(0, 0), Pt(4, 0)}).Contains(Pt(2, 1)))
 	})
 }
+
+func TestPolygon_Intersects(t *testing.T) {
+	square := Pol(squareVertices())
+
+	t.Run("overlapping", func(t *testing.T) {
+		assert.True(t, square.Intersects(square.Translate(Vec(1, 1))))
+	})
+	t.Run("apart", func(t *testing.T) {
+		assert.False(t, square.Intersects(square.Translate(Vec(3, 0))))
+	})
+	t.Run("a shared edge counts", func(t *testing.T) {
+		assert.True(t, square.Intersects(square.Translate(Vec(2, 0))))
+	})
+	t.Run("one contained in the other", func(t *testing.T) {
+		assert.True(t, square.Intersects(Pol([]Point[int]{Pt(1, 1), Pt(1, 1)})))
+		assert.True(t, Pol([]Point[int]{Pt(1, 1), Pt(1, 1)}).Intersects(square))
+	})
+	t.Run("edges crossing without a vertex inside", func(t *testing.T) {
+		cross := Pol([]Point[int]{Pt(-1, 1), Pt(3, 1), Pt(3, 1), Pt(-1, 1)})
+		plus := Pol([]Point[int]{Pt(1, -1), Pt(1, 3), Pt(1, 3), Pt(1, -1)})
+
+		assert.True(t, cross.Intersects(plus))
+	})
+	t.Run("an empty polygon intersects nothing", func(t *testing.T) {
+		assert.False(t, square.Intersects(Pol[int](nil)))
+		assert.False(t, Pol[int](nil).Intersects(square))
+	})
+	t.Run("symmetric", func(t *testing.T) {
+		for _, a := range polygonFixtures() {
+			for _, b := range polygonFixtures() {
+				assert.Equal(t, a.Intersects(b), b.Intersects(a), fmt.Sprintf("%s → %s: ", a, b))
+			}
+		}
+	})
+}
+
+func TestPolygon_IntersectsLine(t *testing.T) {
+	square := Pol(squareVertices())
+
+	t.Run("crossing an edge", func(t *testing.T) {
+		assert.True(t, square.IntersectsLine(Ln(Pt(1, 1), Pt(5, 1))))
+		assert.True(t, square.IntersectsLine(Ln(Pt(5, 1), Pt(1, 1))))
+	})
+	t.Run("passing through", func(t *testing.T) {
+		assert.True(t, square.IntersectsLine(Ln(Pt(-1, 1), Pt(5, 1))))
+	})
+	t.Run("inside", func(t *testing.T) {
+		assert.True(t, square.IntersectsLine(Ln(Pt(1, 1), Pt(1, 1))))
+	})
+	t.Run("apart", func(t *testing.T) {
+		assert.False(t, square.IntersectsLine(Ln(Pt(3, -1), Pt(3, 3))))
+	})
+	t.Run("touching a vertex counts", func(t *testing.T) {
+		assert.True(t, square.IntersectsLine(Ln(Pt(1, 3), Pt(3, 1))))
+	})
+}
+
+func TestPolygon_IntersectsRectangle(t *testing.T) {
+	square := Pol(squareVertices())
+
+	t.Run("overlapping", func(t *testing.T) {
+		assert.True(t, square.IntersectsRectangle(Rect(Pt(2, 2), Sz(2, 2))))
+	})
+	t.Run("apart", func(t *testing.T) {
+		assert.False(t, square.IntersectsRectangle(Rect(Pt(4, 4), Sz(2, 2))))
+	})
+	t.Run("matches the rectangle as a polygon", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			for _, r := range rectFixtures {
+				assert.Equal(t, p.IntersectsRectangle(r), p.Intersects(r.Polygon()), fmt.Sprintf("%s → %s: ", p, r))
+			}
+		}
+	})
+}
+
+func TestPolygon_IntersectsCircle(t *testing.T) {
+	square := Pol(squareVertices())
+
+	t.Run("center inside", func(t *testing.T) {
+		assert.True(t, square.IntersectsCircle(Circ(Pt(1, 1), 5)))
+	})
+	t.Run("an edge within the radius", func(t *testing.T) {
+		assert.True(t, square.IntersectsCircle(Circ(Pt(3, 1), 1)))
+	})
+	t.Run("apart", func(t *testing.T) {
+		assert.False(t, square.IntersectsCircle(Circ(Pt(4, 1), 1)))
+	})
+	t.Run("an empty polygon intersects nothing", func(t *testing.T) {
+		assert.False(t, Pol[int](nil).IntersectsCircle(Circ(Pt(0, 0), 1)))
+	})
+}

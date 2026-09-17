@@ -249,6 +249,29 @@ func TestPoint_AngleTo(t *testing.T) {
 	})
 }
 
+func TestPoint_Between(t *testing.T) {
+	t.Run("inside and on the boundary", func(t *testing.T) {
+		assert.True(t, Pt(1, 1).Between(Pt(0, 0), Pt(2, 2)))
+		assert.True(t, Pt(0, 2).Between(Pt(0, 0), Pt(2, 2)))
+		assert.True(t, Pt(2, 0).Between(Pt(0, 0), Pt(2, 2)))
+	})
+	t.Run("outside on either axis", func(t *testing.T) {
+		assert.False(t, Pt(3, 1).Between(Pt(0, 0), Pt(2, 2)))
+		assert.False(t, Pt(1, -1).Between(Pt(0, 0), Pt(2, 2)))
+	})
+	t.Run("float is tolerant", func(t *testing.T) {
+		assert.True(t, Pt(2.0+Delta/2, 1.0).Between(Pt(0.0, 0.0), Pt(2.0, 2.0)))
+		assert.False(t, Pt(2.0+2*Delta, 1.0).Between(Pt(0.0, 0.0), Pt(2.0, 2.0)))
+	})
+	t.Run("matches Rectangle.Contains", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, p := range pointFixtures {
+				assert.Equal(t, p.Between(r.MinMax()), r.Contains(p), fmt.Sprintf("%s in %s: ", p, r))
+			}
+		}
+	})
+}
+
 func TestPoint_Equal(t *testing.T) {
 	t.Run("same point", func(t *testing.T) {
 		assert.True(t, Pt(1, 2).Equal(Pt(1, 2)))

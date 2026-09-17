@@ -2,11 +2,13 @@ package geom
 
 import (
 	"fmt"
+	"iter"
+	"slices"
 )
 
 // Rectangle is a 2D axis-aligned rectangle represented by its center and size.
 //
-// The rectangle is closed: Contains, Clamp and the collision functions include the boundary,
+// The rectangle is closed: Contains, Clamp and the Intersects methods include the boundary,
 // within the Epsilon that Equal applies, so a float rectangle contains the corners it was built
 // from even where Min is recomputed from Center with a rounding error.
 // For integer T the corners are lattice points on that boundary, so a rectangle of width w
@@ -105,12 +107,12 @@ func (r Rectangle[T]) ShrinkXY(amountX, amountY T) Rectangle[T] {
 // that still lies within the original bounds, at the last edge to move.
 // A negative padding outsets the rectangle, so Outset undoes Inset as long as nothing was clamped.
 func (r Rectangle[T]) Inset(padding Padding[T]) Rectangle[T] {
-	minPoint, maxPoint := r.Min(), r.Max()
+	a, b := r.MinMax()
 
-	insetMin := Point[T]{min(minPoint.X+padding.Left, maxPoint.X), min(minPoint.Y+padding.Top, maxPoint.Y)}
-	insetMax := Point[T]{max(maxPoint.X-padding.Right, insetMin.X), max(maxPoint.Y-padding.Bottom, insetMin.Y)}
+	a = Point[T]{min(a.X+padding.Left, b.X), min(a.Y+padding.Top, b.Y)}
+	b = Point[T]{max(b.X-padding.Right, a.X), max(b.Y-padding.Bottom, a.Y)}
 
-	return RectangleFromMinMax(insetMin, insetMax)
+	return RectangleFromMinMax(a, b)
 }
 
 // Outset creates a new Rectangle expanded by the given padding amounts, the inverse of Inset.
@@ -142,6 +144,11 @@ func (r Rectangle[T]) Max() Point[T] {
 	w, h := r.Size.XY()
 
 	return r.Center.AddXY(w-w/2, h-h/2)
+}
+
+// MinMax returns the minimum and maximum corner points of the rectangle together.
+func (r Rectangle[T]) MinMax() (Point[T], Point[T]) {
+	return r.Min(), r.Max()
 }
 
 // TopLeft returns the top-left corner.
@@ -233,11 +240,18 @@ func (r Rectangle[T]) LeftEdge() Line[T] {
 // the same winding as Directions and RegularPolygon.Vertices, and clockwise as drawn on a screen
 // with Y pointing down. Each edge starts where the previous one ends.
 func (r Rectangle[T]) Edges() []Line[T] {
-	return []Line[T]{
-		r.TopEdge(),
-		r.RightEdge(),
-		r.BottomEdge(),
-		r.LeftEdge(),
+	return slices.AppendSeq(make([]Line[T], 0, 4), r.edges())
+}
+
+// edges iterates the edges Edges returns without allocating them, for the methods that only
+// need to walk them once.
+func (r Rectangle[T]) edges() iter.Seq[Line[T]] {
+	return func(yield func(Line[T]) bool) {
+		for _, edge := range [4]Line[T]{r.TopEdge(), r.RightEdge(), r.BottomEdge(), r.LeftEdge()} {
+			if !yield(edge) {
+				return
+			}
+		}
 	}
 }
 
@@ -275,9 +289,9 @@ func (r Rectangle[T]) Bounds() Rectangle[T] {
 
 // Clamp returns the given Point clamped to the rectangle bounds.
 func (r Rectangle[T]) Clamp(point Point[T]) Point[T] {
-	minPoint, maxPoint := r.Min(), r.Max()
+	a, b := r.MinMax()
 
-	return Point[T]{Clamp(point.X, minPoint.X, maxPoint.X), Clamp(point.Y, minPoint.Y, maxPoint.Y)}
+	return Point[T]{Clamp(point.X, a.X, b.X), Clamp(point.Y, a.Y, b.Y)}
 }
 
 // Equal checks for equal center and size values using tolerant numeric comparison.
@@ -293,15 +307,38 @@ func (r Rectangle[T]) IsZero() bool {
 // Contains reports whether the given point lies within the rectangle, boundary included within
 // Epsilon of T.
 func (r Rectangle[T]) Contains(point Point[T]) bool {
-	return between(point, r.Min(), r.Max())
+	return point.Between(r.MinMax())
 }
 
-// between reports whether the point lies within the box spanned by the two corners, boundary
-// included within Epsilon of T. It is the check Rectangle.Contains makes, shared with
-// Polygon.Contains, which tests the extent of the vertices before walking the edges.
-func between[T Number](point, minPoint, maxPoint Point[T]) bool {
-	return LessOrEqual(minPoint.X, point.X) && LessOrEqual(point.X, maxPoint.X) &&
-		LessOrEqual(minPoint.Y, point.Y) && LessOrEqual(point.Y, maxPoint.Y)
+// Intersects reports whether the rectangles overlap. Touching rectangles intersect, within
+// Epsilon of T, the same closed convention as Contains.
+func (r Rectangle[T]) Intersects(rectangle Rectangle[T]) bool {
+	a1, b1 := r.MinMax()
+	a2, b2 := rectangle.MinMax()
+
+	return LessOrEqual(a1.X, b2.X) && LessOrEqual(a2.X, b1.X) &&
+		LessOrEqual(a1.Y, b2.Y) && LessOrEqual(a2.Y, b1.Y)
+}
+
+// IntersectsCircle reports whether the rectangle and the circle overlap: the point of the
+// rectangle closest to the circle center lies within the radius. Touching shapes intersect,
+// within Epsilon of T, and the rectangle bounds are the same Min and Max that Contains uses.
+func (r Rectangle[T]) IntersectsCircle(circle Circle[T]) bool {
+	closest := r.Clamp(circle.Center)
+
+	return closest.Subtract(circle.Center).LessOrEqual(circle.Radius)
+}
+
+// IntersectsLine reports whether the rectangle and the segment share a point, as
+// Line.IntersectsRectangle does.
+func (r Rectangle[T]) IntersectsLine(line Line[T]) bool {
+	return line.IntersectsRectangle(r)
+}
+
+// IntersectsPolygon reports whether the rectangle and the polygon share a point, as
+// Polygon.IntersectsRectangle does.
+func (r Rectangle[T]) IntersectsPolygon(polygon Polygon[T]) bool {
+	return polygon.IntersectsRectangle(r)
 }
 
 // Polygon converts the rectangle into a generic Polygon with computed vertices.

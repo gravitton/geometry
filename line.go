@@ -69,6 +69,72 @@ func (l Line[T]) Contains(point Point[T]) bool {
 	return LessOrEqualDelta(l.DistanceTo(point), 0, Epsilon[T]())
 }
 
+// Intersects reports whether the segments share a point, within Epsilon of T, the same closed
+// convention as Contains: segments that touch at an endpoint or overlap collinearly intersect.
+func (l Line[T]) Intersects(line Line[T]) bool {
+	return LessOrEqualDelta(l.distanceToLine(line), 0, Epsilon[T]())
+}
+
+// IntersectsCircle reports whether the segment and the circle share a point: the point of the
+// segment closest to the center lies within the radius. Touching shapes intersect, within
+// Epsilon of T.
+func (l Line[T]) IntersectsCircle(circle Circle[T]) bool {
+	return circle.Radius >= 0 && LessOrEqualDelta(l.DistanceTo(circle.Center), float64(circle.Radius), Epsilon[T]())
+}
+
+// IntersectsRectangle reports whether the segment and the rectangle share a point: an endpoint
+// lies within the rectangle, or the segment crosses one of its edges. Touching shapes intersect,
+// within Epsilon of T.
+func (l Line[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
+	if rectangle.Contains(l.Start) || rectangle.Contains(l.End) {
+		return true
+	}
+
+	for edge := range rectangle.edges() {
+		if l.Intersects(edge) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// IntersectsPolygon reports whether the segment and the polygon share a point, as
+// Polygon.IntersectsLine does.
+func (l Line[T]) IntersectsPolygon(polygon Polygon[T]) bool {
+	return polygon.IntersectsLine(l)
+}
+
+// distanceToLine returns the distance between the nearest points of the two segments: zero
+// when they cross, and otherwise the smallest distance from an endpoint of one to the other.
+func (l Line[T]) distanceToLine(line Line[T]) float64 {
+	if l.crosses(line) {
+		return 0
+	}
+
+	return min(
+		l.DistanceTo(line.Start), l.DistanceTo(line.End),
+		line.DistanceTo(l.Start), line.DistanceTo(l.End),
+	)
+}
+
+// crosses reports whether the segments properly cross: each has its endpoints on opposite sides
+// of the other. Touching and collinear segments do not cross and are left to the endpoint
+// distances, which cover them within the tolerance of the caller.
+func (l Line[T]) crosses(line Line[T]) bool {
+	return l.separates(line) && line.separates(l)
+}
+
+// separates reports whether the endpoints of the given segment lie strictly on opposite sides
+// of the line through this one.
+func (l Line[T]) separates(line Line[T]) bool {
+	direction := l.Vector().Float()
+	start := direction.Cross(line.Start.Subtract(l.Start).Float())
+	end := direction.Cross(line.End.Subtract(l.Start).Float())
+
+	return (start > 0 && end < 0) || (start < 0 && end > 0)
+}
+
 // wedge returns Start × End in float64, the term the shoelace formula sums per edge. Cross is
 // exact for parallel vectors, so a degenerate edge contributes exactly zero.
 func (l Line[T]) wedge() float64 {
@@ -102,9 +168,9 @@ func (l Line[T]) Vertices() []Point[T] {
 
 // Bounds returns the axis-aligned bounding rectangle.
 func (l Line[T]) Bounds() Rectangle[T] {
-	minPoint := Point[T]{min(l.Start.X, l.End.X), min(l.Start.Y, l.End.Y)}
+	a := Point[T]{min(l.Start.X, l.End.X), min(l.Start.Y, l.End.Y)}
 
-	return RectangleFromMin(minPoint, l.Vector().Size())
+	return RectangleFromMin(a, l.Vector().Size())
 }
 
 // Equal checks if the start and end points of the lines are equal.

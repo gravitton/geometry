@@ -7,7 +7,7 @@ import (
 
 // Size is a 2D size. Width and Height are expected to be non-negative: the constructors do not
 // check it, and shapes built on a negative size have Min beyond Max, so Contains, Clamp and the
-// collision functions give no meaningful answer for them.
+// Intersects methods give no meaningful answer for them.
 type Size[T Number] struct {
 	Width  T `json:"w"`
 	Height T `json:"h"`

@@ -193,6 +193,65 @@ func TestCircle_Contains(t *testing.T) {
 	})
 }
 
+func TestCircle_Intersects(t *testing.T) {
+	circle := Circ(Pt(0.0, 0.0), 100.0)
+
+	t.Run("overlapping", func(t *testing.T) {
+		assert.True(t, circle.Intersects(Circ(Pt(199.0, 0.0), 100.0)))
+	})
+	t.Run("apart", func(t *testing.T) {
+		assert.False(t, circle.Intersects(Circ(Pt(210.0, 0.0), 100.0)))
+	})
+	t.Run("exactly touching counts as an intersection", func(t *testing.T) {
+		assert.True(t, circle.Intersects(Circ(Pt(200.0, 0.0), 100.0)))
+		assert.False(t, circle.Intersects(Circ(Pt(201.0, 0.0), 100.0)))
+	})
+	t.Run("one contained in the other", func(t *testing.T) {
+		assert.True(t, circle.Intersects(Circ(Pt(0.0, 0.0), 50.0)))
+	})
+	t.Run("narrow integers do not overflow the radii sum", func(t *testing.T) {
+		assert.True(t, Circ(Pt[int8](0, 0), 100).Intersects(Circ(Pt[int8](0, 50), 100)))
+		assert.False(t, Circ(Pt[int8](-20, 0), 50).Intersects(Circ(Pt[int8](100, 0), 50)))
+	})
+	t.Run("symmetric", func(t *testing.T) {
+		for _, a := range circleFixtures {
+			for _, b := range circleFixtures {
+				assert.Equal(t, a.Intersects(b), b.Intersects(a), fmt.Sprintf("%s → %s: ", a, b))
+			}
+		}
+	})
+}
+
+func TestCircle_IntersectsRectangle(t *testing.T) {
+	t.Run("mirrors Rectangle.IntersectsCircle", func(t *testing.T) {
+		for _, c := range circleFixtures {
+			for _, r := range rectFixtures {
+				assert.Equal(t, c.IntersectsRectangle(r), r.IntersectsCircle(c), fmt.Sprintf("%s → %s: ", c, r))
+			}
+		}
+	})
+}
+
+func TestCircle_IntersectsLine(t *testing.T) {
+	t.Run("mirrors Line.IntersectsCircle", func(t *testing.T) {
+		for _, c := range circleFixtures {
+			for _, l := range lineFixtures {
+				assert.Equal(t, c.IntersectsLine(l), l.IntersectsCircle(c), fmt.Sprintf("%s → %s: ", c, l))
+			}
+		}
+	})
+}
+
+func TestCircle_IntersectsPolygon(t *testing.T) {
+	t.Run("mirrors Polygon.IntersectsCircle", func(t *testing.T) {
+		for _, c := range circleFixtures {
+			for _, p := range polygonFixtures() {
+				assert.Equal(t, c.IntersectsPolygon(p), p.IntersectsCircle(c), fmt.Sprintf("%s → %s: ", c, p))
+			}
+		}
+	})
+}
+
 func TestCircle_Int(t *testing.T) {
 	t.Run("int is a no-op", func(t *testing.T) {
 		AssertCircle(t, Circ(Pt(1, 2), 10).Int(), Circ(Pt(1, 2), 10))

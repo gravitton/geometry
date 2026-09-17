@@ -169,13 +169,13 @@ func (p Polygon[T]) Bounds() Rectangle[T] {
 // extent returns the minimum and maximum corner of the vertices, which must not be empty.
 // Bounds rounds them into a Rectangle; Contains tests them as they are.
 func (p Polygon[T]) extent() (Point[T], Point[T]) {
-	minPoint, maxPoint := p.Vertices[0], p.Vertices[0]
+	a, b := p.Vertices[0], p.Vertices[0]
 	for _, v := range p.Vertices[1:] {
-		minPoint = Point[T]{min(minPoint.X, v.X), min(minPoint.Y, v.Y)}
-		maxPoint = Point[T]{max(maxPoint.X, v.X), max(maxPoint.Y, v.Y)}
+		a = Point[T]{min(a.X, v.X), min(a.Y, v.Y)}
+		b = Point[T]{max(b.X, v.X), max(b.Y, v.Y)}
 	}
 
-	return minPoint, maxPoint
+	return a, b
 }
 
 // Equal checks if two polygons have the same vertices.
@@ -212,7 +212,7 @@ func (p Polygon[T]) Contains(point Point[T]) bool {
 		return false
 	}
 
-	if minPoint, maxPoint := p.extent(); !between(point, minPoint, maxPoint) {
+	if a, b := p.extent(); !point.Between(a, b) {
 		return false
 	}
 
@@ -227,6 +227,68 @@ func (p Polygon[T]) Contains(point Point[T]) bool {
 	}
 
 	return inside
+}
+
+// Intersects reports whether the polygons share a point: a vertex of one lies within the other,
+// or an edge of one crosses an edge of the other. Touching polygons intersect, within Epsilon
+// of T, the same closed convention as Contains, and an empty polygon intersects nothing.
+func (p Polygon[T]) Intersects(polygon Polygon[T]) bool {
+	if p.Empty() || polygon.Empty() {
+		return false
+	}
+
+	if polygon.Contains(p.Vertices[0]) || p.Contains(polygon.Vertices[0]) {
+		return true
+	}
+
+	for edge := range p.edges() {
+		if polygon.crossesEdge(edge) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// IntersectsLine reports whether the polygon and the segment share a point: an endpoint lies
+// within the polygon, or the segment crosses one of its edges. Touching shapes intersect,
+// within Epsilon of T.
+func (p Polygon[T]) IntersectsLine(line Line[T]) bool {
+	return p.Contains(line.Start) || p.crossesEdge(line)
+}
+
+// IntersectsRectangle reports whether the polygon and the rectangle share a point, the same
+// test as Intersects on the rectangle's Polygon.
+func (p Polygon[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
+	return p.Intersects(rectangle.Polygon())
+}
+
+// IntersectsCircle reports whether the polygon and the circle share a point: the center lies
+// within the polygon, or an edge passes within the radius. Touching shapes intersect, within
+// Epsilon of T.
+func (p Polygon[T]) IntersectsCircle(circle Circle[T]) bool {
+	if p.Contains(circle.Center) {
+		return true
+	}
+
+	for edge := range p.edges() {
+		if edge.IntersectsCircle(circle) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// crossesEdge reports whether the segment intersects any edge of the polygon.
+func (p Polygon[T]) crossesEdge(line Line[T]) bool {
+	for edge := range p.edges() {
+		if edge.Intersects(line) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // Int converts the polygon to a Polygon[int].

@@ -96,6 +96,34 @@ func (c Circle[T]) Contains(point Point[T]) bool {
 	return c.Center.Subtract(point).LessOrEqual(c.Radius)
 }
 
+// Intersects reports whether the circles overlap. Touching circles intersect, within Epsilon
+// of T, the same closed convention as Contains. The radii are summed in float64, so a narrow
+// integer T cannot overflow the threshold.
+func (c Circle[T]) Intersects(circle Circle[T]) bool {
+	distance := c.Center.Subtract(circle.Center).Length()
+	threshold := float64(c.Radius) + float64(circle.Radius)
+
+	return LessOrEqualDelta(distance, threshold, Epsilon[T]())
+}
+
+// IntersectsRectangle reports whether the circle and the rectangle overlap, as
+// Rectangle.IntersectsCircle does.
+func (c Circle[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
+	return rectangle.IntersectsCircle(c)
+}
+
+// IntersectsLine reports whether the circle and the segment share a point, as
+// Line.IntersectsCircle does.
+func (c Circle[T]) IntersectsLine(line Line[T]) bool {
+	return line.IntersectsCircle(c)
+}
+
+// IntersectsPolygon reports whether the circle and the polygon share a point, as
+// Polygon.IntersectsCircle does.
+func (c Circle[T]) IntersectsPolygon(polygon Polygon[T]) bool {
+	return polygon.IntersectsCircle(c)
+}
+
 // Int converts the circle to a Circle[int].
 func (c Circle[T]) Int() Circle[int] {
 	return Circle[int]{c.Center.Int(), Int(c.Radius)}

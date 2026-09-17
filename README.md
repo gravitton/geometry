@@ -106,12 +106,13 @@ hex.Bounds() // Rectangle (-20,-17)-(20,17) by MinMaxString
 for _, vertex := range hex.Vertices() { ... }
 ```
 
-Collisions:
+Intersections:
 
 ```go
-geom.CollisionRectangles(a, b)
-geom.CollisionCircles(a, b)
-geom.CollisionRectangleCircle(r, c)
+a.Intersects(b)        // Rectangle, Circle, Line and Polygon with their own kind
+r.IntersectsCircle(c)  // and IntersectsLine, IntersectsPolygon
+c.IntersectsRectangle(r)
+l.IntersectsPolygon(p)
 ```
 
 Directions and axes:
@@ -235,7 +236,7 @@ operator and `Mod`. Check `IsInvertible` first when a matrix may be singular.
 narrow `int8` or `int16` never overflows mid-computation and only a result outside its range is lost. An `int64`
 beyond 2^53 loses precision on the way through `float64`.
 
-**Boundaries:** every `Contains`, `Vector.LessOrEqual` and the collision functions are closed and tolerant: a point
+**Boundaries:** every `Contains`, `Intersects` and `Vector.LessOrEqual` are closed and tolerant: a point
 within `Epsilon[T]()` of the boundary counts as on it, so a float rectangle contains the corners it was built from, a
 circle contains its anchors and a polygon contains its vertices. `Vector.Less` and `LessOrEqual`'s strict counterparts apply no tolerance.
 

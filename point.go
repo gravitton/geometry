@@ -141,6 +141,13 @@ func (p Point[T]) AngleTo(point Point[T]) float64 {
 	return point.Subtract(p).Angle()
 }
 
+// Between reports whether the point lies within the box from corner a to corner b, boundary
+// included within Epsilon of T. It is the check Rectangle.Contains makes on its Min and Max.
+func (p Point[T]) Between(a, b Point[T]) bool {
+	return LessOrEqual(a.X, p.X) && LessOrEqual(p.X, b.X) &&
+		LessOrEqual(a.Y, p.Y) && LessOrEqual(p.Y, b.Y)
+}
+
 // Equal checks for equal X and Y values with given point.
 func (p Point[T]) Equal(point Point[T]) bool {
 	return Equal(p.X, point.X) && Equal(p.Y, point.Y)
