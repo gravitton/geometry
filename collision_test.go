@@ -48,6 +48,10 @@ func TestCollisionCircles(t *testing.T) {
 	t.Run("one contained in the other", func(t *testing.T) {
 		assert.True(t, CollisionCircles(circle, Circ(Pt(0.0, 0.0), 50.0)))
 	})
+	t.Run("narrow integers do not overflow the radii sum", func(t *testing.T) {
+		assert.True(t, CollisionCircles(Circ(Pt[int8](0, 0), 100), Circ(Pt[int8](0, 50), 100)))
+		assert.False(t, CollisionCircles(Circ(Pt[int8](-20, 0), 50), Circ(Pt[int8](100, 0), 50)))
+	})
 	t.Run("symmetric", func(t *testing.T) {
 		for _, a := range circleFixtures {
 			for _, b := range circleFixtures {

@@ -104,7 +104,7 @@ func (c Circle[T]) Float() Circle[float64] {
 	return Circle[float64]{c.Center.Float(), float64(c.Radius)}
 }
 
-// String returns a string representation of the Circle.
+// String returns the circle in the form of its constructor: Circ((x,y);r).
 func (c Circle[T]) String() string {
-	return fmt.Sprintf("C(%s;%s)", c.Center.String(), String(c.Radius))
+	return fmt.Sprintf("Circ(%s;%s)", c.Center.String(), String(c.Radius))
 }

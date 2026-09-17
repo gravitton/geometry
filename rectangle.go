@@ -301,7 +301,14 @@ func (r Rectangle[T]) Float() Rectangle[float64] {
 	return Rectangle[float64]{r.Center.Float(), r.Size.Float()}
 }
 
-// String returns a string representation of the Rectangle using min and max.
+// String returns the rectangle in the form of its constructor: Rect((x,y);WxH), center then
+// size. See MinMaxString for the corners.
 func (r Rectangle[T]) String() string {
+	return fmt.Sprintf("Rect(%s;%s)", r.Center.String(), r.Size.String())
+}
+
+// MinMaxString returns the rectangle by its corners: (x,y)-(x,y), Min then Max. It is the form
+// to read positions from, where String mirrors how the rectangle was built.
+func (r Rectangle[T]) MinMaxString() string {
 	return fmt.Sprintf("%s-%s", r.Min().String(), r.Max().String())
 }

@@ -213,10 +213,10 @@ func TestCircle_Float(t *testing.T) {
 
 func TestCircle_String(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		assert.Equal(t, Circ(Pt(10, 16), 5).String(), "C((10,16);5)")
+		assert.Equal(t, Circ(Pt(10, 16), 5).String(), "Circ((10,16);5)")
 	})
 	t.Run("float", func(t *testing.T) {
-		assert.Equal(t, Circ(Pt(100, -34.0000115), 0.2).String(), "C((100.00,-34.00);0.20)")
+		assert.Equal(t, Circ(Pt(100, -34.0000115), 0.2).String(), "Circ((100.00,-34.00);0.20)")
 	})
 }
 
@@ -328,5 +328,5 @@ var circleFixtures = []Circle[float64]{
 
 func ExampleCirc() {
 	fmt.Println(Circ(Pt(10, 16), 5))
-	// Output: C((10,16);5)
+	// Output: Circ((10,16);5)
 }

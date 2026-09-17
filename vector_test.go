@@ -167,6 +167,10 @@ func TestVector_Resize(t *testing.T) {
 		AssertVector(t, Vec(1e-7, 1e-7).Resize(5), Vec(5*OneOverSqrt2, 5*OneOverSqrt2))
 		AssertVector(t, Vec[float32](0, -1e-5).Resize(2), Vec[float32](0, -2))
 	})
+	t.Run("a subnormal vector does not overflow", func(t *testing.T) {
+		AssertVector(t, Vec(5e-324, 0).Resize(3), Vec(3.0, 0.0))
+		AssertVector(t, Vec(0, -5e-324).Normalize(), Vec(0.0, -1.0))
+	})
 }
 
 func TestVector_Normalize(t *testing.T) {

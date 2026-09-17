@@ -11,12 +11,15 @@ func CollisionRectangles[T Number](rect1 Rectangle[T], rect2 Rectangle[T]) bool 
 }
 
 // CollisionCircles checks if the given circles collide. Touching circles collide,
-// within Epsilon of T, the same closed convention as CollisionRectangles.
+// within Epsilon of T, the same closed convention as CollisionRectangles. The radii are
+// summed in float64, so a narrow integer T cannot overflow the threshold.
 func CollisionCircles[T Number](circle1 Circle[T], circle2 Circle[T]) bool {
-	distance := circle1.Center.Subtract(circle2.Center)
-	threshold := circle1.Radius + circle2.Radius
+	distance := circle1.Center.Subtract(circle2.Center).Length()
+	threshold := float64(circle1.Radius) + float64(circle2.Radius)
 
-	return distance.LessOrEqual(threshold)
+	// LessOrEqual would take the threshold back into T, or apply the float64 tolerance to it;
+	// the delta form compares two float64 values with the tolerance of T.
+	return LessOrEqualDelta(distance, threshold, Epsilon[T]())
 }
 
 // CollisionRectangleCircle checks if the given rectangle and circle collide: the point of the

@@ -227,6 +227,24 @@ func TestMidpoint(t *testing.T) {
 	})
 }
 
+func TestSum(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		assert.Equal(t, Sum([]int{1, 2, 3}), 6)
+		assert.Equal(t, Sum([]int{-4, 1}), -3)
+	})
+	t.Run("narrow integers do not overflow mid-sum", func(t *testing.T) {
+		assert.Equal(t, Sum([]int8{100, 100, -100}), int8(100))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Sum([]float64{0.5, 0.25, 0.125}), 0.875)
+		AssertNumber(t, Sum([]float32{0.5, 0.25}), float32(0.75))
+	})
+	t.Run("empty and nil are zero", func(t *testing.T) {
+		assert.Equal(t, Sum([]int{}), 0)
+		assert.Equal(t, Sum[float64](nil), 0.0)
+	})
+}
+
 func TestClamp(t *testing.T) {
 	t.Run("inside the range", func(t *testing.T) {
 		AssertNumber(t, Clamp(5, 0, 10), 5)
@@ -287,6 +305,12 @@ func TestLessOrEqual(t *testing.T) {
 		assert.True(t, LessOrEqual(1, 2))
 		assert.True(t, LessOrEqual(2, 2))
 		assert.False(t, LessOrEqual(3, 2))
+	})
+	t.Run("int64 beyond 2^53 stays exact", func(t *testing.T) {
+		big := int64(1) << 53
+
+		assert.False(t, LessOrEqual(big+1, big))
+		assert.True(t, LessOrEqual(big, big+1))
 	})
 	t.Run("float64 allows Delta past the bound", func(t *testing.T) {
 		assert.True(t, LessOrEqual(1.0, 2.0))

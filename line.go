@@ -77,7 +77,7 @@ func (l Line[T]) Float() Line[float64] {
 	return Line[float64]{l.Start.Float(), l.End.Float()}
 }
 
-// String returns a string representation of the Line.
+// String returns the line in the form of its constructor: Ln((x,y);(x,y)).
 func (l Line[T]) String() string {
-	return fmt.Sprintf("L(%s;%s)", l.Start.String(), l.End.String())
+	return fmt.Sprintf("Ln(%s;%s)", l.Start.String(), l.End.String())
 }

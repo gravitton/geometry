@@ -414,10 +414,19 @@ func TestRectangle_Float(t *testing.T) {
 
 func TestRectangle_String(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		assert.Equal(t, Rect(Pt(1, 2), Sz(2, 3)).String(), "(0,1)-(2,4)")
+		assert.Equal(t, Rect(Pt(1, 2), Sz(2, 3)).String(), "Rect((1,2);2x3)")
 	})
 	t.Run("float", func(t *testing.T) {
-		assert.Equal(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).String(), "(0.00,-2.05)-(1.20,1.55)")
+		assert.Equal(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).String(), "Rect((0.60,-0.25);1.20x3.60)")
+	})
+}
+
+func TestRectangle_MinMaxString(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		assert.Equal(t, Rect(Pt(1, 2), Sz(2, 3)).MinMaxString(), "(0,1)-(2,4)")
+	})
+	t.Run("float", func(t *testing.T) {
+		assert.Equal(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).MinMaxString(), "(0.00,-2.05)-(1.20,1.55)")
 	})
 }
 
@@ -568,5 +577,10 @@ var rectFixtures = []Rectangle[float64]{
 
 func ExampleRect() {
 	fmt.Println(Rect(Pt(1, 2), Sz(2, 3)))
+	// Output: Rect((1,2);2x3)
+}
+
+func ExampleRectangle_MinMaxString() {
+	fmt.Println(Rect(Pt(1, 2), Sz(2, 3)).MinMaxString())
 	// Output: (0,1)-(2,4)
 }

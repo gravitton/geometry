@@ -129,6 +129,18 @@ func Midpoint[T Number](a, b T) T {
 	return Lerp(a, b, 0.5)
 }
 
+// Sum adds the values, accumulating in float64 and storing the total back through Cast, so a
+// narrow integer T cannot overflow mid-sum; only a total outside its range is affected, as Cast
+// documents. An empty or nil slice sums to 0.
+func Sum[T Number](values []T) T {
+	var total float64
+	for _, value := range values {
+		total += float64(value)
+	}
+
+	return Cast[T](total)
+}
+
 // Clamp adjusts the given value to be between the given minimum and maximum value.
 func Clamp[T Number](value, min, max T) T {
 	if value < min {
@@ -172,6 +184,10 @@ func Equal[T Number](a, b T) bool {
 // and with the same tolerance as Equal for a float T, so that a value a rounding error past
 // a boundary still counts as on it.
 func LessOrEqual[T Number](a, b T) bool {
+	if isIntType[T]() {
+		return a <= b
+	}
+
 	return LessOrEqualDelta(a, b, Epsilon[T]())
 }
 
