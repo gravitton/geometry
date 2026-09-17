@@ -99,6 +99,22 @@ func TestRectangle_Shrink(t *testing.T) {
 	})
 }
 
+func TestRectangle_Outset(t *testing.T) {
+	t.Run("uniform padding keeps the center", func(t *testing.T) {
+		AssertRect(t, Rect(Pt(0, 0), Sz(10, 10)).Outset(PadU(1)), Rect(Pt(0, 0), Sz(12, 12)))
+	})
+	t.Run("asymmetric padding shifts the center", func(t *testing.T) {
+		AssertRect(t, Rect(Pt(0, 0), Sz(10, 10)).Outset(Pad(3, 1, 1, 5)), Rect(Pt(-2, -1), Sz(16, 14)))
+	})
+	t.Run("undoes an inset", func(t *testing.T) {
+		r := RectangleFromMinMax(Pt(0.0, 0.0), Pt(10.0, 10.0))
+		padding := Pad(1.0, 2.0, 3.0, 4.0)
+
+		AssertRect(t, r.Inset(padding).Outset(padding), r)
+		AssertRect(t, r.Outset(padding).Inset(padding), r)
+	})
+}
+
 func TestRectangle_Inset(t *testing.T) {
 	t.Run("uniform padding keeps the center", func(t *testing.T) {
 		AssertRect(t, Rect(Pt(0, 0), Sz(10, 10)).Inset(PadU(1)), Rect(Pt(0, 0), Sz(8, 8)))
@@ -349,6 +365,21 @@ func TestRectangle_Contains(t *testing.T) {
 		assert.True(t, r.Contains(r.Min()))
 		assert.True(t, r.Contains(r.Max()))
 	})
+	t.Run("a float rectangle contains the corners it was built from", func(t *testing.T) {
+		for _, corners := range [][2]float64{{0.1, 0.7}, {0.2, 0.9}, {5.7, 9.1}, {0.15, 0.45}} {
+			low, high := Pt(corners[0], corners[0]), Pt(corners[1], corners[1])
+			r := RectangleFromMinMax(low, high)
+
+			assert.True(t, r.Contains(low), fmt.Sprintf("%v: min", corners))
+			assert.True(t, r.Contains(high), fmt.Sprintf("%v: max", corners))
+		}
+	})
+	t.Run("float beyond Delta is outside", func(t *testing.T) {
+		r := RectangleFromMinMax(Pt(0.0, 0.0), Pt(1.0, 1.0))
+
+		assert.True(t, r.Contains(Pt(1+Delta/2, 0.5)))
+		assert.False(t, r.Contains(Pt(1+2*Delta, 0.5)))
+	})
 }
 
 func TestRectangle_Polygon(t *testing.T) {
@@ -492,7 +523,7 @@ func TestRectangle_Properties(t *testing.T) {
 	})
 	t.Run("anchors lie on the rectangle", func(t *testing.T) {
 		for _, r := range rectFixtures {
-			for _, direction := range Directions {
+			for _, direction := range Directions() {
 				anchor := r.Anchor(direction)
 
 				assert.True(t, anchor.X >= r.Min().X-Delta && anchor.X <= r.Max().X+Delta, fmt.Sprintf("%s → %s: ", r, direction))

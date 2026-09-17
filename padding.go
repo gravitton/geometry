@@ -25,6 +25,21 @@ func PadXY[T Number](topBottom, leftRight T) Padding[T] {
 	return Padding[T]{topBottom, leftRight, topBottom, leftRight}
 }
 
+// Add creates a new Padding by adding the given padding edge by edge.
+func (p Padding[T]) Add(padding Padding[T]) Padding[T] {
+	return Padding[T]{p.Top + padding.Top, p.Right + padding.Right, p.Bottom + padding.Bottom, p.Left + padding.Left}
+}
+
+// Negate creates a new Padding with every edge negated, so Rectangle.Inset outsets by it.
+func (p Padding[T]) Negate() Padding[T] {
+	return Padding[T]{-p.Top, -p.Right, -p.Bottom, -p.Left}
+}
+
+// Scale creates a new Padding with every edge scaled by the given factor.
+func (p Padding[T]) Scale(factor float64) Padding[T] {
+	return Padding[T]{Multiply(p.Top, factor), Multiply(p.Right, factor), Multiply(p.Bottom, factor), Multiply(p.Left, factor)}
+}
+
 // Width returns the width of the padding.
 func (p Padding[T]) Width() T {
 	return p.Left + p.Right

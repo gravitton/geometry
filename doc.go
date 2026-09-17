@@ -20,9 +20,24 @@
 // Divide, and every method built on it (Point.Divide, Size.Unscale, Matrix.Unscale), panics
 // for a zero factor, and Matrix.Inverse panics for a singular matrix, the same way the integer
 // / operator and Mod do. Check IsInvertible before inverting a matrix that may be singular.
-// Cast panics when a NaN or ±Inf would be stored into an integer T, which Go otherwise converts
-// to a platform-dependent value: Multiply, Lerp, Rotate, Transform and Int on an integer shape
-// all go through it. A float T carries NaN and ±Inf through unchanged.
+// Cast panics when a NaN or ±Inf would be stored into an integer T: Multiply, Lerp, Rotate,
+// Transform and Int on an integer shape all go through it. A float T carries NaN and ±Inf
+// through unchanged. A finite value outside the range of an integer T is not checked and
+// stores a platform-dependent value, as Cast documents. RegularPolygonOrientationAngle panics
+// for an Orientation that is neither FlatTop nor PointyTop.
 // These are the only panics: every other guard returns a value the type can express, such as
 // DirectionNone, an empty polygon, or the 0 that Size.AspectRatio gives for a zero height.
+//
+// # Arithmetic
+//
+// Products, distances and interpolations are computed in float64 and stored back through Cast,
+// whatever T is, so a narrow integer T never overflows mid-computation and every integer result
+// follows the one rounding rule above. Sums and differences of two values stay in T.
+//
+// # Boundaries
+//
+// Rectangle.Contains, Circle.Contains, Vector.LessOrEqual and the collision functions are
+// closed and tolerant: a point within Epsilon of the boundary counts as on it, so a float
+// rectangle contains the corners it was built from even where Min is recomputed with a
+// rounding error. Vector.Less is the strict counterpart and applies no tolerance.
 package geom

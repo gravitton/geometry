@@ -26,21 +26,21 @@ func Pol[T Number](vertices []Point[T]) Polygon[T] {
 
 // Center returns the polygon centroid computed as the average of its vertices,
 // or the zero point for a polygon without vertices.
-// For integer T, the coordinate sums are divided using integer division and the
-// result is truncated; use float64 when centroid accuracy matters.
+// For integer T the average is rounded like every other result stored into T; use float64
+// when centroid accuracy matters.
 func (p Polygon[T]) Center() Point[T] {
 	if p.Empty() {
 		return Point[T]{}
 	}
 
-	var x, y T
+	var x, y float64
 	for _, v := range p.Vertices {
-		x, y = x+v.X, y+v.Y
+		x, y = x+float64(v.X), y+float64(v.Y)
 	}
 
-	l := T(len(p.Vertices))
+	n := float64(len(p.Vertices))
 
-	return Point[T]{x / l, y / l}
+	return Point[T]{Cast[T](x / n), Cast[T](y / n)}
 }
 
 // Translate creates a new Polygon translated by the given vector (applied to all vertices).
@@ -51,10 +51,9 @@ func (p Polygon[T]) Translate(vector Vector[T]) Polygon[T] {
 }
 
 // MoveTo creates a new Polygon whose centroid is moved to point, preserving shape.
-// For integer T this is a known exception to exactness: Center truncates toward zero, which does
-// not commute with translation, so the moved centroid can miss the point by one unit when a
-// coordinate sum crosses zero. Floor division would be exact but is deliberately not used, to
-// keep a single integer rounding rule; use float64 when the centroid must land exactly.
+// For integer T the centroid is rounded, and a translation by a whole number of units preserves
+// the fractional part of the average, so the moved centroid lands on point except when the
+// average sits exactly on a half and rounding away from zero flips side as the sign changes.
 func (p Polygon[T]) MoveTo(point Point[T]) Polygon[T] {
 	return p.Translate(point.Subtract(p.Center()))
 }

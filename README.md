@@ -75,6 +75,7 @@ r := geom.Rect(geom.Pt(50, 50), geom.Sz(20, 10)) // center + size
 
 r.Contains(geom.Pt(55, 52))                 // true
 r.Inset(geom.PadU(2)).Anchor(geom.TopRight) // Point{58, 47}
+r.Outset(geom.PadXY(1, 2))                  // Rectangle (38,44)-(62,56)
 r.Clamp(geom.Pt(80, 0))                     // Point{60, 45}, nearest point inside
 
 b := geom.RectangleFromMinMax(geom.Pt(0, 0), geom.Pt(8, 6))
@@ -213,16 +214,21 @@ one with `Float()` at the call, the same way an angle is always `float64`.
 modulo a full turn, across the `0`/`2π` seam, and is what `RegularPolygon.Equal` uses.
 
 **Integer rounding:** A float result stored into an integer `T` rounds half away from zero, so
-`Pt(0, 0).Midpoint(Pt(5, 5))` is `(3,3)`. `Rectangle` is the exception: its center truncates half the size toward
-`Min` so that `Max-Min` stays exactly the size, so `RectangleFromMinMax(Pt(0, 0), Pt(5, 5)).Center` is `(2,2)`.
-`Polygon.Center` truncates the vertex average toward zero, so an integer `MoveTo` can miss by one unit; this is a known
-exception.
+`Pt(0, 0).Midpoint(Pt(5, 5))` is `(3,3)` and `Polygon.Center` rounds the vertex average. `Rectangle` is the exception:
+its center truncates half the size toward `Min` so that `Max-Min` stays exactly the size, so
+`RectangleFromMinMax(Pt(0, 0), Pt(5, 5)).Center` is `(2,2)`. A finite value outside the range of an integer `T` is not
+checked and stores a platform-dependent value.
 
 **Division by zero:** `Divide`, `Unscale`, and `Matrix.Inverse` on a singular matrix panic, like the integer `/`
 operator and `Mod`. Check `IsInvertible` first when a matrix may be singular.
 
-**Narrow integers:** `int8` and `int16` are admitted for storage. Products such as `LengthSquared` and `Area` overflow
-there, so use `int` or `int64` for arithmetic.
+**Arithmetic:** Products, distances and interpolations are computed in `float64` and rounded back into `T`, so a
+narrow `int8` or `int16` never overflows mid-computation and only a result outside its range is lost. An `int64`
+beyond 2^53 loses precision on the way through `float64`.
+
+**Boundaries:** `Contains`, `Vector.LessOrEqual` and the collision functions are closed and tolerant: a point within
+`Epsilon[T]()` of the boundary counts as on it, so a float rectangle contains the corners it was built from and a
+circle contains its anchors. `Vector.Less` and `LessOrEqual`'s strict counterparts apply no tolerance.
 
 **Common API:** Every shape exposes `Int()`, `Float()`, `String()`, `Equal()`, and `IsZero()`. Shapes with spatial
 extent add `Bounds()`. `Line`, `Polygon`, and `RegularPolygon` add `Vertices()`.

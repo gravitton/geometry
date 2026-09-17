@@ -161,12 +161,12 @@ func (v Vector[T]) Ceil() Vector[T] {
 
 // Dot returns dot (scalar) product of two vectors.
 func (v Vector[T]) Dot(vector Vector[T]) T {
-	return v.X*vector.X + v.Y*vector.Y
+	return Cast[T](float64(v.X)*float64(vector.X) + float64(v.Y)*float64(vector.Y))
 }
 
 // Cross returns cross product of two vectors.
 func (v Vector[T]) Cross(vector Vector[T]) T {
-	return v.X*vector.Y - v.Y*vector.X
+	return Cast[T](float64(v.X)*float64(vector.Y) - float64(v.Y)*float64(vector.X))
 }
 
 // Normal creates a new Vector as normal to current vector. Faster equivalent to Rotate(math.Pi/2).
@@ -181,7 +181,9 @@ func (v Vector[T]) Length() float64 {
 
 // LengthSquared returns the Vector's length (magnitude) squared (for faster comparison).
 func (v Vector[T]) LengthSquared() T {
-	return v.X*v.X + v.Y*v.Y
+	x, y := float64(v.X), float64(v.Y)
+
+	return Cast[T](x*x + y*y)
 }
 
 // Angle returns the vector's angle in radians.
@@ -244,21 +246,22 @@ func (v Vector[T]) IsRight() bool {
 	return v.X > 0
 }
 
-// IsNormalized checks if Vector is normalized.
+// IsNormalized checks if Vector is normalized: its length is 1 within Epsilon of T.
 func (v Vector[T]) IsNormalized() bool {
-	return Equal(v.LengthSquared(), 1.0)
+	return EqualDelta(v.Length(), 1, Epsilon[T]())
 }
 
-// Less reports whether the vector is shorter than the given length.
-// No vector is shorter than a non-positive length.
+// Less reports whether the vector is strictly shorter than the given length. No tolerance is
+// applied, and no vector is shorter than a non-positive length.
 func (v Vector[T]) Less(length T) bool {
-	return length > 0 && v.LengthSquared() < length*length
+	return v.Length() < float64(length)
 }
 
-// LessOrEqual reports whether the vector is at most the given length.
-// No vector is at most a negative length.
+// LessOrEqual reports whether the vector is at most the given length, within Epsilon of T,
+// so a vector a rounding error longer than length still counts. No vector is at most a
+// negative length.
 func (v Vector[T]) LessOrEqual(length T) bool {
-	return length >= 0 && v.LengthSquared() <= length*length
+	return length >= 0 && LessOrEqualDelta(v.Length(), float64(length), Epsilon[T]())
 }
 
 // XY returns the vector X, Y values in standard order.

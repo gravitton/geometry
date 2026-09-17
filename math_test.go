@@ -282,6 +282,47 @@ func TestEqual(t *testing.T) {
 	})
 }
 
+func TestLessOrEqual(t *testing.T) {
+	t.Run("int compares exactly", func(t *testing.T) {
+		assert.True(t, LessOrEqual(1, 2))
+		assert.True(t, LessOrEqual(2, 2))
+		assert.False(t, LessOrEqual(3, 2))
+	})
+	t.Run("float64 allows Delta past the bound", func(t *testing.T) {
+		assert.True(t, LessOrEqual(1.0, 2.0))
+		assert.True(t, LessOrEqual(2.0+Delta/2, 2.0))
+		assert.False(t, LessOrEqual(2.0+2*Delta, 2.0))
+	})
+	t.Run("float32 allows Delta32 past the bound", func(t *testing.T) {
+		assert.True(t, LessOrEqual(float32(2+Delta32/2), 2))
+		assert.False(t, LessOrEqual(float32(2+2*Delta32), 2))
+	})
+	t.Run("a recomputed float corner is still inside", func(t *testing.T) {
+		low := 0.1
+		recomputed := (low + 0.6/2) - 0.6/2
+
+		assert.False(t, low >= recomputed)
+		assert.True(t, LessOrEqual(recomputed, low))
+	})
+}
+
+func TestLessOrEqualDelta(t *testing.T) {
+	t.Run("within the delta", func(t *testing.T) {
+		assert.True(t, LessOrEqualDelta(1, 2, 0.0))
+		assert.True(t, LessOrEqualDelta(3, 2, 1.5))
+		assert.True(t, LessOrEqualDelta(1.001, 1.0, 0.01))
+	})
+	t.Run("outside the delta", func(t *testing.T) {
+		assert.False(t, LessOrEqualDelta(4, 2, 1.5))
+		assert.False(t, LessOrEqualDelta(1.02, 1.0, 0.01))
+	})
+	t.Run("narrow integers do not overflow", func(t *testing.T) {
+		assert.True(t, LessOrEqualDelta[int8](-128, 127, 0))
+		assert.False(t, LessOrEqualDelta[int8](127, -128, 254))
+		assert.True(t, LessOrEqualDelta[int8](127, -128, 255))
+	})
+}
+
 func TestEqualDelta(t *testing.T) {
 	t.Run("within the delta", func(t *testing.T) {
 		assert.True(t, EqualDelta(1, 2, 1.5))

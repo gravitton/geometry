@@ -87,10 +87,9 @@ func (c Circle[T]) IsZero() bool {
 	return c.Center.IsZero() && Equal(c.Radius, 0)
 }
 
-// Contains reports whether the given point lies within the circle, boundary included,
-// the same closed convention as Rectangle.Contains. The comparison is exact, without the
-// Epsilon that Equal applies, so a float point a rounding error outside the radius is not
-// contained.
+// Contains reports whether the given point lies within the circle, boundary included within
+// Epsilon of T, the same closed convention as Rectangle.Contains: a float point a rounding
+// error outside the radius, such as an Anchor, is still contained.
 func (c Circle[T]) Contains(point Point[T]) bool {
 	return c.Center.Subtract(point).LessOrEqual(c.Radius)
 }

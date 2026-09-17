@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased](https://github.com/gravitton/geometry/compare/v1.12.0...main)
 ### Added
+- `LessOrEqual(a, b)` and `LessOrEqualDelta(a, b, delta)` – ordered comparison within `Epsilon[T]()` or a given delta, the `<=` counterparts of `Equal` and `EqualDelta`; `Rectangle.Contains`, `CollisionRectangles` and `Vector.LessOrEqual` are built on them
+- `Padding.Add`, `Padding.Negate` and `Padding.Scale`, so a padding can follow a scaled rectangle
+- `Rectangle.Outset(padding)` – expands the rectangle by the padding, the inverse of `Inset`
 - `Int[T Number](value T) int` – converts a `Number` to `int`, an integer `T` directly and a float `T` rounded through `Cast`; the `Int()` methods are built on it
 - `Delta32` – the equality tolerance for `float32`, `1e-4`. A `float32` ulp reaches 6e-5 at magnitude 1e3, so `Delta` sat below one ulp across the coordinate range `float32` is normally chosen for and asked for bit-exact equality there
 - `Epsilon[T]()` – the tolerance for `T`: zero for an integer `T`, `Delta32` for `float32`, `Delta` for `float64`. It depends only on the type, never on the values compared, so `Equal` costs what it did before
@@ -21,6 +24,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `EqualAngle(a, b)` – reports whether two angles are equal modulo a full turn within `Delta`, holding across the `0`/`2π` seam where comparing normalized angles does not
 
 ### Changed
+- `Rectangle.Contains`, `Circle.Contains`, `Vector.LessOrEqual`, `CollisionRectangles`, `CollisionCircles` and `CollisionRectangleCircle` include the boundary within `Epsilon[T]()` instead of comparing exactly, so a float rectangle contains the corners it was built from even where `Min` is recomputed from `Center` with a rounding error, and a circle contains its anchors; `Vector.Less` stays strict (**breaking**)
+- Every product, distance and interpolation is computed in `float64` and stored back through `Cast`: `Vector.Dot`, `Cross`, `LengthSquared`, `Less`, `LessOrEqual`, `IsNormalized`, `Point.ManhattanDistanceTo`, `ChebyshevDistanceTo`, `OctileDistanceTo`, `Size.Area`, `Perimeter`, `Polygon.Center`, `Matrix.Multiply`, `Determinant`, `Inverse` and `IsInvertible`, so a narrow `int8` or `int16` no longer overflows mid-computation and an `int64` beyond 2^53 loses precision instead (**breaking** for such values)
+- `Polygon.Center` rounds the vertex average half away from zero like every other integer result instead of truncating toward zero, so an integer `MoveTo` now lands on the point except when a half average changes sign (**breaking**)
+- `Directions`, `CardinalDirections`, `DiagonalDirections` and `Axes` are functions returning a fresh array instead of package-level variables an importer could write into (**breaking**)
+- `RegularPolygonOrientationAngle` panics for an `Orientation` other than `FlatTop` and `PointyTop` instead of returning `0`
+- `RegularPolygon.Vertices` returns nil for `N < 1` instead of an empty slice, so `RegularPolygon.Polygon()` of an empty polygon is zero like `Pol(nil)`
+- `Cast` documents that a finite value outside the range of an integer `T` is not checked and stores a platform-dependent value, `Int` that an `int64` truncates on a 32-bit target, and `Rectangle.Inset` that `Outset` undoes it
 - `Line` marshals `Start` and `End` under the JSON keys `s` and `e` instead of `a` and `b`, the initials of the fields like every other key in the package (**breaking**)
 - `Cast` panics when a `NaN` or `±Inf` would be stored into an integer `T`, the same convention `Divide` follows for a zero scale, so `Multiply`, `Lerp`, `Vector.Rotate`, `Transform` and `Int()` on an integer shape panic on a non-finite input instead of storing the platform-dependent value Go's conversion gives; a float `T` keeps it (**breaking**)
 - `RegularPolygonOrientationAngle` returns the top angle for `n < 1` instead of dividing by `n`, which stored a `NaN` angle in a `FlatTop` polygon without vertices and left it unequal to itself

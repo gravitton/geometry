@@ -58,13 +58,22 @@ const (
 )
 
 // Directions lists all eight directions ordered by increasing angle from DirectionRight.
-var Directions = [8]Direction{DirectionRight, DirectionDownRight, DirectionDown, DirectionDownLeft, DirectionLeft, DirectionUpLeft, DirectionUp, DirectionUpRight}
+// It returns a fresh array, so a caller cannot alter the list.
+func Directions() [8]Direction {
+	return [8]Direction{DirectionRight, DirectionDownRight, DirectionDown, DirectionDownLeft, DirectionLeft, DirectionUpLeft, DirectionUp, DirectionUpRight}
+}
 
 // CardinalDirections lists the four cardinal directions ordered by increasing angle from DirectionRight.
-var CardinalDirections = [4]Direction{DirectionRight, DirectionDown, DirectionLeft, DirectionUp}
+// It returns a fresh array, so a caller cannot alter the list.
+func CardinalDirections() [4]Direction {
+	return [4]Direction{DirectionRight, DirectionDown, DirectionLeft, DirectionUp}
+}
 
 // DiagonalDirections lists the four diagonal directions ordered by increasing angle from DirectionDownRight.
-var DiagonalDirections = [4]Direction{DirectionDownRight, DirectionDownLeft, DirectionUpLeft, DirectionUpRight}
+// It returns a fresh array, so a caller cannot alter the list.
+func DiagonalDirections() [4]Direction {
+	return [4]Direction{DirectionDownRight, DirectionDownLeft, DirectionUpLeft, DirectionUpRight}
+}
 
 // directionOffsets lists the lattice step of each direction, indexed by direction.
 var directionOffsets = [8]Vector[int]{

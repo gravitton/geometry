@@ -18,9 +18,12 @@ func TestPolygon_Constructor(t *testing.T) {
 }
 
 func TestPolygon_Center(t *testing.T) {
-	t.Run("int truncates the average", func(t *testing.T) {
+	t.Run("int rounds the average", func(t *testing.T) {
 		AssertPoint(t, Pol(squareVertices()).Center(), Pt(1, 1))
-		AssertPoint(t, Pol([]Point[int]{Pt(-1, -2), Pt(0, 0), Pt(0, 0)}).Center(), Pt(0, 0))
+		AssertPoint(t, Pol([]Point[int]{Pt(-1, -2), Pt(0, 0), Pt(0, 0)}).Center(), Pt(0, -1))
+	})
+	t.Run("narrow integers do not overflow the sum", func(t *testing.T) {
+		AssertPoint(t, Pol([]Point[int8]{Pt[int8](100, 100), Pt[int8](100, 100), Pt[int8](100, 100)}).Center(), Pt[int8](100, 100))
 	})
 	t.Run("float", func(t *testing.T) {
 		AssertPoint(t, Pol(triangleVertices()).Center(), Pt(1.5, 0.5))
@@ -48,10 +51,15 @@ func TestPolygon_MoveTo(t *testing.T) {
 		Pt(9, 11),
 	}))
 
-	t.Run("int can miss by one when the average crosses zero", func(t *testing.T) {
+	t.Run("int lands on the point when the average crosses zero", func(t *testing.T) {
 		moved := Pol([]Point[int]{Pt(-1, 0), Pt(0, 0), Pt(0, 0)}).MoveTo(Pt(1, 0))
 
-		AssertPoint(t, moved.Center(), Pt(0, 0))
+		AssertPoint(t, moved.Center(), Pt(1, 0))
+	})
+	t.Run("int misses by one when a half average changes sign", func(t *testing.T) {
+		moved := Pol([]Point[int]{Pt(-1, 0), Pt(0, 0)}).MoveTo(Pt(0, 0))
+
+		AssertPoint(t, moved.Center(), Pt(1, 0))
 	})
 }
 

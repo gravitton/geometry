@@ -31,7 +31,8 @@ const (
 // and the given orientation, normalized to [0, 2π) like Rotate. PointyTop puts the first vertex at
 // the top (-Y, 3π/2); FlatTop puts the midpoint of an edge there, so the first vertex sits half a
 // step before it at 3π/2 - π/n. A polygon with n < 1 has no edge to place, so both orientations
-// give the top angle rather than dividing by n.
+// give the top angle rather than dividing by n. An orientation other than FlatTop and PointyTop
+// has no meaning and panics.
 func RegularPolygonOrientationAngle(n int, orientation Orientation) float64 {
 	top := 3 * Pi / 2
 
@@ -45,7 +46,7 @@ func RegularPolygonOrientationAngle(n int, orientation Orientation) float64 {
 	case PointyTop:
 		return top
 	default:
-		return 0
+		panic(fmt.Sprintf("geom: unknown orientation %d", orientation))
 	}
 }
 
@@ -97,12 +98,13 @@ func (rp RegularPolygon[T]) Rotate(angle float64) RegularPolygon[T] {
 
 // Vertices returns the polygon vertices in order starting from Angle, by increasing angle —
 // the same winding as Directions and Rectangle.Vertices, and clockwise as drawn on a screen
-// with Y pointing down. A polygon with N < 1 has no vertices.
+// with Y pointing down. A polygon with N < 1 has no vertices and returns nil, so its Polygon
+// is zero like Pol(nil).
 // For integer T, each vertex component is rounded to the nearest integer, so vertices at
 // non-right angles may be off by up to half a unit. Use float64 for exact positions.
 func (rp RegularPolygon[T]) Vertices() []Point[T] {
-	if rp.N < 1 {
-		return []Point[T]{}
+	if rp.Empty() {
+		return nil
 	}
 
 	angleStep := (2 * Pi) / float64(rp.N)

@@ -39,8 +39,10 @@ func TestRegularPolygonOrientationAngle(t *testing.T) {
 			AssertPoint(t, vertices[0].Midpoint(vertices[1]), Pt(0.0, -10*math.Cos(Pi/float64(n))), fmt.Sprintf("n=%d: ", n))
 		}
 	})
-	t.Run("unknown orientation has no initial angle", func(t *testing.T) {
-		AssertNumber(t, RegularPolygonOrientationAngle(6, Orientation(99)), 0.0)
+	t.Run("unknown orientation panics", func(t *testing.T) {
+		assert.PanicsWith(t, func() {
+			RegularPolygonOrientationAngle(6, Orientation(99))
+		}, "geom: unknown orientation 99")
 	})
 	t.Run("no vertices give the top angle instead of dividing by n", func(t *testing.T) {
 		AssertNumber(t, RegularPolygonOrientationAngle(0, FlatTop), 270*DegToRad)
@@ -145,9 +147,10 @@ func TestRegularPolygon_Rotate(t *testing.T) {
 }
 
 func TestRegularPolygon_Vertices(t *testing.T) {
-	t.Run("fewer than one side has no vertices", func(t *testing.T) {
-		AssertVertices(t, RegPol(Pt(0, 0), Sz(1, 1), 0, 0).Vertices(), []Point[int]{})
-		AssertVertices(t, RegPol(Pt(0.0, 0.0), Sz(1.0, 1.0), -3, 0).Vertices(), []Point[float64]{})
+	t.Run("fewer than one side has nil vertices", func(t *testing.T) {
+		assert.Nil(t, RegPol(Pt(0, 0), Sz(1, 1), 0, 0).Vertices())
+		assert.Nil(t, RegPol(Pt(0.0, 0.0), Sz(1.0, 1.0), -3, 0).Vertices())
+		assert.True(t, RegPol(Pt(0, 0), Sz(1, 1), 0, 0).Polygon().IsZero())
 	})
 	t.Run("int", func(t *testing.T) {
 		AssertVertices(t, RegPol(Pt(0, 0), Sz(1, 1), 4, 0).Vertices(), []Point[int]{

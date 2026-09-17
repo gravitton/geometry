@@ -6,9 +6,9 @@ import (
 
 // Rectangle is a 2D axis-aligned rectangle represented by its center and size.
 //
-// The rectangle is closed: Contains, Clamp and the collision functions include the boundary.
-// They compare exactly, without the Epsilon that Equal applies, so a float point a rounding
-// error outside Min or Max is not contained even where Equal would call it a corner.
+// The rectangle is closed: Contains, Clamp and the collision functions include the boundary,
+// within the Epsilon that Equal applies, so a float rectangle contains the corners it was built
+// from even where Min is recomputed from Center with a rounding error.
 // For integer T the corners are lattice points on that boundary, so a rectangle of width w
 // spans w+1 lattice columns from Min to Max inclusive. The image.Rectangle returned by Rectangle
 // is half-open as the image package requires, and therefore spans exactly w pixels.
@@ -91,12 +91,18 @@ func (r Rectangle[T]) ShrinkXY(amountX, amountY T) Rectangle[T] {
 	return Rectangle[T]{r.Center, r.Size.ShrinkXY(amountX, amountY)}
 }
 
-// Inset creates a new Rectangle inset by the given padding amounts.
+// Inset creates a new Rectangle inset by the given padding amounts, clamping the size to zero.
+// A negative padding outsets the rectangle, so Outset undoes Inset as long as nothing was clamped.
 func (r Rectangle[T]) Inset(padding Padding[T]) Rectangle[T] {
 	return RectangleFromMin(
 		r.Min().AddXY(padding.Left, padding.Top),
 		r.Size.ShrinkXY(padding.Left+padding.Right, padding.Top+padding.Bottom),
 	)
+}
+
+// Outset creates a new Rectangle expanded by the given padding amounts, the inverse of Inset.
+func (r Rectangle[T]) Outset(padding Padding[T]) Rectangle[T] {
+	return r.Inset(padding.Negate())
 }
 
 // Width returns the rectangle width.
@@ -271,11 +277,13 @@ func (r Rectangle[T]) IsZero() bool {
 	return r.Center.IsZero() && r.Size.IsZero()
 }
 
-// Contains reports whether the given point lies within the rectangle, boundary included.
+// Contains reports whether the given point lies within the rectangle, boundary included within
+// Epsilon of T.
 func (r Rectangle[T]) Contains(point Point[T]) bool {
 	minPoint, maxPoint := r.Min(), r.Max()
 
-	return minPoint.X <= point.X && point.X <= maxPoint.X && minPoint.Y <= point.Y && point.Y <= maxPoint.Y
+	return LessOrEqual(minPoint.X, point.X) && LessOrEqual(point.X, maxPoint.X) &&
+		LessOrEqual(minPoint.Y, point.Y) && LessOrEqual(point.Y, maxPoint.Y)
 }
 
 // Polygon converts the rectangle into a generic Polygon with computed vertices.

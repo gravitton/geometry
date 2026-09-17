@@ -246,6 +246,9 @@ func TestVector_Dot(t *testing.T) {
 	t.Run("perpendicular vectors are zero", func(t *testing.T) {
 		AssertNumber(t, Vec(1, 0).Dot(Vec(0, 1)), 0)
 	})
+	t.Run("narrow integers do not overflow mid-computation", func(t *testing.T) {
+		AssertNumber(t, Vec[int8](100, 50).Dot(Vec[int8](2, -2)), 100)
+	})
 }
 
 func TestVector_Cross(t *testing.T) {
@@ -462,7 +465,7 @@ func TestVector_IsNormalized(t *testing.T) {
 		assert.True(t, Vec(1.1, 2.1).Normalize().IsNormalized())
 	})
 	t.Run("every direction unit", func(t *testing.T) {
-		for _, direction := range Directions {
+		for _, direction := range Directions() {
 			assert.True(t, direction.Unit[float64]().IsNormalized(), direction.String()+": ")
 		}
 	})
@@ -485,6 +488,10 @@ func TestVector_Less(t *testing.T) {
 		assert.False(t, Vec(10, 16).Less(-19))
 		assert.False(t, ZeroVector[int]().Less(0))
 	})
+	t.Run("strict without tolerance", func(t *testing.T) {
+		assert.False(t, Vec(3.0, 4.0).Less(5))
+		assert.False(t, Vec(3.0, 4.0).Less(5-Delta/2))
+	})
 }
 
 func TestVector_LessOrEqual(t *testing.T) {
@@ -499,6 +506,10 @@ func TestVector_LessOrEqual(t *testing.T) {
 	})
 	t.Run("nothing is at most a negative length", func(t *testing.T) {
 		assert.False(t, ZeroVector[int]().LessOrEqual(-1))
+	})
+	t.Run("float allows Delta past the length", func(t *testing.T) {
+		assert.True(t, Vec(3.0, 4.0).LessOrEqual(5-Delta/2))
+		assert.False(t, Vec(3.0, 4.0).LessOrEqual(5-2*Delta))
 	})
 }
 

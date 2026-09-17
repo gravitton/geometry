@@ -63,6 +63,37 @@ func TestPadding_Size(t *testing.T) {
 	})
 }
 
+func TestPadding_Add(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertPadding(t, Pad(1, 2, 3, 4).Add(Pad(10, 20, 30, 40)), Pad(11, 22, 33, 44))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertPadding(t, Pad(0.1, 0.2, 0.3, 0.4).Add(PadU(0.5)), Pad(0.6, 0.7, 0.8, 0.9))
+	})
+}
+
+func TestPadding_Negate(t *testing.T) {
+	t.Run("negates every edge", func(t *testing.T) {
+		AssertPadding(t, Pad(1, -2, 3, -4).Negate(), Pad(-1, 2, -3, 4))
+	})
+	t.Run("undoes an inset", func(t *testing.T) {
+		r := RectangleFromMinMax(Pt(0.0, 0.0), Pt(10.0, 10.0))
+		padding := Pad(1.0, 2.0, 3.0, 4.0)
+
+		AssertRect(t, r.Inset(padding).Inset(padding.Negate()), r)
+		AssertRect(t, r.Outset(padding).Inset(padding.Negate()), r.Outset(padding).Outset(padding))
+	})
+}
+
+func TestPadding_Scale(t *testing.T) {
+	t.Run("int rounds", func(t *testing.T) {
+		AssertPadding(t, Pad(1, 2, 3, 4).Scale(1.5), Pad(2, 3, 5, 6))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertPadding(t, Pad(0.1, 0.2, 0.3, 0.4).Scale(2), Pad(0.2, 0.4, 0.6, 0.8))
+	})
+}
+
 func TestPadding_Equal(t *testing.T) {
 	t.Run("same padding", func(t *testing.T) {
 		assert.True(t, Pad(1, 2, 3, 4).Equal(Pad(1, 2, 3, 4)))

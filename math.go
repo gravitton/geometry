@@ -168,6 +168,19 @@ func Equal[T Number](a, b T) bool {
 	return EqualDelta(a, b, Epsilon[T]())
 }
 
+// LessOrEqual reports whether a is at most b within Epsilon of T: exactly for an integer T,
+// and with the same tolerance as Equal for a float T, so that a value a rounding error past
+// a boundary still counts as on it.
+func LessOrEqual[T Number](a, b T) bool {
+	return LessOrEqualDelta(a, b, Epsilon[T]())
+}
+
+// LessOrEqualDelta reports whether a is at most b within the given delta.
+// The comparison is made in float64, so it cannot overflow a narrow integer T.
+func LessOrEqualDelta[T Number](a, b T, delta float64) bool {
+	return float64(a) <= float64(b)+delta
+}
+
 // EqualDelta reports whether a and b are equal within the given delta.
 // The difference is taken in float64, so it cannot overflow a narrow integer T.
 func EqualDelta[T Number](a, b T, delta float64) bool {

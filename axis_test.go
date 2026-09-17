@@ -141,20 +141,20 @@ func TestAxis_String(t *testing.T) {
 
 func TestAxis_Properties(t *testing.T) {
 	t.Run("cross is its own inverse", func(t *testing.T) {
-		for _, axis := range Axes {
+		for _, axis := range Axes() {
 			assert.Equal(t, axis.Cross().Cross(), axis, axis.String()+": ")
 		}
 	})
 	t.Run("along and across swap on the cross axis", func(t *testing.T) {
 		size := Sz(10.0, 20.0)
 
-		for _, axis := range Axes {
+		for _, axis := range Axes() {
 			AssertNumber(t, axis.Cross().Along(size), axis.Across(size), axis.String()+": ")
 			AssertNumber(t, axis.Cross().Across(size), axis.Along(size), axis.String()+": ")
 		}
 	})
 	t.Run("size and along are inverse", func(t *testing.T) {
-		for _, axis := range Axes {
+		for _, axis := range Axes() {
 			built := axis.Size(1.0, 2.0)
 
 			AssertNumber(t, axis.Along(built), 1.0, axis.String()+": ")
@@ -162,7 +162,7 @@ func TestAxis_Properties(t *testing.T) {
 		}
 	})
 	t.Run("direction round-trips through axis and sign", func(t *testing.T) {
-		for _, axis := range Axes {
+		for _, axis := range Axes() {
 			for _, positive := range []bool{true, false} {
 				direction := axis.Direction(positive)
 
@@ -172,7 +172,7 @@ func TestAxis_Properties(t *testing.T) {
 		}
 	})
 	t.Run("project is the component of the vector", func(t *testing.T) {
-		for _, axis := range Axes {
+		for _, axis := range Axes() {
 			for _, vector := range vectorFixtures {
 				AssertNumber(t, axis.Project(vector), axis.Along(Sz(vector.X, vector.Y)), fmt.Sprintf("%s → %s: ", axis, vector))
 			}

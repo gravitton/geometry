@@ -7,9 +7,10 @@ import (
 
 // Integer is a generic integer type, supporting operations like modulo that floats don't.
 //
-// The narrow types int8 and int16 are admitted for storage, not arithmetic: products such as
-// Vector.LengthSquared, Vector.Less, Circle.Contains, Size.Area and Matrix.Multiply are
-// computed in T and overflow at ordinary magnitudes there. Use int or int64 for math.
+// Every product, distance and interpolation is computed in float64 and stored back through
+// Cast, so a narrow T such as int8 never overflows mid-computation; only a result outside its
+// range is affected, as Cast documents. A value of an int64 T beyond 2^53 loses precision on
+// the way through float64.
 type Integer interface {
 	~int | ~int8 | ~int16 | ~int32 | ~int64
 }
@@ -25,9 +26,12 @@ type Number interface {
 }
 
 // Cast converts a float64 to T, rounding half away from zero for an integer T. NaN and ±Inf
-// have no integer form and Go leaves their conversion platform-dependent, so for an integer
-// T Cast panics on them, the same convention Divide follows for a zero scale. A float T
-// keeps them.
+// have no integer form, so for an integer T Cast panics on them, the same convention Divide
+// follows for a zero scale. A float T keeps them.
+//
+// A finite value outside the range of an integer T is not checked: Go leaves that conversion
+// platform-dependent, so Cast[int8](300) or Multiply(int(1), 1e30) stores an arbitrary value.
+// Keep results within the range of T, or use a wider T.
 func Cast[T Number](a float64) T {
 	if isIntType[T]() {
 		if math.IsNaN(a) || math.IsInf(a, 0) {
@@ -40,8 +44,9 @@ func Cast[T Number](a float64) T {
 	return T(a)
 }
 
-// Int converts a Number to int: an integer T directly, so a wide value stays exact, and a
-// float T rounded through Cast.
+// Int converts a Number to int: an integer T by plain conversion, exact wherever int is at
+// least as wide as T and truncated otherwise (int64 on a 32-bit target), and a float T rounded
+// through Cast.
 func Int[T Number](value T) int {
 	if isIntType[T]() {
 		return int(value)

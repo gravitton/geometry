@@ -13,8 +13,10 @@ const (
 	AxisNone Axis = -1
 )
 
-// Axes lists both axes in order.
-var Axes = [2]Axis{AxisHorizontal, AxisVertical}
+// Axes lists both axes in order. It returns a fresh array, so a caller cannot alter the list.
+func Axes() [2]Axis {
+	return [2]Axis{AxisHorizontal, AxisVertical}
+}
 
 // Cross returns the perpendicular axis.
 func (a Axis) Cross() Axis {

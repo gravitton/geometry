@@ -3,6 +3,7 @@ package geom
 import (
 	"cmp"
 	"fmt"
+	"math"
 )
 
 // Point is a 2D point.
@@ -98,23 +99,31 @@ func (p Point[T]) DistanceSquaredTo(point Point[T]) T {
 
 // ManhattanDistanceTo returns the Manhattan (taxicab) distance from the current point to the given point.
 func (p Point[T]) ManhattanDistanceTo(point Point[T]) T {
-	return Abs(point.X-p.X) + Abs(point.Y-p.Y)
+	dx, dy := p.deltas(point)
+
+	return Cast[T](dx + dy)
 }
 
 // ChebyshevDistanceTo returns the Chebyshev distance (chessboard distance) from the current point to the given point.
 // It is the maximum of the absolute differences of the coordinates: max(|dx|, |dy|).
 func (p Point[T]) ChebyshevDistanceTo(point Point[T]) T {
-	return max(Abs(point.X-p.X), Abs(point.Y-p.Y))
+	dx, dy := p.deltas(point)
+
+	return Cast[T](max(dx, dy))
 }
 
 // OctileDistanceTo returns the Octile distance from the current point to the given point.
 // Used in grid-based pathfinding where cardinal moves cost 1 and diagonal moves cost √2.
 // It is: max(dx, dy) + (√2 - 1) * min(dx, dy).
 func (p Point[T]) OctileDistanceTo(point Point[T]) float64 {
-	dx := Abs(float64(point.X - p.X))
-	dy := Abs(float64(point.Y - p.Y))
+	dx, dy := p.deltas(point)
 
 	return max(dx, dy) + (Sqrt2-1)*min(dx, dy)
+}
+
+// deltas returns the absolute coordinate differences to the given point in float64.
+func (p Point[T]) deltas(point Point[T]) (float64, float64) {
+	return math.Abs(float64(point.X) - float64(p.X)), math.Abs(float64(point.Y) - float64(p.Y))
 }
 
 // Midpoint creates a new Point between current and given points.

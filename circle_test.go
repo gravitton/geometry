@@ -183,6 +183,14 @@ func TestCircle_Contains(t *testing.T) {
 		assert.True(t, c.Contains(c.Anchor(Right)))
 		assert.False(t, c.Contains(c.Anchor(Right).AddXY(1, 0)))
 	})
+	t.Run("a float anchor is inside despite rounding", func(t *testing.T) {
+		c := Circ(Pt(0.1, 0.2), 0.7)
+
+		for _, direction := range Directions() {
+			assert.True(t, c.Contains(c.Anchor(direction)), direction.String())
+		}
+		assert.False(t, c.Contains(c.Anchor(Right).AddXY(2*Delta, 0)))
+	})
 }
 
 func TestCircle_Int(t *testing.T) {
@@ -257,7 +265,7 @@ func TestCircle_Properties(t *testing.T) {
 	})
 	t.Run("every anchor is on the boundary", func(t *testing.T) {
 		for _, c := range circleFixtures {
-			for _, direction := range Directions {
+			for _, direction := range Directions() {
 				anchor := c.Anchor(direction)
 
 				AssertNumber(t, c.Center.DistanceTo(anchor), c.Radius, fmt.Sprintf("%s → %s: ", c, direction))

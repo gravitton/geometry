@@ -172,7 +172,7 @@ func TestDirection_IsNone(t *testing.T) {
 		assert.True(t, DirectionNone.IsNone())
 	})
 	t.Run("any real direction", func(t *testing.T) {
-		for _, direction := range Directions {
+		for _, direction := range Directions() {
 			assert.False(t, direction.IsNone(), direction.String()+": ")
 		}
 	})
@@ -184,12 +184,12 @@ func TestDirection_IsNone(t *testing.T) {
 
 func TestDirection_IsCardinal(t *testing.T) {
 	t.Run("cardinals", func(t *testing.T) {
-		for _, direction := range CardinalDirections {
+		for _, direction := range CardinalDirections() {
 			assert.True(t, direction.IsCardinal(), direction.String()+": ")
 		}
 	})
 	t.Run("diagonals and none", func(t *testing.T) {
-		for _, direction := range DiagonalDirections {
+		for _, direction := range DiagonalDirections() {
 			assert.False(t, direction.IsCardinal(), direction.String()+": ")
 		}
 
@@ -199,12 +199,12 @@ func TestDirection_IsCardinal(t *testing.T) {
 
 func TestDirection_IsDiagonal(t *testing.T) {
 	t.Run("diagonals", func(t *testing.T) {
-		for _, direction := range DiagonalDirections {
+		for _, direction := range DiagonalDirections() {
 			assert.True(t, direction.IsDiagonal(), direction.String()+": ")
 		}
 	})
 	t.Run("cardinals and none", func(t *testing.T) {
-		for _, direction := range CardinalDirections {
+		for _, direction := range CardinalDirections() {
 			assert.False(t, direction.IsDiagonal(), direction.String()+": ")
 		}
 
@@ -222,7 +222,7 @@ func TestDirection_IsPositive(t *testing.T) {
 		assert.False(t, DirectionUp.IsPositive())
 	})
 	t.Run("diagonals and none have no sign", func(t *testing.T) {
-		for _, direction := range DiagonalDirections {
+		for _, direction := range DiagonalDirections() {
 			assert.False(t, direction.IsPositive(), direction.String()+": ")
 		}
 
@@ -267,15 +267,13 @@ func TestDirection_Properties(t *testing.T) {
 		assert.Equal(t, BottomRight, DirectionDownRight)
 	})
 	t.Run("directions are ordered by increasing angle", func(t *testing.T) {
-		assert.Equal(t, len(Directions), 8)
-
-		for i, direction := range Directions {
+		for i, direction := range Directions() {
 			assert.Equal(t, int(direction), i, direction.String()+": ")
 			AssertVector(t, direction.Offset[int](), directionOffsets[i], direction.String()+": ")
 		}
 	})
 	t.Run("opposite is four steps and its own inverse", func(t *testing.T) {
-		for _, direction := range Directions {
+		for _, direction := range Directions() {
 			assert.Equal(t, direction.Opposite(), direction.Rotate(4), direction.String()+": ")
 			assert.Equal(t, direction.Opposite().Opposite(), direction, direction.String()+": ")
 
@@ -283,12 +281,12 @@ func TestDirection_Properties(t *testing.T) {
 		}
 	})
 	t.Run("angle round-trips through the constructor", func(t *testing.T) {
-		for _, direction := range Directions {
+		for _, direction := range Directions() {
 			assert.Equal(t, DirectionFromAngle(direction.Angle()), direction, direction.String()+": ")
 		}
 	})
 	t.Run("one step is one eighth turn of increasing angle", func(t *testing.T) {
-		for _, direction := range Directions {
+		for _, direction := range Directions() {
 			for steps := -8; steps <= 8; steps++ {
 				rotated := DirectionFromAngle(direction.Angle() + float64(steps)*Pi/4)
 
@@ -297,24 +295,24 @@ func TestDirection_Properties(t *testing.T) {
 		}
 	})
 	t.Run("a step turns the same way as vector rotation", func(t *testing.T) {
-		for _, direction := range Directions {
+		for _, direction := range Directions() {
 			rotated := direction.Offset[float64]().Rotate(Pi / 2)
 
 			assert.Equal(t, rotated.Direction(), direction.Rotate(2), direction.String()+": ")
 		}
 	})
 	t.Run("every unit vector has length one", func(t *testing.T) {
-		for _, direction := range Directions {
+		for _, direction := range Directions() {
 			AssertNumber(t, direction.Unit[float64]().Length(), 1.0, direction.String()+": ")
 		}
 	})
 	t.Run("cardinal and diagonal partition the directions", func(t *testing.T) {
-		for _, direction := range Directions {
+		for _, direction := range Directions() {
 			assert.NotEqual(t, direction.IsCardinal(), direction.IsDiagonal(), direction.String()+": ")
 		}
 	})
 	t.Run("a cardinal axis follows its position in the order", func(t *testing.T) {
-		for _, direction := range CardinalDirections {
+		for _, direction := range CardinalDirections() {
 			assert.Equal(t, direction.Axis(), Axis(int(direction)/2%2), direction.String()+": ")
 		}
 	})

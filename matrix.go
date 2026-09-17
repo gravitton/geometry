@@ -12,8 +12,8 @@ import (
 // different matrix: rotation by anything but a multiple of 90° (see RotationMatrix), Inverse, and
 // Unscale.
 //
-// Multiply, Determinant and Inverse compute in T. They are meant for int and int64; a narrow
-// integer T such as int8 or int16 overflows in ordinary products and is not supported.
+// Multiply, Determinant and Inverse compute in float64 and round the result into T, so a
+// narrow integer T does not overflow mid-computation; only a result outside its range is lost.
 type Matrix[T Number] struct {
 	A T `json:"a"` // scale X
 	B T `json:"b"` // shear X (contribution of y to x')
@@ -66,13 +66,15 @@ func ScaleMatrix[T Number](factorX, factorY T) Matrix[T] {
 
 // Multiply creates a new matrix by multiplying the current matrix with given matrix.
 func (m Matrix[T]) Multiply(matrix Matrix[T]) Matrix[T] {
+	l, r := m.Float(), matrix.Float()
+
 	return Matrix[T]{
-		m.A*matrix.A + m.B*matrix.D,
-		m.A*matrix.B + m.B*matrix.E,
-		m.A*matrix.C + m.B*matrix.F + m.C,
-		m.D*matrix.A + m.E*matrix.D,
-		m.D*matrix.B + m.E*matrix.E,
-		m.D*matrix.C + m.E*matrix.F + m.F,
+		Cast[T](l.A*r.A + l.B*r.D),
+		Cast[T](l.A*r.B + l.B*r.E),
+		Cast[T](l.A*r.C + l.B*r.F + l.C),
+		Cast[T](l.D*r.A + l.E*r.D),
+		Cast[T](l.D*r.B + l.E*r.E),
+		Cast[T](l.D*r.C + l.E*r.F + l.F),
 	}
 }
 
@@ -83,22 +85,21 @@ func (m Matrix[T]) Multiply(matrix Matrix[T]) Matrix[T] {
 // translations, reflections and quarter turns. Otherwise the inverse does not undo the matrix:
 // ScaleMatrix(2, 2).Inverse() rounds 0.5 back up to identity.
 func (m Matrix[T]) Inverse() Matrix[T] {
-	det := m.Determinant()
+	det := m.determinant()
 	if det == 0 {
 		panic("geom: inverse of a singular matrix")
 	}
 
-	a, b, c := float64(m.A), float64(m.B), float64(m.C)
-	d, e, f := float64(m.D), float64(m.E), float64(m.F)
-	invDet := 1.0 / float64(det)
+	f := m.Float()
+	invDet := 1 / det
 
 	return Matrix[T]{
-		Cast[T](e * invDet),
-		Cast[T](-b * invDet),
-		Cast[T]((b*f - c*e) * invDet),
-		Cast[T](-d * invDet),
-		Cast[T](a * invDet),
-		Cast[T]((c*d - a*f) * invDet),
+		Cast[T](f.E * invDet),
+		Cast[T](-f.B * invDet),
+		Cast[T]((f.B*f.F - f.C*f.E) * invDet),
+		Cast[T](-f.D * invDet),
+		Cast[T](f.A * invDet),
+		Cast[T]((f.C*f.D - f.A*f.F) * invDet),
 	}
 }
 
@@ -106,12 +107,20 @@ func (m Matrix[T]) Inverse() Matrix[T] {
 // No tolerance is applied, since a determinant scales with the square of the matrix and a small
 // one only means a large inverse, not a missing one: ScaleMatrix(0.001, 0.001) is invertible.
 func (m Matrix[T]) IsInvertible() bool {
-	return m.Determinant() != 0
+	return m.determinant() != 0
 }
 
 // Determinant calculates the determinant of the 2x2 matrix.
 func (m Matrix[T]) Determinant() T {
-	return m.A*m.E - m.B*m.D
+	return Cast[T](m.determinant())
+}
+
+// determinant calculates the determinant in float64, the form Inverse and IsInvertible use
+// so that an integer matrix is judged on its exact determinant, not a rounded one.
+func (m Matrix[T]) determinant() float64 {
+	f := m.Float()
+
+	return f.A*f.E - f.B*f.D
 }
 
 // Translate creates a new matrix by right-multiplying a translation matrix.

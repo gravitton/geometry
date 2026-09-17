@@ -85,12 +85,12 @@ func (s Size[T]) ShrinkXY(amountX, amountY T) Size[T] {
 
 // Area returns the size's area (width * height).
 func (s Size[T]) Area() T {
-	return s.Width * s.Height
+	return Cast[T](float64(s.Width) * float64(s.Height))
 }
 
 // Perimeter returns the size's perimeter (2 * (width + height)).
 func (s Size[T]) Perimeter() T {
-	return 2 * (s.Width + s.Height)
+	return Cast[T](2 * (float64(s.Width) + float64(s.Height)))
 }
 
 // AspectRatio returns (width / height). A zero Height has no usable ratio and returns 0 rather
