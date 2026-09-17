@@ -28,6 +28,20 @@ func TestPolygon_Center(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
 		AssertPoint(t, Pol(triangleVertices()).Center(), Pt(1.5, 0.5))
 	})
+	t.Run("a vertex on an edge does not move the centroid", func(t *testing.T) {
+		subdivided := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(1.0, 0.0), Pt(2.0, 0.0), Pt(2.0, 2.0), Pt(0.0, 2.0)})
+
+		AssertPoint(t, subdivided.Center(), Pt(1.0, 1.0))
+	})
+	t.Run("winding does not matter", func(t *testing.T) {
+		reversed := Pol([]Point[float64]{Pt(0.0, 2.0), Pt(2.0, 2.0), Pt(2.0, 0.0), Pt(1.0, 0.0), Pt(0.0, 0.0)})
+
+		AssertPoint(t, reversed.Center(), Pt(1.0, 1.0))
+	})
+	t.Run("collinear falls back to the vertex average", func(t *testing.T) {
+		AssertPoint(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(1.0, 1.0), Pt(3.0, 3.0)}).Center(), Pt(4.0/3, 4.0/3))
+		AssertPoint(t, Pol([]Point[int]{Pt(0, 0), Pt(4, 0)}).Center(), Pt(2, 0))
+	})
 	t.Run("empty is the zero point", func(t *testing.T) {
 		AssertPoint(t, Pol([]Point[int]{}).Center(), Pt(0, 0))
 		AssertPoint(t, Polygon[float64]{}.Center(), Pt(0.0, 0.0))
@@ -242,15 +256,24 @@ func TestPolygon_Properties(t *testing.T) {
 			assert.True(t, polygon.ScaleXY(1, 1).Equal(polygon), fmt.Sprintf("%s: ", polygon))
 		}
 	})
-	t.Run("centroid is the average of the vertices", func(t *testing.T) {
+	t.Run("centroid of a triangle is the average of the vertices", func(t *testing.T) {
 		for _, polygon := range polygonFixtures() {
+			if len(polygon.Vertices) != 3 {
+				continue
+			}
+
 			var sum Point[float64]
 			for _, vertex := range polygon.Vertices {
 				sum = sum.AddXY(vertex.XY())
 			}
 
-			expected := sum.Divide(float64(len(polygon.Vertices)))
+			expected := sum.Divide(3)
 			assert.True(t, polygon.Center().Equal(expected), fmt.Sprintf("%s: ", polygon))
+		}
+	})
+	t.Run("centroid lies within the bounds", func(t *testing.T) {
+		for _, polygon := range polygonFixtures() {
+			assert.True(t, polygon.Bounds().Contains(polygon.Center()), fmt.Sprintf("%s: ", polygon))
 		}
 	})
 }

@@ -5,6 +5,11 @@ import (
 )
 
 // RegularPolygon is a polygon with equally spaced vertices around a center.
+//
+// Size holds the semi-axes of the ellipse the vertices lie on, so it is a radius, not an
+// extent: a hexagon of Size 10x10 spans 17.32x20, and a circle of radius r converts to
+// Size r x r. This differs from Rectangle, whose Size is the full width and height. Use
+// Bounds for the extent.
 type RegularPolygon[T Number] struct {
 	Center Point[T] `json:",embed"`
 	Size   Size[T]  `json:",embed"`

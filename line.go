@@ -70,10 +70,12 @@ func (l Line[T]) Contains(point Point[T]) bool {
 }
 
 // wedge returns Start × End in float64, the term the shoelace formula sums per edge.
+// The two products are rounded separately, which keeps a fused multiply-add from turning the
+// wedge of two equal points into a rounding error: a degenerate edge contributes exactly zero.
 func (l Line[T]) wedge() float64 {
 	start, end := l.Start.Float(), l.End.Float()
 
-	return start.X*end.Y - start.Y*end.X
+	return float64(start.X*end.Y) - float64(start.Y*end.X)
 }
 
 // crossesRay reports whether a ray cast from the point along +X crosses the segment, counting

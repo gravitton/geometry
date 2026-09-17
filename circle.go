@@ -57,7 +57,9 @@ func (c Circle[T]) Circumference() float64 {
 	return 2 * Pi * float64(c.Radius)
 }
 
-// Diameter returns the circle diameter (2 * radius).
+// Diameter returns the circle diameter (2 * radius). It stays in T like a sum, since doubling
+// has no intermediate to overflow: only a diameter beyond the range of a narrow integer T is
+// lost, as with every other result outside it.
 func (c Circle[T]) Diameter() T {
 	return c.Radius * 2
 }

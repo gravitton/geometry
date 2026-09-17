@@ -50,6 +50,7 @@ func TranslationMatrix[T Number](deltaX, deltaY T) Matrix[T] {
 // Any other angle is not a rotation at all: π/6 rounds to [[1, -1], [1, 1]], scaling by √2 and shearing.
 func RotationMatrix[T Number](angle float64) Matrix[T] {
 	sin, cos := math.Sincos(angle)
+
 	return Matrix[T]{
 		Cast[T](cos), Cast[T](-sin), 0,
 		Cast[T](sin), Cast[T](cos), 0,
@@ -79,7 +80,7 @@ func (m Matrix[T]) Multiply(matrix Matrix[T]) Matrix[T] {
 }
 
 // Inverse creates a new inverse affine matrix. A singular matrix has no inverse and Inverse
-// panics for one, the same convention Divide follows for a zero scale; check IsInvertible first
+// panics for one, the same convention Divide follows for a zero factor; check IsInvertible first
 // when the matrix may be singular.
 // For integer T, all six components are rounded; only |det| = 1 gives exact results, which covers
 // translations, reflections and quarter turns. Otherwise the inverse does not undo the matrix:

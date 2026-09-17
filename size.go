@@ -100,6 +100,7 @@ func (s Size[T]) AspectRatio() float64 {
 	if s.Height == 0 {
 		return 0
 	}
+
 	return float64(s.Width) / float64(s.Height)
 }
 

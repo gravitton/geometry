@@ -68,13 +68,13 @@ func Multiply[T Number](x T, factor float64) T {
 }
 
 // Divide divides a number by a scale factor. Like the / operator on integers it panics for a
-// zero scale, rather than returning an infinity that an integer T could not hold.
-func Divide[T Number](x T, scale float64) T {
-	if scale == 0 {
+// zero factor, rather than returning an infinity that an integer T could not hold.
+func Divide[T Number](x T, factor float64) T {
+	if factor == 0 {
 		panic("geom: division by zero")
 	}
 
-	return Cast[T](float64(x) / scale)
+	return Cast[T](float64(x) / factor)
 }
 
 // Abs returns the absolute value. It never leaves T, so integers of any width stay exact.

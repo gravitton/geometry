@@ -3,10 +3,12 @@ package geom
 import (
 	"encoding/json"
 	"fmt"
+	"iter"
 	"math"
+	"slices"
 	"strings"
 
-	"github.com/gravitton/x/slices"
+	xslices "github.com/gravitton/x/slices"
 )
 
 // Polygon is a 2D polygon given by its vertices. The vertex count is not checked: a polygon with
@@ -25,15 +27,79 @@ func Pol[T Number](vertices []Point[T]) Polygon[T] {
 	return Polygon[T]{vertices}
 }
 
-// Center returns the polygon centroid computed as the average of its vertices,
-// or the zero point for a polygon without vertices.
-// For integer T the average is rounded like every other result stored into T; use float64
+// Translate creates a new Polygon translated by the given vector (applied to all vertices).
+func (p Polygon[T]) Translate(vector Vector[T]) Polygon[T] {
+	return Polygon[T]{xslices.Map(p.Vertices, func(e Point[T]) Point[T] {
+		return e.Add(vector)
+	})}
+}
+
+// MoveTo creates a new Polygon whose centroid is moved to point, preserving shape.
+// For integer T the centroid is rounded, and a translation by a whole number of units preserves
+// the fractional part of the centroid, so the moved centroid lands on point except when it sits
+// exactly on a half and rounding away from zero flips side as the sign changes.
+func (p Polygon[T]) MoveTo(point Point[T]) Polygon[T] {
+	return p.Translate(point.Subtract(p.Center()))
+}
+
+// Scale creates a new Polygon uniformly scaled about its centroid by the factor.
+func (p Polygon[T]) Scale(factor float64) Polygon[T] {
+	center := p.Center()
+
+	return Polygon[T]{xslices.Map(p.Vertices, func(point Point[T]) Point[T] {
+		return center.Add(point.Subtract(center).Multiply(factor))
+	})}
+}
+
+// ScaleXY creates a new Polygon scaled about its centroid by the factors.
+func (p Polygon[T]) ScaleXY(factorX, factorY float64) Polygon[T] {
+	center := p.Center()
+
+	return Polygon[T]{xslices.Map(p.Vertices, func(point Point[T]) Point[T] {
+		return center.Add(point.Subtract(center).MultiplyXY(factorX, factorY))
+	})}
+}
+
+// Center returns the polygon centroid: the center of the enclosed area, so a vertex added in
+// the middle of an edge does not move it. A polygon that encloses no area, with fewer than
+// three vertices or all of them collinear, has no such center and falls back to the average of
+// its vertices; an empty polygon returns the zero point.
+// For integer T the centroid is rounded like every other result stored into T; use float64
 // when centroid accuracy matters.
+//
+// The sum is taken with the origin moved to the first vertex, so the products stay small and
+// every edge at that vertex contributes exactly zero: a polygon of one or two vertices has an
+// exact zero area whatever its coordinates.
 func (p Polygon[T]) Center() Point[T] {
 	if p.Empty() {
 		return Point[T]{}
 	}
 
+	origin := p.Vertices[0].Float()
+	offset := origin.Vector().Negate()
+
+	var x, y, twiceArea float64
+	for edge := range p.edges() {
+		shifted := edge.Float().Translate(offset)
+		wedge := shifted.wedge()
+
+		x += (shifted.Start.X + shifted.End.X) * wedge
+		y += (shifted.Start.Y + shifted.End.Y) * wedge
+		twiceArea += wedge
+	}
+
+	if twiceArea == 0 {
+		return p.mean()
+	}
+
+	centroid := origin.AddXY(x/(3*twiceArea), y/(3*twiceArea))
+
+	return Point[T]{Cast[T](centroid.X), Cast[T](centroid.Y)}
+}
+
+// mean returns the average of the vertices, the Center falls back to when the
+// polygon encloses no area.
+func (p Polygon[T]) mean() Point[T] {
 	var x, y float64
 	for _, v := range p.Vertices {
 		x, y = x+float64(v.X), y+float64(v.Y)
@@ -44,35 +110,50 @@ func (p Polygon[T]) Center() Point[T] {
 	return Point[T]{Cast[T](x / n), Cast[T](y / n)}
 }
 
-// Translate creates a new Polygon translated by the given vector (applied to all vertices).
-func (p Polygon[T]) Translate(vector Vector[T]) Polygon[T] {
-	return Polygon[T]{slices.Map(p.Vertices, func(e Point[T]) Point[T] {
-		return e.Add(vector)
-	})}
+// Edges returns the polygon edges in vertex order, each from a vertex to the next and the
+// last one closing back to the first. A single vertex yields one zero-length edge, and a nil
+// Vertices maps to nil edges like every other mapping.
+func (p Polygon[T]) Edges() []Line[T] {
+	if p.IsZero() {
+		return nil
+	}
+
+	return slices.AppendSeq(make([]Line[T], 0, len(p.Vertices)), p.edges())
 }
 
-// MoveTo creates a new Polygon whose centroid is moved to point, preserving shape.
-// For integer T the centroid is rounded, and a translation by a whole number of units preserves
-// the fractional part of the average, so the moved centroid lands on point except when the
-// average sits exactly on a half and rounding away from zero flips side as the sign changes.
-func (p Polygon[T]) MoveTo(point Point[T]) Polygon[T] {
-	return p.Translate(point.Subtract(p.Center()))
+// edges iterates the edges Edges returns without allocating them, for the methods that only
+// need to walk them once.
+func (p Polygon[T]) edges() iter.Seq[Line[T]] {
+	return func(yield func(Line[T]) bool) {
+		n := len(p.Vertices)
+		for i, vertex := range p.Vertices {
+			if !yield(Line[T]{vertex, p.Vertices[(i+1)%n]}) {
+				return
+			}
+		}
+	}
 }
 
-// Scale creates a new Polygon uniformly scaled about its centroid by the factor.
-func (p Polygon[T]) Scale(factor float64) Polygon[T] {
-	center := p.Center()
-	return Polygon[T]{slices.Map(p.Vertices, func(point Point[T]) Point[T] {
-		return center.Add(point.Subtract(center).Multiply(factor))
-	})}
+// Area returns the area enclosed by the polygon, by the shoelace formula, regardless of winding.
+// It is a float64 even for an integer T, since a lattice polygon can enclose half a unit;
+// a self-intersecting polygon has its lobes cancel where they wind the opposite way.
+func (p Polygon[T]) Area() float64 {
+	var twiceArea float64
+	for edge := range p.edges() {
+		twiceArea += edge.wedge()
+	}
+
+	return math.Abs(twiceArea) / 2
 }
 
-// ScaleXY creates a new Polygon scaled about its centroid by the factors.
-func (p Polygon[T]) ScaleXY(factorX, factorY float64) Polygon[T] {
-	center := p.Center()
-	return Polygon[T]{slices.Map(p.Vertices, func(point Point[T]) Point[T] {
-		return center.Add(point.Subtract(center).MultiplyXY(factorX, factorY))
-	})}
+// Perimeter returns the total length of the edges.
+func (p Polygon[T]) Perimeter() float64 {
+	var perimeter float64
+	for edge := range p.edges() {
+		perimeter += edge.Length()
+	}
+
+	return perimeter
 }
 
 // Bounds returns the axis-aligned bounding rectangle of the vertices, or the zero rectangle
@@ -89,48 +170,6 @@ func (p Polygon[T]) Bounds() Rectangle[T] {
 	}
 
 	return RectangleFromMinMax(minPoint, maxPoint)
-}
-
-// Edges returns the polygon edges in vertex order, each from a vertex to the next and the
-// last one closing back to the first. A single vertex yields one zero-length edge, and a nil
-// Vertices maps to nil edges like every other mapping.
-func (p Polygon[T]) Edges() []Line[T] {
-	next := 0
-
-	return slices.Map(p.Vertices, func(vertex Point[T]) Line[T] {
-		next = (next + 1) % len(p.Vertices)
-
-		return Line[T]{vertex, p.Vertices[next]}
-	})
-}
-
-// Area returns the area enclosed by the polygon, by the shoelace formula, regardless of winding.
-// It is a float64 even for an integer T, since a lattice polygon can enclose half a unit;
-// a self-intersecting polygon has its lobes cancel where they wind the opposite way.
-func (p Polygon[T]) Area() float64 {
-	return math.Abs(Sum(slices.Map(p.Edges(), Line[T].wedge))) / 2
-}
-
-// Perimeter returns the total length of the edges.
-func (p Polygon[T]) Perimeter() float64 {
-	return Sum(slices.Map(p.Edges(), Line[T].Length))
-}
-
-// Contains reports whether the given point lies within the polygon, boundary included within
-// Epsilon of T, the same closed convention as Rectangle.Contains. The interior follows the
-// even-odd rule, so a self-intersecting polygon excludes the regions it winds around twice.
-func (p Polygon[T]) Contains(point Point[T]) bool {
-	inside := false
-	for _, edge := range p.Edges() {
-		if edge.Contains(point) {
-			return true
-		}
-		if edge.crossesRay(point) {
-			inside = !inside
-		}
-	}
-
-	return inside
 }
 
 // Equal checks if two polygons have the same vertices.
@@ -158,19 +197,36 @@ func (p Polygon[T]) Empty() bool {
 	return len(p.Vertices) == 0
 }
 
+// Contains reports whether the given point lies within the polygon, boundary included within
+// Epsilon of T, the same closed convention as Rectangle.Contains. The interior follows the
+// even-odd rule, so a self-intersecting polygon excludes the regions it winds around twice.
+func (p Polygon[T]) Contains(point Point[T]) bool {
+	inside := false
+	for edge := range p.edges() {
+		if edge.Contains(point) {
+			return true
+		}
+		if edge.crossesRay(point) {
+			inside = !inside
+		}
+	}
+
+	return inside
+}
+
 // Int converts the polygon to a Polygon[int].
 func (p Polygon[T]) Int() Polygon[int] {
-	return Polygon[int]{slices.Map(p.Vertices, Point[T].Int)}
+	return Polygon[int]{xslices.Map(p.Vertices, Point[T].Int)}
 }
 
 // Float converts the polygon to a Polygon[float64].
 func (p Polygon[T]) Float() Polygon[float64] {
-	return Polygon[float64]{slices.Map(p.Vertices, Point[T].Float)}
+	return Polygon[float64]{xslices.Map(p.Vertices, Point[T].Float)}
 }
 
 // String returns a string representation of the Polygon.
 func (p Polygon[T]) String() string {
-	return fmt.Sprintf("Pol(%s)", strings.Join(slices.Map(p.Vertices, Point[T].String), ", "))
+	return fmt.Sprintf("Pol(%s)", strings.Join(xslices.Map(p.Vertices, Point[T].String), ", "))
 }
 
 // MarshalJSON implements json.Marshaler.

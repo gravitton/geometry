@@ -27,7 +27,7 @@ type Number interface {
 
 // Cast converts a float64 to T, rounding half away from zero for an integer T. NaN and ±Inf
 // have no integer form, so for an integer T Cast panics on them, the same convention Divide
-// follows for a zero scale. A float T keeps them.
+// follows for a zero factor. A float T keeps them.
 //
 // A finite value outside the range of an integer T is not checked: Go leaves that conversion
 // platform-dependent, so Cast[int8](300) or Multiply(int(1), 1e30) stores an arbitrary value.

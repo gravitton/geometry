@@ -147,7 +147,8 @@ func (p Point[T]) Equal(point Point[T]) bool {
 }
 
 // Compare returns -1, 0, or +1 as p sorts before, with, or after point, ordering by
-// X and then by Y. It follows the [cmp.Compare] convention.
+// X and then by Y. It follows the [cmp.Compare] convention and applies no tolerance, unlike
+// Equal, so two float points that Equal considers the same can still order apart.
 func (p Point[T]) Compare(point Point[T]) int {
 	if c := cmp.Compare(p.X, point.X); c != 0 {
 		return c
