@@ -24,9 +24,16 @@ type Number interface {
 	Integer | Float
 }
 
-// Cast number to type, round integer values.
+// Cast converts a float64 to T, rounding half away from zero for an integer T. NaN and ±Inf
+// have no integer form and Go leaves their conversion platform-dependent, so for an integer
+// T Cast panics on them, the same convention Divide follows for a zero scale. A float T
+// keeps them.
 func Cast[T Number](a float64) T {
 	if isIntType[T]() {
+		if math.IsNaN(a) || math.IsInf(a, 0) {
+			panic("geom: cast of a non-finite value to an integer")
+		}
+
 		return T(math.Round(a))
 	}
 

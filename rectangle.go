@@ -7,6 +7,8 @@ import (
 // Rectangle is a 2D axis-aligned rectangle represented by its center and size.
 //
 // The rectangle is closed: Contains, Clamp and the collision functions include the boundary.
+// They compare exactly, without the Epsilon that Equal applies, so a float point a rounding
+// error outside Min or Max is not contained even where Equal would call it a corner.
 // For integer T the corners are lattice points on that boundary, so a rectangle of width w
 // spans w+1 lattice columns from Min to Max inclusive. The image.Rectangle returned by Rectangle
 // is half-open as the image package requires, and therefore spans exactly w pixels.
@@ -79,12 +81,12 @@ func (r Rectangle[T]) GrowXY(amountX, amountY T) Rectangle[T] {
 	return Rectangle[T]{r.Center, r.Size.GrowXY(amountX, amountY)}
 }
 
-// Shrink creates a new Rectangle with size reduced by the same amount in both dimensions.
+// Shrink creates a new Rectangle with size reduced by the same amount in both dimensions, clamped to zero.
 func (r Rectangle[T]) Shrink(amount T) Rectangle[T] {
 	return Rectangle[T]{r.Center, r.Size.Shrink(amount)}
 }
 
-// ShrinkXY creates a new Rectangle with size reduced by the given amounts along X and Y.
+// ShrinkXY creates a new Rectangle with size reduced by the given amounts along X and Y, clamped to zero.
 func (r Rectangle[T]) ShrinkXY(amountX, amountY T) Rectangle[T] {
 	return Rectangle[T]{r.Center, r.Size.ShrinkXY(amountX, amountY)}
 }

@@ -25,7 +25,10 @@ func ZeroPoint[T Number]() Point[T] {
 // The matrix is float-only, like an angle: convert an integer matrix with Matrix.Float first.
 // For integer T, the float64 result of each component is rounded; rotations and non-integer scales lose precision.
 func (p Point[T]) Transform[M Float](matrix Matrix[M]) Point[T] {
-	return Point[T]{Cast[T](float64(matrix.A)*float64(p.X) + float64(matrix.B)*float64(p.Y) + float64(matrix.C)), Cast[T](float64(matrix.D)*float64(p.X) + float64(matrix.E)*float64(p.Y) + float64(matrix.F))}
+	x, y := float64(p.X), float64(p.Y)
+	m := matrix.Float()
+
+	return Point[T]{Cast[T](m.A*x + m.B*y + m.C), Cast[T](m.D*x + m.E*y + m.F)}
 }
 
 // Add creates a new Point by adding the given vector to the current point.

@@ -26,16 +26,16 @@ func SzU[T Number](size T) Size[T] {
 // ParseSize parses a size string in the form "WxH" (e.g. "16x16" or "23.0x12.1").
 // For integer T, only integer strings parse; a fractional value is an error, not a rounded size.
 func ParseSize[T Number](s string) (Size[T], error) {
-	parts := strings.SplitN(s, "x", 2)
-	if len(parts) != 2 {
+	width, height, ok := strings.Cut(s, "x")
+	if !ok {
 		return Size[T]{}, fmt.Errorf("invalid size format: %s", s)
 	}
 
-	x, err := Parse[T](parts[0])
+	x, err := Parse[T](width)
 	if err != nil {
 		return Size[T]{}, fmt.Errorf("invalid width value: %w", err)
 	}
-	y, err := Parse[T](parts[1])
+	y, err := Parse[T](height)
 	if err != nil {
 		return Size[T]{}, fmt.Errorf("invalid height value: %w", err)
 	}

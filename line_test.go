@@ -159,17 +159,17 @@ func TestLine_String(t *testing.T) {
 
 func TestLine_JSON(t *testing.T) {
 	t.Run("int wire format", func(t *testing.T) {
-		assert.JSON(t, Ln(Pt(10, 16), Pt(1, 2)), `{"a":{"x":10,"y":16},"b":{"x":1,"y":2}}`)
+		assert.JSON(t, Ln(Pt(10, 16), Pt(1, 2)), `{"s":{"x":10,"y":16},"e":{"x":1,"y":2}}`)
 
 		var l Line[int]
-		assert.NoError(t, json.Unmarshal([]byte(`{"a":{"x":10,"y":16},"b":{"x":1,"y":2}}`), &l))
+		assert.NoError(t, json.Unmarshal([]byte(`{"s":{"x":10,"y":16},"e":{"x":1,"y":2}}`), &l))
 		AssertLine(t, l, Ln(Pt(10, 16), Pt(1, 2)))
 	})
 	t.Run("float wire format", func(t *testing.T) {
-		assert.JSON(t, Ln(Pt(100, -34.0000115), Pt(0.2, 0.4)), `{"a":{"x":100.0,"y":-34.0000115},"b":{"x":0.2,"y":0.4}}`)
+		assert.JSON(t, Ln(Pt(100, -34.0000115), Pt(0.2, 0.4)), `{"s":{"x":100.0,"y":-34.0000115},"e":{"x":0.2,"y":0.4}}`)
 
 		var l Line[float64]
-		assert.NoError(t, json.Unmarshal([]byte(`{"a":{"x":10.1,"y":-34.0000115},"b":{"x":0.2,"y":0.4}}`), &l))
+		assert.NoError(t, json.Unmarshal([]byte(`{"s":{"x":10.1,"y":-34.0000115},"e":{"x":0.2,"y":0.4}}`), &l))
 		AssertLine(t, l, Ln(Pt(10.1, -34.0000115), Pt(0.2, 0.4)))
 	})
 	t.Run("round-trip", func(t *testing.T) {

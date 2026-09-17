@@ -6,8 +6,8 @@ import (
 
 // Line is a 2D line.
 type Line[T Number] struct {
-	Start Point[T] `json:"a"`
-	End   Point[T] `json:"b"`
+	Start Point[T] `json:"s"`
+	End   Point[T] `json:"e"`
 }
 
 // Ln is shorthand for Line{start, end}.

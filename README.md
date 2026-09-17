@@ -176,6 +176,9 @@ json.Marshal(geom.Circ(geom.Pt(1, 2), 3))             // {"x":1,"y":2,"r":3}
 geom.ParseSize[int]("4x2") // Size{4, 2}
 ```
 
+The flat shape of `Rectangle`, `Circle`, and `RegularPolygon` relies on the `embed` struct tag of the v2-backed
+`encoding/json`, the default since Go 1.27; under `GOEXPERIMENT=nojsonv2` the nested fields are emitted as objects.
+
 Test assertions, one per shape, comparing with the tolerance of the asserted type:
 
 ```go

@@ -15,11 +15,14 @@
 // RectangleFromMinMax(Pt(0, 0), Pt(5, 5)).Center is (2,2), and Line.Bounds().Center can
 // therefore differ from Line.Midpoint() by one unit on an odd span.
 //
-// # Division by zero
+// # Panics
 //
 // Divide, and every method built on it (Point.Divide, Size.Unscale, Matrix.Unscale), panics
 // for a zero factor, and Matrix.Inverse panics for a singular matrix, the same way the integer
 // / operator and Mod do. Check IsInvertible before inverting a matrix that may be singular.
+// Cast panics when a NaN or ±Inf would be stored into an integer T, which Go otherwise converts
+// to a platform-dependent value: Multiply, Lerp, Rotate, Transform and Int on an integer shape
+// all go through it. A float T carries NaN and ±Inf through unchanged.
 // These are the only panics: every other guard returns a value the type can express, such as
 // DirectionNone, an empty polygon, or the 0 that Size.AspectRatio gives for a zero height.
 package geom

@@ -42,6 +42,14 @@ func TestRegularPolygonOrientationAngle(t *testing.T) {
 	t.Run("unknown orientation has no initial angle", func(t *testing.T) {
 		AssertNumber(t, RegularPolygonOrientationAngle(6, Orientation(99)), 0.0)
 	})
+	t.Run("no vertices give the top angle instead of dividing by n", func(t *testing.T) {
+		AssertNumber(t, RegularPolygonOrientationAngle(0, FlatTop), 270*DegToRad)
+		AssertNumber(t, RegularPolygonOrientationAngle(-1, FlatTop), 270*DegToRad)
+		AssertNumber(t, RegularPolygonOrientationAngle(0, PointyTop), 270*DegToRad)
+
+		empty := RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 0, FlatTop)
+		assert.True(t, empty.Equal(empty))
+	})
 }
 
 func TestRegularPolygonWithOrientation(t *testing.T) {

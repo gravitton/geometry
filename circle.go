@@ -70,6 +70,9 @@ func (c Circle[T]) Bounds() Rectangle[T] {
 
 // Anchor returns the point on the circle boundary in the given direction from its center,
 // or the center itself for DirectionNone.
+// For integer T a diagonal anchor is rounded like
+// Direction.Vector and only approximates the boundary: at a small radius it can land outside
+// the circle, so Circ(Pt(0, 0), 1).Anchor(BottomRight) is (1,1), which Contains rejects.
 func (c Circle[T]) Anchor(direction Direction) Point[T] {
 	return c.Center.Add(direction.Vector(c.Radius))
 }
@@ -85,7 +88,9 @@ func (c Circle[T]) IsZero() bool {
 }
 
 // Contains reports whether the given point lies within the circle, boundary included,
-// the same closed convention as Rectangle.Contains.
+// the same closed convention as Rectangle.Contains. The comparison is exact, without the
+// Epsilon that Equal applies, so a float point a rounding error outside the radius is not
+// contained.
 func (c Circle[T]) Contains(point Point[T]) bool {
 	return c.Center.Subtract(point).LessOrEqual(c.Radius)
 }

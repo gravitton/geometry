@@ -8,7 +8,8 @@ import (
 	"github.com/gravitton/x/slices"
 )
 
-// Polygon is a 2D polygon with 3+ vertices.
+// Polygon is a 2D polygon given by its vertices. The vertex count is not checked: a polygon with
+// fewer than three vertices is degenerate but every method still answers for it.
 //
 // Vertices is shared, not copied: Pol keeps the slice it is given and every method that
 // returns a Polygon allocates a new one. The polygon is immutable as long as its caller does

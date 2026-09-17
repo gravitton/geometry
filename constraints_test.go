@@ -1,6 +1,7 @@
 package geom
 
 import (
+	"fmt"
 	"math"
 	"testing"
 
@@ -35,6 +36,21 @@ func TestCast(t *testing.T) {
 		assertCast[namedInt8](t, 1.2, 1)
 		assertCast[namedFloat64](t, 1.6, 1.6)
 		assertCast[namedFloat32](t, -15.5, -15.5)
+	})
+	t.Run("int panics on a non-finite value", func(t *testing.T) {
+		for _, value := range []float64{math.NaN(), math.Inf(1), math.Inf(-1)} {
+			assert.Panics(t, func() {
+				Cast[int](value)
+			}, fmt.Sprintf("%v: ", value))
+			assert.Panics(t, func() {
+				Cast[namedInt8](value)
+			}, fmt.Sprintf("%v: ", value))
+		}
+	})
+	t.Run("float keeps a non-finite value", func(t *testing.T) {
+		assert.True(t, math.IsNaN(float64(Cast[float64](math.NaN()))))
+		assert.True(t, math.IsInf(float64(Cast[float32](math.Inf(1))), 1))
+		assert.True(t, math.IsInf(float64(Cast[namedFloat64](math.Inf(-1))), -1))
 	})
 }
 

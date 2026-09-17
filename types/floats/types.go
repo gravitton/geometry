@@ -5,15 +5,34 @@ import (
 	geom "github.com/gravitton/geometry"
 )
 
+// Point is geom.Point[float64].
 type Point = geom.Point[float64]
+
+// Vector is geom.Vector[float64].
 type Vector = geom.Vector[float64]
+
+// Size is geom.Size[float64].
 type Size = geom.Size[float64]
+
+// Circle is geom.Circle[float64].
 type Circle = geom.Circle[float64]
+
+// Line is geom.Line[float64].
 type Line = geom.Line[float64]
+
+// Rectangle is geom.Rectangle[float64].
 type Rectangle = geom.Rectangle[float64]
+
+// Polygon is geom.Polygon[float64].
 type Polygon = geom.Polygon[float64]
+
+// RegularPolygon is geom.RegularPolygon[float64].
 type RegularPolygon = geom.RegularPolygon[float64]
+
+// Padding is geom.Padding[float64].
 type Padding = geom.Padding[float64]
+
+// Matrix is geom.Matrix[float64].
 type Matrix = geom.Matrix[float64]
 
 // Pt is shorthand for geom.Pt(x, y).Float()

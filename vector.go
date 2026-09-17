@@ -46,7 +46,10 @@ func VectorFromAngleSize[T Number](angle float64, size Size[T]) Vector[T] {
 // The matrix is float-only, like an angle: convert an integer matrix with Matrix.Float first.
 // For integer T, the float64 result of each component is rounded; rotations and non-integer scales lose precision.
 func (v Vector[T]) Transform[M Float](matrix Matrix[M]) Vector[T] {
-	return Vector[T]{Cast[T](float64(matrix.A)*float64(v.X) + float64(matrix.B)*float64(v.Y)), Cast[T](float64(matrix.D)*float64(v.X) + float64(matrix.E)*float64(v.Y))}
+	x, y := float64(v.X), float64(v.Y)
+	m := matrix.Float()
+
+	return Vector[T]{Cast[T](m.A*x + m.B*y), Cast[T](m.D*x + m.E*y)}
 }
 
 // Add creates a new Vector by adding the given vector to the current vector.
