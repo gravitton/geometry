@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `Rectangle.Union(rectangle)` – the smallest rectangle containing both
 - `Circle.DistanceTo(point)`, `Rectangle.DistanceTo(point)` and `Polygon.DistanceTo(point)` – the distance to the nearest point of the shape, zero within it, so every shape with `Contains` measures distance the way `Line` does; an empty polygon is infinitely far
 - `Line.Transform(matrix)` and `Polygon.Transform(matrix)` – apply a float matrix to every point, like `Point.Transform`
+- `Line.Scale(factor)` and `ScaleXY(factorX, factorY)` – scaling about the midpoint, so every shape scales about its own center; an integer `T` rounds the midpoint first like `Rotate`
 - `Line.Rotate(angle)` and `Polygon.Rotate(angle)` – rotation about the midpoint and the centroid in the sense of `Vector.Rotate`; for an integer `T` the pivot is rounded first, so a half turn of an odd span is not exactly `Reverse`
 - `Circle.Intersection(circle)` – the points where two circles cross: two for overlapping, one for tangent within `Epsilon[T]()`, none for apart, nested, concentric, coincident or a negative radius
 - `Size.Fit(size)` and `Fill(size)` – uniform scaling to the largest size inside or the smallest around the given one, keeping the aspect ratio; a zero extent has no ratio and gives the zero size

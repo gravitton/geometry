@@ -59,6 +59,25 @@ func (l Line[T]) MoveTo(point Point[T]) Line[T] {
 	return Line[T]{point, l.End.Add(point.Subtract(l.Start))}
 }
 
+// Scale creates a new Line uniformly scaled about its midpoint by the factor: the midpoint and
+// direction stay, the length multiplies. A zero factor collapses the line onto its midpoint.
+// For integer T the midpoint and both scaled points are rounded, so an odd span scaled by one
+// is not exactly the same line.
+func (l Line[T]) Scale(factor float64) Line[T] {
+	return l.ScaleXY(factor, factor)
+}
+
+// ScaleXY creates a new Line scaled about its midpoint by the factors along X and Y, which
+// changes the direction unless the factors are equal.
+func (l Line[T]) ScaleXY(factorX, factorY float64) Line[T] {
+	pivot := l.Midpoint()
+
+	return Line[T]{
+		pivot.Add(l.Start.Subtract(pivot).MultiplyXY(factorX, factorY)),
+		pivot.Add(l.End.Subtract(pivot).MultiplyXY(factorX, factorY)),
+	}
+}
+
 // Reverse creates a new Line with the start and end points swapped.
 func (l Line[T]) Reverse() Line[T] {
 	return Line[T]{l.End, l.Start}

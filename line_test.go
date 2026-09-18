@@ -85,6 +85,31 @@ func TestLine_MoveTo(t *testing.T) {
 	})
 }
 
+func TestLine_Scale(t *testing.T) {
+	t.Run("uniform factor about the midpoint", func(t *testing.T) {
+		AssertLine(t, Ln(Pt(0, 0), Pt(4, 2)).Scale(2), Ln(Pt(-2, -1), Pt(6, 3)))
+		AssertLine(t, Ln(Pt(0.0, 0.0), Pt(4.0, 2.0)).Scale(0.5), Ln(Pt(1.0, 0.5), Pt(3.0, 1.5)))
+	})
+	t.Run("per-axis factor changes the direction", func(t *testing.T) {
+		AssertLine(t, Ln(Pt(0.0, 0.0), Pt(4.0, 2.0)).ScaleXY(1, 3), Ln(Pt(0.0, -2.0), Pt(4.0, 4.0)))
+	})
+	t.Run("zero collapses onto the midpoint", func(t *testing.T) {
+		AssertLine(t, Ln(Pt(0.0, 0.0), Pt(4.0, 2.0)).Scale(0), Ln(Pt(2.0, 1.0), Pt(2.0, 1.0)))
+	})
+	t.Run("int rounds the midpoint, so an odd span drifts by one", func(t *testing.T) {
+		AssertLine(t, Ln(Pt(0, 0), Pt(3, 0)).Scale(1), Ln(Pt(0, 0), Pt(3, 0)))
+		AssertLine(t, Ln(Pt(0, 0), Pt(3, 0)).Scale(2), Ln(Pt(-2, 0), Pt(4, 0)))
+	})
+	t.Run("keeps the midpoint and scales the length", func(t *testing.T) {
+		for _, l := range lineFixtures {
+			scaled := l.Scale(2.5)
+
+			AssertPoint(t, scaled.Midpoint(), l.Midpoint(), fmt.Sprintf("%s: ", l))
+			AssertNumber(t, scaled.Length(), l.Length()*2.5, fmt.Sprintf("%s: ", l))
+		}
+	})
+}
+
 func TestLine_Reverse(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		AssertLine(t, Ln(Pt(1, 2), Pt(3, 5)).Reverse(), Ln(Pt(3, 5), Pt(1, 2)))
