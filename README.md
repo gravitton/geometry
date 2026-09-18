@@ -51,6 +51,7 @@ v := geom.Pt(4, 6).Subtract(p) // Vector{3, 4}
 v.Length()          // 5
 v.Normal()          // Vector{-4, 3}, perpendicular
 p.Add(v.Resize(10)) // Point{7, 10}
+v.AtMost(2)         // Vector{1.2, 1.6}, a velocity capped at a top speed; AtLeast is the floor
 
 v.Project(geom.Vec(1, 0))      // Vector{3, 0}, the component along X
 v.Reflect(geom.Vec(0, 1))      // Vector{3, -4}, bounced off a horizontal wall
@@ -87,10 +88,11 @@ r.Inset(geom.PadU(2)).Anchor(geom.TopRight) // Point{58, 47}
 r.AlignTo(geom.TopLeft, geom.Pt(0, 0))      // Rectangle (0,0)-(20,10) by MinMaxString
 
 b := geom.RectangleFromMinMax(geom.Pt(0, 0), geom.Pt(8, 6))
-b.Scale(2)   // Rectangle (-4,-3)-(12,9), scaled around the center
-b.Unscale(2) // Rectangle (2,2)-(6,5), the inverse; every shape has the pair
-b.Edges()[0] // Line (0,0)-(8,0), the top edge
-b.Vertices() // clockwise from the top-left corner
+b.Scale(2)         // Rectangle (-4,-3)-(12,9), scaled around the center
+b.Unscale(2)       // Rectangle (2,2)-(6,5), the inverse; every shape has the pair
+b.Lerp(c, 0.5)     // center and size together, for tweening
+b.Edges()[0]       // Line (0,0)-(8,0), the top edge
+b.Vertices()       // clockwise from the top-left corner
 ```
 
 ### Circles, lines and polygons
@@ -99,10 +101,13 @@ b.Vertices() // clockwise from the top-left corner
 c := geom.Circ(geom.Pt(0.0, 0.0), 5.0)
 c.Anchor(geom.Bottom) // Point{0, 5}
 c.Scale(-2)           // Circ((0,0);10), a negative factor scales by its absolute value
+c.AlignTo(geom.Top, geom.Pt(0.0, 0.0)) // Circ((0,5);5), the anchor moved onto the point
 
 l := geom.Ln(geom.Pt(0, 0), geom.Pt(3, 4))
 l.Length()                  // 5
+l.Resize(10)                // Line (-1,-2)-(5,6), the same midpoint and direction at length 10
 l.Direction()               // DirectionDownRight, nearest of the eight, and Angle in radians
+l.Normal()                  // Vector{-4, 3}, a quarter turn of the segment, inward on a rectangle edge
 l.DistanceTo(geom.Pt(3, 0)) // 2.4, to the nearest point of the segment
 l.Contains(geom.Pt(6, 8))   // false, the segment ends at (3,4)
 
@@ -262,24 +267,42 @@ JSON last.
 - **`Nearest(point)`** – the closest point of a shape to a point, on every shape. `Rectangle.Clamp` already is one, and
   `Line`, `Circle` and `Polygon` compute it inside `DistanceTo` and throw it away; collision response needs the point
   and the normal at it more than the distance.
+- **`Polygon.Simplify(tolerance)`** – drops every vertex within the tolerance of the edge between its neighbours, by
+  `Line.DistanceTo`, so a traced outline keeps its shape with fewer edges to walk; pairs with `ConvexHull`.
+- **`Ray`** – a half-line with origin and direction, for casts against every shape.
+- **`Ellipse`** – `RegularPolygon` already takes semi-axes; the continuous shape has no type.
+- **Vertex and edge iterators** – public `iter.Seq` forms of `Vertices` and `Edges`, forward and backward as
+  `slices.Backward` spells it. `Rectangle.edges` and `Polygon.edges` are already iterators internally and every
+  intersection test walks them without allocating; the public `Vertices()` and `Edges()` allocate a slice per call
+  purely to hand it out. The open question is the name: `Edges`/`Vertices` are taken, and `AllEdges` reads better than
+  the `-Seq` suffix Go does not use elsewhere.
+- **`Transform` on every shape** – `Point`, `Vector`, `Line` and `Polygon` take a matrix; `Rectangle`, `Circle` and
+  `RegularPolygon` do not, and each is blocked on a planned shape rather than on the work: a rotated rectangle needs
+  `Rectangle.Angle`, a non-uniformly scaled circle is an `Ellipse`, and a sheared `RegularPolygon` is neither. Until
+  those land the only honest results are `Bounds()` or `Polygon().Transform(m)`.
+- **`Rectangle.Abs`** – a rectangle whose `Size` went negative through a struct literal or JSON has no repair today,
+  and `Contains`, `Clamp` and the `Intersects` methods give no meaningful answer for it. `Size.Abs` is the operation
+  and the name; `Normalize` would be the wrong one, since in this package it means resizing to length 1. The
+  alternative is for `UnmarshalJSON` to take the size absolute the way every constructor does.
+- **`Circle.RegularPolygon(n, orientation)` and `RegularPolygon.Circle()`** – the conversion between the two shapes,
+  with two options for where the polygon meets the circle: inscribed, with the vertices on the boundary, so the polygon
+  has `Size r x r` and the circle is the circumcircle; or circumscribed, with the edges tangent to the boundary, so
+  the polygon has `Size r/cos(π/n)` and the circle is the incircle. A square `Size` is required in the polygon-to-circle
+  direction; an elliptic one converts to the planned `Ellipse`.
 - **`Line.Clip(rectangle)`** – the part of a segment inside a rectangle and whether there is one, for drawing through a
   viewport; `IntersectionRectangle` gives the crossings and `Contains` the endpoints, the clip joins them.
 - **More fuzz targets** – `IntersectionCircle` against `IntersectsCircle` and `IntersectionRectangle` against
   `IntersectsRectangle`, on the shape of `FuzzLine_Intersection`, to cover the tolerance band the fixtures cannot.
-  Drafted in `TODO.md`, with the one input the circle target already found.
+  Drafted in `TODO.md`, with the one input the circle target already found. `Circle.Intersection` against
+  `Circle.Intersects` on the same shape, seeded with the tangent exactly `Delta` outside its reach that returned the
+  same point twice, the seam the line targets are built to catch.
 - **`Rectangle.Angle`** – an oriented rectangle. `Contains`, `Clamp`, `Intersects`, `Intersection` and `Union` assume
   axis alignment today; the edge-based tests already work for any orientation.
 - **`Polygon.Winding`, `IsConvex` and `ConvexHull`** – the signed vertex order that `Center` already computes, a
   convexity test on it, and the hull of a point set. Convexity also unlocks a separating-axis `Intersects`, the slow
   case in `BenchmarkPolygon_Intersects` today.
 - **`Encloses`** – shape-in-shape containment for culling, distinct from `Contains`, which takes a point.
-- **`Ray`** – a half-line with origin and direction, for casts against every shape.
-- **`Ellipse`** – `RegularPolygon` already takes semi-axes; the continuous shape has no type.
-- **`Circle.RegularPolygon(n, orientation)` and `RegularPolygon.Circle()`** – the conversion between the two shapes,
-  with two options for where the polygon meets the circle: inscribed, with the vertices on the boundary, so the polygon
-  has `Size r x r` and the circle is the circumcircle; or circumscribed, with the edges tangent to the boundary, so
-  the polygon has `Size r/cos(π/n)` and the circle is the incircle. A square `Size` is required in the polygon-to-circle
-  direction; an elliptic one converts to the planned `Ellipse`.
+
 
 ## Credits
 

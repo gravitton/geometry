@@ -361,7 +361,8 @@ func (p Polygon[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 // IntersectsCircle reports whether the polygon and the circle share a point: the center lies
 // within the polygon, or an edge passes within the radius. Touching shapes intersect, within
 // Epsilon of T. A circle with a negative radius contains nothing and intersects nothing, and
-// one whose Bounds lie outside the polygon is rejected before any edge is examined.
+// one whose Bounds lie outside the polygon is rejected before any edge is examined, as is
+// every edge whose extent lies outside those Bounds.
 func (p Polygon[T]) IntersectsCircle(circle Circle[T]) bool {
 	if circle.Radius < 0 || p.Empty() {
 		return false
@@ -379,7 +380,7 @@ func (p Polygon[T]) IntersectsCircle(circle Circle[T]) bool {
 	}
 
 	for edge := range p.edges() {
-		if edge.IntersectsCircle(circle) {
+		if c, d := edge.MinMax(); overlaps(a2, b2, c, d) && edge.IntersectsCircle(circle) {
 			return true
 		}
 	}

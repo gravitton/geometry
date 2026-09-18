@@ -181,6 +181,28 @@ func TestCircle_Lerp(t *testing.T) {
 	})
 }
 
+func TestCircle_AlignTo(t *testing.T) {
+	c := Circ(Pt(10.0, 10.0), 5.0)
+
+	t.Run("moves the anchor onto the point", func(t *testing.T) {
+		AssertCircle(t, c.AlignTo(Bottom, Pt(0.0, 0.0)), Circ(Pt(0.0, -5.0), 5.0))
+		AssertCircle(t, Circ(Pt(1, 2), 3).AlignTo(Left, Pt(0, 0)), Circ(Pt(3, 0), 3))
+	})
+	t.Run("none aligns the center like MoveTo", func(t *testing.T) {
+		AssertCircle(t, c.AlignTo(DirectionNone, Pt(1.0, 2.0)), c.MoveTo(Pt(1.0, 2.0)))
+	})
+	t.Run("a negative radius anchors at the center and aligns it", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(10.0, 10.0), -5.0).AlignTo(Right, Pt(1.0, 2.0)), Circ(Pt(1.0, 2.0), -5.0))
+	})
+	t.Run("is the inverse of Anchor", func(t *testing.T) {
+		for _, c := range circleFixtures {
+			for _, direction := range Directions() {
+				AssertPoint(t, c.AlignTo(direction, Pt(1.5, -2.5)).Anchor(direction), Pt(1.5, -2.5), fmt.Sprintf("%s %s: ", c, direction))
+			}
+		}
+	})
+}
+
 func TestCircle_Contains(t *testing.T) {
 	t.Run("inside", func(t *testing.T) {
 		assert.True(t, Circ(Pt(1, 2), 10).Contains(Pt(4, 4)))
@@ -235,11 +257,12 @@ func TestCircle_DistanceTo(t *testing.T) {
 		assert.Equal(t, c.DistanceTo(Pt(1.0+Delta/2, 0.0)), 0.0)
 		AssertNumber(t, c.DistanceTo(Pt(1.0+2*Delta, 0.0)), 2*Delta)
 	})
-	t.Run("a negative radius is beyond every point, its center included", func(t *testing.T) {
+	t.Run("a negative radius is infinitely far from every point, its center included", func(t *testing.T) {
 		negative := Circ(Pt(0.0, 0.0), -1.0)
 
-		AssertNumber(t, negative.DistanceTo(negative.Center), 1.0)
-		AssertNumber(t, negative.DistanceTo(Pt(3.0, 0.0)), 4.0)
+		assert.True(t, math.IsInf(negative.DistanceTo(negative.Center), 1))
+		assert.True(t, math.IsInf(negative.DistanceTo(Pt(3.0, 0.0)), 1))
+		assert.True(t, math.IsInf(negative.DistanceSquaredTo(Pt(3.0, 0.0)), 1))
 	})
 	t.Run("zero exactly where Contains holds", func(t *testing.T) {
 		for _, c := range circleFixtures {

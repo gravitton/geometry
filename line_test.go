@@ -291,6 +291,29 @@ func TestLine_Rotate(t *testing.T) {
 	})
 }
 
+func TestLine_Normal(t *testing.T) {
+	t.Run("a quarter turn of the vector, with its length", func(t *testing.T) {
+		AssertVector(t, Ln(Pt(1, 1), Pt(4, 1)).Normal(), Vec(0, 3))
+		AssertVector(t, Ln(Pt(0.0, 0.0), Pt(0.0, 2.5)).Normal(), Vec(-2.5, 0.0))
+	})
+	t.Run("points inward on a rectangle edge", func(t *testing.T) {
+		r := Rect(Pt(0, 0), Sz(4, 4))
+
+		for _, edge := range r.Edges() {
+			assert.True(t, r.Contains(edge.Midpoint().Add(edge.Normal().Resize(1))), edge.String())
+		}
+	})
+	t.Run("a zero-length segment has none", func(t *testing.T) {
+		AssertVector(t, Ln(Pt(3, 4), Pt(3, 4)).Normal(), ZeroVector[int]())
+	})
+	t.Run("is perpendicular to the segment", func(t *testing.T) {
+		for _, l := range lineFixtures {
+			AssertNumber(t, l.Normal().Dot(l.Vector()), 0.0, l.String())
+			AssertNumber(t, l.Normal().Length(), l.Length(), l.String())
+		}
+	})
+}
+
 func TestLine_Contains(t *testing.T) {
 	t.Run("int is exact", func(t *testing.T) {
 		l := Ln(Pt(0, 0), Pt(6, 3))
@@ -450,22 +473,6 @@ func TestLine_Intersects(t *testing.T) {
 	})
 }
 
-func BenchmarkLine_Intersects(b *testing.B) {
-	line := Ln(Pt(0.0, 0.0), Pt(10.0, 10.0))
-	crossing, apart := Ln(Pt(0.0, 10.0), Pt(10.0, 0.0)), Ln(Pt(20.0, 0.0), Pt(20.0, 10.0))
-
-	b.Run("crossing", func(b *testing.B) {
-		for b.Loop() {
-			sinkBool = line.Intersects(crossing)
-		}
-	})
-	b.Run("apart", func(b *testing.B) {
-		for b.Loop() {
-			sinkBool = line.Intersects(apart)
-		}
-	})
-}
-
 func TestLine_Intersection(t *testing.T) {
 	diagonal := Ln(Pt(0, 0), Pt(4, 4))
 
@@ -608,33 +615,28 @@ func TestLine_Intersection(t *testing.T) {
 	})
 }
 
-func FuzzLine_Intersection(f *testing.F) {
-	f.Add(0.0, 0.0, 4.0, 4.0, 0.0, 4.0, 4.0, 0.0)
-	f.Add(0.0, 0.0, 100.0, 0.0, 50.0, Delta/2, 150.0, 1e-3)
-	f.Add(0.0, 0.0, 4.0, 4.0, 1.0, 1.0, 1.0, 1.0)
-	f.Add(0.0, 0.0, 4.0, 4.0, 2.0, 2.0, 6.0, 6.0)
+func TestLine_IntersectsCircle(t *testing.T) {
+	circle := Circ(Pt(0.0, 0.0), 1.0)
 
-	f.Fuzz(func(t *testing.T, x1, y1, x2, y2, x3, y3, x4, y4 float64) {
-		for _, v := range []float64{x1, y1, x2, y2, x3, y3, x4, y4} {
-			if math.IsNaN(v) || math.Abs(v) > 1e3 {
-				t.Skip()
-			}
-		}
-
-		a, b := Ln(Pt(x1, y1), Pt(x2, y2)), Ln(Pt(x3, y3), Pt(x4, y4))
-		parallel := !a.Vector().IsZero() && !b.Vector().IsZero() && a.Vector().Cross(b.Vector()) == 0
-
-		point, ok := a.Intersection(b)
-		_, reverse := b.Intersection(a)
-
-		assert.Equal(t, ok, a.Intersects(b) && !parallel, fmt.Sprintf("%s → %s: ", a, b))
-		assert.Equal(t, ok, reverse, fmt.Sprintf("%s → %s: symmetric: ", a, b))
-		if !ok {
-			return
-		}
-
-		assert.True(t, a.Contains(point), fmt.Sprintf("%s → %s on a: ", a, b))
-		assert.True(t, b.Contains(point), fmt.Sprintf("%s → %s on b: ", a, b))
+	t.Run("passing through", func(t *testing.T) {
+		assert.True(t, Ln(Pt(-2.0, 0.0), Pt(2.0, 0.0)).IntersectsCircle(circle))
+	})
+	t.Run("apart", func(t *testing.T) {
+		assert.False(t, Ln(Pt(-2.0, 2.0), Pt(2.0, 2.0)).IntersectsCircle(circle))
+		assert.False(t, Ln(Pt(2.0, 0.0), Pt(3.0, 0.0)).IntersectsCircle(circle))
+	})
+	t.Run("tangent counts", func(t *testing.T) {
+		assert.True(t, Ln(Pt(-2.0, 1.0), Pt(2.0, 1.0)).IntersectsCircle(circle))
+		assert.False(t, Ln(Pt(-2.0, 1.0+2*Delta), Pt(2.0, 1.0+2*Delta)).IntersectsCircle(circle))
+	})
+	t.Run("an endpoint inside counts", func(t *testing.T) {
+		assert.True(t, Ln(Pt(0.5, 0.0), Pt(5.0, 0.0)).IntersectsCircle(circle))
+	})
+	t.Run("a segment inside counts", func(t *testing.T) {
+		assert.True(t, Ln(Pt(-0.5, 0.0), Pt(0.5, 0.0)).IntersectsCircle(circle))
+	})
+	t.Run("a negative radius intersects nothing", func(t *testing.T) {
+		assert.False(t, Ln(Pt(-2.0, 0.0), Pt(2.0, 0.0)).IntersectsCircle(Circ(Pt(0.0, 0.0), -1.0)))
 	})
 }
 
@@ -724,6 +726,28 @@ func TestLine_IntersectionCircle(t *testing.T) {
 	})
 }
 
+func TestLine_IntersectsRectangle(t *testing.T) {
+	rectangle := Rect(Pt(0, 0), Sz(4, 4))
+
+	t.Run("crossing an edge", func(t *testing.T) {
+		assert.True(t, Ln(Pt(0, 0), Pt(5, 0)).IntersectsRectangle(rectangle))
+	})
+	t.Run("passing through", func(t *testing.T) {
+		assert.True(t, Ln(Pt(-5, 0), Pt(5, 0)).IntersectsRectangle(rectangle))
+	})
+	t.Run("inside", func(t *testing.T) {
+		assert.True(t, Ln(Pt(-1, -1), Pt(1, 1)).IntersectsRectangle(rectangle))
+	})
+	t.Run("apart", func(t *testing.T) {
+		assert.False(t, Ln(Pt(3, -5), Pt(3, 5)).IntersectsRectangle(rectangle))
+		assert.False(t, Ln(Pt(3, 3), Pt(5, 5)).IntersectsRectangle(rectangle))
+	})
+	t.Run("touching a corner counts", func(t *testing.T) {
+		assert.True(t, Ln(Pt(1, 3), Pt(3, 1)).IntersectsRectangle(rectangle))
+		assert.False(t, Ln(Pt(2, 4), Pt(4, 2)).IntersectsRectangle(rectangle))
+	})
+}
+
 func TestLine_IntersectionRectangle(t *testing.T) {
 	rectangle := Rect(Pt(0, 0), Sz(4, 4))
 
@@ -768,50 +792,69 @@ func TestLine_IntersectionRectangle(t *testing.T) {
 	})
 }
 
-func TestLine_IntersectsCircle(t *testing.T) {
-	circle := Circ(Pt(0.0, 0.0), 1.0)
-
-	t.Run("passing through", func(t *testing.T) {
-		assert.True(t, Ln(Pt(-2.0, 0.0), Pt(2.0, 0.0)).IntersectsCircle(circle))
-	})
-	t.Run("apart", func(t *testing.T) {
-		assert.False(t, Ln(Pt(-2.0, 2.0), Pt(2.0, 2.0)).IntersectsCircle(circle))
-		assert.False(t, Ln(Pt(2.0, 0.0), Pt(3.0, 0.0)).IntersectsCircle(circle))
-	})
-	t.Run("tangent counts", func(t *testing.T) {
-		assert.True(t, Ln(Pt(-2.0, 1.0), Pt(2.0, 1.0)).IntersectsCircle(circle))
-		assert.False(t, Ln(Pt(-2.0, 1.0+2*Delta), Pt(2.0, 1.0+2*Delta)).IntersectsCircle(circle))
-	})
-	t.Run("an endpoint inside counts", func(t *testing.T) {
-		assert.True(t, Ln(Pt(0.5, 0.0), Pt(5.0, 0.0)).IntersectsCircle(circle))
-	})
-	t.Run("a segment inside counts", func(t *testing.T) {
-		assert.True(t, Ln(Pt(-0.5, 0.0), Pt(0.5, 0.0)).IntersectsCircle(circle))
-	})
-	t.Run("a negative radius intersects nothing", func(t *testing.T) {
-		assert.False(t, Ln(Pt(-2.0, 0.0), Pt(2.0, 0.0)).IntersectsCircle(Circ(Pt(0.0, 0.0), -1.0)))
+func TestLine_IntersectsPolygon(t *testing.T) {
+	t.Run("mirrors Polygon.IntersectsLine", func(t *testing.T) {
+		for _, l := range lineFixtures {
+			for _, p := range polygonFixtures() {
+				assert.Equal(t, l.IntersectsPolygon(p), p.IntersectsLine(l), fmt.Sprintf("%s → %s: ", l, p))
+			}
+		}
 	})
 }
 
-func TestLine_IntersectsRectangle(t *testing.T) {
-	rectangle := Rect(Pt(0, 0), Sz(4, 4))
+func TestLine_IntersectionPolygon(t *testing.T) {
+	t.Run("matches Polygon.IntersectionLine", func(t *testing.T) {
+		for _, l := range lineFixtures {
+			for _, p := range polygonFixtures() {
+				AssertVertices(t, l.IntersectionPolygon(p), p.IntersectionLine(l), fmt.Sprintf("%s → %s: ", l, p))
+			}
+		}
+	})
+}
 
-	t.Run("crossing an edge", func(t *testing.T) {
-		assert.True(t, Ln(Pt(0, 0), Pt(5, 0)).IntersectsRectangle(rectangle))
+func BenchmarkLine_Intersects(b *testing.B) {
+	line := Ln(Pt(0.0, 0.0), Pt(10.0, 10.0))
+	crossing, apart := Ln(Pt(0.0, 10.0), Pt(10.0, 0.0)), Ln(Pt(20.0, 0.0), Pt(20.0, 10.0))
+
+	b.Run("crossing", func(b *testing.B) {
+		for b.Loop() {
+			sinkBool = line.Intersects(crossing)
+		}
 	})
-	t.Run("passing through", func(t *testing.T) {
-		assert.True(t, Ln(Pt(-5, 0), Pt(5, 0)).IntersectsRectangle(rectangle))
+	b.Run("apart", func(b *testing.B) {
+		for b.Loop() {
+			sinkBool = line.Intersects(apart)
+		}
 	})
-	t.Run("inside", func(t *testing.T) {
-		assert.True(t, Ln(Pt(-1, -1), Pt(1, 1)).IntersectsRectangle(rectangle))
-	})
-	t.Run("apart", func(t *testing.T) {
-		assert.False(t, Ln(Pt(3, -5), Pt(3, 5)).IntersectsRectangle(rectangle))
-		assert.False(t, Ln(Pt(3, 3), Pt(5, 5)).IntersectsRectangle(rectangle))
-	})
-	t.Run("touching a corner counts", func(t *testing.T) {
-		assert.True(t, Ln(Pt(1, 3), Pt(3, 1)).IntersectsRectangle(rectangle))
-		assert.False(t, Ln(Pt(2, 4), Pt(4, 2)).IntersectsRectangle(rectangle))
+}
+
+func FuzzLine_Intersection(f *testing.F) {
+	f.Add(0.0, 0.0, 4.0, 4.0, 0.0, 4.0, 4.0, 0.0)
+	f.Add(0.0, 0.0, 100.0, 0.0, 50.0, Delta/2, 150.0, 1e-3)
+	f.Add(0.0, 0.0, 4.0, 4.0, 1.0, 1.0, 1.0, 1.0)
+	f.Add(0.0, 0.0, 4.0, 4.0, 2.0, 2.0, 6.0, 6.0)
+
+	f.Fuzz(func(t *testing.T, x1, y1, x2, y2, x3, y3, x4, y4 float64) {
+		for _, v := range []float64{x1, y1, x2, y2, x3, y3, x4, y4} {
+			if math.IsNaN(v) || math.Abs(v) > 1e3 {
+				t.Skip()
+			}
+		}
+
+		a, b := Ln(Pt(x1, y1), Pt(x2, y2)), Ln(Pt(x3, y3), Pt(x4, y4))
+		parallel := !a.Vector().IsZero() && !b.Vector().IsZero() && a.Vector().Cross(b.Vector()) == 0
+
+		point, ok := a.Intersection(b)
+		_, reverse := b.Intersection(a)
+
+		assert.Equal(t, ok, a.Intersects(b) && !parallel, fmt.Sprintf("%s → %s: ", a, b))
+		assert.Equal(t, ok, reverse, fmt.Sprintf("%s → %s: symmetric: ", a, b))
+		if !ok {
+			return
+		}
+
+		assert.True(t, a.Contains(point), fmt.Sprintf("%s → %s on a: ", a, b))
+		assert.True(t, b.Contains(point), fmt.Sprintf("%s → %s on b: ", a, b))
 	})
 }
 
@@ -827,26 +870,6 @@ func BenchmarkLine_IntersectsRectangle(b *testing.B) {
 	b.Run("apart", func(b *testing.B) {
 		for b.Loop() {
 			sinkBool = apart.IntersectsRectangle(rectangle)
-		}
-	})
-}
-
-func TestLine_IntersectionPolygon(t *testing.T) {
-	t.Run("matches Polygon.IntersectionLine", func(t *testing.T) {
-		for _, l := range lineFixtures {
-			for _, p := range polygonFixtures() {
-				AssertVertices(t, l.IntersectionPolygon(p), p.IntersectionLine(l), fmt.Sprintf("%s → %s: ", l, p))
-			}
-		}
-	})
-}
-
-func TestLine_IntersectsPolygon(t *testing.T) {
-	t.Run("mirrors Polygon.IntersectsLine", func(t *testing.T) {
-		for _, l := range lineFixtures {
-			for _, p := range polygonFixtures() {
-				assert.Equal(t, l.IntersectsPolygon(p), p.IntersectsLine(l), fmt.Sprintf("%s → %s: ", l, p))
-			}
 		}
 	})
 }

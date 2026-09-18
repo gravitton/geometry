@@ -150,6 +150,15 @@ func (l Line[T]) Rotate(angle float64) Line[T] {
 	return Line[T]{l.Start.RotateAround(pivot, angle), l.End.RotateAround(pivot, angle)}
 }
 
+// Normal returns the perpendicular of the segment, Vector.Normal of its vector: the direction
+// from Start to End turned a quarter turn in the sense of Vector.Rotate, clockwise as drawn on
+// a screen with Y pointing down, with the length of the segment. On an edge of a Rectangle, or
+// of any polygon wound the same way, it points inward. A zero-length segment has no normal and
+// gives the zero vector.
+func (l Line[T]) Normal() Vector[T] {
+	return l.Vector().Normal()
+}
+
 // Contains reports whether the given point lies on the segment, within Epsilon of T, the same
 // closed convention as Rectangle.Contains: it holds exactly where DistanceTo is zero.
 func (l Line[T]) Contains(point Point[T]) bool {
@@ -287,15 +296,6 @@ func (l Line[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
 	return points
 }
 
-// IntersectionRectangle returns the points where the segment crosses the rectangle boundary,
-// from Start to End: the crossings with its edges by Intersection, with a corner hit by two
-// edges counted once. A segment inside crosses no boundary and returns none while
-// IntersectsRectangle still reports it, and a segment along an edge is parallel to it and
-// crosses only the edges at its ends, if it reaches them.
-func (l Line[T]) IntersectionRectangle(rectangle Rectangle[T]) []Point[T] {
-	return l.crossings(rectangle.edges())
-}
-
 // IntersectsRectangle reports whether the segment and the rectangle share a point: the start
 // lies within the rectangle, or the segment crosses one of its edges. Touching shapes intersect,
 // within Epsilon of T. A segment whose extent lies outside the rectangle is rejected before any
@@ -318,6 +318,15 @@ func (l Line[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 	}
 
 	return false
+}
+
+// IntersectionRectangle returns the points where the segment crosses the rectangle boundary,
+// from Start to End: the crossings with its edges by Intersection, with a corner hit by two
+// edges counted once. A segment inside crosses no boundary and returns none while
+// IntersectsRectangle still reports it, and a segment along an edge is parallel to it and
+// crosses only the edges at its ends, if it reaches them.
+func (l Line[T]) IntersectionRectangle(rectangle Rectangle[T]) []Point[T] {
+	return l.crossings(rectangle.edges())
 }
 
 // IntersectsPolygon reports whether the segment and the polygon share a point, as

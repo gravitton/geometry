@@ -231,6 +231,57 @@ func TestVector_Lerp(t *testing.T) {
 	})
 }
 
+func TestVector_AtLeast(t *testing.T) {
+	t.Run("a shorter vector is resized along its direction", func(t *testing.T) {
+		AssertVector(t, Vec(3.0, 4.0).AtLeast(10), Vec(6.0, 8.0))
+		AssertVector(t, Vec(3, 4).AtLeast(10), Vec(6, 8))
+	})
+	t.Run("a longer vector is unchanged", func(t *testing.T) {
+		AssertVector(t, Vec(3.0, 4.0).AtLeast(2), Vec(3.0, 4.0))
+		AssertVector(t, Vec(3.0, 4.0).AtLeast(5), Vec(3.0, 4.0))
+	})
+	t.Run("the zero vector grows along +X", func(t *testing.T) {
+		AssertVector(t, ZeroVector[int]().AtLeast(3), Vec(3, 0))
+	})
+	t.Run("a non-positive length changes nothing", func(t *testing.T) {
+		AssertVector(t, Vec(3.0, 4.0).AtLeast(-10), Vec(3.0, 4.0))
+		AssertVector(t, ZeroVector[float64]().AtLeast(0), ZeroVector[float64]())
+	})
+	t.Run("the result is at least the length", func(t *testing.T) {
+		for _, v := range vectorFixtures {
+			assert.False(t, v.AtLeast(7).Less(7-Delta), v.String())
+			assert.Equal(t, v.AtLeast(7).Equal(v), !v.Less(7), v.String())
+		}
+	})
+}
+
+func TestVector_AtMost(t *testing.T) {
+	t.Run("a longer vector is capped along its direction", func(t *testing.T) {
+		AssertVector(t, Vec(6.0, 8.0).AtMost(5), Vec(3.0, 4.0))
+		AssertVector(t, Vec(6, 8).AtMost(5), Vec(3, 4))
+	})
+	t.Run("a shorter vector is unchanged", func(t *testing.T) {
+		AssertVector(t, Vec(3.0, 4.0).AtMost(10), Vec(3.0, 4.0))
+		AssertVector(t, Vec(3.0, 4.0).AtMost(5), Vec(3.0, 4.0))
+	})
+	t.Run("float keeps a vector a rounding error past the length", func(t *testing.T) {
+		v := Vec(3.0, 4.0+Delta/2)
+
+		AssertVector(t, v.AtMost(5), v)
+	})
+	t.Run("a non-positive length gives the zero vector", func(t *testing.T) {
+		AssertVector(t, Vec(3.0, 4.0).AtMost(0), ZeroVector[float64]())
+		AssertVector(t, Vec(3, 4).AtMost(-1), ZeroVector[int]())
+		AssertVector(t, ZeroVector[int]().AtMost(-1), ZeroVector[int]())
+	})
+	t.Run("the result is at most the length", func(t *testing.T) {
+		for _, v := range vectorFixtures {
+			assert.True(t, v.AtMost(7).LessOrEqual(7), v.String())
+			assert.Equal(t, v.AtMost(7).Equal(v), v.LessOrEqual(7), v.String())
+		}
+	})
+}
+
 func TestVector_Transform(t *testing.T) {
 	t.Run("float64 matrix", func(t *testing.T) {
 		AssertVector(t, Vec(10, 16).Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), Vec(48, 132))

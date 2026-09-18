@@ -106,6 +106,13 @@ func (c Circle[T]) Lerp(circle Circle[T], t float64) Circle[T] {
 	return Circle[T]{c.Center.Lerp(circle.Center, t), Lerp(c.Radius, circle.Radius, t)}
 }
 
+// AlignTo creates a new Circle moved so that its Anchor in the given direction lands on the
+// point, the inverse of Anchor like Rectangle.AlignTo: DirectionNone aligns the center, like
+// MoveTo, and so does every direction of a circle with a negative radius, which anchors there.
+func (c Circle[T]) AlignTo(direction Direction, point Point[T]) Circle[T] {
+	return c.Translate(point.Subtract(c.Anchor(direction)))
+}
+
 // Contains reports whether the given point lies within the circle, boundary included within
 // Epsilon of T, the same closed convention as Rectangle.Contains: a float point a rounding
 // error outside the radius, such as an Anchor, is still contained.
@@ -116,8 +123,13 @@ func (c Circle[T]) Contains(point Point[T]) bool {
 // DistanceTo returns the distance from the given point to the nearest point of the circle:
 // zero exactly where Contains holds, so a point within Epsilon of T of the boundary is at
 // distance zero rather than at the rounding error that put it there, and otherwise the
-// distance to the center less the radius.
+// distance to the center less the radius. A circle with a negative radius has no point to
+// measure to and is infinitely far from every point, like an empty polygon.
 func (c Circle[T]) DistanceTo(point Point[T]) float64 {
+	if c.Radius < 0 {
+		return math.Inf(1)
+	}
+
 	distanceSquared := c.Center.Float().DistanceSquaredTo(point.Float())
 	if c.reaches(distanceSquared) {
 		return 0
@@ -137,7 +149,9 @@ func (c Circle[T]) DistanceSquaredTo(point Point[T]) float64 {
 
 // Intersects reports whether the circles overlap. Touching circles intersect, within Epsilon
 // of T, the same closed convention as Contains, and a circle with a negative radius intersects
-// nothing. The radii are summed in float64, so a narrow integer T cannot overflow the threshold.
+// nothing. The radii are summed in float64, so a narrow integer T cannot overflow the threshold,
+// which is why this is the one radius test not made through reaches on the squared distance:
+// Intersection judges tangency on the same linear distance, so the two agree.
 func (c Circle[T]) Intersects(circle Circle[T]) bool {
 	if c.Radius < 0 || circle.Radius < 0 {
 		return false

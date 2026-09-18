@@ -143,6 +143,32 @@ func (v Vector[T]) Lerp(vector Vector[T], t float64) Vector[T] {
 	return Vector[T]{Lerp(v.X, vector.X, t), Lerp(v.Y, vector.Y, t)}
 }
 
+// AtLeast creates a new Vector of at least the given length: a shorter vector is resized to it
+// along its own direction, judged by Less, and a longer one is returned unchanged. The zero
+// vector has no direction and is resized along +X, as Resize does. Every vector is at least a
+// non-positive length, so that returns the vector unchanged.
+// For integer T the resized vector is rounded, as with Resize.
+func (v Vector[T]) AtLeast(length T) Vector[T] {
+	if !v.Less(length) {
+		return v
+	}
+
+	return v.Resize(float64(length))
+}
+
+// AtMost creates a new Vector of at most the given length: a longer vector is resized to it
+// along its own direction, judged by LessOrEqual, and a shorter one is returned unchanged, so
+// a velocity is capped at a top speed. No vector is at most a negative length, and the only
+// one at most zero is the zero vector, so a non-positive length gives the zero vector.
+// For integer T the resized vector is rounded, as with Resize.
+func (v Vector[T]) AtMost(length T) Vector[T] {
+	if v.LessOrEqual(length) {
+		return v
+	}
+
+	return v.Resize(float64(max(length, 0)))
+}
+
 // Transform creates a new Vector by applying the given matrix to the current vector.
 // The matrix is float-only, like an angle: convert an integer matrix with Matrix.Float first.
 // For integer T, the float64 result of each component is rounded; rotations and non-integer scales lose precision.
