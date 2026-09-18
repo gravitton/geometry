@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `Int[T Number](value T) int` – converts a `Number` to `int`, an integer `T` by plain conversion and a float `T` rounded through `Cast`; the `Int()` methods are built on it
 - `Delta32` – the equality tolerance for `float32`, `1e-4`; `Delta` sat below one `float32` ulp above magnitude 1e3 and asked for bit-exact equality there
 - `Epsilon[T]()` – the tolerance for `T`: zero for an integer `T`, `Delta32` for `float32`, `Delta` for `float64`; it depends only on the type, so `Equal` costs what it did before
-- `EqualRelative(a, b)` and `EpsilonRelative(a, b)` – equality within a tolerance that scales with magnitude, for values where an absolute tolerance falls below one ulp; ~1.1 ns against ~0.6 ns for `Equal`, which is why it is a separate function
+- `EqualRelative(a, b)` and `EpsilonRelative(a, b)` – equality within a tolerance that scales with magnitude, for values where an absolute tolerance falls below one ulp; it costs about 1.25x `Equal` and 2.8x `EqualDelta`, which is why it is a separate function and why no shape reaches for it
 - `LessOrEqual(a, b)` and `LessOrEqualDelta(a, b, delta)` – the `<=` counterparts of `Equal` and `EqualDelta`; every closed boundary check is built on them
 - `Sum(values)` – adds a slice of `Number`, accumulating in `float64` and storing the total through `Cast`
 - `AngleDistance(a, b)` – the shortest angular distance between two angles, in `[0, π]`
@@ -63,6 +63,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `RegularPolygon.Area` and `Perimeter` – measured through `Polygon` like `Bounds`, so the three measurements taken from the computed vertices sit together
 - `Padding.Subtract` – the counterpart of `Add`
 - `Axis.ScaleAcross` – scales the cross extent only, the counterpart of `ScaleAlong`
+- `Line.Unscale` and `UnscaleXY` – the inverse of `Scale` about the midpoint, completing the pair on the last shape that lacked it
+- `Line.Resize(length)` – the segment at a given length about its midpoint, where `Scale` multiplies the length it has; a `float64` like `Vector.Resize`, since a segment stores no length. A zero-length segment resizes along +X and a negative length gives the reverse of the segment of that absolute length, both the conventions `Vector.Resize` follows
+- `Rectangle.Lerp`, `Circle.Lerp` and `Padding.Lerp` – interpolation towards another shape, extrapolating outside `[0, 1]` like `Point.Lerp`, so a shape can be tweened. The rectangle moves its center and size together and keeps the size absolute; the circle moves its center and radius and does not clamp, so an extrapolation can pass through the empty circle a negative radius describes. `Polygon`, `RegularPolygon` and `Matrix` are left out: two polygons need not share a vertex count, `N` does not interpolate, and a component-wise matrix blend is not the interpolation of a transform
+- `BenchmarkEqualDelta_Float64` – the third of the equality benchmarks, so the cost of `Equal`, `EqualDelta` and `EqualRelative` can be read side by side
 
 ### Changed
 - `RegPol`, `RegularPolygonWithOrientation`, `Triangle`, `Square` and `Hexagon` take the size absolute like `Rect`, so a `RegularPolygon` never stores a negative semi-axis unless a struct literal or JSON says otherwise; a negative one placed every vertex half a turn away (**breaking** for a caller relying on the mirrored vertices)
@@ -92,6 +96,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `Divide` names its parameter `factor` like `Multiply` and every other scaling function; the docs follow
 - `Circle.IsZero`, `Rectangle.IsZero` and `Line.IsZero` are `Equal` against the zero value, the form every other type already uses; `Vector.LessOrEqual`, `Polygon.Equal` and `Direction` document that a negative length never counts, that nil and empty vertices are equal, and that the numbering follows the normalized angle
 - `Point.Compare` documents that it applies no tolerance, unlike `Equal`, so two float points `Equal` considers the same can still order apart
+- `Rectangle.Inset` documents where a too-large padding collapses the rectangle: at the opposite edge, not at the one that over-ran, and on `Left` and `Top` where both paddings on an axis over-run, since the minimum corner moves first and the maximum is then stopped at it. The doc said "at the last edge to move", which is the wrong edge
+- `Point.Compare` documents that a NaN coordinate sorts before every other value and with itself, as `cmp.Compare` orders it, so points carrying one still sort into a total order
 - `Circle.Area` documents why it leaves `T` for `float64`, as `Polygon.Area` already did: the factor π leaves no radius with an area `T` could express
 - `Rectangle.TopLeft`, `TopRight`, `BottomRight`, `BottomLeft`, the four edge midpoints and the four `*Edge` accessors have example cases of their own instead of being reached only through `Anchor` and `Edges`
 - `RegularPolygon` documents that `Size` holds the semi-axes of the ellipse the vertices lie on, a radius rather than the full extent `Rectangle.Size` holds, and `Circle.Diameter` documents that it stays in `T` and only overflows for a result outside the range of `T`

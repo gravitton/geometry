@@ -114,6 +114,18 @@ func TestPadding_Unscale(t *testing.T) {
 	})
 }
 
+func TestPadding_Lerp(t *testing.T) {
+	t.Run("interpolates edge by edge", func(t *testing.T) {
+		AssertPadding(t, Pad(0.0, 0.0, 0.0, 0.0).Lerp(Pad(2.0, 4.0, 6.0, 8.0), 0.5), Pad(1.0, 2.0, 3.0, 4.0))
+	})
+	t.Run("the ends are the paddings themselves", func(t *testing.T) {
+		a, b := Pad(1, 2, 3, 4), Pad(10, 20, 30, 40)
+
+		AssertPadding(t, a.Lerp(b, 0), a)
+		AssertPadding(t, a.Lerp(b, 1), b)
+	})
+}
+
 func TestPadding_Equal(t *testing.T) {
 	t.Run("same padding", func(t *testing.T) {
 		assert.True(t, Pad(1, 2, 3, 4).Equal(Pad(1, 2, 3, 4)))
@@ -218,6 +230,15 @@ func TestPadding_Properties(t *testing.T) {
 			AssertNumber(t, width, padding.Width(), fmt.Sprintf("%s: ", padding))
 			AssertNumber(t, height, padding.Height(), fmt.Sprintf("%s: ", padding))
 			assert.True(t, padding.Size().Equal(Sz(padding.Width(), padding.Height())), fmt.Sprintf("%s: ", padding))
+		}
+	})
+	t.Run("lerp ends on the two paddings", func(t *testing.T) {
+		for _, a := range paddingFixtures {
+			for _, b := range paddingFixtures {
+				assert.True(t, a.Lerp(b, 0).Equal(a), fmt.Sprintf("%s -> %s: ", a, b))
+				assert.True(t, a.Lerp(b, 1).Equal(b), fmt.Sprintf("%s -> %s: ", a, b))
+				assert.True(t, a.Lerp(b, 0.5).Equal(b.Lerp(a, 0.5)), fmt.Sprintf("%s -> %s: ", a, b))
+			}
 		}
 	})
 	t.Run("float is the inverse of int on whole values", func(t *testing.T) {

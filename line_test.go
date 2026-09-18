@@ -161,6 +161,63 @@ func TestLine_Scale(t *testing.T) {
 	})
 }
 
+func TestLine_Unscale(t *testing.T) {
+	t.Run("uniform factor", func(t *testing.T) {
+		AssertLine(t, Ln(Pt(0.0, 0.0), Pt(8.0, 4.0)).Unscale(2), Ln(Pt(2.0, 1.0), Pt(6.0, 3.0)))
+	})
+	t.Run("per-axis factor", func(t *testing.T) {
+		AssertLine(t, Ln(Pt(0.0, 0.0), Pt(8.0, 4.0)).UnscaleXY(2, 4), Ln(Pt(2.0, 1.5), Pt(6.0, 2.5)))
+	})
+	t.Run("undoes scale", func(t *testing.T) {
+		l := Ln(Pt(1.0, 2.0), Pt(9.0, 6.0))
+
+		AssertLine(t, l.Scale(2.5).Unscale(2.5), l)
+		AssertLine(t, l.ScaleXY(2.0, 4.0).UnscaleXY(2.0, 4.0), l)
+	})
+	t.Run("zero factor panics", func(t *testing.T) {
+		assert.Panics(t, func() {
+			Ln(Pt(0.0, 0.0), Pt(8.0, 4.0)).Unscale(0)
+		}, "geom: division by zero")
+		assert.Panics(t, func() {
+			Ln(Pt(0.0, 0.0), Pt(8.0, 4.0)).UnscaleXY(0, 2)
+		}, "geom: division by zero")
+	})
+}
+
+func TestLine_Resize(t *testing.T) {
+	t.Run("keeps the midpoint and the direction", func(t *testing.T) {
+		l := Ln(Pt(0.0, 0.0), Pt(6.0, 8.0)) // length 10, midpoint (3,4)
+		resized := l.Resize(20)
+
+		AssertLine(t, resized, Ln(Pt(-3.0, -4.0), Pt(9.0, 12.0)))
+		AssertNumber(t, resized.Length(), 20.0)
+		AssertPoint(t, resized.Midpoint(), l.Midpoint())
+	})
+	t.Run("shortens as readily as it lengthens", func(t *testing.T) {
+		resized := Ln(Pt(0.0, 0.0), Pt(6.0, 8.0)).Resize(5)
+
+		AssertLine(t, resized, Ln(Pt(1.5, 2.0), Pt(4.5, 6.0)))
+		AssertNumber(t, resized.Length(), 5.0)
+	})
+	t.Run("a zero length collapses onto the midpoint", func(t *testing.T) {
+		AssertLine(t, Ln(Pt(0.0, 0.0), Pt(6.0, 8.0)).Resize(0), Ln(Pt(3.0, 4.0), Pt(3.0, 4.0)))
+	})
+	t.Run("a negative length flips the ends", func(t *testing.T) {
+		l := Ln(Pt(0.0, 0.0), Pt(6.0, 8.0))
+
+		AssertLine(t, l.Resize(-10), l.Reverse())
+		AssertNumber(t, l.Resize(-10).Length(), 10.0)
+	})
+	t.Run("a zero-length segment resizes along +X", func(t *testing.T) {
+		AssertLine(t, Ln(Pt(3.0, 4.0), Pt(3.0, 4.0)).Resize(10), Ln(Pt(-2.0, 4.0), Pt(8.0, 4.0)))
+	})
+	t.Run("int rounds both ends", func(t *testing.T) {
+		resized := Ln(Pt(0, 0), Pt(6, 8)).Resize(5)
+
+		AssertLine(t, resized, Ln(Pt(2, 2), Pt(5, 6)))
+	})
+}
+
 func TestLine_Reverse(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		AssertLine(t, Ln(Pt(1, 2), Pt(3, 5)).Reverse(), Ln(Pt(3, 5), Pt(1, 2)))
@@ -885,6 +942,23 @@ func TestLine_JSON(t *testing.T) {
 }
 
 func TestLine_Properties(t *testing.T) {
+	t.Run("scale and unscale are inverse", func(t *testing.T) {
+		for _, l := range lineFixtures {
+			for _, factor := range []float64{0.5, 1, 2.5, -3} {
+				assert.True(t, l.Scale(factor).Unscale(factor).Equal(l), fmt.Sprintf("%s x%v: ", l, factor))
+			}
+		}
+	})
+	t.Run("resize keeps the midpoint and reaches the length", func(t *testing.T) {
+		for _, l := range lineFixtures {
+			for _, length := range []float64{0, 1, 12.5} {
+				resized := l.Resize(length)
+
+				AssertPoint(t, resized.Midpoint(), l.Midpoint(), fmt.Sprintf("%s ->%v: ", l, length))
+				AssertNumber(t, resized.Length(), length, fmt.Sprintf("%s ->%v: ", l, length))
+			}
+		}
+	})
 	t.Run("angle and direction follow the vector", func(t *testing.T) {
 		for _, l := range lineFixtures {
 			AssertNumber(t, l.Angle(), l.Vector().Angle(), l.String()+": ")

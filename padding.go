@@ -66,6 +66,11 @@ func (p Padding[T]) Unscale(factor float64) Padding[T] {
 	return Padding[T]{Divide(p.Top, factor), Divide(p.Right, factor), Divide(p.Bottom, factor), Divide(p.Left, factor)}
 }
 
+// Lerp creates a new Padding in linear interpolation towards the given padding, edge by edge.
+func (p Padding[T]) Lerp(padding Padding[T], t float64) Padding[T] {
+	return Padding[T]{Lerp(p.Top, padding.Top, t), Lerp(p.Right, padding.Right, t), Lerp(p.Bottom, padding.Bottom, t), Lerp(p.Left, padding.Left, t)}
+}
+
 // Equal checks for equal edge values with given padding.
 func (p Padding[T]) Equal(padding Padding[T]) bool {
 	return Equal(p.Top, padding.Top) && Equal(p.Right, padding.Right) && Equal(p.Bottom, padding.Bottom) && Equal(p.Left, padding.Left)

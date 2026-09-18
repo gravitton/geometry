@@ -99,6 +99,13 @@ func (c Circle[T]) Shrink(amount T) Circle[T] {
 	return Circle[T]{c.Center, max(c.Radius-amount, 0)}
 }
 
+// Lerp creates a new Circle in linear interpolation towards the given circle, moving the center
+// and the radius together, and extrapolating outside [0, 1] like Point.Lerp. The radius is not
+// clamped, so an extrapolation can pass through the empty circle a negative radius describes.
+func (c Circle[T]) Lerp(circle Circle[T], t float64) Circle[T] {
+	return Circle[T]{c.Center.Lerp(circle.Center, t), Lerp(c.Radius, circle.Radius, t)}
+}
+
 // Contains reports whether the given point lies within the circle, boundary included within
 // Epsilon of T, the same closed convention as Rectangle.Contains: a float point a rounding
 // error outside the radius, such as an Anchor, is still contained.

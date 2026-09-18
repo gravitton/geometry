@@ -91,10 +91,38 @@ func (l Line[T]) Scale(factor float64) Line[T] {
 func (l Line[T]) ScaleXY(factorX, factorY float64) Line[T] {
 	pivot := l.Midpoint()
 
-	return Line[T]{
-		pivot.Add(l.Start.Subtract(pivot).MultiplyXY(factorX, factorY)),
-		pivot.Add(l.End.Subtract(pivot).MultiplyXY(factorX, factorY)),
-	}
+	return Line[T]{pivot.Add(l.Start.Subtract(pivot).MultiplyXY(factorX, factorY)), pivot.Add(l.End.Subtract(pivot).MultiplyXY(factorX, factorY))}
+}
+
+// Unscale creates a new Line uniformly scaled about its midpoint by the inverse factor, the
+// inverse of Scale. Like Divide it panics for a zero factor.
+func (l Line[T]) Unscale(factor float64) Line[T] {
+	return l.UnscaleXY(factor, factor)
+}
+
+// UnscaleXY creates a new Line scaled about its midpoint by the inverse of the given factors,
+// the inverse of ScaleXY. Like Divide it panics for a zero factor.
+func (l Line[T]) UnscaleXY(factorX, factorY float64) Line[T] {
+	pivot := l.Midpoint()
+
+	return Line[T]{pivot.Add(l.Start.Subtract(pivot).DivideXY(factorX, factorY)), pivot.Add(l.End.Subtract(pivot).DivideXY(factorX, factorY))}
+}
+
+// Resize creates a new Line of the given length about its midpoint, where Scale multiplies the
+// length it has: the midpoint and direction stay and both ends move to half the length either
+// side. A zero-length segment has no direction and resizes along +X, the convention
+// Vector.Resize follows, and a negative length flips the ends, giving the reverse of the
+// segment of that absolute length.
+// The length is a float64 like the one Length returns, so an integer segment can be resized to
+// a length no integer expresses; for integer T the midpoint and both ends are rounded, and the
+// actual length may differ from the requested value.
+func (l Line[T]) Resize(length float64) Line[T] {
+	pivot := l.Midpoint().Float()
+	half := l.Vector().Float().Resize(length / 2)
+
+	start, end := pivot.Add(half.Negate()), pivot.Add(half)
+
+	return Line[T]{Point[T]{Cast[T](start.X), Cast[T](start.Y)}, Point[T]{Cast[T](end.X), Cast[T](end.Y)}}
 }
 
 // Reverse creates a new Line with the start and end points swapped.

@@ -204,12 +204,7 @@ func TestPolygon_Scale(t *testing.T) {
 func TestPolygon_Unscale(t *testing.T) {
 	t.Run("uniform factor", func(t *testing.T) {
 		AssertPolygon(t, Pol(squareVertices()).Scale(2).Unscale(2), Pol(squareVertices()))
-		AssertPolygon(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(4.0, 4.0), Pt(0.0, 4.0)}).Unscale(2), Pol([]Point[float64]{
-			Pt(1.0, 1.0),
-			Pt(3.0, 1.0),
-			Pt(3.0, 3.0),
-			Pt(1.0, 3.0),
-		}))
+		AssertPolygon(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(4.0, 4.0), Pt(0.0, 4.0)}).Unscale(2), Pol([]Point[float64]{Pt(1.0, 1.0), Pt(3.0, 1.0), Pt(3.0, 3.0), Pt(1.0, 3.0)}))
 	})
 	t.Run("per-axis factor", func(t *testing.T) {
 		AssertPolygon(t, Pol(triangleVertices()).ScaleXY(0.5, 2.5).UnscaleXY(0.5, 2.5), Pol(triangleVertices()))

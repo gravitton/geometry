@@ -260,6 +260,12 @@ func TestEqualDelta(t *testing.T) {
 	})
 }
 
+func BenchmarkEqualDelta_Float64(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		sinkBool = EqualDelta(float64(i), float64(i), Delta)
+	}
+}
+
 func TestEqualRelative(t *testing.T) {
 	t.Run("int is exact", func(t *testing.T) {
 		assert.True(t, EqualRelative(1, 1))

@@ -166,6 +166,21 @@ func TestCircle_Shrink(t *testing.T) {
 	})
 }
 
+func TestCircle_Lerp(t *testing.T) {
+	a, b := Circ(Pt(0.0, 0.0), 2.0), Circ(Pt(10.0, 20.0), 8.0)
+
+	t.Run("moves the center and the radius together", func(t *testing.T) {
+		AssertCircle(t, a.Lerp(b, 0.5), Circ(Pt(5.0, 10.0), 5.0))
+	})
+	t.Run("the ends are the circles themselves", func(t *testing.T) {
+		AssertCircle(t, a.Lerp(b, 0), a)
+		AssertCircle(t, a.Lerp(b, 1), b)
+	})
+	t.Run("extrapolates through the empty circle", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(0.0, 0.0), 2.0).Lerp(Circ(Pt(0.0, 0.0), 0.0), 2), Circ(Pt(0.0, 0.0), -2.0))
+	})
+}
+
 func TestCircle_Contains(t *testing.T) {
 	t.Run("inside", func(t *testing.T) {
 		assert.True(t, Circ(Pt(1, 2), 10).Contains(Pt(4, 4)))
@@ -500,6 +515,14 @@ func TestCircle_Properties(t *testing.T) {
 			AssertNumber(t, c.Area(), Pi*c.Radius*c.Radius, fmt.Sprintf("%s: ", c))
 			AssertNumber(t, c.Circumference(), 2*Pi*c.Radius, fmt.Sprintf("%s: ", c))
 			AssertNumber(t, c.Diameter(), 2*c.Radius, fmt.Sprintf("%s: ", c))
+		}
+	})
+	t.Run("lerp ends on the two circles", func(t *testing.T) {
+		for _, a := range circleFixtures {
+			for _, b := range circleFixtures {
+				assert.True(t, a.Lerp(b, 0).Equal(a), fmt.Sprintf("%s -> %s: ", a, b))
+				assert.True(t, a.Lerp(b, 1).Equal(b), fmt.Sprintf("%s -> %s: ", a, b))
+			}
 		}
 	})
 	t.Run("scale and unscale are inverse", func(t *testing.T) {

@@ -456,6 +456,30 @@ func TestRectangle_Outset(t *testing.T) {
 	})
 }
 
+func TestRectangle_Lerp(t *testing.T) {
+	a := Rect(Pt(0.0, 0.0), Sz(10.0, 10.0))
+	b := Rect(Pt(10.0, 20.0), Sz(20.0, 30.0))
+
+	t.Run("moves the center and the size together", func(t *testing.T) {
+		AssertRectangle(t, a.Lerp(b, 0.5), Rect(Pt(5.0, 10.0), Sz(15.0, 20.0)))
+	})
+	t.Run("the ends are the rectangles themselves", func(t *testing.T) {
+		AssertRectangle(t, a.Lerp(b, 0), a)
+		AssertRectangle(t, a.Lerp(b, 1), b)
+	})
+	t.Run("extrapolates outside the unit range", func(t *testing.T) {
+		AssertRectangle(t, a.Lerp(b, 2), Rect(Pt(20.0, 40.0), Sz(30.0, 50.0)))
+	})
+	t.Run("the size stays absolute", func(t *testing.T) {
+		shrinking := Rect(Pt(0.0, 0.0), Sz(10.0, 10.0)).Lerp(Rect(Pt(0.0, 0.0), Sz(0.0, 0.0)), 2)
+
+		AssertRectangle(t, shrinking, Rect(Pt(0.0, 0.0), Sz(10.0, 10.0)))
+	})
+	t.Run("int rounds like every other interpolation", func(t *testing.T) {
+		AssertRectangle(t, Rect(Pt(0, 0), Sz(0, 10)).Lerp(Rect(Pt(1, 1), Sz(1, 11)), 0.5), Rect(Pt(1, 1), Sz(1, 11)))
+	})
+}
+
 func TestRectangle_AlignTo(t *testing.T) {
 	r := RectangleFromMin(Pt(0, 0), Sz(10, 20))
 
@@ -892,6 +916,14 @@ func TestRectangle_Properties(t *testing.T) {
 			AssertPoint(t, r.RightEdge().Midpoint(), r.Right(), fmt.Sprintf("%s: ", r))
 			AssertPoint(t, r.BottomEdge().Midpoint(), r.Bottom(), fmt.Sprintf("%s: ", r))
 			AssertPoint(t, r.LeftEdge().Midpoint(), r.Left(), fmt.Sprintf("%s: ", r))
+		}
+	})
+	t.Run("lerp ends on the two rectangles", func(t *testing.T) {
+		for _, a := range rectFixtures {
+			for _, b := range rectFixtures {
+				assert.True(t, a.Lerp(b, 0).Equal(a), fmt.Sprintf("%s -> %s: ", a, b))
+				assert.True(t, a.Lerp(b, 1).Equal(b), fmt.Sprintf("%s -> %s: ", a, b))
+			}
 		}
 	})
 	t.Run("scale and unscale are inverse", func(t *testing.T) {

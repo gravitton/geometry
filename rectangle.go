@@ -299,8 +299,10 @@ func (r Rectangle[T]) ShrinkXY(amountX, amountY T) Rectangle[T] {
 }
 
 // Inset creates a new Rectangle inset by the given padding amounts. An edge pushed past its
-// opposite stops there, so a padding larger than the rectangle collapses it to a zero extent
-// that still lies within the original bounds, at the last edge to move.
+// opposite stops there, so a padding larger than the rectangle collapses it to a zero extent on
+// that axis, at the opposite edge rather than at the one that over-ran: too much Left collapses
+// it onto Max, too much Right onto Min. Where both paddings on an axis over-run, Left and Top
+// win, since the minimum corner moves first and the maximum is then stopped at it.
 // A negative padding outsets the rectangle, so Outset undoes Inset as long as nothing was clamped.
 func (r Rectangle[T]) Inset(padding Padding[T]) Rectangle[T] {
 	a, b := r.MinMax()
@@ -314,6 +316,14 @@ func (r Rectangle[T]) Inset(padding Padding[T]) Rectangle[T] {
 // Outset creates a new Rectangle expanded by the given padding amounts, the inverse of Inset.
 func (r Rectangle[T]) Outset(padding Padding[T]) Rectangle[T] {
 	return r.Inset(padding.Negate())
+}
+
+// Lerp creates a new Rectangle in linear interpolation towards the given rectangle, moving the
+// center and the size together, and extrapolating outside [0, 1] like Point.Lerp. The size is
+// taken absolute, so an extrapolation that would pass through a mirrored rectangle stays a
+// rectangle.
+func (r Rectangle[T]) Lerp(rectangle Rectangle[T], t float64) Rectangle[T] {
+	return Rectangle[T]{r.Center.Lerp(rectangle.Center, t), r.Size.Lerp(rectangle.Size, t).Abs()}
 }
 
 // AlignTo creates a new Rectangle moved so that its Anchor in the given direction lands on the
