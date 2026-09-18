@@ -5,9 +5,11 @@ import (
 	"strings"
 )
 
-// Size is a 2D size. Width and Height are expected to be non-negative: the constructors do not
-// check it, but every Rectangle constructor takes the size absolute or reorders its corners, so
-// a rectangle with Min beyond Max can only be written as a struct literal or decoded from JSON.
+// Size is a 2D size: a signed pair of extents, not a shape. A negative extent is meaningful
+// where a size measures a displacement, as RectangleFromMin reads it, and arithmetic such as
+// Scale, Lerp and Vector.Size can produce one. A shape that stores a size as its own extent
+// takes it absolute where it enters the shape, so a rectangle or regular polygon never holds a
+// negative one; Abs is the same operation on the size alone.
 type Size[T Number] struct {
 	Width  T `json:"w"`
 	Height T `json:"h"`

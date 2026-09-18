@@ -284,6 +284,7 @@ JSON last.
 - **`Polygon.Winding`, `IsConvex` and `ConvexHull`** – convexity also unlocks a separating-axis `Intersects`, the slow
   case in `BenchmarkPolygon_Intersects` today.
 - **`Polygon.Simplify(tolerance)`** – drops every vertex within the tolerance of the edge between its neighbours.
+- **`Vector.Slerp(vector, t)`** – interpolation of the direction along the shorter arc, on `LerpAngle`-
 - **`Polygon.Lerp(polygon, t)`** – vertex-by-vertex interpolation for shape morphing, left out of the `Lerp` pass because
 - **`Ray`** – a half-line with origin and direction, for casts against every shape.
 - **`Ellipse`** – `RegularPolygon` already takes semi-axes; the continuous shape has no type.
