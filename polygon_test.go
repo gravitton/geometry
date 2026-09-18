@@ -522,6 +522,26 @@ func TestPolygon_DistanceTo(t *testing.T) {
 	})
 }
 
+func TestPolygon_DistanceSquaredTo(t *testing.T) {
+	square := Pol(squareVertices())
+
+	t.Run("is the square of DistanceTo", func(t *testing.T) {
+		AssertNumber(t, square.DistanceSquaredTo(Pt(5, 6)), 25.0)
+		AssertNumber(t, square.DistanceSquaredTo(Pt(5, 1)), 9.0)
+		assert.Equal(t, square.DistanceSquaredTo(Pt(1, 1)), 0.0)
+	})
+	t.Run("stays fractional for an integer T", func(t *testing.T) {
+		AssertNumber(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 1)}).DistanceSquaredTo(Pt(0, 1)), 0.8)
+	})
+	t.Run("agrees with DistanceTo", func(t *testing.T) {
+		for _, polygon := range polygonFixtures() {
+			for _, p := range pointFixtures {
+				AssertNumber(t, polygon.DistanceSquaredTo(p), polygon.DistanceTo(p)*polygon.DistanceTo(p), fmt.Sprintf("%s → %s: ", polygon, p))
+			}
+		}
+	})
+}
+
 func TestPolygon_Intersects(t *testing.T) {
 	square := Pol(squareVertices())
 

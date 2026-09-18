@@ -218,6 +218,23 @@ func TestCircle_DistanceTo(t *testing.T) {
 	})
 }
 
+func TestCircle_DistanceSquaredTo(t *testing.T) {
+	circle := Circ(Pt(0, 0), 3)
+
+	t.Run("is the square of DistanceTo", func(t *testing.T) {
+		AssertNumber(t, circle.DistanceSquaredTo(Pt(7, 0)), 16.0)
+		AssertNumber(t, circle.DistanceSquaredTo(Pt(3, 4)), 4.0)
+		assert.Equal(t, circle.DistanceSquaredTo(Pt(1, 1)), 0.0)
+	})
+	t.Run("agrees with DistanceTo", func(t *testing.T) {
+		for _, c := range circleFixtures {
+			for _, p := range pointFixtures {
+				AssertNumber(t, c.DistanceSquaredTo(p), c.DistanceTo(p)*c.DistanceTo(p), fmt.Sprintf("%s → %s: ", c, p))
+			}
+		}
+	})
+}
+
 func TestCircle_Intersects(t *testing.T) {
 	circle := Circ(Pt(0.0, 0.0), 100.0)
 

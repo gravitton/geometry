@@ -459,6 +459,23 @@ func TestRectangle_DistanceTo(t *testing.T) {
 	})
 }
 
+func TestRectangle_DistanceSquaredTo(t *testing.T) {
+	rectangle := Rect(Pt(0, 0), Sz(4, 4))
+
+	t.Run("is the square of DistanceTo and exact for int", func(t *testing.T) {
+		assert.Equal(t, rectangle.DistanceSquaredTo(Pt(5, 6)), 25)
+		assert.Equal(t, rectangle.DistanceSquaredTo(Pt(5, 0)), 9)
+		assert.Equal(t, rectangle.DistanceSquaredTo(Pt(1, 1)), 0)
+	})
+	t.Run("agrees with DistanceTo", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, p := range pointFixtures {
+				AssertNumber(t, r.DistanceSquaredTo(p), r.DistanceTo(p)*r.DistanceTo(p), fmt.Sprintf("%s → %s: ", r, p))
+			}
+		}
+	})
+}
+
 func TestRectangle_Intersects(t *testing.T) {
 	rectangle := Rect(Pt(0.0, 0.0), Sz(200.0, 100.0))
 

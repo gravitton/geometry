@@ -394,6 +394,34 @@ func TestLine_Contains(t *testing.T) {
 	})
 }
 
+func TestLine_DistanceToLine(t *testing.T) {
+	diagonal := Ln(Pt(0, 0), Pt(4, 4))
+
+	t.Run("crossing segments are at zero", func(t *testing.T) {
+		assert.Equal(t, diagonal.DistanceToLine(Ln(Pt(0, 4), Pt(4, 0))), 0.0)
+	})
+	t.Run("touching segments are at zero", func(t *testing.T) {
+		assert.Equal(t, diagonal.DistanceToLine(Ln(Pt(4, 4), Pt(8, 0))), 0.0)
+	})
+	t.Run("parallel segments measure the gap", func(t *testing.T) {
+		AssertNumber(t, Ln(Pt(0, 0), Pt(4, 0)).DistanceToLine(Ln(Pt(1, 3), Pt(3, 3))), 3.0)
+	})
+	t.Run("apart measures between the nearest endpoints", func(t *testing.T) {
+		AssertNumber(t, Ln(Pt(0, 0), Pt(4, 0)).DistanceToLine(Ln(Pt(7, 4), Pt(9, 4))), 5.0)
+	})
+	t.Run("an endpoint nearest an interior point", func(t *testing.T) {
+		AssertNumber(t, Ln(Pt(0, 0), Pt(4, 0)).DistanceToLine(Ln(Pt(2, 2), Pt(2, 5))), 2.0)
+	})
+	t.Run("symmetric and zero exactly where Intersects holds", func(t *testing.T) {
+		for _, a := range lineFixtures {
+			for _, b := range lineFixtures {
+				AssertNumber(t, a.DistanceToLine(b), b.DistanceToLine(a), fmt.Sprintf("%s → %s: ", a, b))
+				assert.Equal(t, a.DistanceToLine(b) <= Delta, a.Intersects(b), fmt.Sprintf("%s → %s: ", a, b))
+			}
+		}
+	})
+}
+
 func TestLine_Intersects(t *testing.T) {
 	diagonal := Ln(Pt(0, 0), Pt(4, 4))
 

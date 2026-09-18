@@ -106,7 +106,7 @@ func (l Line[T]) Contains(point Point[T]) bool {
 // Intersects reports whether the segments share a point, within Epsilon of T, the same closed
 // convention as Contains: segments that touch at an endpoint or overlap collinearly intersect.
 func (l Line[T]) Intersects(line Line[T]) bool {
-	return LessOrEqualDelta(l.distanceToLine(line), 0, Epsilon[T]())
+	return LessOrEqualDelta(l.DistanceToLine(line), 0, Epsilon[T]())
 }
 
 // Intersection returns the point where the segments cross, and false when they do not.
@@ -162,17 +162,18 @@ func (l Line[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 	return polygon.IntersectsLine(l)
 }
 
-// distanceToLine returns the distance between the nearest points of the two segments: zero
+// DistanceToLine returns the distance between the nearest points of the two segments: zero
 // when they cross, and otherwise the smallest distance from an endpoint of one to the other.
-func (l Line[T]) distanceToLine(line Line[T]) float64 {
+// Intersects is DistanceToLine within Epsilon of T.
+func (l Line[T]) DistanceToLine(line Line[T]) float64 {
 	if l.crosses(line) {
 		return 0
 	}
 
-	return min(
-		l.DistanceTo(line.Start), l.DistanceTo(line.End),
-		line.DistanceTo(l.Start), line.DistanceTo(l.End),
-	)
+	return math.Sqrt(min(
+		l.DistanceSquaredTo(line.Start), l.DistanceSquaredTo(line.End),
+		line.DistanceSquaredTo(l.Start), line.DistanceSquaredTo(l.End),
+	))
 }
 
 // crosses reports whether the segments properly cross: each has its endpoints on opposite sides

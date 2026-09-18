@@ -322,6 +322,13 @@ func (r Rectangle[T]) DistanceTo(point Point[T]) float64 {
 	return r.Clamp(point).DistanceTo(point)
 }
 
+// DistanceSquaredTo returns the squared distance from the given point to the nearest point of
+// the rectangle, faster for comparisons. It stays in T like Point.DistanceSquaredTo, since the
+// nearest point is the clamped point and a lattice point for an integer T.
+func (r Rectangle[T]) DistanceSquaredTo(point Point[T]) T {
+	return r.Clamp(point).DistanceSquaredTo(point)
+}
+
 // Intersects reports whether the rectangles overlap. Touching rectangles intersect, within
 // Epsilon of T, the same closed convention as Contains.
 func (r Rectangle[T]) Intersects(rectangle Rectangle[T]) bool {

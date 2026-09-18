@@ -262,7 +262,8 @@ circle contains its anchors and a polygon contains its vertices. `Vector.Less` a
 the parallel and coincident cases that have no single answer.
 
 **Common API:** Every shape exposes `Int()`, `Float()`, `String()`, `Equal()`, and `IsZero()`. Shapes with spatial
-extent add `Bounds()`, `Contains(point)`, `DistanceTo(point)` and an `Intersects` method for every other shape.
+extent add `Bounds()`, `Contains(point)`, `DistanceTo(point)`, `DistanceSquaredTo(point)` and an `Intersects` method for every
+other shape.
 `Line`, `Polygon`, and `RegularPolygon` add `Vertices()`; `Rectangle` and `Polygon` add `Edges()`, `Area()` and
 `Perimeter()`. `Point`, `Vector`, `Line` and `Polygon` take a float `Matrix` in `Transform()`.
 
@@ -271,7 +272,9 @@ extent add `Bounds()`, `Contains(point)`, `DistanceTo(point)` and an `Intersects
 - **`Rectangle.Angle`** – an oriented rectangle. `Contains`, `Clamp`, `Intersects`, `Intersection` and `Union` assume
   axis alignment through `Min` and `Max` today; the edge-based tests already work for any orientation.
 - **`Polygon.Winding`, `IsConvex` and `ConvexHull`** – the vertex order as a sign, since `Center` already computes
-  the signed area that `Area` discards; a convexity test built on it; and the hull of a point set.
+  the signed area that `Area` discards; a convexity test built on it; and the hull of a point set. Convexity also
+  unlocks a separating-axis test for `Intersects`: two polygons apart but with overlapping bounds currently compare
+  every edge pair, the slow case in `BenchmarkPolygon_Intersects`.
 - **`Encloses`** – shape-in-shape containment such as `Rectangle.Encloses(rectangle)` and `Circle.Encloses(circle)`
   for culling, distinct from `Contains`, which takes a point.
 - **`Ray`** – a half-line with origin and direction, for casts against every shape.

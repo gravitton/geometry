@@ -163,6 +163,15 @@ func (c Circle[T]) DistanceTo(point Point[T]) float64 {
 	return max(c.Center.DistanceTo(point)-float64(c.Radius), 0)
 }
 
+// DistanceSquaredTo returns the square of DistanceTo, so every shape offers the same pair. It
+// is a float64 even for an integer T and saves no square root, since the distance to a circle
+// already needs the root of the distance to its center.
+func (c Circle[T]) DistanceSquaredTo(point Point[T]) float64 {
+	distance := c.DistanceTo(point)
+
+	return distance * distance
+}
+
 // Int converts the circle to a Circle[int].
 func (c Circle[T]) Int() Circle[int] {
 	return Circle[int]{c.Center.Int(), Int(c.Radius)}

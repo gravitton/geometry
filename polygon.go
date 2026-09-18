@@ -251,13 +251,20 @@ func (p Polygon[T]) Contains(point Point[T]) bool {
 // zero for a point within it, the same closed convention as Contains, and otherwise the
 // distance to the nearest edge. An empty polygon is infinitely far from every point.
 func (p Polygon[T]) DistanceTo(point Point[T]) float64 {
+	return math.Sqrt(p.DistanceSquaredTo(point))
+}
+
+// DistanceSquaredTo returns the squared distance DistanceTo takes the root of, faster for
+// comparisons. It is a float64 even for an integer T, like Line.DistanceSquaredTo, since the
+// nearest point of an edge is not a lattice point in general.
+func (p Polygon[T]) DistanceSquaredTo(point Point[T]) float64 {
 	if p.Contains(point) {
 		return 0
 	}
 
 	distance := math.Inf(1)
 	for edge := range p.edges() {
-		distance = min(distance, edge.DistanceTo(point))
+		distance = min(distance, edge.DistanceSquaredTo(point))
 	}
 
 	return distance
@@ -266,8 +273,9 @@ func (p Polygon[T]) DistanceTo(point Point[T]) float64 {
 // Intersects reports whether the polygons share a point: a vertex of one lies within the other,
 // or an edge of one crosses an edge of the other. Touching polygons intersect, within Epsilon
 // of T, the same closed convention as Contains, and an empty polygon intersects nothing.
+// Polygons whose Bounds do not intersect are rejected before any edge pair is examined.
 func (p Polygon[T]) Intersects(polygon Polygon[T]) bool {
-	if p.Empty() || polygon.Empty() {
+	if p.Empty() || polygon.Empty() || !p.Bounds().Intersects(polygon.Bounds()) {
 		return false
 	}
 
