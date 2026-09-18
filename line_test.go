@@ -568,6 +568,15 @@ func TestLine_IntersectionCircle(t *testing.T) {
 	t.Run("a tangent beyond the segment is missed", func(t *testing.T) {
 		assert.Nil(t, Ln(Pt(1.0, 1.0), Pt(2.0, 1.0)).IntersectionCircle(circle))
 	})
+	t.Run("a shallow touch is decided on the endpoint distance, like IntersectsCircle", func(t *testing.T) {
+		shallow := Ln(Pt(-1.0, 1.0+Delta/2), Pt(-0.0005, 1.0+Delta/2))
+
+		assert.True(t, shallow.IntersectsCircle(circle))
+		AssertVertices(t, shallow.IntersectionCircle(circle), []Point[float64]{shallow.End})
+	})
+	t.Run("an endpoint on the boundary is counted once with its crossing", func(t *testing.T) {
+		AssertVertices(t, Ln(Pt(-1.0, 0.0), Pt(2.0, 0.0)).IntersectionCircle(circle), []Point[float64]{Pt(-1.0, 0.0), Pt(1.0, 0.0)})
+	})
 	t.Run("apart and inside give none", func(t *testing.T) {
 		assert.Nil(t, Ln(Pt(-2.0, 2.0), Pt(2.0, 2.0)).IntersectionCircle(circle))
 		assert.Nil(t, Ln(Pt(2.0, 0.0), Pt(3.0, 0.0)).IntersectionCircle(circle))

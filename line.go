@@ -231,41 +231,25 @@ func (l Line[T]) IntersectsCircle(circle Circle[T]) bool {
 // Start to End: two where it passes through, one where it is tangent or ends inside, within
 // Epsilon of T like IntersectsCircle, and none where it misses, lies entirely inside, or the
 // radius is negative. A segment inside crosses no boundary, so it returns none while
-// IntersectsCircle still reports it. For integer T the points are rounded like every other
-// result stored into T.
+// IntersectsCircle still reports it. An endpoint within Epsilon of the boundary is a crossing
+// in its own right, judged on its distance to the center like IntersectsCircle, so a shallow
+// touch is not lost to the fraction along the chord. For integer T the points are rounded like
+// every other result stored into T.
 func (l Line[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
 	if circle.Radius < 0 {
 		return nil
 	}
 
-	a := l.Float()
-	direction, offset := a.Vector(), a.Start.Subtract(circle.Center.Float())
-	radius, epsilon := float64(circle.Radius), Epsilon[T]()
-
-	if !direction.hasDirection() {
-		if EqualDelta(offset.Length(), radius, epsilon) {
-			return []Point[T]{l.Start}
+	points := l.chord(circle)
+	for _, endpoint := range [2]Point[T]{l.Start, l.End} {
+		if EqualDelta(circle.Center.DistanceTo(endpoint), float64(circle.Radius), Epsilon[T]()) && !slices.ContainsFunc(points, endpoint.Equal) {
+			points = append(points, endpoint)
 		}
-
-		return nil
 	}
 
-	lengthSquared := direction.LengthSquared()
-	along := -offset.Dot(direction) / lengthSquared
-	nearest := a.Lerp(along)
-	gap := nearest.Subtract(circle.Center.Float()).Length()
+	slices.SortFunc(points, l.nearer)
 
-	if EqualDelta(gap, radius, epsilon) {
-		return l.pointsAt(along)
-	}
-
-	if gap > radius {
-		return nil
-	}
-
-	half := math.Sqrt(radius*radius-gap*gap) / math.Sqrt(lengthSquared)
-
-	return l.pointsAt(along-half, along+half)
+	return points
 }
 
 // IntersectionRectangle returns the points where the segment crosses the rectangle boundary,
@@ -327,11 +311,36 @@ func (l Line[T]) crossings(edges iter.Seq[Line[T]]) []Point[T] {
 		points = append(points, point)
 	}
 
-	slices.SortFunc(points, func(a, b Point[T]) int {
-		return cmp.Compare(l.Start.DistanceSquaredTo(a), l.Start.DistanceSquaredTo(b))
-	})
+	slices.SortFunc(points, l.nearer)
 
 	return points
+}
+
+// chord returns the points where the segment crosses the circle boundary as the chord it cuts:
+// the crossings of the line through it, kept where they fall within the segment. A tangent
+// gives its one point, a zero-length segment cuts no chord, and an endpoint on the boundary
+// is left to IntersectionCircle.
+func (l Line[T]) chord(circle Circle[T]) []Point[T] {
+	a := l.Float()
+	direction := a.Vector()
+	if !direction.hasDirection() {
+		return nil
+	}
+
+	lengthSquared := direction.LengthSquared()
+	along := -a.Start.Subtract(circle.Center.Float()).Dot(direction) / lengthSquared
+	radius, gap := float64(circle.Radius), a.Lerp(along).DistanceTo(circle.Center.Float())
+
+	switch {
+	case EqualDelta(gap, radius, Epsilon[T]()):
+		return l.pointsAt(along)
+	case gap < radius:
+		half := math.Sqrt(radius*radius-gap*gap) / math.Sqrt(lengthSquared)
+
+		return l.pointsAt(along-half, along+half)
+	default:
+		return nil
+	}
 }
 
 // pointsAt returns the points at the given fractions along the segment that lie within it,
@@ -347,6 +356,12 @@ func (l Line[T]) pointsAt(fractions ...float64) []Point[T] {
 	}
 
 	return points
+}
+
+// nearer orders two points by their distance from Start, the order every boundary crossing
+// method returns its points in.
+func (l Line[T]) nearer(a, b Point[T]) int {
+	return cmp.Compare(l.Start.DistanceSquaredTo(a), l.Start.DistanceSquaredTo(b))
 }
 
 // covers reports whether the fraction t of the way along the segment lies within it, the
