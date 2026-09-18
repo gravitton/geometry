@@ -52,6 +52,10 @@ v.Length()          // 5
 v.Normal()          // Vector{-4, 3}, perpendicular
 p.Add(v.Resize(10)) // Point{7, 10}
 
+v.Project(geom.Vec(1, 0))       // Vector{3, 0}, the component along X
+v.Reflect(geom.Vec(0, 1))       // Vector{3, -4}, bounced off a horizontal wall
+v.AngleBetween(geom.Vec(1, 0))  // 0.93, unsigned
+
 p.Lerp(geom.Pt(9, 10), 0.25)                 // Point{3, 4}
 p.ManhattanDistanceTo(geom.Pt(4, 5))         // 6, for grid pathfinding
 geom.Pt(0.0, 0.0).AngleTo(geom.Pt(1.0, 1.0)) // π/4
@@ -63,6 +67,8 @@ Sizes and padding:
 s := geom.Sz(1920, 1080)
 s.Scale(0.5)                // Size{960, 540}
 s.AtMost(geom.SzU(800))     // Size{800, 800}, clamped per axis
+s.Fit(geom.SzU(800))        // Size{800, 450}, largest with the same ratio inside
+s.Fill(geom.SzU(800))       // Size{1422, 800}, smallest with the same ratio around
 s.AspectRatio()             // 1.78
 
 geom.PadXY(4, 8).Size()     // Size{16, 8}, horizontal and vertical total
@@ -115,6 +121,7 @@ c.IntersectsRectangle(r)
 l.IntersectsPolygon(p)
 
 point, ok := l.Intersection(m)  // where two segments cross
+c.Intersection(d)               // zero, one or two points where two circles cross
 box, ok := a.Intersection(b)    // the overlap of two rectangles
 a.Union(b)                      // the smallest rectangle around both
 ```
@@ -245,8 +252,18 @@ within `Epsilon[T]()` of the boundary counts as on it, so a float rectangle cont
 circle contains its anchors and a polygon contains its vertices. `Vector.Less` and `LessOrEqual`'s strict counterparts apply no tolerance.
 
 **Common API:** Every shape exposes `Int()`, `Float()`, `String()`, `Equal()`, and `IsZero()`. Shapes with spatial
-extent add `Bounds()`. `Line`, `Polygon`, and `RegularPolygon` add `Vertices()`; `Rectangle` and `Polygon` add
-`Edges()`, `Area()` and `Perimeter()`.
+extent add `Bounds()`, `Contains(point)`, `DistanceTo(point)` and an `Intersects` method for every other shape.
+`Line`, `Polygon`, and `RegularPolygon` add `Vertices()`; `Rectangle` and `Polygon` add `Edges()`, `Area()` and
+`Perimeter()`. `Point`, `Vector`, `Line` and `Polygon` take a float `Matrix` in `Transform()`.
+
+## Planned
+
+- **`Rectangle.Angle`** – an oriented rectangle. `Contains`, `Clamp`, `Intersects`, `Intersection` and `Union` assume
+  axis alignment through `Min` and `Max` today; the edge-based tests already work for any orientation.
+- **`Polygon.IsConvex`, `ConvexHull` and winding** – convexity tests, the hull of a point set, and reporting or
+  reversing the vertex order.
+- **`Ray`** – a half-line with origin and direction, for casts against every shape.
+- **`Ellipse`** – `RegularPolygon` already takes semi-axes; the continuous shape has no type.
 
 ## Credits
 

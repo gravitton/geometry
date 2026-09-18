@@ -30,6 +30,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `Rectangle.Union(rectangle)` – the smallest rectangle containing both
 - `Circle.DistanceTo(point)`, `Rectangle.DistanceTo(point)` and `Polygon.DistanceTo(point)` – the distance to the nearest point of the shape, zero within it, so every shape with `Contains` measures distance the way `Line` does; an empty polygon is infinitely far
 - `Line.Transform(matrix)` and `Polygon.Transform(matrix)` – apply a float matrix to every point, like `Point.Transform`
+- `Line.Rotate(angle)` and `Polygon.Rotate(angle)` – rotation about the midpoint and the centroid in the sense of `Vector.Rotate`; for an integer `T` the pivot is rounded first, so a half turn of an odd span is not exactly `Reverse`
+- `Circle.Intersection(circle)` – the points where two circles cross: two for overlapping, one for tangent within `Epsilon[T]()`, none for apart, nested, concentric, coincident or a negative radius
+- `Size.Fit(size)` and `Fill(size)` – uniform scaling to the largest size inside or the smallest around the given one, keeping the aspect ratio; a zero extent has no ratio and gives the zero size
+- `Vector.Project(vector)`, `Reject(vector)`, `Reflect(normal)` and `AngleBetween(vector)` – the component along and perpendicular to a vector, the mirror across a surface with a normal of any length, and the unsigned angle in `[0, π]`; the zero vector projects to zero, reflects nothing and is at angle 0 to everything
 - `Polygon.Bounds` – the axis-aligned bounding rectangle of the vertices, the zero rectangle for an empty polygon; every shape now has `Bounds()`
 - `Matrix.IsInvertible` – reports whether the determinant is non-zero, the check to run before `Inverse`
 - `Line.Lerp(t)` – the point at a fraction of the way from `Start` to `End`, extrapolating outside `[0, 1]` like `Point.Lerp`; `Midpoint` is `Lerp(0.5)`
