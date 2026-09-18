@@ -597,6 +597,17 @@ func TestLine_IntersectionCircle(t *testing.T) {
 		AssertVertices(t, Ln(Pt(-2.0, 1.0+Delta/2), Pt(2.0, 1.0+Delta/2)).IntersectionCircle(circle), []Point[float64]{Pt(0.0, 1.0+Delta/2)})
 		assert.Nil(t, Ln(Pt(-2.0, 1.0+2*Delta), Pt(2.0, 1.0+2*Delta)).IntersectionCircle(circle))
 	})
+	t.Run("a chord within the tolerance band of the gap keeps both ends", func(t *testing.T) {
+		height := 1.0 - Delta/2
+		half := math.Sqrt(1 - height*height)
+
+		AssertVertices(t, Ln(Pt(-1.0, height), Pt(1.0, height)).IntersectionCircle(circle), []Point[float64]{Pt(-half, height), Pt(half, height)})
+	})
+	t.Run("a chord shorter than Delta is a tangent", func(t *testing.T) {
+		height := math.Sqrt(1 - Delta*Delta/16)
+
+		AssertVertices(t, Ln(Pt(-1.0, height), Pt(1.0, height)).IntersectionCircle(circle), []Point[float64]{Pt(0.0, height)})
+	})
 	t.Run("a tangent beyond the segment is missed", func(t *testing.T) {
 		assert.Nil(t, Ln(Pt(1.0, 1.0), Pt(2.0, 1.0)).IntersectionCircle(circle))
 	})

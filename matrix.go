@@ -7,9 +7,12 @@ import (
 
 // Matrix is a 2D affine matrix.
 //
-// Translate, Rotate and Scale compose the matrix with TranslationMatrix, RotationMatrix and
-// ScaleMatrix and take the arguments of that constructor; the Pre variants compose on the
-// other side.
+// Translate, Rotate, Scale, Shear and Reflect compose the matrix with the constructor of the
+// same name, TranslationMatrix, RotationMatrix, ScaleMatrix, ShearMatrix and ReflectionMatrix,
+// and the Pre variants compose on the other side. Translate, Rotate, Shear and Reflect take the
+// arguments of their constructor. Scale and Unscale take float64 factors like every other
+// Scale in the package, where ScaleMatrix takes them in T, so an integer matrix can be scaled
+// by a half; each scaled component is rounded, following Multiply.
 //
 // For integer T, the matrix stores and composes lattice transforms – translation, integer scaling,
 // reflection, quarter turns – exactly. The rest are not closed over the integers and round into a

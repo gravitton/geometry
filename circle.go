@@ -146,8 +146,10 @@ func (c Circle[T]) Intersects(circle Circle[T]) bool {
 // for tangent ones, within Epsilon of T like Intersects, and none for circles apart, nested, or
 // with a negative radius. Coincident circles share every point and also return none. The
 // second point is the mirror of the first across the line of centers. Circles with centers
-// within Epsilon of T of each other count as coincident. For integer T the points are rounded
-// like every other result stored into T.
+// within Epsilon of T of each other count as coincident. Tangency is judged by the same
+// comparison that admits the circles, so a tangent a rounding error outside its reach gives
+// one point rather than the same point twice. For integer T the points are rounded like every
+// other result stored into T.
 func (c Circle[T]) Intersection(circle Circle[T]) []Point[T] {
 	if c.Radius < 0 || circle.Radius < 0 {
 		return nil
@@ -165,7 +167,7 @@ func (c Circle[T]) Intersection(circle Circle[T]) []Point[T] {
 	along := (r1*r1 - r2*r2 + distance*distance) / (2 * distance)
 	middle := c.Center.Float().Add(direction.Resize(along))
 
-	if EqualDelta(distance, r1+r2, epsilon) || EqualDelta(distance, math.Abs(r1-r2), epsilon) {
+	if LessOrEqualDelta(r1+r2, distance, epsilon) || LessOrEqualDelta(distance, math.Abs(r1-r2), epsilon) {
 		return []Point[T]{{Cast[T](middle.X), Cast[T](middle.Y)}}
 	}
 

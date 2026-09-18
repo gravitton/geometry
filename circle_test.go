@@ -329,6 +329,12 @@ func TestCircle_Intersection(t *testing.T) {
 		assert.Equal(t, len(circle.Intersection(Circ(Pt(8.0+Delta/2, 0.0), 3.0))), 1)
 		assert.Nil(t, circle.Intersection(Circ(Pt(8.0+2*Delta, 0.0), 3.0)))
 	})
+	t.Run("a tangent exactly Delta outside is judged like Intersects, on both sides", func(t *testing.T) {
+		for _, other := range []Circle[float64]{Circ(Pt(8.0+Delta, 0.0), 3.0), Circ(Pt(2.0+Delta, 0.0), 3.0)} {
+			assert.True(t, circle.Intersects(other))
+			AssertVertices(t, circle.Intersection(other), []Point[float64]{Pt(5.0, 0.0)})
+		}
+	})
 	t.Run("int rounds the points", func(t *testing.T) {
 		AssertVertices(t, Circ(Pt(0, 0), 5).Intersection(Circ(Pt(6, 0), 5)), []Point[int]{Pt(3, 4), Pt(3, -4)})
 		AssertVertices(t, Circ(Pt(0, 0), 2).Intersection(Circ(Pt(3, 0), 2)), []Point[int]{Pt(2, 1), Pt(2, -1)})

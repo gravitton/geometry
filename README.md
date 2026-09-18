@@ -275,6 +275,11 @@ JSON last.
 - **`Encloses`** – shape-in-shape containment for culling, distinct from `Contains`, which takes a point.
 - **`Ray`** – a half-line with origin and direction, for casts against every shape.
 - **`Ellipse`** – `RegularPolygon` already takes semi-axes; the continuous shape has no type.
+- **`Circle.RegularPolygon(n, orientation)` and `RegularPolygon.Circle()`** – the conversion between the two shapes,
+  with two options for where the polygon meets the circle: inscribed, with the vertices on the boundary, so the polygon
+  has `Size r x r` and the circle is the circumcircle; or circumscribed, with the edges tangent to the boundary, so
+  the polygon has `Size r/cos(π/n)` and the circle is the incircle. A square `Size` is required in the polygon-to-circle
+  direction; an elliptic one converts to the planned `Ellipse`.
 
 ## Credits
 

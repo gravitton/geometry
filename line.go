@@ -236,7 +236,8 @@ func (l Line[T]) IntersectsCircle(circle Circle[T]) bool {
 // IntersectionCircle returns the points where the segment crosses the circle boundary, from
 // Start to End: two where it passes through, one where it is tangent or ends inside, within
 // Epsilon of T like IntersectsCircle, and none where it misses, lies entirely inside, or the
-// radius is negative. A segment inside crosses no boundary, so it returns none while
+// radius is negative. A chord shorter than Epsilon of T is a tangent and gives its midpoint;
+// a longer one gives both ends even where it grazes the boundary within the tolerance. A segment inside crosses no boundary, so it returns none while
 // IntersectsCircle still reports it. An endpoint within Epsilon of the boundary is a crossing
 // in its own right, judged by the same comparison IntersectsCircle makes, so a shallow touch is
 // not lost to the fraction along the chord and the two agree to the last bit. For integer T the points are rounded like
@@ -323,10 +324,12 @@ func (l Line[T]) crossings(edges iter.Seq[Line[T]]) []Point[T] {
 }
 
 // chord returns the points where the segment crosses the circle boundary as the chord it cuts:
-// the crossings of the line through it, kept where they fall within the segment. A tangent
-// gives its one point, a zero-length segment cuts no chord, and an endpoint on the boundary
-// is left to IntersectionCircle. Whether the line touches or cuts the circle is decided by the
-// same comparisons IntersectsCircle makes, so the two agree to the last bit.
+// the crossings of the line through it, kept where they fall within the segment. A zero-length
+// segment cuts no chord, and an endpoint on the boundary is left to IntersectionCircle. Whether
+// the line reaches the circle is decided by the same comparison IntersectsCircle makes, so the
+// two agree to the last bit. A chord whose ends lie within Epsilon of T of each other is a
+// tangent and gives its midpoint alone: the tolerance collapses two crossings only where they
+// would compare Equal, never a chord that merely grazes the boundary within the tolerance.
 func (l Line[T]) chord(circle Circle[T]) []Point[T] {
 	a := l.Float()
 	direction := a.Vector()
@@ -338,17 +341,19 @@ func (l Line[T]) chord(circle Circle[T]) []Point[T] {
 	along := -a.Start.Subtract(circle.Center.Float()).Dot(direction) / lengthSquared
 	gapSquared := a.Lerp(along).DistanceSquaredTo(circle.Center.Float())
 
-	switch {
-	case circle.touches(gapSquared):
-		return l.pointsAt(along)
-	case circle.reaches(gapSquared):
-		radius := float64(circle.Radius)
-		half := math.Sqrt(radius*radius-gapSquared) / math.Sqrt(lengthSquared)
-
-		return l.pointsAt(along-half, along+half)
-	default:
+	if !circle.reaches(gapSquared) {
 		return nil
 	}
+
+	radius := float64(circle.Radius)
+	halfChord := math.Sqrt(max(radius*radius-gapSquared, 0))
+	if 2*halfChord <= Epsilon[T]() {
+		return l.pointsAt(along)
+	}
+
+	half := halfChord / math.Sqrt(lengthSquared)
+
+	return l.pointsAt(along-half, along+half)
 }
 
 // pointsAt returns the points at the given fractions along the segment that lie within it,

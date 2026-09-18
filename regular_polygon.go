@@ -8,9 +8,14 @@ import (
 // RegularPolygon is a polygon with equally spaced vertices around a center.
 //
 // Size holds the semi-axes of the ellipse the vertices lie on, so it is a radius, not an
-// extent: a hexagon of Size 10x10 spans 17.32x20, and a circle of radius r converts to
-// Size r x r. This differs from Rectangle, whose Size is the full width and height. Use
-// Bounds for the extent.
+// extent: a hexagon of Size 10x10 spans 17.32x20, and the polygon inscribed in a circle of
+// radius r has Size r x r. This differs from Rectangle, whose Size is the full width and
+// height. Use Bounds for the extent.
+//
+// The size is never negative: RegPol and the orientation constructors take it absolute like
+// Rect, and Scale takes a negative factor absolute, since a negative semi-axis would place
+// every vertex half a turn away rather than describe a different polygon. A negative size can
+// only be written as a struct literal or decoded from JSON.
 type RegularPolygon[T Number] struct {
 	Center Point[T] `json:",embed"`
 	Size   Size[T]  `json:",embed"`
@@ -18,9 +23,9 @@ type RegularPolygon[T Number] struct {
 	Angle  float64  `json:"a"`
 }
 
-// RegPol is shorthand for RegularPolygon{center, size, n, angle}.
+// RegPol is shorthand for RegularPolygon{center, size, n, angle}, with the size taken absolute.
 func RegPol[T Number](center Point[T], size Size[T], n int, angle float64) RegularPolygon[T] {
-	return RegularPolygon[T]{center, size, n, angle}
+	return RegularPolygon[T]{center, size.Abs(), n, angle}
 }
 
 // Orientation defines the rotational alignment of a regular polygon.
@@ -56,9 +61,10 @@ func RegularPolygonOrientationAngle(n int, orientation Orientation) float64 {
 	}
 }
 
-// RegularPolygonWithOrientation creates a RegularPolygon with the given orientation.
+// RegularPolygonWithOrientation creates a RegularPolygon with the given orientation, with the
+// size taken absolute like RegPol.
 func RegularPolygonWithOrientation[T Number](center Point[T], size Size[T], n int, orientation Orientation) RegularPolygon[T] {
-	return RegularPolygon[T]{center, size, n, RegularPolygonOrientationAngle(n, orientation)}
+	return RegPol(center, size, n, RegularPolygonOrientationAngle(n, orientation))
 }
 
 // Triangle creates a RegularPolygon with 3 vertices.

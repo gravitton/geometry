@@ -16,6 +16,10 @@ func TestRegularPolygon_Constructor(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
 		AssertRegularPolygon(t, RegPol(Pt(0.5, -1.25), Sz(2.5, 3.75), 6, Pi/3), RegularPolygon[float64]{Center: Pt(0.5, -1.25), Size: Sz(2.5, 3.75), N: 6, Angle: Pi / 3})
 	})
+	t.Run("a negative size is taken absolute", func(t *testing.T) {
+		AssertRegularPolygon(t, RegPol(Pt(0, 0), Sz(-2, 3), 4, 0), RegPol(Pt(0, 0), Sz(2, 3), 4, 0))
+		AssertRegularPolygon(t, Square(Pt(0.0, 0.0), Sz(-2.0, -3.0), PointyTop), Square(Pt(0.0, 0.0), Sz(2.0, 3.0), PointyTop))
+	})
 }
 
 func TestRegularPolygonOrientationAngle(t *testing.T) {
