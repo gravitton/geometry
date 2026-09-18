@@ -257,6 +257,32 @@ func TestRectangle_Anchor(t *testing.T) {
 	})
 }
 
+func TestRectangle_AlignTo(t *testing.T) {
+	r := RectangleFromMin(Pt(0, 0), Sz(10, 20))
+
+	t.Run("a corner lands on the point", func(t *testing.T) {
+		AssertRect(t, r.AlignTo(TopLeft, Pt(100, 50)), RectangleFromMin(Pt(100, 50), Sz(10, 20)))
+		AssertRect(t, r.AlignTo(BottomRight, Pt(100, 50)), RectangleFromMax(Pt(100, 50), Sz(10, 20)))
+	})
+	t.Run("an edge midpoint lands on the point", func(t *testing.T) {
+		AssertPoint(t, r.AlignTo(Top, Pt(100, 50)).Top(), Pt(100, 50))
+		AssertPoint(t, r.AlignTo(DirectionLeft, Pt(100, 50)).Left(), Pt(100, 50))
+	})
+	t.Run("none aligns the center", func(t *testing.T) {
+		AssertRect(t, r.AlignTo(DirectionNone, Pt(100, 50)), r.MoveTo(Pt(100, 50)))
+	})
+	t.Run("keeps the size and inverts Anchor", func(t *testing.T) {
+		for _, rect := range rectFixtures {
+			for _, direction := range Directions() {
+				aligned := rect.AlignTo(direction, Pt(3.5, -2.25))
+
+				AssertSize(t, aligned.Size, rect.Size, fmt.Sprintf("%s %s: ", rect, direction))
+				AssertPoint(t, aligned.Anchor(direction), Pt(3.5, -2.25), fmt.Sprintf("%s %s: ", rect, direction))
+			}
+		}
+	})
+}
+
 func TestRectangle_Edges(t *testing.T) {
 	r := Rect(Pt(0, 0), Sz(2, 2))
 	edges := r.Edges()

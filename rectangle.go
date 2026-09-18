@@ -216,6 +216,12 @@ func (r Rectangle[T]) Anchor(direction Direction) Point[T] {
 	}
 }
 
+// AlignTo creates a new Rectangle moved so that its Anchor in the given direction lands on the
+// point, the inverse of Anchor: DirectionNone aligns the center, like MoveTo.
+func (r Rectangle[T]) AlignTo(direction Direction, point Point[T]) Rectangle[T] {
+	return r.Translate(point.Subtract(r.Anchor(direction)))
+}
+
 // TopEdge returns the top edge, from the top-left to the top-right corner.
 func (r Rectangle[T]) TopEdge() Line[T] {
 	return Ln(r.TopLeft(), r.TopRight())
