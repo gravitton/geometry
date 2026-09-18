@@ -70,23 +70,37 @@ func (l Line[T]) Length() float64 {
 // A point on the segment is at distance 0 exactly, for an integer T, since the perpendicular
 // distance comes from a cross product that is exact in float64 rather than from a projection.
 func (l Line[T]) DistanceTo(point Point[T]) float64 {
+	return math.Sqrt(l.DistanceSquaredTo(point))
+}
+
+// DistanceSquaredTo returns the squared distance DistanceTo takes the root of, faster for
+// comparisons. It is a float64 even for an integer T, unlike Point.DistanceSquaredTo, since the
+// nearest point of a segment is not a lattice point in general. Contains compares it against
+// the squared tolerance, so a polygon boundary is walked without a square root per edge.
+func (l Line[T]) DistanceSquaredTo(point Point[T]) float64 {
 	direction, offset := l.Vector().Float(), point.Subtract(l.Start).Float()
 
 	along := offset.Dot(direction)
 	if along <= 0 {
-		return offset.Length()
-	}
-	if along >= direction.LengthSquared() {
-		return point.Subtract(l.End).Length()
+		return offset.LengthSquared()
 	}
 
-	return math.Abs(offset.Cross(direction)) / direction.Length()
+	lengthSquared := direction.LengthSquared()
+	if along >= lengthSquared {
+		return point.Subtract(l.End).Float().LengthSquared()
+	}
+
+	cross := offset.Cross(direction)
+
+	return cross * cross / lengthSquared
 }
 
 // Contains reports whether the given point lies on the segment, within Epsilon of T, the same
 // closed convention as Rectangle.Contains.
 func (l Line[T]) Contains(point Point[T]) bool {
-	return LessOrEqualDelta(l.DistanceTo(point), 0, Epsilon[T]())
+	epsilon := Epsilon[T]()
+
+	return LessOrEqualDelta(l.DistanceSquaredTo(point), 0, epsilon*epsilon)
 }
 
 // Intersects reports whether the segments share a point, within Epsilon of T, the same closed

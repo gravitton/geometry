@@ -356,6 +356,26 @@ func TestLine_DistanceTo(t *testing.T) {
 	})
 }
 
+func TestLine_DistanceSquaredTo(t *testing.T) {
+	l := Ln(Pt(0, 0), Pt(4, 0))
+
+	t.Run("is the square of DistanceTo", func(t *testing.T) {
+		AssertNumber(t, l.DistanceSquaredTo(Pt(2, 3)), 9.0)
+		AssertNumber(t, l.DistanceSquaredTo(Pt(-3, 4)), 25.0)
+		AssertNumber(t, l.DistanceSquaredTo(Pt(7, 4)), 25.0)
+	})
+	t.Run("stays fractional for an integer T", func(t *testing.T) {
+		AssertNumber(t, Ln(Pt(0, 0), Pt(2, 1)).DistanceSquaredTo(Pt(0, 1)), 0.8)
+	})
+	t.Run("agrees with DistanceTo", func(t *testing.T) {
+		for _, l := range lineFixtures {
+			for _, p := range pointFixtures {
+				AssertNumber(t, l.DistanceSquaredTo(p), l.DistanceTo(p)*l.DistanceTo(p), fmt.Sprintf("%s → %s: ", l, p))
+			}
+		}
+	})
+}
+
 func TestLine_Contains(t *testing.T) {
 	t.Run("int is exact", func(t *testing.T) {
 		l := Ln(Pt(0, 0), Pt(6, 3))
