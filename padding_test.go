@@ -71,8 +71,8 @@ func TestPadding_Negate(t *testing.T) {
 		r := RectangleFromMinMax(Pt(0.0, 0.0), Pt(10.0, 10.0))
 		padding := Pad(1.0, 2.0, 3.0, 4.0)
 
-		AssertRect(t, r.Inset(padding).Inset(padding.Negate()), r)
-		AssertRect(t, r.Outset(padding).Inset(padding.Negate()), r.Outset(padding).Outset(padding))
+		AssertRectangle(t, r.Inset(padding).Inset(padding.Negate()), r)
+		AssertRectangle(t, r.Outset(padding).Inset(padding.Negate()), r.Outset(padding).Outset(padding))
 	})
 }
 

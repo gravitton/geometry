@@ -168,6 +168,8 @@ func (v Vector[T]) Rotate(angle float64) Vector[T] {
 // zero vector is treated this way: a vector shorter than Epsilon keeps its direction, down to
 // the subnormal range, since each component is divided by the current length before it is
 // scaled; the single factor length/current would overflow to +Inf there.
+// The length is a float64 like the one Length returns, so an integer vector can be resized to
+// a length no integer expresses.
 // For integer T, the result is rounded and the actual length may differ from the requested value.
 func (v Vector[T]) Resize(length float64) Vector[T] {
 	if !v.hasDirection() {

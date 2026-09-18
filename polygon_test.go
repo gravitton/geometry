@@ -116,16 +116,16 @@ func TestPolygon_Perimeter(t *testing.T) {
 
 func TestPolygon_Bounds(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertRect(t, Pol(squareVertices()).Bounds(), RectangleFromMinMax(Pt(0, 0), Pt(2, 2)))
+		AssertRectangle(t, Pol(squareVertices()).Bounds(), RectangleFromMinMax(Pt(0, 0), Pt(2, 2)))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertRect(t, Pol(triangleVertices()).Bounds(), RectangleFromMinMax(Pt(0.0, 0.0), Pt(2.5, 1.0)))
+		AssertRectangle(t, Pol(triangleVertices()).Bounds(), RectangleFromMinMax(Pt(0.0, 0.0), Pt(2.5, 1.0)))
 	})
 	t.Run("vertex order does not matter", func(t *testing.T) {
-		AssertRect(t, Pol([]Point[int]{Pt(3, -1), Pt(-2, 4), Pt(0, 0)}).Bounds(), RectangleFromMinMax(Pt(-2, -1), Pt(3, 4)))
+		AssertRectangle(t, Pol([]Point[int]{Pt(3, -1), Pt(-2, 4), Pt(0, 0)}).Bounds(), RectangleFromMinMax(Pt(-2, -1), Pt(3, 4)))
 	})
 	t.Run("empty is the zero rectangle", func(t *testing.T) {
-		AssertRect(t, Polygon[int]{}.Bounds(), Rectangle[int]{})
+		AssertRectangle(t, Polygon[int]{}.Bounds(), Rectangle[int]{})
 	})
 }
 

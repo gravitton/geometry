@@ -209,17 +209,7 @@ func (p Polygon[T]) Contains(point Point[T]) bool {
 		return false
 	}
 
-	inside := false
-	for edge := range p.edges() {
-		if edge.Contains(point) {
-			return true
-		}
-		if edge.crossesRay(point) {
-			inside = !inside
-		}
-	}
-
-	return inside
+	return p.walk(point) == 0
 }
 
 // DistanceTo returns the distance from the given point to the nearest point of the polygon:
@@ -233,13 +223,29 @@ func (p Polygon[T]) DistanceTo(point Point[T]) float64 {
 // comparisons. It is a float64 even for an integer T, like Line.DistanceSquaredTo, since the
 // nearest point of an edge is not a lattice point in general.
 func (p Polygon[T]) DistanceSquaredTo(point Point[T]) float64 {
-	if p.Contains(point) {
-		return 0
-	}
+	return p.walk(point)
+}
 
-	distance := math.Inf(1)
+// walk returns the squared distance from the point to the polygon in one pass over the edges:
+// zero for a point on an edge or inside by the even-odd rule, the squared distance to the
+// nearest edge otherwise, and infinity for an empty polygon. Contains and DistanceSquaredTo are
+// both built on it, so the two agree by construction.
+func (p Polygon[T]) walk(point Point[T]) float64 {
+	epsilon := Epsilon[T]()
+	inside, distance := false, math.Inf(1)
+
 	for edge := range p.edges() {
 		distance = min(distance, edge.DistanceSquaredTo(point))
+		if LessOrEqualDelta(distance, 0, epsilon*epsilon) {
+			return 0
+		}
+		if edge.crossesRay(point) {
+			inside = !inside
+		}
+	}
+
+	if inside {
+		return 0
 	}
 
 	return distance

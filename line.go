@@ -165,6 +165,10 @@ func (l Line[T]) Intersects(line Line[T]) bool {
 // which Intersects still reports. Touching at an endpoint counts, within Epsilon of T, the
 // same closed convention as Intersects. For integer T the crossing is rounded like every
 // other result stored into T.
+//
+// Whether the segments cross is decided on the fractions of the way along each segment where
+// the lines through them meet, both from cross products that are exact for an integer T, so
+// the answer does not depend on which segment the rounded point is checked against.
 func (l Line[T]) Intersection(line Line[T]) (Point[T], bool) {
 	a, b := l.Float(), line.Float()
 
@@ -173,12 +177,15 @@ func (l Line[T]) Intersection(line Line[T]) (Point[T], bool) {
 		return Point[T]{}, false
 	}
 
-	t := b.Start.Subtract(a.Start).Cross(b.Vector()) / denominator
-	point := a.Start.Add(a.Vector().Multiply(Clamp(t, 0, 1)))
+	offset := b.Start.Subtract(a.Start)
+	t := offset.Cross(b.Vector()) / denominator
+	u := offset.Cross(a.Vector()) / denominator
 
-	if !LessOrEqualDelta(b.DistanceTo(point), 0, Epsilon[T]()) {
+	if !l.covers(t) || !line.covers(u) {
 		return Point[T]{}, false
 	}
+
+	point := a.Lerp(Clamp(t, 0, 1))
 
 	return Point[T]{Cast[T](point.X), Cast[T](point.Y)}, true
 }
@@ -211,6 +218,15 @@ func (l Line[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 // Polygon.IntersectsLine does.
 func (l Line[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 	return polygon.IntersectsLine(l)
+}
+
+// covers reports whether the fraction t of the way along the segment lies within it, the
+// endpoints included within Epsilon of T scaled to the length, so that the tolerance is the
+// same distance Contains and Intersects apply.
+func (l Line[T]) covers(t float64) bool {
+	epsilon := ratio(Epsilon[T](), l.Length())
+
+	return LessOrEqualDelta(0, t, epsilon) && LessOrEqualDelta(t, 1, epsilon)
 }
 
 // crosses reports whether the segments properly cross: each has its endpoints on opposite sides

@@ -28,10 +28,10 @@ func TestSizeFromImage(t *testing.T) {
 
 func TestRectangleFromImage(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertRect(t, RectangleFromImage[int](image.Rect(0, 10, 55, 70)), Rect(Pt(27, 40), Sz(55, 60)))
+		AssertRectangle(t, RectangleFromImage[int](image.Rect(0, 10, 55, 70)), Rect(Pt(27, 40), Sz(55, 60)))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertRect(t, RectangleFromImage[float64](image.Rect(0, 10, 55, 70)), Rect(Pt(27.5, 40.0), Sz(55.0, 60.0)))
+		AssertRectangle(t, RectangleFromImage[float64](image.Rect(0, 10, 55, 70)), Rect(Pt(27.5, 40.0), Sz(55.0, 60.0)))
 	})
 }
 
@@ -65,7 +65,7 @@ func TestRectangle_Image(t *testing.T) {
 			RectangleFromMin(Pt(-6, 10), Sz(20, 60)),
 			RectangleFromMinMax(Pt(-2, -4), Pt(6, 2)),
 		} {
-			AssertRect(t, RectangleFromImage[int](r.Rectangle()), r, fmt.Sprintf("%s: ", r))
+			AssertRectangle(t, RectangleFromImage[int](r.Rectangle()), r, fmt.Sprintf("%s: ", r))
 		}
 	})
 }

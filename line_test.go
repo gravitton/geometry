@@ -58,12 +58,12 @@ func TestLine_Bounds(t *testing.T) {
 	t.Run("spans the endpoints", func(t *testing.T) {
 		l := Ln(Pt(1, 2), Pt(3, 5))
 
-		AssertRect(t, l.Bounds(), Rect(Pt(2, 3), Sz(2, 3)))
+		AssertRectangle(t, l.Bounds(), Rect(Pt(2, 3), Sz(2, 3)))
 		AssertPoint(t, l.Bounds().Min(), l.Start)
 		AssertPoint(t, l.Bounds().Max(), l.End)
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertRect(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Bounds(), Rect(Pt(0.9, 1.575), Sz(0.6, 3.65)))
+		AssertRectangle(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Bounds(), Rect(Pt(0.9, 1.575), Sz(0.6, 3.65)))
 	})
 }
 
@@ -388,17 +388,40 @@ func TestLine_Intersection(t *testing.T) {
 		_, ok = l.Intersection(Ln(Pt(0.5, 2*Delta), Pt(0.5, 1.0)))
 		assert.False(t, ok)
 	})
-	t.Run("agrees with Intersects on crossing fixtures", func(t *testing.T) {
+	t.Run("int decides exactly where the crossing is not a lattice point", func(t *testing.T) {
+		a, b := Ln(Pt(-6, -6), Pt(-5, -5)), Ln(Pt(-6, -5), Pt(-4, -6))
+
+		point, ok := a.Intersection(b)
+		assert.True(t, ok)
+		AssertPoint(t, point, Pt(-5, -5))
+
+		point, ok = b.Intersection(a)
+		assert.True(t, ok)
+		AssertPoint(t, point, Pt(-5, -5))
+	})
+	t.Run("agrees with Intersects on non-parallel fixtures", func(t *testing.T) {
 		for _, a := range lineFixtures {
 			for _, b := range lineFixtures {
 				point, ok := a.Intersection(b)
+				parallel := a.Vector().Cross(b.Vector()) == 0
+
+				assert.Equal(t, ok, a.Intersects(b) && !parallel, fmt.Sprintf("%s → %s: ", a, b))
 				if !ok {
 					continue
 				}
 
-				assert.True(t, a.Intersects(b), fmt.Sprintf("%s → %s: ", a, b))
 				assert.True(t, a.Contains(point), fmt.Sprintf("%s → %s on a: ", a, b))
 				assert.True(t, b.Contains(point), fmt.Sprintf("%s → %s on b: ", a, b))
+			}
+		}
+	})
+	t.Run("symmetric", func(t *testing.T) {
+		for _, a := range lineFixtures {
+			for _, b := range lineFixtures {
+				_, ok := a.Intersection(b)
+				_, reverse := b.Intersection(a)
+
+				assert.Equal(t, ok, reverse, fmt.Sprintf("%s → %s: ", a, b))
 			}
 		}
 	})

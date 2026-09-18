@@ -274,6 +274,7 @@ func BenchmarkVector_Rotate(b *testing.B) {
 func TestVector_Resize(t *testing.T) {
 	t.Run("int rounds", func(t *testing.T) {
 		AssertVector(t, Vec(10, 16).Resize(5), Vec(3, 4))
+		AssertVector(t, Vec(3, 4).Resize(Sqrt2), Vec(1, 1))
 	})
 	t.Run("float", func(t *testing.T) {
 		AssertVector(t, Vec(0.6, -0.25).Resize(5), Vec(4.615384, -1.923076))

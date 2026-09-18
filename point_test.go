@@ -217,6 +217,9 @@ func TestPoint_Between(t *testing.T) {
 		assert.False(t, Pt(3, 1).Between(Pt(0, 0), Pt(2, 2)))
 		assert.False(t, Pt(1, -1).Between(Pt(0, 0), Pt(2, 2)))
 	})
+	t.Run("corners out of order contain nothing", func(t *testing.T) {
+		assert.False(t, Pt(1, 1).Between(Pt(2, 2), Pt(0, 0)))
+	})
 	t.Run("float is tolerant", func(t *testing.T) {
 		assert.True(t, Pt(2.0+Delta/2, 1.0).Between(Pt(0.0, 0.0), Pt(2.0, 2.0)))
 		assert.False(t, Pt(2.0+2*Delta, 1.0).Between(Pt(0.0, 0.0), Pt(2.0, 2.0)))

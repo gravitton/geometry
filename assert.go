@@ -106,8 +106,8 @@ func AssertLine[T Number](t Testing, actual, expected Line[T], messages ...strin
 	return ok
 }
 
-// AssertRect asserts that actual equals expected (exactly for an integer T, within [EpsilonRelative] for a float T).
-func AssertRect[T Number](t Testing, actual, expected Rectangle[T], messages ...string) bool {
+// AssertRectangle asserts that actual equals expected (exactly for an integer T, within [EpsilonRelative] for a float T).
+func AssertRectangle[T Number](t Testing, actual, expected Rectangle[T], messages ...string) bool {
 	t.Helper()
 
 	ok := true

@@ -82,17 +82,17 @@ func TestAssertLine(t *testing.T) {
 	})
 }
 
-func TestAssertRect(t *testing.T) {
+func TestAssertRectangle(t *testing.T) {
 	r := Rect(Pt(1, 2), Sz(3, 4))
 
 	t.Run("equal", func(t *testing.T) {
-		assertHelper(t, AssertRect, r, Rect(Pt(1, 2), Sz(3, 4)), true)
+		assertHelper(t, AssertRectangle, r, Rect(Pt(1, 2), Sz(3, 4)), true)
 	})
 	t.Run("center differs", func(t *testing.T) {
-		assertHelper(t, AssertRect, r, Rect(Pt(9, 2), Sz(3, 4)), false)
+		assertHelper(t, AssertRectangle, r, Rect(Pt(9, 2), Sz(3, 4)), false)
 	})
 	t.Run("size differs", func(t *testing.T) {
-		assertHelper(t, AssertRect, r, Rect(Pt(1, 2), Sz(9, 4)), false)
+		assertHelper(t, AssertRectangle, r, Rect(Pt(1, 2), Sz(9, 4)), false)
 	})
 }
 

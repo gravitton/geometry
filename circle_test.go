@@ -50,10 +50,10 @@ func TestCircle_Diameter(t *testing.T) {
 
 func TestCircle_Bounds(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertRect(t, Circ(Pt(1, 2), 10).Bounds(), Rect(Pt(1, 2), Sz(20, 20)))
+		AssertRectangle(t, Circ(Pt(1, 2), 10).Bounds(), Rect(Pt(1, 2), Sz(20, 20)))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertRect(t, Circ(Pt(0.6, -0.25), 1.2).Bounds(), Rect(Pt(0.6, -0.25), Sz(2.4, 2.4)))
+		AssertRectangle(t, Circ(Pt(0.6, -0.25), 1.2).Bounds(), Rect(Pt(0.6, -0.25), Sz(2.4, 2.4)))
 	})
 }
 
@@ -218,6 +218,19 @@ func TestCircle_Intersects(t *testing.T) {
 	t.Run("narrow integers do not overflow the radii sum", func(t *testing.T) {
 		assert.True(t, Circ(Pt[int8](0, 0), 100).Intersects(Circ(Pt[int8](0, 50), 100)))
 		assert.False(t, Circ(Pt[int8](-20, 0), 50).Intersects(Circ(Pt[int8](100, 0), 50)))
+	})
+	t.Run("a negative radius intersects nothing", func(t *testing.T) {
+		assert.False(t, circle.Intersects(Circ(Pt(0.0, 0.0), -1.0)))
+		assert.False(t, Circ(Pt(0.0, 0.0), -1.0).Intersects(circle))
+	})
+	t.Run("holds wherever Intersection finds a point", func(t *testing.T) {
+		for _, a := range circleFixtures {
+			for _, b := range circleFixtures {
+				if len(a.Intersection(b)) > 0 {
+					assert.True(t, a.Intersects(b), fmt.Sprintf("%s → %s: ", a, b))
+				}
+			}
+		}
 	})
 	t.Run("symmetric", func(t *testing.T) {
 		for _, a := range circleFixtures {

@@ -204,7 +204,7 @@ One assertion per shape, comparing with the tolerance of the asserted type:
 
 ```go
 geom.AssertPoint(t, got, geom.Pt(1.0, 2.0))
-geom.AssertRect(t, got, want, "after inset")
+geom.AssertRectangle(t, got, want, "after inset")
 geom.AssertVertices(t, hex.Vertices(), want)
 ```
 

@@ -103,9 +103,13 @@ func (c Circle[T]) DistanceSquaredTo(point Point[T]) float64 {
 }
 
 // Intersects reports whether the circles overlap. Touching circles intersect, within Epsilon
-// of T, the same closed convention as Contains. The radii are summed in float64, so a narrow
-// integer T cannot overflow the threshold.
+// of T, the same closed convention as Contains, and a circle with a negative radius intersects
+// nothing. The radii are summed in float64, so a narrow integer T cannot overflow the threshold.
 func (c Circle[T]) Intersects(circle Circle[T]) bool {
+	if c.Radius < 0 || circle.Radius < 0 {
+		return false
+	}
+
 	distance := c.Center.Subtract(circle.Center).Length()
 	threshold := float64(c.Radius) + float64(circle.Radius)
 

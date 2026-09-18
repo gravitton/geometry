@@ -120,6 +120,11 @@ func TestMod(t *testing.T) {
 		AssertNumber(t, Mod(-9, 8), 7)
 		AssertNumber(t, Mod(-1, 6), 5)
 	})
+	t.Run("a negative modulus wraps into (m, 0]", func(t *testing.T) {
+		AssertNumber(t, Mod(3, -5), -2)
+		AssertNumber(t, Mod(-3, -5), -3)
+		AssertNumber(t, Mod(5, -5), 0)
+	})
 	t.Run("defined integer types", func(t *testing.T) {
 		AssertNumber(t, Mod(namedInt(12), 8), namedInt(4))
 	})

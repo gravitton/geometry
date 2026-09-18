@@ -158,7 +158,7 @@ func TestRegularPolygon_Vertices(t *testing.T) {
 
 func TestRegularPolygon_Bounds(t *testing.T) {
 	t.Run("vertices on the axes", func(t *testing.T) {
-		AssertRect(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Bounds(), Rect(Pt(1, 2), Sz(4, 4)))
+		AssertRectangle(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Bounds(), Rect(Pt(1, 2), Sz(4, 4)))
 	})
 	t.Run("hexagon is tight around its vertices", func(t *testing.T) {
 		// width = 2r, height = √3 r
@@ -168,7 +168,7 @@ func TestRegularPolygon_Bounds(t *testing.T) {
 		AssertNumber(t, bounds.Size.Height, 2.0*Sqrt3)
 	})
 	t.Run("no vertices is the zero rectangle", func(t *testing.T) {
-		AssertRect(t, RegPol(Pt(3, 4), Sz(10, 10), 0, 0).Bounds(), Rectangle[int]{})
+		AssertRectangle(t, RegPol(Pt(3, 4), Sz(10, 10), 0, 0).Bounds(), Rectangle[int]{})
 	})
 }
 

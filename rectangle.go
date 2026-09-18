@@ -175,8 +175,9 @@ func (r Rectangle[T]) Edges() []Line[T] {
 // need to walk them once.
 func (r Rectangle[T]) edges() iter.Seq[Line[T]] {
 	return func(yield func(Line[T]) bool) {
-		for _, edge := range [4]Line[T]{r.TopEdge(), r.RightEdge(), r.BottomEdge(), r.LeftEdge()} {
-			if !yield(edge) {
+		corners := r.corners()
+		for i, corner := range corners {
+			if !yield(Line[T]{corner, corners[(i+1)%4]}) {
 				return
 			}
 		}
@@ -187,12 +188,17 @@ func (r Rectangle[T]) edges() iter.Seq[Line[T]] {
 // the same winding as Directions and RegularPolygon.Vertices, and clockwise as drawn on a screen
 // with Y pointing down.
 func (r Rectangle[T]) Vertices() []Point[T] {
-	return []Point[T]{
-		r.TopLeft(),
-		r.TopRight(),
-		r.BottomRight(),
-		r.BottomLeft(),
-	}
+	corners := r.corners()
+
+	return corners[:]
+}
+
+// corners returns the vertices as an array from a single Min and Max, for Vertices and the
+// edge walk, so neither recomputes the corners it shares.
+func (r Rectangle[T]) corners() [4]Point[T] {
+	a, b := r.MinMax()
+
+	return [4]Point[T]{a, {b.X, a.Y}, b, {a.X, b.Y}}
 }
 
 // Area returns the rectangle area.
