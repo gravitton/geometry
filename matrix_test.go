@@ -36,6 +36,26 @@ func TestMatrix_Constructor(t *testing.T) {
 		// the angle is always computed in float64 and narrowed afterwards
 		AssertMatrix(t, RotationMatrix[float32](Pi/2), Mat[float32](0, -1, 0, 1, 0, 0))
 	})
+	t.Run("shear", func(t *testing.T) {
+		AssertMatrix(t, ShearMatrix(2, 3), Mat(1, 2, 0, 3, 1, 0))
+		AssertMatrix(t, ShearMatrix(0.5, 0.0), Mat(1.0, 0.5, 0.0, 0.0, 1.0, 0.0))
+		AssertPoint(t, Pt(1.0, 1.0).Transform(ShearMatrix(0.5, 0.0)), Pt(1.5, 1.0))
+	})
+	t.Run("reflection", func(t *testing.T) {
+		AssertMatrix(t, ReflectionMatrix[int](AxisHorizontal), Mat(1, 0, 0, 0, -1, 0))
+		AssertMatrix(t, ReflectionMatrix[int](AxisVertical), Mat(-1, 0, 0, 0, 1, 0))
+		AssertMatrix(t, ReflectionMatrix[float64](AxisNone), IdentityMatrix[float64]())
+		AssertPoint(t, Pt(2.0, 3.0).Transform(ReflectionMatrix[float64](AxisHorizontal)), Pt(2.0, -3.0))
+		AssertPoint(t, Pt(2.0, 3.0).Transform(ReflectionMatrix[float64](AxisVertical)), Pt(-2.0, 3.0))
+	})
+	t.Run("a reflection undoes itself", func(t *testing.T) {
+		for _, axis := range Axes() {
+			m := ReflectionMatrix[int](axis)
+
+			AssertMatrix(t, m.Multiply(m), IdentityMatrix[int](), axis.String()+": ")
+			assert.Equal(t, m.Determinant(), -1, axis.String()+": ")
+		}
+	})
 	t.Run("integer rotation is exact only for quarter turns", func(t *testing.T) {
 		// cos(π/2) ≈ 6e-17 rounds to 0; sin(π/2) = 1 exactly
 		AssertMatrix(t, RotationMatrix[int](Pi/2), Mat(0, -1, 0, 1, 0, 0))

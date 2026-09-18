@@ -65,6 +65,29 @@ func ScaleMatrix[T Number](factorX, factorY T) Matrix[T] {
 	}
 }
 
+// ShearMatrix creates a new shear matrix: shearX is the contribution of y to x', shearY the
+// contribution of x to y'.
+func ShearMatrix[T Number](shearX, shearY T) Matrix[T] {
+	return Matrix[T]{
+		1, shearX, 0,
+		shearY, 1, 0,
+	}
+}
+
+// ReflectionMatrix creates a new matrix reflecting across the given axis: across the
+// horizontal axis flips Y, across the vertical axis flips X. AxisNone reflects across nothing
+// and gives the identity.
+func ReflectionMatrix[T Number](axis Axis) Matrix[T] {
+	switch axis {
+	case AxisHorizontal:
+		return ScaleMatrix[T](1, -1)
+	case AxisVertical:
+		return ScaleMatrix[T](-1, 1)
+	default:
+		return IdentityMatrix[T]()
+	}
+}
+
 // Multiply creates a new matrix by multiplying the current matrix with given matrix.
 func (m Matrix[T]) Multiply(matrix Matrix[T]) Matrix[T] {
 	l, r := m.Float(), matrix.Float()
