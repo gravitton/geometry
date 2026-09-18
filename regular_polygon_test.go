@@ -119,33 +119,6 @@ func TestHexagon(t *testing.T) {
 	})
 }
 
-func TestRegularPolygon_Translate(t *testing.T) {
-	AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Translate(Vec(1, -2)), RegPol(Pt(2, 0), Sz(2, 2), 4, 0))
-}
-
-func TestRegularPolygon_MoveTo(t *testing.T) {
-	AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).MoveTo(Pt(-3, 5)), RegPol(Pt(-3, 5), Sz(2, 2), 4, 0))
-}
-
-func TestRegularPolygon_Scale(t *testing.T) {
-	t.Run("uniform factor", func(t *testing.T) {
-		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Scale(0.5), RegPol(Pt(1, 2), Sz(1, 1), 4, 0))
-	})
-	t.Run("per-axis factor", func(t *testing.T) {
-		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).ScaleXY(2, 3), RegPol(Pt(1, 2), Sz(4, 6), 4, 0))
-	})
-}
-
-func TestRegularPolygon_Rotate(t *testing.T) {
-	t.Run("adds to the stored angle", func(t *testing.T) {
-		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Rotate(Pi), RegPol(Pt(1, 2), Sz(2, 2), 4, Pi))
-	})
-	t.Run("normalizes to the unit turn", func(t *testing.T) {
-		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Rotate(3*Pi), RegPol(Pt(1, 2), Sz(2, 2), 4, Pi))      // 0 + 3π → π
-		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Rotate(-Pi/2), RegPol(Pt(1, 2), Sz(2, 2), 4, 3*Pi/2)) // 0 − π/2 → 3π/2
-	})
-}
-
 func TestRegularPolygon_Vertices(t *testing.T) {
 	t.Run("fewer than one side has nil vertices", func(t *testing.T) {
 		assert.Nil(t, RegPol(Pt(0, 0), Sz(1, 1), 0, 0).Vertices())
@@ -199,15 +172,30 @@ func TestRegularPolygon_Bounds(t *testing.T) {
 	})
 }
 
-func TestRegularPolygon_Polygon(t *testing.T) {
-	rp := RegPol(Pt(0.0, 0.0), Sz(1.0, 1.0), 5, 0)
-	p := rp.Polygon()
+func TestRegularPolygon_Translate(t *testing.T) {
+	AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Translate(Vec(1, -2)), RegPol(Pt(2, 0), Sz(2, 2), 4, 0))
+}
 
-	t.Run("carries the vertices", func(t *testing.T) {
-		AssertVertices(t, p.Vertices, rp.Vertices())
+func TestRegularPolygon_MoveTo(t *testing.T) {
+	AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).MoveTo(Pt(-3, 5)), RegPol(Pt(-3, 5), Sz(2, 2), 4, 0))
+}
+
+func TestRegularPolygon_Scale(t *testing.T) {
+	t.Run("uniform factor", func(t *testing.T) {
+		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Scale(0.5), RegPol(Pt(1, 2), Sz(1, 1), 4, 0))
 	})
-	t.Run("owns its slice", func(t *testing.T) {
-		assert.NotSame(t, p.Vertices, rp.Vertices())
+	t.Run("per-axis factor", func(t *testing.T) {
+		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).ScaleXY(2, 3), RegPol(Pt(1, 2), Sz(4, 6), 4, 0))
+	})
+}
+
+func TestRegularPolygon_Rotate(t *testing.T) {
+	t.Run("adds to the stored angle", func(t *testing.T) {
+		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Rotate(Pi), RegPol(Pt(1, 2), Sz(2, 2), 4, Pi))
+	})
+	t.Run("normalizes to the unit turn", func(t *testing.T) {
+		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Rotate(3*Pi), RegPol(Pt(1, 2), Sz(2, 2), 4, Pi))      // 0 + 3π → π
+		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Rotate(-Pi/2), RegPol(Pt(1, 2), Sz(2, 2), 4, 3*Pi/2)) // 0 − π/2 → 3π/2
 	})
 }
 
@@ -265,6 +253,18 @@ func TestRegularPolygon_Empty(t *testing.T) {
 	})
 	t.Run("with sides", func(t *testing.T) {
 		assert.False(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Empty())
+	})
+}
+
+func TestRegularPolygon_Polygon(t *testing.T) {
+	rp := RegPol(Pt(0.0, 0.0), Sz(1.0, 1.0), 5, 0)
+	p := rp.Polygon()
+
+	t.Run("carries the vertices", func(t *testing.T) {
+		AssertVertices(t, p.Vertices, rp.Vertices())
+	})
+	t.Run("owns its slice", func(t *testing.T) {
+		assert.NotSame(t, p.Vertices, rp.Vertices())
 	})
 }
 

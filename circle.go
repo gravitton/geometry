@@ -16,36 +16,6 @@ func Circ[T Number](center Point[T], radius T) Circle[T] {
 	return Circle[T]{center, radius}
 }
 
-// Translate creates a new Circle translated by the given vector.
-func (c Circle[T]) Translate(vector Vector[T]) Circle[T] {
-	return Circle[T]{c.Center.Add(vector), c.Radius}
-}
-
-// MoveTo creates a new Circle with the same radius and the center set to point.
-func (c Circle[T]) MoveTo(point Point[T]) Circle[T] {
-	return Circle[T]{point, c.Radius}
-}
-
-// Scale creates a new Circle with radius scaled by the given factor.
-func (c Circle[T]) Scale(factor float64) Circle[T] {
-	return Circle[T]{c.Center, Multiply(c.Radius, factor)}
-}
-
-// Resize creates a new Circle with the given radius.
-func (c Circle[T]) Resize(radius T) Circle[T] {
-	return Circle[T]{c.Center, radius}
-}
-
-// Grow creates a new Circle with radius increased by amount, clamped to zero.
-func (c Circle[T]) Grow(amount T) Circle[T] {
-	return Circle[T]{c.Center, max(c.Radius+amount, 0)}
-}
-
-// Shrink creates a new Circle with radius decreased by amount, clamped to zero.
-func (c Circle[T]) Shrink(amount T) Circle[T] {
-	return Circle[T]{c.Center, max(c.Radius-amount, 0)}
-}
-
 // Area returns the circle area (π * radius^2).
 func (c Circle[T]) Area() float64 {
 	radius := float64(c.Radius)
@@ -80,14 +50,34 @@ func (c Circle[T]) Anchor(direction Direction) Point[T] {
 	return c.Center.Add(direction.Vector(c.Radius))
 }
 
-// Equal checks for equal center and radius with given circle.
-func (c Circle[T]) Equal(circle Circle[T]) bool {
-	return c.Center.Equal(circle.Center) && Equal(c.Radius, circle.Radius)
+// Translate creates a new Circle translated by the given vector.
+func (c Circle[T]) Translate(vector Vector[T]) Circle[T] {
+	return Circle[T]{c.Center.Add(vector), c.Radius}
 }
 
-// IsZero checks if center point and radius are zero.
-func (c Circle[T]) IsZero() bool {
-	return c.Center.IsZero() && Equal(c.Radius, 0)
+// MoveTo creates a new Circle with the same radius and the center set to point.
+func (c Circle[T]) MoveTo(point Point[T]) Circle[T] {
+	return Circle[T]{point, c.Radius}
+}
+
+// Scale creates a new Circle with radius scaled by the given factor.
+func (c Circle[T]) Scale(factor float64) Circle[T] {
+	return Circle[T]{c.Center, Multiply(c.Radius, factor)}
+}
+
+// Resize creates a new Circle with the given radius.
+func (c Circle[T]) Resize(radius T) Circle[T] {
+	return Circle[T]{c.Center, radius}
+}
+
+// Grow creates a new Circle with radius increased by amount, clamped to zero.
+func (c Circle[T]) Grow(amount T) Circle[T] {
+	return Circle[T]{c.Center, max(c.Radius+amount, 0)}
+}
+
+// Shrink creates a new Circle with radius decreased by amount, clamped to zero.
+func (c Circle[T]) Shrink(amount T) Circle[T] {
+	return Circle[T]{c.Center, max(c.Radius-amount, 0)}
 }
 
 // Contains reports whether the given point lies within the circle, boundary included within
@@ -95,6 +85,21 @@ func (c Circle[T]) IsZero() bool {
 // error outside the radius, such as an Anchor, is still contained.
 func (c Circle[T]) Contains(point Point[T]) bool {
 	return c.Center.Subtract(point).LessOrEqual(c.Radius)
+}
+
+// DistanceTo returns the distance from the given point to the nearest point of the circle:
+// zero for a point within it, the same closed convention as Contains.
+func (c Circle[T]) DistanceTo(point Point[T]) float64 {
+	return max(c.Center.DistanceTo(point)-float64(c.Radius), 0)
+}
+
+// DistanceSquaredTo returns the square of DistanceTo, so every shape offers the same pair. It
+// is a float64 even for an integer T and saves no square root, since the distance to a circle
+// already needs the root of the distance to its center.
+func (c Circle[T]) DistanceSquaredTo(point Point[T]) float64 {
+	distance := c.DistanceTo(point)
+
+	return distance * distance
 }
 
 // Intersects reports whether the circles overlap. Touching circles intersect, within Epsilon
@@ -157,19 +162,14 @@ func (c Circle[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 	return polygon.IntersectsCircle(c)
 }
 
-// DistanceTo returns the distance from the given point to the nearest point of the circle:
-// zero for a point within it, the same closed convention as Contains.
-func (c Circle[T]) DistanceTo(point Point[T]) float64 {
-	return max(c.Center.DistanceTo(point)-float64(c.Radius), 0)
+// Equal checks for equal center and radius with given circle.
+func (c Circle[T]) Equal(circle Circle[T]) bool {
+	return c.Center.Equal(circle.Center) && Equal(c.Radius, circle.Radius)
 }
 
-// DistanceSquaredTo returns the square of DistanceTo, so every shape offers the same pair. It
-// is a float64 even for an integer T and saves no square root, since the distance to a circle
-// already needs the root of the distance to its center.
-func (c Circle[T]) DistanceSquaredTo(point Point[T]) float64 {
-	distance := c.DistanceTo(point)
-
-	return distance * distance
+// IsZero checks if center point and radius are zero.
+func (c Circle[T]) IsZero() bool {
+	return c.Center.IsZero() && Equal(c.Radius, 0)
 }
 
 // Int converts the circle to a Circle[int].

@@ -261,6 +261,13 @@ circle contains its anchors and a polygon contains its vertices. `Vector.Less` a
 `DistanceTo` is zero exactly where `Contains` holds, and `Intersection` answers exactly where `Intersects` holds, less
 the parallel and coincident cases that have no single answer.
 
+**Layout:** every shape file lists its methods in the same order, and the tests follow it: constructors; properties
+read from the value alone (`XY`, `Length`, `Width`, `Min`, `Area`, `Bounds`); arithmetic on the components
+(`Add`, `Multiply`, `Lerp`, `Translate`, `Scale`, `Grow`, `Inset`); geometry treating the value as a position or
+direction (`Transform`, `Rotate`, `Normalize`, `Project`, `AlignTo`); relations with other geometry (`Dot`,
+`Contains`, `DistanceTo`, `Intersects`, `Intersection`, `Union`); equality and state (`Equal`, `IsZero`, `Is*`);
+conversions leaving the type (`Vector`, `Polygon`, `Int`, `Float`); and `String` with JSON last.
+
 **Common API:** Every shape exposes `Int()`, `Float()`, `String()`, `Equal()`, and `IsZero()`. Shapes with spatial
 extent add `Bounds()`, `Contains(point)`, `DistanceTo(point)`, `DistanceSquaredTo(point)` and an `Intersects` method for every
 other shape.

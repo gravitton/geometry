@@ -21,18 +21,16 @@ func TestPoint_Constructor(t *testing.T) {
 	})
 }
 
-func TestPoint_Transform(t *testing.T) {
-	t.Run("float64 matrix", func(t *testing.T) {
-		AssertPoint(t, Pt(1, 2).Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), Pt(9, 22))
-		AssertPoint(t, Pt(0.6, -0.25).Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), Pt(3.385, 7.865))
+func TestPoint_XY(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		x, y := Pt(10, 16).XY()
+		AssertNumber(t, x, 10)
+		AssertNumber(t, y, 16)
 	})
-	t.Run("float32 matrix", func(t *testing.T) {
-		AssertPoint(t, Pt(1, 2).Transform(Mat[float32](1, 2, 3, 4, 5, 6)), Pt(8, 20))
-		AssertPoint(t, Pt(0.6, -0.25).Transform(Mat[float32](1, 2, 3, 4, 5, 6)), Pt(3.1, 7.15))
-	})
-	t.Run("integer matrix converted to float", func(t *testing.T) {
-		AssertPoint(t, Pt(1, 2).Transform(Mat(1, 2, 3, 4, 5, 6).Float()), Pt(8, 20))
-		AssertPoint(t, Pt(0.6, -0.25).Transform(Mat(1, 2, 3, 4, 5, 6).Float()), Pt(3.1, 7.15))
+	t.Run("float", func(t *testing.T) {
+		x, y := Pt(0.6, -0.25).XY()
+		AssertNumber(t, x, 0.6)
+		AssertNumber(t, y, -0.25)
 	})
 }
 
@@ -127,6 +125,111 @@ func TestPoint_Ceil(t *testing.T) {
 	})
 }
 
+func TestPoint_Lerp(t *testing.T) {
+	t.Run("between points", func(t *testing.T) {
+		AssertPoint(t, Pt(1, 2).Lerp(Pt(3, -3), 0.3), Pt(2, 1))
+		AssertPoint(t, Pt(0.6, -0.25).Lerp(Pt(100.1, -0.1), 0.1), Pt(10.55, -0.235))
+	})
+	t.Run("endpoints", func(t *testing.T) {
+		AssertPoint(t, Pt(1, 2).Lerp(Pt(3, -3), 0), Pt(1, 2))
+		AssertPoint(t, Pt(1, 2).Lerp(Pt(3, -3), 1), Pt(3, -3))
+	})
+	t.Run("extrapolates outside the unit range", func(t *testing.T) {
+		AssertPoint(t, Pt(0.0, 0.0).Lerp(Pt(2.0, 2.0), 2), Pt(4.0, 4.0))
+		AssertPoint(t, Pt(0.0, 0.0).Lerp(Pt(2.0, 2.0), -1), Pt(-2.0, -2.0))
+	})
+}
+
+func TestPoint_Midpoint(t *testing.T) {
+	t.Run("int rounds the half away from zero", func(t *testing.T) {
+		AssertPoint(t, Pt(1, 2).Midpoint(Pt(3, -3)), Pt(2, -1))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertPoint(t, Pt(0.6, -0.25).Midpoint(Pt(100.1, -0.1)), Pt(50.35, -0.175))
+	})
+}
+
+func TestPoint_Transform(t *testing.T) {
+	t.Run("float64 matrix", func(t *testing.T) {
+		AssertPoint(t, Pt(1, 2).Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), Pt(9, 22))
+		AssertPoint(t, Pt(0.6, -0.25).Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), Pt(3.385, 7.865))
+	})
+	t.Run("float32 matrix", func(t *testing.T) {
+		AssertPoint(t, Pt(1, 2).Transform(Mat[float32](1, 2, 3, 4, 5, 6)), Pt(8, 20))
+		AssertPoint(t, Pt(0.6, -0.25).Transform(Mat[float32](1, 2, 3, 4, 5, 6)), Pt(3.1, 7.15))
+	})
+	t.Run("integer matrix converted to float", func(t *testing.T) {
+		AssertPoint(t, Pt(1, 2).Transform(Mat(1, 2, 3, 4, 5, 6).Float()), Pt(8, 20))
+		AssertPoint(t, Pt(0.6, -0.25).Transform(Mat(1, 2, 3, 4, 5, 6).Float()), Pt(3.1, 7.15))
+	})
+}
+
+func TestPoint_RotateAround(t *testing.T) {
+	t.Run("quarter turn about a pivot", func(t *testing.T) {
+		AssertPoint(t, Pt(3, 1).RotateAround(Pt(1, 1), Pi/2), Pt(1, 3))
+		AssertPoint(t, Pt(3, 1).RotateAround(Pt(1, 1), -Pi/2), Pt(1, -1))
+	})
+	t.Run("half turn mirrors through the pivot", func(t *testing.T) {
+		AssertPoint(t, Pt(3.0, 4.0).RotateAround(Pt(1.0, 1.0), Pi), Pt(-1.0, -2.0))
+	})
+	t.Run("about itself is identity", func(t *testing.T) {
+		AssertPoint(t, Pt(3.0, 4.0).RotateAround(Pt(3.0, 4.0), 0.7), Pt(3.0, 4.0))
+	})
+	t.Run("about the origin matches Vector.Rotate", func(t *testing.T) {
+		for _, p := range pointFixtures {
+			AssertPoint(t, p.RotateAround(ZeroPoint[float64](), 0.7), p.Vector().Rotate(0.7).Point(), fmt.Sprintf("%s: ", p))
+		}
+	})
+	t.Run("keeps the distance to the pivot", func(t *testing.T) {
+		pivot := Pt(-2.5, 1.25)
+		for _, p := range pointFixtures {
+			AssertNumber(t, p.RotateAround(pivot, 2.1).DistanceTo(pivot), p.DistanceTo(pivot), fmt.Sprintf("%s: ", p))
+		}
+	})
+}
+
+func TestPoint_AngleTo(t *testing.T) {
+	t.Run("cardinal directions", func(t *testing.T) {
+		AssertNumber(t, Pt(0, 0).AngleTo(Pt(1, 0)), ToRadians(0))
+		AssertNumber(t, Pt(0, 0).AngleTo(Pt(0, 1)), ToRadians(90))
+		AssertNumber(t, Pt(0, 0).AngleTo(Pt(-1, 0)), ToRadians(180))
+		AssertNumber(t, Pt(0, 0).AngleTo(Pt(0, -1)), ToRadians(-90))
+	})
+	t.Run("diagonals", func(t *testing.T) {
+		AssertNumber(t, Pt(0, 0).AngleTo(Pt(1, 1)), ToRadians(45))
+		AssertNumber(t, Pt(0, 0).AngleTo(Pt(-1, 1)), ToRadians(135))
+		AssertNumber(t, Pt(0, 0).AngleTo(Pt(-1, -1)), ToRadians(-135))
+		AssertNumber(t, Pt(0, 0).AngleTo(Pt(1, -1)), ToRadians(-45))
+	})
+	t.Run("off the origin", func(t *testing.T) {
+		AssertNumber(t, Pt(2, 2).AngleTo(Pt(3, 2)), ToRadians(0))
+		AssertNumber(t, Pt(0.6, -0.25).AngleTo(Pt(0.7, -0.35)), ToRadians(-45))
+	})
+}
+
+func TestPoint_Between(t *testing.T) {
+	t.Run("inside and on the boundary", func(t *testing.T) {
+		assert.True(t, Pt(1, 1).Between(Pt(0, 0), Pt(2, 2)))
+		assert.True(t, Pt(0, 2).Between(Pt(0, 0), Pt(2, 2)))
+		assert.True(t, Pt(2, 0).Between(Pt(0, 0), Pt(2, 2)))
+	})
+	t.Run("outside on either axis", func(t *testing.T) {
+		assert.False(t, Pt(3, 1).Between(Pt(0, 0), Pt(2, 2)))
+		assert.False(t, Pt(1, -1).Between(Pt(0, 0), Pt(2, 2)))
+	})
+	t.Run("float is tolerant", func(t *testing.T) {
+		assert.True(t, Pt(2.0+Delta/2, 1.0).Between(Pt(0.0, 0.0), Pt(2.0, 2.0)))
+		assert.False(t, Pt(2.0+2*Delta, 1.0).Between(Pt(0.0, 0.0), Pt(2.0, 2.0)))
+	})
+	t.Run("matches Rectangle.Contains", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, p := range pointFixtures {
+				assert.Equal(t, p.Between(r.MinMax()), r.Contains(p), fmt.Sprintf("%s in %s: ", p, r))
+			}
+		}
+	})
+}
+
 func TestPoint_DistanceTo(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
 		for _, test := range distanceFixtures {
@@ -189,110 +292,6 @@ func TestPoint_OctileDistanceTo(t *testing.T) {
 	})
 	t.Run("int", func(t *testing.T) {
 		AssertNumber(t, Pt(1, 2).OctileDistanceTo(Pt(2, 3)), Sqrt2)
-	})
-}
-
-// distanceFixtures feeds every DistanceTo variant, which all measure the same geometry.
-var distanceFixtures = []struct {
-	name                                             string
-	a, b                                             Point[float64]
-	euclidean, squared, manhattan, chebyshev, octile float64
-}{
-	{"diagonal step", Pt(1.0, 2.0), Pt(2.0, 3.0), Sqrt2, 2, 2, 1, Sqrt2},
-	{"cardinal step", Pt(1.0, 2.0), Pt(4.0, 2.0), 3, 9, 3, 3, 3},
-	{"knight move", Pt(0.0, 0.0), Pt(1.0, 2.0), math.Sqrt(5), 5, 3, 2, 1 + Sqrt2},
-	{"fractional", Pt(0.6, -0.25), Pt(0.5, -0.35), math.Sqrt(0.02), 0.02, 0.2, 0.1, 0.1 * Sqrt2},
-	{"negative direction", Pt(2.0, 3.0), Pt(1.0, 2.0), Sqrt2, 2, 2, 1, Sqrt2},
-	{"same point", Pt(0.6, -0.25), Pt(0.6, -0.25), 0, 0, 0, 0, 0},
-}
-
-func TestPoint_RotateAround(t *testing.T) {
-	t.Run("quarter turn about a pivot", func(t *testing.T) {
-		AssertPoint(t, Pt(3, 1).RotateAround(Pt(1, 1), Pi/2), Pt(1, 3))
-		AssertPoint(t, Pt(3, 1).RotateAround(Pt(1, 1), -Pi/2), Pt(1, -1))
-	})
-	t.Run("half turn mirrors through the pivot", func(t *testing.T) {
-		AssertPoint(t, Pt(3.0, 4.0).RotateAround(Pt(1.0, 1.0), Pi), Pt(-1.0, -2.0))
-	})
-	t.Run("about itself is identity", func(t *testing.T) {
-		AssertPoint(t, Pt(3.0, 4.0).RotateAround(Pt(3.0, 4.0), 0.7), Pt(3.0, 4.0))
-	})
-	t.Run("about the origin matches Vector.Rotate", func(t *testing.T) {
-		for _, p := range pointFixtures {
-			AssertPoint(t, p.RotateAround(ZeroPoint[float64](), 0.7), p.Vector().Rotate(0.7).Point(), fmt.Sprintf("%s: ", p))
-		}
-	})
-	t.Run("keeps the distance to the pivot", func(t *testing.T) {
-		pivot := Pt(-2.5, 1.25)
-		for _, p := range pointFixtures {
-			AssertNumber(t, p.RotateAround(pivot, 2.1).DistanceTo(pivot), p.DistanceTo(pivot), fmt.Sprintf("%s: ", p))
-		}
-	})
-}
-
-func TestPoint_Midpoint(t *testing.T) {
-	t.Run("int rounds the half away from zero", func(t *testing.T) {
-		AssertPoint(t, Pt(1, 2).Midpoint(Pt(3, -3)), Pt(2, -1))
-	})
-	t.Run("float", func(t *testing.T) {
-		AssertPoint(t, Pt(0.6, -0.25).Midpoint(Pt(100.1, -0.1)), Pt(50.35, -0.175))
-	})
-}
-
-func TestPoint_Lerp(t *testing.T) {
-	t.Run("between points", func(t *testing.T) {
-		AssertPoint(t, Pt(1, 2).Lerp(Pt(3, -3), 0.3), Pt(2, 1))
-		AssertPoint(t, Pt(0.6, -0.25).Lerp(Pt(100.1, -0.1), 0.1), Pt(10.55, -0.235))
-	})
-	t.Run("endpoints", func(t *testing.T) {
-		AssertPoint(t, Pt(1, 2).Lerp(Pt(3, -3), 0), Pt(1, 2))
-		AssertPoint(t, Pt(1, 2).Lerp(Pt(3, -3), 1), Pt(3, -3))
-	})
-	t.Run("extrapolates outside the unit range", func(t *testing.T) {
-		AssertPoint(t, Pt(0.0, 0.0).Lerp(Pt(2.0, 2.0), 2), Pt(4.0, 4.0))
-		AssertPoint(t, Pt(0.0, 0.0).Lerp(Pt(2.0, 2.0), -1), Pt(-2.0, -2.0))
-	})
-}
-
-func TestPoint_AngleTo(t *testing.T) {
-	t.Run("cardinal directions", func(t *testing.T) {
-		AssertNumber(t, Pt(0, 0).AngleTo(Pt(1, 0)), ToRadians(0))
-		AssertNumber(t, Pt(0, 0).AngleTo(Pt(0, 1)), ToRadians(90))
-		AssertNumber(t, Pt(0, 0).AngleTo(Pt(-1, 0)), ToRadians(180))
-		AssertNumber(t, Pt(0, 0).AngleTo(Pt(0, -1)), ToRadians(-90))
-	})
-	t.Run("diagonals", func(t *testing.T) {
-		AssertNumber(t, Pt(0, 0).AngleTo(Pt(1, 1)), ToRadians(45))
-		AssertNumber(t, Pt(0, 0).AngleTo(Pt(-1, 1)), ToRadians(135))
-		AssertNumber(t, Pt(0, 0).AngleTo(Pt(-1, -1)), ToRadians(-135))
-		AssertNumber(t, Pt(0, 0).AngleTo(Pt(1, -1)), ToRadians(-45))
-	})
-	t.Run("off the origin", func(t *testing.T) {
-		AssertNumber(t, Pt(2, 2).AngleTo(Pt(3, 2)), ToRadians(0))
-		AssertNumber(t, Pt(0.6, -0.25).AngleTo(Pt(0.7, -0.35)), ToRadians(-45))
-	})
-}
-
-func TestPoint_Between(t *testing.T) {
-	t.Run("inside and on the boundary", func(t *testing.T) {
-		assert.True(t, Pt(1, 1).Between(Pt(0, 0), Pt(2, 2)))
-		assert.True(t, Pt(0, 2).Between(Pt(0, 0), Pt(2, 2)))
-		assert.True(t, Pt(2, 0).Between(Pt(0, 0), Pt(2, 2)))
-	})
-	t.Run("outside on either axis", func(t *testing.T) {
-		assert.False(t, Pt(3, 1).Between(Pt(0, 0), Pt(2, 2)))
-		assert.False(t, Pt(1, -1).Between(Pt(0, 0), Pt(2, 2)))
-	})
-	t.Run("float is tolerant", func(t *testing.T) {
-		assert.True(t, Pt(2.0+Delta/2, 1.0).Between(Pt(0.0, 0.0), Pt(2.0, 2.0)))
-		assert.False(t, Pt(2.0+2*Delta, 1.0).Between(Pt(0.0, 0.0), Pt(2.0, 2.0)))
-	})
-	t.Run("matches Rectangle.Contains", func(t *testing.T) {
-		for _, r := range rectFixtures {
-			for _, p := range pointFixtures {
-				assert.Equal(t, p.Between(r.MinMax()), r.Contains(p), fmt.Sprintf("%s in %s: ", p, r))
-			}
-		}
 	})
 }
 
@@ -382,19 +381,6 @@ func TestPoint_IsZero(t *testing.T) {
 	})
 	t.Run("within delta", func(t *testing.T) {
 		assert.True(t, Pt(0.0, 0.000001).IsZero())
-	})
-}
-
-func TestPoint_XY(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		x, y := Pt(10, 16).XY()
-		AssertNumber(t, x, 10)
-		AssertNumber(t, y, 16)
-	})
-	t.Run("float", func(t *testing.T) {
-		x, y := Pt(0.6, -0.25).XY()
-		AssertNumber(t, x, 0.6)
-		AssertNumber(t, y, -0.25)
 	})
 }
 
@@ -554,6 +540,20 @@ func TestPoint_Immutable(t *testing.T) {
 
 	AssertPoint(t, p1, Pt(1, 2))
 	AssertPoint(t, p2, Pt(3, -3))
+}
+
+// distanceFixtures feeds every DistanceTo variant, which all measure the same geometry.
+var distanceFixtures = []struct {
+	name                                             string
+	a, b                                             Point[float64]
+	euclidean, squared, manhattan, chebyshev, octile float64
+}{
+	{"diagonal step", Pt(1.0, 2.0), Pt(2.0, 3.0), Sqrt2, 2, 2, 1, Sqrt2},
+	{"cardinal step", Pt(1.0, 2.0), Pt(4.0, 2.0), 3, 9, 3, 3, 3},
+	{"knight move", Pt(0.0, 0.0), Pt(1.0, 2.0), math.Sqrt(5), 5, 3, 2, 1 + Sqrt2},
+	{"fractional", Pt(0.6, -0.25), Pt(0.5, -0.35), math.Sqrt(0.02), 0.02, 0.2, 0.1, 0.1 * Sqrt2},
+	{"negative direction", Pt(2.0, 3.0), Pt(1.0, 2.0), Sqrt2, 2, 2, 1, Sqrt2},
+	{"same point", Pt(0.6, -0.25), Pt(0.6, -0.25), 0, 0, 0, 0, 0},
 }
 
 // pointFixtures span the quadrants, the axes, and the diagonal.

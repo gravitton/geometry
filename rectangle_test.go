@@ -36,132 +36,6 @@ func TestRectangle_Constructor(t *testing.T) {
 	})
 }
 
-func TestRectangle_Translate(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		AssertRect(t, Rect(Pt(1, 2), Sz(2, 3)).Translate(Vec(3, -2)), Rect(Pt(4, 0), Sz(2, 3)))
-	})
-	t.Run("float", func(t *testing.T) {
-		AssertRect(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Translate(Vec(100.1, -0.1)), Rect(Pt(100.7, -0.35), Sz(1.2, 3.6)))
-	})
-}
-
-func TestRectangle_MoveTo(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		AssertRect(t, Rect(Pt(1, 2), Sz(2, 3)).MoveTo(Pt(3, -2)), Rect(Pt(3, -2), Sz(2, 3)))
-	})
-	t.Run("float", func(t *testing.T) {
-		AssertRect(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).MoveTo(Pt(100.1, -0.1)), Rect(Pt(100.1, -0.1), Sz(1.2, 3.6)))
-	})
-}
-
-func TestRectangle_Scale(t *testing.T) {
-	t.Run("uniform factor", func(t *testing.T) {
-		AssertRect(t, Rect(Pt(1, 2), Sz(2, 3)).Scale(2.5), Rect(Pt(1, 2), Sz(5, 8)))
-		AssertRect(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Scale(2.5), Rect(Pt(0.6, -0.25), Sz(3.0, 9.0)))
-	})
-	t.Run("per-axis factor", func(t *testing.T) {
-		AssertRect(t, Rect(Pt(1, 2), Sz(2, 3)).ScaleXY(2, 3), Rect(Pt(1, 2), Sz(4, 9)))
-		AssertRect(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).ScaleXY(-1.5, 2), Rect(Pt(0.6, -0.25), Sz(-1.8, 7.2)))
-	})
-}
-
-func TestRectangle_Resize(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		AssertRect(t, Rect(Pt(1, 2), Sz(2, 3)).Resize(Sz(8, 9)), Rect(Pt(1, 2), Sz(8, 9)))
-	})
-	t.Run("float", func(t *testing.T) {
-		AssertRect(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Resize(Sz(3.1, 0.2)), Rect(Pt(0.6, -0.25), Sz(3.1, 0.2)))
-	})
-}
-
-func TestRectangle_Grow(t *testing.T) {
-	t.Run("uniform amount", func(t *testing.T) {
-		AssertRect(t, Rect(Pt(1, 2), Sz(2, 3)).Grow(2), Rect(Pt(1, 2), Sz(4, 5)))
-		AssertRect(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Grow(0.1), Rect(Pt(0.6, -0.25), Sz(1.3, 3.7)))
-	})
-	t.Run("per-axis amount", func(t *testing.T) {
-		AssertRect(t, Rect(Pt(1, 2), Sz(2, 3)).GrowXY(2, 3), Rect(Pt(1, 2), Sz(4, 6)))
-		AssertRect(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).GrowXY(0.1, 0.2), Rect(Pt(0.6, -0.25), Sz(1.3, 3.8)))
-	})
-}
-
-func TestRectangle_Shrink(t *testing.T) {
-	t.Run("uniform amount", func(t *testing.T) {
-		AssertRect(t, Rect(Pt(1, 2), Sz(2, 3)).Shrink(1), Rect(Pt(1, 2), Sz(1, 2)))
-		AssertRect(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Shrink(0.1), Rect(Pt(0.6, -0.25), Sz(1.1, 3.5)))
-	})
-	t.Run("per-axis amount", func(t *testing.T) {
-		AssertRect(t, Rect(Pt(1, 2), Sz(2, 3)).ShrinkXY(1, 2), Rect(Pt(1, 2), Sz(1, 1)))
-		AssertRect(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).ShrinkXY(0.1, 0.2), Rect(Pt(0.6, -0.25), Sz(1.1, 3.4)))
-	})
-	t.Run("clamps to zero", func(t *testing.T) {
-		AssertRect(t, Rect(Pt(1, 2), Sz(2, 3)).Shrink(100), Rect(Pt(1, 2), Sz(0, 0)))
-	})
-}
-
-func TestRectangle_Outset(t *testing.T) {
-	t.Run("uniform padding keeps the center", func(t *testing.T) {
-		AssertRect(t, Rect(Pt(0, 0), Sz(10, 10)).Outset(PadU(1)), Rect(Pt(0, 0), Sz(12, 12)))
-	})
-	t.Run("asymmetric padding shifts the center", func(t *testing.T) {
-		AssertRect(t, Rect(Pt(0, 0), Sz(10, 10)).Outset(Pad(3, 1, 1, 5)), Rect(Pt(-2, -1), Sz(16, 14)))
-	})
-	t.Run("undoes an inset", func(t *testing.T) {
-		r := RectangleFromMinMax(Pt(0.0, 0.0), Pt(10.0, 10.0))
-		padding := Pad(1.0, 2.0, 3.0, 4.0)
-
-		AssertRect(t, r.Inset(padding).Outset(padding), r)
-		AssertRect(t, r.Outset(padding).Inset(padding), r)
-	})
-}
-
-func TestRectangle_Inset(t *testing.T) {
-	t.Run("uniform padding keeps the center", func(t *testing.T) {
-		AssertRect(t, Rect(Pt(0, 0), Sz(10, 10)).Inset(PadU(1)), Rect(Pt(0, 0), Sz(8, 8)))
-	})
-	t.Run("asymmetric padding shifts the center", func(t *testing.T) {
-		AssertRect(t, Rect(Pt(0, 0), Sz(10, 10)).Inset(Pad(3, 1, 1, 5)), Rect(Pt(2, 1), Sz(4, 6)))
-	})
-	t.Run("odd integer padding stays inside the rectangle", func(t *testing.T) {
-		r := Rect(Pt(0, 0), Sz(10, 10))
-
-		AssertPoint(t, r.Inset(Pad(0, 0, 0, 1)).Min(), r.Min().AddXY(1, 0))
-		AssertPoint(t, r.Inset(Pad(0, 0, 0, 1)).Max(), r.Max())
-		AssertPoint(t, r.Inset(Pad(0, 3, 1, 0)).Min(), r.Min())
-		AssertPoint(t, r.Inset(Pad(0, 3, 1, 0)).Max(), r.Max().AddXY(-3, -1))
-	})
-	t.Run("padding beyond the size collapses inside the rectangle", func(t *testing.T) {
-		r := Rect(Pt(0, 0), Sz(10, 10))
-
-		AssertRect(t, r.Inset(Pad(0, 0, 0, 20)), Rect(Pt(5, 0), Sz(0, 10)))
-		AssertRect(t, r.Inset(Pad(0, 20, 0, 0)), Rect(Pt(-5, 0), Sz(0, 10)))
-		AssertRect(t, r.Inset(Pad(20, 0, 20, 0)), Rect(Pt(0, 5), Sz(10, 0)))
-		AssertRect(t, r.Inset(PadU(20)), Rect(Pt(5, 5), Sz(0, 0)))
-		AssertRect(t, Rect(Pt(0.0, 0.0), Sz(10.0, 10.0)).Inset(Pad(0.0, 0.0, 0.0, 12.5)), Rect(Pt(5.0, 0.0), Sz(0.0, 10.0)))
-	})
-	t.Run("a collapsed rectangle is contained by the original", func(t *testing.T) {
-		r := Rect(Pt(0, 0), Sz(10, 10))
-
-		for _, padding := range []Padding[int]{Pad(0, 0, 0, 20), Pad(0, 20, 0, 0), Pad(20, 0, 0, 0), Pad(0, 0, 20, 0), PadU(20), Pad(7, 7, 7, 7)} {
-			inset := r.Inset(padding)
-
-			assert.True(t, r.Contains(inset.Min()), fmt.Sprintf("%s min: ", padding))
-			assert.True(t, r.Contains(inset.Max()), fmt.Sprintf("%s max: ", padding))
-		}
-	})
-	t.Run("negative padding grows the edge", func(t *testing.T) {
-		AssertRect(t, Rect(Pt(0.0, 0.0), Sz(10.0, 10.0)).Inset(Pad(1.5, -2.0, 0.0, 1.0)), Rect(Pt(1.5, 0.75), Sz(11.0, 8.5)))
-	})
-	t.Run("each edge moves inward by its own padding", func(t *testing.T) {
-		r := Rect(Pt(0.0, 0.0), Sz(10.0, 10.0))
-		padding := Pad(3.0, 1.0, 1.0, 5.0)
-		inset := r.Inset(padding)
-
-		AssertPoint(t, inset.Min(), r.Min().AddXY(padding.Left, padding.Top))
-		AssertPoint(t, inset.Max(), r.Max().AddXY(-padding.Right, -padding.Bottom))
-	})
-}
-
 func TestRectangle_Width(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		AssertNumber(t, Rect(Pt(1, 2), Sz(2, 3)).Width(), 2)
@@ -257,32 +131,6 @@ func TestRectangle_Anchor(t *testing.T) {
 	})
 }
 
-func TestRectangle_AlignTo(t *testing.T) {
-	r := RectangleFromMin(Pt(0, 0), Sz(10, 20))
-
-	t.Run("a corner lands on the point", func(t *testing.T) {
-		AssertRect(t, r.AlignTo(TopLeft, Pt(100, 50)), RectangleFromMin(Pt(100, 50), Sz(10, 20)))
-		AssertRect(t, r.AlignTo(BottomRight, Pt(100, 50)), RectangleFromMax(Pt(100, 50), Sz(10, 20)))
-	})
-	t.Run("an edge midpoint lands on the point", func(t *testing.T) {
-		AssertPoint(t, r.AlignTo(Top, Pt(100, 50)).Top(), Pt(100, 50))
-		AssertPoint(t, r.AlignTo(DirectionLeft, Pt(100, 50)).Left(), Pt(100, 50))
-	})
-	t.Run("none aligns the center", func(t *testing.T) {
-		AssertRect(t, r.AlignTo(DirectionNone, Pt(100, 50)), r.MoveTo(Pt(100, 50)))
-	})
-	t.Run("keeps the size and inverts Anchor", func(t *testing.T) {
-		for _, rect := range rectFixtures {
-			for _, direction := range Directions() {
-				aligned := rect.AlignTo(direction, Pt(3.5, -2.25))
-
-				AssertSize(t, aligned.Size, rect.Size, fmt.Sprintf("%s %s: ", rect, direction))
-				AssertPoint(t, aligned.Anchor(direction), Pt(3.5, -2.25), fmt.Sprintf("%s %s: ", rect, direction))
-			}
-		}
-	})
-}
-
 func TestRectangle_Edges(t *testing.T) {
 	r := Rect(Pt(0, 0), Sz(2, 2))
 	edges := r.Edges()
@@ -363,6 +211,158 @@ func TestRectangle_Bounds(t *testing.T) {
 	})
 }
 
+func TestRectangle_Translate(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertRect(t, Rect(Pt(1, 2), Sz(2, 3)).Translate(Vec(3, -2)), Rect(Pt(4, 0), Sz(2, 3)))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertRect(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Translate(Vec(100.1, -0.1)), Rect(Pt(100.7, -0.35), Sz(1.2, 3.6)))
+	})
+}
+
+func TestRectangle_MoveTo(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertRect(t, Rect(Pt(1, 2), Sz(2, 3)).MoveTo(Pt(3, -2)), Rect(Pt(3, -2), Sz(2, 3)))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertRect(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).MoveTo(Pt(100.1, -0.1)), Rect(Pt(100.1, -0.1), Sz(1.2, 3.6)))
+	})
+}
+
+func TestRectangle_Scale(t *testing.T) {
+	t.Run("uniform factor", func(t *testing.T) {
+		AssertRect(t, Rect(Pt(1, 2), Sz(2, 3)).Scale(2.5), Rect(Pt(1, 2), Sz(5, 8)))
+		AssertRect(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Scale(2.5), Rect(Pt(0.6, -0.25), Sz(3.0, 9.0)))
+	})
+	t.Run("per-axis factor", func(t *testing.T) {
+		AssertRect(t, Rect(Pt(1, 2), Sz(2, 3)).ScaleXY(2, 3), Rect(Pt(1, 2), Sz(4, 9)))
+		AssertRect(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).ScaleXY(-1.5, 2), Rect(Pt(0.6, -0.25), Sz(-1.8, 7.2)))
+	})
+}
+
+func TestRectangle_Resize(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertRect(t, Rect(Pt(1, 2), Sz(2, 3)).Resize(Sz(8, 9)), Rect(Pt(1, 2), Sz(8, 9)))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertRect(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Resize(Sz(3.1, 0.2)), Rect(Pt(0.6, -0.25), Sz(3.1, 0.2)))
+	})
+}
+
+func TestRectangle_Grow(t *testing.T) {
+	t.Run("uniform amount", func(t *testing.T) {
+		AssertRect(t, Rect(Pt(1, 2), Sz(2, 3)).Grow(2), Rect(Pt(1, 2), Sz(4, 5)))
+		AssertRect(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Grow(0.1), Rect(Pt(0.6, -0.25), Sz(1.3, 3.7)))
+	})
+	t.Run("per-axis amount", func(t *testing.T) {
+		AssertRect(t, Rect(Pt(1, 2), Sz(2, 3)).GrowXY(2, 3), Rect(Pt(1, 2), Sz(4, 6)))
+		AssertRect(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).GrowXY(0.1, 0.2), Rect(Pt(0.6, -0.25), Sz(1.3, 3.8)))
+	})
+}
+
+func TestRectangle_Shrink(t *testing.T) {
+	t.Run("uniform amount", func(t *testing.T) {
+		AssertRect(t, Rect(Pt(1, 2), Sz(2, 3)).Shrink(1), Rect(Pt(1, 2), Sz(1, 2)))
+		AssertRect(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Shrink(0.1), Rect(Pt(0.6, -0.25), Sz(1.1, 3.5)))
+	})
+	t.Run("per-axis amount", func(t *testing.T) {
+		AssertRect(t, Rect(Pt(1, 2), Sz(2, 3)).ShrinkXY(1, 2), Rect(Pt(1, 2), Sz(1, 1)))
+		AssertRect(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).ShrinkXY(0.1, 0.2), Rect(Pt(0.6, -0.25), Sz(1.1, 3.4)))
+	})
+	t.Run("clamps to zero", func(t *testing.T) {
+		AssertRect(t, Rect(Pt(1, 2), Sz(2, 3)).Shrink(100), Rect(Pt(1, 2), Sz(0, 0)))
+	})
+}
+
+func TestRectangle_Inset(t *testing.T) {
+	t.Run("uniform padding keeps the center", func(t *testing.T) {
+		AssertRect(t, Rect(Pt(0, 0), Sz(10, 10)).Inset(PadU(1)), Rect(Pt(0, 0), Sz(8, 8)))
+	})
+	t.Run("asymmetric padding shifts the center", func(t *testing.T) {
+		AssertRect(t, Rect(Pt(0, 0), Sz(10, 10)).Inset(Pad(3, 1, 1, 5)), Rect(Pt(2, 1), Sz(4, 6)))
+	})
+	t.Run("odd integer padding stays inside the rectangle", func(t *testing.T) {
+		r := Rect(Pt(0, 0), Sz(10, 10))
+
+		AssertPoint(t, r.Inset(Pad(0, 0, 0, 1)).Min(), r.Min().AddXY(1, 0))
+		AssertPoint(t, r.Inset(Pad(0, 0, 0, 1)).Max(), r.Max())
+		AssertPoint(t, r.Inset(Pad(0, 3, 1, 0)).Min(), r.Min())
+		AssertPoint(t, r.Inset(Pad(0, 3, 1, 0)).Max(), r.Max().AddXY(-3, -1))
+	})
+	t.Run("padding beyond the size collapses inside the rectangle", func(t *testing.T) {
+		r := Rect(Pt(0, 0), Sz(10, 10))
+
+		AssertRect(t, r.Inset(Pad(0, 0, 0, 20)), Rect(Pt(5, 0), Sz(0, 10)))
+		AssertRect(t, r.Inset(Pad(0, 20, 0, 0)), Rect(Pt(-5, 0), Sz(0, 10)))
+		AssertRect(t, r.Inset(Pad(20, 0, 20, 0)), Rect(Pt(0, 5), Sz(10, 0)))
+		AssertRect(t, r.Inset(PadU(20)), Rect(Pt(5, 5), Sz(0, 0)))
+		AssertRect(t, Rect(Pt(0.0, 0.0), Sz(10.0, 10.0)).Inset(Pad(0.0, 0.0, 0.0, 12.5)), Rect(Pt(5.0, 0.0), Sz(0.0, 10.0)))
+	})
+	t.Run("a collapsed rectangle is contained by the original", func(t *testing.T) {
+		r := Rect(Pt(0, 0), Sz(10, 10))
+
+		for _, padding := range []Padding[int]{Pad(0, 0, 0, 20), Pad(0, 20, 0, 0), Pad(20, 0, 0, 0), Pad(0, 0, 20, 0), PadU(20), Pad(7, 7, 7, 7)} {
+			inset := r.Inset(padding)
+
+			assert.True(t, r.Contains(inset.Min()), fmt.Sprintf("%s min: ", padding))
+			assert.True(t, r.Contains(inset.Max()), fmt.Sprintf("%s max: ", padding))
+		}
+	})
+	t.Run("negative padding grows the edge", func(t *testing.T) {
+		AssertRect(t, Rect(Pt(0.0, 0.0), Sz(10.0, 10.0)).Inset(Pad(1.5, -2.0, 0.0, 1.0)), Rect(Pt(1.5, 0.75), Sz(11.0, 8.5)))
+	})
+	t.Run("each edge moves inward by its own padding", func(t *testing.T) {
+		r := Rect(Pt(0.0, 0.0), Sz(10.0, 10.0))
+		padding := Pad(3.0, 1.0, 1.0, 5.0)
+		inset := r.Inset(padding)
+
+		AssertPoint(t, inset.Min(), r.Min().AddXY(padding.Left, padding.Top))
+		AssertPoint(t, inset.Max(), r.Max().AddXY(-padding.Right, -padding.Bottom))
+	})
+}
+
+func TestRectangle_Outset(t *testing.T) {
+	t.Run("uniform padding keeps the center", func(t *testing.T) {
+		AssertRect(t, Rect(Pt(0, 0), Sz(10, 10)).Outset(PadU(1)), Rect(Pt(0, 0), Sz(12, 12)))
+	})
+	t.Run("asymmetric padding shifts the center", func(t *testing.T) {
+		AssertRect(t, Rect(Pt(0, 0), Sz(10, 10)).Outset(Pad(3, 1, 1, 5)), Rect(Pt(-2, -1), Sz(16, 14)))
+	})
+	t.Run("undoes an inset", func(t *testing.T) {
+		r := RectangleFromMinMax(Pt(0.0, 0.0), Pt(10.0, 10.0))
+		padding := Pad(1.0, 2.0, 3.0, 4.0)
+
+		AssertRect(t, r.Inset(padding).Outset(padding), r)
+		AssertRect(t, r.Outset(padding).Inset(padding), r)
+	})
+}
+
+func TestRectangle_AlignTo(t *testing.T) {
+	r := RectangleFromMin(Pt(0, 0), Sz(10, 20))
+
+	t.Run("a corner lands on the point", func(t *testing.T) {
+		AssertRect(t, r.AlignTo(TopLeft, Pt(100, 50)), RectangleFromMin(Pt(100, 50), Sz(10, 20)))
+		AssertRect(t, r.AlignTo(BottomRight, Pt(100, 50)), RectangleFromMax(Pt(100, 50), Sz(10, 20)))
+	})
+	t.Run("an edge midpoint lands on the point", func(t *testing.T) {
+		AssertPoint(t, r.AlignTo(Top, Pt(100, 50)).Top(), Pt(100, 50))
+		AssertPoint(t, r.AlignTo(DirectionLeft, Pt(100, 50)).Left(), Pt(100, 50))
+	})
+	t.Run("none aligns the center", func(t *testing.T) {
+		AssertRect(t, r.AlignTo(DirectionNone, Pt(100, 50)), r.MoveTo(Pt(100, 50)))
+	})
+	t.Run("keeps the size and inverts Anchor", func(t *testing.T) {
+		for _, rect := range rectFixtures {
+			for _, direction := range Directions() {
+				aligned := rect.AlignTo(direction, Pt(3.5, -2.25))
+
+				AssertSize(t, aligned.Size, rect.Size, fmt.Sprintf("%s %s: ", rect, direction))
+				AssertPoint(t, aligned.Anchor(direction), Pt(3.5, -2.25), fmt.Sprintf("%s %s: ", rect, direction))
+			}
+		}
+	})
+}
+
 func TestRectangle_Clamp(t *testing.T) {
 	t.Run("inside point is unchanged", func(t *testing.T) {
 		AssertPoint(t, Rect(Pt(1, 2), Sz(2, 3)).Clamp(Pt(2, 2)), Pt(2, 2))
@@ -370,34 +370,6 @@ func TestRectangle_Clamp(t *testing.T) {
 	t.Run("outside point snaps to the edge", func(t *testing.T) {
 		AssertPoint(t, Rect(Pt(1, 2), Sz(2, 3)).Clamp(Pt(10, 10)), Pt(2, 4))
 		AssertPoint(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Clamp(Pt(-1.0, 1.2)), Pt(0.0, 1.2))
-	})
-}
-
-func TestRectangle_Equal(t *testing.T) {
-	t.Run("same rectangle", func(t *testing.T) {
-		assert.True(t, Rect(Pt(1, 2), Sz(2, 3)).Equal(Rect(Pt(1, 2), Sz(2, 3))))
-		assert.True(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Equal(Rect(Pt(0.6, -0.25), Sz(1.2, 3.6))))
-	})
-	t.Run("different rectangle", func(t *testing.T) {
-		assert.False(t, Rect(Pt(1, 2), Sz(2, 3)).Equal(Rect(Pt(3, -3), Sz(3, 4))))
-		assert.False(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Equal(Rect(Pt(100.1, -0.1), Sz(1.2, 3.4))))
-	})
-	t.Run("within delta", func(t *testing.T) {
-		assert.True(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Equal(Rect(Pt(0.6, -0.250001), Sz(1.2, 3.6))))
-	})
-}
-
-func TestRectangle_IsZero(t *testing.T) {
-	t.Run("zero rectangle", func(t *testing.T) {
-		assert.True(t, Rectangle[int]{}.IsZero())
-		assert.True(t, Rectangle[float64]{}.IsZero())
-	})
-	t.Run("non-zero rectangle", func(t *testing.T) {
-		assert.False(t, Rect(Pt(1, 2), Sz(2, 3)).IsZero())
-		assert.False(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).IsZero())
-	})
-	t.Run("within delta", func(t *testing.T) {
-		assert.True(t, Rect(Pt(0.0, 0.000001), Sz(0.0, 0.0)).IsZero())
 	})
 }
 
@@ -501,6 +473,15 @@ func TestRectangle_Intersects(t *testing.T) {
 	})
 }
 
+func BenchmarkRectangle_Intersects(b *testing.B) {
+	rectangle := Rect(Pt(0.0, 0.0), Sz(10.0, 10.0))
+	other := Rect(Pt(5.0, 5.0), Sz(10.0, 10.0))
+
+	for b.Loop() {
+		sinkBool = rectangle.Intersects(other)
+	}
+}
+
 func TestRectangle_Intersection(t *testing.T) {
 	rectangle := Rect(Pt(0, 0), Sz(4, 4))
 
@@ -584,15 +565,6 @@ func TestRectangle_Union(t *testing.T) {
 	})
 }
 
-func BenchmarkRectangle_Intersects(b *testing.B) {
-	rectangle := Rect(Pt(0.0, 0.0), Sz(10.0, 10.0))
-	other := Rect(Pt(5.0, 5.0), Sz(10.0, 10.0))
-
-	for b.Loop() {
-		sinkBool = rectangle.Intersects(other)
-	}
-}
-
 func TestRectangle_IntersectsCircle(t *testing.T) {
 	rectangle := Rect(Pt(0.0, 0.0), Sz(200.0, 100.0))
 
@@ -651,6 +623,34 @@ func TestRectangle_IntersectsPolygon(t *testing.T) {
 				assert.Equal(t, r.IntersectsPolygon(p), p.IntersectsRectangle(r), fmt.Sprintf("%s → %s: ", r, p))
 			}
 		}
+	})
+}
+
+func TestRectangle_Equal(t *testing.T) {
+	t.Run("same rectangle", func(t *testing.T) {
+		assert.True(t, Rect(Pt(1, 2), Sz(2, 3)).Equal(Rect(Pt(1, 2), Sz(2, 3))))
+		assert.True(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Equal(Rect(Pt(0.6, -0.25), Sz(1.2, 3.6))))
+	})
+	t.Run("different rectangle", func(t *testing.T) {
+		assert.False(t, Rect(Pt(1, 2), Sz(2, 3)).Equal(Rect(Pt(3, -3), Sz(3, 4))))
+		assert.False(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Equal(Rect(Pt(100.1, -0.1), Sz(1.2, 3.4))))
+	})
+	t.Run("within delta", func(t *testing.T) {
+		assert.True(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Equal(Rect(Pt(0.6, -0.250001), Sz(1.2, 3.6))))
+	})
+}
+
+func TestRectangle_IsZero(t *testing.T) {
+	t.Run("zero rectangle", func(t *testing.T) {
+		assert.True(t, Rectangle[int]{}.IsZero())
+		assert.True(t, Rectangle[float64]{}.IsZero())
+	})
+	t.Run("non-zero rectangle", func(t *testing.T) {
+		assert.False(t, Rect(Pt(1, 2), Sz(2, 3)).IsZero())
+		assert.False(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).IsZero())
+	})
+	t.Run("within delta", func(t *testing.T) {
+		assert.True(t, Rect(Pt(0.0, 0.000001), Sz(0.0, 0.0)).IsZero())
 	})
 }
 

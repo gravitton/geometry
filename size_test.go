@@ -59,6 +59,50 @@ func TestParseSize(t *testing.T) {
 	})
 }
 
+func TestSize_XY(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		width, height := Sz(10, 16).XY()
+		AssertNumber(t, width, 10)
+		AssertNumber(t, height, 16)
+	})
+	t.Run("float", func(t *testing.T) {
+		width, height := Sz(0.4, -0.25).XY()
+		AssertNumber(t, width, 0.4)
+		AssertNumber(t, height, -0.25)
+	})
+}
+
+func TestSize_Area(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertNumber(t, Sz(5, 3).Area(), 15)
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Sz(0.4, 0.25).Area(), 0.1)
+	})
+}
+
+func TestSize_Perimeter(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertNumber(t, Sz(5, 3).Perimeter(), 16)
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Sz(0.4, 0.25).Perimeter(), 1.3)
+	})
+}
+
+func TestSize_AspectRatio(t *testing.T) {
+	t.Run("wider than tall", func(t *testing.T) {
+		AssertNumber(t, Sz(5, 3).AspectRatio(), 5.0/3.0)
+		AssertNumber(t, Sz(0.4, 0.25).AspectRatio(), 1.6)
+	})
+	t.Run("square", func(t *testing.T) {
+		AssertNumber(t, SzU(7).AspectRatio(), 1.0)
+	})
+	t.Run("zero height", func(t *testing.T) {
+		AssertNumber(t, Sz(16, 0).AspectRatio(), 0.0)
+	})
+}
+
 func TestSize_Scale(t *testing.T) {
 	t.Run("uniform factor", func(t *testing.T) {
 		AssertSize(t, Sz(2, 3).Scale(2.5), Sz(5, 8)) // int: 7.5 rounds to 8
@@ -114,37 +158,6 @@ func TestSize_Shrink(t *testing.T) {
 		AssertSize(t, Sz(2, 3).Shrink(5), Sz(0, 0))
 		AssertSize(t, Sz(2, 3).ShrinkXY(5, 1), Sz(0, 2))
 		AssertSize(t, Sz(0.4, 0.25).Shrink(1.0), Sz(0.0, 0.0))
-	})
-}
-
-func TestSize_Area(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		AssertNumber(t, Sz(5, 3).Area(), 15)
-	})
-	t.Run("float", func(t *testing.T) {
-		AssertNumber(t, Sz(0.4, 0.25).Area(), 0.1)
-	})
-}
-
-func TestSize_Perimeter(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		AssertNumber(t, Sz(5, 3).Perimeter(), 16)
-	})
-	t.Run("float", func(t *testing.T) {
-		AssertNumber(t, Sz(0.4, 0.25).Perimeter(), 1.3)
-	})
-}
-
-func TestSize_AspectRatio(t *testing.T) {
-	t.Run("wider than tall", func(t *testing.T) {
-		AssertNumber(t, Sz(5, 3).AspectRatio(), 5.0/3.0)
-		AssertNumber(t, Sz(0.4, 0.25).AspectRatio(), 1.6)
-	})
-	t.Run("square", func(t *testing.T) {
-		AssertNumber(t, SzU(7).AspectRatio(), 1.0)
-	})
-	t.Run("zero height", func(t *testing.T) {
-		AssertNumber(t, Sz(16, 0).AspectRatio(), 0.0)
 	})
 }
 
@@ -261,19 +274,6 @@ func TestSize_IsZero(t *testing.T) {
 	})
 	t.Run("within delta", func(t *testing.T) {
 		assert.True(t, Sz(0.0, 0.000001).IsZero())
-	})
-}
-
-func TestSize_XY(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		width, height := Sz(10, 16).XY()
-		AssertNumber(t, width, 10)
-		AssertNumber(t, height, 16)
-	})
-	t.Run("float", func(t *testing.T) {
-		width, height := Sz(0.4, -0.25).XY()
-		AssertNumber(t, width, 0.4)
-		AssertNumber(t, height, -0.25)
 	})
 }
 

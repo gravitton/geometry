@@ -59,22 +59,61 @@ func TestVectorFromAngleSize(t *testing.T) {
 	})
 }
 
-func TestVector_Transform(t *testing.T) {
-	t.Run("float64 matrix", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), Vec(48, 132))
-		AssertVector(t, Vec(0.6, -0.25).Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), Vec(0.085, 1.265))
+func TestVector_XY(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		x, y := Vec(10, 16).XY()
+		AssertNumber(t, x, 10)
+		AssertNumber(t, y, 16)
 	})
-	t.Run("float32 matrix", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).Transform(Mat[float32](1, 2, 3, 4, 5, 6)), Vec(42, 120))
-		AssertVector(t, Vec(0.6, -0.25).Transform(Mat[float32](1, 2, 3, 4, 5, 6)), Vec(0.1, 1.15))
+	t.Run("float", func(t *testing.T) {
+		x, y := Vec(0.6, -0.25).XY()
+		AssertNumber(t, x, 0.6)
+		AssertNumber(t, y, -0.25)
 	})
-	t.Run("integer matrix converted to float", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).Transform(Mat(1, 2, 3, 4, 5, 6).Float()), Vec(42, 120))
-		AssertVector(t, Vec(0.6, -0.25).Transform(Mat(1, 2, 3, 4, 5, 6).Float()), Vec(0.1, 1.15))
+}
+
+func TestVector_Length(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertNumber(t, Vec(10, 16).Length(), math.Sqrt(356))
 	})
-	t.Run("translation is ignored", func(t *testing.T) {
-		// a vector is a displacement, so only the linear part applies
-		AssertVector(t, Vec(1.0, 2.0).Transform(TranslationMatrix(5.0, 7.0)), Vec(1.0, 2.0))
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Vec(0.6, -0.25).Length(), 0.65)
+	})
+}
+
+func TestVector_LengthSquared(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertNumber(t, Vec(10, 16).LengthSquared(), 356)
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Vec(0.6, -0.25).LengthSquared(), 0.4225)
+	})
+}
+
+func TestVector_Angle(t *testing.T) {
+	t.Run("diagonal", func(t *testing.T) {
+		AssertNumber(t, Vec(2, 2).Angle(), ToRadians(45))
+		AssertNumber(t, Vec(0.6, -0.25).Angle(), -0.39479111)
+	})
+	t.Run("zero vector", func(t *testing.T) {
+		AssertNumber(t, Vec(0, 0).Angle(), 0)
+	})
+}
+
+func TestVector_Direction(t *testing.T) {
+	t.Run("snaps to the nearest direction", func(t *testing.T) {
+		assert.Equal(t, Vec(3, 0).Direction(), DirectionRight)
+		assert.Equal(t, Vec(2.0, -2.0).Direction(), DirectionUpRight)
+		assert.Equal(t, Vec(10.0, 1.0).Direction(), DirectionRight)
+	})
+	t.Run("zero vector has no direction", func(t *testing.T) {
+		assert.Equal(t, Vec(0, 0).Direction(), DirectionNone)
+	})
+	t.Run("a vector shorter than Epsilon still has one", func(t *testing.T) {
+		assert.Equal(t, Vec(-1e-7, 0.0).Direction(), DirectionLeft)
+	})
+	t.Run("NaN has no direction", func(t *testing.T) {
+		assert.Equal(t, Vec(math.NaN(), 1.0).Direction(), DirectionNone)
 	})
 }
 
@@ -136,6 +175,78 @@ func TestVector_Negate(t *testing.T) {
 	})
 	t.Run("float", func(t *testing.T) {
 		AssertVector(t, Vec(0.6, -0.25).Negate(), Vec(-0.6, 0.25))
+	})
+}
+
+func TestVector_Abs(t *testing.T) {
+	t.Run("negative components", func(t *testing.T) {
+		AssertVector(t, Vec(-1, -3).Abs(), Vec(1, 3))
+		AssertVector(t, Vec(0.6, -0.25).Abs(), Vec(0.6, 0.25))
+	})
+	t.Run("non-negative components unchanged", func(t *testing.T) {
+		AssertVector(t, Vec(10, 16).Abs(), Vec(10, 16))
+		AssertVector(t, Vec(0.0, 0.0).Abs(), Vec(0.0, 0.0))
+	})
+}
+
+func TestVector_Round(t *testing.T) {
+	t.Run("float", func(t *testing.T) {
+		AssertVector(t, Vec(1.4, -1.5).Round(), Vec(1.0, -2.0))
+	})
+	t.Run("int is a no-op", func(t *testing.T) {
+		AssertVector(t, Vec(3, -2).Round(), Vec(3, -2))
+	})
+}
+
+func TestVector_Floor(t *testing.T) {
+	t.Run("float", func(t *testing.T) {
+		AssertVector(t, Vec(1.9, -1.1).Floor(), Vec(1.0, -2.0))
+	})
+	t.Run("int is a no-op", func(t *testing.T) {
+		AssertVector(t, Vec(3, -2).Floor(), Vec(3, -2))
+	})
+}
+
+func TestVector_Ceil(t *testing.T) {
+	t.Run("float", func(t *testing.T) {
+		AssertVector(t, Vec(1.1, -1.9).Ceil(), Vec(2.0, -1.0))
+	})
+	t.Run("int is a no-op", func(t *testing.T) {
+		AssertVector(t, Vec(3, -2).Ceil(), Vec(3, -2))
+	})
+}
+
+func TestVector_Lerp(t *testing.T) {
+	t.Run("between vectors", func(t *testing.T) {
+		AssertVector(t, Vec(10, 16).Lerp(Vec(20, 20), 0.25), Vec(13, 17))
+		AssertVector(t, Vec(0.6, -0.25).Lerp(Vec(-10.0, 10.0), 0.25), Vec(-2.05, 2.3125))
+	})
+	t.Run("endpoints", func(t *testing.T) {
+		AssertVector(t, Vec(10, 16).Lerp(Vec(20, 20), 0), Vec(10, 16))
+		AssertVector(t, Vec(10, 16).Lerp(Vec(20, 20), 1), Vec(20, 20))
+	})
+	t.Run("extrapolates outside the unit range", func(t *testing.T) {
+		AssertVector(t, Vec(0.0, 0.0).Lerp(Vec(2.0, 2.0), 2), Vec(4.0, 4.0))
+		AssertVector(t, Vec(0.0, 0.0).Lerp(Vec(2.0, 2.0), -1), Vec(-2.0, -2.0))
+	})
+}
+
+func TestVector_Transform(t *testing.T) {
+	t.Run("float64 matrix", func(t *testing.T) {
+		AssertVector(t, Vec(10, 16).Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), Vec(48, 132))
+		AssertVector(t, Vec(0.6, -0.25).Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), Vec(0.085, 1.265))
+	})
+	t.Run("float32 matrix", func(t *testing.T) {
+		AssertVector(t, Vec(10, 16).Transform(Mat[float32](1, 2, 3, 4, 5, 6)), Vec(42, 120))
+		AssertVector(t, Vec(0.6, -0.25).Transform(Mat[float32](1, 2, 3, 4, 5, 6)), Vec(0.1, 1.15))
+	})
+	t.Run("integer matrix converted to float", func(t *testing.T) {
+		AssertVector(t, Vec(10, 16).Transform(Mat(1, 2, 3, 4, 5, 6).Float()), Vec(42, 120))
+		AssertVector(t, Vec(0.6, -0.25).Transform(Mat(1, 2, 3, 4, 5, 6).Float()), Vec(0.1, 1.15))
+	})
+	t.Run("translation is ignored", func(t *testing.T) {
+		// a vector is a displacement, so only the linear part applies
+		AssertVector(t, Vec(1.0, 2.0).Transform(TranslationMatrix(5.0, 7.0)), Vec(1.0, 2.0))
 	})
 }
 
@@ -212,80 +323,12 @@ func TestVector_Normalize(t *testing.T) {
 	})
 }
 
-func TestVector_Abs(t *testing.T) {
-	t.Run("negative components", func(t *testing.T) {
-		AssertVector(t, Vec(-1, -3).Abs(), Vec(1, 3))
-		AssertVector(t, Vec(0.6, -0.25).Abs(), Vec(0.6, 0.25))
+func TestVector_Normal(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertVector(t, Vec(10, 16).Normal(), Vec(-16, 10))
 	})
-	t.Run("non-negative components unchanged", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).Abs(), Vec(10, 16))
-		AssertVector(t, Vec(0.0, 0.0).Abs(), Vec(0.0, 0.0))
-	})
-}
-
-func TestVector_Round(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
-		AssertVector(t, Vec(1.4, -1.5).Round(), Vec(1.0, -2.0))
-	})
-	t.Run("int is a no-op", func(t *testing.T) {
-		AssertVector(t, Vec(3, -2).Round(), Vec(3, -2))
-	})
-}
-
-func TestVector_Floor(t *testing.T) {
-	t.Run("float", func(t *testing.T) {
-		AssertVector(t, Vec(1.9, -1.1).Floor(), Vec(1.0, -2.0))
-	})
-	t.Run("int is a no-op", func(t *testing.T) {
-		AssertVector(t, Vec(3, -2).Floor(), Vec(3, -2))
-	})
-}
-
-func TestVector_Ceil(t *testing.T) {
-	t.Run("float", func(t *testing.T) {
-		AssertVector(t, Vec(1.1, -1.9).Ceil(), Vec(2.0, -1.0))
-	})
-	t.Run("int is a no-op", func(t *testing.T) {
-		AssertVector(t, Vec(3, -2).Ceil(), Vec(3, -2))
-	})
-}
-
-func TestVector_Dot(t *testing.T) {
-	t.Run("general vectors", func(t *testing.T) {
-		AssertNumber(t, Vec(10, 16).Dot(Vec(3, -3)), -18)
-		AssertNumber(t, Vec(0.6, -0.25).Dot(Vec(100.1, -0.1)), 60.085)
-	})
-	t.Run("perpendicular vectors are zero", func(t *testing.T) {
-		AssertNumber(t, Vec(1, 0).Dot(Vec(0, 1)), 0)
-	})
-	t.Run("a float vector and its normal are exactly zero", func(t *testing.T) {
-		for _, v := range []Vector[float64]{Vec(0.1, 0.3), Vec(1.1, 3.3), Vec(2.5, 1e5+0.1)} {
-			assert.Equal(t, v.Dot(v.Normal()), 0.0, v.String())
-		}
-		for _, v := range []Vector[float32]{Vec[float32](0.1, 0.3), Vec[float32](1.1, 3.3)} {
-			assert.Equal(t, v.Dot(v.Normal()), float32(0), v.String())
-		}
-	})
-	t.Run("narrow integers do not overflow mid-computation", func(t *testing.T) {
-		AssertNumber(t, Vec[int8](100, 50).Dot(Vec[int8](2, -2)), 100)
-	})
-}
-
-func TestVector_Cross(t *testing.T) {
-	t.Run("general vectors", func(t *testing.T) {
-		AssertNumber(t, Vec(10, 16).Cross(Vec(3, -3)), -78)
-		AssertNumber(t, Vec(0.6, -0.25).Cross(Vec(100.1, -0.1)), 24.965)
-	})
-	t.Run("parallel vectors are zero", func(t *testing.T) {
-		AssertNumber(t, Vec(2, 4).Cross(Vec(1, 2)), 0)
-	})
-	t.Run("a float vector with itself is exactly zero", func(t *testing.T) {
-		for _, v := range []Vector[float64]{Vec(0.1, 0.3), Vec(1.1, 3.3), Vec(2.5, 1e5+0.1)} {
-			assert.Equal(t, v.Cross(v), 0.0, v.String())
-		}
-		for _, v := range []Vector[float32]{Vec[float32](0.1, 0.3), Vec[float32](1.1, 3.3)} {
-			assert.Equal(t, v.Cross(v), float32(0), v.String())
-		}
+		AssertVector(t, Vec(0.6, -0.25).Normal(), Vec(0.25, 0.6))
 	})
 }
 
@@ -363,6 +406,45 @@ func TestVector_Reflect(t *testing.T) {
 	})
 }
 
+func TestVector_Dot(t *testing.T) {
+	t.Run("general vectors", func(t *testing.T) {
+		AssertNumber(t, Vec(10, 16).Dot(Vec(3, -3)), -18)
+		AssertNumber(t, Vec(0.6, -0.25).Dot(Vec(100.1, -0.1)), 60.085)
+	})
+	t.Run("perpendicular vectors are zero", func(t *testing.T) {
+		AssertNumber(t, Vec(1, 0).Dot(Vec(0, 1)), 0)
+	})
+	t.Run("a float vector and its normal are exactly zero", func(t *testing.T) {
+		for _, v := range []Vector[float64]{Vec(0.1, 0.3), Vec(1.1, 3.3), Vec(2.5, 1e5+0.1)} {
+			assert.Equal(t, v.Dot(v.Normal()), 0.0, v.String())
+		}
+		for _, v := range []Vector[float32]{Vec[float32](0.1, 0.3), Vec[float32](1.1, 3.3)} {
+			assert.Equal(t, v.Dot(v.Normal()), float32(0), v.String())
+		}
+	})
+	t.Run("narrow integers do not overflow mid-computation", func(t *testing.T) {
+		AssertNumber(t, Vec[int8](100, 50).Dot(Vec[int8](2, -2)), 100)
+	})
+}
+
+func TestVector_Cross(t *testing.T) {
+	t.Run("general vectors", func(t *testing.T) {
+		AssertNumber(t, Vec(10, 16).Cross(Vec(3, -3)), -78)
+		AssertNumber(t, Vec(0.6, -0.25).Cross(Vec(100.1, -0.1)), 24.965)
+	})
+	t.Run("parallel vectors are zero", func(t *testing.T) {
+		AssertNumber(t, Vec(2, 4).Cross(Vec(1, 2)), 0)
+	})
+	t.Run("a float vector with itself is exactly zero", func(t *testing.T) {
+		for _, v := range []Vector[float64]{Vec(0.1, 0.3), Vec(1.1, 3.3), Vec(2.5, 1e5+0.1)} {
+			assert.Equal(t, v.Cross(v), 0.0, v.String())
+		}
+		for _, v := range []Vector[float32]{Vec[float32](0.1, 0.3), Vec[float32](1.1, 3.3)} {
+			assert.Equal(t, v.Cross(v), float32(0), v.String())
+		}
+	})
+}
+
 func TestVector_AngleBetween(t *testing.T) {
 	t.Run("right angle", func(t *testing.T) {
 		AssertNumber(t, Vec(1, 0).AngleBetween(Vec(0, 1)), Pi/2)
@@ -388,75 +470,6 @@ func TestVector_AngleBetween(t *testing.T) {
 				AssertNumber(t, angle, b.AngleBetween(a), fmt.Sprintf("%s to %s: ", a, b))
 			}
 		}
-	})
-}
-
-func TestVector_Normal(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).Normal(), Vec(-16, 10))
-	})
-	t.Run("float", func(t *testing.T) {
-		AssertVector(t, Vec(0.6, -0.25).Normal(), Vec(0.25, 0.6))
-	})
-}
-
-func TestVector_Length(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		AssertNumber(t, Vec(10, 16).Length(), math.Sqrt(356))
-	})
-	t.Run("float", func(t *testing.T) {
-		AssertNumber(t, Vec(0.6, -0.25).Length(), 0.65)
-	})
-}
-
-func TestVector_LengthSquared(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		AssertNumber(t, Vec(10, 16).LengthSquared(), 356)
-	})
-	t.Run("float", func(t *testing.T) {
-		AssertNumber(t, Vec(0.6, -0.25).LengthSquared(), 0.4225)
-	})
-}
-
-func TestVector_Angle(t *testing.T) {
-	t.Run("diagonal", func(t *testing.T) {
-		AssertNumber(t, Vec(2, 2).Angle(), ToRadians(45))
-		AssertNumber(t, Vec(0.6, -0.25).Angle(), -0.39479111)
-	})
-	t.Run("zero vector", func(t *testing.T) {
-		AssertNumber(t, Vec(0, 0).Angle(), 0)
-	})
-}
-
-func TestVector_Direction(t *testing.T) {
-	t.Run("snaps to the nearest direction", func(t *testing.T) {
-		assert.Equal(t, Vec(3, 0).Direction(), DirectionRight)
-		assert.Equal(t, Vec(2.0, -2.0).Direction(), DirectionUpRight)
-		assert.Equal(t, Vec(10.0, 1.0).Direction(), DirectionRight)
-	})
-	t.Run("zero vector has no direction", func(t *testing.T) {
-		assert.Equal(t, Vec(0, 0).Direction(), DirectionNone)
-	})
-	t.Run("a vector shorter than Epsilon still has one", func(t *testing.T) {
-		assert.Equal(t, Vec(-1e-7, 0.0).Direction(), DirectionLeft)
-	})
-	t.Run("NaN has no direction", func(t *testing.T) {
-		assert.Equal(t, Vec(math.NaN(), 1.0).Direction(), DirectionNone)
-	})
-}
-
-func TestVector_Lerp(t *testing.T) {
-	t.Run("between vectors", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).Lerp(Vec(20, 20), 0.25), Vec(13, 17))
-		AssertVector(t, Vec(0.6, -0.25).Lerp(Vec(-10.0, 10.0), 0.25), Vec(-2.05, 2.3125))
-	})
-	t.Run("endpoints", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).Lerp(Vec(20, 20), 0), Vec(10, 16))
-		AssertVector(t, Vec(10, 16).Lerp(Vec(20, 20), 1), Vec(20, 20))
-	})
-	t.Run("extrapolates outside the unit range", func(t *testing.T) {
-		AssertVector(t, Vec(0.0, 0.0).Lerp(Vec(2.0, 2.0), 2), Vec(4.0, 4.0))
-		AssertVector(t, Vec(0.0, 0.0).Lerp(Vec(2.0, 2.0), -1), Vec(-2.0, -2.0))
 	})
 }
 
@@ -640,19 +653,6 @@ func TestVector_LessOrEqual(t *testing.T) {
 	t.Run("float allows Delta past the length", func(t *testing.T) {
 		assert.True(t, Vec(3.0, 4.0).LessOrEqual(5-Delta/2))
 		assert.False(t, Vec(3.0, 4.0).LessOrEqual(5-2*Delta))
-	})
-}
-
-func TestVector_XY(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		x, y := Vec(10, 16).XY()
-		AssertNumber(t, x, 10)
-		AssertNumber(t, y, 16)
-	})
-	t.Run("float", func(t *testing.T) {
-		x, y := Vec(0.6, -0.25).XY()
-		AssertNumber(t, x, 0.6)
-		AssertNumber(t, y, -0.25)
 	})
 }
 

@@ -18,63 +18,6 @@ func TestCircle_Constructor(t *testing.T) {
 	})
 }
 
-func TestCircle_Translate(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		AssertCircle(t, Circ(Pt(1, 2), 10).Translate(Vec(3, -2)), Circ(Pt(4, 0), 10))
-	})
-	t.Run("float", func(t *testing.T) {
-		AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).Translate(Vec(100.1, -0.1)), Circ(Pt(100.7, -0.35), 1.2))
-	})
-}
-
-func TestCircle_MoveTo(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		AssertCircle(t, Circ(Pt(1, 2), 10).MoveTo(Pt(3, -2)), Circ(Pt(3, -2), 10))
-	})
-	t.Run("float", func(t *testing.T) {
-		AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).MoveTo(Pt(100.1, -0.1)), Circ(Pt(100.1, -0.1), 1.2))
-	})
-}
-
-func TestCircle_Scale(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		AssertCircle(t, Circ(Pt(1, 2), 10).Scale(2.5), Circ(Pt(1, 2), 25))
-	})
-	t.Run("float", func(t *testing.T) {
-		AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).Scale(2.5), Circ(Pt(0.6, -0.25), 3.0))
-	})
-}
-
-func TestCircle_Resize(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		AssertCircle(t, Circ(Pt(1, 2), 10).Resize(8), Circ(Pt(1, 2), 8))
-	})
-	t.Run("float", func(t *testing.T) {
-		AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).Resize(3.1), Circ(Pt(0.6, -0.25), 3.1))
-	})
-}
-
-func TestCircle_Grow(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		AssertCircle(t, Circ(Pt(1, 2), 10).Grow(8), Circ(Pt(1, 2), 18))
-		AssertCircle(t, Circ(Pt(1, 2), 10).Grow(-12), Circ(Pt(1, 2), 0))
-	})
-	t.Run("float", func(t *testing.T) {
-		AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).Grow(3.1), Circ(Pt(0.6, -0.25), 4.3))
-	})
-}
-
-func TestCircle_Shrink(t *testing.T) {
-	t.Run("reduces the radius", func(t *testing.T) {
-		AssertCircle(t, Circ(Pt(1, 2), 10).Shrink(8), Circ(Pt(1, 2), 2))
-		AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).Shrink(0.3), Circ(Pt(0.6, -0.25), 0.9))
-	})
-	t.Run("clamps to zero", func(t *testing.T) {
-		AssertCircle(t, Circ(Pt(1, 2), 10).Shrink(100), Circ(Pt(1, 2), 0))
-		AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).Shrink(5.0), Circ(Pt(0.6, -0.25), 0.0))
-	})
-}
-
 func TestCircle_Area(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		AssertNumber(t, Circ(Pt(1, 2), 10).Area(), Pi*100.0)
@@ -132,39 +75,60 @@ func TestCircle_Anchor(t *testing.T) {
 	})
 }
 
-func TestCircle_Equal(t *testing.T) {
-	t.Run("same circle", func(t *testing.T) {
-		assert.True(t, Circ(Pt(1, 2), 10).Equal(Circ(Pt(1, 2), 10)))
-		assert.True(t, Circ(Pt(0.6, -0.25), 1.2).Equal(Circ(Pt(0.6, -0.25), 1.2)))
+func TestCircle_Translate(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(1, 2), 10).Translate(Vec(3, -2)), Circ(Pt(4, 0), 10))
 	})
-	t.Run("different circle", func(t *testing.T) {
-		assert.False(t, Circ(Pt(1, 2), 10).Equal(Circ(Pt(3, -3), 10)))
-		assert.False(t, Circ(Pt(1, 2), 10).Equal(Circ(Pt(1, 2), 11)))
-		assert.False(t, Circ(Pt(0.6, -0.25), 1.2).Equal(Circ(Pt(100.1, -0.1), 1.2)))
-	})
-	t.Run("within delta", func(t *testing.T) {
-		assert.True(t, Circ(Pt(0.6, -0.25), 1.2).Equal(Circ(Pt(0.6, -0.250001), 1.2)))
+	t.Run("float", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).Translate(Vec(100.1, -0.1)), Circ(Pt(100.7, -0.35), 1.2))
 	})
 }
 
-func TestCircle_IsZero(t *testing.T) {
-	t.Run("zero circle", func(t *testing.T) {
-		assert.True(t, Circle[int]{}.IsZero())
-		assert.True(t, Circ(Pt(0, 0), 0).IsZero())
-		assert.True(t, Circle[float64]{}.IsZero())
+func TestCircle_MoveTo(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(1, 2), 10).MoveTo(Pt(3, -2)), Circ(Pt(3, -2), 10))
 	})
-	t.Run("only the center or only the radius is zero", func(t *testing.T) {
-		assert.False(t, Circ(Pt(0, 0), 10).IsZero())
-		assert.False(t, Circ(Pt(2, 1), 0).IsZero())
-		assert.False(t, Circ(Pt(0.0, 0.0), 10.0).IsZero())
-		assert.False(t, Circ(Pt(2.0, 1.0), 0.0).IsZero())
+	t.Run("float", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).MoveTo(Pt(100.1, -0.1)), Circ(Pt(100.1, -0.1), 1.2))
 	})
-	t.Run("non-zero circle", func(t *testing.T) {
-		assert.False(t, Circ(Pt(1, 2), 10).IsZero())
-		assert.False(t, Circ(Pt(1.0, 2.0), 10.0).IsZero())
+}
+
+func TestCircle_Scale(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(1, 2), 10).Scale(2.5), Circ(Pt(1, 2), 25))
 	})
-	t.Run("within delta", func(t *testing.T) {
-		assert.True(t, Circ(Pt(0.0, 0.000001), 0.0).IsZero())
+	t.Run("float", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).Scale(2.5), Circ(Pt(0.6, -0.25), 3.0))
+	})
+}
+
+func TestCircle_Resize(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(1, 2), 10).Resize(8), Circ(Pt(1, 2), 8))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).Resize(3.1), Circ(Pt(0.6, -0.25), 3.1))
+	})
+}
+
+func TestCircle_Grow(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(1, 2), 10).Grow(8), Circ(Pt(1, 2), 18))
+		AssertCircle(t, Circ(Pt(1, 2), 10).Grow(-12), Circ(Pt(1, 2), 0))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).Grow(3.1), Circ(Pt(0.6, -0.25), 4.3))
+	})
+}
+
+func TestCircle_Shrink(t *testing.T) {
+	t.Run("reduces the radius", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(1, 2), 10).Shrink(8), Circ(Pt(1, 2), 2))
+		AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).Shrink(0.3), Circ(Pt(0.6, -0.25), 0.9))
+	})
+	t.Run("clamps to zero", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(1, 2), 10).Shrink(100), Circ(Pt(1, 2), 0))
+		AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).Shrink(5.0), Circ(Pt(0.6, -0.25), 0.0))
 	})
 }
 
@@ -351,6 +315,42 @@ func TestCircle_IntersectsPolygon(t *testing.T) {
 				assert.Equal(t, c.IntersectsPolygon(p), p.IntersectsCircle(c), fmt.Sprintf("%s → %s: ", c, p))
 			}
 		}
+	})
+}
+
+func TestCircle_Equal(t *testing.T) {
+	t.Run("same circle", func(t *testing.T) {
+		assert.True(t, Circ(Pt(1, 2), 10).Equal(Circ(Pt(1, 2), 10)))
+		assert.True(t, Circ(Pt(0.6, -0.25), 1.2).Equal(Circ(Pt(0.6, -0.25), 1.2)))
+	})
+	t.Run("different circle", func(t *testing.T) {
+		assert.False(t, Circ(Pt(1, 2), 10).Equal(Circ(Pt(3, -3), 10)))
+		assert.False(t, Circ(Pt(1, 2), 10).Equal(Circ(Pt(1, 2), 11)))
+		assert.False(t, Circ(Pt(0.6, -0.25), 1.2).Equal(Circ(Pt(100.1, -0.1), 1.2)))
+	})
+	t.Run("within delta", func(t *testing.T) {
+		assert.True(t, Circ(Pt(0.6, -0.25), 1.2).Equal(Circ(Pt(0.6, -0.250001), 1.2)))
+	})
+}
+
+func TestCircle_IsZero(t *testing.T) {
+	t.Run("zero circle", func(t *testing.T) {
+		assert.True(t, Circle[int]{}.IsZero())
+		assert.True(t, Circ(Pt(0, 0), 0).IsZero())
+		assert.True(t, Circle[float64]{}.IsZero())
+	})
+	t.Run("only the center or only the radius is zero", func(t *testing.T) {
+		assert.False(t, Circ(Pt(0, 0), 10).IsZero())
+		assert.False(t, Circ(Pt(2, 1), 0).IsZero())
+		assert.False(t, Circ(Pt(0.0, 0.0), 10.0).IsZero())
+		assert.False(t, Circ(Pt(2.0, 1.0), 0.0).IsZero())
+	})
+	t.Run("non-zero circle", func(t *testing.T) {
+		assert.False(t, Circ(Pt(1, 2), 10).IsZero())
+		assert.False(t, Circ(Pt(1.0, 2.0), 10.0).IsZero())
+	})
+	t.Run("within delta", func(t *testing.T) {
+		assert.True(t, Circ(Pt(0.0, 0.000001), 0.0).IsZero())
 	})
 }
 

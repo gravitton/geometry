@@ -25,6 +25,21 @@ func PadXY[T Number](topBottom, leftRight T) Padding[T] {
 	return Padding[T]{topBottom, leftRight, topBottom, leftRight}
 }
 
+// Width returns the width of the padding.
+func (p Padding[T]) Width() T {
+	return p.Left + p.Right
+}
+
+// Height returns the height of the padding.
+func (p Padding[T]) Height() T {
+	return p.Top + p.Bottom
+}
+
+// XY returns the width and height of the padding.
+func (p Padding[T]) XY() (T, T) {
+	return p.Width(), p.Height()
+}
+
 // Add creates a new Padding by adding the given padding edge by edge.
 func (p Padding[T]) Add(padding Padding[T]) Padding[T] {
 	return Padding[T]{p.Top + padding.Top, p.Right + padding.Right, p.Bottom + padding.Bottom, p.Left + padding.Left}
@@ -46,26 +61,6 @@ func (p Padding[T]) Unscale(factor float64) Padding[T] {
 	return Padding[T]{Divide(p.Top, factor), Divide(p.Right, factor), Divide(p.Bottom, factor), Divide(p.Left, factor)}
 }
 
-// Width returns the width of the padding.
-func (p Padding[T]) Width() T {
-	return p.Left + p.Right
-}
-
-// Height returns the height of the padding.
-func (p Padding[T]) Height() T {
-	return p.Top + p.Bottom
-}
-
-// XY returns the width and height of the padding.
-func (p Padding[T]) XY() (T, T) {
-	return p.Width(), p.Height()
-}
-
-// Size converts the padding to a Size.
-func (p Padding[T]) Size() Size[T] {
-	return Size[T]{p.Width(), p.Height()}
-}
-
 // Equal checks for equal edge values with given padding.
 func (p Padding[T]) Equal(padding Padding[T]) bool {
 	return Equal(p.Top, padding.Top) && Equal(p.Right, padding.Right) && Equal(p.Bottom, padding.Bottom) && Equal(p.Left, padding.Left)
@@ -74,6 +69,11 @@ func (p Padding[T]) Equal(padding Padding[T]) bool {
 // IsZero checks if all edge values are zero.
 func (p Padding[T]) IsZero() bool {
 	return p.Equal(Padding[T]{})
+}
+
+// Size converts the padding to a Size.
+func (p Padding[T]) Size() Size[T] {
+	return Size[T]{p.Width(), p.Height()}
 }
 
 // Int converts the padding to a Padding[int].

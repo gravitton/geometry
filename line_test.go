@@ -18,14 +18,52 @@ func TestLine_Constructor(t *testing.T) {
 	})
 }
 
-func TestLine_Transform(t *testing.T) {
-	t.Run("applies the matrix to both points", func(t *testing.T) {
-		matrix := Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)
-
-		AssertLine(t, Ln(Pt(1, 2), Pt(3, 4)).Transform(matrix), Ln(Pt(1, 2).Transform(matrix), Pt(3, 4).Transform(matrix)))
+func TestLine_Vector(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertVector(t, Ln(Pt(1, 2), Pt(3, 5)).Vector(), Vec(2, 3))
 	})
-	t.Run("float32 matrix", func(t *testing.T) {
-		AssertLine(t, Ln(Pt(1.0, 2.0), Pt(0.0, 0.0)).Transform(Mat[float32](1, 0, 1, 0, 1, 1)), Ln(Pt(2.0, 3.0), Pt(1.0, 1.0)))
+	t.Run("float", func(t *testing.T) {
+		AssertVector(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Vector(), Vec(0.6, 3.65))
+	})
+}
+
+func TestLine_Length(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertNumber(t, Ln(Pt(1, 2), Pt(3, 5)).Length(), math.Sqrt(13))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Length(), math.Sqrt(13.6825))
+	})
+}
+
+func TestLine_Midpoint(t *testing.T) {
+	t.Run("int rounds the half away from zero", func(t *testing.T) {
+		AssertPoint(t, Ln(Pt(1, 2), Pt(3, 5)).Midpoint(), Pt(2, 4))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertPoint(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Midpoint(), Pt(0.9, 1.575))
+	})
+}
+
+func TestLine_Vertices(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertVertices(t, Ln(Pt(1, 2), Pt(3, 5)).Vertices(), []Point[int]{{1, 2}, {3, 5}})
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertVertices(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Vertices(), []Point[float64]{{0.6, -0.25}, {1.2, 3.4}})
+	})
+}
+
+func TestLine_Bounds(t *testing.T) {
+	t.Run("spans the endpoints", func(t *testing.T) {
+		l := Ln(Pt(1, 2), Pt(3, 5))
+
+		AssertRect(t, l.Bounds(), Rect(Pt(2, 3), Sz(2, 3)))
+		AssertPoint(t, l.Bounds().Min(), l.Start)
+		AssertPoint(t, l.Bounds().Max(), l.End)
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertRect(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Bounds(), Rect(Pt(0.9, 1.575), Sz(0.6, 3.65)))
 	})
 }
 
@@ -44,31 +82,6 @@ func TestLine_MoveTo(t *testing.T) {
 	})
 	t.Run("float", func(t *testing.T) {
 		AssertLine(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).MoveTo(Pt(100.1, -0.1)), Ln(Pt(100.1, -0.1), Pt(100.7, 3.55)))
-	})
-}
-
-func TestLine_Rotate(t *testing.T) {
-	t.Run("quarter turn about the midpoint", func(t *testing.T) {
-		AssertLine(t, Ln(Pt(0, 0), Pt(4, 0)).Rotate(Pi/2), Ln(Pt(2, -2), Pt(2, 2)))
-	})
-	t.Run("half turn reverses the line", func(t *testing.T) {
-		AssertLine(t, Ln(Pt(1, 2), Pt(3, 6)).Rotate(Pi), Ln(Pt(3, 6), Pt(1, 2)))
-	})
-	t.Run("int rounds the midpoint, so an odd span drifts by one", func(t *testing.T) {
-		AssertLine(t, Ln(Pt(1, 2), Pt(3, 5)).Rotate(Pi), Ln(Pt(3, 6), Pt(1, 3)))
-	})
-	t.Run("float keeps the midpoint and length", func(t *testing.T) {
-		l := Ln(Pt(0.6, -0.25), Pt(1.2, 3.4))
-		rotated := l.Rotate(0.7)
-
-		AssertPoint(t, rotated.Midpoint(), l.Midpoint())
-		AssertNumber(t, rotated.Length(), l.Length())
-		AssertNumber(t, rotated.Vector().AngleBetween(l.Vector()), 0.7)
-	})
-	t.Run("a full turn is identity", func(t *testing.T) {
-		for _, l := range lineFixtures {
-			AssertLine(t, l.Rotate(2*Pi), l, fmt.Sprintf("%s: ", l))
-		}
 	})
 }
 
@@ -109,52 +122,333 @@ func TestLine_Lerp(t *testing.T) {
 	})
 }
 
-func TestLine_Midpoint(t *testing.T) {
-	t.Run("int rounds the half away from zero", func(t *testing.T) {
-		AssertPoint(t, Ln(Pt(1, 2), Pt(3, 5)).Midpoint(), Pt(2, 4))
+func TestLine_Transform(t *testing.T) {
+	t.Run("applies the matrix to both points", func(t *testing.T) {
+		matrix := Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)
+
+		AssertLine(t, Ln(Pt(1, 2), Pt(3, 4)).Transform(matrix), Ln(Pt(1, 2).Transform(matrix), Pt(3, 4).Transform(matrix)))
 	})
-	t.Run("float", func(t *testing.T) {
-		AssertPoint(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Midpoint(), Pt(0.9, 1.575))
+	t.Run("float32 matrix", func(t *testing.T) {
+		AssertLine(t, Ln(Pt(1.0, 2.0), Pt(0.0, 0.0)).Transform(Mat[float32](1, 0, 1, 0, 1, 1)), Ln(Pt(2.0, 3.0), Pt(1.0, 1.0)))
 	})
 }
 
-func TestLine_Vector(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		AssertVector(t, Ln(Pt(1, 2), Pt(3, 5)).Vector(), Vec(2, 3))
+func TestLine_Rotate(t *testing.T) {
+	t.Run("quarter turn about the midpoint", func(t *testing.T) {
+		AssertLine(t, Ln(Pt(0, 0), Pt(4, 0)).Rotate(Pi/2), Ln(Pt(2, -2), Pt(2, 2)))
 	})
-	t.Run("float", func(t *testing.T) {
-		AssertVector(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Vector(), Vec(0.6, 3.65))
+	t.Run("half turn reverses the line", func(t *testing.T) {
+		AssertLine(t, Ln(Pt(1, 2), Pt(3, 6)).Rotate(Pi), Ln(Pt(3, 6), Pt(1, 2)))
+	})
+	t.Run("int rounds the midpoint, so an odd span drifts by one", func(t *testing.T) {
+		AssertLine(t, Ln(Pt(1, 2), Pt(3, 5)).Rotate(Pi), Ln(Pt(3, 6), Pt(1, 3)))
+	})
+	t.Run("float keeps the midpoint and length", func(t *testing.T) {
+		l := Ln(Pt(0.6, -0.25), Pt(1.2, 3.4))
+		rotated := l.Rotate(0.7)
+
+		AssertPoint(t, rotated.Midpoint(), l.Midpoint())
+		AssertNumber(t, rotated.Length(), l.Length())
+		AssertNumber(t, rotated.Vector().AngleBetween(l.Vector()), 0.7)
+	})
+	t.Run("a full turn is identity", func(t *testing.T) {
+		for _, l := range lineFixtures {
+			AssertLine(t, l.Rotate(2*Pi), l, fmt.Sprintf("%s: ", l))
+		}
 	})
 }
 
-func TestLine_Length(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		AssertNumber(t, Ln(Pt(1, 2), Pt(3, 5)).Length(), math.Sqrt(13))
+func TestLine_Contains(t *testing.T) {
+	t.Run("int is exact", func(t *testing.T) {
+		l := Ln(Pt(0, 0), Pt(6, 3))
+
+		assert.True(t, l.Contains(Pt(2, 1)))
+		assert.True(t, l.Contains(l.Start))
+		assert.True(t, l.Contains(l.End))
+		assert.False(t, l.Contains(Pt(2, 2)))
+		assert.False(t, l.Contains(Pt(8, 4)))
 	})
-	t.Run("float", func(t *testing.T) {
-		AssertNumber(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Length(), math.Sqrt(13.6825))
+	t.Run("float is tolerant", func(t *testing.T) {
+		l := Ln(Pt(0.0, 0.0), Pt(1.0, 1.0))
+
+		assert.True(t, l.Contains(Pt(0.5, 0.5+Delta/2)))
+		assert.False(t, l.Contains(Pt(0.5, 0.5+2*Delta)))
 	})
 }
 
-func TestLine_Vertices(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		AssertVertices(t, Ln(Pt(1, 2), Pt(3, 5)).Vertices(), []Point[int]{{1, 2}, {3, 5}})
+func TestLine_DistanceTo(t *testing.T) {
+	l := Ln(Pt(0, 0), Pt(4, 0))
+
+	t.Run("perpendicular to the segment", func(t *testing.T) {
+		AssertNumber(t, l.DistanceTo(Pt(2, 3)), 3.0)
+		AssertNumber(t, l.DistanceTo(Pt(1, -2)), 2.0)
+	})
+	t.Run("beyond the start measures to the start", func(t *testing.T) {
+		AssertNumber(t, l.DistanceTo(Pt(-3, 4)), 5.0)
+	})
+	t.Run("beyond the end measures to the end", func(t *testing.T) {
+		AssertNumber(t, l.DistanceTo(Pt(7, 4)), 5.0)
+	})
+	t.Run("on the segment is exactly zero", func(t *testing.T) {
+		assert.Equal(t, Ln(Pt(0, 0), Pt(3, 3)).DistanceTo(Pt(1, 1)), 0.0)
+		assert.Equal(t, l.DistanceTo(Pt(4, 0)), 0.0)
+	})
+	t.Run("degenerate segment measures to the point", func(t *testing.T) {
+		AssertNumber(t, Ln(Pt(1, 1), Pt(1, 1)).DistanceTo(Pt(4, 5)), 5.0)
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertVertices(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Vertices(), []Point[float64]{{0.6, -0.25}, {1.2, 3.4}})
+		AssertNumber(t, Ln(Pt(0.0, 0.0), Pt(1.0, 1.0)).DistanceTo(Pt(1.0, 0.0)), OneOverSqrt2)
 	})
 }
 
-func TestLine_Bounds(t *testing.T) {
-	t.Run("spans the endpoints", func(t *testing.T) {
-		l := Ln(Pt(1, 2), Pt(3, 5))
+func TestLine_DistanceSquaredTo(t *testing.T) {
+	l := Ln(Pt(0, 0), Pt(4, 0))
 
-		AssertRect(t, l.Bounds(), Rect(Pt(2, 3), Sz(2, 3)))
-		AssertPoint(t, l.Bounds().Min(), l.Start)
-		AssertPoint(t, l.Bounds().Max(), l.End)
+	t.Run("is the square of DistanceTo", func(t *testing.T) {
+		AssertNumber(t, l.DistanceSquaredTo(Pt(2, 3)), 9.0)
+		AssertNumber(t, l.DistanceSquaredTo(Pt(-3, 4)), 25.0)
+		AssertNumber(t, l.DistanceSquaredTo(Pt(7, 4)), 25.0)
 	})
-	t.Run("float", func(t *testing.T) {
-		AssertRect(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Bounds(), Rect(Pt(0.9, 1.575), Sz(0.6, 3.65)))
+	t.Run("stays fractional for an integer T", func(t *testing.T) {
+		AssertNumber(t, Ln(Pt(0, 0), Pt(2, 1)).DistanceSquaredTo(Pt(0, 1)), 0.8)
+	})
+	t.Run("agrees with DistanceTo", func(t *testing.T) {
+		for _, l := range lineFixtures {
+			for _, p := range pointFixtures {
+				AssertNumber(t, l.DistanceSquaredTo(p), l.DistanceTo(p)*l.DistanceTo(p), fmt.Sprintf("%s → %s: ", l, p))
+			}
+		}
+	})
+}
+
+func TestLine_DistanceToLine(t *testing.T) {
+	diagonal := Ln(Pt(0, 0), Pt(4, 4))
+
+	t.Run("crossing segments are at zero", func(t *testing.T) {
+		assert.Equal(t, diagonal.DistanceToLine(Ln(Pt(0, 4), Pt(4, 0))), 0.0)
+	})
+	t.Run("touching segments are at zero", func(t *testing.T) {
+		assert.Equal(t, diagonal.DistanceToLine(Ln(Pt(4, 4), Pt(8, 0))), 0.0)
+	})
+	t.Run("parallel segments measure the gap", func(t *testing.T) {
+		AssertNumber(t, Ln(Pt(0, 0), Pt(4, 0)).DistanceToLine(Ln(Pt(1, 3), Pt(3, 3))), 3.0)
+	})
+	t.Run("apart measures between the nearest endpoints", func(t *testing.T) {
+		AssertNumber(t, Ln(Pt(0, 0), Pt(4, 0)).DistanceToLine(Ln(Pt(7, 4), Pt(9, 4))), 5.0)
+	})
+	t.Run("an endpoint nearest an interior point", func(t *testing.T) {
+		AssertNumber(t, Ln(Pt(0, 0), Pt(4, 0)).DistanceToLine(Ln(Pt(2, 2), Pt(2, 5))), 2.0)
+	})
+	t.Run("symmetric and zero exactly where Intersects holds", func(t *testing.T) {
+		for _, a := range lineFixtures {
+			for _, b := range lineFixtures {
+				AssertNumber(t, a.DistanceToLine(b), b.DistanceToLine(a), fmt.Sprintf("%s → %s: ", a, b))
+				assert.Equal(t, a.DistanceToLine(b) <= Delta, a.Intersects(b), fmt.Sprintf("%s → %s: ", a, b))
+			}
+		}
+	})
+}
+
+func TestLine_Intersects(t *testing.T) {
+	diagonal := Ln(Pt(0, 0), Pt(4, 4))
+
+	t.Run("crossing", func(t *testing.T) {
+		assert.True(t, diagonal.Intersects(Ln(Pt(0, 4), Pt(4, 0))))
+	})
+	t.Run("apart", func(t *testing.T) {
+		assert.False(t, diagonal.Intersects(Ln(Pt(5, 0), Pt(5, 4))))
+		assert.False(t, diagonal.Intersects(Ln(Pt(0, 1), Pt(3, 4))))
+	})
+	t.Run("touching at an endpoint counts", func(t *testing.T) {
+		assert.True(t, diagonal.Intersects(Ln(Pt(4, 4), Pt(8, 0))))
+		assert.True(t, diagonal.Intersects(Ln(Pt(2, 2), Pt(2, 8))))
+	})
+	t.Run("collinear overlap counts and a collinear gap does not", func(t *testing.T) {
+		assert.True(t, diagonal.Intersects(Ln(Pt(2, 2), Pt(6, 6))))
+		assert.False(t, diagonal.Intersects(Ln(Pt(5, 5), Pt(6, 6))))
+	})
+	t.Run("parallel segments do not cross", func(t *testing.T) {
+		assert.False(t, diagonal.Intersects(Ln(Pt(0, 1), Pt(4, 5))))
+	})
+	t.Run("a degenerate segment is a point", func(t *testing.T) {
+		assert.True(t, diagonal.Intersects(Ln(Pt(1, 1), Pt(1, 1))))
+		assert.False(t, diagonal.Intersects(Ln(Pt(1, 2), Pt(1, 2))))
+	})
+	t.Run("float is tolerant", func(t *testing.T) {
+		l := Ln(Pt(0.0, 0.0), Pt(1.0, 0.0))
+
+		assert.True(t, l.Intersects(Ln(Pt(0.5, Delta/2), Pt(0.5, 1.0))))
+		assert.False(t, l.Intersects(Ln(Pt(0.5, 2*Delta), Pt(0.5, 1.0))))
+	})
+	t.Run("symmetric", func(t *testing.T) {
+		for _, a := range lineFixtures {
+			for _, b := range lineFixtures {
+				assert.Equal(t, a.Intersects(b), b.Intersects(a), fmt.Sprintf("%s → %s: ", a, b))
+			}
+		}
+	})
+}
+
+func BenchmarkLine_Intersects(b *testing.B) {
+	line := Ln(Pt(0.0, 0.0), Pt(10.0, 10.0))
+	crossing, apart := Ln(Pt(0.0, 10.0), Pt(10.0, 0.0)), Ln(Pt(20.0, 0.0), Pt(20.0, 10.0))
+
+	b.Run("crossing", func(b *testing.B) {
+		for b.Loop() {
+			sinkBool = line.Intersects(crossing)
+		}
+	})
+	b.Run("apart", func(b *testing.B) {
+		for b.Loop() {
+			sinkBool = line.Intersects(apart)
+		}
+	})
+}
+
+func TestLine_Intersection(t *testing.T) {
+	diagonal := Ln(Pt(0, 0), Pt(4, 4))
+
+	t.Run("crossing", func(t *testing.T) {
+		point, ok := diagonal.Intersection(Ln(Pt(0, 4), Pt(4, 0)))
+
+		assert.True(t, ok)
+		AssertPoint(t, point, Pt(2, 2))
+	})
+	t.Run("apart", func(t *testing.T) {
+		_, ok := diagonal.Intersection(Ln(Pt(5, 0), Pt(5, 4)))
+
+		assert.False(t, ok)
+	})
+	t.Run("touching at an endpoint counts", func(t *testing.T) {
+		point, ok := diagonal.Intersection(Ln(Pt(4, 4), Pt(8, 0)))
+
+		assert.True(t, ok)
+		AssertPoint(t, point, Pt(4, 4))
+
+		point, ok = Ln(Pt(2, 2), Pt(2, 8)).Intersection(diagonal)
+
+		assert.True(t, ok)
+		AssertPoint(t, point, Pt(2, 2))
+	})
+	t.Run("parallel and collinear segments have no single point", func(t *testing.T) {
+		_, ok := diagonal.Intersection(Ln(Pt(0, 1), Pt(4, 5)))
+		assert.False(t, ok)
+
+		_, ok = diagonal.Intersection(Ln(Pt(2, 2), Pt(6, 6)))
+		assert.False(t, ok)
+	})
+	t.Run("the lines cross beyond a segment", func(t *testing.T) {
+		_, ok := diagonal.Intersection(Ln(Pt(5, 0), Pt(6, 4)))
+
+		assert.False(t, ok)
+	})
+	t.Run("int rounds the crossing", func(t *testing.T) {
+		point, ok := Ln(Pt(0, 0), Pt(3, 3)).Intersection(Ln(Pt(0, 3), Pt(3, 0)))
+
+		assert.True(t, ok)
+		AssertPoint(t, point, Pt(2, 2))
+	})
+	t.Run("float keeps the crossing", func(t *testing.T) {
+		point, ok := Ln(Pt(0.0, 0.0), Pt(3.0, 3.0)).Intersection(Ln(Pt(0.0, 3.0), Pt(3.0, 0.0)))
+
+		assert.True(t, ok)
+		AssertPoint(t, point, Pt(1.5, 1.5))
+	})
+	t.Run("float is tolerant", func(t *testing.T) {
+		l := Ln(Pt(0.0, 0.0), Pt(1.0, 0.0))
+
+		_, ok := l.Intersection(Ln(Pt(0.5, Delta/2), Pt(0.5, 1.0)))
+		assert.True(t, ok)
+
+		_, ok = l.Intersection(Ln(Pt(0.5, 2*Delta), Pt(0.5, 1.0)))
+		assert.False(t, ok)
+	})
+	t.Run("agrees with Intersects on crossing fixtures", func(t *testing.T) {
+		for _, a := range lineFixtures {
+			for _, b := range lineFixtures {
+				point, ok := a.Intersection(b)
+				if !ok {
+					continue
+				}
+
+				assert.True(t, a.Intersects(b), fmt.Sprintf("%s → %s: ", a, b))
+				assert.True(t, a.Contains(point), fmt.Sprintf("%s → %s on a: ", a, b))
+				assert.True(t, b.Contains(point), fmt.Sprintf("%s → %s on b: ", a, b))
+			}
+		}
+	})
+}
+
+func TestLine_IntersectsCircle(t *testing.T) {
+	circle := Circ(Pt(0.0, 0.0), 1.0)
+
+	t.Run("passing through", func(t *testing.T) {
+		assert.True(t, Ln(Pt(-2.0, 0.0), Pt(2.0, 0.0)).IntersectsCircle(circle))
+	})
+	t.Run("apart", func(t *testing.T) {
+		assert.False(t, Ln(Pt(-2.0, 2.0), Pt(2.0, 2.0)).IntersectsCircle(circle))
+		assert.False(t, Ln(Pt(2.0, 0.0), Pt(3.0, 0.0)).IntersectsCircle(circle))
+	})
+	t.Run("tangent counts", func(t *testing.T) {
+		assert.True(t, Ln(Pt(-2.0, 1.0), Pt(2.0, 1.0)).IntersectsCircle(circle))
+		assert.False(t, Ln(Pt(-2.0, 1.0+2*Delta), Pt(2.0, 1.0+2*Delta)).IntersectsCircle(circle))
+	})
+	t.Run("an endpoint inside counts", func(t *testing.T) {
+		assert.True(t, Ln(Pt(0.5, 0.0), Pt(5.0, 0.0)).IntersectsCircle(circle))
+	})
+	t.Run("a segment inside counts", func(t *testing.T) {
+		assert.True(t, Ln(Pt(-0.5, 0.0), Pt(0.5, 0.0)).IntersectsCircle(circle))
+	})
+	t.Run("a negative radius intersects nothing", func(t *testing.T) {
+		assert.False(t, Ln(Pt(-2.0, 0.0), Pt(2.0, 0.0)).IntersectsCircle(Circ(Pt(0.0, 0.0), -1.0)))
+	})
+}
+
+func TestLine_IntersectsRectangle(t *testing.T) {
+	rectangle := Rect(Pt(0, 0), Sz(4, 4))
+
+	t.Run("crossing an edge", func(t *testing.T) {
+		assert.True(t, Ln(Pt(0, 0), Pt(5, 0)).IntersectsRectangle(rectangle))
+	})
+	t.Run("passing through", func(t *testing.T) {
+		assert.True(t, Ln(Pt(-5, 0), Pt(5, 0)).IntersectsRectangle(rectangle))
+	})
+	t.Run("inside", func(t *testing.T) {
+		assert.True(t, Ln(Pt(-1, -1), Pt(1, 1)).IntersectsRectangle(rectangle))
+	})
+	t.Run("apart", func(t *testing.T) {
+		assert.False(t, Ln(Pt(3, -5), Pt(3, 5)).IntersectsRectangle(rectangle))
+		assert.False(t, Ln(Pt(3, 3), Pt(5, 5)).IntersectsRectangle(rectangle))
+	})
+	t.Run("touching a corner counts", func(t *testing.T) {
+		assert.True(t, Ln(Pt(1, 3), Pt(3, 1)).IntersectsRectangle(rectangle))
+		assert.False(t, Ln(Pt(2, 4), Pt(4, 2)).IntersectsRectangle(rectangle))
+	})
+}
+
+func BenchmarkLine_IntersectsRectangle(b *testing.B) {
+	rectangle := Rect(Pt(0.0, 0.0), Sz(10.0, 10.0))
+	through, apart := Ln(Pt(-20.0, 0.0), Pt(20.0, 0.0)), Ln(Pt(-20.0, 20.0), Pt(20.0, 20.0))
+
+	b.Run("through", func(b *testing.B) {
+		for b.Loop() {
+			sinkBool = through.IntersectsRectangle(rectangle)
+		}
+	})
+	b.Run("apart", func(b *testing.B) {
+		for b.Loop() {
+			sinkBool = apart.IntersectsRectangle(rectangle)
+		}
+	})
+}
+
+func TestLine_IntersectsPolygon(t *testing.T) {
+	t.Run("mirrors Polygon.IntersectsLine", func(t *testing.T) {
+		for _, l := range lineFixtures {
+			for _, p := range polygonFixtures() {
+				assert.Equal(t, l.IntersectsPolygon(p), p.IntersectsLine(l), fmt.Sprintf("%s → %s: ", l, p))
+			}
+		}
 	})
 }
 
@@ -329,298 +623,4 @@ var lineFixtures = []Line[float64]{
 func ExampleLn() {
 	fmt.Println(Ln(Pt(1, 2), Pt(3, 5)))
 	// Output: Ln((1,2);(3,5))
-}
-
-func TestLine_DistanceTo(t *testing.T) {
-	l := Ln(Pt(0, 0), Pt(4, 0))
-
-	t.Run("perpendicular to the segment", func(t *testing.T) {
-		AssertNumber(t, l.DistanceTo(Pt(2, 3)), 3.0)
-		AssertNumber(t, l.DistanceTo(Pt(1, -2)), 2.0)
-	})
-	t.Run("beyond the start measures to the start", func(t *testing.T) {
-		AssertNumber(t, l.DistanceTo(Pt(-3, 4)), 5.0)
-	})
-	t.Run("beyond the end measures to the end", func(t *testing.T) {
-		AssertNumber(t, l.DistanceTo(Pt(7, 4)), 5.0)
-	})
-	t.Run("on the segment is exactly zero", func(t *testing.T) {
-		assert.Equal(t, Ln(Pt(0, 0), Pt(3, 3)).DistanceTo(Pt(1, 1)), 0.0)
-		assert.Equal(t, l.DistanceTo(Pt(4, 0)), 0.0)
-	})
-	t.Run("degenerate segment measures to the point", func(t *testing.T) {
-		AssertNumber(t, Ln(Pt(1, 1), Pt(1, 1)).DistanceTo(Pt(4, 5)), 5.0)
-	})
-	t.Run("float", func(t *testing.T) {
-		AssertNumber(t, Ln(Pt(0.0, 0.0), Pt(1.0, 1.0)).DistanceTo(Pt(1.0, 0.0)), OneOverSqrt2)
-	})
-}
-
-func TestLine_DistanceSquaredTo(t *testing.T) {
-	l := Ln(Pt(0, 0), Pt(4, 0))
-
-	t.Run("is the square of DistanceTo", func(t *testing.T) {
-		AssertNumber(t, l.DistanceSquaredTo(Pt(2, 3)), 9.0)
-		AssertNumber(t, l.DistanceSquaredTo(Pt(-3, 4)), 25.0)
-		AssertNumber(t, l.DistanceSquaredTo(Pt(7, 4)), 25.0)
-	})
-	t.Run("stays fractional for an integer T", func(t *testing.T) {
-		AssertNumber(t, Ln(Pt(0, 0), Pt(2, 1)).DistanceSquaredTo(Pt(0, 1)), 0.8)
-	})
-	t.Run("agrees with DistanceTo", func(t *testing.T) {
-		for _, l := range lineFixtures {
-			for _, p := range pointFixtures {
-				AssertNumber(t, l.DistanceSquaredTo(p), l.DistanceTo(p)*l.DistanceTo(p), fmt.Sprintf("%s → %s: ", l, p))
-			}
-		}
-	})
-}
-
-func TestLine_Contains(t *testing.T) {
-	t.Run("int is exact", func(t *testing.T) {
-		l := Ln(Pt(0, 0), Pt(6, 3))
-
-		assert.True(t, l.Contains(Pt(2, 1)))
-		assert.True(t, l.Contains(l.Start))
-		assert.True(t, l.Contains(l.End))
-		assert.False(t, l.Contains(Pt(2, 2)))
-		assert.False(t, l.Contains(Pt(8, 4)))
-	})
-	t.Run("float is tolerant", func(t *testing.T) {
-		l := Ln(Pt(0.0, 0.0), Pt(1.0, 1.0))
-
-		assert.True(t, l.Contains(Pt(0.5, 0.5+Delta/2)))
-		assert.False(t, l.Contains(Pt(0.5, 0.5+2*Delta)))
-	})
-}
-
-func TestLine_DistanceToLine(t *testing.T) {
-	diagonal := Ln(Pt(0, 0), Pt(4, 4))
-
-	t.Run("crossing segments are at zero", func(t *testing.T) {
-		assert.Equal(t, diagonal.DistanceToLine(Ln(Pt(0, 4), Pt(4, 0))), 0.0)
-	})
-	t.Run("touching segments are at zero", func(t *testing.T) {
-		assert.Equal(t, diagonal.DistanceToLine(Ln(Pt(4, 4), Pt(8, 0))), 0.0)
-	})
-	t.Run("parallel segments measure the gap", func(t *testing.T) {
-		AssertNumber(t, Ln(Pt(0, 0), Pt(4, 0)).DistanceToLine(Ln(Pt(1, 3), Pt(3, 3))), 3.0)
-	})
-	t.Run("apart measures between the nearest endpoints", func(t *testing.T) {
-		AssertNumber(t, Ln(Pt(0, 0), Pt(4, 0)).DistanceToLine(Ln(Pt(7, 4), Pt(9, 4))), 5.0)
-	})
-	t.Run("an endpoint nearest an interior point", func(t *testing.T) {
-		AssertNumber(t, Ln(Pt(0, 0), Pt(4, 0)).DistanceToLine(Ln(Pt(2, 2), Pt(2, 5))), 2.0)
-	})
-	t.Run("symmetric and zero exactly where Intersects holds", func(t *testing.T) {
-		for _, a := range lineFixtures {
-			for _, b := range lineFixtures {
-				AssertNumber(t, a.DistanceToLine(b), b.DistanceToLine(a), fmt.Sprintf("%s → %s: ", a, b))
-				assert.Equal(t, a.DistanceToLine(b) <= Delta, a.Intersects(b), fmt.Sprintf("%s → %s: ", a, b))
-			}
-		}
-	})
-}
-
-func TestLine_Intersects(t *testing.T) {
-	diagonal := Ln(Pt(0, 0), Pt(4, 4))
-
-	t.Run("crossing", func(t *testing.T) {
-		assert.True(t, diagonal.Intersects(Ln(Pt(0, 4), Pt(4, 0))))
-	})
-	t.Run("apart", func(t *testing.T) {
-		assert.False(t, diagonal.Intersects(Ln(Pt(5, 0), Pt(5, 4))))
-		assert.False(t, diagonal.Intersects(Ln(Pt(0, 1), Pt(3, 4))))
-	})
-	t.Run("touching at an endpoint counts", func(t *testing.T) {
-		assert.True(t, diagonal.Intersects(Ln(Pt(4, 4), Pt(8, 0))))
-		assert.True(t, diagonal.Intersects(Ln(Pt(2, 2), Pt(2, 8))))
-	})
-	t.Run("collinear overlap counts and a collinear gap does not", func(t *testing.T) {
-		assert.True(t, diagonal.Intersects(Ln(Pt(2, 2), Pt(6, 6))))
-		assert.False(t, diagonal.Intersects(Ln(Pt(5, 5), Pt(6, 6))))
-	})
-	t.Run("parallel segments do not cross", func(t *testing.T) {
-		assert.False(t, diagonal.Intersects(Ln(Pt(0, 1), Pt(4, 5))))
-	})
-	t.Run("a degenerate segment is a point", func(t *testing.T) {
-		assert.True(t, diagonal.Intersects(Ln(Pt(1, 1), Pt(1, 1))))
-		assert.False(t, diagonal.Intersects(Ln(Pt(1, 2), Pt(1, 2))))
-	})
-	t.Run("float is tolerant", func(t *testing.T) {
-		l := Ln(Pt(0.0, 0.0), Pt(1.0, 0.0))
-
-		assert.True(t, l.Intersects(Ln(Pt(0.5, Delta/2), Pt(0.5, 1.0))))
-		assert.False(t, l.Intersects(Ln(Pt(0.5, 2*Delta), Pt(0.5, 1.0))))
-	})
-	t.Run("symmetric", func(t *testing.T) {
-		for _, a := range lineFixtures {
-			for _, b := range lineFixtures {
-				assert.Equal(t, a.Intersects(b), b.Intersects(a), fmt.Sprintf("%s → %s: ", a, b))
-			}
-		}
-	})
-}
-
-func TestLine_Intersection(t *testing.T) {
-	diagonal := Ln(Pt(0, 0), Pt(4, 4))
-
-	t.Run("crossing", func(t *testing.T) {
-		point, ok := diagonal.Intersection(Ln(Pt(0, 4), Pt(4, 0)))
-
-		assert.True(t, ok)
-		AssertPoint(t, point, Pt(2, 2))
-	})
-	t.Run("apart", func(t *testing.T) {
-		_, ok := diagonal.Intersection(Ln(Pt(5, 0), Pt(5, 4)))
-
-		assert.False(t, ok)
-	})
-	t.Run("touching at an endpoint counts", func(t *testing.T) {
-		point, ok := diagonal.Intersection(Ln(Pt(4, 4), Pt(8, 0)))
-
-		assert.True(t, ok)
-		AssertPoint(t, point, Pt(4, 4))
-
-		point, ok = Ln(Pt(2, 2), Pt(2, 8)).Intersection(diagonal)
-
-		assert.True(t, ok)
-		AssertPoint(t, point, Pt(2, 2))
-	})
-	t.Run("parallel and collinear segments have no single point", func(t *testing.T) {
-		_, ok := diagonal.Intersection(Ln(Pt(0, 1), Pt(4, 5)))
-		assert.False(t, ok)
-
-		_, ok = diagonal.Intersection(Ln(Pt(2, 2), Pt(6, 6)))
-		assert.False(t, ok)
-	})
-	t.Run("the lines cross beyond a segment", func(t *testing.T) {
-		_, ok := diagonal.Intersection(Ln(Pt(5, 0), Pt(6, 4)))
-
-		assert.False(t, ok)
-	})
-	t.Run("int rounds the crossing", func(t *testing.T) {
-		point, ok := Ln(Pt(0, 0), Pt(3, 3)).Intersection(Ln(Pt(0, 3), Pt(3, 0)))
-
-		assert.True(t, ok)
-		AssertPoint(t, point, Pt(2, 2))
-	})
-	t.Run("float keeps the crossing", func(t *testing.T) {
-		point, ok := Ln(Pt(0.0, 0.0), Pt(3.0, 3.0)).Intersection(Ln(Pt(0.0, 3.0), Pt(3.0, 0.0)))
-
-		assert.True(t, ok)
-		AssertPoint(t, point, Pt(1.5, 1.5))
-	})
-	t.Run("float is tolerant", func(t *testing.T) {
-		l := Ln(Pt(0.0, 0.0), Pt(1.0, 0.0))
-
-		_, ok := l.Intersection(Ln(Pt(0.5, Delta/2), Pt(0.5, 1.0)))
-		assert.True(t, ok)
-
-		_, ok = l.Intersection(Ln(Pt(0.5, 2*Delta), Pt(0.5, 1.0)))
-		assert.False(t, ok)
-	})
-	t.Run("agrees with Intersects on crossing fixtures", func(t *testing.T) {
-		for _, a := range lineFixtures {
-			for _, b := range lineFixtures {
-				point, ok := a.Intersection(b)
-				if !ok {
-					continue
-				}
-
-				assert.True(t, a.Intersects(b), fmt.Sprintf("%s → %s: ", a, b))
-				assert.True(t, a.Contains(point), fmt.Sprintf("%s → %s on a: ", a, b))
-				assert.True(t, b.Contains(point), fmt.Sprintf("%s → %s on b: ", a, b))
-			}
-		}
-	})
-}
-
-func BenchmarkLine_Intersects(b *testing.B) {
-	line := Ln(Pt(0.0, 0.0), Pt(10.0, 10.0))
-	crossing, apart := Ln(Pt(0.0, 10.0), Pt(10.0, 0.0)), Ln(Pt(20.0, 0.0), Pt(20.0, 10.0))
-
-	b.Run("crossing", func(b *testing.B) {
-		for b.Loop() {
-			sinkBool = line.Intersects(crossing)
-		}
-	})
-	b.Run("apart", func(b *testing.B) {
-		for b.Loop() {
-			sinkBool = line.Intersects(apart)
-		}
-	})
-}
-
-func TestLine_IntersectsCircle(t *testing.T) {
-	circle := Circ(Pt(0.0, 0.0), 1.0)
-
-	t.Run("passing through", func(t *testing.T) {
-		assert.True(t, Ln(Pt(-2.0, 0.0), Pt(2.0, 0.0)).IntersectsCircle(circle))
-	})
-	t.Run("apart", func(t *testing.T) {
-		assert.False(t, Ln(Pt(-2.0, 2.0), Pt(2.0, 2.0)).IntersectsCircle(circle))
-		assert.False(t, Ln(Pt(2.0, 0.0), Pt(3.0, 0.0)).IntersectsCircle(circle))
-	})
-	t.Run("tangent counts", func(t *testing.T) {
-		assert.True(t, Ln(Pt(-2.0, 1.0), Pt(2.0, 1.0)).IntersectsCircle(circle))
-		assert.False(t, Ln(Pt(-2.0, 1.0+2*Delta), Pt(2.0, 1.0+2*Delta)).IntersectsCircle(circle))
-	})
-	t.Run("an endpoint inside counts", func(t *testing.T) {
-		assert.True(t, Ln(Pt(0.5, 0.0), Pt(5.0, 0.0)).IntersectsCircle(circle))
-	})
-	t.Run("a segment inside counts", func(t *testing.T) {
-		assert.True(t, Ln(Pt(-0.5, 0.0), Pt(0.5, 0.0)).IntersectsCircle(circle))
-	})
-	t.Run("a negative radius intersects nothing", func(t *testing.T) {
-		assert.False(t, Ln(Pt(-2.0, 0.0), Pt(2.0, 0.0)).IntersectsCircle(Circ(Pt(0.0, 0.0), -1.0)))
-	})
-}
-
-func TestLine_IntersectsRectangle(t *testing.T) {
-	rectangle := Rect(Pt(0, 0), Sz(4, 4))
-
-	t.Run("crossing an edge", func(t *testing.T) {
-		assert.True(t, Ln(Pt(0, 0), Pt(5, 0)).IntersectsRectangle(rectangle))
-	})
-	t.Run("passing through", func(t *testing.T) {
-		assert.True(t, Ln(Pt(-5, 0), Pt(5, 0)).IntersectsRectangle(rectangle))
-	})
-	t.Run("inside", func(t *testing.T) {
-		assert.True(t, Ln(Pt(-1, -1), Pt(1, 1)).IntersectsRectangle(rectangle))
-	})
-	t.Run("apart", func(t *testing.T) {
-		assert.False(t, Ln(Pt(3, -5), Pt(3, 5)).IntersectsRectangle(rectangle))
-		assert.False(t, Ln(Pt(3, 3), Pt(5, 5)).IntersectsRectangle(rectangle))
-	})
-	t.Run("touching a corner counts", func(t *testing.T) {
-		assert.True(t, Ln(Pt(1, 3), Pt(3, 1)).IntersectsRectangle(rectangle))
-		assert.False(t, Ln(Pt(2, 4), Pt(4, 2)).IntersectsRectangle(rectangle))
-	})
-}
-
-func BenchmarkLine_IntersectsRectangle(b *testing.B) {
-	rectangle := Rect(Pt(0.0, 0.0), Sz(10.0, 10.0))
-	through, apart := Ln(Pt(-20.0, 0.0), Pt(20.0, 0.0)), Ln(Pt(-20.0, 20.0), Pt(20.0, 20.0))
-
-	b.Run("through", func(b *testing.B) {
-		for b.Loop() {
-			sinkBool = through.IntersectsRectangle(rectangle)
-		}
-	})
-	b.Run("apart", func(b *testing.B) {
-		for b.Loop() {
-			sinkBool = apart.IntersectsRectangle(rectangle)
-		}
-	})
-}
-
-func TestLine_IntersectsPolygon(t *testing.T) {
-	t.Run("mirrors Polygon.IntersectsLine", func(t *testing.T) {
-		for _, l := range lineFixtures {
-			for _, p := range polygonFixtures() {
-				assert.Equal(t, l.IntersectsPolygon(p), p.IntersectsLine(l), fmt.Sprintf("%s → %s: ", l, p))
-			}
-		}
-	})
 }

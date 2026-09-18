@@ -42,14 +42,35 @@ func VectorFromAngleSize[T Number](angle float64, size Size[T]) Vector[T] {
 	return Vector[T]{Cast[T](float64(size.Width) * cos), Cast[T](float64(size.Height) * sin)}
 }
 
-// Transform creates a new Vector by applying the given matrix to the current vector.
-// The matrix is float-only, like an angle: convert an integer matrix with Matrix.Float first.
-// For integer T, the float64 result of each component is rounded; rotations and non-integer scales lose precision.
-func (v Vector[T]) Transform[M Float](matrix Matrix[M]) Vector[T] {
-	x, y := float64(v.X), float64(v.Y)
-	m := matrix.Float()
+// XY returns the vector X, Y values in standard order.
+func (v Vector[T]) XY() (T, T) {
+	return v.X, v.Y
+}
 
-	return Vector[T]{Cast[T](m.A*x + m.B*y), Cast[T](m.D*x + m.E*y)}
+// Length returns the Vector's length (magnitude).
+func (v Vector[T]) Length() float64 {
+	return math.Hypot(float64(v.X), float64(v.Y))
+}
+
+// LengthSquared returns the Vector's length (magnitude) squared (for faster comparison).
+func (v Vector[T]) LengthSquared() T {
+	x, y := float64(v.X), float64(v.Y)
+
+	return Cast[T](x*x + y*y)
+}
+
+// Angle returns the vector's angle in radians.
+func (v Vector[T]) Angle() float64 {
+	return math.Atan2(float64(v.Y), float64(v.X))
+}
+
+// Direction returns the direction nearest to the vector, or DirectionNone for the exact zero vector.
+func (v Vector[T]) Direction() Direction {
+	if !v.hasDirection() {
+		return DirectionNone
+	}
+
+	return DirectionFromAngle(v.Angle())
 }
 
 // Add creates a new Vector by adding the given vector to the current vector.
@@ -95,6 +116,41 @@ func (v Vector[T]) DivideXY(factorX, factorY float64) Vector[T] {
 // Negate creates a new Vector with opposite direction.
 func (v Vector[T]) Negate() Vector[T] {
 	return Vector[T]{-v.X, -v.Y}
+}
+
+// Abs creates a new Vector with absolute X and Y.
+func (v Vector[T]) Abs() Vector[T] {
+	return Vector[T]{Abs(v.X), Abs(v.Y)}
+}
+
+// Round creates a new Vector by rounding X, Y values to the nearest integer.
+func (v Vector[T]) Round() Vector[T] {
+	return Vector[T]{Round(v.X), Round(v.Y)}
+}
+
+// Floor creates a new Vector by rounding down X, Y values to the nearest integer.
+func (v Vector[T]) Floor() Vector[T] {
+	return Vector[T]{Floor(v.X), Floor(v.Y)}
+}
+
+// Ceil creates a new Vector by rounding up X, Y values to the nearest integer.
+func (v Vector[T]) Ceil() Vector[T] {
+	return Vector[T]{Ceil(v.X), Ceil(v.Y)}
+}
+
+// Lerp creates a new Vector in linear interpolation towards given vector.
+func (v Vector[T]) Lerp(vector Vector[T], t float64) Vector[T] {
+	return Vector[T]{Lerp(v.X, vector.X, t), Lerp(v.Y, vector.Y, t)}
+}
+
+// Transform creates a new Vector by applying the given matrix to the current vector.
+// The matrix is float-only, like an angle: convert an integer matrix with Matrix.Float first.
+// For integer T, the float64 result of each component is rounded; rotations and non-integer scales lose precision.
+func (v Vector[T]) Transform[M Float](matrix Matrix[M]) Vector[T] {
+	x, y := float64(v.X), float64(v.Y)
+	m := matrix.Float()
+
+	return Vector[T]{Cast[T](m.A*x + m.B*y), Cast[T](m.D*x + m.E*y)}
 }
 
 // Rotate creates a new Vector rotated by the given angle (in radians), in the standard math
@@ -143,43 +199,9 @@ func (v Vector[T]) Normalize() Vector[T] {
 	return v.Resize(1)
 }
 
-// Abs creates a new Vector with absolute X and Y.
-func (v Vector[T]) Abs() Vector[T] {
-	return Vector[T]{Abs(v.X), Abs(v.Y)}
-}
-
-// Round creates a new Vector by rounding X, Y values to the nearest integer.
-func (v Vector[T]) Round() Vector[T] {
-	return Vector[T]{Round(v.X), Round(v.Y)}
-}
-
-// Floor creates a new Vector by rounding down X, Y values to the nearest integer.
-func (v Vector[T]) Floor() Vector[T] {
-	return Vector[T]{Floor(v.X), Floor(v.Y)}
-}
-
-// Ceil creates a new Vector by rounding up X, Y values to the nearest integer.
-func (v Vector[T]) Ceil() Vector[T] {
-	return Vector[T]{Ceil(v.X), Ceil(v.Y)}
-}
-
-// Dot returns dot (scalar) product of two vectors.
-// The two products are rounded separately, which keeps a fused multiply-add from turning the
-// dot product of a vector with its own normal into a rounding error: perpendicular vectors give
-// exactly zero.
-func (v Vector[T]) Dot(vector Vector[T]) T {
-	a, b := v.Float(), vector.Float()
-
-	return Cast[T](float64(a.X*b.X) + float64(a.Y*b.Y))
-}
-
-// Cross returns cross product of two vectors.
-// The two products are rounded separately, which keeps a fused multiply-add from turning the
-// cross product of a vector with itself into a rounding error: parallel vectors give exactly zero.
-func (v Vector[T]) Cross(vector Vector[T]) T {
-	a, b := v.Float(), vector.Float()
-
-	return Cast[T](float64(a.X*b.Y) - float64(a.Y*b.X))
+// Normal creates a new Vector as normal to current vector. Faster equivalent to Rotate(math.Pi/2).
+func (v Vector[T]) Normal() Vector[T] {
+	return Vector[T]{-v.Y, v.X}
 }
 
 // Project creates a new Vector with the component of the current vector along the given one:
@@ -210,6 +232,25 @@ func (v Vector[T]) Reflect(normal Vector[T]) Vector[T] {
 	return v.Subtract(v.Project(normal).Multiply(2))
 }
 
+// Dot returns dot (scalar) product of two vectors.
+// The two products are rounded separately, which keeps a fused multiply-add from turning the
+// dot product of a vector with its own normal into a rounding error: perpendicular vectors give
+// exactly zero.
+func (v Vector[T]) Dot(vector Vector[T]) T {
+	a, b := v.Float(), vector.Float()
+
+	return Cast[T](float64(a.X*b.X) + float64(a.Y*b.Y))
+}
+
+// Cross returns cross product of two vectors.
+// The two products are rounded separately, which keeps a fused multiply-add from turning the
+// cross product of a vector with itself into a rounding error: parallel vectors give exactly zero.
+func (v Vector[T]) Cross(vector Vector[T]) T {
+	a, b := v.Float(), vector.Float()
+
+	return Cast[T](float64(a.X*b.Y) - float64(a.Y*b.X))
+}
+
 // AngleBetween returns the unsigned angle between the vectors in radians, in [0, π]. The zero
 // vector has no direction and is at angle 0 to everything. For the signed angle from one to
 // the other, subtract their Angle values.
@@ -217,42 +258,6 @@ func (v Vector[T]) AngleBetween(vector Vector[T]) float64 {
 	a, b := v.Float(), vector.Float()
 
 	return math.Atan2(math.Abs(a.Cross(b)), a.Dot(b))
-}
-
-// Normal creates a new Vector as normal to current vector. Faster equivalent to Rotate(math.Pi/2).
-func (v Vector[T]) Normal() Vector[T] {
-	return Vector[T]{-v.Y, v.X}
-}
-
-// Length returns the Vector's length (magnitude).
-func (v Vector[T]) Length() float64 {
-	return math.Hypot(float64(v.X), float64(v.Y))
-}
-
-// LengthSquared returns the Vector's length (magnitude) squared (for faster comparison).
-func (v Vector[T]) LengthSquared() T {
-	x, y := float64(v.X), float64(v.Y)
-
-	return Cast[T](x*x + y*y)
-}
-
-// Angle returns the vector's angle in radians.
-func (v Vector[T]) Angle() float64 {
-	return math.Atan2(float64(v.Y), float64(v.X))
-}
-
-// Direction returns the direction nearest to the vector, or DirectionNone for the exact zero vector.
-func (v Vector[T]) Direction() Direction {
-	if !v.hasDirection() {
-		return DirectionNone
-	}
-
-	return DirectionFromAngle(v.Angle())
-}
-
-// Lerp creates a new Vector in linear interpolation towards given vector.
-func (v Vector[T]) Lerp(vector Vector[T], t float64) Vector[T] {
-	return Vector[T]{Lerp(v.X, vector.X, t), Lerp(v.Y, vector.Y, t)}
 }
 
 // Equal checks for equal X and Y values with given vector.
@@ -263,12 +268,6 @@ func (v Vector[T]) Equal(vector Vector[T]) bool {
 // IsZero checks if X and Y values are zero.
 func (v Vector[T]) IsZero() bool {
 	return v.Equal(Vector[T]{})
-}
-
-// hasDirection reports whether the vector points somewhere: only the exact zero vector does not.
-// It deliberately ignores Epsilon, since a vector shorter than the tolerance still has a direction.
-func (v Vector[T]) hasDirection() bool {
-	return v.X != 0 || v.Y != 0
 }
 
 // IsOne checks if X and Y values are (1,1).
@@ -314,9 +313,10 @@ func (v Vector[T]) LessOrEqual(length T) bool {
 	return length >= 0 && LessOrEqualDelta(v.Length(), float64(length), Epsilon[T]())
 }
 
-// XY returns the vector X, Y values in standard order.
-func (v Vector[T]) XY() (T, T) {
-	return v.X, v.Y
+// hasDirection reports whether the vector points somewhere: only the exact zero vector does not.
+// It deliberately ignores Epsilon, since a vector shorter than the tolerance still has a direction.
+func (v Vector[T]) hasDirection() bool {
+	return v.X != 0 || v.Y != 0
 }
 
 // Point converts the vector to a Point.

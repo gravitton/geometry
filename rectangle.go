@@ -48,78 +48,6 @@ func RectangleFromSize[T Number](size Size[T]) Rectangle[T] {
 	return RectangleFromMin(Pt[T](0, 0), size)
 }
 
-// Translate creates a new Rectangle translated by the given vector.
-func (r Rectangle[T]) Translate(vector Vector[T]) Rectangle[T] {
-	return Rectangle[T]{r.Center.Add(vector), r.Size}
-}
-
-// MoveTo creates a new Rectangle with the same size centered at point.
-func (r Rectangle[T]) MoveTo(point Point[T]) Rectangle[T] {
-	return Rectangle[T]{point, r.Size}
-}
-
-// Scale creates a new Rectangle with size uniformly scaled by the factor.
-func (r Rectangle[T]) Scale(factor float64) Rectangle[T] {
-	return Rectangle[T]{r.Center, r.Size.Scale(factor)}
-}
-
-// ScaleXY creates a new Rectangle with size scaled by the given factors.
-func (r Rectangle[T]) ScaleXY(factorX, factorY float64) Rectangle[T] {
-	return Rectangle[T]{r.Center, r.Size.ScaleXY(factorX, factorY)}
-}
-
-// Resize creates a new Rectangle with the given size.
-func (r Rectangle[T]) Resize(size Size[T]) Rectangle[T] {
-	return Rectangle[T]{r.Center, size}
-}
-
-// Grow creates a new Rectangle with size expanded by the same amount in both dimensions, clamped to zero.
-// The amount is the total change of each extent, so each side moves out by half of it, where
-// Outset moves every side by the full padding.
-// For integer T an odd amount cannot be split evenly and lands on one side only: on Min when
-// the new extent is even, on Max when it is odd, as Min and Max place the center. Use Outset
-// to move a chosen side by a whole amount.
-func (r Rectangle[T]) Grow(amount T) Rectangle[T] {
-	return Rectangle[T]{r.Center, r.Size.Grow(amount)}
-}
-
-// GrowXY creates a new Rectangle with size expanded by the given amounts along X and Y, clamped to zero.
-// Each amount is the total change of that extent and an odd integer one lands on one side only, like Grow.
-func (r Rectangle[T]) GrowXY(amountX, amountY T) Rectangle[T] {
-	return Rectangle[T]{r.Center, r.Size.GrowXY(amountX, amountY)}
-}
-
-// Shrink creates a new Rectangle with size reduced by the same amount in both dimensions, clamped to zero.
-// The amount is the total change of each extent, so each side moves in by half of it, where
-// Inset moves every side by the full padding. An odd integer amount comes off one side only, like Grow.
-func (r Rectangle[T]) Shrink(amount T) Rectangle[T] {
-	return Rectangle[T]{r.Center, r.Size.Shrink(amount)}
-}
-
-// ShrinkXY creates a new Rectangle with size reduced by the given amounts along X and Y, clamped to zero.
-// Each amount is the total change of that extent and an odd integer one comes off one side only, like Shrink.
-func (r Rectangle[T]) ShrinkXY(amountX, amountY T) Rectangle[T] {
-	return Rectangle[T]{r.Center, r.Size.ShrinkXY(amountX, amountY)}
-}
-
-// Inset creates a new Rectangle inset by the given padding amounts. An edge pushed past its
-// opposite stops there, so a padding larger than the rectangle collapses it to a zero extent
-// that still lies within the original bounds, at the last edge to move.
-// A negative padding outsets the rectangle, so Outset undoes Inset as long as nothing was clamped.
-func (r Rectangle[T]) Inset(padding Padding[T]) Rectangle[T] {
-	a, b := r.MinMax()
-
-	a = Point[T]{min(a.X+padding.Left, b.X), min(a.Y+padding.Top, b.Y)}
-	b = Point[T]{max(b.X-padding.Right, a.X), max(b.Y-padding.Bottom, a.Y)}
-
-	return RectangleFromMinMax(a, b)
-}
-
-// Outset creates a new Rectangle expanded by the given padding amounts, the inverse of Inset.
-func (r Rectangle[T]) Outset(padding Padding[T]) Rectangle[T] {
-	return r.Inset(padding.Negate())
-}
-
 // Width returns the rectangle width.
 func (r Rectangle[T]) Width() T {
 	return r.Size.Width
@@ -216,12 +144,6 @@ func (r Rectangle[T]) Anchor(direction Direction) Point[T] {
 	}
 }
 
-// AlignTo creates a new Rectangle moved so that its Anchor in the given direction lands on the
-// point, the inverse of Anchor: DirectionNone aligns the center, like MoveTo.
-func (r Rectangle[T]) AlignTo(direction Direction, point Point[T]) Rectangle[T] {
-	return r.Translate(point.Subtract(r.Anchor(direction)))
-}
-
 // TopEdge returns the top edge, from the top-left to the top-right corner.
 func (r Rectangle[T]) TopEdge() Line[T] {
 	return Ln(r.TopLeft(), r.TopRight())
@@ -293,21 +215,89 @@ func (r Rectangle[T]) Bounds() Rectangle[T] {
 	return r
 }
 
+// Translate creates a new Rectangle translated by the given vector.
+func (r Rectangle[T]) Translate(vector Vector[T]) Rectangle[T] {
+	return Rectangle[T]{r.Center.Add(vector), r.Size}
+}
+
+// MoveTo creates a new Rectangle with the same size centered at point.
+func (r Rectangle[T]) MoveTo(point Point[T]) Rectangle[T] {
+	return Rectangle[T]{point, r.Size}
+}
+
+// Scale creates a new Rectangle with size uniformly scaled by the factor.
+func (r Rectangle[T]) Scale(factor float64) Rectangle[T] {
+	return Rectangle[T]{r.Center, r.Size.Scale(factor)}
+}
+
+// ScaleXY creates a new Rectangle with size scaled by the given factors.
+func (r Rectangle[T]) ScaleXY(factorX, factorY float64) Rectangle[T] {
+	return Rectangle[T]{r.Center, r.Size.ScaleXY(factorX, factorY)}
+}
+
+// Resize creates a new Rectangle with the given size.
+func (r Rectangle[T]) Resize(size Size[T]) Rectangle[T] {
+	return Rectangle[T]{r.Center, size}
+}
+
+// Grow creates a new Rectangle with size expanded by the same amount in both dimensions, clamped to zero.
+// The amount is the total change of each extent, so each side moves out by half of it, where
+// Outset moves every side by the full padding.
+// For integer T an odd amount cannot be split evenly and lands on one side only: on Min when
+// the new extent is even, on Max when it is odd, as Min and Max place the center. Use Outset
+// to move a chosen side by a whole amount.
+func (r Rectangle[T]) Grow(amount T) Rectangle[T] {
+	return Rectangle[T]{r.Center, r.Size.Grow(amount)}
+}
+
+// GrowXY creates a new Rectangle with size expanded by the given amounts along X and Y, clamped to zero.
+// Each amount is the total change of that extent and an odd integer one lands on one side only, like Grow.
+func (r Rectangle[T]) GrowXY(amountX, amountY T) Rectangle[T] {
+	return Rectangle[T]{r.Center, r.Size.GrowXY(amountX, amountY)}
+}
+
+// Shrink creates a new Rectangle with size reduced by the same amount in both dimensions, clamped to zero.
+// The amount is the total change of each extent, so each side moves in by half of it, where
+// Inset moves every side by the full padding. An odd integer amount comes off one side only, like Grow.
+func (r Rectangle[T]) Shrink(amount T) Rectangle[T] {
+	return Rectangle[T]{r.Center, r.Size.Shrink(amount)}
+}
+
+// ShrinkXY creates a new Rectangle with size reduced by the given amounts along X and Y, clamped to zero.
+// Each amount is the total change of that extent and an odd integer one comes off one side only, like Shrink.
+func (r Rectangle[T]) ShrinkXY(amountX, amountY T) Rectangle[T] {
+	return Rectangle[T]{r.Center, r.Size.ShrinkXY(amountX, amountY)}
+}
+
+// Inset creates a new Rectangle inset by the given padding amounts. An edge pushed past its
+// opposite stops there, so a padding larger than the rectangle collapses it to a zero extent
+// that still lies within the original bounds, at the last edge to move.
+// A negative padding outsets the rectangle, so Outset undoes Inset as long as nothing was clamped.
+func (r Rectangle[T]) Inset(padding Padding[T]) Rectangle[T] {
+	a, b := r.MinMax()
+
+	a = Point[T]{min(a.X+padding.Left, b.X), min(a.Y+padding.Top, b.Y)}
+	b = Point[T]{max(b.X-padding.Right, a.X), max(b.Y-padding.Bottom, a.Y)}
+
+	return RectangleFromMinMax(a, b)
+}
+
+// Outset creates a new Rectangle expanded by the given padding amounts, the inverse of Inset.
+func (r Rectangle[T]) Outset(padding Padding[T]) Rectangle[T] {
+	return r.Inset(padding.Negate())
+}
+
+// AlignTo creates a new Rectangle moved so that its Anchor in the given direction lands on the
+// point, the inverse of Anchor: DirectionNone aligns the center, like MoveTo.
+func (r Rectangle[T]) AlignTo(direction Direction, point Point[T]) Rectangle[T] {
+	return r.Translate(point.Subtract(r.Anchor(direction)))
+}
+
 // Clamp returns the given Point clamped to the rectangle bounds.
 func (r Rectangle[T]) Clamp(point Point[T]) Point[T] {
 	a, b := r.MinMax()
 
 	return Point[T]{Clamp(point.X, a.X, b.X), Clamp(point.Y, a.Y, b.Y)}
-}
-
-// Equal checks for equal center and size values using tolerant numeric comparison.
-func (r Rectangle[T]) Equal(rectangle Rectangle[T]) bool {
-	return r.Center.Equal(rectangle.Center) && r.Size.Equal(rectangle.Size)
-}
-
-// IsZero checks if center point and size are zero.
-func (r Rectangle[T]) IsZero() bool {
-	return r.Center.IsZero() && r.Size.IsZero()
 }
 
 // Contains reports whether the given point lies within the rectangle, boundary included within
@@ -386,6 +376,16 @@ func (r Rectangle[T]) IntersectsLine(line Line[T]) bool {
 // Polygon.IntersectsRectangle does.
 func (r Rectangle[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 	return polygon.IntersectsRectangle(r)
+}
+
+// Equal checks for equal center and size values using tolerant numeric comparison.
+func (r Rectangle[T]) Equal(rectangle Rectangle[T]) bool {
+	return r.Center.Equal(rectangle.Center) && r.Size.Equal(rectangle.Size)
+}
+
+// IsZero checks if center point and size are zero.
+func (r Rectangle[T]) IsZero() bool {
+	return r.Center.IsZero() && r.Size.IsZero()
 }
 
 // Polygon converts the rectangle into a generic Polygon with computed vertices.

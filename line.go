@@ -16,9 +16,37 @@ func Ln[T Number](start, end Point[T]) Line[T] {
 	return Line[T]{start, end}
 }
 
-// Transform creates a new Line by applying the given matrix to both points, like Point.Transform.
-func (l Line[T]) Transform[M Float](matrix Matrix[M]) Line[T] {
-	return Line[T]{l.Start.Transform(matrix), l.End.Transform(matrix)}
+// Vector returns the line as a vector, from start to end.
+func (l Line[T]) Vector() Vector[T] {
+	return l.End.Subtract(l.Start)
+}
+
+// Length returns the length of the line.
+func (l Line[T]) Length() float64 {
+	return l.Vector().Length()
+}
+
+// Midpoint returns the midpoint of the line, Lerp(0.5).
+func (l Line[T]) Midpoint() Point[T] {
+	return l.Start.Midpoint(l.End)
+}
+
+// Vertices returns the start and end points as a slice.
+func (l Line[T]) Vertices() []Point[T] {
+	return []Point[T]{l.Start, l.End}
+}
+
+// Bounds returns the axis-aligned bounding rectangle.
+func (l Line[T]) Bounds() Rectangle[T] {
+	a := Point[T]{min(l.Start.X, l.End.X), min(l.Start.Y, l.End.Y)}
+
+	return RectangleFromMin(a, l.Vector().Size())
+}
+
+// wedge returns Start × End in float64, the term the shoelace formula sums per edge. Cross is
+// exact for parallel vectors, so a degenerate edge contributes exactly zero.
+func (l Line[T]) wedge() float64 {
+	return l.Start.Vector().Float().Cross(l.End.Vector().Float())
 }
 
 // Translate creates a new Line translated by the given vector.
@@ -29,15 +57,6 @@ func (l Line[T]) Translate(vector Vector[T]) Line[T] {
 // MoveTo creates a new Line with the start point moved to point and same length and direction.
 func (l Line[T]) MoveTo(point Point[T]) Line[T] {
 	return Line[T]{point, l.End.Add(point.Subtract(l.Start))}
-}
-
-// Rotate creates a new Line rotated by the given angle (in radians) about its midpoint, in the
-// same sense as Vector.Rotate. For integer T the midpoint and both rotated points are rounded;
-// only multiples of 90° keep the length exactly.
-func (l Line[T]) Rotate(angle float64) Line[T] {
-	pivot := l.Midpoint()
-
-	return Line[T]{l.Start.RotateAround(pivot, angle), l.End.RotateAround(pivot, angle)}
 }
 
 // Reverse creates a new Line with the start and end points swapped.
@@ -51,19 +70,26 @@ func (l Line[T]) Lerp(t float64) Point[T] {
 	return l.Start.Lerp(l.End, t)
 }
 
-// Midpoint returns the midpoint of the line, Lerp(0.5).
-func (l Line[T]) Midpoint() Point[T] {
-	return l.Start.Midpoint(l.End)
+// Transform creates a new Line by applying the given matrix to both points, like Point.Transform.
+func (l Line[T]) Transform[M Float](matrix Matrix[M]) Line[T] {
+	return Line[T]{l.Start.Transform(matrix), l.End.Transform(matrix)}
 }
 
-// Vector returns the line as a vector, from start to end.
-func (l Line[T]) Vector() Vector[T] {
-	return l.End.Subtract(l.Start)
+// Rotate creates a new Line rotated by the given angle (in radians) about its midpoint, in the
+// same sense as Vector.Rotate. For integer T the midpoint and both rotated points are rounded;
+// only multiples of 90° keep the length exactly.
+func (l Line[T]) Rotate(angle float64) Line[T] {
+	pivot := l.Midpoint()
+
+	return Line[T]{l.Start.RotateAround(pivot, angle), l.End.RotateAround(pivot, angle)}
 }
 
-// Length returns the length of the line.
-func (l Line[T]) Length() float64 {
-	return l.Vector().Length()
+// Contains reports whether the given point lies on the segment, within Epsilon of T, the same
+// closed convention as Rectangle.Contains.
+func (l Line[T]) Contains(point Point[T]) bool {
+	epsilon := Epsilon[T]()
+
+	return LessOrEqualDelta(l.DistanceSquaredTo(point), 0, epsilon*epsilon)
 }
 
 // DistanceTo returns the distance from the given point to the nearest point of the segment.
@@ -95,12 +121,18 @@ func (l Line[T]) DistanceSquaredTo(point Point[T]) float64 {
 	return cross * cross / lengthSquared
 }
 
-// Contains reports whether the given point lies on the segment, within Epsilon of T, the same
-// closed convention as Rectangle.Contains.
-func (l Line[T]) Contains(point Point[T]) bool {
-	epsilon := Epsilon[T]()
+// DistanceToLine returns the distance between the nearest points of the two segments: zero
+// when they cross, and otherwise the smallest distance from an endpoint of one to the other.
+// Intersects is DistanceToLine within Epsilon of T.
+func (l Line[T]) DistanceToLine(line Line[T]) float64 {
+	if l.crosses(line) {
+		return 0
+	}
 
-	return LessOrEqualDelta(l.DistanceSquaredTo(point), 0, epsilon*epsilon)
+	return math.Sqrt(min(
+		l.DistanceSquaredTo(line.Start), l.DistanceSquaredTo(line.End),
+		line.DistanceSquaredTo(l.Start), line.DistanceSquaredTo(l.End),
+	))
 }
 
 // Intersects reports whether the segments share a point, within Epsilon of T, the same closed
@@ -162,20 +194,6 @@ func (l Line[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 	return polygon.IntersectsLine(l)
 }
 
-// DistanceToLine returns the distance between the nearest points of the two segments: zero
-// when they cross, and otherwise the smallest distance from an endpoint of one to the other.
-// Intersects is DistanceToLine within Epsilon of T.
-func (l Line[T]) DistanceToLine(line Line[T]) float64 {
-	if l.crosses(line) {
-		return 0
-	}
-
-	return math.Sqrt(min(
-		l.DistanceSquaredTo(line.Start), l.DistanceSquaredTo(line.End),
-		line.DistanceSquaredTo(l.Start), line.DistanceSquaredTo(l.End),
-	))
-}
-
 // crosses reports whether the segments properly cross: each has its endpoints on opposite sides
 // of the other. Touching and collinear segments do not cross and are left to the endpoint
 // distances, which cover them within the tolerance of the caller.
@@ -191,12 +209,6 @@ func (l Line[T]) separates(line Line[T]) bool {
 	end := direction.Cross(line.End.Subtract(l.Start).Float())
 
 	return (start > 0 && end < 0) || (start < 0 && end > 0)
-}
-
-// wedge returns Start × End in float64, the term the shoelace formula sums per edge. Cross is
-// exact for parallel vectors, so a degenerate edge contributes exactly zero.
-func (l Line[T]) wedge() float64 {
-	return l.Start.Vector().Float().Cross(l.End.Vector().Float())
 }
 
 // crossesRay reports whether a ray cast from the point along +X crosses the segment, counting
@@ -217,18 +229,6 @@ func (l Line[T]) crossesRay(point Point[T]) bool {
 	left := end.Subtract(start).Cross(p.Subtract(start)) > 0
 
 	return left == upward
-}
-
-// Vertices returns the start and end points as a slice.
-func (l Line[T]) Vertices() []Point[T] {
-	return []Point[T]{l.Start, l.End}
-}
-
-// Bounds returns the axis-aligned bounding rectangle.
-func (l Line[T]) Bounds() Rectangle[T] {
-	a := Point[T]{min(l.Start.X, l.End.X), min(l.Start.Y, l.End.Y)}
-
-	return RectangleFromMin(a, l.Vector().Size())
 }
 
 // Equal checks if the start and end points of the lines are equal.

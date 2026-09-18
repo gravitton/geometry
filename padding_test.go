@@ -54,15 +54,6 @@ func TestPadding_XY(t *testing.T) {
 	})
 }
 
-func TestPadding_Size(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		AssertSize(t, Pad(2, 4, 3, 5).Size(), Sz(9, 5))
-	})
-	t.Run("float", func(t *testing.T) {
-		AssertSize(t, Pad(0.1, 3.0, 0.6, 2.4).Size(), Sz(5.4, 0.7))
-	})
-}
-
 func TestPadding_Add(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		AssertPadding(t, Pad(1, 2, 3, 4).Add(Pad(10, 20, 30, 40)), Pad(11, 22, 33, 44))
@@ -130,6 +121,15 @@ func TestPadding_IsZero(t *testing.T) {
 	t.Run("non-zero", func(t *testing.T) {
 		assert.False(t, Pad(0, 0, 0, 1).IsZero())
 		assert.False(t, PadU(0.5).IsZero())
+	})
+}
+
+func TestPadding_Size(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertSize(t, Pad(2, 4, 3, 5).Size(), Sz(9, 5))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertSize(t, Pad(0.1, 3.0, 0.6, 2.4).Size(), Sz(5.4, 0.7))
 	})
 }
 

@@ -75,32 +75,6 @@ func Hexagon[T Number](center Point[T], size Size[T], orientation Orientation) R
 	return RegularPolygonWithOrientation(center, size, 6, orientation)
 }
 
-// Translate creates a new RegularPolygon translated by the given vector.
-func (rp RegularPolygon[T]) Translate(vector Vector[T]) RegularPolygon[T] {
-	return RegularPolygon[T]{rp.Center.Add(vector), rp.Size, rp.N, rp.Angle}
-}
-
-// MoveTo creates a new RegularPolygon with center at point.
-func (rp RegularPolygon[T]) MoveTo(point Point[T]) RegularPolygon[T] {
-	return RegularPolygon[T]{point, rp.Size, rp.N, rp.Angle}
-}
-
-// Scale creates a new RegularPolygon with size scaled by the given factor.
-func (rp RegularPolygon[T]) Scale(factor float64) RegularPolygon[T] {
-	return RegularPolygon[T]{rp.Center, rp.Size.Scale(factor), rp.N, rp.Angle}
-}
-
-// ScaleXY creates a new RegularPolygon with size scaled by the given factors.
-func (rp RegularPolygon[T]) ScaleXY(factorX, factorY float64) RegularPolygon[T] {
-	return RegularPolygon[T]{rp.Center, rp.Size.ScaleXY(factorX, factorY), rp.N, rp.Angle}
-}
-
-// Rotate creates a new RegularPolygon rotated by the given angle (in radians).
-// The stored angle is normalized to [0, 2π) to prevent drift from repeated rotations.
-func (rp RegularPolygon[T]) Rotate(angle float64) RegularPolygon[T] {
-	return RegularPolygon[T]{rp.Center, rp.Size, rp.N, NormalizeAngle(rp.Angle + angle)}
-}
-
 // Vertices returns the polygon vertices in order starting from Angle, by increasing angle —
 // the same winding as Directions and Rectangle.Vertices, and clockwise as drawn on a screen
 // with Y pointing down. A polygon with N < 1 has no vertices and returns nil, so its Polygon
@@ -128,9 +102,30 @@ func (rp RegularPolygon[T]) Bounds() Rectangle[T] {
 	return rp.Polygon().Bounds()
 }
 
-// Polygon converts the regular polygon into a generic Polygon with computed vertices.
-func (rp RegularPolygon[T]) Polygon() Polygon[T] {
-	return Polygon[T]{rp.Vertices()}
+// Translate creates a new RegularPolygon translated by the given vector.
+func (rp RegularPolygon[T]) Translate(vector Vector[T]) RegularPolygon[T] {
+	return RegularPolygon[T]{rp.Center.Add(vector), rp.Size, rp.N, rp.Angle}
+}
+
+// MoveTo creates a new RegularPolygon with center at point.
+func (rp RegularPolygon[T]) MoveTo(point Point[T]) RegularPolygon[T] {
+	return RegularPolygon[T]{point, rp.Size, rp.N, rp.Angle}
+}
+
+// Scale creates a new RegularPolygon with size scaled by the given factor.
+func (rp RegularPolygon[T]) Scale(factor float64) RegularPolygon[T] {
+	return RegularPolygon[T]{rp.Center, rp.Size.Scale(factor), rp.N, rp.Angle}
+}
+
+// ScaleXY creates a new RegularPolygon with size scaled by the given factors.
+func (rp RegularPolygon[T]) ScaleXY(factorX, factorY float64) RegularPolygon[T] {
+	return RegularPolygon[T]{rp.Center, rp.Size.ScaleXY(factorX, factorY), rp.N, rp.Angle}
+}
+
+// Rotate creates a new RegularPolygon rotated by the given angle (in radians).
+// The stored angle is normalized to [0, 2π) to prevent drift from repeated rotations.
+func (rp RegularPolygon[T]) Rotate(angle float64) RegularPolygon[T] {
+	return RegularPolygon[T]{rp.Center, rp.Size, rp.N, NormalizeAngle(rp.Angle + angle)}
 }
 
 // Equal checks if center point, size, number of vertices and angle are equal. Angles are
@@ -148,6 +143,11 @@ func (rp RegularPolygon[T]) IsZero() bool {
 // Empty checks if the polygon has no vertices.
 func (rp RegularPolygon[T]) Empty() bool {
 	return rp.N < 1
+}
+
+// Polygon converts the regular polygon into a generic Polygon with computed vertices.
+func (rp RegularPolygon[T]) Polygon() Polygon[T] {
+	return Polygon[T]{rp.Vertices()}
 }
 
 // Int converts the regular polygon to a RegularPolygon[int].
