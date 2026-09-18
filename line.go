@@ -133,7 +133,7 @@ func (l Line[T]) DistanceTo(point Point[T]) float64 {
 func (l Line[T]) DistanceSquaredTo(point Point[T]) float64 {
 	epsilon := Epsilon[T]()
 
-	distance := l.distanceSquared(point)
+	distance := l.distanceSquaredTo(point)
 	if LessOrEqualDelta(distance, 0, epsilon*epsilon) {
 		return 0
 	}
@@ -141,9 +141,9 @@ func (l Line[T]) DistanceSquaredTo(point Point[T]) float64 {
 	return distance
 }
 
-// distanceSquared returns the squared distance to the point with no tolerance applied, which
+// distanceSquaredTo returns the squared distance to the point with no tolerance applied, which
 // DistanceSquaredTo snaps to zero within Epsilon of T.
-func (l Line[T]) distanceSquared(point Point[T]) float64 {
+func (l Line[T]) distanceSquaredTo(point Point[T]) float64 {
 	direction, offset := l.Vector().Float(), point.Subtract(l.Start).Float()
 
 	along := offset.Dot(direction)

@@ -235,7 +235,7 @@ func (p Polygon[T]) walk(point Point[T]) float64 {
 	inside, distance := false, math.Inf(1)
 
 	for edge := range p.edges() {
-		distance = min(distance, edge.distanceSquared(point))
+		distance = min(distance, edge.distanceSquaredTo(point))
 		if LessOrEqualDelta(distance, 0, epsilon*epsilon) {
 			return 0
 		}
