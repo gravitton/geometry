@@ -74,7 +74,7 @@ func (p Polygon[T]) Rotate(angle float64) Polygon[T] {
 	pivot := p.Center()
 
 	return Polygon[T]{xslices.Map(p.Vertices, func(point Point[T]) Point[T] {
-		return pivot.Add(point.Subtract(pivot).Rotate(angle))
+		return point.RotateAround(pivot, angle)
 	})}
 }
 
@@ -299,8 +299,12 @@ func (p Polygon[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 
 // IntersectsCircle reports whether the polygon and the circle share a point: the center lies
 // within the polygon, or an edge passes within the radius. Touching shapes intersect, within
-// Epsilon of T.
+// Epsilon of T. A circle with a negative radius contains nothing and intersects nothing.
 func (p Polygon[T]) IntersectsCircle(circle Circle[T]) bool {
+	if circle.Radius < 0 {
+		return false
+	}
+
 	if p.Contains(circle.Center) {
 		return true
 	}

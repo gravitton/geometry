@@ -37,7 +37,7 @@ func (l Line[T]) MoveTo(point Point[T]) Line[T] {
 func (l Line[T]) Rotate(angle float64) Line[T] {
 	pivot := l.Midpoint()
 
-	return Line[T]{pivot.Add(l.Start.Subtract(pivot).Rotate(angle)), pivot.Add(l.End.Subtract(pivot).Rotate(angle))}
+	return Line[T]{l.Start.RotateAround(pivot, angle), l.End.RotateAround(pivot, angle)}
 }
 
 // Reverse creates a new Line with the start and end points swapped.

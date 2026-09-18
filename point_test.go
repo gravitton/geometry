@@ -206,6 +206,30 @@ var distanceFixtures = []struct {
 	{"same point", Pt(0.6, -0.25), Pt(0.6, -0.25), 0, 0, 0, 0, 0},
 }
 
+func TestPoint_RotateAround(t *testing.T) {
+	t.Run("quarter turn about a pivot", func(t *testing.T) {
+		AssertPoint(t, Pt(3, 1).RotateAround(Pt(1, 1), Pi/2), Pt(1, 3))
+		AssertPoint(t, Pt(3, 1).RotateAround(Pt(1, 1), -Pi/2), Pt(1, -1))
+	})
+	t.Run("half turn mirrors through the pivot", func(t *testing.T) {
+		AssertPoint(t, Pt(3.0, 4.0).RotateAround(Pt(1.0, 1.0), Pi), Pt(-1.0, -2.0))
+	})
+	t.Run("about itself is identity", func(t *testing.T) {
+		AssertPoint(t, Pt(3.0, 4.0).RotateAround(Pt(3.0, 4.0), 0.7), Pt(3.0, 4.0))
+	})
+	t.Run("about the origin matches Vector.Rotate", func(t *testing.T) {
+		for _, p := range pointFixtures {
+			AssertPoint(t, p.RotateAround(ZeroPoint[float64](), 0.7), p.Vector().Rotate(0.7).Point(), fmt.Sprintf("%s: ", p))
+		}
+	})
+	t.Run("keeps the distance to the pivot", func(t *testing.T) {
+		pivot := Pt(-2.5, 1.25)
+		for _, p := range pointFixtures {
+			AssertNumber(t, p.RotateAround(pivot, 2.1).DistanceTo(pivot), p.DistanceTo(pivot), fmt.Sprintf("%s: ", p))
+		}
+	})
+}
+
 func TestPoint_Midpoint(t *testing.T) {
 	t.Run("int rounds the half away from zero", func(t *testing.T) {
 		AssertPoint(t, Pt(1, 2).Midpoint(Pt(3, -3)), Pt(2, -1))

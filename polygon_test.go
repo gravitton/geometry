@@ -611,4 +611,7 @@ func TestPolygon_IntersectsCircle(t *testing.T) {
 	t.Run("an empty polygon intersects nothing", func(t *testing.T) {
 		assert.False(t, Pol[int](nil).IntersectsCircle(Circ(Pt(0, 0), 1)))
 	})
+	t.Run("a negative radius intersects nothing, even from inside", func(t *testing.T) {
+		assert.False(t, square.IntersectsCircle(Circ(Pt(1, 1), -1)))
+	})
 }

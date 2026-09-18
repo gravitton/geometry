@@ -32,6 +32,13 @@ func (p Point[T]) Transform[M Float](matrix Matrix[M]) Point[T] {
 	return Point[T]{Cast[T](m.A*x + m.B*y + m.C), Cast[T](m.D*x + m.E*y + m.F)}
 }
 
+// RotateAround creates a new Point rotated by the given angle (in radians) about the pivot, in
+// the same sense as Vector.Rotate. For integer T the result is rounded; only multiples of 90°
+// give exact results.
+func (p Point[T]) RotateAround(pivot Point[T], angle float64) Point[T] {
+	return pivot.Add(p.Subtract(pivot).Rotate(angle))
+}
+
 // Add creates a new Point by adding the given vector to the current point.
 func (p Point[T]) Add(vector Vector[T]) Point[T] {
 	return Point[T]{p.X + vector.X, p.Y + vector.Y}
