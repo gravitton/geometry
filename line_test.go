@@ -47,6 +47,31 @@ func TestLine_MoveTo(t *testing.T) {
 	})
 }
 
+func TestLine_Rotate(t *testing.T) {
+	t.Run("quarter turn about the midpoint", func(t *testing.T) {
+		AssertLine(t, Ln(Pt(0, 0), Pt(4, 0)).Rotate(Pi/2), Ln(Pt(2, -2), Pt(2, 2)))
+	})
+	t.Run("half turn reverses the line", func(t *testing.T) {
+		AssertLine(t, Ln(Pt(1, 2), Pt(3, 6)).Rotate(Pi), Ln(Pt(3, 6), Pt(1, 2)))
+	})
+	t.Run("int rounds the midpoint, so an odd span drifts by one", func(t *testing.T) {
+		AssertLine(t, Ln(Pt(1, 2), Pt(3, 5)).Rotate(Pi), Ln(Pt(3, 6), Pt(1, 3)))
+	})
+	t.Run("float keeps the midpoint and length", func(t *testing.T) {
+		l := Ln(Pt(0.6, -0.25), Pt(1.2, 3.4))
+		rotated := l.Rotate(0.7)
+
+		AssertPoint(t, rotated.Midpoint(), l.Midpoint())
+		AssertNumber(t, rotated.Length(), l.Length())
+		AssertNumber(t, rotated.Vector().AngleBetween(l.Vector()), 0.7)
+	})
+	t.Run("a full turn is identity", func(t *testing.T) {
+		for _, l := range lineFixtures {
+			AssertLine(t, l.Rotate(2*Pi), l, fmt.Sprintf("%s: ", l))
+		}
+	})
+}
+
 func TestLine_Reverse(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		AssertLine(t, Ln(Pt(1, 2), Pt(3, 5)).Reverse(), Ln(Pt(3, 5), Pt(1, 2)))

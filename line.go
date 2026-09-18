@@ -31,6 +31,15 @@ func (l Line[T]) MoveTo(point Point[T]) Line[T] {
 	return Line[T]{point, l.End.Add(point.Subtract(l.Start))}
 }
 
+// Rotate creates a new Line rotated by the given angle (in radians) about its midpoint, in the
+// same sense as Vector.Rotate. For integer T the midpoint and both rotated points are rounded;
+// only multiples of 90° keep the length exactly.
+func (l Line[T]) Rotate(angle float64) Line[T] {
+	pivot := l.Midpoint()
+
+	return Line[T]{pivot.Add(l.Start.Subtract(pivot).Rotate(angle)), pivot.Add(l.End.Subtract(pivot).Rotate(angle))}
+}
+
 // Reverse creates a new Line with the start and end points swapped.
 func (l Line[T]) Reverse() Line[T] {
 	return Line[T]{l.End, l.Start}
