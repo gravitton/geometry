@@ -69,24 +69,6 @@ func TestLine_Direction(t *testing.T) {
 	})
 }
 
-func TestLine_Midpoint(t *testing.T) {
-	t.Run("int rounds the half away from zero", func(t *testing.T) {
-		AssertPoint(t, Ln(Pt(1, 2), Pt(3, 5)).Midpoint(), Pt(2, 4))
-	})
-	t.Run("float", func(t *testing.T) {
-		AssertPoint(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Midpoint(), Pt(0.9, 1.575))
-	})
-}
-
-func TestLine_Vertices(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		AssertVertices(t, Ln(Pt(1, 2), Pt(3, 5)).Vertices(), []Point[int]{{1, 2}, {3, 5}})
-	})
-	t.Run("float", func(t *testing.T) {
-		AssertVertices(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Vertices(), []Point[float64]{{0.6, -0.25}, {1.2, 3.4}})
-	})
-}
-
 func TestLine_MinMax(t *testing.T) {
 	t.Run("orders the corners", func(t *testing.T) {
 		a, b := Ln(Pt(4, 1), Pt(0, 3)).MinMax()
@@ -102,6 +84,24 @@ func TestLine_MinMax(t *testing.T) {
 			AssertPoint(t, a, c, l.String())
 			AssertPoint(t, b, d, l.String())
 		}
+	})
+}
+
+func TestLine_Vertices(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertVertices(t, Ln(Pt(1, 2), Pt(3, 5)).Vertices(), []Point[int]{{1, 2}, {3, 5}})
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertVertices(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Vertices(), []Point[float64]{{0.6, -0.25}, {1.2, 3.4}})
+	})
+}
+
+func TestLine_Midpoint(t *testing.T) {
+	t.Run("int rounds the half away from zero", func(t *testing.T) {
+		AssertPoint(t, Ln(Pt(1, 2), Pt(3, 5)).Midpoint(), Pt(2, 4))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertPoint(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Midpoint(), Pt(0.9, 1.575))
 	})
 }
 
@@ -672,6 +672,7 @@ func TestLine_IntersectionCircle(t *testing.T) {
 
 		assert.True(t, shallow.IntersectsCircle(circle))
 		AssertVertices(t, shallow.IntersectionCircle(circle), []Point[float64]{shallow.End})
+		AssertVertices(t, shallow.Reverse().IntersectionCircle(circle), []Point[float64]{shallow.End})
 	})
 	t.Run("an interior graze exactly Delta outside is judged like IntersectsCircle", func(t *testing.T) {
 		l, c := Ln(Pt(-1.0, 1.000001), Pt(1.0, 1.000001)), Circ(Pt(0.0, 0.0), 1.0)
@@ -690,6 +691,19 @@ func TestLine_IntersectionCircle(t *testing.T) {
 	})
 	t.Run("an endpoint on the boundary is counted once with its crossing", func(t *testing.T) {
 		AssertVertices(t, Ln(Pt(-1.0, 0.0), Pt(2.0, 0.0)).IntersectionCircle(circle), []Point[float64]{Pt(-1.0, 0.0), Pt(1.0, 0.0)})
+		AssertVertices(t, Ln(Pt(-2.0, 0.0), Pt(1.0, 0.0)).IntersectionCircle(circle), []Point[float64]{Pt(-1.0, 0.0), Pt(1.0, 0.0)})
+	})
+	t.Run("an endpoint on the boundary replaces the crossing nearest to it", func(t *testing.T) {
+		l, c := Ln(Pt(-1.0, 2.000001), Pt(-877.0315, 0.11111116666666668)), Circ(Pt(-1.0, 0.0), 2.0)
+		points := l.IntersectionCircle(c)
+
+		assert.Equal(t, len(points), 2)
+		AssertPoint(t, points[0], l.Start)
+	})
+	t.Run("a tangent segment with both ends on the boundary gives its ends", func(t *testing.T) {
+		grazing := Ln(Pt(-0.0003, 1.0), Pt(0.0003, 1.0))
+
+		AssertVertices(t, grazing.IntersectionCircle(circle), []Point[float64]{grazing.Start, grazing.End})
 	})
 	t.Run("apart and inside give none", func(t *testing.T) {
 		assert.Nil(t, Ln(Pt(-2.0, 2.0), Pt(2.0, 2.0)).IntersectionCircle(circle))
@@ -708,9 +722,10 @@ func TestLine_IntersectionCircle(t *testing.T) {
 			for _, c := range circleFixtures {
 				points := l.IntersectionCircle(c)
 
+				assert.True(t, len(points) <= 2, fmt.Sprintf("%s → %s: at most two crossings: ", l, c))
 				for _, p := range points {
 					assert.True(t, l.Contains(p), fmt.Sprintf("%s → %s: %s on the segment: ", l, c, p))
-					assert.True(t, EqualDelta(c.Center.DistanceTo(p), c.Radius, Delta), fmt.Sprintf("%s → %s: %s on the boundary: ", l, c, p))
+					assert.True(t, c.touches(c.Center.DistanceSquaredTo(p)), fmt.Sprintf("%s → %s: %s on the boundary: ", l, c, p))
 				}
 				if len(points) > 0 {
 					assert.True(t, l.IntersectsCircle(c), fmt.Sprintf("%s → %s: ", l, c))
@@ -755,6 +770,11 @@ func TestLine_IntersectionRectangle(t *testing.T) {
 	t.Run("through a corner counts it once", func(t *testing.T) {
 		AssertVertices(t, Ln(Pt(1, 3), Pt(3, 1)).IntersectionRectangle(rectangle), []Point[int]{Pt(2, 2)})
 		AssertVertices(t, Ln(Pt(-4, -4), Pt(4, 4)).IntersectionRectangle(rectangle), []Point[int]{Pt(-2, -2), Pt(2, 2)})
+	})
+	t.Run("an endpoint exactly Delta outside is judged like IntersectsRectangle", func(t *testing.T) {
+		l, r := Ln(Pt(-2.0, 2.000001), Pt(2.0, 68.0000005)), Rect(Pt(0.0, 0.0), Sz(26.0, 4.0))
+
+		assert.Equal(t, len(l.IntersectionRectangle(r)) > 0, l.IntersectsRectangle(r))
 	})
 	t.Run("along an edge crosses the edges at its ends", func(t *testing.T) {
 		AssertVertices(t, Ln(Pt(-5, -2), Pt(5, -2)).IntersectionRectangle(rectangle), []Point[int]{Pt(-2, -2), Pt(2, -2)})

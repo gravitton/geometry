@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased](https://github.com/gravitton/geometry/compare/v1.13.0...main)
+### Added
+- `Orientation.String`, `MarshalText` and `UnmarshalText` – an orientation is stored as `"FlatTop"` in JSON and as a map key rather than as its number, like `Direction` and `Axis`
+- `ParseOrientation(name)` – the inverse of `String`, with an error for an unknown name; `"None"` parses to `OrientationNone`
+- `Orientations()` – both orientations in order, as a fresh array
+- `OrientationNone` – the absence of an orientation, and `Orientation.IsNone`, which reports every value outside the two constants like `Axis.IsNone`
+
+### Changed
+- Every test against a radius is one squared-distance comparison, `lessOrEqualSquared` in `math.go`, with `greaterOrEqualSquared` and `equalSquared` for the boundary band: `Circle.Intersects` and `Intersection` judge the sum and difference of the radii by it, so they agree with `Contains` and every `IntersectsCircle` to the last bit, and the snap `Line.DistanceSquaredTo` and `Polygon.walk` apply is the same comparison at radius zero
+- `Rectangle.Contains`, `DistanceTo`, `DistanceSquaredTo` and `IntersectsCircle` are built on a walk of the edges like `Polygon`, so a point on an edge is contained exactly where `Line.Contains` holds and `IntersectionRectangle` answers exactly where `IntersectsRectangle` does; `Line.IntersectsRectangle` and `Polygon.IntersectsRectangle` test the rectangle the same way
+- `Polygon.IntersectsCircle` tests the radius against the same walk `Contains` and `DistanceSquaredTo` measure
+- `Vector.LessOrEqual` and `IsNormalized` judge the length on its square by the same comparison, so no method in the package applies a linear tolerance to a distance
+- `Line.IntersectionCircle` never returns more than two points: an endpoint on the boundary replaces the crossing nearest to it rather than being added beside it, and a tangent chord gives way to an endpoint on the boundary
+- `Circle.Intersection` places a tangent point halfway between the two boundaries where they meet, within half the tolerance of both, where the exact crossing formula doubled the admitted perturbation
+- `Size.Grow`, `GrowXY`, `Shrink` and `ShrinkXY` no longer clamp at zero: a size is signed, so a displacement shrunk past zero measures the other way. `Rectangle.Grow`, `GrowXY`, `Shrink` and `ShrinkXY` clamp their own extent at zero as before (**breaking**)
+- `Line.MinMax` and `Polygon.MinMax` and `Edges` moved before `Vertices` and `Center`, in the method order every shape follows
+
+
 
 ## [v1.13.0 (2026-09-18)](https://github.com/gravitton/geometry/compare/v1.12.0...v1.13.0)
 

@@ -144,47 +144,69 @@ func (c Circle[T]) DistanceSquaredTo(point Point[T]) float64 {
 	return distance * distance
 }
 
-// Intersects reports whether the circles overlap. Touching circles intersect, within Epsilon
-// of T, the same closed convention as Contains. The radii are summed in float64, so a narrow
-// integer T cannot overflow the threshold, which is why this is the one radius test not made
-// through reaches on the squared distance: Intersection judges tangency on the same linear
-// distance, so the two agree.
+// Intersects reports whether the circles overlap: the center of one lies within the sum of the
+// radii of the other. Touching circles intersect, within Epsilon of T, by the same comparison
+// Contains makes, on the squared distance. The radii are summed in float64, so a narrow integer
+// T cannot overflow the threshold.
 func (c Circle[T]) Intersects(circle Circle[T]) bool {
-	distance := c.Center.Subtract(circle.Center).Length()
-	threshold := float64(c.Radius) + float64(circle.Radius)
+	distanceSquared := c.Center.Float().DistanceSquaredTo(circle.Center.Float())
 
-	return LessOrEqualDelta(distance, threshold, Epsilon[T]())
+	return lessOrEqualSquared[T](distanceSquared, float64(c.Radius)+float64(circle.Radius))
 }
 
 // Intersection returns the points where the circles cross: two for overlapping circles, one
 // for tangent ones, within Epsilon of T like Intersects, and none for circles apart or nested.
-// Coincident circles share every point and also return none. The
-// second point is the mirror of the first across the line of centers. Circles with centers
-// within Epsilon of T of each other count as coincident. Tangency is judged by the same
-// comparison that admits the circles, so a tangent a rounding error outside its reach gives
-// one point rather than the same point twice. For integer T the points are rounded like every
-// other result stored into T.
+// Coincident circles share every point and also return none, and circles with centers within
+// Epsilon of T of each other count as coincident. The second point is the mirror of the first
+// across the line of centers. Tangency is judged on the sum and the difference of the radii by
+// the same comparison Intersects makes, so a tangent a rounding error outside its reach gives
+// one point rather than the same point twice; that point is placed halfway between the two
+// boundaries where they meet, since the crossing formula amplifies the tolerance there. For
+// integer T the points are rounded like every other result stored into T.
 func (c Circle[T]) Intersection(circle Circle[T]) []Point[T] {
 	direction := circle.Center.Subtract(c.Center).Float()
-	distance := direction.Length()
+	distanceSquared := direction.LengthSquared()
 	r1, r2 := float64(c.Radius), float64(circle.Radius)
-	epsilon := Epsilon[T]()
+	outer, inner := r1+r2, math.Abs(r1-r2)
 
-	if LessOrEqualDelta(distance, 0, epsilon) || !LessOrEqualDelta(distance, r1+r2, epsilon) || !LessOrEqualDelta(math.Abs(r1-r2), distance, epsilon) {
+	if lessOrEqualSquared[T](distanceSquared, 0) || !lessOrEqualSquared[T](distanceSquared, outer) || !greaterOrEqualSquared[T](distanceSquared, inner) {
 		return nil
 	}
 
-	along := (r1*r1 - r2*r2 + distance*distance) / (2 * distance)
-	middle := c.Center.Float().Add(direction.Resize(along))
+	distance := math.Sqrt(distanceSquared)
 
-	if LessOrEqualDelta(r1+r2, distance, epsilon) || LessOrEqualDelta(distance, math.Abs(r1-r2), epsilon) {
-		return []Point[T]{{Cast[T](middle.X), Cast[T](middle.Y)}}
+	if external, internal := equalSquared[T](distanceSquared, outer), equalSquared[T](distanceSquared, inner); external || internal {
+		point := c.Center.Float().Add(direction.Resize(c.tangent(circle, distance, external)))
+
+		return []Point[T]{{Cast[T](point.X), Cast[T](point.Y)}}
 	}
 
+	along := (r1*r1 - r2*r2 + distanceSquared) / (2 * distance)
+	middle := c.Center.Float().Add(direction.Resize(along))
 	normal := direction.Normal().Resize(math.Sqrt(max(r1*r1-along*along, 0)))
 	first, second := middle.Add(normal), middle.Add(normal.Negate())
 
 	return []Point[T]{{Cast[T](first.X), Cast[T](first.Y)}, {Cast[T](second.X), Cast[T](second.Y)}}
+}
+
+// tangent returns how far along the line of centers, from this center toward the other at the
+// given distance, the boundaries of two tangent circles meet. Each boundary crosses that line
+// at a known place, this one at ±Radius and the other at the distance ± its radius, and the
+// point is taken halfway between the two crossings that meet: externally, from outside; or
+// internally, on the far side of the smaller circle. The exact crossing formula is ill-conditioned
+// at a tangent, moving twice as far as the center distance it is given, so the midpoint keeps the
+// point within half the tolerance of both boundaries.
+func (c Circle[T]) tangent(circle Circle[T], distance float64, external bool) float64 {
+	r1, r2 := float64(c.Radius), float64(circle.Radius)
+
+	switch {
+	case external:
+		return (r1 + distance - r2) / 2
+	case r1 >= r2:
+		return (r1 + distance + r2) / 2
+	default:
+		return (distance - r1 - r2) / 2
+	}
 }
 
 // IntersectsRectangle reports whether the circle and the rectangle overlap, as
@@ -212,23 +234,17 @@ func (c Circle[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 }
 
 // reaches reports whether a point at the given squared distance from the center lies within
-// the circle, boundary included within Epsilon of T. It is the one comparison against the
-// radius that Contains, DistanceTo and every IntersectsCircle make, on the squared distance so
-// that no test pays a square root and all of them round alike at the boundary.
+// the circle, boundary included within Epsilon of T: lessOrEqualSquared on the radius, the
+// comparison Contains, DistanceTo and every IntersectsCircle make.
 func (c Circle[T]) reaches(distanceSquared float64) bool {
-	reach := float64(c.Radius) + Epsilon[T]()
-
-	return distanceSquared <= reach*reach
+	return lessOrEqualSquared[T](distanceSquared, float64(c.Radius))
 }
 
 // touches reports whether a point at the given squared distance from the center lies on the
-// boundary within Epsilon of T: reached, and no deeper inside than the tolerance. It is the
-// endpoint test of Line.IntersectionCircle, built on reaches so it agrees with IntersectsCircle.
-// Both take the squared distance from the center as Point.DistanceSquaredTo gives it in float64.
+// boundary within Epsilon of T: equalSquared on the radius, the endpoint test of
+// Line.IntersectionCircle.
 func (c Circle[T]) touches(distanceSquared float64) bool {
-	inner := max(float64(c.Radius)-Epsilon[T](), 0)
-
-	return c.reaches(distanceSquared) && distanceSquared >= inner*inner
+	return equalSquared[T](distanceSquared, float64(c.Radius))
 }
 
 // Equal checks for equal center and radius with given circle.

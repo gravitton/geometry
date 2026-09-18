@@ -19,6 +19,50 @@ func TestPolygon_Constructor(t *testing.T) {
 	})
 }
 
+func TestPolygon_MinMax(t *testing.T) {
+	t.Run("spans the vertices", func(t *testing.T) {
+		a, b := Pol([]Point[int]{Pt(3, 1), Pt(-2, 4), Pt(0, 0)}).MinMax()
+
+		AssertPoint(t, a, Pt(-2, 0))
+		AssertPoint(t, b, Pt(3, 4))
+	})
+	t.Run("an empty polygon has zero corners", func(t *testing.T) {
+		a, b := Pol[int](nil).MinMax()
+
+		AssertPoint(t, a, Pt(0, 0))
+		AssertPoint(t, b, Pt(0, 0))
+	})
+	t.Run("matches the corners of Bounds", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			a, b := p.MinMax()
+			c, d := p.Bounds().MinMax()
+
+			AssertPoint(t, a, c, p.String())
+			AssertPoint(t, b, d, p.String())
+		}
+	})
+}
+
+func TestPolygon_Edges(t *testing.T) {
+	t.Run("closes back to the first vertex", func(t *testing.T) {
+		edges := Pol(squareVertices()).Edges()
+
+		assert.Equal(t, len(edges), 4)
+		AssertLine(t, edges[0], Ln(Pt(0, 0), Pt(2, 0)))
+		AssertLine(t, edges[3], Ln(Pt(0, 2), Pt(0, 0)))
+	})
+	t.Run("single vertex is one zero-length edge", func(t *testing.T) {
+		edges := Pol([]Point[int]{Pt(1, 1)}).Edges()
+
+		assert.Equal(t, len(edges), 1)
+		AssertLine(t, edges[0], Ln(Pt(1, 1), Pt(1, 1)))
+	})
+	t.Run("nil stays nil and empty stays empty", func(t *testing.T) {
+		assert.Nil(t, Pol[int](nil).Edges())
+		assert.Equal(t, len(Pol([]Point[int]{}).Edges()), 0)
+	})
+}
+
 func TestPolygon_Center(t *testing.T) {
 	t.Run("int rounds the average", func(t *testing.T) {
 		AssertPoint(t, Pol(squareVertices()).Center(), Pt(1, 1))
@@ -52,26 +96,6 @@ func TestPolygon_Center(t *testing.T) {
 	t.Run("empty is the zero point", func(t *testing.T) {
 		AssertPoint(t, Pol([]Point[int]{}).Center(), Pt(0, 0))
 		AssertPoint(t, Polygon[float64]{}.Center(), Pt(0.0, 0.0))
-	})
-}
-
-func TestPolygon_Edges(t *testing.T) {
-	t.Run("closes back to the first vertex", func(t *testing.T) {
-		edges := Pol(squareVertices()).Edges()
-
-		assert.Equal(t, len(edges), 4)
-		AssertLine(t, edges[0], Ln(Pt(0, 0), Pt(2, 0)))
-		AssertLine(t, edges[3], Ln(Pt(0, 2), Pt(0, 0)))
-	})
-	t.Run("single vertex is one zero-length edge", func(t *testing.T) {
-		edges := Pol([]Point[int]{Pt(1, 1)}).Edges()
-
-		assert.Equal(t, len(edges), 1)
-		AssertLine(t, edges[0], Ln(Pt(1, 1), Pt(1, 1)))
-	})
-	t.Run("nil stays nil and empty stays empty", func(t *testing.T) {
-		assert.Nil(t, Pol[int](nil).Edges())
-		assert.Equal(t, len(Pol([]Point[int]{}).Edges()), 0)
 	})
 }
 
@@ -112,30 +136,6 @@ func TestPolygon_Perimeter(t *testing.T) {
 	})
 	t.Run("empty is zero", func(t *testing.T) {
 		AssertNumber(t, Polygon[float64]{}.Perimeter(), 0.0)
-	})
-}
-
-func TestPolygon_MinMax(t *testing.T) {
-	t.Run("spans the vertices", func(t *testing.T) {
-		a, b := Pol([]Point[int]{Pt(3, 1), Pt(-2, 4), Pt(0, 0)}).MinMax()
-
-		AssertPoint(t, a, Pt(-2, 0))
-		AssertPoint(t, b, Pt(3, 4))
-	})
-	t.Run("an empty polygon has zero corners", func(t *testing.T) {
-		a, b := Pol[int](nil).MinMax()
-
-		AssertPoint(t, a, Pt(0, 0))
-		AssertPoint(t, b, Pt(0, 0))
-	})
-	t.Run("matches the corners of Bounds", func(t *testing.T) {
-		for _, p := range polygonFixtures() {
-			a, b := p.MinMax()
-			c, d := p.Bounds().MinMax()
-
-			AssertPoint(t, a, c, p.String())
-			AssertPoint(t, b, d, p.String())
-		}
 	})
 }
 

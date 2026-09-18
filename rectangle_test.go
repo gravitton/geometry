@@ -401,6 +401,10 @@ func TestRectangle_Grow(t *testing.T) {
 		AssertRectangle(t, Rect(Pt(1, 2), Sz(2, 3)).GrowXY(2, 3), Rect(Pt(1, 2), Sz(4, 6)))
 		AssertRectangle(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).GrowXY(0.1, 0.2), Rect(Pt(0.6, -0.25), Sz(1.3, 3.8)))
 	})
+	t.Run("clamps to zero", func(t *testing.T) {
+		AssertRectangle(t, Rect(Pt(1, 2), Sz(2, 3)).Grow(-5), Rect(Pt(1, 2), Sz(0, 0)))
+		AssertRectangle(t, Rect(Pt(1, 2), Sz(2, 3)).GrowXY(-5, 1), Rect(Pt(1, 2), Sz(0, 4)))
+	})
 }
 
 func TestRectangle_Shrink(t *testing.T) {
@@ -414,6 +418,7 @@ func TestRectangle_Shrink(t *testing.T) {
 	})
 	t.Run("clamps to zero", func(t *testing.T) {
 		AssertRectangle(t, Rect(Pt(1, 2), Sz(2, 3)).Shrink(100), Rect(Pt(1, 2), Sz(0, 0)))
+		AssertRectangle(t, Rect(Pt(1, 2), Sz(2, 3)).ShrinkXY(5, 1), Rect(Pt(1, 2), Sz(0, 2)))
 	})
 }
 

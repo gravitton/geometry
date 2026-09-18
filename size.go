@@ -9,7 +9,8 @@ import (
 // where a size measures a displacement, as RectangleFromMin reads it, and arithmetic such as
 // Scale, Lerp and Vector.Size can produce one. A shape that stores a size as its own extent
 // takes it absolute where it enters the shape, so a rectangle or regular polygon never holds a
-// negative one; Abs is the same operation on the size alone.
+// negative one; Abs is the same operation on the size alone. The size itself never clamps or
+// takes an extent absolute, so a struct literal, Grow and Shrink carry a negative extent as it is.
 type Size[T Number] struct {
 	Width  T `json:"w"`
 	Height T `json:"h"`
@@ -119,44 +120,46 @@ func (s Size[T]) Lerp(size Size[T], t float64) Size[T] {
 	return Size[T]{Lerp(s.Width, size.Width, t), Lerp(s.Height, size.Height, t)}
 }
 
-// Grow creates a new Size expanded by the same amount in both dimensions, clamped to zero.
-// The amount is the total change of each extent, not an amount per side.
+// Grow creates a new Size expanded by the same amount in both dimensions. The amount is the
+// total change of each extent, not an amount per side. A size is signed, so nothing is clamped:
+// a shape that stores a size clamps its own extent at zero, as Rectangle.Grow does.
 func (s Size[T]) Grow(amount T) Size[T] {
-	return Size[T]{max(s.Width+amount, 0), max(s.Height+amount, 0)}
+	return Size[T]{s.Width + amount, s.Height + amount}
 }
 
-// GrowXY creates a new Size expanded by the given amounts along X and Y, clamped to zero.
+// GrowXY creates a new Size expanded by the given amounts along X and Y.
 // Each amount is the total change of that extent, like Grow.
 func (s Size[T]) GrowXY(amountX, amountY T) Size[T] {
-	return Size[T]{max(s.Width+amountX, 0), max(s.Height+amountY, 0)}
+	return Size[T]{s.Width + amountX, s.Height + amountY}
 }
 
-// Shrink creates a new Size reduced by the same amount in both dimensions, clamped to zero.
-// The amount is the total change of each extent, not an amount per side.
+// Shrink creates a new Size reduced by the same amount in both dimensions, the inverse of Grow.
+// The amount is the total change of each extent, not an amount per side, and a reduction past
+// zero gives a negative size rather than clamping, like Grow.
 func (s Size[T]) Shrink(amount T) Size[T] {
-	return Size[T]{max(s.Width-amount, 0), max(s.Height-amount, 0)}
+	return Size[T]{s.Width - amount, s.Height - amount}
 }
 
-// ShrinkXY creates a new Size reduced by the given amounts along X and Y, clamped to zero.
+// ShrinkXY creates a new Size reduced by the given amounts along X and Y.
 // Each amount is the total change of that extent, like Shrink.
 func (s Size[T]) ShrinkXY(amountX, amountY T) Size[T] {
-	return Size[T]{max(s.Width-amountX, 0), max(s.Height-amountY, 0)}
+	return Size[T]{s.Width - amountX, s.Height - amountY}
 }
 
 // Fit creates a new Size scaled uniformly to the largest that fits within the given size, keeping
 // the aspect ratio: one extent matches the given size and the other is at most it. A size with a
-// zero width or height has no ratio to keep and fits as the zero size. A negative extent is
-// outside the contract of Size and fits to a negative one, which no longer bounds anything;
-// take Abs first where a size may carry one.
+// zero width or height has no ratio to keep and fits as the zero size. A negative extent
+// measures the other way and fits to a negative one, which no longer bounds anything; take Abs
+// first where a size may carry one.
 func (s Size[T]) Fit(size Size[T]) Size[T] {
 	return s.Scale(min(s.ratios(size)))
 }
 
 // Fill creates a new Size scaled uniformly to the smallest that covers the given size, keeping
 // the aspect ratio: one extent matches the given size and the other is at least it. A size with a
-// zero width or height has no ratio to keep and fills as the zero size. A negative extent is
-// outside the contract of Size and fills to a negative one, which no longer covers anything;
-// take Abs first where a size may carry one.
+// zero width or height has no ratio to keep and fills as the zero size. A negative extent
+// measures the other way and fills to a negative one, which no longer covers anything; take Abs
+// first where a size may carry one.
 func (s Size[T]) Fill(size Size[T]) Size[T] {
 	return s.Scale(max(s.ratios(size)))
 }

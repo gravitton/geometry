@@ -14,9 +14,9 @@ import (
 // rectangle with Min beyond Max can only be written as a struct literal or decoded from JSON,
 // and Contains, Clamp and the Intersects methods give no meaningful answer for it; Canonical repairs it.
 //
-// The rectangle is closed: Contains, Clamp and the Intersects methods include the boundary,
-// within the Epsilon that Equal applies, so a float rectangle contains the corners it was built
-// from even where Min is recomputed from Center with a rounding error.
+// The rectangle is closed: Contains and the Intersects methods include the boundary, within the
+// Epsilon that Equal applies, so a float rectangle contains the corners it was built from even
+// where Min is recomputed from Center with a rounding error; Clamp applies no tolerance.
 // For integer T the corners are lattice points on that boundary, so a rectangle of width w
 // spans w+1 lattice columns from Min to Max inclusive. The image.Rectangle returned by Rectangle
 // is half-open as the image package requires, and therefore spans exactly w pixels.
@@ -285,26 +285,26 @@ func (r Rectangle[T]) Canonical() Rectangle[T] {
 // the new extent is even, on Max when it is odd, as Min and Max place the center. Use Outset
 // to move a chosen side by a whole amount.
 func (r Rectangle[T]) Grow(amount T) Rectangle[T] {
-	return Rectangle[T]{r.Center, r.Size.Grow(amount)}
+	return Rectangle[T]{r.Center, r.Size.Grow(amount).AtLeast(Size[T]{})}
 }
 
 // GrowXY creates a new Rectangle with size expanded by the given amounts along X and Y, clamped to zero.
 // Each amount is the total change of that extent and an odd integer one lands on one side only, like Grow.
 func (r Rectangle[T]) GrowXY(amountX, amountY T) Rectangle[T] {
-	return Rectangle[T]{r.Center, r.Size.GrowXY(amountX, amountY)}
+	return Rectangle[T]{r.Center, r.Size.GrowXY(amountX, amountY).AtLeast(Size[T]{})}
 }
 
 // Shrink creates a new Rectangle with size reduced by the same amount in both dimensions, clamped to zero.
 // The amount is the total change of each extent, so each side moves in by half of it, where
 // Inset moves every side by the full padding. An odd integer amount comes off one side only, like Grow.
 func (r Rectangle[T]) Shrink(amount T) Rectangle[T] {
-	return Rectangle[T]{r.Center, r.Size.Shrink(amount)}
+	return Rectangle[T]{r.Center, r.Size.Shrink(amount).AtLeast(Size[T]{})}
 }
 
 // ShrinkXY creates a new Rectangle with size reduced by the given amounts along X and Y, clamped to zero.
 // Each amount is the total change of that extent and an odd integer one comes off one side only, like Shrink.
 func (r Rectangle[T]) ShrinkXY(amountX, amountY T) Rectangle[T] {
-	return Rectangle[T]{r.Center, r.Size.ShrinkXY(amountX, amountY)}
+	return Rectangle[T]{r.Center, r.Size.ShrinkXY(amountX, amountY).AtLeast(Size[T]{})}
 }
 
 // Inset creates a new Rectangle inset by the given padding amounts. An edge pushed past its
@@ -349,15 +349,16 @@ func (r Rectangle[T]) Clamp(point Point[T]) Point[T] {
 }
 
 // Contains reports whether the given point lies within the rectangle, boundary included within
-// Epsilon of T.
+// Epsilon of T: strictly inside, or on an edge as Line.Contains judges it, so the rectangle
+// contains exactly the points its edges contain and the points between them.
 func (r Rectangle[T]) Contains(point Point[T]) bool {
-	return point.Between(r.MinMax())
+	return r.walk(point) == 0
 }
 
 // DistanceTo returns the distance from the given point to the nearest point of the rectangle:
 // zero exactly where Contains holds, so a point within Epsilon of T of the boundary is at
 // distance zero rather than at the rounding error that put it there, and otherwise the
-// distance to the clamped point.
+// distance to the nearest edge.
 func (r Rectangle[T]) DistanceTo(point Point[T]) float64 {
 	return math.Sqrt(float64(r.DistanceSquaredTo(point)))
 }
@@ -366,11 +367,30 @@ func (r Rectangle[T]) DistanceTo(point Point[T]) float64 {
 // comparisons. It stays in T like Point.DistanceSquaredTo, since the nearest point is the
 // clamped point and a lattice point for an integer T.
 func (r Rectangle[T]) DistanceSquaredTo(point Point[T]) T {
-	if r.Contains(point) {
+	return Cast[T](r.walk(point))
+}
+
+// walk returns the squared distance from the point to the rectangle: zero for a point inside,
+// the one Clamp leaves where it is, or on an edge within Epsilon of T as Line.DistanceSquaredTo
+// snaps it, and the squared distance to the nearest edge otherwise. Contains, DistanceSquaredTo
+// and IntersectsCircle are built on it, and the edge test is the one Line.Intersection makes
+// on the same edges, so containment and the boundary crossings of a segment agree by
+// construction, as Polygon.walk arranges for a polygon.
+func (r Rectangle[T]) walk(point Point[T]) float64 {
+	if r.Clamp(point) == point {
 		return 0
 	}
 
-	return r.Clamp(point).DistanceSquaredTo(point)
+	distance := math.Inf(1)
+	for edge := range r.edges() {
+		distance = min(distance, edge.distanceSquaredTo(point))
+	}
+
+	if lessOrEqualSquared[T](distance, 0) {
+		return 0
+	}
+
+	return distance
 }
 
 // Intersects reports whether the rectangles overlap. Touching rectangles intersect, within
@@ -410,12 +430,12 @@ func (r Rectangle[T]) Union(rectangle Rectangle[T]) Rectangle[T] {
 	)
 }
 
-// IntersectsCircle reports whether the rectangle and the circle overlap: the point of the
-// rectangle closest to the circle center lies within the radius. Touching shapes intersect,
-// within Epsilon of T, by the same comparison Circle.Contains makes, and the rectangle bounds
-// are the same Min and Max that Contains uses.
+// IntersectsCircle reports whether the rectangle and the circle overlap: the center lies within
+// the rectangle, or an edge passes within the radius. Touching shapes intersect, within Epsilon
+// of T, by the same comparison Circle.Contains makes on the squared distance Contains and
+// DistanceSquaredTo measure.
 func (r Rectangle[T]) IntersectsCircle(circle Circle[T]) bool {
-	return circle.reaches(circle.Center.Float().DistanceSquaredTo(r.Clamp(circle.Center).Float()))
+	return circle.reaches(r.walk(circle.Center))
 }
 
 // IntersectsLine reports whether the rectangle and the segment share a point, as

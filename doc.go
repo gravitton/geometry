@@ -42,7 +42,9 @@
 // Rectangle.Contains, Circle.Contains, Line.Contains, Polygon.Contains, Vector.LessOrEqual and
 // the Intersects methods are closed and tolerant: a point within Epsilon of the boundary counts
 // as on it, so a float rectangle contains the corners it was built from even where Min is
-// recomputed with a rounding error. Vector.Less is the strict counterpart and applies no tolerance.
+// recomputed with a rounding error. Every such test is one comparison on a squared distance,
+// so containment, the distance methods and the intersection tests round alike at the boundary.
+// Vector.Less is the strict counterpart and applies no tolerance.
 // DistanceTo is zero exactly where Contains holds, and Intersection returns a point or a
 // rectangle exactly where Intersects holds, less the parallel and coincident cases that have
 // no single answer. The boundary crossings of a segment, IntersectionCircle, IntersectionRectangle

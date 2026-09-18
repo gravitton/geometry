@@ -189,7 +189,10 @@ func TestSize_Grow(t *testing.T) {
 	t.Run("uniform amount", func(t *testing.T) {
 		AssertSize(t, Sz(2, 3).Grow(2), Sz(4, 5))
 		AssertSize(t, Sz(0.4, 0.25).Grow(0.1), Sz(0.5, 0.35))
-		AssertSize(t, Sz(2, 3).Grow(-5), Sz(0, 0))
+	})
+	t.Run("signed, so nothing is clamped", func(t *testing.T) {
+		AssertSize(t, Sz(2, 3).Grow(-5), Sz(-3, -2))
+		AssertSize(t, Sz(-10, 5).GrowXY(2, -1), Sz(-8, 4))
 	})
 	t.Run("per-axis amount", func(t *testing.T) {
 		AssertSize(t, Sz(2, 3).GrowXY(2, 3), Sz(4, 6))
@@ -206,10 +209,11 @@ func TestSize_Shrink(t *testing.T) {
 		AssertSize(t, Sz(2, 3).ShrinkXY(1, 2), Sz(1, 1))
 		AssertSize(t, Sz(0.4, 0.25).ShrinkXY(0.1, 0.2), Sz(0.3, 0.05))
 	})
-	t.Run("clamps to zero", func(t *testing.T) {
-		AssertSize(t, Sz(2, 3).Shrink(5), Sz(0, 0))
-		AssertSize(t, Sz(2, 3).ShrinkXY(5, 1), Sz(0, 2))
-		AssertSize(t, Sz(0.4, 0.25).Shrink(1.0), Sz(0.0, 0.0))
+	t.Run("signed, so nothing is clamped", func(t *testing.T) {
+		AssertSize(t, Sz(2, 3).Shrink(5), Sz(-3, -2))
+		AssertSize(t, Sz(2, 3).ShrinkXY(5, 1), Sz(-3, 2))
+		AssertSize(t, Sz(-10, 5).Shrink(2), Sz(-12, 3))
+		AssertSize(t, Sz(0.4, 0.25).Shrink(1.0), Sz(-0.6, -0.75))
 	})
 }
 

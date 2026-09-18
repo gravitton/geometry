@@ -27,6 +27,34 @@ func Pol[T Number](vertices []Point[T]) Polygon[T] {
 	return Polygon[T]{vertices}
 }
 
+// MinMax returns the minimum and maximum corner of the vertices, the pair Rectangle.MinMax
+// returns for its Bounds, exact for an integer T where Bounds places a center. An empty polygon
+// has no corners and returns two zero points.
+func (p Polygon[T]) MinMax() (Point[T], Point[T]) {
+	if p.Empty() {
+		return Point[T]{}, Point[T]{}
+	}
+
+	a, b := p.Vertices[0], p.Vertices[0]
+	for _, v := range p.Vertices[1:] {
+		a = Point[T]{min(a.X, v.X), min(a.Y, v.Y)}
+		b = Point[T]{max(b.X, v.X), max(b.Y, v.Y)}
+	}
+
+	return a, b
+}
+
+// Edges returns the polygon edges in vertex order, each from a vertex to the next and the
+// last one closing back to the first. A single vertex yields one zero-length edge, and a nil
+// Vertices maps to nil edges like every other mapping.
+func (p Polygon[T]) Edges() []Line[T] {
+	if p.IsZero() {
+		return nil
+	}
+
+	return slices.AppendSeq(make([]Line[T], 0, len(p.Vertices)), p.edges())
+}
+
 // Center returns the polygon centroid: the center of the enclosed area, so a vertex added in
 // the middle of an edge does not move it. A polygon that encloses no area, with fewer than
 // three vertices or all of them collinear, has no such center and falls back to the average of
@@ -64,17 +92,6 @@ func (p Polygon[T]) Center() Point[T] {
 	return Point[T]{Cast[T](centroid.X), Cast[T](centroid.Y)}
 }
 
-// Edges returns the polygon edges in vertex order, each from a vertex to the next and the
-// last one closing back to the first. A single vertex yields one zero-length edge, and a nil
-// Vertices maps to nil edges like every other mapping.
-func (p Polygon[T]) Edges() []Line[T] {
-	if p.IsZero() {
-		return nil
-	}
-
-	return slices.AppendSeq(make([]Line[T], 0, len(p.Vertices)), p.edges())
-}
-
 // Area returns the area enclosed by the polygon, by the shoelace formula, regardless of winding.
 // It is a float64 even for an integer T, since a lattice polygon can enclose half a unit;
 // a self-intersecting polygon has its lobes cancel where they wind the opposite way.
@@ -95,23 +112,6 @@ func (p Polygon[T]) Perimeter() float64 {
 	}
 
 	return perimeter
-}
-
-// MinMax returns the minimum and maximum corner of the vertices, the pair Rectangle.MinMax
-// returns for its Bounds, exact for an integer T where Bounds places a center. An empty polygon
-// has no corners and returns two zero points.
-func (p Polygon[T]) MinMax() (Point[T], Point[T]) {
-	if p.Empty() {
-		return Point[T]{}, Point[T]{}
-	}
-
-	a, b := p.Vertices[0], p.Vertices[0]
-	for _, v := range p.Vertices[1:] {
-		a = Point[T]{min(a.X, v.X), min(a.Y, v.Y)}
-		b = Point[T]{max(b.X, v.X), max(b.Y, v.Y)}
-	}
-
-	return a, b
 }
 
 // Bounds returns the axis-aligned bounding rectangle of the vertices, or the zero rectangle
@@ -148,8 +148,8 @@ func (p Polygon[T]) edges() iter.Seq[Line[T]] {
 
 // Translate creates a new Polygon translated by the given vector (applied to all vertices).
 func (p Polygon[T]) Translate(vector Vector[T]) Polygon[T] {
-	return Polygon[T]{xslices.Map(p.Vertices, func(e Point[T]) Point[T] {
-		return e.Add(vector)
+	return Polygon[T]{xslices.Map(p.Vertices, func(point Point[T]) Point[T] {
+		return point.Add(vector)
 	})}
 }
 
@@ -251,12 +251,11 @@ func (p Polygon[T]) DistanceSquaredTo(point Point[T]) float64 {
 // squared distance to the nearest edge otherwise, and infinity for an empty polygon. Contains
 // and DistanceSquaredTo are both built on it, so the two agree by construction.
 func (p Polygon[T]) walk(point Point[T]) float64 {
-	epsilon := Epsilon[T]()
 	inside, distance := false, math.Inf(1)
 
 	for edge := range p.edges() {
 		distance = min(distance, edge.distanceSquaredTo(point))
-		if LessOrEqualDelta(distance, 0, epsilon*epsilon) {
+		if lessOrEqualSquared[T](distance, 0) {
 			return 0
 		}
 		if edge.crossesRay(point) {
@@ -345,7 +344,7 @@ func (p Polygon[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 		return false
 	}
 
-	if p.Vertices[0].Between(a2, b2) || p.encloses(a2, a1, b1) {
+	if rectangle.Contains(p.Vertices[0]) || p.encloses(a2, a1, b1) {
 		return true
 	}
 
@@ -360,8 +359,9 @@ func (p Polygon[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 
 // IntersectsCircle reports whether the polygon and the circle share a point: the center lies
 // within the polygon, or an edge passes within the radius. Touching shapes intersect, within
-// Epsilon of T. A circle whose Bounds lie outside the polygon is rejected before any edge is
-// examined, as is every edge whose extent lies outside those Bounds.
+// Epsilon of T, by the same comparison Circle.Contains makes on the squared distance Contains
+// and DistanceSquaredTo measure. A circle whose Bounds lie outside the polygon is rejected
+// before any edge is examined.
 func (p Polygon[T]) IntersectsCircle(circle Circle[T]) bool {
 	if p.Empty() {
 		return false
@@ -370,21 +370,7 @@ func (p Polygon[T]) IntersectsCircle(circle Circle[T]) bool {
 	a1, b1 := p.MinMax()
 	a2, b2 := circle.Bounds().MinMax()
 
-	if !overlaps(a1, b1, a2, b2) {
-		return false
-	}
-
-	if p.encloses(circle.Center, a1, b1) {
-		return true
-	}
-
-	for edge := range p.edges() {
-		if c, d := edge.MinMax(); overlaps(a2, b2, c, d) && edge.IntersectsCircle(circle) {
-			return true
-		}
-	}
-
-	return false
+	return overlaps(a1, b1, a2, b2) && circle.reaches(p.walk(circle.Center))
 }
 
 // crossesEdge reports whether the segment intersects any edge of the polygon, given the extent

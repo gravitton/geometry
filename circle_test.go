@@ -352,6 +352,7 @@ func TestCircle_Intersection(t *testing.T) {
 	})
 	t.Run("tangent from inside gives one point", func(t *testing.T) {
 		AssertVertices(t, circle.Intersection(Circ(Pt(2.0, 0.0), 3.0)), []Point[float64]{Pt(5.0, 0.0)})
+		AssertVertices(t, Circ(Pt(0.0, 0.0), 3.0).Intersection(Circ(Pt(2.0, 0.0), 5.0)), []Point[float64]{Pt(-3.0, 0.0)})
 	})
 	t.Run("apart, nested and concentric give none", func(t *testing.T) {
 		assert.Nil(t, circle.Intersection(Circ(Pt(20.0, 0.0), 5.0)))
@@ -373,6 +374,16 @@ func TestCircle_Intersection(t *testing.T) {
 			AssertVertices(t, circle.Intersection(other), []Point[float64]{Pt(5.0, 0.0)})
 		}
 	})
+	t.Run("a tangent within the tolerance lands on both boundaries", func(t *testing.T) {
+		a, b := Circ(Pt(0.0, 0.0), 6.0), Circ(Pt(2.0000005, 0.0), 4.0)
+		points := a.Intersection(b)
+
+		assert.Equal(t, len(points), 1)
+		for _, p := range points {
+			assert.True(t, a.touches(a.Center.DistanceSquaredTo(p)), "on a")
+			assert.True(t, b.touches(b.Center.DistanceSquaredTo(p)), "on b")
+		}
+	})
 	t.Run("int rounds the points", func(t *testing.T) {
 		AssertVertices(t, Circ(Pt(0, 0), 5).Intersection(Circ(Pt(6, 0), 5)), []Point[int]{Pt(3, 4), Pt(3, -4)})
 		AssertVertices(t, Circ(Pt(0, 0), 2).Intersection(Circ(Pt(3, 0), 2)), []Point[int]{Pt(2, 1), Pt(2, -1)})
@@ -382,12 +393,13 @@ func TestCircle_Intersection(t *testing.T) {
 			for _, b := range circleFixtures {
 				points := a.Intersection(b)
 
+				assert.True(t, len(points) <= 2, fmt.Sprintf("%s → %s: at most two points: ", a, b))
 				if len(points) > 0 {
 					assert.True(t, a.Intersects(b), fmt.Sprintf("%s → %s: ", a, b))
 				}
 				for _, p := range points {
-					AssertNumber(t, a.Center.DistanceTo(p), float64(a.Radius), fmt.Sprintf("%s → %s on a: ", a, b))
-					AssertNumber(t, b.Center.DistanceTo(p), float64(b.Radius), fmt.Sprintf("%s → %s on b: ", a, b))
+					assert.True(t, a.touches(a.Center.DistanceSquaredTo(p)), fmt.Sprintf("%s → %s: %s on a: ", a, b, p))
+					assert.True(t, b.touches(b.Center.DistanceSquaredTo(p)), fmt.Sprintf("%s → %s: %s on b: ", a, b, p))
 				}
 			}
 		}

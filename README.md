@@ -26,7 +26,7 @@ Generic, immutable 2D geometry library for game development
 - **Generic** over every integer and float type, named types included.
 - **Immutable** – every method returns a new value.
 - **Shapes** – point, vector, size, padding, rectangle, circle, line, polygon, regular polygon, affine matrix.
-- **Directions and axes** as enums, with compass and rectangle-anchor aliases.
+- **Directions, axes and orientations** as enums, with compass and rectangle-anchor aliases.
 - **Screen space** – top-left origin, `+Y` down, one winding order everywhere.
 - **Extras** – `image` interop, JSON, string parsing, numeric helpers, test assertions.
 
@@ -123,7 +123,7 @@ c.Intersection(d)              // zero, one or two points where two circles cros
 l.IntersectionCircle(c)        // where a segment crosses a boundary; also of a rectangle or a polygon
 ```
 
-### Directions and axes
+### Directions, axes and orientations
 
 ```go
 dir := geom.DirectionUp
@@ -136,6 +136,9 @@ geom.Vec(3, -7).Direction()                   // DirectionUpRight, nearest of th
 axis := geom.AxisVertical
 axis.Along(size)             // Height, because the axis is vertical
 axis.Size(length, thickness) // Size{thickness, length}
+
+geom.Hexagon(center, size, geom.PointyTop) // orientation places a vertex or an edge at the top
+geom.ParseOrientation("FlatTop")           // the name back to the constant, "None" to OrientationNone
 ```
 
 ### Matrices
@@ -172,6 +175,7 @@ geom.RectangleFromMin(geom.Pt(0, 0), geom.Sz(4, 2)).Rectangle() // image.Rectang
 
 json.Marshal(geom.Rect(geom.Pt(1, 2), geom.Sz(3, 4))) // {"x":1,"y":2,"w":3,"h":4}
 json.Marshal(geom.DirectionUp)                        // "Up"
+json.Marshal(geom.PointyTop)                          // "PointyTop"
 geom.ParseSize[int]("4x2")                            // Size{4, 2}
 ```
 
@@ -227,20 +231,21 @@ JSON last.
 - **`Nearest(point)`** – the closest point of a shape to a point, on every shape.
 - **`Encloses`** – shape-in-shape containment for culling, distinct from `Contains`, which takes a point.
 - **`Rectangle.Clamp(rectangle)`** – moves a rectangle so it lies within another.
-- **`Orientation` as a full enum** – `String`, `MarshalText`, `UnmarshalText`, `ParseOrientation` and an `Orientations()` list.
 - **Vertex and edge iterators** – public `iter.Seq` forms of `Vertices` and `Edges`, forward and backward as
   `slices.Backward` spells it.
 - **`Circle.RegularPolygon(n, orientation)` and `RegularPolygon.Circle()`** – the conversion between the two shapes,
   with two options for where the polygon meets the circle.
 - **`Line.Clip()`** – the part of a segment inside a shape.
-- **More fuzz targets**
+- **More fuzz targets** – three for the boundary crossings are drafted in [TODO.md](TODO.md).
 - **`Rectangle.Angle`** – an oriented rectangle. `Contains`, `Clamp`, `Intersects`, `Intersection` and `Union` assume
   axis alignment today.
 - **`Polygon.Winding`, `IsConvex` and `ConvexHull`** – convexity also unlocks a separating-axis `Intersects`, the slow
   case in `BenchmarkPolygon_Intersects` today.
 - **`Polygon.Simplify(tolerance)`** – drops every vertex within the tolerance of the edge between its neighbours.
-- **`Vector.Slerp(vector, t)`** – interpolation of the direction along the shorter arc, on `LerpAngle`-
+- **`Vector.Slerp(vector, t)`** – interpolation of the direction along the shorter arc, on `LerpAngle`, with the
+  length interpolated linearly.
 - **`Polygon.Lerp(polygon, t)`** – vertex-by-vertex interpolation for shape morphing, left out of the `Lerp` pass because
+  two polygons with different vertex counts have no shape between them and the answer for that case is not settled.
 - **`Ray`** – a half-line with origin and direction, for casts against every shape.
 - **`Ellipse`** – `RegularPolygon` already takes semi-axes; the continuous shape has no type.
 - **`Transform` on every shape** – a rotated rectangle needs `Rectangle.Angle`, a non-uniformly scaled circle is an `Ellipse`.

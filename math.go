@@ -189,6 +189,34 @@ func LessOrEqualDelta[T Number](a, b T, delta float64) bool {
 	return float64(a) <= float64(b)+delta
 }
 
+// lessOrEqualSquared reports whether a distance is at most b within Epsilon of T, given the
+// square of a: the squared form of LessOrEqual, for a distance that is only ever measured
+// squared. It is the one comparison against a radius or a segment in the package: every
+// Contains, DistanceTo and Intersects makes it, and a b of zero is the tolerance alone, the snap
+// Line.DistanceSquaredTo applies to a point on a segment. Made on the square, no test pays a
+// square root and all of them round alike at the boundary.
+func lessOrEqualSquared[T Number](a2, b float64) bool {
+	reach := b + Epsilon[T]()
+
+	return a2 <= reach*reach
+}
+
+// greaterOrEqualSquared reports whether a distance is at least b within Epsilon of T, given
+// the square of a: no nearer than the tolerance allows.
+func greaterOrEqualSquared[T Number](a2, b float64) bool {
+	reach := max(b-Epsilon[T](), 0)
+
+	return a2 >= reach*reach
+}
+
+// equalSquared reports whether a distance equals b within Epsilon of T, given the square of a:
+// at most and at least it at once, the squared form of Equal. Only lessOrEqualSquared fits the
+// inlining budget, which Epsilon alone takes most of; the two comparisons of the boundary band
+// are made at endpoints and tangents, never on a hot path.
+func equalSquared[T Number](a2, b float64) bool {
+	return lessOrEqualSquared[T](a2, b) && greaterOrEqualSquared[T](a2, b)
+}
+
 // Epsilon returns the equality tolerance for T: zero for an integer T, which is
 // compared exactly, Delta32 for float32, and Delta for float64. It depends only on T,
 // never on the values compared.

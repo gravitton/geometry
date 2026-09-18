@@ -41,9 +41,10 @@ func (l Line[T]) Direction() Direction {
 	return l.Vector().Direction()
 }
 
-// Midpoint returns the midpoint of the line, Lerp(0.5).
-func (l Line[T]) Midpoint() Point[T] {
-	return l.Start.Midpoint(l.End)
+// MinMax returns the minimum and maximum corner of the segment, the pair Rectangle.MinMax
+// returns for its Bounds, exact for an integer T where Bounds places a center.
+func (l Line[T]) MinMax() (Point[T], Point[T]) {
+	return Point[T]{min(l.Start.X, l.End.X), min(l.Start.Y, l.End.Y)}, Point[T]{max(l.Start.X, l.End.X), max(l.Start.Y, l.End.Y)}
 }
 
 // Vertices returns the start and end points as a slice.
@@ -51,10 +52,9 @@ func (l Line[T]) Vertices() []Point[T] {
 	return []Point[T]{l.Start, l.End}
 }
 
-// MinMax returns the minimum and maximum corner of the segment, the pair Rectangle.MinMax
-// returns for its Bounds, exact for an integer T where Bounds places a center.
-func (l Line[T]) MinMax() (Point[T], Point[T]) {
-	return Point[T]{min(l.Start.X, l.End.X), min(l.Start.Y, l.End.Y)}, Point[T]{max(l.Start.X, l.End.X), max(l.Start.Y, l.End.Y)}
+// Midpoint returns the midpoint of the line, Lerp(0.5).
+func (l Line[T]) Midpoint() Point[T] {
+	return l.Start.Midpoint(l.End)
 }
 
 // Bounds returns the axis-aligned bounding rectangle.
@@ -180,10 +180,8 @@ func (l Line[T]) DistanceTo(point Point[T]) float64 {
 // is snapped to zero, which is where Contains reads it, so a polygon boundary is walked without
 // a square root per edge.
 func (l Line[T]) DistanceSquaredTo(point Point[T]) float64 {
-	epsilon := Epsilon[T]()
-
 	distance := l.distanceSquaredTo(point)
-	if LessOrEqualDelta(distance, 0, epsilon*epsilon) {
+	if lessOrEqualSquared[T](distance, 0) {
 		return 0
 	}
 
@@ -272,24 +270,38 @@ func (l Line[T]) IntersectsCircle(circle Circle[T]) bool {
 
 // IntersectionCircle returns the points where the segment crosses the circle boundary, from
 // Start to End: two where it passes through, one where it is tangent or ends inside, within
-// Epsilon of T like IntersectsCircle, and none where it misses, lies entirely inside, or the
-// radius is negative. A chord shorter than Epsilon of T is a tangent and gives its midpoint;
-// a longer one gives both ends even where it grazes the boundary within the tolerance. A segment inside crosses no boundary, so it returns none while
-// IntersectsCircle still reports it. An endpoint within Epsilon of the boundary is a crossing
-// in its own right, judged by the same comparison IntersectsCircle makes, so a shallow touch is
-// not lost to the fraction along the chord and the two agree to the last bit. For integer T the points are rounded like
-// every other result stored into T.
+// Epsilon of T like IntersectsCircle, and none where it misses or lies entirely inside. A
+// segment inside crosses no boundary, so it returns none while IntersectsCircle still reports
+// it. An endpoint within Epsilon of the boundary is the crossing nearest to it, judged by the
+// same comparison IntersectsCircle makes, so a shallow touch is not lost to the fraction along
+// the chord and the two agree to the last bit; where the chord is a tangent the endpoint
+// replaces it. For integer T the points are rounded like every other result stored into T.
 func (l Line[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
-	points := l.chord(circle)
-	for _, endpoint := range [2]Point[T]{l.Start, l.End} {
-		if circle.touches(circle.Center.Float().DistanceSquaredTo(endpoint.Float())) && !slices.ContainsFunc(points, endpoint.Equal) {
-			points = append(points, endpoint)
+	entry, exit, ok := l.chord(circle)
+	start := circle.touches(circle.Center.Float().DistanceSquaredTo(l.Start.Float()))
+	end := circle.touches(circle.Center.Float().DistanceSquaredTo(l.End.Float()))
+
+	switch {
+	case ok && entry < exit:
+		if start {
+			entry, exit = snap(entry, exit, 0)
 		}
+		if end {
+			entry, exit = snap(entry, exit, 1)
+		}
+
+		return l.pointsAt(entry, exit)
+	case start && end && l.Vector().hasDirection():
+		return l.pointsAt(0, 1)
+	case start:
+		return l.pointsAt(0)
+	case end:
+		return l.pointsAt(1)
+	case ok:
+		return l.pointsAt(entry)
+	default:
+		return nil
 	}
-
-	slices.SortFunc(points, l.nearer)
-
-	return points
 }
 
 // IntersectsRectangle reports whether the segment and the rectangle share a point: the start
@@ -303,7 +315,7 @@ func (l Line[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 		return false
 	}
 
-	if l.Start.Between(a, b) {
+	if rectangle.Contains(l.Start) {
 		return true
 	}
 
@@ -356,37 +368,49 @@ func (l Line[T]) crossings(edges iter.Seq[Line[T]]) []Point[T] {
 	return points
 }
 
-// chord returns the points where the segment crosses the circle boundary as the chord it cuts:
-// the crossings of the line through it, kept where they fall within the segment. A zero-length
-// segment cuts no chord, and an endpoint on the boundary is left to IntersectionCircle. Whether
-// the line reaches the circle is decided by the same comparison IntersectsCircle makes, so the
-// two agree to the last bit. A chord whose ends lie within Epsilon of T of each other is a
-// tangent and gives its midpoint alone: the tolerance collapses two crossings only where they
-// would compare Equal, never a chord that merely grazes the boundary within the tolerance.
-func (l Line[T]) chord(circle Circle[T]) []Point[T] {
-	a := l.Float()
-	direction := a.Vector()
+// chord returns the fractions along the segment where the line through it enters and leaves
+// the circle, in that order and not clamped to the segment, and false where the line misses
+// or the segment has no direction. Whether the line reaches the circle is decided on the
+// squared distance of the line, the expression DistanceSquaredTo evaluates for a point beside
+// the segment, by the same comparison IntersectsCircle makes, so the two agree to the last
+// bit. A chord whose ends lie within Epsilon of T of each other is a tangent and both
+// fractions are its midpoint: the tolerance collapses two crossings only where they would
+// compare Equal, never a chord that merely grazes the boundary within the tolerance.
+func (l Line[T]) chord(circle Circle[T]) (float64, float64, bool) {
+	direction, offset := l.Vector().Float(), circle.Center.Subtract(l.Start).Float()
 	if !direction.hasDirection() {
-		return nil
+		return 0, 0, false
 	}
 
 	lengthSquared := direction.LengthSquared()
-	along := -a.Start.Subtract(circle.Center.Float()).Dot(direction) / lengthSquared
-	gapSquared := a.Lerp(along).DistanceSquaredTo(circle.Center.Float())
+	cross := offset.Cross(direction)
+	gapSquared := cross * cross / lengthSquared
 
 	if !circle.reaches(gapSquared) {
-		return nil
+		return 0, 0, false
 	}
 
+	along := offset.Dot(direction) / lengthSquared
 	radius := float64(circle.Radius)
 	halfChord := math.Sqrt(max(radius*radius-gapSquared, 0))
 	if 2*halfChord <= Epsilon[T]() {
-		return l.pointsAt(along)
+		return along, along, true
 	}
 
 	half := halfChord / math.Sqrt(lengthSquared)
 
-	return l.pointsAt(along-half, along+half)
+	return along - half, along + half, true
+}
+
+// snap replaces whichever of the two fractions lies nearer to the fraction of an endpoint,
+// 0 for Start and 1 for End, with that fraction: an endpoint on the boundary is the crossing
+// nearest to it, not a third one beside it.
+func snap(entry, exit, endpoint float64) (float64, float64) {
+	if math.Abs(entry-endpoint) <= math.Abs(exit-endpoint) {
+		return endpoint, exit
+	}
+
+	return entry, endpoint
 }
 
 // pointsAt returns the points at the given fractions along the segment that lie within it,
