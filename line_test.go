@@ -129,10 +129,13 @@ func TestLine_Translate(t *testing.T) {
 
 func TestLine_MoveTo(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertLine(t, Ln(Pt(1, 2), Pt(3, 5)).MoveTo(Pt(3, -2)), Ln(Pt(3, -2), Pt(5, 1)))
+		AssertLine(t, Ln(Pt(1, 2), Pt(3, 6)).MoveTo(Pt(3, -2)), Ln(Pt(2, -4), Pt(4, 0)))
+	})
+	t.Run("int odd span rounds the midpoint", func(t *testing.T) {
+		AssertLine(t, Ln(Pt(1, 2), Pt(3, 5)).MoveTo(Pt(3, -2)), Ln(Pt(2, -4), Pt(4, -1)))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertLine(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).MoveTo(Pt(100.1, -0.1)), Ln(Pt(100.1, -0.1), Pt(100.7, 3.55)))
+		AssertLine(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).MoveTo(Pt(100.1, -0.1)), Ln(Pt(99.8, -1.925), Pt(100.4, 1.725)))
 	})
 }
 
@@ -664,6 +667,9 @@ func TestLine_IntersectionCircle(t *testing.T) {
 
 		AssertVertices(t, Ln(Pt(-1.0, height), Pt(1.0, height)).IntersectionCircle(circle), []Point[float64]{Pt(0.0, height)})
 	})
+	t.Run("a segment within the tolerance with both ends on the boundary gives one point", func(t *testing.T) {
+		AssertVertices(t, Ln(Pt(1.0, 0.0), Pt(1.0, Delta/10)).IntersectionCircle(circle), []Point[float64]{Pt(1.0, 0.0)})
+	})
 	t.Run("a tangent beyond the segment is missed", func(t *testing.T) {
 		assert.Nil(t, Ln(Pt(1.0, 1.0), Pt(2.0, 1.0)).IntersectionCircle(circle))
 	})
@@ -872,6 +878,67 @@ func FuzzLine_Intersection(f *testing.F) {
 	})
 }
 
+func FuzzLine_IntersectionCircle(f *testing.F) {
+	f.Add(-2.0, 0.0, 2.0, 0.0, 0.0, 0.0, 1.0)
+	f.Add(-1.0, 1.0+Delta/2, -0.0005, 1.0+Delta/2, 0.0, 0.0, 1.0)
+	f.Add(-0.5, 0.0, 0.5, 0.0, 0.0, 0.0, 1.0)
+	f.Add(1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
+
+	f.Fuzz(func(t *testing.T, x1, y1, x2, y2, cx, cy, r float64) {
+		for _, v := range []float64{x1, y1, x2, y2, cx, cy, r} {
+			if math.IsNaN(v) || math.Abs(v) > 1e3 {
+				t.Skip()
+			}
+		}
+
+		l, c := Ln(Pt(x1, y1), Pt(x2, y2)), Circ(Pt(cx, cy), r)
+		points := l.IntersectionCircle(c)
+
+		assert.True(t, len(points) <= 2, fmt.Sprintf("%s → %s: at most two crossings, got %d: ", l, c, len(points)))
+
+		for _, p := range points {
+			assert.True(t, l.Contains(p), fmt.Sprintf("%s → %s: %s on the segment: ", l, c, p))
+			assert.True(t, c.touches(c.Center.Float().DistanceSquaredTo(p.Float())), fmt.Sprintf("%s → %s: %s on the boundary: ", l, c, p))
+		}
+
+		if inside := c.Contains(l.Start) && c.Contains(l.End); !inside {
+			assert.Equal(t, len(points) > 0, l.IntersectsCircle(c), fmt.Sprintf("%s → %s: ", l, c))
+		}
+	})
+}
+
+func FuzzLine_IntersectionRectangle(f *testing.F) {
+	f.Add(-5.0, 0.0, 5.0, 0.0, 0.0, 0.0, 4.0, 4.0)
+	f.Add(-5.0, -2.0, 5.0, -2.0, 0.0, 0.0, 4.0, 4.0)
+	f.Add(-1.0, -1.0, 1.0, 1.0, 0.0, 0.0, 4.0, 4.0)
+	f.Add(-2.0, 1.0+Delta/2, 2.0, 1.0+Delta/2, 0.0, 0.0, 2.0, 2.0)
+	f.Add(-2.0, 2.000001, 2.0, 68.0000005, 0.0, 0.0, -26.0, 4.0)
+
+	f.Fuzz(func(t *testing.T, x1, y1, x2, y2, cx, cy, w, h float64) {
+		for _, v := range []float64{x1, y1, x2, y2, cx, cy, w, h} {
+			if math.IsNaN(v) || math.Abs(v) > 1e3 {
+				t.Skip()
+			}
+		}
+
+		l, r := Ln(Pt(x1, y1), Pt(x2, y2)), Rect(Pt(cx, cy), Sz(w, h))
+		points := l.IntersectionRectangle(r)
+
+		assert.True(t, len(points) <= 4, fmt.Sprintf("%s → %s: at most four crossings, got %d: ", l, r, len(points)))
+
+		for _, p := range points {
+			assert.True(t, l.Contains(p), fmt.Sprintf("%s → %s: %s on the segment: ", l, r, p))
+			assert.True(t, slices.ContainsFunc(r.Edges(), func(edge Line[float64]) bool {
+				return edge.Contains(p)
+			}), fmt.Sprintf("%s → %s: %s on the boundary: ", l, r, p))
+		}
+
+		if inside := r.Contains(l.Start) && r.Contains(l.End); !inside {
+			assert.Equal(t, len(points) > 0, l.IntersectsRectangle(r), fmt.Sprintf("%s → %s: ", l, r))
+		}
+	})
+}
+
 func BenchmarkLine_IntersectsRectangle(b *testing.B) {
 	rectangle := Rect(Pt(0.0, 0.0), Sz(10.0, 10.0))
 	through, apart := Ln(Pt(-20.0, 0.0), Pt(20.0, 0.0)), Ln(Pt(-20.0, 20.0), Pt(20.0, 20.0))
@@ -1033,12 +1100,12 @@ func TestLine_Properties(t *testing.T) {
 			}
 		}
 	})
-	t.Run("move to keeps the vector and starts where asked", func(t *testing.T) {
+	t.Run("move to keeps the vector and centers where asked", func(t *testing.T) {
 		for _, line := range lineFixtures {
 			for _, point := range pointFixtures {
 				moved := line.MoveTo(point)
 
-				assert.True(t, moved.Start.Equal(point), fmt.Sprintf("%s → %s: ", line, point))
+				assert.True(t, moved.Midpoint().Equal(point), fmt.Sprintf("%s → %s: ", line, point))
 				assert.True(t, moved.Vector().Equal(line.Vector()), fmt.Sprintf("%s → %s: ", line, point))
 			}
 		}

@@ -73,9 +73,12 @@ func (l Line[T]) Translate(vector Vector[T]) Line[T] {
 	return Line[T]{l.Start.Add(vector), l.End.Add(vector)}
 }
 
-// MoveTo creates a new Line with the start point moved to point and same length and direction.
+// MoveTo creates a new Line with its midpoint moved to point and the same length and
+// direction, the center every shape places with MoveTo and the pivot Scale, Resize and Rotate
+// turn about. For integer T the midpoint is rounded, so an odd span lands within half a unit
+// of the point, on the side Midpoint rounds to.
 func (l Line[T]) MoveTo(point Point[T]) Line[T] {
-	return Line[T]{point, l.End.Add(point.Subtract(l.Start))}
+	return l.Translate(point.Subtract(l.Midpoint()))
 }
 
 // Scale creates a new Line uniformly scaled about its midpoint by the factor: the midpoint and
@@ -415,14 +418,22 @@ func snap(entry, exit, endpoint float64) (float64, float64) {
 
 // pointsAt returns the points at the given fractions along the segment that lie within it,
 // the endpoints included within Epsilon of T scaled to the length, so the tolerance is the same
-// distance the Intersects methods apply. The fractions must be in increasing order.
+// distance the Intersects methods apply, with points that compare Equal counted once, as
+// crossings counts them. The fractions must be in increasing order.
 func (l Line[T]) pointsAt(fractions ...float64) []Point[T] {
 	var points []Point[T]
 	for _, t := range fractions {
-		if l.covers(t) {
-			point := l.Float().Lerp(Clamp(t, 0, 1))
-			points = append(points, Point[T]{Cast[T](point.X), Cast[T](point.Y)})
+		if !l.covers(t) {
+			continue
 		}
+
+		lerped := l.Float().Lerp(Clamp(t, 0, 1))
+		point := Point[T]{Cast[T](lerped.X), Cast[T](lerped.Y)}
+		if slices.ContainsFunc(points, point.Equal) {
+			continue
+		}
+
+		points = append(points, point)
 	}
 
 	return points

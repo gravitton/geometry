@@ -236,7 +236,6 @@ JSON last.
 - **`Circle.RegularPolygon(n, orientation)` and `RegularPolygon.Circle()`** – the conversion between the two shapes,
   with two options for where the polygon meets the circle.
 - **`Line.Clip()`** – the part of a segment inside a shape.
-- **More fuzz targets** – three for the boundary crossings are drafted in [TODO.md](TODO.md).
 - **`Rectangle.Angle`** – an oriented rectangle. `Contains`, `Clamp`, `Intersects`, `Intersection` and `Union` assume
   axis alignment today.
 - **`Polygon.Winding`, `IsConvex` and `ConvexHull`** – convexity also unlocks a separating-axis `Intersects`, the slow

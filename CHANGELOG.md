@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `Circle.Intersection` places a tangent point halfway between the two boundaries where they meet, within half the tolerance of both, where the exact crossing formula doubled the admitted perturbation
 - `Size.Grow`, `GrowXY`, `Shrink` and `ShrinkXY` no longer clamp at zero: a size is signed, so a displacement shrunk past zero measures the other way. `Rectangle.Grow`, `GrowXY`, `Shrink` and `ShrinkXY` clamp their own extent at zero as before (**breaking**)
 - `Line.MinMax` and `Polygon.MinMax` and `Edges` moved before `Vertices` and `Center`, in the method order every shape follows
+- `Rectangle.Rectangle` builds the `image.Rectangle` from `Int`, so it spans exactly `Size.Int` pixels and a sprite keeps its width as it moves through sub-pixel positions, where rounding the two corners on their own had the span flicker by a pixel (**breaking**)
+- `Line.MoveTo` places the midpoint on the point, the center every other shape places with `MoveTo` and the pivot `Line.Scale`, `Resize` and `Rotate` turn about, where it placed `Start` (**breaking**)
+- `Line.IntersectionCircle` counts points that compare `Equal` once, as `IntersectionRectangle` and `IntersectionPolygon` do, where a segment shorter than the tolerance with both ends on the boundary returned its two endpoints
+- `Polygon.String` separates the vertices with `;`, the separator every other shape prints between its fields: `Pol((0,0);(2,0);(2,2))` (**breaking**)
 
 
 

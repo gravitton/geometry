@@ -676,10 +676,10 @@ func TestPolygon_Float(t *testing.T) {
 
 func TestPolygon_String(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		assert.Equal(t, Pol(squareVertices()).String(), "Pol((0,0), (2,0), (2,2), (0,2))")
+		assert.Equal(t, Pol(squareVertices()).String(), "Pol((0,0);(2,0);(2,2);(0,2))")
 	})
 	t.Run("float", func(t *testing.T) {
-		assert.Equal(t, Pol(triangleVertices()).String(), "Pol((0.00,0.00), (2.50,0.50), (2.00,1.00))")
+		assert.Equal(t, Pol(triangleVertices()).String(), "Pol((0.00,0.00);(2.50,0.50);(2.00,1.00))")
 	})
 }
 
@@ -814,7 +814,7 @@ func polygonFixtures() []Polygon[float64] {
 
 func ExamplePol() {
 	fmt.Println(Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(2, 2)}))
-	// Output: Pol((0,0), (2,0), (2,2))
+	// Output: Pol((0,0);(2,0);(2,2))
 }
 
 // benchPolygon is a 64-gon, large enough for the edge walk to dominate.

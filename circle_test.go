@@ -414,6 +414,39 @@ func BenchmarkCircle_Intersection(b *testing.B) {
 	}
 }
 
+func FuzzCircle_Intersection(f *testing.F) {
+	f.Add(0.0, 0.0, 1.0, 2.0, 0.0, 1.0)
+	f.Add(0.0, 0.0, 1.0, 2.0+Delta/2, 0.0, 1.0)
+	f.Add(0.0, 0.0, 2.0, 0.0, 0.0, 1.0)
+	f.Add(0.0, 0.0, 6.0, 2.0000005, 0.0, 4.0)
+
+	f.Fuzz(func(t *testing.T, x1, y1, r1, x2, y2, r2 float64) {
+		for _, v := range []float64{x1, y1, r1, x2, y2, r2} {
+			if math.IsNaN(v) || math.Abs(v) > 1e3 {
+				t.Skip()
+			}
+		}
+
+		a, b := Circ(Pt(x1, y1), r1), Circ(Pt(x2, y2), r2)
+		points := a.Intersection(b)
+
+		assert.True(t, len(points) <= 2, fmt.Sprintf("%s → %s: at most two crossings, got %d: ", a, b, len(points)))
+
+		for _, p := range points {
+			assert.True(t, a.touches(a.Center.Float().DistanceSquaredTo(p.Float())), fmt.Sprintf("%s → %s: %s on the first: ", a, b, p))
+			assert.True(t, b.touches(b.Center.Float().DistanceSquaredTo(p.Float())), fmt.Sprintf("%s → %s: %s on the second: ", a, b, p))
+		}
+
+		if len(points) == 2 {
+			assert.True(t, !points[0].Equal(points[1]), fmt.Sprintf("%s → %s: two distinct points: ", a, b))
+		}
+
+		if len(points) > 0 {
+			assert.True(t, a.Intersects(b), fmt.Sprintf("%s → %s: points imply intersects: ", a, b))
+		}
+	})
+}
+
 func TestCircle_IntersectsRectangle(t *testing.T) {
 	t.Run("mirrors Rectangle.IntersectsCircle", func(t *testing.T) {
 		for _, c := range circleFixtures {

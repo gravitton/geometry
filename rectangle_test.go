@@ -861,6 +861,9 @@ func TestRectangle_Int(t *testing.T) {
 	t.Run("float rounds", func(t *testing.T) {
 		AssertRectangle(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Int(), Rect(Pt(1, 0), Sz(1, 4)))
 	})
+	t.Run("keeps the size where the corners would not", func(t *testing.T) {
+		AssertRectangle(t, Rect(Pt(0.5, 0.5), SzU(16.0)).Int(), Rect(Pt(1, 1), SzU(16)))
+	})
 }
 
 func TestRectangle_Float(t *testing.T) {

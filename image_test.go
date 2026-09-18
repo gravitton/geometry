@@ -42,20 +42,28 @@ func TestPoint_Image(t *testing.T) {
 	t.Run("float rounds", func(t *testing.T) {
 		assert.Equal(t, Pt(0.6, -0.25).Point(), image.Pt(1, 0))
 	})
+	t.Run("is the image point of Int", func(t *testing.T) {
+		for _, p := range pointFixtures {
+			assert.Equal(t, p.Point(), p.Int().Point(), p.String())
+		}
+	})
 }
 
 func TestRectangle_Image(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		assert.Equal(t, Rect(Pt(1, 2), Sz(2, 3)).Rectangle(), image.Rect(0, 1, 2, 4))
 	})
-	t.Run("float rounds", func(t *testing.T) {
-		assert.Equal(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Rectangle(), image.Rect(0, -2, 1, 2))
+	t.Run("float rounds like Int", func(t *testing.T) {
+		assert.Equal(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Rectangle(), image.Rect(1, -2, 2, 2))
 	})
-	t.Run("float corners round independently of the size", func(t *testing.T) {
-		r := Rect(Pt(0.4, 0.4), SzU(0.2))
-
-		assert.Equal(t, r.Rectangle(), image.Rect(0, 0, 1, 1))
-		AssertSize(t, r.Size.Int(), Sz(0, 0))
+	t.Run("float spans exactly the rounded size", func(t *testing.T) {
+		assert.Equal(t, Rect(Pt(0.5, 0.5), SzU(16.0)).Rectangle(), image.Rect(-7, -7, 9, 9))
+		assert.Equal(t, Rect(Pt(0.4, 0.4), SzU(0.2)).Rectangle(), image.Rect(0, 0, 0, 0))
+	})
+	t.Run("is the image rectangle of Int", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			assert.Equal(t, r.Rectangle(), r.Int().Rectangle(), r.String())
+		}
 	})
 	t.Run("round-trips through the image package", func(t *testing.T) {
 		// only rectangles on the integer lattice with even extents survive: the center is

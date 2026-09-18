@@ -471,7 +471,12 @@ func (r Rectangle[T]) Polygon() Polygon[T] {
 	return Polygon[T]{r.Vertices()}
 }
 
-// Int converts the rectangle to a Rectangle[int].
+// Int converts the rectangle to a Rectangle[int], rounding the center and the size on their
+// own like every other Int, so the size is exact and a rectangle keeps its extent as it moves
+// through positions no lattice expresses. The box moves instead: a center on a half rounds
+// away from zero and the int center then truncates toward Min, so the box can land a whole
+// unit from where the corners would round. Rectangle builds the image.Rectangle from it, so a
+// float rectangle covers the same pixels its Int spans.
 func (r Rectangle[T]) Int() Rectangle[int] {
 	return Rectangle[int]{r.Center.Int(), r.Size.Int()}
 }

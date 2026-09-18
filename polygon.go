@@ -427,9 +427,10 @@ func (p Polygon[T]) Float() Polygon[float64] {
 	return Polygon[float64]{xslices.Map(p.Vertices, Point[T].Float)}
 }
 
-// String returns a string representation of the Polygon.
+// String returns the polygon in the form of its constructor: Pol((x,y);(x,y);...), the
+// vertices separated as every other shape separates its fields.
 func (p Polygon[T]) String() string {
-	return fmt.Sprintf("Pol(%s)", strings.Join(xslices.Map(p.Vertices, Point[T].String), ", "))
+	return fmt.Sprintf("Pol(%s)", strings.Join(xslices.Map(p.Vertices, Point[T].String), ";"))
 }
 
 // MarshalJSON implements json.Marshaler.
