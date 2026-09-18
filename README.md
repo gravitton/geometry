@@ -51,31 +51,24 @@ v := geom.Pt(4, 6).Subtract(p) // Vector{3, 4}
 v.Length()          // 5
 v.Normal()          // Vector{-4, 3}, perpendicular
 p.Add(v.Resize(10)) // Point{7, 10}
-v.AtMost(2)         // Vector{1.2, 1.6}, a velocity capped at a top speed; AtLeast is the floor
 
-v.Project(geom.Vec(1, 0))      // Vector{3, 0}, the component along X
-v.Reflect(geom.Vec(0, 1))      // Vector{3, -4}, bounced off a horizontal wall
-v.AngleBetween(geom.Vec(1, 0)) // 0.93, unsigned
-
+v.Reflect(geom.Vec(0, 1))                // Vector{3, -4}, bounced off a horizontal wall
 p.RotateAround(geom.Pt(0, 0), math.Pi/2) // Point{-2, 1}
 p.Lerp(geom.Pt(9, 10), 0.25)             // Point{3, 4}
-p.ManhattanDistanceTo(geom.Pt(4, 5))     // 6, for grid pathfinding
 ```
+
+Vectors also have `Project`, `Reject`, `AngleBetween`, and `AtMost` and `AtLeast` to cap or floor a length.
 
 ### Sizes and padding
 
 ```go
 s := geom.Sz(1920, 1080)
 s.Scale(0.5)            // Size{960, 540}
-s.Unscale(2)            // Size{960, 540}, divided rather than multiplied
-s.Transpose()           // Size{1080, 1920}, turned a quarter turn
 s.AtMost(geom.SzU(800)) // Size{800, 800}, clamped per axis
 s.Fit(geom.SzU(800))    // Size{800, 450}, largest with the same ratio inside
 s.Fill(geom.SzU(800))   // Size{1422, 800}, smallest with the same ratio around
 
-geom.Sz(1.6, 2.4).Round()                 // Size{2, 2}, and Floor, Ceil, Lerp
-geom.PadXY(4, 8).Size()                   // Size{16, 8}, horizontal and vertical total
-geom.PadU(4).Subtract(geom.PadXY(1, 2))   // Padding{3, 2, 3, 2}
+geom.PadXY(4, 8).Size() // Size{16, 8}, horizontal and vertical total
 ```
 
 ### Rectangles
@@ -86,15 +79,12 @@ r := geom.Rect(geom.Pt(50, 50), geom.Sz(20, 10)) // center and size
 r.Contains(geom.Pt(55, 52))                 // true
 r.Clamp(geom.Pt(80, 0))                     // Point{60, 45}, nearest point inside
 r.Inset(geom.PadU(2)).Anchor(geom.TopRight) // Point{58, 47}
-r.AlignTo(geom.TopLeft, geom.Pt(0, 0))      // Rectangle (0,0)-(20,10) by MinMaxString
+r.AlignTo(geom.TopLeft, geom.Pt(0, 0))      // Rectangle (0,0)-(20,10)
 
 b := geom.RectangleFromMinMax(geom.Pt(0, 0), geom.Pt(8, 6))
-b.Scale(2)         // Rectangle (-4,-3)-(12,9), scaled around the center
-b.Unscale(2)       // Rectangle (2,2)-(6,5), the inverse; every shape has the pair
-b.Canonical()      // the form Rect builds, repairing a literal or decoded negative extent
-b.Lerp(c, 0.5)     // center and size together, for tweening
-b.Edges()[0]       // Line (0,0)-(8,0), the top edge
-b.Vertices()       // clockwise from the top-left corner
+b.Scale(2)    // Rectangle (-4,-3)-(12,9), scaled around the center
+b.Edges()[0]  // Line (0,0)-(8,0), the top edge
+b.Vertices()  // clockwise from the top-left corner
 ```
 
 ### Circles, lines and polygons
@@ -102,43 +92,35 @@ b.Vertices()       // clockwise from the top-left corner
 ```go
 c := geom.Circ(geom.Pt(0.0, 0.0), 5.0)
 c.Anchor(geom.Bottom) // Point{0, 5}
-c.Scale(-2)           // Circ((0,0);10), a negative factor scales by its absolute value, as Circ and Canonical take the radius
-c.AlignTo(geom.Top, geom.Pt(0.0, 0.0)) // Circ((0,5);5), the anchor moved onto the point
 
 l := geom.Ln(geom.Pt(0, 0), geom.Pt(3, 4))
 l.Length()                  // 5
-l.Resize(10)                // Line (-1,-2)-(5,6), the same midpoint and direction at length 10
-l.Direction()               // DirectionDownRight, nearest of the eight, and Angle in radians
-l.Normal()                  // Vector{-4, 3}, a quarter turn of the segment, inward on a rectangle edge
 l.DistanceTo(geom.Pt(3, 0)) // 2.4, to the nearest point of the segment
 l.Contains(geom.Pt(6, 8))   // false, the segment ends at (3,4)
 
 p := geom.Pol([]geom.Point[int]{{0, 0}, {4, 0}, {4, 4}, {2, 1}, {0, 4}})
-p.Area()                  // 10, by the shoelace formula
+p.Area()                  // 10
 p.Contains(geom.Pt(2, 3)) // false, inside the notch
-p.Edges()[4]              // Line (0,4)-(0,0), closing back to the first vertex
 
 hex := geom.Hexagon(geom.Pt(0, 0), geom.SzU(20), geom.FlatTop)
 hex.Bounds() // Rectangle (-20,-17)-(20,17)
-hex.Area()   // 1020, in closed form, and Perimeter
-hex.Lerp(hex.Rotate(1).Scale(2), 0.5) // halfway in size and angle, along the shorter arc
+hex.Area()   // 1039, 3√3/2 · r²
 ```
+
+Every shape has `Translate`, `MoveTo`, `Scale`, `Unscale`, `Lerp`, `Bounds`, `Contains` and `DistanceTo`.
 
 ### Intersections
 
 Every pair of shapes has a test on both sides, and the derived result where one exists:
 
 ```go
-a.Intersects(b)          // any shape with its own kind
-r.IntersectsCircle(c)    // and IntersectsLine, IntersectsPolygon, on every shape
-c.IntersectsRectangle(r)
+a.Intersects(b)       // any shape with its own kind
+r.IntersectsCircle(c) // and IntersectsLine, IntersectsPolygon, on every shape
 
 point, ok := l.Intersection(m) // where two segments cross
 box, ok := a.Intersection(b)   // the overlap of two rectangles
 c.Intersection(d)              // zero, one or two points where two circles cross
-l.IntersectionCircle(c)        // where a segment crosses the boundary of a circle
-l.IntersectionRectangle(r)     // or of a rectangle, or of a polygon with IntersectionPolygon, from Start to End
-a.Union(b)                     // the smallest rectangle around both
+l.IntersectionCircle(c)        // where a segment crosses a boundary; also of a rectangle or a polygon
 ```
 
 ### Directions and axes
@@ -148,15 +130,12 @@ dir := geom.DirectionUp
 dir.Rotate(2)   // DirectionRight, two 45° steps
 dir.Vector(5.0) // Vector{0, -5}
 
-geom.LerpAngle(geom.ToRadians(350), geom.ToRadians(10), 0.5) // 0, along the shorter arc
-
 geom.DirectionFromAxes(up, down, left, right) // keyboard input to an 8-way direction
 geom.Vec(3, -7).Direction()                   // DirectionUpRight, nearest of the eight
 
 axis := geom.AxisVertical
-axis.Along(size)               // Height, because the axis is vertical
-axis.Size(length, thickness)   // Size{thickness, length}
-axis.ScaleAcross(size, 0.5)    // halves Width, the cross extent; ScaleAlong halves Height
+axis.Along(size)             // Height, because the axis is vertical
+axis.Size(length, thickness) // Size{thickness, length}
 ```
 
 ### Matrices
@@ -167,51 +146,28 @@ m := geom.IdentityMatrix[float64]().Rotate(math.Pi / 4).Scale(2, 2)
 geom.Pt(1.0, 0.0).Transform(m) // Point{1.41, 1.41}
 m.Angle()                      // π/4, read back from the matrix
 m.Scaling()                    // Vector{2, 2}
-m.IsIdentity()                 // false
-
-geom.ShearMatrix(0.5, 0.0)                          // x' = x + 0.5y
-geom.ReflectionMatrix[float64](geom.AxisHorizontal) // flips Y
-
-m.Shear(0.5, 0.0)              // compose either one, and PreShear, PreReflect on the other side
-m.Reflect(geom.AxisHorizontal)
 ```
+
+`TranslationMatrix`, `RotationMatrix`, `ScaleMatrix`, `ShearMatrix` and `ReflectionMatrix` each have a composing method
+on both sides.
 
 ### Number types
 
-Any type satisfying `Number` works, including named types:
+Any type satisfying `Number` works, including named types, and `Int()` and `Float()` convert between instantiations.
+The `ints` and `floats` packages alias the two common ones:
 
 ```go
 type Tile int32
 
 geom.Pt[Tile](3, 4).Add(geom.DirectionRight.Unit[Tile]()) // Point[Tile]{4, 4}
-geom.Vec(3, 0).Transform(m)                               // an int vector through a float matrix, rounded
-```
-
-`Int()` and `Float()` convert any value to its `int` and `float64` instantiation. The `ints` and `floats` packages
-alias those two and add constructors that round or widen from any `Number`:
-
-```go
-import (
-	"github.com/gravitton/geometry/types/floats"
-	"github.com/gravitton/geometry/types/ints"
-)
-
-type Grid struct {
-	Size     ints.Size   // geom.Size[int]
-	CellSize floats.Size // geom.Size[float64]
-}
-
-geom.Pt(1.4, 2.6).Int() // Point[int]{1, 3}, rounded
-geom.Sz(4, 2).Float()   // Size[float64]{4, 2}
-ints.Pt(1.4, 2.6)       // Point[int]{1, 3}
-floats.Sz(4, 2)         // Size[float64]{4, 2}
+geom.Pt(1.4, 2.6).Int()                                   // Point[int]{1, 3}, rounded
+ints.Pt(1.4, 2.6)                                         // the same, from github.com/gravitton/geometry/types/ints
 ```
 
 ### Interop
 
 ```go
 geom.RectangleFromImage[int](img.Bounds())
-geom.Pt(3, 4).Point()                                            // image.Point
 geom.RectangleFromMin(geom.Pt(0, 0), geom.Sz(4, 2)).Rectangle() // image.Rectangle
 
 json.Marshal(geom.Rect(geom.Pt(1, 2), geom.Sz(3, 4))) // {"x":1,"y":2,"w":3,"h":4}
@@ -229,7 +185,6 @@ One assertion per shape, comparing with the tolerance of the asserted type:
 ```go
 geom.AssertPoint(t, got, geom.Pt(1.0, 2.0))
 geom.AssertRectangle(t, got, want, "after inset")
-geom.AssertVertices(t, hex.Vertices(), want)
 ```
 
 Full reference: [pkg.go.dev][link-go-dev-reference].
