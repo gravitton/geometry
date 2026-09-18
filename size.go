@@ -101,11 +101,31 @@ func (s Size[T]) Perimeter() T {
 // than an Inf or NaN that would poison later arithmetic; the same 0 a zero Width gives, since
 // neither degenerate size has a ratio worth distinguishing.
 func (s Size[T]) AspectRatio() float64 {
-	if s.Height == 0 {
-		return 0
+	return ratio(s.Width, s.Height)
+}
+
+// Fit creates a new Size scaled uniformly to the largest that fits within the given size, keeping
+// the aspect ratio: one extent matches the given size and the other is at most it. A size with a
+// zero width or height has no ratio to keep and fits as the zero size.
+func (s Size[T]) Fit(size Size[T]) Size[T] {
+	return s.Scale(min(s.ratios(size)))
+}
+
+// Fill creates a new Size scaled uniformly to the smallest that covers the given size, keeping
+// the aspect ratio: one extent matches the given size and the other is at least it. A size with a
+// zero width or height has no ratio to keep and fills as the zero size.
+func (s Size[T]) Fill(size Size[T]) Size[T] {
+	return s.Scale(max(s.ratios(size)))
+}
+
+// ratios returns the factors that scale the width and the height onto the given size, both
+// zero when either extent of s is zero, so that Fit and Fill agree on the zero size there.
+func (s Size[T]) ratios(size Size[T]) (float64, float64) {
+	if s.Width == 0 || s.Height == 0 {
+		return 0, 0
 	}
 
-	return float64(s.Width) / float64(s.Height)
+	return ratio(size.Width, s.Width), ratio(size.Height, s.Height)
 }
 
 // AtLeast creates a new Size with at least the given width and height values.

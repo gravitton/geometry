@@ -77,6 +77,16 @@ func Divide[T Number](x T, factor float64) T {
 	return Cast[T](float64(x) / factor)
 }
 
+// ratio returns a divided by b in float64, or 0 for a zero b rather than the Inf or NaN that
+// would poison later arithmetic. Divide is the panicking counterpart for scaling.
+func ratio[T Number](a, b T) float64 {
+	if b == 0 {
+		return 0
+	}
+
+	return float64(a) / float64(b)
+}
+
 // Abs returns the absolute value. It never leaves T, so integers of any width stay exact.
 func Abs[T Number](x T) T {
 	if x < 0 {

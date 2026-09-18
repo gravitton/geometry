@@ -148,6 +148,68 @@ func TestSize_AspectRatio(t *testing.T) {
 	})
 }
 
+func TestSize_Fit(t *testing.T) {
+	t.Run("wide into square is limited by width", func(t *testing.T) {
+		AssertSize(t, Sz(1920, 1080).Fit(SzU(960)), Sz(960, 540))
+	})
+	t.Run("tall into square is limited by height", func(t *testing.T) {
+		AssertSize(t, Sz(300, 600).Fit(SzU(200)), Sz(100, 200))
+	})
+	t.Run("scales up as well as down", func(t *testing.T) {
+		AssertSize(t, Sz(4.0, 2.0).Fit(Sz(10.0, 10.0)), Sz(10.0, 5.0))
+	})
+	t.Run("a zero extent fits as the zero size", func(t *testing.T) {
+		AssertSize(t, Sz(0, 5).Fit(SzU(10)), Sz(0, 0))
+		AssertSize(t, Sz(5, 0).Fit(SzU(10)), Sz(0, 0))
+	})
+	t.Run("int rounds", func(t *testing.T) {
+		AssertSize(t, Sz(3, 2).Fit(SzU(4)), Sz(4, 3))
+	})
+	t.Run("fits within the target and keeps the ratio", func(t *testing.T) {
+		for _, s := range positiveSizeFixtures() {
+			for _, target := range positiveSizeFixtures() {
+				fitted := s.Fit(target)
+
+				assert.True(t, LessOrEqual(fitted.Width, target.Width) && LessOrEqual(fitted.Height, target.Height), fmt.Sprintf("%s into %s: %s", s, target, fitted))
+				if !s.IsZero() && !fitted.IsZero() {
+					AssertNumber(t, fitted.AspectRatio(), s.AspectRatio(), fmt.Sprintf("%s into %s: ", s, target))
+				}
+			}
+		}
+	})
+}
+
+func TestSize_Fill(t *testing.T) {
+	t.Run("wide over square is limited by height", func(t *testing.T) {
+		AssertSize(t, Sz(1920, 1080).Fill(SzU(540)), Sz(960, 540))
+	})
+	t.Run("tall over square is limited by width", func(t *testing.T) {
+		AssertSize(t, Sz(300, 600).Fill(SzU(200)), Sz(200, 400))
+	})
+	t.Run("scales down as well as up", func(t *testing.T) {
+		AssertSize(t, Sz(40.0, 20.0).Fill(Sz(10.0, 10.0)), Sz(20.0, 10.0))
+	})
+	t.Run("a zero extent fills as the zero size", func(t *testing.T) {
+		AssertSize(t, Sz(0, 5).Fill(SzU(10)), Sz(0, 0))
+	})
+	t.Run("covers the target and keeps the ratio", func(t *testing.T) {
+		for _, s := range positiveSizeFixtures() {
+			for _, target := range positiveSizeFixtures() {
+				if s.Width == 0 || s.Height == 0 {
+					continue
+				}
+
+				filled := s.Fill(target)
+
+				assert.True(t, LessOrEqual(target.Width, filled.Width) && LessOrEqual(target.Height, filled.Height), fmt.Sprintf("%s over %s: %s", s, target, filled))
+				if !filled.IsZero() {
+					AssertNumber(t, filled.AspectRatio(), s.AspectRatio(), fmt.Sprintf("%s over %s: ", s, target))
+				}
+			}
+		}
+	})
+}
+
 func TestSize_AtLeast(t *testing.T) {
 	t.Run("raises the smaller dimension", func(t *testing.T) {
 		AssertSize(t, Sz(2, 3).AtLeast(Sz(1, 5)), Sz(2, 5))
@@ -385,4 +447,16 @@ func ExampleParseSize() {
 	size, err := ParseSize[int]("16x32")
 	fmt.Println(size, err)
 	// Output: 16x32 <nil>
+}
+
+// positiveSizeFixtures are the fixtures with no negative extent, the sizes Fit and Fill are defined for.
+func positiveSizeFixtures() []Size[float64] {
+	var sizes []Size[float64]
+	for _, s := range sizeFixtures {
+		if s.Width >= 0 && s.Height >= 0 {
+			sizes = append(sizes, s)
+		}
+	}
+
+	return sizes
 }
