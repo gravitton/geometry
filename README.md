@@ -254,6 +254,7 @@ JSON last.
   viewport; `IntersectionRectangle` gives the crossings and `Contains` the endpoints, the clip joins them.
 - **More fuzz targets** – `IntersectionCircle` against `IntersectsCircle` and `IntersectionRectangle` against
   `IntersectsRectangle`, on the shape of `FuzzLine_Intersection`, to cover the tolerance band the fixtures cannot.
+  Drafted in `TODO.md`, with the one input the circle target already found.
 - **`Rectangle.Angle`** – an oriented rectangle. `Contains`, `Clamp`, `Intersects`, `Intersection` and `Union` assume
   axis alignment today; the edge-based tests already work for any orientation.
 - **`Polygon.Winding`, `IsConvex` and `ConvexHull`** – the signed vertex order that `Center` already computes, a

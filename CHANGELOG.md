@@ -57,6 +57,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `Rectangle.MinMaxString` – the rectangle by its corners, `(0,1)-(2,4)`, the form `String` printed before
 
 ### Changed
+- Every test against a radius compares the squared distance against the squared reach through one `Circle` helper, so `Circle.Contains`, `DistanceTo`, `Line.IntersectsCircle`, `Rectangle.IntersectsCircle`, `Polygon.IntersectsCircle` and the endpoint rule of `Line.IntersectionCircle` round alike at the boundary; a point exactly `Epsilon[T]()` outside could be inside for one and outside for another by an ulp
 - `Circle.Bounds` returns the zero-size rectangle at the center for a negative radius, which contains nothing, instead of a rectangle with a negative size
 - `Rectangle` never stores a negative size: `Rect`, `Resize`, `Scale` and `ScaleXY` take the size absolute, `RectangleFromMin` and `RectangleFromMax` measure a negative extent the other way from the given corner, and `RectangleFromMinMax` accepts its two corners in either order, so `Contains`, `Clamp` and the `Intersects` methods always have a `Min` below `Max` unless a struct literal or JSON says otherwise (**breaking** for a caller relying on a mirrored size)
 - `Circle.Anchor` returns the center for a negative radius, which contains and intersects nothing and so has no boundary to anchor on; it placed the anchor on the far side of the center, where a negative length put it

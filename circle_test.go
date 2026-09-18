@@ -158,6 +158,13 @@ func TestCircle_Contains(t *testing.T) {
 		assert.True(t, c.Contains(c.Anchor(Right)))
 		assert.False(t, c.Contains(c.Anchor(Right).AddXY(1, 0)))
 	})
+	t.Run("agrees with a zero-length segment at the point", func(t *testing.T) {
+		for _, c := range circleFixtures {
+			for _, p := range pointFixtures {
+				assert.Equal(t, c.Contains(p), Ln(p, p).IntersectsCircle(c), fmt.Sprintf("%s → %s: ", c, p))
+			}
+		}
+	})
 	t.Run("a float anchor is inside despite rounding", func(t *testing.T) {
 		c := Circ(Pt(0.1, 0.2), 0.7)
 

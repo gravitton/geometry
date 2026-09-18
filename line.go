@@ -216,15 +216,9 @@ func (l Line[T]) Intersection(line Line[T]) (Point[T], bool) {
 
 // IntersectsCircle reports whether the segment and the circle share a point: the point of the
 // segment closest to the center lies within the radius. Touching shapes intersect, within
-// Epsilon of T. The comparison is made on squared distances, so it costs no square root.
+// Epsilon of T, by the same comparison Circle.Contains makes, on the squared distance.
 func (l Line[T]) IntersectsCircle(circle Circle[T]) bool {
-	if circle.Radius < 0 {
-		return false
-	}
-
-	reach := float64(circle.Radius) + Epsilon[T]()
-
-	return l.DistanceSquaredTo(circle.Center) <= reach*reach
+	return circle.reaches(l.DistanceSquaredTo(circle.Center))
 }
 
 // IntersectionCircle returns the points where the segment crosses the circle boundary, from
@@ -232,8 +226,8 @@ func (l Line[T]) IntersectsCircle(circle Circle[T]) bool {
 // Epsilon of T like IntersectsCircle, and none where it misses, lies entirely inside, or the
 // radius is negative. A segment inside crosses no boundary, so it returns none while
 // IntersectsCircle still reports it. An endpoint within Epsilon of the boundary is a crossing
-// in its own right, judged on its distance to the center like IntersectsCircle, so a shallow
-// touch is not lost to the fraction along the chord. For integer T the points are rounded like
+// in its own right, judged by the same comparison IntersectsCircle makes, so a shallow touch is
+// not lost to the fraction along the chord and the two agree to the last bit. For integer T the points are rounded like
 // every other result stored into T.
 func (l Line[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
 	if circle.Radius < 0 {
@@ -242,7 +236,7 @@ func (l Line[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
 
 	points := l.chord(circle)
 	for _, endpoint := range [2]Point[T]{l.Start, l.End} {
-		if EqualDelta(circle.Center.DistanceTo(endpoint), float64(circle.Radius), Epsilon[T]()) && !slices.ContainsFunc(points, endpoint.Equal) {
+		if circle.touches(circle.Center.Float().DistanceSquaredTo(endpoint.Float())) && !slices.ContainsFunc(points, endpoint.Equal) {
 			points = append(points, endpoint)
 		}
 	}
@@ -319,7 +313,8 @@ func (l Line[T]) crossings(edges iter.Seq[Line[T]]) []Point[T] {
 // chord returns the points where the segment crosses the circle boundary as the chord it cuts:
 // the crossings of the line through it, kept where they fall within the segment. A tangent
 // gives its one point, a zero-length segment cuts no chord, and an endpoint on the boundary
-// is left to IntersectionCircle.
+// is left to IntersectionCircle. Whether the line touches or cuts the circle is decided by the
+// same comparisons IntersectsCircle makes, so the two agree to the last bit.
 func (l Line[T]) chord(circle Circle[T]) []Point[T] {
 	a := l.Float()
 	direction := a.Vector()
@@ -329,13 +324,14 @@ func (l Line[T]) chord(circle Circle[T]) []Point[T] {
 
 	lengthSquared := direction.LengthSquared()
 	along := -a.Start.Subtract(circle.Center.Float()).Dot(direction) / lengthSquared
-	radius, gap := float64(circle.Radius), a.Lerp(along).DistanceTo(circle.Center.Float())
+	gapSquared := a.Lerp(along).DistanceSquaredTo(circle.Center.Float())
 
 	switch {
-	case EqualDelta(gap, radius, Epsilon[T]()):
+	case circle.touches(gapSquared):
 		return l.pointsAt(along)
-	case gap < radius:
-		half := math.Sqrt(radius*radius-gap*gap) / math.Sqrt(lengthSquared)
+	case circle.reaches(gapSquared):
+		radius := float64(circle.Radius)
+		half := math.Sqrt(radius*radius-gapSquared) / math.Sqrt(lengthSquared)
 
 		return l.pointsAt(along-half, along+half)
 	default:

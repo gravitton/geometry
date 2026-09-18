@@ -380,11 +380,10 @@ func (r Rectangle[T]) Union(rectangle Rectangle[T]) Rectangle[T] {
 
 // IntersectsCircle reports whether the rectangle and the circle overlap: the point of the
 // rectangle closest to the circle center lies within the radius. Touching shapes intersect,
-// within Epsilon of T, and the rectangle bounds are the same Min and Max that Contains uses.
+// within Epsilon of T, by the same comparison Circle.Contains makes, and the rectangle bounds
+// are the same Min and Max that Contains uses.
 func (r Rectangle[T]) IntersectsCircle(circle Circle[T]) bool {
-	closest := r.Clamp(circle.Center)
-
-	return closest.Subtract(circle.Center).LessOrEqual(circle.Radius)
+	return circle.reaches(circle.Center.Float().DistanceSquaredTo(r.Clamp(circle.Center).Float()))
 }
 
 // IntersectsLine reports whether the rectangle and the segment share a point, as

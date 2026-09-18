@@ -93,7 +93,7 @@ func (c Circle[T]) Shrink(amount T) Circle[T] {
 // Epsilon of T, the same closed convention as Rectangle.Contains: a float point a rounding
 // error outside the radius, such as an Anchor, is still contained.
 func (c Circle[T]) Contains(point Point[T]) bool {
-	return c.reaches(c.Center.DistanceTo(point))
+	return c.reaches(c.Center.Float().DistanceSquaredTo(point.Float()))
 }
 
 // DistanceTo returns the distance from the given point to the nearest point of the circle:
@@ -101,12 +101,12 @@ func (c Circle[T]) Contains(point Point[T]) bool {
 // distance zero rather than at the rounding error that put it there, and otherwise the
 // distance to the center less the radius.
 func (c Circle[T]) DistanceTo(point Point[T]) float64 {
-	distance := c.Center.DistanceTo(point)
-	if c.reaches(distance) {
+	distanceSquared := c.Center.Float().DistanceSquaredTo(point.Float())
+	if c.reaches(distanceSquared) {
 		return 0
 	}
 
-	return distance - float64(c.Radius)
+	return math.Sqrt(distanceSquared) - float64(c.Radius)
 }
 
 // DistanceSquaredTo returns the square of DistanceTo, so every shape offers the same pair. It
@@ -189,11 +189,25 @@ func (c Circle[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 	return polygon.IntersectsCircle(c)
 }
 
-// reaches reports whether a point at the given distance from the center lies within the
-// circle, boundary included within Epsilon of T, the test Contains and DistanceTo share. A
-// negative radius reaches nothing.
-func (c Circle[T]) reaches(distance float64) bool {
-	return c.Radius >= 0 && LessOrEqualDelta(distance, float64(c.Radius), Epsilon[T]())
+// reaches reports whether a point at the given squared distance from the center lies within
+// the circle, boundary included within Epsilon of T. It is the one comparison against the
+// radius that Contains, DistanceTo and every IntersectsCircle make, on the squared distance so
+// that no test pays a square root and all of them round alike at the boundary. A negative
+// radius reaches nothing.
+func (c Circle[T]) reaches(distanceSquared float64) bool {
+	reach := float64(c.Radius) + Epsilon[T]()
+
+	return c.Radius >= 0 && distanceSquared <= reach*reach
+}
+
+// touches reports whether a point at the given squared distance from the center lies on the
+// boundary within Epsilon of T: reached, and no deeper inside than the tolerance. It is the
+// endpoint test of Line.IntersectionCircle, built on reaches so it agrees with IntersectsCircle.
+// Both take the squared distance from the center as Point.DistanceSquaredTo gives it in float64.
+func (c Circle[T]) touches(distanceSquared float64) bool {
+	inner := max(float64(c.Radius)-Epsilon[T](), 0)
+
+	return c.reaches(distanceSquared) && distanceSquared >= inner*inner
 }
 
 // Equal checks for equal center and radius with given circle.

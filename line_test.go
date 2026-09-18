@@ -574,6 +574,21 @@ func TestLine_IntersectionCircle(t *testing.T) {
 		assert.True(t, shallow.IntersectsCircle(circle))
 		AssertVertices(t, shallow.IntersectionCircle(circle), []Point[float64]{shallow.End})
 	})
+	t.Run("an interior graze exactly Delta outside is judged like IntersectsCircle", func(t *testing.T) {
+		l, c := Ln(Pt(-1.0, 1.000001), Pt(1.0, 1.000001)), Circ(Pt(0.0, 0.0), 1.0)
+
+		assert.Equal(t, len(l.IntersectionCircle(c)) > 0, l.IntersectsCircle(c))
+		for _, y := range []float64{1.0000009, 1.0000011, 1.0000015} {
+			l := Ln(Pt(-1.0, y), Pt(1.0, y))
+
+			assert.Equal(t, len(l.IntersectionCircle(c)) > 0, l.IntersectsCircle(c), l.String())
+		}
+	})
+	t.Run("an endpoint exactly Delta outside is judged like IntersectsCircle", func(t *testing.T) {
+		l, c := Ln(Pt(-1.0, 2.000001), Pt(-882.0315, 56.11111116666667)), Circ(Pt(-1.0, 0.0), 2.0)
+
+		assert.Equal(t, len(l.IntersectionCircle(c)) > 0, l.IntersectsCircle(c))
+	})
 	t.Run("an endpoint on the boundary is counted once with its crossing", func(t *testing.T) {
 		AssertVertices(t, Ln(Pt(-1.0, 0.0), Pt(2.0, 0.0)).IntersectionCircle(circle), []Point[float64]{Pt(-1.0, 0.0), Pt(1.0, 0.0)})
 	})
