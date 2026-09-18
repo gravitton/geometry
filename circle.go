@@ -36,17 +36,26 @@ func (c Circle[T]) Diameter() T {
 }
 
 // Bounds returns the axis-aligned bounding rectangle: the square of side Diameter
-// centered on the circle.
+// centered on the circle. A negative radius contains nothing and bounds the zero-size
+// rectangle at the center, never a rectangle with a negative size.
 func (c Circle[T]) Bounds() Rectangle[T] {
-	return Rectangle[T]{c.Center, Size[T]{c.Diameter(), c.Diameter()}}
+	side := max(c.Diameter(), 0)
+
+	return Rectangle[T]{c.Center, Size[T]{side, side}}
 }
 
 // Anchor returns the point on the circle boundary in the given direction from its center,
-// or the center itself for DirectionNone.
+// or the center itself for DirectionNone. A circle with a negative radius has no boundary,
+// as it contains and intersects nothing, and anchors everything at its center rather than
+// on the far side, where a negative length would put it.
 // For integer T a diagonal anchor is rounded like
 // Direction.Vector and only approximates the boundary: at a small radius it can land outside
 // the circle, so Circ(Pt(0, 0), 1).Anchor(BottomRight) is (1,1), which Contains rejects.
 func (c Circle[T]) Anchor(direction Direction) Point[T] {
+	if c.Radius < 0 {
+		return c.Center
+	}
+
 	return c.Center.Add(direction.Vector(c.Radius))
 }
 
@@ -84,13 +93,20 @@ func (c Circle[T]) Shrink(amount T) Circle[T] {
 // Epsilon of T, the same closed convention as Rectangle.Contains: a float point a rounding
 // error outside the radius, such as an Anchor, is still contained.
 func (c Circle[T]) Contains(point Point[T]) bool {
-	return c.Center.Subtract(point).LessOrEqual(c.Radius)
+	return c.reaches(c.Center.DistanceTo(point))
 }
 
 // DistanceTo returns the distance from the given point to the nearest point of the circle:
-// zero for a point within it, the same closed convention as Contains.
+// zero exactly where Contains holds, so a point within Epsilon of T of the boundary is at
+// distance zero rather than at the rounding error that put it there, and otherwise the
+// distance to the center less the radius.
 func (c Circle[T]) DistanceTo(point Point[T]) float64 {
-	return max(c.Center.DistanceTo(point)-float64(c.Radius), 0)
+	distance := c.Center.DistanceTo(point)
+	if c.reaches(distance) {
+		return 0
+	}
+
+	return distance - float64(c.Radius)
 }
 
 // DistanceSquaredTo returns the square of DistanceTo, so every shape offers the same pair. It
@@ -161,10 +177,23 @@ func (c Circle[T]) IntersectsLine(line Line[T]) bool {
 	return line.IntersectsCircle(c)
 }
 
+// IntersectionLine returns the points where the segment crosses the circle boundary, as
+// Line.IntersectionCircle does.
+func (c Circle[T]) IntersectionLine(line Line[T]) []Point[T] {
+	return line.IntersectionCircle(c)
+}
+
 // IntersectsPolygon reports whether the circle and the polygon share a point, as
 // Polygon.IntersectsCircle does.
 func (c Circle[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 	return polygon.IntersectsCircle(c)
+}
+
+// reaches reports whether a point at the given distance from the center lies within the
+// circle, boundary included within Epsilon of T, the test Contains and DistanceTo share. A
+// negative radius reaches nothing.
+func (c Circle[T]) reaches(distance float64) bool {
+	return c.Radius >= 0 && LessOrEqualDelta(distance, float64(c.Radius), Epsilon[T]())
 }
 
 // Equal checks for equal center and radius with given circle.

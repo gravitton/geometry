@@ -55,6 +55,9 @@ func TestCircle_Bounds(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
 		AssertRectangle(t, Circ(Pt(0.6, -0.25), 1.2).Bounds(), Rect(Pt(0.6, -0.25), Sz(2.4, 2.4)))
 	})
+	t.Run("a negative radius bounds the zero size at the center", func(t *testing.T) {
+		AssertRectangle(t, Circ(Pt(1, 2), -3).Bounds(), Rect(Pt(1, 2), Sz(0, 0)))
+	})
 }
 
 func TestCircle_Anchor(t *testing.T) {
@@ -72,6 +75,13 @@ func TestCircle_Anchor(t *testing.T) {
 	})
 	t.Run("none is the center", func(t *testing.T) {
 		AssertPoint(t, c.Anchor(DirectionNone), Pt(10.0, 10.0))
+	})
+	t.Run("a negative radius has no boundary and anchors at the center", func(t *testing.T) {
+		negative := Circ(Pt(10.0, 10.0), -5.0)
+
+		for _, direction := range Directions() {
+			AssertPoint(t, negative.Anchor(direction), negative.Center, direction.String())
+		}
 	})
 }
 
@@ -172,6 +182,18 @@ func TestCircle_DistanceTo(t *testing.T) {
 	})
 	t.Run("float", func(t *testing.T) {
 		AssertNumber(t, Circ(Pt(0.0, 0.0), 1.0).DistanceTo(Pt(1.0, 1.0)), Sqrt2-1)
+	})
+	t.Run("float within the tolerance is zero, beyond it is measured", func(t *testing.T) {
+		c := Circ(Pt(0.0, 0.0), 1.0)
+
+		assert.Equal(t, c.DistanceTo(Pt(1.0+Delta/2, 0.0)), 0.0)
+		AssertNumber(t, c.DistanceTo(Pt(1.0+2*Delta, 0.0)), 2*Delta)
+	})
+	t.Run("a negative radius is beyond every point, its center included", func(t *testing.T) {
+		negative := Circ(Pt(0.0, 0.0), -1.0)
+
+		AssertNumber(t, negative.DistanceTo(negative.Center), 1.0)
+		AssertNumber(t, negative.DistanceTo(Pt(3.0, 0.0)), 4.0)
 	})
 	t.Run("zero exactly where Contains holds", func(t *testing.T) {
 		for _, c := range circleFixtures {
@@ -320,6 +342,16 @@ func TestCircle_IntersectsLine(t *testing.T) {
 		for _, c := range circleFixtures {
 			for _, l := range lineFixtures {
 				assert.Equal(t, c.IntersectsLine(l), l.IntersectsCircle(c), fmt.Sprintf("%s → %s: ", c, l))
+			}
+		}
+	})
+}
+
+func TestCircle_IntersectionLine(t *testing.T) {
+	t.Run("matches Line.IntersectionCircle", func(t *testing.T) {
+		for _, c := range circleFixtures {
+			for _, l := range lineFixtures {
+				AssertVertices(t, c.IntersectionLine(l), l.IntersectionCircle(c), fmt.Sprintf("%s → %s: ", c, l))
 			}
 		}
 	})

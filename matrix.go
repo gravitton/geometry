@@ -7,6 +7,10 @@ import (
 
 // Matrix is a 2D affine matrix.
 //
+// Translate, Rotate and Scale compose the matrix with TranslationMatrix, RotationMatrix and
+// ScaleMatrix and take the arguments of that constructor; the Pre variants compose on the
+// other side.
+//
 // For integer T, the matrix stores and composes lattice transforms – translation, integer scaling,
 // reflection, quarter turns – exactly. The rest are not closed over the integers and round into a
 // different matrix: rotation by anything but a multiple of 90° (see RotationMatrix), Inverse, and

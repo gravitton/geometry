@@ -121,6 +121,8 @@ c.IntersectsRectangle(r)
 point, ok := l.Intersection(m) // where two segments cross
 box, ok := a.Intersection(b)   // the overlap of two rectangles
 c.Intersection(d)              // zero, one or two points where two circles cross
+l.IntersectionCircle(c)        // where a segment crosses the boundary of a circle
+l.IntersectionRectangle(r)     // or of a rectangle, or of a polygon with IntersectionPolygon, from Start to End
 a.Union(b)                     // the smallest rectangle around both
 ```
 
@@ -245,6 +247,13 @@ JSON last.
 
 ## Planned
 
+- **`Nearest(point)`** – the closest point of a shape to a point, on every shape. `Rectangle.Clamp` already is one, and
+  `Line`, `Circle` and `Polygon` compute it inside `DistanceTo` and throw it away; collision response needs the point
+  and the normal at it more than the distance.
+- **`Line.Clip(rectangle)`** – the part of a segment inside a rectangle and whether there is one, for drawing through a
+  viewport; `IntersectionRectangle` gives the crossings and `Contains` the endpoints, the clip joins them.
+- **More fuzz targets** – `IntersectionCircle` against `IntersectsCircle` and `IntersectionRectangle` against
+  `IntersectsRectangle`, on the shape of `FuzzLine_Intersection`, to cover the tolerance band the fixtures cannot.
 - **`Rectangle.Angle`** – an oriented rectangle. `Contains`, `Clamp`, `Intersects`, `Intersection` and `Union` assume
   axis alignment today; the edge-based tests already work for any orientation.
 - **`Polygon.Winding`, `IsConvex` and `ConvexHull`** – the signed vertex order that `Center` already computes, a

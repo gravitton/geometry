@@ -3,10 +3,16 @@ package geom
 import (
 	"fmt"
 	"iter"
+	"math"
 	"slices"
 )
 
 // Rectangle is a 2D axis-aligned rectangle represented by its center and size.
+//
+// The size is never negative: Rect and Resize take it absolute, the corner constructors reorder
+// the corners they are given, and Scale flips a negative factor into a positive one, so a
+// rectangle with Min beyond Max can only be written as a struct literal or decoded from JSON,
+// and Contains, Clamp and the Intersects methods give no meaningful answer for it.
 //
 // The rectangle is closed: Contains, Clamp and the Intersects methods include the boundary,
 // within the Epsilon that Equal applies, so a float rectangle contains the corners it was built
@@ -19,28 +25,30 @@ type Rectangle[T Number] struct {
 	Size   Size[T]  `json:",embed"`
 }
 
-// Rect is shorthand for Rectangle{center, size}.
+// Rect is shorthand for Rectangle{center, size}, with the size taken absolute.
 func Rect[T Number](center Point[T], size Size[T]) Rectangle[T] {
-	return Rectangle[T]{center, size}
+	return Rectangle[T]{center, size.Abs()}
 }
 
-// RectangleFromMin creates a Rectangle from min point and size.
+// RectangleFromMin creates a Rectangle from min point and size. A negative extent measures the
+// other way, so the given point is a corner but no longer the minimum one.
 func RectangleFromMin[T Number](min Point[T], size Size[T]) Rectangle[T] {
-	w, h := size.XY()
-
-	return Rectangle[T]{min.AddXY(w/2, h/2), size}
+	return RectangleFromMinMax(min, min.Add(size.Vector()))
 }
 
-// RectangleFromMax creates a Rectangle from max point and size.
+// RectangleFromMax creates a Rectangle from max point and size. A negative extent measures the
+// other way, so the given point is a corner but no longer the maximum one.
 func RectangleFromMax[T Number](max Point[T], size Size[T]) Rectangle[T] {
-	w, h := size.XY()
-
-	return Rectangle[T]{max.AddXY(-w+w/2, -h+h/2), size}
+	return RectangleFromMinMax(max.Add(size.Vector().Negate()), max)
 }
 
-// RectangleFromMinMax creates a Rectangle from min and max points.
-func RectangleFromMinMax[T Number](min, max Point[T]) Rectangle[T] {
-	return RectangleFromMin(min, Sz(max.Subtract(min).XY()))
+// RectangleFromMinMax creates a Rectangle from two opposite corners, given in either order.
+// For integer T the center truncates toward Min, so Max-Min is exactly the size.
+func RectangleFromMinMax[T Number](a, b Point[T]) Rectangle[T] {
+	a, b = Point[T]{min(a.X, b.X), min(a.Y, b.Y)}, Point[T]{max(a.X, b.X), max(a.Y, b.Y)}
+	w, h := b.Subtract(a).XY()
+
+	return Rectangle[T]{a.AddXY(w/2, h/2), Size[T]{w, h}}
 }
 
 // RectangleFromSize creates a Rectangle from zero point and size.
@@ -231,19 +239,21 @@ func (r Rectangle[T]) MoveTo(point Point[T]) Rectangle[T] {
 	return Rectangle[T]{point, r.Size}
 }
 
-// Scale creates a new Rectangle with size uniformly scaled by the factor.
+// Scale creates a new Rectangle with size uniformly scaled by the factor. A negative factor
+// scales by its absolute value, since a rectangle mirrored about its center is the same rectangle.
 func (r Rectangle[T]) Scale(factor float64) Rectangle[T] {
-	return Rectangle[T]{r.Center, r.Size.Scale(factor)}
+	return Rectangle[T]{r.Center, r.Size.Scale(factor).Abs()}
 }
 
-// ScaleXY creates a new Rectangle with size scaled by the given factors.
+// ScaleXY creates a new Rectangle with size scaled by the given factors, negative ones by their
+// absolute value like Scale.
 func (r Rectangle[T]) ScaleXY(factorX, factorY float64) Rectangle[T] {
-	return Rectangle[T]{r.Center, r.Size.ScaleXY(factorX, factorY)}
+	return Rectangle[T]{r.Center, r.Size.ScaleXY(factorX, factorY).Abs()}
 }
 
-// Resize creates a new Rectangle with the given size.
+// Resize creates a new Rectangle with the given size, taken absolute like Rect.
 func (r Rectangle[T]) Resize(size Size[T]) Rectangle[T] {
-	return Rectangle[T]{r.Center, size}
+	return Rectangle[T]{r.Center, size.Abs()}
 }
 
 // Grow creates a new Rectangle with size expanded by the same amount in both dimensions, clamped to zero.
@@ -313,15 +323,21 @@ func (r Rectangle[T]) Contains(point Point[T]) bool {
 }
 
 // DistanceTo returns the distance from the given point to the nearest point of the rectangle:
-// zero for a point within it, the same closed convention as Contains.
+// zero exactly where Contains holds, so a point within Epsilon of T of the boundary is at
+// distance zero rather than at the rounding error that put it there, and otherwise the
+// distance to the clamped point.
 func (r Rectangle[T]) DistanceTo(point Point[T]) float64 {
-	return r.Clamp(point).DistanceTo(point)
+	return math.Sqrt(float64(r.DistanceSquaredTo(point)))
 }
 
-// DistanceSquaredTo returns the squared distance from the given point to the nearest point of
-// the rectangle, faster for comparisons. It stays in T like Point.DistanceSquaredTo, since the
-// nearest point is the clamped point and a lattice point for an integer T.
+// DistanceSquaredTo returns the squared distance DistanceTo takes the root of, faster for
+// comparisons. It stays in T like Point.DistanceSquaredTo, since the nearest point is the
+// clamped point and a lattice point for an integer T.
 func (r Rectangle[T]) DistanceSquaredTo(point Point[T]) T {
+	if r.Contains(point) {
+		return 0
+	}
+
 	return r.Clamp(point).DistanceSquaredTo(point)
 }
 
@@ -331,8 +347,7 @@ func (r Rectangle[T]) Intersects(rectangle Rectangle[T]) bool {
 	a1, b1 := r.MinMax()
 	a2, b2 := rectangle.MinMax()
 
-	return LessOrEqual(a1.X, b2.X) && LessOrEqual(a2.X, b1.X) &&
-		LessOrEqual(a1.Y, b2.Y) && LessOrEqual(a2.Y, b1.Y)
+	return overlaps(a1, b1, a2, b2)
 }
 
 // Intersection returns the rectangle common to both, and false when they do not intersect.
@@ -376,6 +391,12 @@ func (r Rectangle[T]) IntersectsCircle(circle Circle[T]) bool {
 // Line.IntersectsRectangle does.
 func (r Rectangle[T]) IntersectsLine(line Line[T]) bool {
 	return line.IntersectsRectangle(r)
+}
+
+// IntersectionLine returns the points where the segment crosses the rectangle boundary, as
+// Line.IntersectionRectangle does.
+func (r Rectangle[T]) IntersectionLine(line Line[T]) []Point[T] {
+	return line.IntersectionRectangle(r)
 }
 
 // IntersectsPolygon reports whether the rectangle and the polygon share a point, as

@@ -1,8 +1,11 @@
 package geom
 
 import (
+	"cmp"
 	"fmt"
+	"iter"
 	"math"
+	"slices"
 )
 
 // Line is a 2D line.
@@ -36,11 +39,15 @@ func (l Line[T]) Vertices() []Point[T] {
 	return []Point[T]{l.Start, l.End}
 }
 
+// MinMax returns the minimum and maximum corner of the segment, the pair Rectangle.MinMax
+// returns for its Bounds, exact for an integer T where Bounds places a center.
+func (l Line[T]) MinMax() (Point[T], Point[T]) {
+	return Point[T]{min(l.Start.X, l.End.X), min(l.Start.Y, l.End.Y)}, Point[T]{max(l.Start.X, l.End.X), max(l.Start.Y, l.End.Y)}
+}
+
 // Bounds returns the axis-aligned bounding rectangle.
 func (l Line[T]) Bounds() Rectangle[T] {
-	a := Point[T]{min(l.Start.X, l.End.X), min(l.Start.Y, l.End.Y)}
-
-	return RectangleFromMin(a, l.Vector().Size())
+	return RectangleFromMinMax(l.MinMax())
 }
 
 // wedge returns Start × End in float64, the term the shoelace formula sums per edge. Cross is
@@ -104,25 +111,39 @@ func (l Line[T]) Rotate(angle float64) Line[T] {
 }
 
 // Contains reports whether the given point lies on the segment, within Epsilon of T, the same
-// closed convention as Rectangle.Contains.
+// closed convention as Rectangle.Contains: it holds exactly where DistanceTo is zero.
 func (l Line[T]) Contains(point Point[T]) bool {
-	epsilon := Epsilon[T]()
-
-	return LessOrEqualDelta(l.DistanceSquaredTo(point), 0, epsilon*epsilon)
+	return l.DistanceSquaredTo(point) == 0
 }
 
-// DistanceTo returns the distance from the given point to the nearest point of the segment.
-// A point on the segment is at distance 0 exactly, for an integer T, since the perpendicular
-// distance comes from a cross product that is exact in float64 rather than from a projection.
+// DistanceTo returns the distance from the given point to the nearest point of the segment:
+// zero exactly where Contains holds, so a point within Epsilon of T of the segment is at
+// distance zero rather than at the rounding error that put it there. A lattice point on a
+// lattice segment is at zero without any tolerance, since the perpendicular distance comes
+// from a cross product that is exact in float64 rather than from a projection.
 func (l Line[T]) DistanceTo(point Point[T]) float64 {
 	return math.Sqrt(l.DistanceSquaredTo(point))
 }
 
 // DistanceSquaredTo returns the squared distance DistanceTo takes the root of, faster for
 // comparisons. It is a float64 even for an integer T, unlike Point.DistanceSquaredTo, since the
-// nearest point of a segment is not a lattice point in general. Contains compares it against
-// the squared tolerance, so a polygon boundary is walked without a square root per edge.
+// nearest point of a segment is not a lattice point in general. A distance within Epsilon of T
+// is snapped to zero, which is where Contains reads it, so a polygon boundary is walked without
+// a square root per edge.
 func (l Line[T]) DistanceSquaredTo(point Point[T]) float64 {
+	epsilon := Epsilon[T]()
+
+	distance := l.distanceSquared(point)
+	if LessOrEqualDelta(distance, 0, epsilon*epsilon) {
+		return 0
+	}
+
+	return distance
+}
+
+// distanceSquared returns the squared distance to the point with no tolerance applied, which
+// DistanceSquaredTo snaps to zero within Epsilon of T.
+func (l Line[T]) distanceSquared(point Point[T]) float64 {
 	direction, offset := l.Vector().Float(), point.Subtract(l.Start).Float()
 
 	along := offset.Dot(direction)
@@ -141,67 +162,133 @@ func (l Line[T]) DistanceSquaredTo(point Point[T]) float64 {
 }
 
 // DistanceToLine returns the distance between the nearest points of the two segments: zero
-// when they cross, and otherwise the smallest distance from an endpoint of one to the other.
-// Intersects is DistanceToLine within Epsilon of T.
+// exactly where Intersects holds, and otherwise the smallest distance from an endpoint of one
+// to the other.
 func (l Line[T]) DistanceToLine(line Line[T]) float64 {
+	return math.Sqrt(l.DistanceSquaredToLine(line))
+}
+
+// DistanceSquaredToLine returns the squared distance DistanceToLine takes the root of, faster
+// for comparisons: zero where the segments properly cross or an endpoint of one lies on the
+// other within Epsilon of T, as DistanceSquaredTo snaps it.
+func (l Line[T]) DistanceSquaredToLine(line Line[T]) float64 {
 	if l.crosses(line) {
 		return 0
 	}
 
-	return math.Sqrt(min(
+	return min(
 		l.DistanceSquaredTo(line.Start), l.DistanceSquaredTo(line.End),
 		line.DistanceSquaredTo(l.Start), line.DistanceSquaredTo(l.End),
-	))
+	)
 }
 
 // Intersects reports whether the segments share a point, within Epsilon of T, the same closed
 // convention as Contains: segments that touch at an endpoint or overlap collinearly intersect.
+// It holds exactly where DistanceToLine is zero.
 func (l Line[T]) Intersects(line Line[T]) bool {
-	return LessOrEqualDelta(l.DistanceToLine(line), 0, Epsilon[T]())
+	return l.DistanceSquaredToLine(line) == 0
 }
 
-// Intersection returns the point where the segments cross, and false when they do not.
-// Parallel segments have no single crossing point and return false even where they overlap,
-// which Intersects still reports. Touching at an endpoint counts, within Epsilon of T, the
-// same closed convention as Intersects. For integer T the crossing is rounded like every
-// other result stored into T.
+// Intersection returns the point where the segments cross, and false when they do not. It
+// answers exactly where Intersects holds, less the parallel case: parallel segments have no
+// single crossing point and return false even where they overlap, which Intersects still
+// reports. A zero-length segment is a point, parallel to nothing, and is the answer wherever it
+// lies on the other segment. For integer T the crossing is rounded like every other result
+// stored into T.
 //
-// Whether the segments cross is decided on the fractions of the way along each segment where
-// the lines through them meet, both from cross products that are exact for an integer T, so
-// the answer does not depend on which segment the rounded point is checked against.
+// The segments cross where Intersects says they do: either they properly cross, decided on
+// cross products that are exact for an integer T, and the point is where the lines through
+// them meet; or an endpoint of one lies on the other within Epsilon of T, and that endpoint is
+// the point. The touch is judged on the endpoint's distance, like Contains, rather than on the
+// fraction along the segment, which for a shallow crossing can put the same endpoint far
+// outside the other segment.
 func (l Line[T]) Intersection(line Line[T]) (Point[T], bool) {
-	a, b := l.Float(), line.Float()
+	if l.crosses(line) {
+		return l.crossing(line), true
+	}
 
-	denominator := a.Vector().Cross(b.Vector())
-	if denominator == 0 {
+	if l.parallel(line) {
 		return Point[T]{}, false
 	}
 
-	offset := b.Start.Subtract(a.Start)
-	t := offset.Cross(b.Vector()) / denominator
-	u := offset.Cross(a.Vector()) / denominator
-
-	if !l.covers(t) || !line.covers(u) {
-		return Point[T]{}, false
-	}
-
-	point := a.Lerp(Clamp(t, 0, 1))
-
-	return Point[T]{Cast[T](point.X), Cast[T](point.Y)}, true
+	return l.touching(line)
 }
 
 // IntersectsCircle reports whether the segment and the circle share a point: the point of the
 // segment closest to the center lies within the radius. Touching shapes intersect, within
-// Epsilon of T.
+// Epsilon of T. The comparison is made on squared distances, so it costs no square root.
 func (l Line[T]) IntersectsCircle(circle Circle[T]) bool {
-	return circle.Radius >= 0 && LessOrEqualDelta(l.DistanceTo(circle.Center), float64(circle.Radius), Epsilon[T]())
+	if circle.Radius < 0 {
+		return false
+	}
+
+	reach := float64(circle.Radius) + Epsilon[T]()
+
+	return l.DistanceSquaredTo(circle.Center) <= reach*reach
+}
+
+// IntersectionCircle returns the points where the segment crosses the circle boundary, from
+// Start to End: two where it passes through, one where it is tangent or ends inside, within
+// Epsilon of T like IntersectsCircle, and none where it misses, lies entirely inside, or the
+// radius is negative. A segment inside crosses no boundary, so it returns none while
+// IntersectsCircle still reports it. For integer T the points are rounded like every other
+// result stored into T.
+func (l Line[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
+	if circle.Radius < 0 {
+		return nil
+	}
+
+	a := l.Float()
+	direction, offset := a.Vector(), a.Start.Subtract(circle.Center.Float())
+	radius, epsilon := float64(circle.Radius), Epsilon[T]()
+
+	if !direction.hasDirection() {
+		if EqualDelta(offset.Length(), radius, epsilon) {
+			return []Point[T]{l.Start}
+		}
+
+		return nil
+	}
+
+	lengthSquared := direction.LengthSquared()
+	along := -offset.Dot(direction) / lengthSquared
+	nearest := a.Lerp(along)
+	gap := nearest.Subtract(circle.Center.Float()).Length()
+
+	if EqualDelta(gap, radius, epsilon) {
+		return l.pointsAt(along)
+	}
+
+	if gap > radius {
+		return nil
+	}
+
+	half := math.Sqrt(radius*radius-gap*gap) / math.Sqrt(lengthSquared)
+
+	return l.pointsAt(along-half, along+half)
+}
+
+// IntersectionRectangle returns the points where the segment crosses the rectangle boundary,
+// from Start to End: the crossings with its edges by Intersection, with a corner hit by two
+// edges counted once. A segment inside crosses no boundary and returns none while
+// IntersectsRectangle still reports it, and a segment along an edge is parallel to it and
+// crosses only the edges at its ends, if it reaches them.
+func (l Line[T]) IntersectionRectangle(rectangle Rectangle[T]) []Point[T] {
+	return l.crossings(rectangle.edges())
 }
 
 // IntersectsRectangle reports whether the segment and the rectangle share a point: the start
 // lies within the rectangle, or the segment crosses one of its edges. Touching shapes intersect,
-// within Epsilon of T.
+// within Epsilon of T. A segment whose extent lies outside the rectangle is rejected before any
+// edge is examined.
 func (l Line[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
-	if rectangle.Contains(l.Start) {
+	a, b := rectangle.MinMax()
+
+	if c, d := l.MinMax(); !overlaps(a, b, c, d) {
+		return false
+	}
+
+	if l.Start.Between(a, b) {
 		return true
 	}
 
@@ -220,6 +307,48 @@ func (l Line[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 	return polygon.IntersectsLine(l)
 }
 
+// IntersectionPolygon returns the points where the segment crosses the polygon boundary, as
+// Polygon.IntersectionLine does.
+func (l Line[T]) IntersectionPolygon(polygon Polygon[T]) []Point[T] {
+	return polygon.IntersectionLine(l)
+}
+
+// crossings returns the points where the segment crosses the given edges, from Start to End:
+// each crossing by Intersection, with a vertex hit by two edges counted once. It is the loop
+// IntersectionRectangle and Polygon.IntersectionLine share.
+func (l Line[T]) crossings(edges iter.Seq[Line[T]]) []Point[T] {
+	var points []Point[T]
+	for edge := range edges {
+		point, ok := l.Intersection(edge)
+		if !ok || slices.ContainsFunc(points, point.Equal) {
+			continue
+		}
+
+		points = append(points, point)
+	}
+
+	slices.SortFunc(points, func(a, b Point[T]) int {
+		return cmp.Compare(l.Start.DistanceSquaredTo(a), l.Start.DistanceSquaredTo(b))
+	})
+
+	return points
+}
+
+// pointsAt returns the points at the given fractions along the segment that lie within it,
+// the endpoints included within Epsilon of T scaled to the length, so the tolerance is the same
+// distance the Intersects methods apply. The fractions must be in increasing order.
+func (l Line[T]) pointsAt(fractions ...float64) []Point[T] {
+	var points []Point[T]
+	for _, t := range fractions {
+		if l.covers(t) {
+			point := l.Float().Lerp(Clamp(t, 0, 1))
+			points = append(points, Point[T]{Cast[T](point.X), Cast[T](point.Y)})
+		}
+	}
+
+	return points
+}
+
 // covers reports whether the fraction t of the way along the segment lies within it, the
 // endpoints included within Epsilon of T scaled to the length, so that the tolerance is the
 // same distance Contains and Intersects apply.
@@ -234,6 +363,43 @@ func (l Line[T]) covers(t float64) bool {
 // distances, which cover them within the tolerance of the caller.
 func (l Line[T]) crosses(line Line[T]) bool {
 	return l.separates(line) && line.separates(l)
+}
+
+// crossing returns the point where the lines through two properly crossing segments meet, the
+// fraction of the way along this segment from the same cross products crosses decided on.
+func (l Line[T]) crossing(line Line[T]) Point[T] {
+	a, b := l.Float(), line.Float()
+
+	t := b.Start.Subtract(a.Start).Cross(b.Vector()) / a.Vector().Cross(b.Vector())
+	point := a.Lerp(t)
+
+	return Point[T]{Cast[T](point.X), Cast[T](point.Y)}
+}
+
+// parallel reports whether the segments run along the same direction. A zero-length segment
+// has no direction and is parallel to nothing, so its point can still be found on the other.
+func (l Line[T]) parallel(line Line[T]) bool {
+	a, b := l.Vector(), line.Vector()
+
+	return a.hasDirection() && b.hasDirection() && a.Float().Cross(b.Float()) == 0
+}
+
+// touching returns the endpoint of either segment that lies on the other, within Epsilon of T
+// as Contains judges it, and false when there is none. Non-parallel segments that do not
+// properly cross can share a point only this way.
+func (l Line[T]) touching(line Line[T]) (Point[T], bool) {
+	switch {
+	case l.Contains(line.Start):
+		return line.Start, true
+	case l.Contains(line.End):
+		return line.End, true
+	case line.Contains(l.Start):
+		return l.Start, true
+	case line.Contains(l.End):
+		return l.End, true
+	default:
+		return Point[T]{}, false
+	}
 }
 
 // separates reports whether the endpoints of the given segment lie strictly on opposite sides

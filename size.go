@@ -6,8 +6,8 @@ import (
 )
 
 // Size is a 2D size. Width and Height are expected to be non-negative: the constructors do not
-// check it, and shapes built on a negative size have Min beyond Max, so Contains, Clamp and the
-// Intersects methods give no meaningful answer for them.
+// check it, but every Rectangle constructor takes the size absolute or reorders its corners, so
+// a rectangle with Min beyond Max can only be written as a struct literal or decoded from JSON.
 type Size[T Number] struct {
 	Width  T `json:"w"`
 	Height T `json:"h"`
@@ -83,6 +83,11 @@ func (s Size[T]) Unscale(factor float64) Size[T] {
 // UnscaleXY creates a new Size scaled with inverse factors along X and Y.
 func (s Size[T]) UnscaleXY(factorX, factorY float64) Size[T] {
 	return Size[T]{Divide(s.Width, factorX), Divide(s.Height, factorY)}
+}
+
+// Abs creates a new Size with absolute width and height, the size a Rectangle stores.
+func (s Size[T]) Abs() Size[T] {
+	return Size[T]{Abs(s.Width), Abs(s.Height)}
 }
 
 // Grow creates a new Size expanded by the same amount in both dimensions, clamped to zero.

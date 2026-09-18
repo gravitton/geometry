@@ -133,6 +133,12 @@ func TestSize_Unscale(t *testing.T) {
 	})
 }
 
+func TestSize_Abs(t *testing.T) {
+	AssertSize(t, Sz(-2, 3).Abs(), Sz(2, 3))
+	AssertSize(t, Sz(-0.4, -0.25).Abs(), Sz(0.4, 0.25))
+	AssertSize(t, Sz(2, 3).Abs(), Sz(2, 3))
+}
+
 func TestSize_Grow(t *testing.T) {
 	t.Run("uniform amount", func(t *testing.T) {
 		AssertSize(t, Sz(2, 3).Grow(2), Sz(4, 5))

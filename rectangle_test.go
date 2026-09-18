@@ -34,6 +34,29 @@ func TestRectangle_Constructor(t *testing.T) {
 	t.Run("unit integer rectangle", func(t *testing.T) {
 		AssertRectangle(t, RectangleFromMin(Pt(0, 0), Sz(1, 1)), Rect(Pt(0, 0), Sz(1, 1)))
 	})
+	t.Run("a negative size is taken absolute", func(t *testing.T) {
+		AssertRectangle(t, Rect(Pt(2, 1), Sz(-4, -2)), Rect(Pt(2, 1), Sz(4, 2)))
+	})
+	t.Run("min and max round-trip for odd and even integer sizes", func(t *testing.T) {
+		for w := 0; w < 6; w++ {
+			for h := 0; h < 6; h++ {
+				r := Rect(Pt(-3, 7), Sz(w, h))
+
+				AssertRectangle(t, RectangleFromMin(r.Min(), r.Size), r, r.String())
+				AssertRectangle(t, RectangleFromMax(r.Max(), r.Size), r, r.String())
+				AssertRectangle(t, RectangleFromMinMax(r.MinMax()), r, r.String())
+			}
+		}
+	})
+	t.Run("a negative extent measures the other way from the corner", func(t *testing.T) {
+		AssertRectangle(t, RectangleFromMin(Pt(4, 2), Sz(-4, -2)), Rect(Pt(2, 1), Sz(4, 2)))
+		AssertRectangle(t, RectangleFromMax(Pt(0, 0), Sz(-4, -2)), Rect(Pt(2, 1), Sz(4, 2)))
+		AssertRectangle(t, RectangleFromSize(Sz(-4, 2)), RectangleFromMinMax(Pt(-4, 0), Pt(0, 2)))
+	})
+	t.Run("corners in either order", func(t *testing.T) {
+		AssertRectangle(t, RectangleFromMinMax(Pt(4, 2), Pt(0, 0)), Rect(Pt(2, 1), Sz(4, 2)))
+		AssertRectangle(t, RectangleFromMinMax(Pt(4, 0), Pt(0, 2)), Rect(Pt(2, 1), Sz(4, 2)))
+	})
 }
 
 func TestRectangle_Width(t *testing.T) {
@@ -236,7 +259,10 @@ func TestRectangle_Scale(t *testing.T) {
 	})
 	t.Run("per-axis factor", func(t *testing.T) {
 		AssertRectangle(t, Rect(Pt(1, 2), Sz(2, 3)).ScaleXY(2, 3), Rect(Pt(1, 2), Sz(4, 9)))
-		AssertRectangle(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).ScaleXY(-1.5, 2), Rect(Pt(0.6, -0.25), Sz(-1.8, 7.2)))
+		AssertRectangle(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).ScaleXY(-1.5, 2), Rect(Pt(0.6, -0.25), Sz(1.8, 7.2)))
+	})
+	t.Run("a negative factor scales by its absolute value", func(t *testing.T) {
+		AssertRectangle(t, Rect(Pt(1, 2), Sz(2, 3)).Scale(-2), Rect(Pt(1, 2), Sz(4, 6)))
 	})
 }
 
@@ -246,6 +272,9 @@ func TestRectangle_Resize(t *testing.T) {
 	})
 	t.Run("float", func(t *testing.T) {
 		AssertRectangle(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Resize(Sz(3.1, 0.2)), Rect(Pt(0.6, -0.25), Sz(3.1, 0.2)))
+	})
+	t.Run("a negative size is taken absolute", func(t *testing.T) {
+		AssertRectangle(t, Rect(Pt(1, 2), Sz(2, 3)).Resize(Sz(-8, 9)), Rect(Pt(1, 2), Sz(8, 9)))
 	})
 }
 
@@ -421,6 +450,12 @@ func TestRectangle_DistanceTo(t *testing.T) {
 	})
 	t.Run("float", func(t *testing.T) {
 		AssertNumber(t, Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).DistanceTo(Pt(2.0, 2.0)), Sqrt2)
+	})
+	t.Run("float within the tolerance is zero, beyond it is measured", func(t *testing.T) {
+		r := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0))
+
+		assert.Equal(t, r.DistanceTo(Pt(1.0+Delta/2, 0.0)), 0.0)
+		AssertNumber(t, r.DistanceTo(Pt(1.0+2*Delta, 0.0)), 2*Delta)
 	})
 	t.Run("zero exactly where Contains holds", func(t *testing.T) {
 		for _, r := range rectFixtures {
@@ -611,6 +646,16 @@ func TestRectangle_IntersectsLine(t *testing.T) {
 		for _, r := range rectFixtures {
 			for _, l := range lineFixtures {
 				assert.Equal(t, r.IntersectsLine(l), l.IntersectsRectangle(r), fmt.Sprintf("%s → %s: ", r, l))
+			}
+		}
+	})
+}
+
+func TestRectangle_IntersectionLine(t *testing.T) {
+	t.Run("matches Line.IntersectionRectangle", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, l := range lineFixtures {
+				AssertVertices(t, r.IntersectionLine(l), l.IntersectionRectangle(r), fmt.Sprintf("%s → %s: ", r, l))
 			}
 		}
 	})
