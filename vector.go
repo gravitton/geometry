@@ -182,6 +182,43 @@ func (v Vector[T]) Cross(vector Vector[T]) T {
 	return Cast[T](float64(a.X*b.Y) - float64(a.Y*b.X))
 }
 
+// Project creates a new Vector with the component of the current vector along the given one:
+// the given vector scaled by the ratio of the dot product to its squared length. Projecting
+// onto the zero vector gives the zero vector. For integer T the result is rounded.
+func (v Vector[T]) Project(vector Vector[T]) Vector[T] {
+	a, b := v.Float(), vector.Float()
+
+	length := b.LengthSquared()
+	if length == 0 {
+		return Vector[T]{}
+	}
+
+	return vector.Multiply(a.Dot(b) / length)
+}
+
+// Reject creates a new Vector with the component of the current vector perpendicular to the
+// given one, what Project leaves out: the two sum to the current vector. Rejecting from the
+// zero vector gives the current vector.
+func (v Vector[T]) Reject(vector Vector[T]) Vector[T] {
+	return v.Subtract(v.Project(vector))
+}
+
+// Reflect creates a new Vector mirrored across the surface with the given normal, which need
+// not be normalized: the component along the normal flips and the rest is kept, as a bounce
+// off a wall. A zero normal reflects nothing and returns the current vector.
+func (v Vector[T]) Reflect(normal Vector[T]) Vector[T] {
+	return v.Subtract(v.Project(normal).Multiply(2))
+}
+
+// AngleBetween returns the unsigned angle between the vectors in radians, in [0, π]. The zero
+// vector has no direction and is at angle 0 to everything. For the signed angle from one to
+// the other, subtract their Angle values.
+func (v Vector[T]) AngleBetween(vector Vector[T]) float64 {
+	a, b := v.Float(), vector.Float()
+
+	return math.Atan2(math.Abs(a.Cross(b)), a.Dot(b))
+}
+
 // Normal creates a new Vector as normal to current vector. Faster equivalent to Rotate(math.Pi/2).
 func (v Vector[T]) Normal() Vector[T] {
 	return Vector[T]{-v.Y, v.X}

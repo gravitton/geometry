@@ -281,6 +281,108 @@ func TestVector_Cross(t *testing.T) {
 	})
 }
 
+func TestVector_Project(t *testing.T) {
+	t.Run("onto an axis keeps that component", func(t *testing.T) {
+		AssertVector(t, Vec(3, 4).Project(Vec(10, 0)), Vec(3, 0))
+		AssertVector(t, Vec(3, 4).Project(Vec(0, -2)), Vec(0, 4))
+	})
+	t.Run("onto a diagonal", func(t *testing.T) {
+		AssertVector(t, Vec(3.0, 1.0).Project(Vec(1.0, 1.0)), Vec(2.0, 2.0))
+	})
+	t.Run("opposite direction flips the projection", func(t *testing.T) {
+		AssertVector(t, Vec(-3.0, 1.0).Project(Vec(1.0, 0.0)), Vec(-3.0, 0.0))
+	})
+	t.Run("onto the zero vector is zero", func(t *testing.T) {
+		AssertVector(t, Vec(3, 4).Project(Vec(0, 0)), Vec(0, 0))
+	})
+	t.Run("int rounds", func(t *testing.T) {
+		AssertVector(t, Vec(3, 1).Project(Vec(1, 1)), Vec(2, 2))
+	})
+	t.Run("parallel to the target and independent of its length", func(t *testing.T) {
+		for _, a := range vectorFixtures {
+			for _, b := range vectorFixtures {
+				if b.IsZero() {
+					continue
+				}
+
+				AssertVector(t, a.Project(b), a.Project(b.Multiply(3)), fmt.Sprintf("%s onto %s: ", a, b))
+				AssertNumber(t, a.Project(b).Cross(b), 0.0, fmt.Sprintf("%s onto %s: ", a, b))
+			}
+		}
+	})
+}
+
+func TestVector_Reject(t *testing.T) {
+	t.Run("from an axis keeps the other component", func(t *testing.T) {
+		AssertVector(t, Vec(3, 4).Reject(Vec(10, 0)), Vec(0, 4))
+	})
+	t.Run("from a diagonal", func(t *testing.T) {
+		AssertVector(t, Vec(3.0, 1.0).Reject(Vec(1.0, 1.0)), Vec(1.0, -1.0))
+	})
+	t.Run("from the zero vector is the vector itself", func(t *testing.T) {
+		AssertVector(t, Vec(3, 4).Reject(Vec(0, 0)), Vec(3, 4))
+	})
+	t.Run("sums with the projection to the vector", func(t *testing.T) {
+		for _, a := range vectorFixtures {
+			for _, b := range vectorFixtures {
+				AssertVector(t, a.Project(b).Add(a.Reject(b)), a, fmt.Sprintf("%s from %s: ", a, b))
+			}
+		}
+	})
+}
+
+func TestVector_Reflect(t *testing.T) {
+	t.Run("off a wall flips the normal component", func(t *testing.T) {
+		AssertVector(t, Vec(3, -4).Reflect(Vec(0, 1)), Vec(3, 4))
+		AssertVector(t, Vec(3, -4).Reflect(Vec(-5, 0)), Vec(-3, -4))
+	})
+	t.Run("off a diagonal", func(t *testing.T) {
+		AssertVector(t, Vec(1.0, 0.0).Reflect(Vec(1.0, 1.0)), Vec(0.0, -1.0))
+	})
+	t.Run("the normal length does not matter", func(t *testing.T) {
+		AssertVector(t, Vec(3.0, -4.0).Reflect(Vec(0.0, 7.0)), Vec(3.0, 4.0))
+	})
+	t.Run("a zero normal reflects nothing", func(t *testing.T) {
+		AssertVector(t, Vec(3, 4).Reflect(Vec(0, 0)), Vec(3, 4))
+	})
+	t.Run("keeps the length and reflects back", func(t *testing.T) {
+		for _, a := range vectorFixtures {
+			for _, n := range vectorFixtures {
+				AssertNumber(t, a.Reflect(n).Length(), a.Length(), fmt.Sprintf("%s off %s: ", a, n))
+				AssertVector(t, a.Reflect(n).Reflect(n), a, fmt.Sprintf("%s off %s: ", a, n))
+			}
+		}
+	})
+}
+
+func TestVector_AngleBetween(t *testing.T) {
+	t.Run("right angle", func(t *testing.T) {
+		AssertNumber(t, Vec(1, 0).AngleBetween(Vec(0, 1)), Pi/2)
+	})
+	t.Run("unsigned, so the order does not matter", func(t *testing.T) {
+		AssertNumber(t, Vec(1.0, 0.0).AngleBetween(Vec(1.0, 1.0)), Pi/4)
+		AssertNumber(t, Vec(1.0, 1.0).AngleBetween(Vec(1.0, 0.0)), Pi/4)
+		AssertNumber(t, Vec(1.0, 0.0).AngleBetween(Vec(1.0, -1.0)), Pi/4)
+	})
+	t.Run("parallel and opposite", func(t *testing.T) {
+		AssertNumber(t, Vec(2, 3).AngleBetween(Vec(4, 6)), 0.0)
+		AssertNumber(t, Vec(2, 3).AngleBetween(Vec(-2, -3)), Pi)
+	})
+	t.Run("the zero vector is at angle zero", func(t *testing.T) {
+		AssertNumber(t, Vec(0, 0).AngleBetween(Vec(1, 1)), 0.0)
+	})
+	t.Run("within a half turn", func(t *testing.T) {
+		for _, a := range vectorFixtures {
+			for _, b := range vectorFixtures {
+				angle := a.AngleBetween(b)
+
+				assert.True(t, angle >= 0 && angle <= Pi, fmt.Sprintf("%s to %s: %v", a, b, angle))
+				AssertNumber(t, angle, b.AngleBetween(a), fmt.Sprintf("%s to %s: ", a, b))
+			}
+		}
+	})
+}
+
 func TestVector_Normal(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		AssertVector(t, Vec(10, 16).Normal(), Vec(-16, 10))
