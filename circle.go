@@ -6,14 +6,20 @@ import (
 )
 
 // Circle is a 2D circle.
+//
+// The radius is never negative: Circ, Resize and Lerp take it absolute, Scale takes a negative
+// factor absolute, and Grow and Shrink clamp at zero, since a circle mirrored about its center
+// is the same circle. A negative radius can only be written as a struct literal or decoded from
+// JSON, and Contains, DistanceTo and the Intersects methods give no meaningful answer for it;
+// Canonical repairs it.
 type Circle[T Number] struct {
 	Center Point[T] `json:",embed"`
 	Radius T        `json:"r"`
 }
 
-// Circ is shorthand for Circle{center, radius}.
+// Circ is shorthand for Circle{center, radius}, with the radius taken absolute.
 func Circ[T Number](center Point[T], radius T) Circle[T] {
-	return Circle[T]{center, radius}
+	return Circle[T]{center, Abs(radius)}
 }
 
 // Area returns the circle area (π * radius^2). It is a float64 even for an integer T, since
@@ -37,26 +43,18 @@ func (c Circle[T]) Diameter() T {
 }
 
 // Bounds returns the axis-aligned bounding rectangle: the square of side Diameter
-// centered on the circle. A negative radius contains nothing and bounds the zero-size
-// rectangle at the center, never a rectangle with a negative size.
+// centered on the circle.
 func (c Circle[T]) Bounds() Rectangle[T] {
-	side := max(c.Diameter(), 0)
+	side := c.Diameter()
 
 	return Rectangle[T]{c.Center, Size[T]{side, side}}
 }
 
 // Anchor returns the point on the circle boundary in the given direction from its center,
-// or the center itself for DirectionNone. A circle with a negative radius has no boundary,
-// as it contains and intersects nothing, and anchors everything at its center rather than
-// on the far side, where a negative length would put it.
-// For integer T a diagonal anchor is rounded like
+// or the center itself for DirectionNone. For integer T a diagonal anchor is rounded like
 // Direction.Vector and only approximates the boundary: at a small radius it can land outside
 // the circle, so Circ(Pt(0, 0), 1).Anchor(BottomRight) is (1,1), which Contains rejects.
 func (c Circle[T]) Anchor(direction Direction) Point[T] {
-	if c.Radius < 0 {
-		return c.Center
-	}
-
 	return c.Center.Add(direction.Vector(c.Radius))
 }
 
@@ -71,22 +69,27 @@ func (c Circle[T]) MoveTo(point Point[T]) Circle[T] {
 }
 
 // Scale creates a new Circle with radius scaled by the given factor. A negative factor scales
-// by its absolute value, since a circle mirrored about its center is the same circle: the sign
-// of the radius says whether the circle is empty, never which way it faces, so a negative one
-// stays negative and a positive one stays positive.
+// by its absolute value, since a circle mirrored about its center is the same circle.
 func (c Circle[T]) Scale(factor float64) Circle[T] {
-	return Circle[T]{c.Center, Multiply(c.Radius, math.Abs(factor))}
+	return Circle[T]{c.Center, Abs(Multiply(c.Radius, factor))}
 }
 
-// Unscale creates a new Circle with radius scaled by the inverse factor, the inverse of Scale
-// and negative factors taken absolute like it. Like Divide it panics for a zero factor.
+// Unscale creates a new Circle with radius scaled by the inverse factor, the inverse of Scale,
+// a negative factor by its absolute value like it. Like Divide it panics for a zero factor.
 func (c Circle[T]) Unscale(factor float64) Circle[T] {
-	return Circle[T]{c.Center, Divide(c.Radius, math.Abs(factor))}
+	return Circle[T]{c.Center, Abs(Divide(c.Radius, factor))}
 }
 
-// Resize creates a new Circle with the given radius.
+// Resize creates a new Circle with the given radius, taken absolute like Circ.
 func (c Circle[T]) Resize(radius T) Circle[T] {
-	return Circle[T]{c.Center, radius}
+	return Circle[T]{c.Center, Abs(radius)}
+}
+
+// Canonical creates a new Circle in the form Circ builds, with the radius taken absolute: a
+// well-formed circle is returned as it is. It repairs a negative radius written as a struct
+// literal or decoded from JSON before Contains, DistanceTo or the Intersects methods read it.
+func (c Circle[T]) Canonical() Circle[T] {
+	return Circle[T]{c.Center, Abs(c.Radius)}
 }
 
 // Grow creates a new Circle with radius increased by amount, clamped to zero.
@@ -100,15 +103,14 @@ func (c Circle[T]) Shrink(amount T) Circle[T] {
 }
 
 // Lerp creates a new Circle in linear interpolation towards the given circle, moving the center
-// and the radius together, and extrapolating outside [0, 1] like Point.Lerp. The radius is not
-// clamped, so an extrapolation can pass through the empty circle a negative radius describes.
+// and the radius together, and extrapolating outside [0, 1] like Point.Lerp, with the radius
+// taken absolute like Circ: an extrapolation past a zero radius grows the circle again.
 func (c Circle[T]) Lerp(circle Circle[T], t float64) Circle[T] {
-	return Circle[T]{c.Center.Lerp(circle.Center, t), Lerp(c.Radius, circle.Radius, t)}
+	return Circle[T]{c.Center.Lerp(circle.Center, t), Abs(Lerp(c.Radius, circle.Radius, t))}
 }
 
 // AlignTo creates a new Circle moved so that its Anchor in the given direction lands on the
-// point, the inverse of Anchor like Rectangle.AlignTo: DirectionNone aligns the center, like
-// MoveTo, and so does every direction of a circle with a negative radius, which anchors there.
+// point, the inverse of Anchor: DirectionNone aligns the center, like MoveTo.
 func (c Circle[T]) AlignTo(direction Direction, point Point[T]) Circle[T] {
 	return c.Translate(point.Subtract(c.Anchor(direction)))
 }
@@ -123,13 +125,8 @@ func (c Circle[T]) Contains(point Point[T]) bool {
 // DistanceTo returns the distance from the given point to the nearest point of the circle:
 // zero exactly where Contains holds, so a point within Epsilon of T of the boundary is at
 // distance zero rather than at the rounding error that put it there, and otherwise the
-// distance to the center less the radius. A circle with a negative radius has no point to
-// measure to and is infinitely far from every point, like an empty polygon.
+// distance to the center less the radius.
 func (c Circle[T]) DistanceTo(point Point[T]) float64 {
-	if c.Radius < 0 {
-		return math.Inf(1)
-	}
-
 	distanceSquared := c.Center.Float().DistanceSquaredTo(point.Float())
 	if c.reaches(distanceSquared) {
 		return 0
@@ -148,15 +145,11 @@ func (c Circle[T]) DistanceSquaredTo(point Point[T]) float64 {
 }
 
 // Intersects reports whether the circles overlap. Touching circles intersect, within Epsilon
-// of T, the same closed convention as Contains, and a circle with a negative radius intersects
-// nothing. The radii are summed in float64, so a narrow integer T cannot overflow the threshold,
-// which is why this is the one radius test not made through reaches on the squared distance:
-// Intersection judges tangency on the same linear distance, so the two agree.
+// of T, the same closed convention as Contains. The radii are summed in float64, so a narrow
+// integer T cannot overflow the threshold, which is why this is the one radius test not made
+// through reaches on the squared distance: Intersection judges tangency on the same linear
+// distance, so the two agree.
 func (c Circle[T]) Intersects(circle Circle[T]) bool {
-	if c.Radius < 0 || circle.Radius < 0 {
-		return false
-	}
-
 	distance := c.Center.Subtract(circle.Center).Length()
 	threshold := float64(c.Radius) + float64(circle.Radius)
 
@@ -164,18 +157,14 @@ func (c Circle[T]) Intersects(circle Circle[T]) bool {
 }
 
 // Intersection returns the points where the circles cross: two for overlapping circles, one
-// for tangent ones, within Epsilon of T like Intersects, and none for circles apart, nested, or
-// with a negative radius. Coincident circles share every point and also return none. The
+// for tangent ones, within Epsilon of T like Intersects, and none for circles apart or nested.
+// Coincident circles share every point and also return none. The
 // second point is the mirror of the first across the line of centers. Circles with centers
 // within Epsilon of T of each other count as coincident. Tangency is judged by the same
 // comparison that admits the circles, so a tangent a rounding error outside its reach gives
 // one point rather than the same point twice. For integer T the points are rounded like every
 // other result stored into T.
 func (c Circle[T]) Intersection(circle Circle[T]) []Point[T] {
-	if c.Radius < 0 || circle.Radius < 0 {
-		return nil
-	}
-
 	direction := circle.Center.Subtract(c.Center).Float()
 	distance := direction.Length()
 	r1, r2 := float64(c.Radius), float64(circle.Radius)
@@ -225,12 +214,11 @@ func (c Circle[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 // reaches reports whether a point at the given squared distance from the center lies within
 // the circle, boundary included within Epsilon of T. It is the one comparison against the
 // radius that Contains, DistanceTo and every IntersectsCircle make, on the squared distance so
-// that no test pays a square root and all of them round alike at the boundary. A negative
-// radius reaches nothing.
+// that no test pays a square root and all of them round alike at the boundary.
 func (c Circle[T]) reaches(distanceSquared float64) bool {
 	reach := float64(c.Radius) + Epsilon[T]()
 
-	return c.Radius >= 0 && distanceSquared <= reach*reach
+	return distanceSquared <= reach*reach
 }
 
 // touches reports whether a point at the given squared distance from the center lies on the

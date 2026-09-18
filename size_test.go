@@ -139,6 +139,19 @@ func TestSize_Abs(t *testing.T) {
 	AssertSize(t, Sz(2, 3).Abs(), Sz(2, 3))
 }
 
+func TestSize_Transpose(t *testing.T) {
+	t.Run("swaps width and height", func(t *testing.T) {
+		AssertSize(t, Sz(2, 3).Transpose(), Sz(3, 2))
+		AssertSize(t, Sz(0.4, -0.25).Transpose(), Sz(-0.25, 0.4))
+	})
+	t.Run("twice is the identity and matches Axis.Size", func(t *testing.T) {
+		for _, s := range sizeFixtures {
+			AssertSize(t, s.Transpose().Transpose(), s, s.String())
+			AssertSize(t, s.Transpose(), AxisVertical.Size(s.Width, s.Height), s.String())
+		}
+	})
+}
+
 func TestSize_Round(t *testing.T) {
 	AssertSize(t, Sz(1.4, 2.5).Round(), Sz(1.0, 3.0))
 	AssertSize(t, Sz(-1.4, -2.5).Round(), Sz(-1.0, -3.0))
@@ -217,6 +230,10 @@ func TestSize_Fit(t *testing.T) {
 	t.Run("int rounds", func(t *testing.T) {
 		AssertSize(t, Sz(3, 2).Fit(SzU(4)), Sz(4, 3))
 	})
+	t.Run("a negative extent is out of contract and stays negative", func(t *testing.T) {
+		AssertSize(t, Sz(-4.0, 2.0).Fit(SzU(10.0)), Sz(10.0, -5.0))
+		AssertSize(t, Sz(-4.0, 2.0).Abs().Fit(SzU(10.0)), Sz(10.0, 5.0))
+	})
 	t.Run("fits within the target and keeps the ratio", func(t *testing.T) {
 		for _, s := range positiveSizeFixtures() {
 			for _, target := range positiveSizeFixtures() {
@@ -243,6 +260,10 @@ func TestSize_Fill(t *testing.T) {
 	})
 	t.Run("a zero extent fills as the zero size", func(t *testing.T) {
 		AssertSize(t, Sz(0, 5).Fill(SzU(10)), Sz(0, 0))
+	})
+	t.Run("a negative extent is out of contract and stays negative", func(t *testing.T) {
+		AssertSize(t, Sz(-4.0, 2.0).Fill(SzU(10.0)), Sz(-20.0, 10.0))
+		AssertSize(t, Sz(-4.0, 2.0).Abs().Fill(SzU(10.0)), Sz(20.0, 10.0))
 	})
 	t.Run("covers the target and keeps the ratio", func(t *testing.T) {
 		for _, s := range positiveSizeFixtures() {

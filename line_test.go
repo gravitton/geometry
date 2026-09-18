@@ -635,9 +635,6 @@ func TestLine_IntersectsCircle(t *testing.T) {
 	t.Run("a segment inside counts", func(t *testing.T) {
 		assert.True(t, Ln(Pt(-0.5, 0.0), Pt(0.5, 0.0)).IntersectsCircle(circle))
 	})
-	t.Run("a negative radius intersects nothing", func(t *testing.T) {
-		assert.False(t, Ln(Pt(-2.0, 0.0), Pt(2.0, 0.0)).IntersectsCircle(Circ(Pt(0.0, 0.0), -1.0)))
-	})
 }
 
 func TestLine_IntersectionCircle(t *testing.T) {
@@ -702,9 +699,6 @@ func TestLine_IntersectionCircle(t *testing.T) {
 	t.Run("a degenerate segment is a point on the boundary or nothing", func(t *testing.T) {
 		AssertVertices(t, Ln(Pt(1.0, 0.0), Pt(1.0, 0.0)).IntersectionCircle(circle), []Point[float64]{Pt(1.0, 0.0)})
 		assert.Nil(t, Ln(Pt(0.5, 0.0), Pt(0.5, 0.0)).IntersectionCircle(circle))
-	})
-	t.Run("a negative radius gives none", func(t *testing.T) {
-		assert.Nil(t, Ln(Pt(-2.0, 0.0), Pt(2.0, 0.0)).IntersectionCircle(Circ(Pt(0.0, 0.0), -1.0)))
 	})
 	t.Run("int rounds the crossings", func(t *testing.T) {
 		AssertVertices(t, Ln(Pt(-5, -5), Pt(5, 5)).IntersectionCircle(Circ(Pt(0, 0), 5)), []Point[int]{Pt(-4, -4), Pt(4, 4)})

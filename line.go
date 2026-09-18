@@ -280,10 +280,6 @@ func (l Line[T]) IntersectsCircle(circle Circle[T]) bool {
 // not lost to the fraction along the chord and the two agree to the last bit. For integer T the points are rounded like
 // every other result stored into T.
 func (l Line[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
-	if circle.Radius < 0 {
-		return nil
-	}
-
 	points := l.chord(circle)
 	for _, endpoint := range [2]Point[T]{l.Start, l.End} {
 		if circle.touches(circle.Center.Float().DistanceSquaredTo(endpoint.Float())) && !slices.ContainsFunc(points, endpoint.Equal) {

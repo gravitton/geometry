@@ -16,6 +16,9 @@ func TestCircle_Constructor(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
 		AssertCircle(t, Circ(Pt(0.16, 204), 5.1), Circle[float64]{Center: Pt(0.16, 204.0), Radius: 5.1})
 	})
+	t.Run("a negative radius is taken absolute", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(10, 16), -12), Circ(Pt(10, 16), 12))
+	})
 }
 
 func TestCircle_Area(t *testing.T) {
@@ -55,9 +58,6 @@ func TestCircle_Bounds(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
 		AssertRectangle(t, Circ(Pt(0.6, -0.25), 1.2).Bounds(), Rect(Pt(0.6, -0.25), Sz(2.4, 2.4)))
 	})
-	t.Run("a negative radius bounds the zero size at the center", func(t *testing.T) {
-		AssertRectangle(t, Circ(Pt(1, 2), -3).Bounds(), Rect(Pt(1, 2), Sz(0, 0)))
-	})
 }
 
 func TestCircle_Anchor(t *testing.T) {
@@ -75,13 +75,6 @@ func TestCircle_Anchor(t *testing.T) {
 	})
 	t.Run("none is the center", func(t *testing.T) {
 		AssertPoint(t, c.Anchor(DirectionNone), Pt(10.0, 10.0))
-	})
-	t.Run("a negative radius has no boundary and anchors at the center", func(t *testing.T) {
-		negative := Circ(Pt(10.0, 10.0), -5.0)
-
-		for _, direction := range Directions() {
-			AssertPoint(t, negative.Anchor(direction), negative.Center, direction.String())
-		}
 	})
 }
 
@@ -113,10 +106,6 @@ func TestCircle_Scale(t *testing.T) {
 	t.Run("a negative factor scales by its absolute value", func(t *testing.T) {
 		AssertCircle(t, Circ(Pt(1, 2), 10).Scale(-2), Circ(Pt(1, 2), 20))
 	})
-	t.Run("an empty circle stays empty", func(t *testing.T) {
-		AssertCircle(t, Circ(Pt(1, 2), -10).Scale(2), Circ(Pt(1, 2), -20))
-		AssertCircle(t, Circ(Pt(1, 2), -10).Scale(-2), Circ(Pt(1, 2), -20))
-	})
 }
 
 func TestCircle_Unscale(t *testing.T) {
@@ -142,6 +131,33 @@ func TestCircle_Resize(t *testing.T) {
 	})
 	t.Run("float", func(t *testing.T) {
 		AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).Resize(3.1), Circ(Pt(0.6, -0.25), 3.1))
+	})
+	t.Run("a negative radius is taken absolute", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(1, 2), 10).Resize(-8), Circ(Pt(1, 2), 8))
+	})
+}
+
+func TestCircle_Canonical(t *testing.T) {
+	t.Run("takes a literal negative radius absolute and keeps the center", func(t *testing.T) {
+		AssertCircle(t, Circle[int]{Pt(1, 2), -8}.Canonical(), Circ(Pt(1, 2), 8))
+		AssertCircle(t, Circle[float64]{Pt(0.6, -0.25), -1.2}.Canonical(), Circ(Pt(0.6, -0.25), 1.2))
+	})
+	t.Run("is the circle Circ builds", func(t *testing.T) {
+		c := Circle[int]{Pt(1, 2), -8}
+
+		AssertCircle(t, c.Canonical(), Circ(c.Center, c.Radius))
+		assert.True(t, c.Canonical().Contains(c.Canonical().Anchor(Right)))
+	})
+	t.Run("repairs decoded JSON", func(t *testing.T) {
+		var c Circle[int]
+
+		assert.Nil(t, json.Unmarshal([]byte(`{"x":1,"y":2,"r":-8}`), &c))
+		AssertCircle(t, c.Canonical(), Circ(Pt(1, 2), 8))
+	})
+	t.Run("a well-formed circle is unchanged", func(t *testing.T) {
+		for _, c := range circleFixtures {
+			AssertCircle(t, c.Canonical(), c, c.String())
+		}
 	})
 }
 
@@ -176,8 +192,9 @@ func TestCircle_Lerp(t *testing.T) {
 		AssertCircle(t, a.Lerp(b, 0), a)
 		AssertCircle(t, a.Lerp(b, 1), b)
 	})
-	t.Run("extrapolates through the empty circle", func(t *testing.T) {
-		AssertCircle(t, Circ(Pt(0.0, 0.0), 2.0).Lerp(Circ(Pt(0.0, 0.0), 0.0), 2), Circ(Pt(0.0, 0.0), -2.0))
+	t.Run("extrapolates and keeps the radius absolute", func(t *testing.T) {
+		AssertCircle(t, a.Lerp(b, 2), Circ(Pt(20.0, 40.0), 14.0))
+		AssertCircle(t, Circ(Pt(0.0, 0.0), 2.0).Lerp(Circ(Pt(0.0, 0.0), 0.0), 2), Circ(Pt(0.0, 0.0), 2.0))
 	})
 }
 
@@ -190,9 +207,6 @@ func TestCircle_AlignTo(t *testing.T) {
 	})
 	t.Run("none aligns the center like MoveTo", func(t *testing.T) {
 		AssertCircle(t, c.AlignTo(DirectionNone, Pt(1.0, 2.0)), c.MoveTo(Pt(1.0, 2.0)))
-	})
-	t.Run("a negative radius anchors at the center and aligns it", func(t *testing.T) {
-		AssertCircle(t, Circ(Pt(10.0, 10.0), -5.0).AlignTo(Right, Pt(1.0, 2.0)), Circ(Pt(1.0, 2.0), -5.0))
 	})
 	t.Run("is the inverse of Anchor", func(t *testing.T) {
 		for _, c := range circleFixtures {
@@ -257,13 +271,6 @@ func TestCircle_DistanceTo(t *testing.T) {
 		assert.Equal(t, c.DistanceTo(Pt(1.0+Delta/2, 0.0)), 0.0)
 		AssertNumber(t, c.DistanceTo(Pt(1.0+2*Delta, 0.0)), 2*Delta)
 	})
-	t.Run("a negative radius is infinitely far from every point, its center included", func(t *testing.T) {
-		negative := Circ(Pt(0.0, 0.0), -1.0)
-
-		assert.True(t, math.IsInf(negative.DistanceTo(negative.Center), 1))
-		assert.True(t, math.IsInf(negative.DistanceTo(Pt(3.0, 0.0)), 1))
-		assert.True(t, math.IsInf(negative.DistanceSquaredTo(Pt(3.0, 0.0)), 1))
-	})
 	t.Run("zero exactly where Contains holds", func(t *testing.T) {
 		for _, c := range circleFixtures {
 			for _, p := range pointFixtures {
@@ -310,10 +317,6 @@ func TestCircle_Intersects(t *testing.T) {
 		assert.True(t, Circ(Pt[int8](0, 0), 100).Intersects(Circ(Pt[int8](0, 50), 100)))
 		assert.False(t, Circ(Pt[int8](-20, 0), 50).Intersects(Circ(Pt[int8](100, 0), 50)))
 	})
-	t.Run("a negative radius intersects nothing", func(t *testing.T) {
-		assert.False(t, circle.Intersects(Circ(Pt(0.0, 0.0), -1.0)))
-		assert.False(t, Circ(Pt(0.0, 0.0), -1.0).Intersects(circle))
-	})
 	t.Run("holds wherever Intersection finds a point", func(t *testing.T) {
 		for _, a := range circleFixtures {
 			for _, b := range circleFixtures {
@@ -359,9 +362,6 @@ func TestCircle_Intersection(t *testing.T) {
 	t.Run("float treats centers within Epsilon as coincident", func(t *testing.T) {
 		assert.Nil(t, circle.Intersection(Circ(Pt(1e-7, 0.0), 5.0)))
 		assert.Nil(t, circle.Intersection(Circ(Pt(0.0, -1e-7), 3.0)))
-	})
-	t.Run("a negative radius gives none", func(t *testing.T) {
-		assert.Nil(t, circle.Intersection(Circ(Pt(6.0, 0.0), -5.0)))
 	})
 	t.Run("float is tolerant at a tangent", func(t *testing.T) {
 		assert.Equal(t, len(circle.Intersection(Circ(Pt(8.0+Delta/2, 0.0), 3.0))), 1)

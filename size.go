@@ -90,6 +90,13 @@ func (s Size[T]) Abs() Size[T] {
 	return Size[T]{Abs(s.Width), Abs(s.Height)}
 }
 
+// Transpose creates a new Size with the width and height swapped, the size of the same extent
+// turned a quarter turn, as a rotated tile or sprite has. Axis.Size builds the same pair from
+// an axis in hand.
+func (s Size[T]) Transpose() Size[T] {
+	return Size[T]{s.Height, s.Width}
+}
+
 // Round creates a new Size by rounding width and height to the nearest integer.
 func (s Size[T]) Round() Size[T] {
 	return Size[T]{Round(s.Width), Round(s.Height)}
@@ -136,14 +143,18 @@ func (s Size[T]) ShrinkXY(amountX, amountY T) Size[T] {
 
 // Fit creates a new Size scaled uniformly to the largest that fits within the given size, keeping
 // the aspect ratio: one extent matches the given size and the other is at most it. A size with a
-// zero width or height has no ratio to keep and fits as the zero size.
+// zero width or height has no ratio to keep and fits as the zero size. A negative extent is
+// outside the contract of Size and fits to a negative one, which no longer bounds anything;
+// take Abs first where a size may carry one.
 func (s Size[T]) Fit(size Size[T]) Size[T] {
 	return s.Scale(min(s.ratios(size)))
 }
 
 // Fill creates a new Size scaled uniformly to the smallest that covers the given size, keeping
 // the aspect ratio: one extent matches the given size and the other is at least it. A size with a
-// zero width or height has no ratio to keep and fills as the zero size.
+// zero width or height has no ratio to keep and fills as the zero size. A negative extent is
+// outside the contract of Size and fills to a negative one, which no longer covers anything;
+// take Abs first where a size may carry one.
 func (s Size[T]) Fill(size Size[T]) Size[T] {
 	return s.Scale(max(s.ratios(size)))
 }

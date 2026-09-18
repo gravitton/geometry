@@ -1,6 +1,7 @@
 package geom
 
 import (
+	"fmt"
 	"math"
 	"testing"
 
@@ -435,6 +436,38 @@ func TestAngleDistance(t *testing.T) {
 	t.Run("across the seam", func(t *testing.T) {
 		AssertNumber(t, AngleDistance(-0.1, 0.1), 0.2)
 		AssertNumber(t, AngleDistance(2*Pi-0.1, 0.1), 0.2)
+	})
+}
+
+func TestLerpAngle(t *testing.T) {
+	t.Run("turns along the shorter arc", func(t *testing.T) {
+		AssertNumber(t, LerpAngle(0, Pi/2, 0.5), Pi/4)
+		AssertNumber(t, LerpAngle(Pi/2, 0, 0.5), Pi/4)
+		AssertNumber(t, LerpAngle(0, 3*Pi/2, 0.5), -Pi/4)
+	})
+	t.Run("crosses the seam the short way", func(t *testing.T) {
+		AssertNumber(t, LerpAngle(ToRadians(350), ToRadians(10), 0.5), ToRadians(360))
+		AssertNumber(t, LerpAngle(ToRadians(10), ToRadians(350), 0.5), ToRadians(0))
+	})
+	t.Run("the ends are the angles themselves, up to a turn", func(t *testing.T) {
+		assert.True(t, EqualAngle(LerpAngle(1, 4, 0), 1))
+		assert.True(t, EqualAngle(LerpAngle(1, 4, 1), 4))
+		assert.True(t, EqualAngle(LerpAngle(1, 4+2*Pi, 1), 4))
+	})
+	t.Run("extrapolates along the same arc", func(t *testing.T) {
+		AssertNumber(t, LerpAngle(0, Pi/2, 2), Pi)
+		AssertNumber(t, LerpAngle(0, Pi/2, -1), -Pi/2)
+	})
+	t.Run("half a turn apart turns by increasing angle", func(t *testing.T) {
+		AssertNumber(t, LerpAngle(0, Pi, 0.5), Pi/2)
+	})
+	t.Run("never turns more than half a turn", func(t *testing.T) {
+		for _, a := range []float64{0, 1, -2, Pi, 5, 2 * Pi, 100} {
+			for _, b := range []float64{0, 1, -2, Pi, 5, 2 * Pi, 100} {
+				assert.True(t, math.Abs(LerpAngle(a, b, 1)-a) <= Pi+Delta, fmt.Sprintf("%v → %v: ", a, b))
+				assert.True(t, EqualAngle(LerpAngle(a, b, 1), b), fmt.Sprintf("%v → %v: ", a, b))
+			}
+		}
 	})
 }
 

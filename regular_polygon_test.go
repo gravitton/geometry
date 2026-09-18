@@ -170,8 +170,17 @@ func TestRegularPolygon_Area(t *testing.T) {
 	t.Run("a square of semi-axis r encloses 2r²", func(t *testing.T) {
 		AssertNumber(t, Square(Pt(0.0, 0.0), SzU(3.0), PointyTop).Area(), 18.0)
 	})
-	t.Run("no vertices encloses nothing", func(t *testing.T) {
+	t.Run("an ellipse scales the area by both semi-axes", func(t *testing.T) {
+		AssertNumber(t, Square(Pt(0.0, 0.0), Sz(2.0, 5.0), PointyTop).Area(), 20.0)
+	})
+	t.Run("fewer than three vertices enclose nothing", func(t *testing.T) {
 		AssertNumber(t, RegPol(Pt(3.0, 4.0), SzU(10.0), 0, 0).Area(), 0.0)
+		AssertNumber(t, RegPol(Pt(3.0, 4.0), SzU(10.0), 2, 0).Area(), 0.0)
+	})
+	t.Run("agrees with the polygon at any angle and size", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			AssertNumber(t, rp.Area(), rp.Polygon().Area(), rp.String())
+		}
 	})
 }
 
@@ -185,8 +194,27 @@ func TestRegularPolygon_Perimeter(t *testing.T) {
 	t.Run("a square of semi-axis r has edges of r√2", func(t *testing.T) {
 		AssertNumber(t, Square(Pt(0.0, 0.0), SzU(3.0), PointyTop).Perimeter(), 12*Sqrt2)
 	})
-	t.Run("no vertices has no edge", func(t *testing.T) {
+	t.Run("an ellipse sums chords of different lengths", func(t *testing.T) {
+		square := Square(Pt(0.0, 0.0), Sz(2.0, 5.0), PointyTop)
+
+		AssertNumber(t, square.Perimeter(), 4*math.Hypot(2, 5))
+		AssertNumber(t, square.Perimeter(), square.Polygon().Perimeter())
+	})
+	t.Run("fewer than two vertices have no edge", func(t *testing.T) {
 		AssertNumber(t, RegPol(Pt(3.0, 4.0), SzU(10.0), 0, 0).Perimeter(), 0.0)
+		AssertNumber(t, RegPol(Pt(3.0, 4.0), SzU(10.0), 1, 0).Perimeter(), 0.0)
+		AssertNumber(t, RegPol(Pt(3.0, 4.0), SzU(10.0), 2, 0).Perimeter(), 40.0)
+	})
+	t.Run("int measures the exact polygon, not the rounded vertices", func(t *testing.T) {
+		hexagon := Hexagon(Pt(0, 0), SzU(1), PointyTop)
+
+		AssertNumber(t, hexagon.Perimeter(), 6.0)
+		assert.NotEqual(t, hexagon.Polygon().Perimeter(), 6.0)
+	})
+	t.Run("agrees with the polygon at any angle and size", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			AssertNumber(t, rp.Perimeter(), rp.Polygon().Perimeter(), rp.String())
+		}
 	})
 }
 
@@ -201,8 +229,22 @@ func TestRegularPolygon_Bounds(t *testing.T) {
 		AssertNumber(t, bounds.Size.Width, 4.0)
 		AssertNumber(t, bounds.Size.Height, 2.0*Sqrt3)
 	})
+	t.Run("one and two vertices reach only where they lie", func(t *testing.T) {
+		AssertRectangle(t, RegPol(Pt(0.0, 0.0), SzU(2.0), 1, Pi/2).Bounds(), RectangleFromMinMax(Pt(0.0, 2.0), Pt(0.0, 2.0)))
+		AssertRectangle(t, RegPol(Pt(0.0, 0.0), SzU(2.0), 2, Pi/4).Bounds(), RectangleFromMinMax(Pt(-Sqrt2, -Sqrt2), Pt(Sqrt2, Sqrt2)))
+	})
 	t.Run("no vertices is the zero rectangle", func(t *testing.T) {
 		AssertRectangle(t, RegPol(Pt(3, 4), Sz(10, 10), 0, 0).Bounds(), Rectangle[int]{})
+	})
+	t.Run("is exactly the box around the vertices, rounded alike for int", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for _, angle := range []float64{0, 0.3, Pi / 3, 2, -1} {
+				turned := rp.Rotate(angle)
+
+				AssertRectangle(t, turned.Bounds(), turned.Polygon().Bounds(), turned.String())
+				assert.Equal(t, turned.Int().Bounds(), turned.Int().Polygon().Bounds(), turned.String())
+			}
+		}
 	})
 }
 
@@ -244,6 +286,71 @@ func TestRegularPolygon_Unscale(t *testing.T) {
 		assert.Panics(t, func() {
 			RegPol(Pt(1, 2), Sz(4, 4), 4, 0).UnscaleXY(0, 2)
 		}, "geom: division by zero")
+	})
+}
+
+func TestRegularPolygon_Canonical(t *testing.T) {
+	t.Run("takes a literal negative size absolute and keeps the rest", func(t *testing.T) {
+		AssertRegularPolygon(t, RegularPolygon[int]{Pt(1, 2), Sz(-2, 3), 6, Pi / 3}.Canonical(), RegPol(Pt(1, 2), Sz(2, 3), 6, Pi/3))
+	})
+	t.Run("is the polygon RegPol builds", func(t *testing.T) {
+		rp := RegularPolygon[float64]{Pt(0.5, -1.25), Sz(-2.5, -3.75), 5, 1}
+
+		AssertRegularPolygon(t, rp.Canonical(), RegPol(rp.Center, rp.Size, rp.N, rp.Angle))
+		AssertVertices(t, rp.Canonical().Vertices(), RegPol(rp.Center, rp.Size, rp.N, rp.Angle).Vertices())
+	})
+	t.Run("normalizes the angle the way Rotate stores it", func(t *testing.T) {
+		AssertRegularPolygon(t, RegularPolygon[float64]{Pt(0.0, 0.0), SzU(2.0), 4, 7}.Canonical(), RegPol(Pt(0.0, 0.0), SzU(2.0), 4, 7-2*Pi))
+		AssertNumber(t, RegularPolygon[float64]{Pt(0.0, 0.0), SzU(2.0), 4, -Pi / 2}.Canonical().Angle, 3*Pi/2)
+	})
+	t.Run("a well-formed polygon is unchanged", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			AssertRegularPolygon(t, rp.Canonical(), rp, rp.String())
+			AssertRegularPolygon(t, rp.Rotate(0).Canonical(), rp.Rotate(0), rp.String())
+		}
+	})
+}
+
+func TestRegularPolygon_Lerp(t *testing.T) {
+	a, b := RegPol(Pt(0.0, 0.0), SzU(2.0), 6, 0), RegPol(Pt(10.0, 20.0), Sz(8.0, 4.0), 6, Pi/2)
+
+	t.Run("moves the center, the size and the angle together", func(t *testing.T) {
+		AssertRegularPolygon(t, a.Lerp(b, 0.5), RegPol(Pt(5.0, 10.0), Sz(5.0, 3.0), 6, Pi/4))
+	})
+	t.Run("turns along the shorter arc across the seam", func(t *testing.T) {
+		from, to := RegPol(Pt(0, 0), SzU(2), 4, ToRadians(350)), RegPol(Pt(0, 0), SzU(2), 4, ToRadians(10))
+
+		AssertRegularPolygon(t, from.Lerp(to, 0.5), RegPol(Pt(0, 0), SzU(2), 4, 0))
+		AssertRegularPolygon(t, to.Lerp(from, 0.5), RegPol(Pt(0, 0), SzU(2), 4, 0))
+	})
+	t.Run("the ends are the polygons themselves", func(t *testing.T) {
+		AssertRegularPolygon(t, a.Lerp(b, 0), a)
+		AssertRegularPolygon(t, a.Lerp(b, 1), b)
+	})
+	t.Run("extrapolates and keeps the size absolute", func(t *testing.T) {
+		AssertRegularPolygon(t, a.Lerp(b, 2), RegPol(Pt(20.0, 40.0), Sz(14.0, 6.0), 6, Pi))
+		AssertRegularPolygon(t, b.Lerp(a, 2), RegPol(Pt(-10.0, -20.0), Sz(4.0, 0.0), 6, 3*Pi/2))
+	})
+	t.Run("int rounds the center and the size", func(t *testing.T) {
+		AssertRegularPolygon(t, RegPol(Pt(0, 0), SzU(2), 4, 0).Lerp(RegPol(Pt(5, 5), SzU(5), 4, 0), 0.5), RegPol(Pt(3, 3), SzU(4), 4, 0))
+	})
+	t.Run("a different vertex count panics", func(t *testing.T) {
+		assert.PanicsWith(t, func() {
+			a.Lerp(RegPol(Pt(10.0, 20.0), Sz(8.0, 4.0), 5, Pi/2), 0.5)
+		}, "geom: lerp between polygons of 6 and 5 vertices")
+	})
+	t.Run("the ends hold over the fixtures and the angle never turns more than half a turn", func(t *testing.T) {
+		for _, from := range regularPolygonFixtures {
+			for _, to := range regularPolygonFixtures {
+				if from.N != to.N {
+					continue
+				}
+
+				AssertRegularPolygon(t, from.Lerp(to, 0), from, fmt.Sprintf("%s → %s: ", from, to))
+				AssertRegularPolygon(t, from.Lerp(to, 1), to, fmt.Sprintf("%s → %s: ", from, to))
+				assert.True(t, AngleDistance(from.Lerp(to, 0.5).Angle, from.Angle) <= Pi/2+Delta, fmt.Sprintf("%s → %s: ", from, to))
+			}
+		}
 	})
 }
 

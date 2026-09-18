@@ -240,6 +240,20 @@ func AngleDistance(a, b float64) float64 {
 	return min(d, 2*math.Pi-d)
 }
 
+// LerpAngle interpolates from angle a towards angle b at a ratio t along the shorter arc
+// between them, so a turn from 350° to 10° passes through 0° rather than the long way round.
+// The result is measured from a, not normalized, and t outside [0, 1] extrapolates along the
+// same arc like Lerp. Angles exactly half a turn apart have no shorter arc and turn in the
+// sense of increasing angle.
+func LerpAngle(a, b, t float64) float64 {
+	delta := NormalizeAngle(b - a)
+	if delta > math.Pi {
+		delta -= 2 * math.Pi
+	}
+
+	return a + delta*t
+}
+
 // EqualAngle reports whether a and b are the same angle within Delta, a full turn or the
 // sign of an angle aside. Unlike comparing normalized angles it holds across the 0/2π seam.
 func EqualAngle(a, b float64) bool {

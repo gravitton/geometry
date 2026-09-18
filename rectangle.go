@@ -12,7 +12,7 @@ import (
 // The size is never negative: Rect and Resize take it absolute, the corner constructors reorder
 // the corners they are given, and Scale flips a negative factor into a positive one, so a
 // rectangle with Min beyond Max can only be written as a struct literal or decoded from JSON,
-// and Contains, Clamp and the Intersects methods give no meaningful answer for it.
+// and Contains, Clamp and the Intersects methods give no meaningful answer for it; Canonical repairs it.
 //
 // The rectangle is closed: Contains, Clamp and the Intersects methods include the boundary,
 // within the Epsilon that Equal applies, so a float rectangle contains the corners it was built
@@ -267,6 +267,15 @@ func (r Rectangle[T]) UnscaleXY(factorX, factorY float64) Rectangle[T] {
 // Resize creates a new Rectangle with the given size, taken absolute like Rect.
 func (r Rectangle[T]) Resize(size Size[T]) Rectangle[T] {
 	return Rectangle[T]{r.Center, size.Abs()}
+}
+
+// Canonical creates a new Rectangle in the form Rect builds, with the size taken absolute: a
+// rectangle mirrored about its own center is the same rectangle, so the center is untouched and
+// a well-formed rectangle is returned as it is. It repairs the one way Min can end up beyond
+// Max, a struct literal or decoded JSON with a negative extent, before Contains, Clamp or the
+// Intersects methods read it.
+func (r Rectangle[T]) Canonical() Rectangle[T] {
+	return Rectangle[T]{r.Center, r.Size.Abs()}
 }
 
 // Grow creates a new Rectangle with size expanded by the same amount in both dimensions, clamped to zero.

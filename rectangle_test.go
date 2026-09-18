@@ -368,6 +368,30 @@ func TestRectangle_Resize(t *testing.T) {
 	})
 }
 
+func TestRectangle_Canonical(t *testing.T) {
+	t.Run("takes a literal negative size absolute and keeps the center", func(t *testing.T) {
+		AssertRectangle(t, Rectangle[int]{Pt(1, 2), Sz(-8, 9)}.Canonical(), Rect(Pt(1, 2), Sz(8, 9)))
+		AssertRectangle(t, Rectangle[float64]{Pt(0.6, -0.25), Sz(-1.2, -3.6)}.Canonical(), Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)))
+	})
+	t.Run("is the rectangle Rect builds", func(t *testing.T) {
+		r := Rectangle[int]{Pt(1, 2), Sz(-8, 9)}
+
+		AssertRectangle(t, r.Canonical(), Rect(r.Center, r.Size))
+		assert.True(t, r.Canonical().Contains(r.Canonical().Min()))
+	})
+	t.Run("repairs decoded JSON", func(t *testing.T) {
+		var r Rectangle[int]
+
+		assert.Nil(t, json.Unmarshal([]byte(`{"x":1,"y":2,"w":-8,"h":9}`), &r))
+		AssertRectangle(t, r.Canonical(), Rect(Pt(1, 2), Sz(8, 9)))
+	})
+	t.Run("a well-formed rectangle is unchanged", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			AssertRectangle(t, r.Canonical(), r, r.String())
+		}
+	})
+}
+
 func TestRectangle_Grow(t *testing.T) {
 	t.Run("uniform amount", func(t *testing.T) {
 		AssertRectangle(t, Rect(Pt(1, 2), Sz(2, 3)).Grow(2), Rect(Pt(1, 2), Sz(4, 5)))

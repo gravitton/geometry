@@ -174,6 +174,11 @@ func TestDirection_Vector(t *testing.T) {
 	t.Run("an integer diagonal is rounded", func(t *testing.T) {
 		AssertVector(t, DirectionDownRight.Vector(5), Vec(4, 4))
 	})
+	t.Run("a negative length points the other way", func(t *testing.T) {
+		AssertVector(t, DirectionRight.Vector(-5.0), Vec(-5.0, 0.0))
+		AssertNumber(t, DirectionDownLeft.Vector(-4.0).Length(), 4.0)
+		AssertVector(t, DirectionUp.Vector(-5.0), DirectionDown.Vector(5.0))
+	})
 	t.Run("none is the zero vector", func(t *testing.T) {
 		AssertVector(t, DirectionNone.Vector(5.0), Vec(0.0, 0.0))
 	})
