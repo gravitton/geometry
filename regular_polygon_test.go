@@ -43,10 +43,14 @@ func TestRegularPolygonOrientationAngle(t *testing.T) {
 			AssertPoint(t, vertices[0].Midpoint(vertices[1]), Pt(0.0, -10*math.Cos(Pi/float64(n))), fmt.Sprintf("n=%d: ", n))
 		}
 	})
-	t.Run("unknown orientation panics", func(t *testing.T) {
+	t.Run("an orientation that is neither panics", func(t *testing.T) {
 		assert.PanicsWith(t, func() {
 			RegularPolygonOrientationAngle(6, Orientation(99))
 		}, "geom: unknown orientation 99")
+
+		assert.PanicsWith(t, func() {
+			RegularPolygonOrientationAngle(6, OrientationNone)
+		}, "geom: unknown orientation -1")
 	})
 	t.Run("no vertices give the top angle instead of dividing by n", func(t *testing.T) {
 		AssertNumber(t, RegularPolygonOrientationAngle(0, FlatTop), 270*DegToRad)

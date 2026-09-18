@@ -28,16 +28,6 @@ func RegPol[T Number](center Point[T], size Size[T], n int, angle float64) Regul
 	return RegularPolygon[T]{center, size.Abs(), n, angle}
 }
 
-// Orientation defines the rotational alignment of a regular polygon.
-type Orientation int
-
-const (
-	// FlatTop places a flat edge at the top of the polygon.
-	FlatTop Orientation = iota
-	// PointyTop places a vertex at the top of the polygon.
-	PointyTop
-)
-
 // RegularPolygonOrientationAngle returns the initial vertex angle for a regular polygon with n sides
 // and the given orientation, normalized to [0, 2π) like Rotate. PointyTop puts the first vertex at
 // the top (-Y, 3π/2); FlatTop puts the midpoint of an edge there, so the first vertex sits half a

@@ -150,6 +150,18 @@ func (a Axis) IsNone() bool {
 	return a != AxisHorizontal && a != AxisVertical
 }
 
+// String returns the name of the axis constant.
+func (a Axis) String() string {
+	switch a {
+	case AxisHorizontal:
+		return "Horizontal"
+	case AxisVertical:
+		return "Vertical"
+	default:
+		return "None"
+	}
+}
+
 // MarshalText implements encoding.TextMarshaler with the name String prints, so an axis is
 // stored as "Horizontal" in JSON and as a map key rather than as its number.
 func (a Axis) MarshalText() ([]byte, error) {
@@ -166,16 +178,4 @@ func (a *Axis) UnmarshalText(text []byte) error {
 	*a = axis
 
 	return nil
-}
-
-// String returns the name of the axis constant.
-func (a Axis) String() string {
-	switch a {
-	case AxisHorizontal:
-		return "Horizontal"
-	case AxisVertical:
-		return "Vertical"
-	default:
-		return "None"
-	}
 }

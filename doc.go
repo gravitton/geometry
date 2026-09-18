@@ -25,7 +25,9 @@
 // Transform and Int on an integer shape all go through it. A float T carries NaN and ±Inf
 // through unchanged. A finite value outside the range of an integer T is not checked and
 // stores a platform-dependent value, as Cast documents. RegularPolygonOrientationAngle panics
-// for an Orientation that is neither FlatTop nor PointyTop.
+// for an Orientation that is neither FlatTop nor PointyTop, OrientationNone included: the
+// absence of an alignment has no angle to give. RegularPolygon.Lerp panics for a polygon with
+// a different vertex count, which has no shape between.
 // These are the only panics: every other guard returns a value the type can express, such as
 // DirectionNone, an empty polygon, or the 0 that Size.AspectRatio gives for a zero height.
 //
