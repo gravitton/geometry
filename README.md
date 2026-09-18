@@ -131,7 +131,7 @@ a.Union(b)                      // the smallest rectangle around both
 Directions and axes:
 
 ```go
-dir := geom.DirectionUp
+dir := geom.DirectionUp // marshals as "Up"; ParseDirection reads it back
 dir.Rotate(2)   // DirectionRight, two 45° steps
 dir.Vector(5.0) // Vector{0, -5}
 
@@ -152,6 +152,9 @@ geom.Pt(1.0, 0.0).Transform(m) // Point{1.41, 1.41}
 m.Angle()                      // π/4, read back from the matrix
 m.Scaling()                    // Vector{2, 2}
 m.Translation()                // Vector{0, 0}
+
+geom.ShearMatrix(0.5, 0.0)                    // x' = x + 0.5y
+geom.ReflectionMatrix[float64](geom.AxisHorizontal) // flips Y
 ```
 
 Interop with `image`:
@@ -255,6 +258,8 @@ beyond 2^53 loses precision on the way through `float64`.
 **Boundaries:** every `Contains`, `Intersects` and `Vector.LessOrEqual` are closed and tolerant: a point
 within `Epsilon[T]()` of the boundary counts as on it, so a float rectangle contains the corners it was built from, a
 circle contains its anchors and a polygon contains its vertices. `Vector.Less` and `LessOrEqual`'s strict counterparts apply no tolerance.
+`DistanceTo` is zero exactly where `Contains` holds, and `Intersection` answers exactly where `Intersects` holds, less
+the parallel and coincident cases that have no single answer.
 
 **Common API:** Every shape exposes `Int()`, `Float()`, `String()`, `Equal()`, and `IsZero()`. Shapes with spatial
 extent add `Bounds()`, `Contains(point)`, `DistanceTo(point)` and an `Intersects` method for every other shape.
