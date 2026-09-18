@@ -201,6 +201,33 @@ func TestPolygon_Scale(t *testing.T) {
 	})
 }
 
+func TestPolygon_Unscale(t *testing.T) {
+	t.Run("uniform factor", func(t *testing.T) {
+		AssertPolygon(t, Pol(squareVertices()).Scale(2).Unscale(2), Pol(squareVertices()))
+		AssertPolygon(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(4.0, 4.0), Pt(0.0, 4.0)}).Unscale(2), Pol([]Point[float64]{
+			Pt(1.0, 1.0),
+			Pt(3.0, 1.0),
+			Pt(3.0, 3.0),
+			Pt(1.0, 3.0),
+		}))
+	})
+	t.Run("per-axis factor", func(t *testing.T) {
+		AssertPolygon(t, Pol(triangleVertices()).ScaleXY(0.5, 2.5).UnscaleXY(0.5, 2.5), Pol(triangleVertices()))
+	})
+	t.Run("nil stays nil", func(t *testing.T) {
+		assert.True(t, Pol[int](nil).Unscale(2).IsZero())
+		assert.True(t, Pol[int](nil).UnscaleXY(2, 3).IsZero())
+	})
+	t.Run("zero factor panics", func(t *testing.T) {
+		assert.Panics(t, func() {
+			Pol(squareVertices()).Unscale(0)
+		}, "geom: division by zero")
+		assert.Panics(t, func() {
+			Pol(squareVertices()).UnscaleXY(0, 2)
+		}, "geom: division by zero")
+	})
+}
+
 func TestPolygon_Transform(t *testing.T) {
 	t.Run("applies the matrix to every vertex", func(t *testing.T) {
 		matrix := Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)

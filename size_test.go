@@ -139,6 +139,39 @@ func TestSize_Abs(t *testing.T) {
 	AssertSize(t, Sz(2, 3).Abs(), Sz(2, 3))
 }
 
+func TestSize_Round(t *testing.T) {
+	AssertSize(t, Sz(1.4, 2.5).Round(), Sz(1.0, 3.0))
+	AssertSize(t, Sz(-1.4, -2.5).Round(), Sz(-1.0, -3.0))
+	AssertSize(t, Sz(1, 2).Round(), Sz(1, 2))
+}
+
+func TestSize_Floor(t *testing.T) {
+	AssertSize(t, Sz(1.4, 2.5).Floor(), Sz(1.0, 2.0))
+	AssertSize(t, Sz(-1.4, -2.5).Floor(), Sz(-2.0, -3.0))
+	AssertSize(t, Sz(1, 2).Floor(), Sz(1, 2))
+}
+
+func TestSize_Ceil(t *testing.T) {
+	AssertSize(t, Sz(1.4, 2.5).Ceil(), Sz(2.0, 3.0))
+	AssertSize(t, Sz(-1.4, -2.5).Ceil(), Sz(-1.0, -2.0))
+	AssertSize(t, Sz(1, 2).Ceil(), Sz(1, 2))
+}
+
+func TestSize_Lerp(t *testing.T) {
+	t.Run("interpolates between the sizes", func(t *testing.T) {
+		AssertSize(t, Sz(0.0, 10.0).Lerp(Sz(10.0, 20.0), 0.25), Sz(2.5, 12.5))
+		AssertSize(t, Sz(0, 10).Lerp(Sz(10, 20), 0.25), Sz(3, 13)) // int: 2.5 rounds away from zero
+	})
+	t.Run("the ends are the sizes themselves", func(t *testing.T) {
+		AssertSize(t, Sz(2.0, 3.0).Lerp(Sz(8.0, 9.0), 0), Sz(2.0, 3.0))
+		AssertSize(t, Sz(2.0, 3.0).Lerp(Sz(8.0, 9.0), 1), Sz(8.0, 9.0))
+	})
+	t.Run("extrapolates outside the unit range", func(t *testing.T) {
+		AssertSize(t, Sz(2.0, 3.0).Lerp(Sz(4.0, 5.0), 2), Sz(6.0, 7.0))
+		AssertSize(t, Sz(2.0, 3.0).Lerp(Sz(4.0, 5.0), -1), Sz(0.0, 1.0))
+	})
+}
+
 func TestSize_Grow(t *testing.T) {
 	t.Run("uniform amount", func(t *testing.T) {
 		AssertSize(t, Sz(2, 3).Grow(2), Sz(4, 5))
@@ -364,6 +397,26 @@ func TestSize_Properties(t *testing.T) {
 		for _, size := range sizeFixtures {
 			for _, factor := range []float64{0.5, 1, 2.5, -3} {
 				assert.True(t, size.Scale(factor).Unscale(factor).Equal(size), fmt.Sprintf("%s ×%v: ", size, factor))
+			}
+		}
+	})
+	t.Run("round, floor and ceil bracket the size", func(t *testing.T) {
+		for _, size := range sizeFixtures {
+			floor, ceil := size.Floor(), size.Ceil()
+
+			assert.True(t, floor.Width <= size.Width && size.Width <= ceil.Width, fmt.Sprintf("%s: ", size))
+			assert.True(t, floor.Height <= size.Height && size.Height <= ceil.Height, fmt.Sprintf("%s: ", size))
+			round := size.Round()
+			assert.True(t, Equal(round.Width, floor.Width) || Equal(round.Width, ceil.Width), fmt.Sprintf("%s: ", size))
+			assert.True(t, Equal(round.Height, floor.Height) || Equal(round.Height, ceil.Height), fmt.Sprintf("%s: ", size))
+		}
+	})
+	t.Run("lerp ends on the two sizes", func(t *testing.T) {
+		for _, a := range sizeFixtures {
+			for _, b := range sizeFixtures {
+				assert.True(t, a.Lerp(b, 0).Equal(a), fmt.Sprintf("%s → %s: ", a, b))
+				assert.True(t, a.Lerp(b, 1).Equal(b), fmt.Sprintf("%s → %s: ", a, b))
+				assert.True(t, a.Lerp(b, 0.5).Equal(b.Lerp(a, 0.5)), fmt.Sprintf("%s → %s: ", a, b))
 			}
 		}
 	})

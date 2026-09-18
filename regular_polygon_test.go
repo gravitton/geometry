@@ -156,6 +156,36 @@ func TestRegularPolygon_Vertices(t *testing.T) {
 	})
 }
 
+func TestRegularPolygon_Area(t *testing.T) {
+	t.Run("agrees with the polygon", func(t *testing.T) {
+		hexagon := Hexagon(Pt(0.0, 0.0), SzU(2.0), FlatTop)
+
+		AssertNumber(t, hexagon.Area(), hexagon.Polygon().Area())
+		AssertNumber(t, hexagon.Area(), 3*Sqrt3/2*4) // 3√3/2 · r²
+	})
+	t.Run("a square of semi-axis r encloses 2r²", func(t *testing.T) {
+		AssertNumber(t, Square(Pt(0.0, 0.0), SzU(3.0), PointyTop).Area(), 18.0)
+	})
+	t.Run("no vertices encloses nothing", func(t *testing.T) {
+		AssertNumber(t, RegPol(Pt(3.0, 4.0), SzU(10.0), 0, 0).Area(), 0.0)
+	})
+}
+
+func TestRegularPolygon_Perimeter(t *testing.T) {
+	t.Run("agrees with the polygon", func(t *testing.T) {
+		hexagon := Hexagon(Pt(0.0, 0.0), SzU(2.0), FlatTop)
+
+		AssertNumber(t, hexagon.Perimeter(), hexagon.Polygon().Perimeter())
+		AssertNumber(t, hexagon.Perimeter(), 12.0) // six edges of length r
+	})
+	t.Run("a square of semi-axis r has edges of r√2", func(t *testing.T) {
+		AssertNumber(t, Square(Pt(0.0, 0.0), SzU(3.0), PointyTop).Perimeter(), 12*Sqrt2)
+	})
+	t.Run("no vertices has no edge", func(t *testing.T) {
+		AssertNumber(t, RegPol(Pt(3.0, 4.0), SzU(10.0), 0, 0).Perimeter(), 0.0)
+	})
+}
+
 func TestRegularPolygon_Bounds(t *testing.T) {
 	t.Run("vertices on the axes", func(t *testing.T) {
 		AssertRectangle(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Bounds(), Rect(Pt(1, 2), Sz(4, 4)))
@@ -186,6 +216,30 @@ func TestRegularPolygon_Scale(t *testing.T) {
 	})
 	t.Run("per-axis factor", func(t *testing.T) {
 		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).ScaleXY(2, 3), RegPol(Pt(1, 2), Sz(4, 6), 4, 0))
+	})
+	t.Run("a negative factor scales by its absolute value", func(t *testing.T) {
+		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Scale(-2), RegPol(Pt(1, 2), Sz(4, 4), 4, 0))
+		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).ScaleXY(-2, 3), RegPol(Pt(1, 2), Sz(4, 6), 4, 0))
+	})
+}
+
+func TestRegularPolygon_Unscale(t *testing.T) {
+	t.Run("uniform factor", func(t *testing.T) {
+		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(4, 4), 4, 0).Unscale(2), RegPol(Pt(1, 2), Sz(2, 2), 4, 0))
+	})
+	t.Run("per-axis factor", func(t *testing.T) {
+		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(4, 6), 4, 0).UnscaleXY(2, 3), RegPol(Pt(1, 2), Sz(2, 2), 4, 0))
+	})
+	t.Run("a negative factor scales by its absolute value", func(t *testing.T) {
+		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(4, 4), 4, 0).Unscale(-2), RegPol(Pt(1, 2), Sz(2, 2), 4, 0))
+	})
+	t.Run("zero factor panics", func(t *testing.T) {
+		assert.Panics(t, func() {
+			RegPol(Pt(1, 2), Sz(4, 4), 4, 0).Unscale(0)
+		}, "geom: division by zero")
+		assert.Panics(t, func() {
+			RegPol(Pt(1, 2), Sz(4, 4), 4, 0).UnscaleXY(0, 2)
+		}, "geom: division by zero")
 	})
 }
 

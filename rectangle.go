@@ -251,6 +251,19 @@ func (r Rectangle[T]) ScaleXY(factorX, factorY float64) Rectangle[T] {
 	return Rectangle[T]{r.Center, r.Size.ScaleXY(factorX, factorY).Abs()}
 }
 
+// Unscale creates a new Rectangle with size uniformly scaled by the inverse factor, the
+// inverse of Scale and negative factors taken absolute like it. Like Divide it panics for a
+// zero factor.
+func (r Rectangle[T]) Unscale(factor float64) Rectangle[T] {
+	return Rectangle[T]{r.Center, r.Size.Unscale(factor).Abs()}
+}
+
+// UnscaleXY creates a new Rectangle with size scaled by the inverse of the given factors, the
+// inverse of ScaleXY. Like Divide it panics for a zero factor.
+func (r Rectangle[T]) UnscaleXY(factorX, factorY float64) Rectangle[T] {
+	return Rectangle[T]{r.Center, r.Size.UnscaleXY(factorX, factorY).Abs()}
+}
+
 // Resize creates a new Rectangle with the given size, taken absolute like Rect.
 func (r Rectangle[T]) Resize(size Size[T]) Rectangle[T] {
 	return Rectangle[T]{r.Center, size.Abs()}

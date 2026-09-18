@@ -110,6 +110,30 @@ func TestCircle_Scale(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
 		AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).Scale(2.5), Circ(Pt(0.6, -0.25), 3.0))
 	})
+	t.Run("a negative factor scales by its absolute value", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(1, 2), 10).Scale(-2), Circ(Pt(1, 2), 20))
+	})
+	t.Run("an empty circle stays empty", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(1, 2), -10).Scale(2), Circ(Pt(1, 2), -20))
+		AssertCircle(t, Circ(Pt(1, 2), -10).Scale(-2), Circ(Pt(1, 2), -20))
+	})
+}
+
+func TestCircle_Unscale(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(1, 2), 25).Unscale(2.5), Circ(Pt(1, 2), 10))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(0.6, -0.25), 3.0).Unscale(2.5), Circ(Pt(0.6, -0.25), 1.2))
+	})
+	t.Run("a negative factor scales by its absolute value", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(1, 2), 20).Unscale(-2), Circ(Pt(1, 2), 10))
+	})
+	t.Run("zero factor panics", func(t *testing.T) {
+		assert.Panics(t, func() {
+			Circ(Pt(1, 2), 10).Unscale(0)
+		}, "geom: division by zero")
+	})
 }
 
 func TestCircle_Resize(t *testing.T) {
@@ -470,6 +494,20 @@ func TestCircle_Properties(t *testing.T) {
 			AssertNumber(t, c.Area(), Pi*c.Radius*c.Radius, fmt.Sprintf("%s: ", c))
 			AssertNumber(t, c.Circumference(), 2*Pi*c.Radius, fmt.Sprintf("%s: ", c))
 			AssertNumber(t, c.Diameter(), 2*c.Radius, fmt.Sprintf("%s: ", c))
+		}
+	})
+	t.Run("scale and unscale are inverse", func(t *testing.T) {
+		for _, c := range circleFixtures {
+			for _, factor := range []float64{0.5, 1, 2.5, -3} {
+				assert.True(t, c.Scale(factor).Unscale(factor).Equal(c), fmt.Sprintf("%s ×%v: ", c, factor))
+			}
+		}
+	})
+	t.Run("scale keeps the sign of the radius", func(t *testing.T) {
+		for _, c := range circleFixtures {
+			for _, factor := range []float64{0.5, 2.5, -3} {
+				assert.Equal(t, Sign(c.Scale(factor).Radius), Sign(c.Radius), fmt.Sprintf("%s ×%v: ", c, factor))
+			}
 		}
 	})
 	t.Run("bounds is the circumscribing square", func(t *testing.T) {

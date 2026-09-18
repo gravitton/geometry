@@ -112,6 +112,12 @@ func (a Axis) ScaleAlong[T Number](size Size[T], factor float64) Size[T] {
 	return a.Size(Multiply(a.Along(size), factor), a.Across(size))
 }
 
+// ScaleAcross creates a new Size scaled by the given factor on the cross axis only.
+// AxisNone has no axis to scale across and returns the size unchanged.
+func (a Axis) ScaleAcross[T Number](size Size[T], factor float64) Size[T] {
+	return a.Cross().ScaleAlong(size, factor)
+}
+
 // Vector creates a new Vector displaced by along on the main axis and across on the cross axis.
 func (a Axis) Vector[T Number](along, across T) Vector[T] {
 	switch a {

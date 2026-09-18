@@ -16,7 +16,8 @@ func Circ[T Number](center Point[T], radius T) Circle[T] {
 	return Circle[T]{center, radius}
 }
 
-// Area returns the circle area (π * radius^2).
+// Area returns the circle area (π * radius^2). It is a float64 even for an integer T, since
+// the factor π leaves no radius with an area T could express.
 func (c Circle[T]) Area() float64 {
 	radius := float64(c.Radius)
 
@@ -69,9 +70,18 @@ func (c Circle[T]) MoveTo(point Point[T]) Circle[T] {
 	return Circle[T]{point, c.Radius}
 }
 
-// Scale creates a new Circle with radius scaled by the given factor.
+// Scale creates a new Circle with radius scaled by the given factor. A negative factor scales
+// by its absolute value, since a circle mirrored about its center is the same circle: the sign
+// of the radius says whether the circle is empty, never which way it faces, so a negative one
+// stays negative and a positive one stays positive.
 func (c Circle[T]) Scale(factor float64) Circle[T] {
-	return Circle[T]{c.Center, Multiply(c.Radius, factor)}
+	return Circle[T]{c.Center, Multiply(c.Radius, math.Abs(factor))}
+}
+
+// Unscale creates a new Circle with radius scaled by the inverse factor, the inverse of Scale
+// and negative factors taken absolute like it. Like Divide it panics for a zero factor.
+func (c Circle[T]) Unscale(factor float64) Circle[T] {
+	return Circle[T]{c.Center, Divide(c.Radius, math.Abs(factor))}
 }
 
 // Resize creates a new Circle with the given radius.

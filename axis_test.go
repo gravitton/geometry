@@ -109,6 +109,17 @@ func TestAxis_ScaleAlong(t *testing.T) {
 	})
 }
 
+func TestAxis_ScaleAcross(t *testing.T) {
+	t.Run("leaves the main axis alone", func(t *testing.T) {
+		AssertSize(t, AxisHorizontal.ScaleAcross(Sz(10, 20), 0.5), Sz(10, 10))
+		AssertSize(t, AxisVertical.ScaleAcross(Sz(10, 20), 0.5), Sz(5, 20))
+		AssertSize(t, AxisHorizontal.ScaleAcross(Sz(1.0, 2.0), 3), Sz(1.0, 6.0))
+	})
+	t.Run("none leaves the size unchanged", func(t *testing.T) {
+		AssertSize(t, AxisNone.ScaleAcross(Sz(10, 20), 0.5), Sz(10, 20))
+	})
+}
+
 func TestAxis_Vector(t *testing.T) {
 	t.Run("horizontal keeps the order", func(t *testing.T) {
 		AssertVector(t, AxisHorizontal.Vector(3, 4), Vec(3, 4))
@@ -215,6 +226,14 @@ func TestAxis_Properties(t *testing.T) {
 				assert.Equal(t, direction.Axis(), axis, direction.String()+": ")
 				assert.Equal(t, direction.IsPositive(), positive, direction.String()+": ")
 			}
+		}
+	})
+	t.Run("scale along and across swap on the cross axis", func(t *testing.T) {
+		size := Sz(10.0, 20.0)
+
+		for _, axis := range Axes() {
+			AssertSize(t, axis.Cross().ScaleAlong(size, 0.5), axis.ScaleAcross(size, 0.5), axis.String()+": ")
+			AssertSize(t, axis.Cross().ScaleAcross(size, 0.5), axis.ScaleAlong(size, 0.5), axis.String()+": ")
 		}
 	})
 	t.Run("project is the component of the vector", func(t *testing.T) {

@@ -45,6 +45,11 @@ func (p Padding[T]) Add(padding Padding[T]) Padding[T] {
 	return Padding[T]{p.Top + padding.Top, p.Right + padding.Right, p.Bottom + padding.Bottom, p.Left + padding.Left}
 }
 
+// Subtract creates a new Padding by subtracting the given padding edge by edge.
+func (p Padding[T]) Subtract(padding Padding[T]) Padding[T] {
+	return Padding[T]{p.Top - padding.Top, p.Right - padding.Right, p.Bottom - padding.Bottom, p.Left - padding.Left}
+}
+
 // Negate creates a new Padding with every edge negated, so Rectangle.Inset outsets by it.
 func (p Padding[T]) Negate() Padding[T] {
 	return Padding[T]{-p.Top, -p.Right, -p.Bottom, -p.Left}

@@ -2,6 +2,7 @@ package geom
 
 import (
 	"fmt"
+	"math"
 )
 
 // RegularPolygon is a polygon with equally spaced vertices around a center.
@@ -96,6 +97,18 @@ func (rp RegularPolygon[T]) Vertices() []Point[T] {
 	return vertices
 }
 
+// Area returns the area enclosed by the polygon, through Polygon like every other measurement
+// taken from the computed vertices. A polygon with N < 3 encloses no area.
+func (rp RegularPolygon[T]) Area() float64 {
+	return rp.Polygon().Area()
+}
+
+// Perimeter returns the total length of the edges, through Polygon like Area. A polygon with
+// N < 2 has no edge with a length.
+func (rp RegularPolygon[T]) Perimeter() float64 {
+	return rp.Polygon().Perimeter()
+}
+
 // Bounds returns the axis-aligned bounding rectangle computed from the polygon vertices,
 // or the zero rectangle for a polygon without vertices, like Polygon.Bounds.
 func (rp RegularPolygon[T]) Bounds() Rectangle[T] {
@@ -112,14 +125,30 @@ func (rp RegularPolygon[T]) MoveTo(point Point[T]) RegularPolygon[T] {
 	return RegularPolygon[T]{point, rp.Size, rp.N, rp.Angle}
 }
 
-// Scale creates a new RegularPolygon with size scaled by the given factor.
+// Scale creates a new RegularPolygon with size scaled by the given factor. A negative factor
+// scales by its absolute value like Rectangle.Scale, since Size holds semi-axes and a negative
+// one would place every vertex half a turn away rather than shrink the polygon; use Rotate for
+// the half turn.
 func (rp RegularPolygon[T]) Scale(factor float64) RegularPolygon[T] {
-	return RegularPolygon[T]{rp.Center, rp.Size.Scale(factor), rp.N, rp.Angle}
+	return RegularPolygon[T]{rp.Center, rp.Size.Scale(math.Abs(factor)), rp.N, rp.Angle}
 }
 
-// ScaleXY creates a new RegularPolygon with size scaled by the given factors.
+// ScaleXY creates a new RegularPolygon with size scaled by the given factors, negative ones by
+// their absolute value like Scale.
 func (rp RegularPolygon[T]) ScaleXY(factorX, factorY float64) RegularPolygon[T] {
-	return RegularPolygon[T]{rp.Center, rp.Size.ScaleXY(factorX, factorY), rp.N, rp.Angle}
+	return RegularPolygon[T]{rp.Center, rp.Size.ScaleXY(math.Abs(factorX), math.Abs(factorY)), rp.N, rp.Angle}
+}
+
+// Unscale creates a new RegularPolygon with size scaled by the inverse factor, the inverse of
+// Scale and negative factors taken absolute like it. Like Divide it panics for a zero factor.
+func (rp RegularPolygon[T]) Unscale(factor float64) RegularPolygon[T] {
+	return RegularPolygon[T]{rp.Center, rp.Size.Unscale(math.Abs(factor)), rp.N, rp.Angle}
+}
+
+// UnscaleXY creates a new RegularPolygon with size scaled by the inverse of the given factors,
+// the inverse of ScaleXY. Like Divide it panics for a zero factor.
+func (rp RegularPolygon[T]) UnscaleXY(factorX, factorY float64) RegularPolygon[T] {
+	return RegularPolygon[T]{rp.Center, rp.Size.UnscaleXY(math.Abs(factorX), math.Abs(factorY)), rp.N, rp.Angle}
 }
 
 // Rotate creates a new RegularPolygon rotated by the given angle (in radians).

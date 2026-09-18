@@ -247,6 +247,31 @@ func (m Matrix[T]) PreScale(factorX, factorY float64) Matrix[T] {
 	}
 }
 
+// Shear creates a new matrix by right-multiplying a shear matrix.
+// Composition order: result = m * m_H(shearX,shearY).
+func (m Matrix[T]) Shear(shearX, shearY T) Matrix[T] {
+	return m.Multiply(ShearMatrix(shearX, shearY))
+}
+
+// PreShear creates a new matrix by left-multiplying a shear matrix.
+// Composition order: result = m_H(shearX,shearY) * m.
+func (m Matrix[T]) PreShear(shearX, shearY T) Matrix[T] {
+	return ShearMatrix(shearX, shearY).Multiply(m)
+}
+
+// Reflect creates a new matrix by right-multiplying a reflection matrix.
+// Composition order: result = m * m_F(axis). Reflecting across AxisNone leaves the matrix
+// unchanged, since ReflectionMatrix gives the identity for it.
+func (m Matrix[T]) Reflect(axis Axis) Matrix[T] {
+	return m.Multiply(ReflectionMatrix[T](axis))
+}
+
+// PreReflect creates a new matrix by left-multiplying a reflection matrix.
+// Composition order: result = m_F(axis) * m.
+func (m Matrix[T]) PreReflect(axis Axis) Matrix[T] {
+	return ReflectionMatrix[T](axis).Multiply(m)
+}
+
 // Equal checks for equal values.
 func (m Matrix[T]) Equal(matrix Matrix[T]) bool {
 	return Equal(m.A, matrix.A) && Equal(m.B, matrix.B) && Equal(m.C, matrix.C) && Equal(m.D, matrix.D) && Equal(m.E, matrix.E) && Equal(m.F, matrix.F)
@@ -255,6 +280,12 @@ func (m Matrix[T]) Equal(matrix Matrix[T]) bool {
 // IsZero checks if values are zero.
 func (m Matrix[T]) IsZero() bool {
 	return m.Equal(Matrix[T]{})
+}
+
+// IsIdentity checks whether the matrix is the identity, the transform that leaves every point
+// where it is, comparing like Equal.
+func (m Matrix[T]) IsIdentity() bool {
+	return m.Equal(IdentityMatrix[T]())
 }
 
 // Int converts the matrix to a Matrix[int], rounding each component.

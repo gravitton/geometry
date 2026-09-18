@@ -110,6 +110,54 @@ func TestRectangle_MinMax(t *testing.T) {
 	})
 }
 
+func TestRectangle_Corners(t *testing.T) {
+	r := RectangleFromMin(Pt(0, 0), Sz(10, 20))
+
+	t.Run("clockwise from the minimum", func(t *testing.T) {
+		AssertPoint(t, r.TopLeft(), Pt(0, 0))
+		AssertPoint(t, r.TopRight(), Pt(10, 0))
+		AssertPoint(t, r.BottomRight(), Pt(10, 20))
+		AssertPoint(t, r.BottomLeft(), Pt(0, 20))
+	})
+	t.Run("the diagonal corners are min and max", func(t *testing.T) {
+		AssertPoint(t, r.TopLeft(), r.Min())
+		AssertPoint(t, r.BottomRight(), r.Max())
+	})
+	t.Run("float", func(t *testing.T) {
+		f := RectangleFromMin(Pt(0.5, 1.25), Sz(2.0, 3.0))
+
+		AssertPoint(t, f.TopLeft(), Pt(0.5, 1.25))
+		AssertPoint(t, f.TopRight(), Pt(2.5, 1.25))
+		AssertPoint(t, f.BottomRight(), Pt(2.5, 4.25))
+		AssertPoint(t, f.BottomLeft(), Pt(0.5, 4.25))
+	})
+}
+
+func TestRectangle_EdgeMidpoints(t *testing.T) {
+	r := RectangleFromMin(Pt(0, 0), Sz(10, 20))
+
+	t.Run("halve the edge they sit on", func(t *testing.T) {
+		AssertPoint(t, r.Top(), Pt(5, 0))
+		AssertPoint(t, r.Right(), Pt(10, 10))
+		AssertPoint(t, r.Bottom(), Pt(5, 20))
+		AssertPoint(t, r.Left(), Pt(0, 10))
+	})
+	t.Run("share a coordinate with the center", func(t *testing.T) {
+		AssertNumber(t, r.Top().X, r.Center.X)
+		AssertNumber(t, r.Bottom().X, r.Center.X)
+		AssertNumber(t, r.Left().Y, r.Center.Y)
+		AssertNumber(t, r.Right().Y, r.Center.Y)
+	})
+	t.Run("float", func(t *testing.T) {
+		f := RectangleFromMin(Pt(0.5, 1.25), Sz(2.0, 3.0))
+
+		AssertPoint(t, f.Top(), Pt(1.5, 1.25))
+		AssertPoint(t, f.Right(), Pt(2.5, 2.75))
+		AssertPoint(t, f.Bottom(), Pt(1.5, 4.25))
+		AssertPoint(t, f.Left(), Pt(0.5, 2.75))
+	})
+}
+
 func TestRectangle_Anchor(t *testing.T) {
 	r := RectangleFromMin(Pt(0, 0), Sz(10, 20))
 
@@ -151,6 +199,29 @@ func TestRectangle_Anchor(t *testing.T) {
 		AssertPoint(t, odd.Bottom(), Pt(1, 3))
 		AssertPoint(t, odd.Left(), Pt(0, 1))
 		AssertPoint(t, odd.Right(), Pt(3, 1))
+	})
+}
+
+func TestRectangle_EdgeAccessors(t *testing.T) {
+	r := RectangleFromMin(Pt(0, 0), Sz(10, 20))
+
+	t.Run("each runs clockwise from its first corner", func(t *testing.T) {
+		AssertLine(t, r.TopEdge(), Ln(Pt(0, 0), Pt(10, 0)))
+		AssertLine(t, r.RightEdge(), Ln(Pt(10, 0), Pt(10, 20)))
+		AssertLine(t, r.BottomEdge(), Ln(Pt(10, 20), Pt(0, 20)))
+		AssertLine(t, r.LeftEdge(), Ln(Pt(0, 20), Pt(0, 0)))
+	})
+	t.Run("their midpoints are the edge anchors", func(t *testing.T) {
+		AssertPoint(t, r.TopEdge().Midpoint(), r.Top())
+		AssertPoint(t, r.RightEdge().Midpoint(), r.Right())
+		AssertPoint(t, r.BottomEdge().Midpoint(), r.Bottom())
+		AssertPoint(t, r.LeftEdge().Midpoint(), r.Left())
+	})
+	t.Run("their lengths are the extents", func(t *testing.T) {
+		AssertNumber(t, r.TopEdge().Length(), float64(r.Width()))
+		AssertNumber(t, r.BottomEdge().Length(), float64(r.Width()))
+		AssertNumber(t, r.LeftEdge().Length(), float64(r.Height()))
+		AssertNumber(t, r.RightEdge().Length(), float64(r.Height()))
 	})
 }
 
@@ -263,6 +334,25 @@ func TestRectangle_Scale(t *testing.T) {
 	})
 	t.Run("a negative factor scales by its absolute value", func(t *testing.T) {
 		AssertRectangle(t, Rect(Pt(1, 2), Sz(2, 3)).Scale(-2), Rect(Pt(1, 2), Sz(4, 6)))
+	})
+}
+
+func TestRectangle_Unscale(t *testing.T) {
+	t.Run("uniform factor", func(t *testing.T) {
+		AssertRectangle(t, Rect(Pt(1, 2), Sz(10, 20)).Unscale(2.5), Rect(Pt(1, 2), Sz(4, 8)))
+		AssertRectangle(t, Rect(Pt(0.6, -0.25), Sz(3.0, 9.0)).Unscale(2.5), Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)))
+	})
+	t.Run("per-axis factor", func(t *testing.T) {
+		AssertRectangle(t, Rect(Pt(1, 2), Sz(10, 20)).UnscaleXY(2, 4), Rect(Pt(1, 2), Sz(5, 5)))
+		AssertRectangle(t, Rect(Pt(0.6, -0.25), Sz(1.8, 7.2)).UnscaleXY(-1.5, 2), Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)))
+	})
+	t.Run("zero factor panics", func(t *testing.T) {
+		assert.Panics(t, func() {
+			Rect(Pt(1, 2), Sz(10, 20)).Unscale(0)
+		}, "geom: division by zero")
+		assert.Panics(t, func() {
+			Rect(Pt(1, 2), Sz(10, 20)).UnscaleXY(0, 2)
+		}, "geom: division by zero")
 	})
 }
 
@@ -787,6 +877,29 @@ func TestRectangle_Properties(t *testing.T) {
 			AssertNumber(t, r.Area(), r.Size.Area(), fmt.Sprintf("%s: ", r))
 			AssertNumber(t, r.Perimeter(), r.Size.Perimeter(), fmt.Sprintf("%s: ", r))
 			AssertNumber(t, r.AspectRatio(), r.Size.AspectRatio(), fmt.Sprintf("%s: ", r))
+		}
+	})
+	t.Run("corners and edges agree with min and max", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			a, b := r.MinMax()
+
+			AssertPoint(t, r.TopLeft(), a, fmt.Sprintf("%s: ", r))
+			AssertPoint(t, r.BottomRight(), b, fmt.Sprintf("%s: ", r))
+			AssertPoint(t, r.TopRight(), Pt(b.X, a.Y), fmt.Sprintf("%s: ", r))
+			AssertPoint(t, r.BottomLeft(), Pt(a.X, b.Y), fmt.Sprintf("%s: ", r))
+
+			AssertPoint(t, r.TopEdge().Midpoint(), r.Top(), fmt.Sprintf("%s: ", r))
+			AssertPoint(t, r.RightEdge().Midpoint(), r.Right(), fmt.Sprintf("%s: ", r))
+			AssertPoint(t, r.BottomEdge().Midpoint(), r.Bottom(), fmt.Sprintf("%s: ", r))
+			AssertPoint(t, r.LeftEdge().Midpoint(), r.Left(), fmt.Sprintf("%s: ", r))
+		}
+	})
+	t.Run("scale and unscale are inverse", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, factor := range []float64{0.5, 1, 2.5, -3} {
+				assert.True(t, r.Scale(factor).Unscale(factor).Equal(r), fmt.Sprintf("%s ×%v: ", r, factor))
+				assert.True(t, r.ScaleXY(factor, 2).UnscaleXY(factor, 2).Equal(r), fmt.Sprintf("%s ×%v: ", r, factor))
+			}
 		}
 	})
 	t.Run("bounds is the rectangle itself", func(t *testing.T) {

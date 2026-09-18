@@ -362,6 +362,74 @@ func TestMatrix_PreScale(t *testing.T) {
 	})
 }
 
+func TestMatrix_Shear(t *testing.T) {
+	t.Run("composes with the shear matrix", func(t *testing.T) {
+		m := TranslationMatrix(5.0, 6.0)
+
+		AssertMatrix(t, m.Shear(2.0, 3.0), m.Multiply(ShearMatrix(2.0, 3.0)))
+		AssertMatrix(t, IdentityMatrix[float64]().Shear(2.0, 3.0), ShearMatrix(2.0, 3.0))
+	})
+	t.Run("shears the transformed point", func(t *testing.T) {
+		AssertPoint(t, Pt(1.0, 2.0).Transform(IdentityMatrix[float64]().Shear(2.0, 0.0)), Pt(5.0, 2.0))
+	})
+}
+
+func TestMatrix_PreShear(t *testing.T) {
+	t.Run("composes on the other side", func(t *testing.T) {
+		m := TranslationMatrix(5.0, 6.0)
+
+		AssertMatrix(t, m.PreShear(2.0, 3.0), ShearMatrix(2.0, 3.0).Multiply(m))
+	})
+	t.Run("differs from shear once the matrix translates", func(t *testing.T) {
+		m := TranslationMatrix(5.0, 6.0)
+
+		assert.False(t, m.Shear(2.0, 3.0).Equal(m.PreShear(2.0, 3.0)))
+	})
+}
+
+func TestMatrix_Reflect(t *testing.T) {
+	t.Run("composes with the reflection matrix", func(t *testing.T) {
+		m := ScaleMatrix(2.0, 3.0)
+
+		AssertMatrix(t, m.Reflect(AxisHorizontal), m.Multiply(ReflectionMatrix[float64](AxisHorizontal)))
+		AssertMatrix(t, m.Reflect(AxisVertical), m.Multiply(ReflectionMatrix[float64](AxisVertical)))
+	})
+	t.Run("flips the transformed point", func(t *testing.T) {
+		AssertPoint(t, Pt(1.0, 2.0).Transform(IdentityMatrix[float64]().Reflect(AxisHorizontal)), Pt(1.0, -2.0))
+		AssertPoint(t, Pt(1.0, 2.0).Transform(IdentityMatrix[float64]().Reflect(AxisVertical)), Pt(-1.0, 2.0))
+	})
+	t.Run("none leaves the matrix unchanged", func(t *testing.T) {
+		m := ScaleMatrix(2.0, 3.0)
+
+		AssertMatrix(t, m.Reflect(AxisNone), m)
+	})
+	t.Run("is its own inverse", func(t *testing.T) {
+		m := Mat(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)
+
+		for _, axis := range Axes() {
+			AssertMatrix(t, m.Reflect(axis).Reflect(axis), m, axis.String()+": ")
+		}
+	})
+}
+
+func TestMatrix_PreReflect(t *testing.T) {
+	t.Run("composes on the other side", func(t *testing.T) {
+		m := TranslationMatrix(5.0, 6.0)
+
+		AssertMatrix(t, m.PreReflect(AxisHorizontal), ReflectionMatrix[float64](AxisHorizontal).Multiply(m))
+	})
+	t.Run("none leaves the matrix unchanged", func(t *testing.T) {
+		m := TranslationMatrix(5.0, 6.0)
+
+		AssertMatrix(t, m.PreReflect(AxisNone), m)
+	})
+	t.Run("differs from reflect once the matrix translates", func(t *testing.T) {
+		m := TranslationMatrix(5.0, 6.0)
+
+		assert.False(t, m.Reflect(AxisHorizontal).Equal(m.PreReflect(AxisHorizontal)))
+	})
+}
+
 func TestMatrix_Equal(t *testing.T) {
 	t.Run("same matrix", func(t *testing.T) {
 		assert.True(t, IdentityMatrix[float64]().Equal(IdentityMatrix[float64]()))
@@ -392,6 +460,26 @@ func TestMatrix_IsZero(t *testing.T) {
 	})
 	t.Run("within delta", func(t *testing.T) {
 		assert.True(t, Mat(0.0, 0.0, 0.000001, 0.0, 0.0, 0.0).IsZero())
+	})
+}
+
+func TestMatrix_IsIdentity(t *testing.T) {
+	t.Run("the identity matrix", func(t *testing.T) {
+		assert.True(t, IdentityMatrix[int]().IsIdentity())
+		assert.True(t, IdentityMatrix[float64]().IsIdentity())
+		assert.True(t, Mat(1.0, 0.0, 0.0, 0.0, 1.0, 0.0).IsIdentity())
+	})
+	t.Run("anything else", func(t *testing.T) {
+		assert.False(t, Matrix[int]{}.IsIdentity())
+		assert.False(t, TranslationMatrix(1.0, 0.0).IsIdentity())
+		assert.False(t, ScaleMatrix(2.0, 2.0).IsIdentity())
+	})
+	t.Run("leaves every point where it is", func(t *testing.T) {
+		m := IdentityMatrix[float64]()
+
+		for _, p := range pointFixtures {
+			AssertPoint(t, p.Transform(m), p, p.String()+": ")
+		}
 	})
 }
 
@@ -466,6 +554,23 @@ func TestMatrix_JSON(t *testing.T) {
 }
 
 func TestMatrix_Properties(t *testing.T) {
+	t.Run("shear and reflect compose like their constructors", func(t *testing.T) {
+		for _, m := range matrixFixtures {
+			AssertMatrix(t, m.Shear(2.0, 3.0), m.Multiply(ShearMatrix(2.0, 3.0)), m.String()+": ")
+			AssertMatrix(t, m.PreShear(2.0, 3.0), ShearMatrix(2.0, 3.0).Multiply(m), m.String()+": ")
+
+			for _, axis := range Axes() {
+				AssertMatrix(t, m.Reflect(axis), m.Multiply(ReflectionMatrix[float64](axis)), m.String()+": ")
+				AssertMatrix(t, m.PreReflect(axis), ReflectionMatrix[float64](axis).Multiply(m), m.String()+": ")
+			}
+		}
+	})
+	t.Run("identity is the only matrix that composes to nothing", func(t *testing.T) {
+		for _, m := range matrixFixtures {
+			assert.Equal(t, m.IsIdentity(), m.Equal(IdentityMatrix[float64]()), m.String()+": ")
+			AssertMatrix(t, m.Multiply(IdentityMatrix[float64]()), m, m.String()+": ")
+		}
+	})
 	t.Run("identity is neutral", func(t *testing.T) {
 		identity := IdentityMatrix[float64]()
 

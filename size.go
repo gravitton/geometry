@@ -90,6 +90,26 @@ func (s Size[T]) Abs() Size[T] {
 	return Size[T]{Abs(s.Width), Abs(s.Height)}
 }
 
+// Round creates a new Size by rounding width and height to the nearest integer.
+func (s Size[T]) Round() Size[T] {
+	return Size[T]{Round(s.Width), Round(s.Height)}
+}
+
+// Floor creates a new Size by rounding width and height down to the nearest integer.
+func (s Size[T]) Floor() Size[T] {
+	return Size[T]{Floor(s.Width), Floor(s.Height)}
+}
+
+// Ceil creates a new Size by rounding width and height up to the nearest integer.
+func (s Size[T]) Ceil() Size[T] {
+	return Size[T]{Ceil(s.Width), Ceil(s.Height)}
+}
+
+// Lerp creates a new Size in linear interpolation towards the given size.
+func (s Size[T]) Lerp(size Size[T], t float64) Size[T] {
+	return Size[T]{Lerp(s.Width, size.Width, t), Lerp(s.Height, size.Height, t)}
+}
+
 // Grow creates a new Size expanded by the same amount in both dimensions, clamped to zero.
 // The amount is the total change of each extent, not an amount per side.
 func (s Size[T]) Grow(amount T) Size[T] {

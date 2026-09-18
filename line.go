@@ -29,6 +29,18 @@ func (l Line[T]) Length() float64 {
 	return l.Vector().Length()
 }
 
+// Angle returns the angle of the segment in radians, the angle of the vector from Start to End.
+// A zero-length segment has no direction and gives 0, the angle Vector.Angle gives it.
+func (l Line[T]) Angle() float64 {
+	return l.Vector().Angle()
+}
+
+// Direction returns the direction nearest to the segment, from Start to End, or DirectionNone
+// for a zero-length segment, as Vector.Direction judges it.
+func (l Line[T]) Direction() Direction {
+	return l.Vector().Direction()
+}
+
 // Midpoint returns the midpoint of the line, Lerp(0.5).
 func (l Line[T]) Midpoint() Point[T] {
 	return l.Start.Midpoint(l.End)

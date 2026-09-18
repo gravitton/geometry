@@ -179,6 +179,26 @@ func (p Polygon[T]) ScaleXY(factorX, factorY float64) Polygon[T] {
 	})}
 }
 
+// Unscale creates a new Polygon uniformly scaled about its centroid by the inverse factor, the
+// inverse of Scale. Like Divide it panics for a zero factor.
+func (p Polygon[T]) Unscale(factor float64) Polygon[T] {
+	center := p.Center()
+
+	return Polygon[T]{xslices.Map(p.Vertices, func(point Point[T]) Point[T] {
+		return center.Add(point.Subtract(center).Divide(factor))
+	})}
+}
+
+// UnscaleXY creates a new Polygon scaled about its centroid by the inverse of the given
+// factors, the inverse of ScaleXY. Like Divide it panics for a zero factor.
+func (p Polygon[T]) UnscaleXY(factorX, factorY float64) Polygon[T] {
+	center := p.Center()
+
+	return Polygon[T]{xslices.Map(p.Vertices, func(point Point[T]) Point[T] {
+		return center.Add(point.Subtract(center).DivideXY(factorX, factorY))
+	})}
+}
+
 // Transform creates a new Polygon by applying the given matrix to every vertex, like Point.Transform.
 func (p Polygon[T]) Transform[M Float](matrix Matrix[M]) Polygon[T] {
 	return Polygon[T]{xslices.Map(p.Vertices, func(point Point[T]) Point[T] {

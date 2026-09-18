@@ -63,6 +63,18 @@ func TestPadding_Add(t *testing.T) {
 	})
 }
 
+func TestPadding_Subtract(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertPadding(t, Pad(11, 22, 33, 44).Subtract(Pad(1, 2, 3, 4)), Pad(10, 20, 30, 40))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertPadding(t, Pad(0.6, 0.7, 0.8, 0.9).Subtract(PadU(0.5)), Pad(0.1, 0.2, 0.3, 0.4))
+	})
+	t.Run("undoes add", func(t *testing.T) {
+		AssertPadding(t, Pad(1, 2, 3, 4).Add(Pad(5, 6, 7, 8)).Subtract(Pad(5, 6, 7, 8)), Pad(1, 2, 3, 4))
+	})
+}
+
 func TestPadding_Negate(t *testing.T) {
 	t.Run("negates every edge", func(t *testing.T) {
 		AssertPadding(t, Pad(1, -2, 3, -4).Negate(), Pad(-1, 2, -3, 4))

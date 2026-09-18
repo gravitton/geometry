@@ -66,11 +66,14 @@ p.ManhattanDistanceTo(geom.Pt(4, 5))     // 6, for grid pathfinding
 ```go
 s := geom.Sz(1920, 1080)
 s.Scale(0.5)            // Size{960, 540}
+s.Unscale(2)            // Size{960, 540}, divided rather than multiplied
 s.AtMost(geom.SzU(800)) // Size{800, 800}, clamped per axis
 s.Fit(geom.SzU(800))    // Size{800, 450}, largest with the same ratio inside
 s.Fill(geom.SzU(800))   // Size{1422, 800}, smallest with the same ratio around
 
-geom.PadXY(4, 8).Size() // Size{16, 8}, horizontal and vertical total
+geom.Sz(1.6, 2.4).Round()                 // Size{2, 2}, and Floor, Ceil, Lerp
+geom.PadXY(4, 8).Size()                   // Size{16, 8}, horizontal and vertical total
+geom.PadU(4).Subtract(geom.PadXY(1, 2))   // Padding{3, 2, 3, 2}
 ```
 
 ### Rectangles
@@ -85,6 +88,7 @@ r.AlignTo(geom.TopLeft, geom.Pt(0, 0))      // Rectangle (0,0)-(20,10) by MinMax
 
 b := geom.RectangleFromMinMax(geom.Pt(0, 0), geom.Pt(8, 6))
 b.Scale(2)   // Rectangle (-4,-3)-(12,9), scaled around the center
+b.Unscale(2) // Rectangle (2,2)-(6,5), the inverse; every shape has the pair
 b.Edges()[0] // Line (0,0)-(8,0), the top edge
 b.Vertices() // clockwise from the top-left corner
 ```
@@ -94,9 +98,11 @@ b.Vertices() // clockwise from the top-left corner
 ```go
 c := geom.Circ(geom.Pt(0.0, 0.0), 5.0)
 c.Anchor(geom.Bottom) // Point{0, 5}
+c.Scale(-2)           // Circ((0,0);10), a negative factor scales by its absolute value
 
 l := geom.Ln(geom.Pt(0, 0), geom.Pt(3, 4))
 l.Length()                  // 5
+l.Direction()               // DirectionDownRight, nearest of the eight, and Angle in radians
 l.DistanceTo(geom.Pt(3, 0)) // 2.4, to the nearest point of the segment
 l.Contains(geom.Pt(6, 8))   // false, the segment ends at (3,4)
 
@@ -107,6 +113,7 @@ p.Edges()[4]              // Line (0,4)-(0,0), closing back to the first vertex
 
 hex := geom.Hexagon(geom.Pt(0, 0), geom.SzU(20), geom.FlatTop)
 hex.Bounds() // Rectangle (-20,-17)-(20,17)
+hex.Area()   // 1020, through the computed vertices, and Perimeter
 ```
 
 ### Intersections
@@ -137,8 +144,9 @@ geom.DirectionFromAxes(up, down, left, right) // keyboard input to an 8-way dire
 geom.Vec(3, -7).Direction()                   // DirectionUpRight, nearest of the eight
 
 axis := geom.AxisVertical
-axis.Along(size)             // Height, because the axis is vertical
-axis.Size(length, thickness) // Size{thickness, length}
+axis.Along(size)               // Height, because the axis is vertical
+axis.Size(length, thickness)   // Size{thickness, length}
+axis.ScaleAcross(size, 0.5)    // halves Width, the cross extent; ScaleAlong halves Height
 ```
 
 ### Matrices
@@ -149,9 +157,13 @@ m := geom.IdentityMatrix[float64]().Rotate(math.Pi / 4).Scale(2, 2)
 geom.Pt(1.0, 0.0).Transform(m) // Point{1.41, 1.41}
 m.Angle()                      // π/4, read back from the matrix
 m.Scaling()                    // Vector{2, 2}
+m.IsIdentity()                 // false
 
 geom.ShearMatrix(0.5, 0.0)                          // x' = x + 0.5y
 geom.ReflectionMatrix[float64](geom.AxisHorizontal) // flips Y
+
+m.Shear(0.5, 0.0)              // compose either one, and PreShear, PreReflect on the other side
+m.Reflect(geom.AxisHorizontal)
 ```
 
 ### Number types

@@ -37,6 +37,38 @@ func TestLine_Length(t *testing.T) {
 	})
 }
 
+func TestLine_Angle(t *testing.T) {
+	t.Run("measures from start to end", func(t *testing.T) {
+		AssertNumber(t, Ln(Pt(0, 0), Pt(1, 0)).Angle(), 0.0)
+		AssertNumber(t, Ln(Pt(0, 0), Pt(0, 1)).Angle(), Pi/2)
+		AssertNumber(t, Ln(Pt(0.0, 0.0), Pt(-1.0, -1.0)).Angle(), -3*Pi/4)
+	})
+	t.Run("reverse turns it half a turn", func(t *testing.T) {
+		l := Ln(Pt(1.0, 2.0), Pt(4.0, 6.0))
+
+		assert.True(t, EqualAngle(l.Reverse().Angle(), l.Angle()+Pi), l.String()+": ")
+	})
+	t.Run("a zero-length segment has no direction", func(t *testing.T) {
+		AssertNumber(t, Ln(Pt(3, 4), Pt(3, 4)).Angle(), 0.0)
+	})
+}
+
+func TestLine_Direction(t *testing.T) {
+	t.Run("the nearest direction from start to end", func(t *testing.T) {
+		assert.Equal(t, Ln(Pt(0, 0), Pt(5, 0)).Direction(), DirectionRight)
+		assert.Equal(t, Ln(Pt(0, 0), Pt(0, -5)).Direction(), DirectionUp)
+		assert.Equal(t, Ln(Pt(0, 0), Pt(4, 5)).Direction(), DirectionDownRight)
+	})
+	t.Run("reverse gives the opposite", func(t *testing.T) {
+		l := Ln(Pt(1, 2), Pt(4, 6))
+
+		assert.Equal(t, l.Reverse().Direction(), l.Direction().Opposite())
+	})
+	t.Run("a zero-length segment has no direction", func(t *testing.T) {
+		assert.Equal(t, Ln(Pt(3, 4), Pt(3, 4)).Direction(), DirectionNone)
+	})
+}
+
 func TestLine_Midpoint(t *testing.T) {
 	t.Run("int rounds the half away from zero", func(t *testing.T) {
 		AssertPoint(t, Ln(Pt(1, 2), Pt(3, 5)).Midpoint(), Pt(2, 4))
@@ -842,6 +874,12 @@ func TestLine_JSON(t *testing.T) {
 }
 
 func TestLine_Properties(t *testing.T) {
+	t.Run("angle and direction follow the vector", func(t *testing.T) {
+		for _, l := range lineFixtures {
+			AssertNumber(t, l.Angle(), l.Vector().Angle(), l.String()+": ")
+			assert.Equal(t, l.Direction(), l.Vector().Direction(), l.String()+": ")
+		}
+	})
 	t.Run("reverse is its own inverse", func(t *testing.T) {
 		for _, line := range lineFixtures {
 			assert.True(t, line.Reverse().Reverse().Equal(line), fmt.Sprintf("%s: ", line))
