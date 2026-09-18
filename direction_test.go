@@ -1,6 +1,7 @@
 package geom
 
 import (
+	"encoding/json"
 	"math"
 	"testing"
 
@@ -54,6 +55,30 @@ func TestDirectionFromAxes(t *testing.T) {
 		assert.Equal(t, DirectionFromAxes(false, false, true, true), DirectionNone)
 		assert.Equal(t, DirectionFromAxes(true, true, true, true), DirectionNone)
 		assert.Equal(t, DirectionFromAxes(false, false, false, false), DirectionNone)
+	})
+}
+
+func TestParseDirection(t *testing.T) {
+	t.Run("every name round-trips", func(t *testing.T) {
+		for _, direction := range Directions() {
+			parsed, err := ParseDirection(direction.String())
+
+			assert.NoError(t, err, direction.String()+": ")
+			assert.Equal(t, parsed, direction, direction.String()+": ")
+		}
+	})
+	t.Run("none", func(t *testing.T) {
+		parsed, err := ParseDirection("None")
+
+		assert.NoError(t, err)
+		assert.Equal(t, parsed, DirectionNone)
+	})
+	t.Run("unknown and wrong case are errors", func(t *testing.T) {
+		_, err := ParseDirection("Sideways")
+		assert.Error(t, err)
+
+		_, err = ParseDirection("up")
+		assert.Error(t, err)
 	})
 }
 
@@ -246,6 +271,30 @@ func TestDirection_String(t *testing.T) {
 	})
 	t.Run("out-of-range values wrap", func(t *testing.T) {
 		assert.Equal(t, Direction(9).String(), "DownRight")
+	})
+}
+
+func TestDirection_JSON(t *testing.T) {
+	t.Run("wire format is the name", func(t *testing.T) {
+		assert.JSON(t, DirectionUpRight, `"UpRight"`)
+		assert.JSON(t, DirectionNone, `"None"`)
+		assert.JSON(t, map[Direction]int{DirectionLeft: 1}, `{"Left":1}`)
+	})
+	t.Run("round-trip", func(t *testing.T) {
+		directions := Directions()
+		for _, direction := range append(directions[:], DirectionNone) {
+			data, err := json.Marshal(direction)
+			assert.NoError(t, err)
+
+			var decoded Direction
+			assert.NoError(t, json.Unmarshal(data, &decoded))
+			assert.Equal(t, decoded, direction, direction.String()+": ")
+		}
+	})
+	t.Run("an unknown name is an error", func(t *testing.T) {
+		var decoded Direction
+
+		assert.Error(t, json.Unmarshal([]byte(`"Sideways"`), &decoded))
 	})
 }
 

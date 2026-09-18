@@ -1,5 +1,9 @@
 package geom
 
+import (
+	"fmt"
+)
+
 // Axis is one of the two main coordinate axes.
 type Axis int
 
@@ -16,6 +20,22 @@ const (
 // Axes lists both axes in order. It returns a fresh array, so a caller cannot alter the list.
 func Axes() [2]Axis {
 	return [2]Axis{AxisHorizontal, AxisVertical}
+}
+
+// ParseAxis returns the axis with the given name, as String prints it, and an error for any
+// other string. "None" parses to AxisNone.
+func ParseAxis(name string) (Axis, error) {
+	if name == AxisNone.String() {
+		return AxisNone, nil
+	}
+
+	for _, axis := range Axes() {
+		if axis.String() == name {
+			return axis, nil
+		}
+	}
+
+	return AxisNone, fmt.Errorf("geom: unknown axis %q", name)
 }
 
 // Cross returns the perpendicular axis.
@@ -122,6 +142,24 @@ func (a Axis) Size[T Number](along, across T) Size[T] {
 // constants is not normalized, so every such value counts as AxisNone.
 func (a Axis) IsNone() bool {
 	return a != AxisHorizontal && a != AxisVertical
+}
+
+// MarshalText implements encoding.TextMarshaler with the name String prints, so an axis is
+// stored as "Horizontal" in JSON and as a map key rather than as its number.
+func (a Axis) MarshalText() ([]byte, error) {
+	return []byte(a.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler, the inverse of MarshalText through ParseAxis.
+func (a *Axis) UnmarshalText(text []byte) error {
+	axis, err := ParseAxis(string(text))
+	if err != nil {
+		return err
+	}
+
+	*a = axis
+
+	return nil
 }
 
 // String returns the name of the axis constant.

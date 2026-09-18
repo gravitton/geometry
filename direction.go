@@ -1,6 +1,7 @@
 package geom
 
 import (
+	"fmt"
 	"math"
 )
 
@@ -127,6 +128,22 @@ func DirectionFromAxes(up, down, left, right bool) Direction {
 	default:
 		return DirectionNone
 	}
+}
+
+// ParseDirection returns the direction with the given name, as String prints it, and an error
+// for any other string. "None" parses to DirectionNone.
+func ParseDirection(name string) (Direction, error) {
+	if name == DirectionNone.String() {
+		return DirectionNone, nil
+	}
+
+	for _, direction := range Directions() {
+		if direction.String() == name {
+			return direction, nil
+		}
+	}
+
+	return DirectionNone, fmt.Errorf("geom: unknown direction %q", name)
 }
 
 // Opposite returns the opposite direction, rotated 180°.
@@ -259,6 +276,24 @@ func (d Direction) String() string {
 	default:
 		return "None"
 	}
+}
+
+// MarshalText implements encoding.TextMarshaler with the name String prints, so a direction
+// is stored as "UpRight" in JSON and as a map key rather than as its number.
+func (d Direction) MarshalText() ([]byte, error) {
+	return []byte(d.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler, the inverse of MarshalText through ParseDirection.
+func (d *Direction) UnmarshalText(text []byte) error {
+	direction, err := ParseDirection(string(text))
+	if err != nil {
+		return err
+	}
+
+	*d = direction
+
+	return nil
 }
 
 // normalize returns the direction wrapped into [DirectionRight, DirectionDownRight],

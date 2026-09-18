@@ -1,11 +1,34 @@
 package geom
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
 	"github.com/gravitton/assert"
 )
+
+func TestParseAxis(t *testing.T) {
+	t.Run("every name round-trips", func(t *testing.T) {
+		for _, axis := range Axes() {
+			parsed, err := ParseAxis(axis.String())
+
+			assert.NoError(t, err, axis.String()+": ")
+			assert.Equal(t, parsed, axis, axis.String()+": ")
+		}
+	})
+	t.Run("none", func(t *testing.T) {
+		parsed, err := ParseAxis("None")
+
+		assert.NoError(t, err)
+		assert.Equal(t, parsed, AxisNone)
+	})
+	t.Run("unknown is an error", func(t *testing.T) {
+		_, err := ParseAxis("Diagonal")
+
+		assert.Error(t, err)
+	})
+}
 
 func TestAxis_Cross(t *testing.T) {
 	t.Run("swaps the two axes", func(t *testing.T) {
@@ -136,6 +159,29 @@ func TestAxis_String(t *testing.T) {
 	t.Run("none and out of range", func(t *testing.T) {
 		assert.Equal(t, AxisNone.String(), "None")
 		assert.Equal(t, Axis(2).String(), "None")
+	})
+}
+
+func TestAxis_JSON(t *testing.T) {
+	t.Run("wire format is the name", func(t *testing.T) {
+		assert.JSON(t, AxisVertical, `"Vertical"`)
+		assert.JSON(t, AxisNone, `"None"`)
+	})
+	t.Run("round-trip", func(t *testing.T) {
+		axes := Axes()
+		for _, axis := range append(axes[:], AxisNone) {
+			data, err := json.Marshal(axis)
+			assert.NoError(t, err)
+
+			var decoded Axis
+			assert.NoError(t, json.Unmarshal(data, &decoded))
+			assert.Equal(t, decoded, axis, axis.String()+": ")
+		}
+	})
+	t.Run("an unknown name is an error", func(t *testing.T) {
+		var decoded Axis
+
+		assert.Error(t, json.Unmarshal([]byte(`"Diagonal"`), &decoded))
 	})
 }
 
