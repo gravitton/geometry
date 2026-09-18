@@ -265,6 +265,10 @@ func TestCircle_Intersection(t *testing.T) {
 		assert.Nil(t, circle.Intersection(Circ(Pt(0.0, 0.0), 3.0)))
 		assert.Nil(t, circle.Intersection(circle))
 	})
+	t.Run("float treats centers within Epsilon as coincident", func(t *testing.T) {
+		assert.Nil(t, circle.Intersection(Circ(Pt(1e-7, 0.0), 5.0)))
+		assert.Nil(t, circle.Intersection(Circ(Pt(0.0, -1e-7), 3.0)))
+	})
 	t.Run("a negative radius gives none", func(t *testing.T) {
 		assert.Nil(t, circle.Intersection(Circ(Pt(6.0, 0.0), -5.0)))
 	})

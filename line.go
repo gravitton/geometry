@@ -273,7 +273,7 @@ func (l Line[T]) Equal(line Line[T]) bool {
 
 // IsZero checks if start and end points are zero.
 func (l Line[T]) IsZero() bool {
-	return l.Start.IsZero() && l.End.IsZero()
+	return l.Equal(Line[T]{})
 }
 
 // Int converts the line to a Line[int].

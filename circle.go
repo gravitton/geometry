@@ -119,8 +119,9 @@ func (c Circle[T]) Intersects(circle Circle[T]) bool {
 // Intersection returns the points where the circles cross: two for overlapping circles, one
 // for tangent ones, within Epsilon of T like Intersects, and none for circles apart, nested, or
 // with a negative radius. Coincident circles share every point and also return none. The
-// second point is the mirror of the first across the line of centers. For integer T the points
-// are rounded like every other result stored into T.
+// second point is the mirror of the first across the line of centers. Circles with centers
+// within Epsilon of T of each other count as coincident. For integer T the points are rounded
+// like every other result stored into T.
 func (c Circle[T]) Intersection(circle Circle[T]) []Point[T] {
 	if c.Radius < 0 || circle.Radius < 0 {
 		return nil
@@ -131,7 +132,7 @@ func (c Circle[T]) Intersection(circle Circle[T]) []Point[T] {
 	r1, r2 := float64(c.Radius), float64(circle.Radius)
 	epsilon := Epsilon[T]()
 
-	if distance == 0 || !LessOrEqualDelta(distance, r1+r2, epsilon) || !LessOrEqualDelta(math.Abs(r1-r2), distance, epsilon) {
+	if LessOrEqualDelta(distance, 0, epsilon) || !LessOrEqualDelta(distance, r1+r2, epsilon) || !LessOrEqualDelta(math.Abs(r1-r2), distance, epsilon) {
 		return nil
 	}
 
@@ -173,7 +174,7 @@ func (c Circle[T]) Equal(circle Circle[T]) bool {
 
 // IsZero checks if center point and radius are zero.
 func (c Circle[T]) IsZero() bool {
-	return c.Center.IsZero() && Equal(c.Radius, 0)
+	return c.Equal(Circle[T]{})
 }
 
 // Int converts the circle to a Circle[int].

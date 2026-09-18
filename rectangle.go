@@ -391,7 +391,7 @@ func (r Rectangle[T]) Equal(rectangle Rectangle[T]) bool {
 
 // IsZero checks if center point and size are zero.
 func (r Rectangle[T]) IsZero() bool {
-	return r.Center.IsZero() && r.Size.IsZero()
+	return r.Equal(Rectangle[T]{})
 }
 
 // Polygon converts the rectangle into a generic Polygon with computed vertices.

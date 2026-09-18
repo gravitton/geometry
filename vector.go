@@ -229,9 +229,17 @@ func (v Vector[T]) Reject(vector Vector[T]) Vector[T] {
 
 // Reflect creates a new Vector mirrored across the surface with the given normal, which need
 // not be normalized: the component along the normal flips and the rest is kept, as a bounce
-// off a wall. A zero normal reflects nothing and returns the current vector.
+// off a wall. A zero normal reflects nothing and returns the current vector. For integer T the
+// result is rounded once, like Project.
 func (v Vector[T]) Reflect(normal Vector[T]) Vector[T] {
-	return v.Subtract(v.Project(normal).Multiply(2))
+	a, b := v.Float(), normal.Float()
+
+	length := b.LengthSquared()
+	if length == 0 {
+		return v
+	}
+
+	return v.Subtract(normal.Multiply(2 * a.Dot(b) / length))
 }
 
 // Dot returns dot (scalar) product of two vectors.
@@ -310,7 +318,7 @@ func (v Vector[T]) Less(length T) bool {
 
 // LessOrEqual reports whether the vector is at most the given length, within Epsilon of T,
 // so a vector a rounding error longer than length still counts. No vector is at most a
-// negative length.
+// negative length, however small: the tolerance widens the boundary, never the sign.
 func (v Vector[T]) LessOrEqual(length T) bool {
 	return length >= 0 && LessOrEqualDelta(v.Length(), float64(length), Epsilon[T]())
 }

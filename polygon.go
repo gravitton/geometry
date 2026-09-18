@@ -318,7 +318,8 @@ func (p Polygon[T]) crossesEdge(line Line[T]) bool {
 	return false
 }
 
-// Equal checks if two polygons have the same vertices.
+// Equal checks if two polygons have the same vertices. A nil and an empty Vertices are equal,
+// having the same none; only IsZero tells them apart.
 func (p Polygon[T]) Equal(polygon Polygon[T]) bool {
 	if len(p.Vertices) != len(polygon.Vertices) {
 		return false

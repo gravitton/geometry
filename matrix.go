@@ -141,10 +141,12 @@ func (m Matrix[T]) Determinant() T {
 
 // determinant calculates the determinant in float64, the form Inverse and IsInvertible use
 // so that an integer matrix is judged on its exact determinant, not a rounded one.
+// The two products are rounded separately, which keeps a fused multiply-add from turning the
+// determinant of a singular matrix into a rounding residue: it is exactly zero on every platform.
 func (m Matrix[T]) determinant() float64 {
 	f := m.Float()
 
-	return f.A*f.E - f.B*f.D
+	return float64(f.A*f.E) - float64(f.B*f.D)
 }
 
 // Translation returns the translation the matrix applies, its C and F components.

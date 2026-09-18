@@ -397,6 +397,10 @@ func TestVector_Reflect(t *testing.T) {
 	t.Run("a zero normal reflects nothing", func(t *testing.T) {
 		AssertVector(t, Vec(3, 4).Reflect(Vec(0, 0)), Vec(3, 4))
 	})
+	t.Run("int rounds the result once", func(t *testing.T) {
+		AssertVector(t, Vec(1, 1).Reflect(Vec(1, 2)), Vec(0, -1))
+		AssertVector(t, Vec(7, 3).Reflect(Vec(2, 5)), Vec(3, -7))
+	})
 	t.Run("keeps the length and reflects back", func(t *testing.T) {
 		for _, a := range vectorFixtures {
 			for _, n := range vectorFixtures {

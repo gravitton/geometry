@@ -7,7 +7,7 @@ import (
 
 // Direction is one of the eight neighbor directions on a square lattice.
 //
-// Directions are numbered by increasing angle, matching Angle and Vector.Angle: counterclockwise
+// Directions are numbered by increasing normalized angle, matching Angle and Vector.Angle: counterclockwise
 // in the standard math convention where Y grows upward, which appears clockwise as drawn on a
 // screen with Y pointing down. A negative step or angle is therefore counterclockwise on screen.
 type Direction int
@@ -207,8 +207,8 @@ func (d Direction) Vector[T Number](length T) Vector[T] {
 
 // Angle returns the angle of the direction in radians, measured in the standard math
 // convention where Y grows upward — so DirectionUp is -Pi/2, not +Pi/2, and NaN for
-// DirectionNone, which has no angle. Direction ordering follows this angle, so
-// DirectionFromAngle and Angle round-trip for every direction, DirectionNone included.
+// DirectionNone, which has no angle. Direction ordering follows this angle normalized to
+// [0, 2π), so DirectionFromAngle and Angle round-trip for every direction, DirectionNone included.
 func (d Direction) Angle() float64 {
 	if d.IsNone() {
 		return math.NaN()

@@ -106,6 +106,9 @@ func TestMatrix_Inverse(t *testing.T) {
 		assert.Panics(t, func() {
 			ScaleMatrix(1, 0).Inverse()
 		}, "geom: inverse of a singular matrix")
+		assert.Panics(t, func() {
+			Mat(0.1, 0.3, 0.0, 0.1, 0.3, 0.0).Inverse()
+		}, "geom: inverse of a singular matrix")
 	})
 	t.Run("negative zero prints as zero", func(t *testing.T) {
 		assert.Equal(t, ScaleMatrix(2.0, 4.0).Translate(1, 1).Inverse().String(), "[[0.50, 0.00, -1.00], [0.00, 0.25, -1.00]]")
@@ -135,6 +138,11 @@ func TestMatrix_IsInvertible(t *testing.T) {
 		assert.False(t, Matrix[int]{}.IsInvertible())
 		assert.False(t, ScaleMatrix(1.0, 0.0).IsInvertible())
 		assert.False(t, Mat(1.0, 2.0, 0.0, 2.0, 4.0, 0.0).IsInvertible())
+	})
+	t.Run("equal rows are singular without a fused multiply-add residue", func(t *testing.T) {
+		assert.False(t, Mat(0.1, 0.3, 0.0, 0.1, 0.3, 0.0).IsInvertible())
+		assert.False(t, Mat(2.3, 7.7, 1.0, 2.3, 7.7, 2.0).IsInvertible())
+		assert.False(t, Mat[float32](0.7, 0.9, 0.0, 0.7, 0.9, 0.0).IsInvertible())
 	})
 }
 
