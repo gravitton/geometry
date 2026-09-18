@@ -135,6 +135,67 @@ func TestMatrix_Determinant(t *testing.T) {
 	})
 }
 
+func TestMatrix_Translation(t *testing.T) {
+	t.Run("reads the translation back", func(t *testing.T) {
+		AssertVector(t, TranslationMatrix(3, -4).Translation(), Vec(3, -4))
+		AssertVector(t, Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6).Translation(), Vec(3.3, 6.6))
+	})
+	t.Run("identity has none", func(t *testing.T) {
+		AssertVector(t, IdentityMatrix[int]().Translation(), Vec(0, 0))
+	})
+}
+
+func TestMatrix_Angle(t *testing.T) {
+	t.Run("reads a rotation back", func(t *testing.T) {
+		AssertNumber(t, RotationMatrix[float64](0.7).Angle(), 0.7)
+		AssertNumber(t, RotationMatrix[float64](-2.5).Angle(), -2.5)
+		AssertNumber(t, RotationMatrix[int](Pi/2).Angle(), Pi/2)
+	})
+	t.Run("scale and translation do not change it", func(t *testing.T) {
+		AssertNumber(t, RotationMatrix[float64](0.7).Scale(2, 3).Translate(5, 6).Angle(), 0.7)
+	})
+	t.Run("identity and the zero matrix are at zero", func(t *testing.T) {
+		AssertNumber(t, IdentityMatrix[float64]().Angle(), 0.0)
+		AssertNumber(t, Matrix[float64]{}.Angle(), 0.0)
+	})
+	t.Run("a shear gives the angle of its X axis", func(t *testing.T) {
+		AssertNumber(t, Mat(1.0, 1.0, 0.0, 0.0, 1.0, 0.0).Angle(), 0.0)
+	})
+}
+
+func TestMatrix_Scaling(t *testing.T) {
+	t.Run("reads a scale back", func(t *testing.T) {
+		AssertVector(t, ScaleMatrix(2, 3).Scaling(), Vec(2, 3))
+		AssertVector(t, ScaleMatrix(0.5, 4.0).Scaling(), Vec(0.5, 4.0))
+	})
+	t.Run("rotation and translation do not change it", func(t *testing.T) {
+		AssertVector(t, RotationMatrix[float64](0.7).Scale(2, 3).Translate(5, 6).Scaling(), Vec(2.0, 3.0))
+	})
+	t.Run("a reflection has a negative Y factor", func(t *testing.T) {
+		AssertVector(t, ScaleMatrix(2.0, -3.0).Scaling(), Vec(2.0, -3.0))
+		AssertVector(t, RotationMatrix[float64](0.7).Scale(2, -3).Scaling(), Vec(2.0, -3.0))
+	})
+	t.Run("identity is one and the zero matrix is zero", func(t *testing.T) {
+		AssertVector(t, IdentityMatrix[int]().Scaling(), Vec(1, 1))
+		AssertVector(t, Matrix[int]{}.Scaling(), Vec(0, 0))
+	})
+	t.Run("int rounds", func(t *testing.T) {
+		AssertVector(t, RotationMatrix[int](Pi/2).Scaling(), Vec(1, 1))
+	})
+	t.Run("rebuilds the matrix with Angle and Translation", func(t *testing.T) {
+		for _, m := range matrixFixtures {
+			scaling, translation := m.Scaling(), m.Translation()
+			rebuilt := TranslationMatrix(translation.XY()).Rotate(m.Angle()).Scale(scaling.X, scaling.Y)
+
+			if m.Determinant() == 0 || !EqualDelta(m.A*m.B+m.D*m.E, 0, Delta) {
+				continue // singular or sheared matrices do not decompose
+			}
+
+			AssertMatrix(t, rebuilt, m, fmt.Sprintf("%s: ", m))
+		}
+	})
+}
+
 func TestMatrix_Translate(t *testing.T) {
 	t.Run("from identity", func(t *testing.T) {
 		AssertMatrix(t, IdentityMatrix[float64]().Translate(5.0, 3.0), TranslationMatrix(5.0, 3.0))

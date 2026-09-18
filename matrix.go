@@ -124,6 +124,35 @@ func (m Matrix[T]) determinant() float64 {
 	return f.A*f.E - f.B*f.D
 }
 
+// Translation returns the translation the matrix applies, its C and F components.
+func (m Matrix[T]) Translation() Vector[T] {
+	return Vector[T]{m.C, m.F}
+}
+
+// Angle returns the rotation the matrix applies, in radians: the angle of the transformed X
+// axis, so a matrix built from a rotation, a scale and a translation gives the rotation back.
+// A sheared matrix has no single rotation and gives the angle of its X axis. The zero matrix
+// gives 0.
+func (m Matrix[T]) Angle() float64 {
+	return math.Atan2(float64(m.D), float64(m.A))
+}
+
+// Scaling returns the scale factors the matrix applies along its rotated X and Y axes: the
+// length of the transformed X axis, and the signed length of the Y axis, negative for a
+// reflection. A matrix built from a rotation, a scale and a translation gives the scale back;
+// a sheared matrix gives the factors of the nearest rotation and scale. For integer T the
+// factors are rounded; the zero matrix gives the zero vector.
+func (m Matrix[T]) Scaling() Vector[T] {
+	f := m.Float()
+
+	x := math.Hypot(f.A, f.D)
+	if x == 0 {
+		return Vector[T]{}
+	}
+
+	return Vector[T]{Cast[T](x), Cast[T](f.determinant() / x)}
+}
+
 // Translate creates a new matrix by right-multiplying a translation matrix.
 // Composition order: result = m * m_T(deltaX,deltaY).
 func (m Matrix[T]) Translate(deltaX, deltaY T) Matrix[T] {
