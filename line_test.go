@@ -536,6 +536,22 @@ func TestLine_Intersection(t *testing.T) {
 	})
 }
 
+func BenchmarkLine_Intersects(b *testing.B) {
+	line := Ln(Pt(0.0, 0.0), Pt(10.0, 10.0))
+	crossing, apart := Ln(Pt(0.0, 10.0), Pt(10.0, 0.0)), Ln(Pt(20.0, 0.0), Pt(20.0, 10.0))
+
+	b.Run("crossing", func(b *testing.B) {
+		for b.Loop() {
+			sinkBool = line.Intersects(crossing)
+		}
+	})
+	b.Run("apart", func(b *testing.B) {
+		for b.Loop() {
+			sinkBool = line.Intersects(apart)
+		}
+	})
+}
+
 func TestLine_IntersectsCircle(t *testing.T) {
 	circle := Circ(Pt(0.0, 0.0), 1.0)
 
@@ -580,6 +596,22 @@ func TestLine_IntersectsRectangle(t *testing.T) {
 	t.Run("touching a corner counts", func(t *testing.T) {
 		assert.True(t, Ln(Pt(1, 3), Pt(3, 1)).IntersectsRectangle(rectangle))
 		assert.False(t, Ln(Pt(2, 4), Pt(4, 2)).IntersectsRectangle(rectangle))
+	})
+}
+
+func BenchmarkLine_IntersectsRectangle(b *testing.B) {
+	rectangle := Rect(Pt(0.0, 0.0), Sz(10.0, 10.0))
+	through, apart := Ln(Pt(-20.0, 0.0), Pt(20.0, 0.0)), Ln(Pt(-20.0, 20.0), Pt(20.0, 20.0))
+
+	b.Run("through", func(b *testing.B) {
+		for b.Loop() {
+			sinkBool = through.IntersectsRectangle(rectangle)
+		}
+	})
+	b.Run("apart", func(b *testing.B) {
+		for b.Loop() {
+			sinkBool = apart.IntersectsRectangle(rectangle)
+		}
 	})
 }
 

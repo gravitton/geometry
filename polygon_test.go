@@ -491,6 +491,27 @@ func TestPolygon_Contains(t *testing.T) {
 	})
 }
 
+func BenchmarkPolygon_Contains(b *testing.B) {
+	polygon := benchPolygon()
+	inside, outside, far := Pt(10.0, 20.0), Pt(99.0, 99.0), Pt(500.0, 500.0)
+
+	b.Run("inside", func(b *testing.B) {
+		for b.Loop() {
+			sinkBool = polygon.Contains(inside)
+		}
+	})
+	b.Run("outside within the extent", func(b *testing.B) {
+		for b.Loop() {
+			sinkBool = polygon.Contains(outside)
+		}
+	})
+	b.Run("outside the extent", func(b *testing.B) {
+		for b.Loop() {
+			sinkBool = polygon.Contains(far)
+		}
+	})
+}
+
 func TestPolygon_DistanceTo(t *testing.T) {
 	square := Pol(squareVertices())
 
@@ -542,6 +563,15 @@ func TestPolygon_DistanceSquaredTo(t *testing.T) {
 	})
 }
 
+func BenchmarkPolygon_DistanceTo(b *testing.B) {
+	polygon := benchPolygon()
+	point := Pt(150.0, 150.0)
+
+	for b.Loop() {
+		_ = polygon.DistanceTo(point)
+	}
+}
+
 func TestPolygon_Intersects(t *testing.T) {
 	square := Pol(squareVertices())
 
@@ -573,6 +603,29 @@ func TestPolygon_Intersects(t *testing.T) {
 			for _, b := range polygonFixtures() {
 				assert.Equal(t, a.Intersects(b), b.Intersects(a), fmt.Sprintf("%s → %s: ", a, b))
 			}
+		}
+	})
+}
+
+func BenchmarkPolygon_Intersects(b *testing.B) {
+	polygon := benchPolygon()
+	overlapping := polygon.Translate(Vec(150.0, 0.0))
+	apartWithinBounds := polygon.Translate(Vec(150.0, 150.0))
+	apart := polygon.Translate(Vec(300.0, 0.0))
+
+	b.Run("overlapping", func(b *testing.B) {
+		for b.Loop() {
+			sinkBool = polygon.Intersects(overlapping)
+		}
+	})
+	b.Run("apart within overlapping bounds", func(b *testing.B) {
+		for b.Loop() {
+			sinkBool = polygon.Intersects(apartWithinBounds)
+		}
+	})
+	b.Run("apart", func(b *testing.B) {
+		for b.Loop() {
+			sinkBool = polygon.Intersects(apart)
 		}
 	})
 }
@@ -634,4 +687,9 @@ func TestPolygon_IntersectsCircle(t *testing.T) {
 	t.Run("a negative radius intersects nothing, even from inside", func(t *testing.T) {
 		assert.False(t, square.IntersectsCircle(Circ(Pt(1, 1), -1)))
 	})
+}
+
+// benchPolygon is a 64-gon, large enough for the edge walk to dominate.
+func benchPolygon() Polygon[float64] {
+	return RegPol(Pt(0.0, 0.0), SzU(100.0), 64, 0).Polygon()
 }

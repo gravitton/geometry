@@ -152,6 +152,14 @@ func TestVector_Rotate(t *testing.T) {
 	})
 }
 
+func BenchmarkVector_Rotate(b *testing.B) {
+	vector := Vec(3.0, 4.0)
+
+	for b.Loop() {
+		_ = vector.Rotate(math.Pi / 3)
+	}
+}
+
 func TestVector_Resize(t *testing.T) {
 	t.Run("int rounds", func(t *testing.T) {
 		AssertVector(t, Vec(10, 16).Resize(5), Vec(3, 4))

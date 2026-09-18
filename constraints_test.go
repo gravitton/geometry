@@ -54,6 +54,18 @@ func TestCast(t *testing.T) {
 	})
 }
 
+func BenchmarkCast_Int(b *testing.B) {
+	for b.Loop() {
+		Cast[int](1.51)
+	}
+}
+
+func BenchmarkCast_Float64(b *testing.B) {
+	for b.Loop() {
+		Cast[float64](1.51)
+	}
+}
+
 func TestInt(t *testing.T) {
 	t.Run("integer converts directly", func(t *testing.T) {
 		assert.Equal(t, Int(3), 3)
@@ -118,6 +130,18 @@ func TestIsIntType(t *testing.T) {
 	})
 }
 
+func BenchmarkIsIntType_Int(b *testing.B) {
+	for b.Loop() {
+		isIntType[int]()
+	}
+}
+
+func BenchmarkIsIntType_Float64(b *testing.B) {
+	for b.Loop() {
+		isIntType[float64]()
+	}
+}
+
 func TestIsFloat32(t *testing.T) {
 	t.Run("float32", func(t *testing.T) {
 		assertIsFloat32[float32](t, true)
@@ -156,28 +180,4 @@ func assertIsFloat32[T Number](t *testing.T, expected bool) {
 	t.Helper()
 
 	assert.Equal(t, isFloat32[T](), expected)
-}
-
-func BenchmarkCast_Int(b *testing.B) {
-	for b.Loop() {
-		Cast[int](1.51)
-	}
-}
-
-func BenchmarkCast_Float64(b *testing.B) {
-	for b.Loop() {
-		Cast[float64](1.51)
-	}
-}
-
-func BenchmarkIsIntType_Int(b *testing.B) {
-	for b.Loop() {
-		isIntType[int]()
-	}
-}
-
-func BenchmarkIsIntType_Float64(b *testing.B) {
-	for b.Loop() {
-		isIntType[float64]()
-	}
 }

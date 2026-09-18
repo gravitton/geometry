@@ -584,6 +584,15 @@ func TestRectangle_Union(t *testing.T) {
 	})
 }
 
+func BenchmarkRectangle_Intersects(b *testing.B) {
+	rectangle := Rect(Pt(0.0, 0.0), Sz(10.0, 10.0))
+	other := Rect(Pt(5.0, 5.0), Sz(10.0, 10.0))
+
+	for b.Loop() {
+		sinkBool = rectangle.Intersects(other)
+	}
+}
+
 func TestRectangle_IntersectsCircle(t *testing.T) {
 	rectangle := Rect(Pt(0.0, 0.0), Sz(200.0, 100.0))
 

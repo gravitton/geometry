@@ -26,42 +26,6 @@ const (
 	OneOverSqrt2 = 1 / math.Sqrt2
 )
 
-// NormalizeAngle returns angle normalized to [0, 2π). NaN and ±Inf are returned as NaN.
-func NormalizeAngle(angle float64) float64 {
-	a := math.Mod(angle, 2*math.Pi)
-	if a < 0 {
-		a += 2 * math.Pi
-	}
-	if a >= 2*math.Pi {
-		a = 0
-	}
-
-	return a
-}
-
-// AngleDistance returns the shortest angular distance between a and b, in [0, π].
-func AngleDistance(a, b float64) float64 {
-	d := NormalizeAngle(a - b)
-
-	return min(d, 2*math.Pi-d)
-}
-
-// EqualAngle reports whether a and b are the same angle within Delta, a full turn or the
-// sign of an angle aside. Unlike comparing normalized angles it holds across the 0/2π seam.
-func EqualAngle(a, b float64) bool {
-	return EqualDelta(AngleDistance(a, b), 0, Delta)
-}
-
-// ToRadians converts degrees to radians.
-func ToRadians(degrees float64) float64 {
-	return degrees * DegToRad
-}
-
-// ToDegrees converts radians to degrees.
-func ToDegrees(radians float64) float64 {
-	return radians * RadToDeg
-}
-
 // Multiply multiplies a number by a scale factor.
 func Multiply[T Number](x T, factor float64) T {
 	return Cast[T](float64(x) * factor)
@@ -96,6 +60,18 @@ func Abs[T Number](x T) T {
 	return x
 }
 
+// Sign returns the sign of x: 1 if x > 0, -1 if x < 0, or 0 if x == 0.
+func Sign[T Number](x T) T {
+	switch {
+	case x > 0:
+		return 1
+	case x < 0:
+		return -1
+	default:
+		return 0
+	}
+}
+
 // Round returns x rounded to the nearest integer. An integer T is returned unchanged.
 func Round[T Number](x T) T {
 	if isIntType[T]() {
@@ -128,15 +104,16 @@ func Mod[T Integer](n, m T) T {
 	return ((n % m) + m) % m
 }
 
-// Lerp calculates the linear interpolation between a and b at a ratio t.
-// The difference is taken in float64, so it cannot overflow a narrow integer T.
-func Lerp[T Number](a, b T, t float64) T {
-	return Cast[T](float64(a) + (float64(b)-float64(a))*t)
-}
+// Clamp adjusts the given value to be between the given minimum and maximum value.
+func Clamp[T Number](value, min, max T) T {
+	if value < min {
+		return min
+	}
+	if value > max {
+		return max
+	}
 
-// Midpoint calculates the midpoint between two values. Equivalent to Lerp(a, b, 0.5).
-func Midpoint[T Number](a, b T) T {
-	return Lerp(a, b, 0.5)
+	return value
 }
 
 // Sum adds the values, accumulating in float64 and storing the total back through Cast, so a
@@ -151,28 +128,15 @@ func Sum[T Number](values []T) T {
 	return Cast[T](total)
 }
 
-// Clamp adjusts the given value to be between the given minimum and maximum value.
-func Clamp[T Number](value, min, max T) T {
-	if value < min {
-		return min
-	}
-	if value > max {
-		return max
-	}
-
-	return value
+// Lerp calculates the linear interpolation between a and b at a ratio t.
+// The difference is taken in float64, so it cannot overflow a narrow integer T.
+func Lerp[T Number](a, b T, t float64) T {
+	return Cast[T](float64(a) + (float64(b)-float64(a))*t)
 }
 
-// Sign returns the sign of x: 1 if x > 0, -1 if x < 0, or 0 if x == 0.
-func Sign[T Number](x T) T {
-	switch {
-	case x > 0:
-		return 1
-	case x < 0:
-		return -1
-	default:
-		return 0
-	}
+// Midpoint calculates the midpoint between two values. Equivalent to Lerp(a, b, 0.5).
+func Midpoint[T Number](a, b T) T {
+	return Lerp(a, b, 0.5)
 }
 
 // Equal reports whether a and b are equal within Epsilon of T: exactly for an integer T,
@@ -190,23 +154,6 @@ func Equal[T Number](a, b T) bool {
 	return EqualDelta(a, b, Epsilon[T]())
 }
 
-// LessOrEqual reports whether a is at most b within Epsilon of T: exactly for an integer T,
-// and with the same tolerance as Equal for a float T, so that a value a rounding error past
-// a boundary still counts as on it.
-func LessOrEqual[T Number](a, b T) bool {
-	if isIntType[T]() {
-		return a <= b
-	}
-
-	return LessOrEqualDelta(a, b, Epsilon[T]())
-}
-
-// LessOrEqualDelta reports whether a is at most b within the given delta.
-// The comparison is made in float64, so it cannot overflow a narrow integer T.
-func LessOrEqualDelta[T Number](a, b T, delta float64) bool {
-	return float64(a) <= float64(b)+delta
-}
-
 // EqualDelta reports whether a and b are equal within the given delta.
 // The difference is taken in float64, so it cannot overflow a narrow integer T.
 func EqualDelta[T Number](a, b T, delta float64) bool {
@@ -222,6 +169,23 @@ func EqualRelative[T Number](a, b T) bool {
 	}
 
 	return EqualDelta(a, b, EpsilonRelative(a, b))
+}
+
+// LessOrEqual reports whether a is at most b within Epsilon of T: exactly for an integer T,
+// and with the same tolerance as Equal for a float T, so that a value a rounding error past
+// a boundary still counts as on it.
+func LessOrEqual[T Number](a, b T) bool {
+	if isIntType[T]() {
+		return a <= b
+	}
+
+	return LessOrEqualDelta(a, b, Epsilon[T]())
+}
+
+// LessOrEqualDelta reports whether a is at most b within the given delta.
+// The comparison is made in float64, so it cannot overflow a narrow integer T.
+func LessOrEqualDelta[T Number](a, b T, delta float64) bool {
+	return float64(a) <= float64(b)+delta
 }
 
 // Epsilon returns the equality tolerance for T: zero for an integer T, which is
@@ -243,6 +207,42 @@ func Epsilon[T Number]() float64 {
 // scaled by the larger magnitude, and never less than Epsilon of T itself.
 func EpsilonRelative[T Number](a, b T) float64 {
 	return Epsilon[T]() * max(1, math.Abs(float64(a)), math.Abs(float64(b)))
+}
+
+// ToRadians converts degrees to radians.
+func ToRadians(degrees float64) float64 {
+	return degrees * DegToRad
+}
+
+// ToDegrees converts radians to degrees.
+func ToDegrees(radians float64) float64 {
+	return radians * RadToDeg
+}
+
+// NormalizeAngle returns angle normalized to [0, 2π). NaN and ±Inf are returned as NaN.
+func NormalizeAngle(angle float64) float64 {
+	a := math.Mod(angle, 2*math.Pi)
+	if a < 0 {
+		a += 2 * math.Pi
+	}
+	if a >= 2*math.Pi {
+		a = 0
+	}
+
+	return a
+}
+
+// AngleDistance returns the shortest angular distance between a and b, in [0, π].
+func AngleDistance(a, b float64) float64 {
+	d := NormalizeAngle(a - b)
+
+	return min(d, 2*math.Pi-d)
+}
+
+// EqualAngle reports whether a and b are the same angle within Delta, a full turn or the
+// sign of an angle aside. Unlike comparing normalized angles it holds across the 0/2π seam.
+func EqualAngle(a, b float64) bool {
+	return EqualDelta(AngleDistance(a, b), 0, Delta)
 }
 
 // Parse parses s into T: an integer T with strconv.ParseInt, a float T with strconv.ParseFloat.

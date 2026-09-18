@@ -10,84 +10,8 @@ import (
 // negativeZero is -0.0; writing it as a literal would fold to +0.0 at compile time.
 var negativeZero = math.Copysign(0, -1)
 
-func TestNormalizeAngle(t *testing.T) {
-	t.Run("inside the unit turn", func(t *testing.T) {
-		AssertNumber(t, NormalizeAngle(0), 0.0)
-		AssertNumber(t, NormalizeAngle(Pi), Pi)
-	})
-	t.Run("wraps above a full turn", func(t *testing.T) {
-		AssertNumber(t, NormalizeAngle(3*Pi), Pi)
-		AssertNumber(t, NormalizeAngle(2*Pi), 0.0)
-	})
-	t.Run("negative angles come back positive", func(t *testing.T) {
-		AssertNumber(t, NormalizeAngle(-Pi/2), 3*Pi/2)
-	})
-	t.Run("a tiny negative angle stays below a full turn", func(t *testing.T) {
-		assert.Less(t, NormalizeAngle(-1e-17), 2*Pi)
-		assert.GreaterOrEqual(t, NormalizeAngle(-1e-17), 0.0)
-	})
-	t.Run("NaN and Inf have no normal form", func(t *testing.T) {
-		assert.True(t, math.IsNaN(NormalizeAngle(math.NaN())))
-		assert.True(t, math.IsNaN(NormalizeAngle(math.Inf(1))))
-		assert.True(t, math.IsNaN(NormalizeAngle(math.Inf(-1))))
-	})
-}
-
-func TestAngleDistance(t *testing.T) {
-	t.Run("same angle", func(t *testing.T) {
-		AssertNumber(t, AngleDistance(1, 1), 0.0)
-		AssertNumber(t, AngleDistance(1, 1+2*Pi), 0.0)
-	})
-	t.Run("shortest way around", func(t *testing.T) {
-		AssertNumber(t, AngleDistance(0, Pi/2), Pi/2)
-		AssertNumber(t, AngleDistance(Pi/2, 0), Pi/2)
-		AssertNumber(t, AngleDistance(0, 3*Pi/2), Pi/2)
-		AssertNumber(t, AngleDistance(0, Pi), Pi)
-	})
-	t.Run("across the seam", func(t *testing.T) {
-		AssertNumber(t, AngleDistance(-0.1, 0.1), 0.2)
-		AssertNumber(t, AngleDistance(2*Pi-0.1, 0.1), 0.2)
-	})
-}
-
-func TestEqualAngle(t *testing.T) {
-	t.Run("same angle", func(t *testing.T) {
-		assert.True(t, EqualAngle(0.5, 0.5))
-		assert.True(t, EqualAngle(0.5, 0.5+2*Pi))
-		assert.True(t, EqualAngle(-Pi/2, 3*Pi/2))
-	})
-	t.Run("across the seam", func(t *testing.T) {
-		assert.True(t, EqualAngle(0, -1e-9))
-		assert.True(t, EqualAngle(0, 2*Pi-1e-9))
-		assert.True(t, EqualAngle(-1e-9, 1e-9))
-	})
-	t.Run("different angle", func(t *testing.T) {
-		assert.False(t, EqualAngle(0, 1e-3))
-		assert.False(t, EqualAngle(0, Pi))
-		assert.False(t, EqualAngle(0, math.NaN()))
-	})
-}
-
-func TestToRadians(t *testing.T) {
-	AssertNumber(t, ToRadians(0), 0.0)
-	AssertNumber(t, ToRadians(90), Pi/2)
-	AssertNumber(t, ToRadians(180), Pi)
-	AssertNumber(t, ToRadians(360), 2*Pi)
-}
-
-func TestToDegrees(t *testing.T) {
-	t.Run("converts", func(t *testing.T) {
-		AssertNumber(t, ToDegrees(0), 0.0)
-		AssertNumber(t, ToDegrees(Pi/2), 90.0)
-		AssertNumber(t, ToDegrees(Pi), 180.0)
-		AssertNumber(t, ToDegrees(2*Pi), 360.0)
-	})
-	t.Run("inverts ToRadians", func(t *testing.T) {
-		for _, degrees := range []float64{0, 30, 45, 90, 179.5, -270} {
-			AssertNumber(t, ToDegrees(ToRadians(degrees)), degrees)
-		}
-	})
-}
+// sinkBool is a shared boolean variable used to store results in benchmarking tests.
+var sinkBool bool
 
 func TestMultiply(t *testing.T) {
 	t.Run("int rounds", func(t *testing.T) {
@@ -132,6 +56,19 @@ func TestAbs(t *testing.T) {
 	t.Run("wide integers stay exact", func(t *testing.T) {
 		AssertNumber(t, Abs(int64(-(1<<53 + 1))), int64(1<<53+1))
 		AssertNumber(t, Abs(int64(1<<53+1)), int64(1<<53+1))
+	})
+}
+
+func TestSign(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertNumber(t, Sign(5), 1)
+		AssertNumber(t, Sign(-5), -1)
+		AssertNumber(t, Sign(0), 0)
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Sign(3.14), 1.0)
+		AssertNumber(t, Sign(-3.14), -1.0)
+		AssertNumber(t, Sign(0.0), 0.0)
 	})
 }
 
@@ -188,6 +125,41 @@ func TestMod(t *testing.T) {
 	})
 }
 
+func TestClamp(t *testing.T) {
+	t.Run("inside the range", func(t *testing.T) {
+		AssertNumber(t, Clamp(5, 0, 10), 5)
+		AssertNumber(t, Clamp(0.5, 0.0, 1.0), 0.5)
+	})
+	t.Run("outside the range", func(t *testing.T) {
+		AssertNumber(t, Clamp(-5, 0, 10), 0)
+		AssertNumber(t, Clamp(15, 0, 10), 10)
+		AssertNumber(t, Clamp(-0.5, 0.0, 1.0), 0.0)
+		AssertNumber(t, Clamp(1.5, 0.0, 1.0), 1.0)
+	})
+	t.Run("the bounds are inclusive", func(t *testing.T) {
+		AssertNumber(t, Clamp(0, 0, 10), 0)
+		AssertNumber(t, Clamp(10, 0, 10), 10)
+	})
+}
+
+func TestSum(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		assert.Equal(t, Sum([]int{1, 2, 3}), 6)
+		assert.Equal(t, Sum([]int{-4, 1}), -3)
+	})
+	t.Run("narrow integers do not overflow mid-sum", func(t *testing.T) {
+		assert.Equal(t, Sum([]int8{100, 100, -100}), int8(100))
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Sum([]float64{0.5, 0.25, 0.125}), 0.875)
+		AssertNumber(t, Sum([]float32{0.5, 0.25}), float32(0.75))
+	})
+	t.Run("empty and nil are zero", func(t *testing.T) {
+		assert.Equal(t, Sum([]int{}), 0)
+		assert.Equal(t, Sum[float64](nil), 0.0)
+	})
+}
+
 func TestLerp(t *testing.T) {
 	t.Run("int rounds", func(t *testing.T) {
 		AssertNumber(t, Lerp(1, 2, 0.25), 1)
@@ -227,54 +199,6 @@ func TestMidpoint(t *testing.T) {
 	})
 }
 
-func TestSum(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		assert.Equal(t, Sum([]int{1, 2, 3}), 6)
-		assert.Equal(t, Sum([]int{-4, 1}), -3)
-	})
-	t.Run("narrow integers do not overflow mid-sum", func(t *testing.T) {
-		assert.Equal(t, Sum([]int8{100, 100, -100}), int8(100))
-	})
-	t.Run("float", func(t *testing.T) {
-		AssertNumber(t, Sum([]float64{0.5, 0.25, 0.125}), 0.875)
-		AssertNumber(t, Sum([]float32{0.5, 0.25}), float32(0.75))
-	})
-	t.Run("empty and nil are zero", func(t *testing.T) {
-		assert.Equal(t, Sum([]int{}), 0)
-		assert.Equal(t, Sum[float64](nil), 0.0)
-	})
-}
-
-func TestClamp(t *testing.T) {
-	t.Run("inside the range", func(t *testing.T) {
-		AssertNumber(t, Clamp(5, 0, 10), 5)
-		AssertNumber(t, Clamp(0.5, 0.0, 1.0), 0.5)
-	})
-	t.Run("outside the range", func(t *testing.T) {
-		AssertNumber(t, Clamp(-5, 0, 10), 0)
-		AssertNumber(t, Clamp(15, 0, 10), 10)
-		AssertNumber(t, Clamp(-0.5, 0.0, 1.0), 0.0)
-		AssertNumber(t, Clamp(1.5, 0.0, 1.0), 1.0)
-	})
-	t.Run("the bounds are inclusive", func(t *testing.T) {
-		AssertNumber(t, Clamp(0, 0, 10), 0)
-		AssertNumber(t, Clamp(10, 0, 10), 10)
-	})
-}
-
-func TestSign(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		AssertNumber(t, Sign(5), 1)
-		AssertNumber(t, Sign(-5), -1)
-		AssertNumber(t, Sign(0), 0)
-	})
-	t.Run("float", func(t *testing.T) {
-		AssertNumber(t, Sign(3.14), 1.0)
-		AssertNumber(t, Sign(-3.14), -1.0)
-		AssertNumber(t, Sign(0.0), 0.0)
-	})
-}
-
 func TestEqual(t *testing.T) {
 	t.Run("int is exact", func(t *testing.T) {
 		assert.True(t, Equal(1, 1))
@@ -298,6 +222,70 @@ func TestEqual(t *testing.T) {
 		assert.False(t, Equal(far, next))
 		assert.True(t, EqualRelative(far, next))
 	})
+}
+
+func BenchmarkEqual_Float64(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		sinkBool = Equal(float64(i), float64(i))
+	}
+}
+
+func BenchmarkEqual_Float32(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		sinkBool = Equal(float32(i), float32(i))
+	}
+}
+
+func TestEqualDelta(t *testing.T) {
+	t.Run("within the delta", func(t *testing.T) {
+		assert.True(t, EqualDelta(1, 2, 1.5))
+		assert.True(t, EqualDelta(1.0, 1.001, 0.01))
+	})
+	t.Run("outside the delta", func(t *testing.T) {
+		assert.False(t, EqualDelta(1, 3, 1.5))
+		assert.False(t, EqualDelta(1.0, 1.02, 0.01))
+	})
+	t.Run("a zero delta asks for exact equality", func(t *testing.T) {
+		assert.True(t, EqualDelta(5, 5, 0.0))
+		assert.False(t, EqualDelta(5, 6, 0.0))
+	})
+	t.Run("narrow integers do not overflow", func(t *testing.T) {
+		assert.False(t, EqualDelta[int8](127, -128, 1))
+		assert.True(t, EqualDelta[int8](127, -128, 255))
+	})
+}
+
+func TestEqualRelative(t *testing.T) {
+	t.Run("int is exact", func(t *testing.T) {
+		assert.True(t, EqualRelative(1, 1))
+		assert.False(t, EqualRelative(1, 2))
+	})
+	t.Run("near zero it matches Equal", func(t *testing.T) {
+		assert.True(t, EqualRelative(1.0000005, 1.0))
+		assert.False(t, EqualRelative(1.0000015, 1.0))
+		assert.True(t, EqualRelative(0.0, 0.0))
+	})
+	t.Run("scales with magnitude", func(t *testing.T) {
+		assert.True(t, EqualRelative(1e6, 1e6+0.5))
+		assert.False(t, EqualRelative(1e6, 1e6+2.0))
+		assert.True(t, EqualRelative[float32](1e4, 1e4+0.05))
+	})
+	t.Run("a full turn in float32 returns to its start", func(t *testing.T) {
+		v := Vec[float32](1000, 0)
+		for range 8 {
+			v = v.Rotate(Pi / 4)
+		}
+
+		// one ulp out at magnitude 1e3, which Delta32 still covers
+		assert.True(t, EqualRelative(v.X, 1000))
+		assert.True(t, Equal(v.X, 1000))
+	})
+}
+
+func BenchmarkEqualRelative_Float64(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		sinkBool = EqualRelative(float64(i), float64(i))
+	}
 }
 
 func TestLessOrEqual(t *testing.T) {
@@ -347,52 +335,6 @@ func TestLessOrEqualDelta(t *testing.T) {
 	})
 }
 
-func TestEqualDelta(t *testing.T) {
-	t.Run("within the delta", func(t *testing.T) {
-		assert.True(t, EqualDelta(1, 2, 1.5))
-		assert.True(t, EqualDelta(1.0, 1.001, 0.01))
-	})
-	t.Run("outside the delta", func(t *testing.T) {
-		assert.False(t, EqualDelta(1, 3, 1.5))
-		assert.False(t, EqualDelta(1.0, 1.02, 0.01))
-	})
-	t.Run("a zero delta asks for exact equality", func(t *testing.T) {
-		assert.True(t, EqualDelta(5, 5, 0.0))
-		assert.False(t, EqualDelta(5, 6, 0.0))
-	})
-	t.Run("narrow integers do not overflow", func(t *testing.T) {
-		assert.False(t, EqualDelta[int8](127, -128, 1))
-		assert.True(t, EqualDelta[int8](127, -128, 255))
-	})
-}
-
-func TestEqualRelative(t *testing.T) {
-	t.Run("int is exact", func(t *testing.T) {
-		assert.True(t, EqualRelative(1, 1))
-		assert.False(t, EqualRelative(1, 2))
-	})
-	t.Run("near zero it matches Equal", func(t *testing.T) {
-		assert.True(t, EqualRelative(1.0000005, 1.0))
-		assert.False(t, EqualRelative(1.0000015, 1.0))
-		assert.True(t, EqualRelative(0.0, 0.0))
-	})
-	t.Run("scales with magnitude", func(t *testing.T) {
-		assert.True(t, EqualRelative(1e6, 1e6+0.5))
-		assert.False(t, EqualRelative(1e6, 1e6+2.0))
-		assert.True(t, EqualRelative[float32](1e4, 1e4+0.05))
-	})
-	t.Run("a full turn in float32 returns to its start", func(t *testing.T) {
-		v := Vec[float32](1000, 0)
-		for range 8 {
-			v = v.Rotate(Pi / 4)
-		}
-
-		// one ulp out at magnitude 1e3, which Delta32 still covers
-		assert.True(t, EqualRelative(v.X, 1000))
-		assert.True(t, Equal(v.X, 1000))
-	})
-}
-
 func TestEpsilon(t *testing.T) {
 	t.Run("int compares exactly", func(t *testing.T) {
 		AssertNumber(t, Epsilon[int](), 0.0)
@@ -421,6 +363,85 @@ func TestEpsilonRelative(t *testing.T) {
 	t.Run("int stays exact at any magnitude", func(t *testing.T) {
 		AssertNumber(t, EpsilonRelative(5, 5), 0.0)
 		AssertNumber(t, EpsilonRelative(1000000, 0), 0.0)
+	})
+}
+
+func TestToRadians(t *testing.T) {
+	AssertNumber(t, ToRadians(0), 0.0)
+	AssertNumber(t, ToRadians(90), Pi/2)
+	AssertNumber(t, ToRadians(180), Pi)
+	AssertNumber(t, ToRadians(360), 2*Pi)
+}
+
+func TestToDegrees(t *testing.T) {
+	t.Run("converts", func(t *testing.T) {
+		AssertNumber(t, ToDegrees(0), 0.0)
+		AssertNumber(t, ToDegrees(Pi/2), 90.0)
+		AssertNumber(t, ToDegrees(Pi), 180.0)
+		AssertNumber(t, ToDegrees(2*Pi), 360.0)
+	})
+	t.Run("inverts ToRadians", func(t *testing.T) {
+		for _, degrees := range []float64{0, 30, 45, 90, 179.5, -270} {
+			AssertNumber(t, ToDegrees(ToRadians(degrees)), degrees)
+		}
+	})
+}
+
+func TestNormalizeAngle(t *testing.T) {
+	t.Run("inside the unit turn", func(t *testing.T) {
+		AssertNumber(t, NormalizeAngle(0), 0.0)
+		AssertNumber(t, NormalizeAngle(Pi), Pi)
+	})
+	t.Run("wraps above a full turn", func(t *testing.T) {
+		AssertNumber(t, NormalizeAngle(3*Pi), Pi)
+		AssertNumber(t, NormalizeAngle(2*Pi), 0.0)
+	})
+	t.Run("negative angles come back positive", func(t *testing.T) {
+		AssertNumber(t, NormalizeAngle(-Pi/2), 3*Pi/2)
+	})
+	t.Run("a tiny negative angle stays below a full turn", func(t *testing.T) {
+		assert.Less(t, NormalizeAngle(-1e-17), 2*Pi)
+		assert.GreaterOrEqual(t, NormalizeAngle(-1e-17), 0.0)
+	})
+	t.Run("NaN and Inf have no normal form", func(t *testing.T) {
+		assert.True(t, math.IsNaN(NormalizeAngle(math.NaN())))
+		assert.True(t, math.IsNaN(NormalizeAngle(math.Inf(1))))
+		assert.True(t, math.IsNaN(NormalizeAngle(math.Inf(-1))))
+	})
+}
+
+func TestAngleDistance(t *testing.T) {
+	t.Run("same angle", func(t *testing.T) {
+		AssertNumber(t, AngleDistance(1, 1), 0.0)
+		AssertNumber(t, AngleDistance(1, 1+2*Pi), 0.0)
+	})
+	t.Run("shortest way around", func(t *testing.T) {
+		AssertNumber(t, AngleDistance(0, Pi/2), Pi/2)
+		AssertNumber(t, AngleDistance(Pi/2, 0), Pi/2)
+		AssertNumber(t, AngleDistance(0, 3*Pi/2), Pi/2)
+		AssertNumber(t, AngleDistance(0, Pi), Pi)
+	})
+	t.Run("across the seam", func(t *testing.T) {
+		AssertNumber(t, AngleDistance(-0.1, 0.1), 0.2)
+		AssertNumber(t, AngleDistance(2*Pi-0.1, 0.1), 0.2)
+	})
+}
+
+func TestEqualAngle(t *testing.T) {
+	t.Run("same angle", func(t *testing.T) {
+		assert.True(t, EqualAngle(0.5, 0.5))
+		assert.True(t, EqualAngle(0.5, 0.5+2*Pi))
+		assert.True(t, EqualAngle(-Pi/2, 3*Pi/2))
+	})
+	t.Run("across the seam", func(t *testing.T) {
+		assert.True(t, EqualAngle(0, -1e-9))
+		assert.True(t, EqualAngle(0, 2*Pi-1e-9))
+		assert.True(t, EqualAngle(-1e-9, 1e-9))
+	})
+	t.Run("different angle", func(t *testing.T) {
+		assert.False(t, EqualAngle(0, 1e-3))
+		assert.False(t, EqualAngle(0, Pi))
+		assert.False(t, EqualAngle(0, math.NaN()))
 	})
 }
 
@@ -487,23 +508,3 @@ func TestParse(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
-
-func BenchmarkEqual_Float64(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		sinkBool = Equal(float64(i), float64(i))
-	}
-}
-
-func BenchmarkEqual_Float32(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		sinkBool = Equal(float32(i), float32(i))
-	}
-}
-
-func BenchmarkEqualRelative_Float64(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		sinkBool = EqualRelative(float64(i), float64(i))
-	}
-}
-
-var sinkBool bool

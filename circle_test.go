@@ -316,6 +316,14 @@ func TestCircle_Intersection(t *testing.T) {
 	})
 }
 
+func BenchmarkCircle_Intersection(b *testing.B) {
+	circle, other := Circ(Pt(0.0, 0.0), 5.0), Circ(Pt(6.0, 0.0), 5.0)
+
+	for b.Loop() {
+		_ = circle.Intersection(other)
+	}
+}
+
 func TestCircle_IntersectsRectangle(t *testing.T) {
 	t.Run("mirrors Rectangle.IntersectsCircle", func(t *testing.T) {
 		for _, c := range circleFixtures {
