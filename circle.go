@@ -2,6 +2,7 @@ package geom
 
 import (
 	"fmt"
+	"math"
 )
 
 // Circle is a 2D circle.
@@ -104,6 +105,38 @@ func (c Circle[T]) Intersects(circle Circle[T]) bool {
 	threshold := float64(c.Radius) + float64(circle.Radius)
 
 	return LessOrEqualDelta(distance, threshold, Epsilon[T]())
+}
+
+// Intersection returns the points where the circles cross: two for overlapping circles, one
+// for tangent ones, within Epsilon of T like Intersects, and none for circles apart, nested, or
+// with a negative radius. Coincident circles share every point and also return none. The
+// second point is the mirror of the first across the line of centers. For integer T the points
+// are rounded like every other result stored into T.
+func (c Circle[T]) Intersection(circle Circle[T]) []Point[T] {
+	if c.Radius < 0 || circle.Radius < 0 {
+		return nil
+	}
+
+	direction := circle.Center.Subtract(c.Center).Float()
+	distance := direction.Length()
+	r1, r2 := float64(c.Radius), float64(circle.Radius)
+	epsilon := Epsilon[T]()
+
+	if distance == 0 || !LessOrEqualDelta(distance, r1+r2, epsilon) || !LessOrEqualDelta(math.Abs(r1-r2), distance, epsilon) {
+		return nil
+	}
+
+	along := (r1*r1 - r2*r2 + distance*distance) / (2 * distance)
+	middle := c.Center.Float().Add(direction.Resize(along))
+
+	if EqualDelta(distance, r1+r2, epsilon) || EqualDelta(distance, math.Abs(r1-r2), epsilon) {
+		return []Point[T]{{Cast[T](middle.X), Cast[T](middle.Y)}}
+	}
+
+	normal := direction.Normal().Resize(math.Sqrt(max(r1*r1-along*along, 0)))
+	first, second := middle.Add(normal), middle.Add(normal.Negate())
+
+	return []Point[T]{{Cast[T](first.X), Cast[T](first.Y)}, {Cast[T](second.X), Cast[T](second.Y)}}
 }
 
 // IntersectsRectangle reports whether the circle and the rectangle overlap, as

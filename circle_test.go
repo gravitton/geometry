@@ -3,6 +3,7 @@ package geom
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"testing"
 
 	"github.com/gravitton/assert"
@@ -241,6 +242,58 @@ func TestCircle_Intersects(t *testing.T) {
 		for _, a := range circleFixtures {
 			for _, b := range circleFixtures {
 				assert.Equal(t, a.Intersects(b), b.Intersects(a), fmt.Sprintf("%s → %s: ", a, b))
+			}
+		}
+	})
+}
+
+func TestCircle_Intersection(t *testing.T) {
+	circle := Circ(Pt(0.0, 0.0), 5.0)
+
+	t.Run("overlapping gives two points mirrored across the centers", func(t *testing.T) {
+		AssertVertices(t, circle.Intersection(Circ(Pt(6.0, 0.0), 5.0)), []Point[float64]{Pt(3.0, 4.0), Pt(3.0, -4.0)})
+		AssertVertices(t, circle.Intersection(Circ(Pt(0.0, 6.0), 5.0)), []Point[float64]{Pt(-4.0, 3.0), Pt(4.0, 3.0)})
+	})
+	t.Run("a larger circle behind the first", func(t *testing.T) {
+		height := math.Sqrt(1 - 0.125*0.125)
+
+		AssertVertices(t, Circ(Pt(0.0, 0.0), 1.0).Intersection(Circ(Pt(1.0, 0.0), 1.5)), []Point[float64]{Pt(-0.125, height), Pt(-0.125, -height)})
+	})
+	t.Run("tangent from outside gives one point", func(t *testing.T) {
+		AssertVertices(t, circle.Intersection(Circ(Pt(8.0, 0.0), 3.0)), []Point[float64]{Pt(5.0, 0.0)})
+	})
+	t.Run("tangent from inside gives one point", func(t *testing.T) {
+		AssertVertices(t, circle.Intersection(Circ(Pt(2.0, 0.0), 3.0)), []Point[float64]{Pt(5.0, 0.0)})
+	})
+	t.Run("apart, nested and concentric give none", func(t *testing.T) {
+		assert.Nil(t, circle.Intersection(Circ(Pt(20.0, 0.0), 5.0)))
+		assert.Nil(t, circle.Intersection(Circ(Pt(1.0, 0.0), 1.0)))
+		assert.Nil(t, circle.Intersection(Circ(Pt(0.0, 0.0), 3.0)))
+		assert.Nil(t, circle.Intersection(circle))
+	})
+	t.Run("a negative radius gives none", func(t *testing.T) {
+		assert.Nil(t, circle.Intersection(Circ(Pt(6.0, 0.0), -5.0)))
+	})
+	t.Run("float is tolerant at a tangent", func(t *testing.T) {
+		assert.Equal(t, len(circle.Intersection(Circ(Pt(8.0+Delta/2, 0.0), 3.0))), 1)
+		assert.Nil(t, circle.Intersection(Circ(Pt(8.0+2*Delta, 0.0), 3.0)))
+	})
+	t.Run("int rounds the points", func(t *testing.T) {
+		AssertVertices(t, Circ(Pt(0, 0), 5).Intersection(Circ(Pt(6, 0), 5)), []Point[int]{Pt(3, 4), Pt(3, -4)})
+		AssertVertices(t, Circ(Pt(0, 0), 2).Intersection(Circ(Pt(3, 0), 2)), []Point[int]{Pt(2, 1), Pt(2, -1)})
+	})
+	t.Run("points lie on both circles and mirror Intersects", func(t *testing.T) {
+		for _, a := range circleFixtures {
+			for _, b := range circleFixtures {
+				points := a.Intersection(b)
+
+				if len(points) > 0 {
+					assert.True(t, a.Intersects(b), fmt.Sprintf("%s → %s: ", a, b))
+				}
+				for _, p := range points {
+					AssertNumber(t, a.Center.DistanceTo(p), float64(a.Radius), fmt.Sprintf("%s → %s on a: ", a, b))
+					AssertNumber(t, b.Center.DistanceTo(p), float64(b.Radius), fmt.Sprintf("%s → %s on b: ", a, b))
+				}
 			}
 		}
 	})
