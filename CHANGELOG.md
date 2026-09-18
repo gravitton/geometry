@@ -33,6 +33,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `Line.Rotate(angle)` and `Polygon.Rotate(angle)` – rotation about the midpoint and the centroid in the sense of `Vector.Rotate`; for an integer `T` the pivot is rounded first, so a half turn of an odd span is not exactly `Reverse`
 - `Circle.Intersection(circle)` – the points where two circles cross: two for overlapping, one for tangent within `Epsilon[T]()`, none for apart, nested, concentric, coincident or a negative radius
 - `Size.Fit(size)` and `Fill(size)` – uniform scaling to the largest size inside or the smallest around the given one, keeping the aspect ratio; a zero extent has no ratio and gives the zero size
+- `Point.RotateAround(pivot, angle)` – rotation about a pivot in the sense of `Vector.Rotate`; `Line.Rotate` and `Polygon.Rotate` are built on it
+- `Rectangle.AlignTo(direction, point)` – moves the rectangle so its `Anchor` in that direction lands on the point, the inverse of `Anchor`; `DirectionNone` aligns the center like `MoveTo`
+- `Matrix.Translation()`, `Angle()` and `Scaling()` – read a transform back: the `C`/`F` components, the angle of the transformed X axis, and the signed scale factors along the rotated axes, negative in Y for a reflection; a sheared matrix gives the nearest rotation and scale
 - `Vector.Project(vector)`, `Reject(vector)`, `Reflect(normal)` and `AngleBetween(vector)` – the component along and perpendicular to a vector, the mirror across a surface with a normal of any length, and the unsigned angle in `[0, π]`; the zero vector projects to zero, reflects nothing and is at angle 0 to everything
 - `Polygon.Bounds` – the axis-aligned bounding rectangle of the vertices, the zero rectangle for an empty polygon; every shape now has `Bounds()`
 - `Matrix.IsInvertible` – reports whether the determinant is non-zero, the check to run before `Inverse`
@@ -85,6 +88,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Internal: `Point.Transform` and `Vector.Transform` convert the matrix with `Matrix.Float` once; `ParseSize` splits with `strings.Cut`; `Triangle`, `Square` and `Hexagon` delegate to `RegularPolygonWithOrientation`; `Axis` methods return from each `switch` case directly
 
 ### Fixed
+- `Polygon.IntersectsCircle` reports false for a circle with a negative radius whose center lies inside the polygon, as `Rectangle.IntersectsCircle` and `Line.IntersectsCircle` already did
 - `Polygon.UnmarshalJSON` decodes into a fresh slice instead of the one the polygon holds, so decoding into `Pol(shared)` no longer writes the new vertices into `shared`
 - `String` prints a float that rounds to zero as `0.00` without a sign; `String(-0.004)` gave `-0.00` while a negative zero already printed unsigned
 - `LessOrEqual` compares an integer `T` in `T` instead of through `float64`, so `Rectangle[int64].Contains` and `Intersects` stay exact beyond 2^53, where `LessOrEqual[int64](1<<53+1, 1<<53)` was true

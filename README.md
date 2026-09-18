@@ -56,6 +56,7 @@ v.Project(geom.Vec(1, 0))       // Vector{3, 0}, the component along X
 v.Reflect(geom.Vec(0, 1))       // Vector{3, -4}, bounced off a horizontal wall
 v.AngleBetween(geom.Vec(1, 0))  // 0.93, unsigned
 
+p.RotateAround(geom.Pt(0, 0), math.Pi/2)     // Point{-2, 1}
 p.Lerp(geom.Pt(9, 10), 0.25)                 // Point{3, 4}
 p.ManhattanDistanceTo(geom.Pt(4, 5))         // 6, for grid pathfinding
 geom.Pt(0.0, 0.0).AngleTo(geom.Pt(1.0, 1.0)) // π/4
@@ -83,6 +84,7 @@ r.Contains(geom.Pt(55, 52))                 // true
 r.Inset(geom.PadU(2)).Anchor(geom.TopRight) // Point{58, 47}
 r.Outset(geom.PadXY(1, 2))                  // Rectangle (38,44)-(62,56) by MinMaxString
 r.Clamp(geom.Pt(80, 0))                     // Point{60, 45}, nearest point inside
+r.AlignTo(geom.TopLeft, geom.Pt(0, 0))      // Rectangle (0,0)-(20,10) by MinMaxString
 
 b := geom.RectangleFromMinMax(geom.Pt(0, 0), geom.Pt(8, 6))
 b.Scale(2)     // Rectangle (-4,-3)-(12,9) by MinMaxString, scaled around the center
@@ -147,6 +149,9 @@ Matrix transforms:
 m := geom.IdentityMatrix[float64]().Rotate(math.Pi / 4).Scale(2, 2)
 
 geom.Pt(1.0, 0.0).Transform(m) // Point{1.41, 1.41}
+m.Angle()                      // π/4, read back from the matrix
+m.Scaling()                    // Vector{2, 2}
+m.Translation()                // Vector{0, 0}
 ```
 
 Interop with `image`:
@@ -260,8 +265,10 @@ extent add `Bounds()`, `Contains(point)`, `DistanceTo(point)` and an `Intersects
 
 - **`Rectangle.Angle`** – an oriented rectangle. `Contains`, `Clamp`, `Intersects`, `Intersection` and `Union` assume
   axis alignment through `Min` and `Max` today; the edge-based tests already work for any orientation.
-- **`Polygon.IsConvex`, `ConvexHull` and winding** – convexity tests, the hull of a point set, and reporting or
-  reversing the vertex order.
+- **`Polygon.Winding`, `IsConvex` and `ConvexHull`** – the vertex order as a sign, since `Center` already computes
+  the signed area that `Area` discards; a convexity test built on it; and the hull of a point set.
+- **`Encloses`** – shape-in-shape containment such as `Rectangle.Encloses(rectangle)` and `Circle.Encloses(circle)`
+  for culling, distinct from `Contains`, which takes a point.
 - **`Ray`** – a half-line with origin and direction, for casts against every shape.
 - **`Ellipse`** – `RegularPolygon` already takes semi-axes; the continuous shape has no type.
 
