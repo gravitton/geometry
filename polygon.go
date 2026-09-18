@@ -67,6 +67,17 @@ func (p Polygon[T]) ScaleXY(factorX, factorY float64) Polygon[T] {
 	})}
 }
 
+// Rotate creates a new Polygon rotated by the given angle (in radians) about its centroid, in
+// the same sense as Vector.Rotate. For integer T the centroid and every rotated vertex are
+// rounded; only multiples of 90° keep the shape exactly.
+func (p Polygon[T]) Rotate(angle float64) Polygon[T] {
+	pivot := p.Center()
+
+	return Polygon[T]{xslices.Map(p.Vertices, func(point Point[T]) Point[T] {
+		return pivot.Add(point.Subtract(pivot).Rotate(angle))
+	})}
+}
+
 // Center returns the polygon centroid: the center of the enclosed area, so a vertex added in
 // the middle of an edge does not move it. A polygon that encloses no area, with fewer than
 // three vertices or all of them collinear, has no such center and falls back to the average of

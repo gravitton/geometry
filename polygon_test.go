@@ -95,6 +95,33 @@ func TestPolygon_MoveTo(t *testing.T) {
 	})
 }
 
+func TestPolygon_Rotate(t *testing.T) {
+	t.Run("quarter turn about the centroid", func(t *testing.T) {
+		AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 2), Pt(0, 2)}).Rotate(Pi/2), Pol([]Point[int]{
+			Pt(3, -1),
+			Pt(3, 3),
+			Pt(1, 3),
+			Pt(1, -1),
+		}))
+	})
+	t.Run("float keeps the centroid, area and perimeter", func(t *testing.T) {
+		p := Pol(triangleVertices())
+		rotated := p.Rotate(0.7)
+
+		AssertPoint(t, rotated.Center(), p.Center())
+		AssertNumber(t, rotated.Area(), p.Area())
+		AssertNumber(t, rotated.Perimeter(), p.Perimeter())
+	})
+	t.Run("a full turn is identity", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			AssertPolygon(t, p.Rotate(2*Pi), p, fmt.Sprintf("%s: ", p))
+		}
+	})
+	t.Run("nil stays nil", func(t *testing.T) {
+		assert.True(t, Pol[int](nil).Rotate(1).IsZero())
+	})
+}
+
 func TestPolygon_Scale(t *testing.T) {
 	t.Run("uniform factor", func(t *testing.T) {
 		AssertPolygon(t, Pol(squareVertices()).Scale(2), Pol([]Point[int]{
