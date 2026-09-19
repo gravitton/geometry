@@ -41,9 +41,10 @@ func (l Line[T]) Direction() Direction {
 	return l.Vector().Direction()
 }
 
-// MinMax returns the minimum and maximum corner of the segment, the pair Rectangle.MinMax
-// returns for its Bounds, exact for an integer T where Bounds places a center.
-func (l Line[T]) MinMax() (Point[T], Point[T]) {
+// minMax returns the minimum and maximum corner of the segment, the corners of Bounds, exact
+// for an integer T where Bounds places a center: the pair the intersection tests reject shapes
+// by before examining any edge, without placing a rectangle.
+func (l Line[T]) minMax() (Point[T], Point[T]) {
 	return Point[T]{min(l.Start.X, l.End.X), min(l.Start.Y, l.End.Y)}, Point[T]{max(l.Start.X, l.End.X), max(l.Start.Y, l.End.Y)}
 }
 
@@ -59,7 +60,7 @@ func (l Line[T]) Midpoint() Point[T] {
 
 // Bounds returns the axis-aligned bounding rectangle.
 func (l Line[T]) Bounds() Rectangle[T] {
-	return RectangleFromMinMax(l.MinMax())
+	return RectangleFromMinMax(l.minMax())
 }
 
 // wedge returns Start × End in float64, the term the shoelace formula sums per edge. Cross is
@@ -314,7 +315,7 @@ func (l Line[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
 func (l Line[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 	a, b := rectangle.MinMax()
 
-	if c, d := l.MinMax(); !overlaps(a, b, c, d) {
+	if c, d := l.minMax(); !overlaps(a, b, c, d) {
 		return false
 	}
 

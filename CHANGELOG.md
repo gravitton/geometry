@@ -7,26 +7,26 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased](https://github.com/gravitton/geometry/compare/v1.13.0...main)
+
+The main change is the oriented rectangle: `Rectangle` gains an `Angle`, every rectangle method answers for a turned one, and rectangle against rectangle is decided on the edges like every other pair, so no boundary in the package is judged on a coordinate any more.
+
 ### Added
-- `Orientation.String`, `MarshalText` and `UnmarshalText` – an orientation is stored as `"FlatTop"` in JSON and as a map key rather than as its number, like `Direction` and `Axis`
-- `ParseOrientation(name)` – the inverse of `String`, with an error for an unknown name; `"None"` parses to `OrientationNone`
-- `Orientations()` – both orientations in order, as a fresh array
-- `OrientationNone` – the absence of an orientation, and `Orientation.IsNone`, which reports every value outside the two constants like `Axis.IsNone`
+- `Rectangle.Angle` – the box of `Size` about `Center`, turned by the angle in the sense of `Vector.Rotate`. `Rect` and the corner constructors leave it zero; `Rotate` turns the rectangle about its center, normalized to `[0, 2π)`; `Lerp` turns along the shorter arc; `Equal`, `IsZero` and `AssertRectangle` compare it modulo a full turn. It marshals as `a` with `omitzero`, so the JSON and `String` of a rectangle that is not rotated are unchanged, and a rotated one prints as `Rect((x,y);WxH;a)`
+- `Rectangle.Rotate(angle)` and `IsAligned` – the turn, and the exact test for a rectangle with no turn, which has exact corners and coincides with its `Bounds`
+- `Rectangle.Canonical` and `RegularPolygon.Canonical` snap an angle within `Delta` of zero or of a full turn to exactly zero, the residue a chain of turns can leave; `Rotate` and `Lerp` never snap, since a turn that small still moves a far corner of a large shape by more than `Epsilon`
+- `Orientation.String`, `MarshalText`, `UnmarshalText`, `ParseOrientation`, `Orientations` and `OrientationNone` with `IsNone`, like `Direction` and `Axis`
 
 ### Changed
-- Every test against a radius is one squared-distance comparison, `lessOrEqualSquared` in `math.go`, with `greaterOrEqualSquared` and `equalSquared` for the boundary band: `Circle.Intersects` and `Intersection` judge the sum and difference of the radii by it, so they agree with `Contains` and every `IntersectsCircle` to the last bit, and the snap `Line.DistanceSquaredTo` and `Polygon.walk` apply is the same comparison at radius zero
-- `Rectangle.Contains`, `DistanceTo`, `DistanceSquaredTo` and `IntersectsCircle` are built on a walk of the edges like `Polygon`, so a point on an edge is contained exactly where `Line.Contains` holds and `IntersectionRectangle` answers exactly where `IntersectsRectangle` does; `Line.IntersectsRectangle` and `Polygon.IntersectsRectangle` test the rectangle the same way
-- `Polygon.IntersectsCircle` tests the radius against the same walk `Contains` and `DistanceSquaredTo` measure
-- `Vector.LessOrEqual` and `IsNormalized` judge the length on its square by the same comparison, so no method in the package applies a linear tolerance to a distance
-- `Line.IntersectionCircle` never returns more than two points: an endpoint on the boundary replaces the crossing nearest to it rather than being added beside it, and a tangent chord gives way to an endpoint on the boundary
-- `Circle.Intersection` places a tangent point halfway between the two boundaries where they meet, within half the tolerance of both, where the exact crossing formula doubled the admitted perturbation
-- `Size.Grow`, `GrowXY`, `Shrink` and `ShrinkXY` no longer clamp at zero: a size is signed, so a displacement shrunk past zero measures the other way. `Rectangle.Grow`, `GrowXY`, `Shrink` and `ShrinkXY` clamp their own extent at zero as before (**breaking**)
-- `Line.MinMax` and `Polygon.MinMax` and `Edges` moved before `Vertices` and `Center`, in the method order every shape follows
-- `Rectangle.Rectangle` builds the `image.Rectangle` from `Int`, so it spans exactly `Size.Int` pixels and a sprite keeps its width as it moves through sub-pixel positions, where rounding the two corners on their own had the span flicker by a pixel (**breaking**)
-- `Line.MoveTo` places the midpoint on the point, the center every other shape places with `MoveTo` and the pivot `Line.Scale`, `Resize` and `Rotate` turn about, where it placed `Start` (**breaking**)
-- `Line.IntersectionCircle` counts points that compare `Equal` once, as `IntersectionRectangle` and `IntersectionPolygon` do, where a segment shorter than the tolerance with both ends on the boundary returned its two endpoints
-- `Polygon.String` separates the vertices with `;`, the separator every other shape prints between its fields: `Pol((0,0);(2,0);(2,2))` (**breaking**)
-
+- A turned rectangle keeps the names of its corners, edges, anchors and `Inset` paddings from the frame before the turn; `Min`, `Max`, `MinMax` and `Bounds` become the axis-aligned extent of its vertices, and `Clamp` snaps to the nearest turned edge. `Contains`, `DistanceTo` and `IntersectsCircle` walk the edges as `Polygon` does, so a rotated integer rectangle contains exactly what the polygon of its rounded corners contains, and `DistanceSquaredTo` returns `float64` like `Line.DistanceSquaredTo`, since the nearest point is no longer a lattice point (**breaking**)
+- `Rectangle.Intersects` is decided on the edges, a corner of one within the other or an edge meeting an edge, with the extent test as a prefilter and an exact overlap of two aligned extents decided at once. Rectangles of the same angle intersect and unite in a rectangle of that angle, found in their shared frame; rectangles of different angles have no rectangle in common, so `Intersection` returns false for them, as `Line.Intersection` does for parallel segments, and `Union` gives the box around both `Bounds` (**breaking**)
+- Every test against a radius or a segment is one squared-distance comparison.
+- `Line.IntersectionCircle` never returns more than two points and counts points that compare `Equal` once; `Circle.Intersection` places a tangent point halfway between the two boundaries, within half the tolerance of both
+- `Line.MoveTo` places the midpoint on the point, the center every other shape places with `MoveTo` and the pivot its `Scale`, `Resize` and `Rotate` turn about (**breaking**)
+- `Rectangle.Rectangle` builds the `image.Rectangle` from `Int`, so it spans exactly `Size.Int` pixels and a sprite keeps its width at sub-pixel positions (**breaking**)
+- `Line.MinMax` and `Polygon.MinMax` are unexported: they are the corners of `Bounds`, so `Bounds().MinMax()` gives the same pair at the same cost; `Rectangle` alone keeps `Min`, `Max` and `MinMax` public (**breaking**)
+- `Size.Grow`, `GrowXY`, `Shrink` and `ShrinkXY` no longer clamp at zero, since a size is signed; `Rectangle.Grow` and `Shrink` clamp their own extent as before (**breaking**)
+- `Polygon.String` separates the vertices with `;` like every other shape: `Pol((0,0);(2,0);(2,2))`; `RegularPolygon` omits a zero angle from its JSON and `String`, as `Rectangle` does: `RegPol((1,2);2x2;4)` (**breaking**)
+- `Polygon.Edges` moved before `Vertices` and `Center`, in the method order every shape follows
 
 
 ## [v1.13.0 (2026-09-18)](https://github.com/gravitton/geometry/compare/v1.12.0...v1.13.0)

@@ -47,7 +47,7 @@ func (c Circle[T]) Diameter() T {
 func (c Circle[T]) Bounds() Rectangle[T] {
 	side := c.Diameter()
 
-	return Rectangle[T]{c.Center, Size[T]{side, side}}
+	return Rectangle[T]{c.Center, Size[T]{side, side}, 0}
 }
 
 // Anchor returns the point on the circle boundary in the given direction from its center,

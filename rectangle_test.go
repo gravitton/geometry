@@ -57,6 +57,11 @@ func TestRectangle_Constructor(t *testing.T) {
 		AssertRectangle(t, RectangleFromMinMax(Pt(4, 2), Pt(0, 0)), Rect(Pt(2, 1), Sz(4, 2)))
 		AssertRectangle(t, RectangleFromMinMax(Pt(4, 0), Pt(0, 2)), Rect(Pt(2, 1), Sz(4, 2)))
 	})
+	t.Run("every constructor builds a rectangle that is not rotated", func(t *testing.T) {
+		assert.Equal(t, Rect(Pt(2, 1), Sz(4, 2)).Angle, 0.0)
+		assert.Equal(t, RectangleFromMinMax(Pt(0, 0), Pt(4, 2)).Angle, 0.0)
+		assert.Equal(t, Rectangle[int]{Pt(2, 1), Sz(4, 2), Pi}.Angle, Pi)
+	})
 }
 
 func TestRectangle_Width(t *testing.T) {
@@ -86,6 +91,10 @@ func TestRectangle_Min(t *testing.T) {
 		r := Rect(Pt(1, 2), Sz(2, 3))
 		AssertPoint(t, r.Min(), r.TopLeft())
 	})
+	t.Run("rotated is the minimum of the vertices", func(t *testing.T) {
+		AssertPoint(t, Rect(Pt(0, 0), Sz(4, 2)).Rotate(Pi/2).Min(), Pt(-1, -2))
+		AssertPoint(t, Rect(Pt(1.0, 2.0), Sz(2.0, 4.0)).Rotate(Pi/2).Min(), Pt(-1.0, 1.0))
+	})
 }
 
 func TestRectangle_Max(t *testing.T) {
@@ -96,6 +105,10 @@ func TestRectangle_Max(t *testing.T) {
 	t.Run("agrees with the corner accessor", func(t *testing.T) {
 		r := Rect(Pt(1, 2), Sz(2, 3))
 		AssertPoint(t, r.Max(), r.BottomRight())
+	})
+	t.Run("rotated is the maximum of the vertices", func(t *testing.T) {
+		AssertPoint(t, Rect(Pt(0, 0), Sz(4, 2)).Rotate(Pi/2).Max(), Pt(1, 2))
+		AssertPoint(t, Rect(Pt(1.0, 2.0), Sz(2.0, 4.0)).Rotate(Pi/2).Max(), Pt(3.0, 3.0))
 	})
 }
 
@@ -131,6 +144,22 @@ func TestRectangle_Corners(t *testing.T) {
 		AssertPoint(t, f.BottomRight(), Pt(2.5, 4.25))
 		AssertPoint(t, f.BottomLeft(), Pt(0.5, 4.25))
 	})
+	t.Run("rotated corners keep their names and turn about the center", func(t *testing.T) {
+		turned := Rect(Pt(1.0, 2.0), Sz(2.0, 4.0)).Rotate(Pi / 2)
+
+		AssertPoint(t, turned.TopLeft(), Pt(3.0, 1.0))
+		AssertPoint(t, turned.TopRight(), Pt(3.0, 3.0))
+		AssertPoint(t, turned.BottomRight(), Pt(-1.0, 3.0))
+		AssertPoint(t, turned.BottomLeft(), Pt(-1.0, 1.0))
+	})
+	t.Run("rotated integer corners are rounded onto the lattice", func(t *testing.T) {
+		turned := Rect(Pt(0, 0), Sz(4, 2)).Rotate(Pi / 2)
+
+		AssertPoint(t, turned.TopLeft(), Pt(1, -2))
+		AssertPoint(t, turned.TopRight(), Pt(1, 2))
+		AssertPoint(t, turned.BottomRight(), Pt(-1, 2))
+		AssertPoint(t, turned.BottomLeft(), Pt(-1, -2))
+	})
 }
 
 func TestRectangle_EdgeMidpoints(t *testing.T) {
@@ -155,6 +184,14 @@ func TestRectangle_EdgeMidpoints(t *testing.T) {
 		AssertPoint(t, f.Right(), Pt(2.5, 2.75))
 		AssertPoint(t, f.Bottom(), Pt(1.5, 4.25))
 		AssertPoint(t, f.Left(), Pt(0.5, 2.75))
+	})
+	t.Run("rotated midpoints keep their names and turn about the center", func(t *testing.T) {
+		turned := Rect(Pt(0, 0), Sz(4, 2)).Rotate(Pi / 2)
+
+		AssertPoint(t, turned.Top(), Pt(1, 0))
+		AssertPoint(t, turned.Right(), Pt(0, 2))
+		AssertPoint(t, turned.Bottom(), Pt(-1, 0))
+		AssertPoint(t, turned.Left(), Pt(0, -2))
 	})
 }
 
@@ -189,6 +226,13 @@ func TestRectangle_Anchor(t *testing.T) {
 		AssertPoint(t, r.Anchor(Bottom), r.Bottom())
 		AssertPoint(t, r.Anchor(DirectionLeft), r.Left())
 		AssertPoint(t, r.Anchor(DirectionRight), r.Right())
+	})
+	t.Run("rotated anchors are named before the turn", func(t *testing.T) {
+		turned := Rect(Pt(0, 0), Sz(4, 2)).Rotate(Pi / 2)
+
+		AssertPoint(t, turned.Anchor(Top), Pt(1, 0))
+		AssertPoint(t, turned.Anchor(TopLeft), Pt(1, -2))
+		AssertPoint(t, turned.Anchor(DirectionNone), Pt(0, 0))
 	})
 	t.Run("odd integer extents split like min and max", func(t *testing.T) {
 		odd := RectangleFromMin(Pt(0, 0), Sz(3, 3))
@@ -247,6 +291,12 @@ func TestRectangle_Edges(t *testing.T) {
 			AssertPoint(t, edge.Start, edges[(i+3)%4].End)
 		}
 	})
+	t.Run("rotated edges join the turned corners", func(t *testing.T) {
+		turned := Rect(Pt(0, 0), Sz(4, 2)).Rotate(Pi / 2)
+
+		AssertLine(t, turned.TopEdge(), Ln(Pt(1, -2), Pt(1, 2)))
+		AssertLine(t, turned.Edges()[2], Ln(Pt(-1, 2), Pt(-1, -2)))
+	})
 }
 
 func TestRectangle_Vertices(t *testing.T) {
@@ -266,6 +316,11 @@ func TestRectangle_Vertices(t *testing.T) {
 		for i, edge := range r.Edges() {
 			AssertPoint(t, edge.Start, vertices[i])
 		}
+	})
+	t.Run("rotated vertices are the corners turned about the center", func(t *testing.T) {
+		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
+
+		AssertVertices(t, diamond.Vertices(), []Point[float64]{{0, -Sqrt2}, {Sqrt2, 0}, {0, Sqrt2}, {-Sqrt2, 0}})
 	})
 }
 
@@ -302,6 +357,11 @@ func TestRectangle_Bounds(t *testing.T) {
 	})
 	t.Run("float", func(t *testing.T) {
 		AssertRectangle(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Bounds(), Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)))
+	})
+	t.Run("rotated is the box around the vertices, not rotated", func(t *testing.T) {
+		AssertRectangle(t, Rect(Pt(0, 0), Sz(4, 2)).Rotate(Pi/2).Bounds(), Rect(Pt(0, 0), Sz(2, 4)))
+		AssertRectangle(t, Rect(Pt(1.0, 2.0), Sz(2.0, 4.0)).Rotate(Pi/2).Bounds(), Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)))
+		AssertRectangle(t, Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi/4).Bounds(), Rect(Pt(0.0, 0.0), SzU(2*Sqrt2)))
 	})
 }
 
@@ -370,11 +430,11 @@ func TestRectangle_Resize(t *testing.T) {
 
 func TestRectangle_Canonical(t *testing.T) {
 	t.Run("takes a literal negative size absolute and keeps the center", func(t *testing.T) {
-		AssertRectangle(t, Rectangle[int]{Pt(1, 2), Sz(-8, 9)}.Canonical(), Rect(Pt(1, 2), Sz(8, 9)))
-		AssertRectangle(t, Rectangle[float64]{Pt(0.6, -0.25), Sz(-1.2, -3.6)}.Canonical(), Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)))
+		AssertRectangle(t, Rectangle[int]{Pt(1, 2), Sz(-8, 9), 0}.Canonical(), Rect(Pt(1, 2), Sz(8, 9)))
+		AssertRectangle(t, Rectangle[float64]{Pt(0.6, -0.25), Sz(-1.2, -3.6), 0}.Canonical(), Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)))
 	})
 	t.Run("is the rectangle Rect builds", func(t *testing.T) {
-		r := Rectangle[int]{Pt(1, 2), Sz(-8, 9)}
+		r := Rectangle[int]{Pt(1, 2), Sz(-8, 9), 0}
 
 		AssertRectangle(t, r.Canonical(), Rect(r.Center, r.Size))
 		assert.True(t, r.Canonical().Contains(r.Canonical().Min()))
@@ -384,6 +444,20 @@ func TestRectangle_Canonical(t *testing.T) {
 
 		assert.Nil(t, json.Unmarshal([]byte(`{"x":1,"y":2,"w":-8,"h":9}`), &r))
 		AssertRectangle(t, r.Canonical(), Rect(Pt(1, 2), Sz(8, 9)))
+	})
+	t.Run("normalizes the angle", func(t *testing.T) {
+		r := Rectangle[float64]{Pt(1.0, 2.0), Sz(2.0, 3.0), 5 * Pi}.Canonical()
+
+		AssertRectangle(t, r, Rect(Pt(1.0, 2.0), Sz(2.0, 3.0)).Rotate(Pi))
+		assert.Equal(t, r.Angle, Pi)
+	})
+	t.Run("snaps a residue of turning back to exactly zero, where Rotate does not", func(t *testing.T) {
+		drifted := Rect(Pt(1, 2), Sz(2, 3)).Rotate(0.1).Rotate(0.2).Rotate(-0.3)
+
+		assert.False(t, drifted.IsAligned())
+		assert.True(t, drifted.Canonical().IsAligned())
+		assert.True(t, Rectangle[int]{Pt(1, 2), Sz(2, 3), 2*Pi - Delta/2}.Canonical().IsAligned())
+		assert.False(t, Rectangle[int]{Pt(1, 2), Sz(2, 3), 2 * Delta}.Canonical().IsAligned())
 	})
 	t.Run("a well-formed rectangle is unchanged", func(t *testing.T) {
 		for _, r := range rectFixtures {
@@ -467,6 +541,14 @@ func TestRectangle_Inset(t *testing.T) {
 		AssertPoint(t, inset.Min(), r.Min().AddXY(padding.Left, padding.Top))
 		AssertPoint(t, inset.Max(), r.Max().AddXY(-padding.Right, -padding.Bottom))
 	})
+	t.Run("rotated moves the edges in the frame before the turn", func(t *testing.T) {
+		turned := Rect(Pt(0.0, 0.0), Sz(10.0, 10.0)).Rotate(Pi / 2)
+		inset := turned.Inset(Pad(0.0, 0.0, 0.0, 4.0))
+
+		AssertRectangle(t, inset, Rect(Pt(0.0, 2.0), Sz(6.0, 10.0)).Rotate(Pi/2))
+		AssertPoint(t, inset.Left(), Pt(0.0, -1.0))
+		AssertPoint(t, inset.Right(), turned.Right())
+	})
 }
 
 func TestRectangle_Outset(t *testing.T) {
@@ -507,6 +589,36 @@ func TestRectangle_Lerp(t *testing.T) {
 	t.Run("int rounds like every other interpolation", func(t *testing.T) {
 		AssertRectangle(t, Rect(Pt(0, 0), Sz(0, 10)).Lerp(Rect(Pt(1, 1), Sz(1, 11)), 0.5), Rect(Pt(1, 1), Sz(1, 11)))
 	})
+	t.Run("turns the angle along the shorter arc", func(t *testing.T) {
+		AssertRectangle(t, a.Lerp(b.Rotate(Pi/2), 0.5), Rect(Pt(5.0, 10.0), Sz(15.0, 20.0)).Rotate(Pi/4))
+		AssertRectangle(t, a.Rotate(-Pi/4).Lerp(a.Rotate(Pi/4), 0.5), a)
+	})
+}
+
+func TestRectangle_Rotate(t *testing.T) {
+	r := Rect(Pt(1, 2), Sz(2, 3))
+
+	t.Run("adds to the angle about the center", func(t *testing.T) {
+		turned := r.Rotate(Pi / 2)
+
+		assert.Equal(t, turned.Angle, Pi/2)
+		AssertPoint(t, turned.Center, r.Center)
+		AssertSize(t, turned.Size, r.Size)
+		assert.Equal(t, turned.Rotate(Pi/2).Angle, Pi)
+	})
+	t.Run("normalizes into a turn", func(t *testing.T) {
+		assert.Equal(t, r.Rotate(-Pi/2).Angle, 3*Pi/2)
+		assert.Equal(t, r.Rotate(2*Pi).Angle, 0.0)
+	})
+	t.Run("a full turn is the rectangle itself, corners exact", func(t *testing.T) {
+		assert.True(t, r.Rotate(2*Pi).IsAligned())
+		AssertVertices(t, r.Rotate(2*Pi).Vertices(), r.Vertices())
+	})
+	t.Run("turning back undoes the turn", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			AssertRectangle(t, r.Rotate(Pi/3).Rotate(-Pi/3), r, r.String())
+		}
+	})
 }
 
 func TestRectangle_AlignTo(t *testing.T) {
@@ -522,6 +634,11 @@ func TestRectangle_AlignTo(t *testing.T) {
 	})
 	t.Run("none aligns the center", func(t *testing.T) {
 		AssertRectangle(t, r.AlignTo(DirectionNone, Pt(100, 50)), r.MoveTo(Pt(100, 50)))
+	})
+	t.Run("rotated lands the turned anchor on the point", func(t *testing.T) {
+		turned := Rect(Pt(0, 0), Sz(4, 2)).Rotate(Pi / 2)
+
+		AssertRectangle(t, turned.AlignTo(TopLeft, Pt(10, 10)), Rect(Pt(9, 12), Sz(4, 2)).Rotate(Pi/2))
 	})
 	t.Run("keeps the size and inverts Anchor", func(t *testing.T) {
 		for _, rect := range rectFixtures {
@@ -542,6 +659,18 @@ func TestRectangle_Clamp(t *testing.T) {
 	t.Run("outside point snaps to the edge", func(t *testing.T) {
 		AssertPoint(t, Rect(Pt(1, 2), Sz(2, 3)).Clamp(Pt(10, 10)), Pt(2, 4))
 		AssertPoint(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Clamp(Pt(-1.0, 1.2)), Pt(0.0, 1.2))
+	})
+	t.Run("rotated snaps to the turned edge, not the bounds", func(t *testing.T) {
+		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
+
+		AssertPoint(t, diamond.Clamp(Pt(2.0, 2.0)), Pt(OneOverSqrt2, OneOverSqrt2))
+		AssertPoint(t, diamond.Clamp(Pt(0.1, 0.2)), Pt(0.1, 0.2))
+	})
+	t.Run("rotated int rounds once", func(t *testing.T) {
+		turned := Rect(Pt(0, 0), Sz(4, 2)).Rotate(Pi / 2)
+
+		AssertPoint(t, turned.Clamp(Pt(5, 0)), Pt(1, 0))
+		AssertPoint(t, turned.Clamp(Pt(0, 7)), Pt(0, 2))
 	})
 }
 
@@ -575,6 +704,21 @@ func TestRectangle_Contains(t *testing.T) {
 		assert.True(t, r.Contains(Pt(1+Delta/2, 0.5)))
 		assert.False(t, r.Contains(Pt(1+2*Delta, 0.5)))
 	})
+	t.Run("rotated excludes the corners of its bounds", func(t *testing.T) {
+		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
+
+		assert.True(t, diamond.Contains(Pt(0.9, 0.0)))
+		assert.True(t, diamond.Contains(Pt(Sqrt2, 0.0)))
+		assert.False(t, diamond.Contains(Pt(0.9, 0.9)))
+		assert.True(t, diamond.Bounds().Contains(Pt(0.9, 0.9)))
+	})
+	t.Run("rotated int contains its rounded corners", func(t *testing.T) {
+		turned := Rect(Pt(0, 0), Sz(4, 2)).Rotate(Pi / 2)
+
+		assert.True(t, turned.Contains(Pt(1, 2)))
+		assert.True(t, turned.Contains(Pt(0, 2)))
+		assert.False(t, turned.Contains(Pt(2, 0)))
+	})
 }
 
 func TestRectangle_DistanceTo(t *testing.T) {
@@ -600,6 +744,12 @@ func TestRectangle_DistanceTo(t *testing.T) {
 		assert.Equal(t, r.DistanceTo(Pt(1.0+Delta/2, 0.0)), 0.0)
 		AssertNumber(t, r.DistanceTo(Pt(1.0+2*Delta, 0.0)), 2*Delta)
 	})
+	t.Run("rotated measures to the turned edge", func(t *testing.T) {
+		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
+
+		AssertNumber(t, diamond.DistanceTo(Pt(0.9, 0.9)), (1.8-Sqrt2)/Sqrt2)
+		AssertNumber(t, Rect(Pt(0, 0), Sz(4, 2)).Rotate(Pi/2).DistanceTo(Pt(4, 0)), 3.0)
+	})
 	t.Run("zero exactly where Contains holds", func(t *testing.T) {
 		for _, r := range rectFixtures {
 			for _, p := range pointFixtures {
@@ -612,10 +762,10 @@ func TestRectangle_DistanceTo(t *testing.T) {
 func TestRectangle_DistanceSquaredTo(t *testing.T) {
 	rectangle := Rect(Pt(0, 0), Sz(4, 4))
 
-	t.Run("is the square of DistanceTo and exact for int", func(t *testing.T) {
-		assert.Equal(t, rectangle.DistanceSquaredTo(Pt(5, 6)), 25)
-		assert.Equal(t, rectangle.DistanceSquaredTo(Pt(5, 0)), 9)
-		assert.Equal(t, rectangle.DistanceSquaredTo(Pt(1, 1)), 0)
+	t.Run("is the square of DistanceTo, exact for an aligned int rectangle", func(t *testing.T) {
+		assert.Equal(t, rectangle.DistanceSquaredTo(Pt(5, 6)), 25.0)
+		assert.Equal(t, rectangle.DistanceSquaredTo(Pt(5, 0)), 9.0)
+		assert.Equal(t, rectangle.DistanceSquaredTo(Pt(1, 1)), 0.0)
 	})
 	t.Run("agrees with DistanceTo", func(t *testing.T) {
 		for _, r := range rectFixtures {
@@ -623,6 +773,12 @@ func TestRectangle_DistanceSquaredTo(t *testing.T) {
 				AssertNumber(t, r.DistanceSquaredTo(p), r.DistanceTo(p)*r.DistanceTo(p), fmt.Sprintf("%s → %s: ", r, p))
 			}
 		}
+	})
+	t.Run("rotated int is not rounded, since the nearest point is off the lattice", func(t *testing.T) {
+		turned := Rect(Pt(0, 0), Sz(4, 4)).Rotate(Pi / 4)
+
+		AssertNumber(t, turned.DistanceTo(Pt(3, 3)), 3/Sqrt2)
+		assert.Equal(t, turned.DistanceSquaredTo(Pt(3, 3)), 4.5)
 	})
 }
 
@@ -641,6 +797,29 @@ func TestRectangle_Intersects(t *testing.T) {
 	})
 	t.Run("one contained in the other", func(t *testing.T) {
 		assert.True(t, rectangle.Intersects(Rect(Pt(0.0, 0.0), Sz(50.0, 50.0))))
+	})
+	t.Run("a corner gap within the tolerance on both axes is decided on the distance", func(t *testing.T) {
+		r := RectangleFromMinMax(Pt(0.0, 0.0), Pt(1.0, 1.0))
+
+		assert.True(t, r.Intersects(RectangleFromMinMax(Pt(1.0+Delta/2, 1.0), Pt(2.0, 2.0))))
+		assert.False(t, r.Intersects(RectangleFromMinMax(Pt(1.0+0.9*Delta, 1.0+0.9*Delta), Pt(2.0, 2.0))))
+		assert.True(t, r.Intersects(RectangleFromMinMax(Pt(1.0+0.7*Delta, 1.0+0.7*Delta), Pt(2.0, 2.0))))
+	})
+	t.Run("rotated against aligned is decided on the edges, not the bounds", func(t *testing.T) {
+		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
+
+		assert.False(t, diamond.Intersects(RectangleFromMinMax(Pt(1.0, 1.0), Pt(3.0, 3.0))))
+		assert.True(t, diamond.Bounds().Intersects(RectangleFromMinMax(Pt(1.0, 1.0), Pt(3.0, 3.0))))
+		assert.True(t, diamond.Intersects(Rect(Pt(1.2, 0.0), Sz(1.0, 1.0))))
+		assert.True(t, diamond.Intersects(Rect(Pt(0.0, 0.0), Sz(0.5, 0.5))))
+		assert.True(t, Rect(Pt(0.0, 0.0), Sz(0.5, 0.5)).Intersects(diamond))
+	})
+	t.Run("rotated of the same angle is tested in the shared frame", func(t *testing.T) {
+		a := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(Pi / 2)
+
+		assert.True(t, a.Intersects(Rect(Pt(0.0, 1.0), Sz(4.0, 2.0)).Rotate(Pi/2)))
+		assert.True(t, a.Intersects(Rect(Pt(2.0, 0.0), Sz(4.0, 2.0)).Rotate(Pi/2)))
+		assert.False(t, a.Intersects(Rect(Pt(3.0, 0.0), Sz(4.0, 2.0)).Rotate(Pi/2)))
 	})
 	t.Run("symmetric", func(t *testing.T) {
 		for _, a := range rectFixtures {
@@ -694,21 +873,55 @@ func TestRectangle_Intersection(t *testing.T) {
 		assert.True(t, ok)
 		AssertRectangle(t, overlap, RectangleFromMinMax(Pt(-0.5, -0.5), Pt(1.5, 1.5)))
 	})
-	t.Run("symmetric and contained by both", func(t *testing.T) {
+	t.Run("rotated of the same angle overlap in a rectangle of that angle", func(t *testing.T) {
+		a := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(Pi / 2)
+
+		overlap, ok := a.Intersection(Rect(Pt(0.0, 1.0), Sz(4.0, 2.0)).Rotate(Pi / 2))
+
+		assert.True(t, ok)
+		AssertRectangle(t, overlap, Rect(Pt(0.0, 0.5), Sz(3.0, 2.0)).Rotate(Pi/2))
+	})
+	t.Run("rotated int rounds the shared frame", func(t *testing.T) {
+		a := Rect(Pt(0, 0), Sz(4, 2)).Rotate(Pi / 2)
+
+		overlap, ok := a.Intersection(Rect(Pt(0, 1), Sz(4, 2)).Rotate(Pi / 2))
+
+		assert.True(t, ok)
+		AssertRectangle(t, overlap, Rect(Pt(0, 0), Sz(3, 2)).Rotate(Pi/2))
+	})
+	t.Run("rotated of the same angle apart", func(t *testing.T) {
+		a := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(Pi / 2)
+
+		_, ok := a.Intersection(Rect(Pt(3.0, 0.0), Sz(4.0, 2.0)).Rotate(Pi / 2))
+
+		assert.False(t, ok)
+	})
+	t.Run("different angles have no rectangle in common", func(t *testing.T) {
+		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
+		square := Rect(Pt(1.2, 0.0), Sz(1.0, 1.0))
+
+		_, ok := diamond.Intersection(square)
+
+		assert.False(t, ok)
+		assert.True(t, diamond.Intersects(square))
+	})
+	t.Run("symmetric and contained by both where the angles agree", func(t *testing.T) {
 		for _, a := range rectFixtures {
 			for _, b := range rectFixtures {
 				ab, okAB := a.Intersection(b)
 				ba, okBA := b.Intersection(a)
 
 				assert.Equal(t, okAB, okBA, fmt.Sprintf("%s → %s: ", a, b))
-				assert.Equal(t, okAB, a.Intersects(b), fmt.Sprintf("%s → %s: ", a, b))
+				assert.Equal(t, okAB, a.Intersects(b) && a.parallel(b), fmt.Sprintf("%s → %s: ", a, b))
 				if !okAB {
 					continue
 				}
 
 				AssertRectangle(t, ab, ba, fmt.Sprintf("%s → %s: ", a, b))
-				assert.True(t, a.Contains(ab.Min()) && a.Contains(ab.Max()), fmt.Sprintf("%s → %s in a: ", a, b))
-				assert.True(t, b.Contains(ab.Min()) && b.Contains(ab.Max()), fmt.Sprintf("%s → %s in b: ", a, b))
+				for _, corner := range ab.Vertices() {
+					assert.True(t, a.Contains(corner), fmt.Sprintf("%s → %s: %s in a: ", a, b, corner))
+					assert.True(t, b.Contains(corner), fmt.Sprintf("%s → %s: %s in b: ", a, b, corner))
+				}
 			}
 		}
 	})
@@ -728,6 +941,16 @@ func TestRectangle_Union(t *testing.T) {
 	})
 	t.Run("float", func(t *testing.T) {
 		AssertRectangle(t, Rect(Pt(0.0, 0.0), Sz(3.0, 3.0)).Union(Rect(Pt(1.0, 1.0), Sz(3.0, 3.0))), RectangleFromMinMax(Pt(-1.5, -1.5), Pt(2.5, 2.5)))
+	})
+	t.Run("rotated of the same angle unite in a rectangle of that angle", func(t *testing.T) {
+		a := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(Pi / 2)
+
+		AssertRectangle(t, a.Union(Rect(Pt(0.0, 1.0), Sz(4.0, 2.0)).Rotate(Pi/2)), Rect(Pt(0.0, 0.5), Sz(5.0, 2.0)).Rotate(Pi/2))
+	})
+	t.Run("different angles unite in the box around both", func(t *testing.T) {
+		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
+
+		AssertRectangle(t, diamond.Union(Rect(Pt(1.2, 0.0), Sz(1.0, 1.0))), RectangleFromMinMax(Pt(-Sqrt2, -Sqrt2), Pt(1.7, Sqrt2)))
 	})
 	t.Run("symmetric and contains both", func(t *testing.T) {
 		for _, a := range rectFixtures {
@@ -773,6 +996,13 @@ func TestRectangle_IntersectsCircle(t *testing.T) {
 	t.Run("circle fully inside the rectangle", func(t *testing.T) {
 		assert.True(t, rectangle.IntersectsCircle(Circ(Pt(0.0, 0.0), 10.0)))
 	})
+	t.Run("rotated measures to the turned edge", func(t *testing.T) {
+		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
+
+		assert.False(t, diamond.IntersectsCircle(Circ(Pt(1.5, 1.5), 0.5)))
+		assert.True(t, diamond.Bounds().IntersectsCircle(Circ(Pt(1.5, 1.5), 0.5)))
+		assert.True(t, diamond.IntersectsCircle(Circ(Pt(1.0, 1.0), 0.5)))
+	})
 	t.Run("a circle intersects its own bounds", func(t *testing.T) {
 		for _, c := range circleFixtures {
 			if c.Radius == 0 {
@@ -805,6 +1035,13 @@ func TestRectangle_IntersectionLine(t *testing.T) {
 }
 
 func TestRectangle_IntersectsPolygon(t *testing.T) {
+	t.Run("rotated is tested on its turned edges", func(t *testing.T) {
+		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
+		corner := Pol([]Point[float64]{{1, 1}, {3, 1}, {3, 3}})
+
+		assert.False(t, diamond.IntersectsPolygon(corner))
+		assert.True(t, diamond.Bounds().IntersectsPolygon(corner))
+	})
 	t.Run("mirrors Polygon.IntersectsRectangle", func(t *testing.T) {
 		for _, r := range rectFixtures {
 			for _, p := range polygonFixtures() {
@@ -826,6 +1063,13 @@ func TestRectangle_Equal(t *testing.T) {
 	t.Run("within delta", func(t *testing.T) {
 		assert.True(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Equal(Rect(Pt(0.6, -0.250001), Sz(1.2, 3.6))))
 	})
+	t.Run("the angle counts, up to a full turn", func(t *testing.T) {
+		r := Rect(Pt(1, 2), Sz(2, 3))
+
+		assert.False(t, r.Equal(r.Rotate(Pi/2)))
+		assert.True(t, r.Equal(r.Rotate(2*Pi)))
+		assert.True(t, r.Rotate(Pi/2).Equal(Rectangle[int]{r.Center, r.Size, -3 * Pi / 2}))
+	})
 }
 
 func TestRectangle_IsZero(t *testing.T) {
@@ -840,6 +1084,33 @@ func TestRectangle_IsZero(t *testing.T) {
 	t.Run("within delta", func(t *testing.T) {
 		assert.True(t, Rect(Pt(0.0, 0.000001), Sz(0.0, 0.0)).IsZero())
 	})
+	t.Run("a full turn is zero", func(t *testing.T) {
+		assert.True(t, Rectangle[int]{Angle: 2 * Pi}.IsZero())
+		assert.False(t, Rectangle[int]{Angle: Pi}.IsZero())
+	})
+}
+
+func TestRectangle_IsAligned(t *testing.T) {
+	r := Rect(Pt(1, 2), Sz(2, 3))
+
+	t.Run("not rotated", func(t *testing.T) {
+		assert.True(t, r.IsAligned())
+		assert.True(t, RectangleFromMinMax(Pt(0.0, 0.0), Pt(1.0, 1.0)).IsAligned())
+		assert.True(t, Rectangle[int]{}.IsAligned())
+	})
+	t.Run("rotated", func(t *testing.T) {
+		assert.False(t, r.Rotate(Pi/2).IsAligned())
+		assert.False(t, Rectangle[int]{r.Center, r.Size, Delta / 2}.IsAligned())
+	})
+	t.Run("a full turn is aligned again", func(t *testing.T) {
+		assert.True(t, r.Rotate(2*Pi).IsAligned())
+		assert.True(t, Rectangle[int]{r.Center, r.Size, 2 * Pi}.Canonical().IsAligned())
+	})
+	t.Run("bounds are always aligned", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			assert.True(t, r.Bounds().IsAligned(), r.String())
+		}
+	})
 }
 
 func TestRectangle_Polygon(t *testing.T) {
@@ -852,6 +1123,12 @@ func TestRectangle_Polygon(t *testing.T) {
 	t.Run("owns its slice", func(t *testing.T) {
 		assert.NotSame(t, p.Vertices, r.Vertices())
 	})
+	t.Run("rotated carries the turned vertices", func(t *testing.T) {
+		turned := r.Rotate(Pi / 2)
+
+		AssertVertices(t, turned.Polygon().Vertices, turned.Vertices())
+		assert.True(t, turned.Polygon().Contains(Pt(1, 1)))
+	})
 }
 
 func TestRectangle_Int(t *testing.T) {
@@ -863,6 +1140,9 @@ func TestRectangle_Int(t *testing.T) {
 	})
 	t.Run("keeps the size where the corners would not", func(t *testing.T) {
 		AssertRectangle(t, Rect(Pt(0.5, 0.5), SzU(16.0)).Int(), Rect(Pt(1, 1), SzU(16)))
+	})
+	t.Run("keeps the angle", func(t *testing.T) {
+		AssertRectangle(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Rotate(Pi/2).Int(), Rect(Pt(1, 0), Sz(1, 4)).Rotate(Pi/2))
 	})
 }
 
@@ -881,6 +1161,9 @@ func TestRectangle_String(t *testing.T) {
 	})
 	t.Run("float", func(t *testing.T) {
 		assert.Equal(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).String(), "Rect((0.60,-0.25);1.20x3.60)")
+	})
+	t.Run("rotated appends the angle", func(t *testing.T) {
+		assert.Equal(t, Rect(Pt(1, 2), Sz(2, 3)).Rotate(Pi/2).String(), "Rect((1,2);2x3;1.57)")
 	})
 }
 
@@ -908,6 +1191,13 @@ func TestRectangle_JSON(t *testing.T) {
 		assert.NoError(t, json.Unmarshal([]byte(`{"x":0.60,"y":-0.25,"w":1.20,"h":3.60}`), &r))
 		AssertRectangle(t, r, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)))
 	})
+	t.Run("rotated carries the angle, absent for a rectangle that is not rotated", func(t *testing.T) {
+		assert.JSON(t, Rect(Pt(1, 2), Sz(2, 3)).Rotate(Pi/2), `{"x":1,"y":2,"w":2,"h":3,"a":1.5707963267948966}`)
+
+		var r Rectangle[int]
+		assert.NoError(t, json.Unmarshal([]byte(`{"x":1,"y":2,"w":2,"h":3,"a":1.5707963267948966}`), &r))
+		AssertRectangle(t, r, Rect(Pt(1, 2), Sz(2, 3)).Rotate(Pi/2))
+	})
 	t.Run("round-trip", func(t *testing.T) {
 		for _, rectangle := range rectFixtures {
 			data, err := json.Marshal(rectangle)
@@ -921,9 +1211,13 @@ func TestRectangle_JSON(t *testing.T) {
 }
 
 func TestRectangle_Properties(t *testing.T) {
-	t.Run("min and max bracket the center", func(t *testing.T) {
+	t.Run("min and max bracket the center and span the size before the turn", func(t *testing.T) {
 		for _, r := range rectFixtures {
 			assert.True(t, r.Min().Midpoint(r.Max()).Equal(r.Center), fmt.Sprintf("%s: ", r))
+			if !r.IsAligned() {
+				continue
+			}
+
 			AssertNumber(t, r.Max().X-r.Min().X, r.Width(), fmt.Sprintf("%s: ", r))
 			AssertNumber(t, r.Max().Y-r.Min().Y, r.Height(), fmt.Sprintf("%s: ", r))
 		}
@@ -935,14 +1229,15 @@ func TestRectangle_Properties(t *testing.T) {
 			AssertNumber(t, r.AspectRatio(), r.Size.AspectRatio(), fmt.Sprintf("%s: ", r))
 		}
 	})
-	t.Run("corners and edges agree with min and max", func(t *testing.T) {
+	t.Run("corners are the corners before the turn, turned about the center", func(t *testing.T) {
 		for _, r := range rectFixtures {
-			a, b := r.MinMax()
+			flat := Rectangle[float64]{r.Center, r.Size, 0}
+			a, b := flat.MinMax()
 
-			AssertPoint(t, r.TopLeft(), a, fmt.Sprintf("%s: ", r))
-			AssertPoint(t, r.BottomRight(), b, fmt.Sprintf("%s: ", r))
-			AssertPoint(t, r.TopRight(), Pt(b.X, a.Y), fmt.Sprintf("%s: ", r))
-			AssertPoint(t, r.BottomLeft(), Pt(a.X, b.Y), fmt.Sprintf("%s: ", r))
+			AssertPoint(t, r.TopLeft(), a.RotateAround(r.Center, r.Angle), fmt.Sprintf("%s: ", r))
+			AssertPoint(t, r.BottomRight(), b.RotateAround(r.Center, r.Angle), fmt.Sprintf("%s: ", r))
+			AssertPoint(t, r.TopRight(), Pt(b.X, a.Y).RotateAround(r.Center, r.Angle), fmt.Sprintf("%s: ", r))
+			AssertPoint(t, r.BottomLeft(), Pt(a.X, b.Y).RotateAround(r.Center, r.Angle), fmt.Sprintf("%s: ", r))
 
 			AssertPoint(t, r.TopEdge().Midpoint(), r.Top(), fmt.Sprintf("%s: ", r))
 			AssertPoint(t, r.RightEdge().Midpoint(), r.Right(), fmt.Sprintf("%s: ", r))
@@ -966,9 +1261,22 @@ func TestRectangle_Properties(t *testing.T) {
 			}
 		}
 	})
-	t.Run("bounds is the rectangle itself", func(t *testing.T) {
+	t.Run("bounds is the box around the vertices, the rectangle itself before a turn", func(t *testing.T) {
 		for _, r := range rectFixtures {
-			assert.True(t, r.Bounds().Equal(r), fmt.Sprintf("%s: ", r))
+			bounds := r.Bounds()
+
+			assert.True(t, bounds.IsAligned(), fmt.Sprintf("%s: ", r))
+			assert.True(t, bounds.Equal(r.Polygon().Bounds()), fmt.Sprintf("%s: ", r))
+			assert.Equal(t, bounds.Equal(r), r.IsAligned(), fmt.Sprintf("%s: ", r))
+		}
+	})
+	t.Run("rotate keeps the center and the size", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			turned := r.Rotate(Pi / 3)
+
+			assert.True(t, turned.Center.Equal(r.Center), fmt.Sprintf("%s: ", r))
+			assert.True(t, turned.Size.Equal(r.Size), fmt.Sprintf("%s: ", r))
+			assert.True(t, EqualAngle(turned.Angle, r.Angle+Pi/3), fmt.Sprintf("%s: ", r))
 		}
 	})
 	t.Run("translate keeps the size", func(t *testing.T) {
@@ -1005,9 +1313,9 @@ func TestRectangle_Properties(t *testing.T) {
 			for _, point := range pointFixtures {
 				clamped := r.Clamp(point)
 
-				assert.True(t, clamped.X >= r.Min().X-Delta && clamped.X <= r.Max().X+Delta, fmt.Sprintf("%s → %s: ", r, point))
-				assert.True(t, clamped.Y >= r.Min().Y-Delta && clamped.Y <= r.Max().Y+Delta, fmt.Sprintf("%s → %s: ", r, point))
+				assert.True(t, r.Contains(clamped), fmt.Sprintf("%s → %s: ", r, point))
 				assert.True(t, r.Clamp(clamped).Equal(clamped), fmt.Sprintf("%s → %s: ", r, point))
+				assert.Equal(t, clamped.Equal(point), r.Contains(point), fmt.Sprintf("%s → %s: ", r, point))
 			}
 		}
 	})
@@ -1027,10 +1335,7 @@ func TestRectangle_Properties(t *testing.T) {
 	t.Run("anchors lie on the rectangle", func(t *testing.T) {
 		for _, r := range rectFixtures {
 			for _, direction := range Directions() {
-				anchor := r.Anchor(direction)
-
-				assert.True(t, anchor.X >= r.Min().X-Delta && anchor.X <= r.Max().X+Delta, fmt.Sprintf("%s → %s: ", r, direction))
-				assert.True(t, anchor.Y >= r.Min().Y-Delta && anchor.Y <= r.Max().Y+Delta, fmt.Sprintf("%s → %s: ", r, direction))
+				assert.True(t, r.Contains(r.Anchor(direction)), fmt.Sprintf("%s → %s: ", r, direction))
 			}
 		}
 	})
@@ -1067,6 +1372,9 @@ var rectFixtures = []Rectangle[float64]{
 	Rect(Pt(-3.5, 0.25), Sz(7.0, 1.0)),
 	RectangleFromMin(Pt(0.0, 0.0), Sz(10.0, 20.0)),
 	RectangleFromMinMax(Pt(-2.0, -4.0), Pt(6.0, 2.0)),
+	Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(Pi / 2),
+	Rect(Pt(1.0, 2.0), Sz(2.0, 3.0)).Rotate(Pi / 6),
+	Rect(Pt(-3.5, 0.25), Sz(7.0, 1.0)).Rotate(-Pi / 4),
 }
 
 func ExampleRect() {

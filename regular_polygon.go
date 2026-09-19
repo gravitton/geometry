@@ -20,7 +20,7 @@ type RegularPolygon[T Number] struct {
 	Center Point[T] `json:",embed"`
 	Size   Size[T]  `json:",embed"`
 	N      int      `json:"n"`
-	Angle  float64  `json:"a"`
+	Angle  float64  `json:"a,omitzero"`
 }
 
 // RegPol is shorthand for RegularPolygon{center, size, n, angle}, with the size taken absolute.
@@ -204,9 +204,11 @@ func (rp RegularPolygon[T]) UnscaleXY(factorX, factorY float64) RegularPolygon[T
 // taken absolute and the angle normalized to [0, 2π): a well-formed polygon is returned as it
 // is, up to the full turns Equal already ignores. It repairs a negative semi-axis written as a
 // struct literal or decoded from JSON, which would place every vertex half a turn away, and
-// brings a decoded angle onto the seam Rotate keeps.
+// brings a decoded angle onto the seam Rotate keeps. An angle within Delta of zero or of a
+// full turn, the residue a chain of Rotate and Lerp calls can leave, becomes exactly zero, as
+// Rectangle.Canonical makes it; Rotate itself never snaps.
 func (rp RegularPolygon[T]) Canonical() RegularPolygon[T] {
-	return RegularPolygon[T]{rp.Center, rp.Size.Abs(), rp.N, NormalizeAngle(rp.Angle)}
+	return RegularPolygon[T]{rp.Center, rp.Size.Abs(), rp.N, snapAngle(rp.Angle)}
 }
 
 // Lerp creates a new RegularPolygon in linear interpolation towards the given polygon, moving
@@ -268,7 +270,13 @@ func (rp RegularPolygon[T]) Float() RegularPolygon[float64] {
 	return RegularPolygon[float64]{rp.Center.Float(), rp.Size.Float(), rp.N, rp.Angle}
 }
 
-// String returns a string representation of the RegularPolygon.
+// String returns the polygon in the form of its constructor: RegPol((x,y);WxH;n), center, size
+// and vertex count, with the angle appended as RegPol((x,y);WxH;n;a) for a rotated polygon, as
+// the JSON carries it only then.
 func (rp RegularPolygon[T]) String() string {
+	if rp.Angle == 0 {
+		return fmt.Sprintf("RegPol(%s;%s;%s)", rp.Center.String(), rp.Size.String(), String(rp.N))
+	}
+
 	return fmt.Sprintf("RegPol(%s;%s;%s;%s)", rp.Center.String(), rp.Size.String(), String(rp.N), String(rp.Angle))
 }

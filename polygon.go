@@ -27,10 +27,11 @@ func Pol[T Number](vertices []Point[T]) Polygon[T] {
 	return Polygon[T]{vertices}
 }
 
-// MinMax returns the minimum and maximum corner of the vertices, the pair Rectangle.MinMax
-// returns for its Bounds, exact for an integer T where Bounds places a center. An empty polygon
-// has no corners and returns two zero points.
-func (p Polygon[T]) MinMax() (Point[T], Point[T]) {
+// minMax returns the minimum and maximum corner of the vertices, the corners of Bounds, exact
+// for an integer T where Bounds places a center: the pair the intersection tests reject shapes
+// by before examining any edge, without placing a rectangle. An empty polygon has no corners
+// and returns two zero points.
+func (p Polygon[T]) minMax() (Point[T], Point[T]) {
 	if p.Empty() {
 		return Point[T]{}, Point[T]{}
 	}
@@ -117,7 +118,7 @@ func (p Polygon[T]) Perimeter() float64 {
 // Bounds returns the axis-aligned bounding rectangle of the vertices, or the zero rectangle
 // for a polygon without vertices.
 func (p Polygon[T]) Bounds() Rectangle[T] {
-	return RectangleFromMinMax(p.MinMax())
+	return RectangleFromMinMax(p.minMax())
 }
 
 // mean returns the average of the vertices, which Center falls back to when the
@@ -226,7 +227,7 @@ func (p Polygon[T]) Contains(point Point[T]) bool {
 		return false
 	}
 
-	a, b := p.MinMax()
+	a, b := p.minMax()
 
 	return p.encloses(point, a, b)
 }
@@ -286,8 +287,8 @@ func (p Polygon[T]) Intersects(polygon Polygon[T]) bool {
 		return false
 	}
 
-	a1, b1 := p.MinMax()
-	a2, b2 := polygon.MinMax()
+	a1, b1 := p.minMax()
+	a2, b2 := polygon.minMax()
 
 	if !overlaps(a1, b1, a2, b2) {
 		return false
@@ -315,7 +316,7 @@ func (p Polygon[T]) IntersectsLine(line Line[T]) bool {
 		return false
 	}
 
-	a, b := p.MinMax()
+	a, b := p.minMax()
 
 	return p.encloses(line.Start, a, b) || p.crossesEdge(line, a, b)
 }
@@ -331,20 +332,21 @@ func (p Polygon[T]) IntersectionLine(line Line[T]) []Point[T] {
 
 // IntersectsRectangle reports whether the polygon and the rectangle share a point, the same
 // answer as Intersects on the rectangle's Polygon, without building it: a corner of one lies
-// within the other, or an edge of the rectangle crosses an edge of the polygon.
+// within the other, or an edge of the rectangle crosses an edge of the polygon. The
+// rectangle's extent rejects it before any edge is examined, whatever its angle.
 func (p Polygon[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 	if p.Empty() {
 		return false
 	}
 
-	a1, b1 := p.MinMax()
+	a1, b1 := p.minMax()
 	a2, b2 := rectangle.MinMax()
 
 	if !overlaps(a1, b1, a2, b2) {
 		return false
 	}
 
-	if rectangle.Contains(p.Vertices[0]) || p.encloses(a2, a1, b1) {
+	if rectangle.Contains(p.Vertices[0]) || p.encloses(rectangle.TopLeft(), a1, b1) {
 		return true
 	}
 
@@ -367,7 +369,7 @@ func (p Polygon[T]) IntersectsCircle(circle Circle[T]) bool {
 		return false
 	}
 
-	a1, b1 := p.MinMax()
+	a1, b1 := p.minMax()
 	a2, b2 := circle.Bounds().MinMax()
 
 	return overlaps(a1, b1, a2, b2) && circle.reaches(p.walk(circle.Center))
@@ -377,13 +379,13 @@ func (p Polygon[T]) IntersectsCircle(circle Circle[T]) bool {
 // of the vertices. The segment is rejected by its own extent against that box, and each edge by
 // its extent against the segment, so the segment test runs only on edges that can share a point.
 func (p Polygon[T]) crossesEdge(line Line[T], a, b Point[T]) bool {
-	c, d := line.MinMax()
+	c, d := line.minMax()
 	if !overlaps(a, b, c, d) {
 		return false
 	}
 
 	for edge := range p.edges() {
-		if e, f := edge.MinMax(); overlaps(c, d, e, f) && edge.Intersects(line) {
+		if e, f := edge.minMax(); overlaps(c, d, e, f) && edge.Intersects(line) {
 			return true
 		}
 	}

@@ -94,6 +94,10 @@ func TestAssertRectangle(t *testing.T) {
 	t.Run("size differs", func(t *testing.T) {
 		assertHelper(t, AssertRectangle, r, Rect(Pt(1, 2), Sz(9, 4)), false)
 	})
+	t.Run("angle is compared normalized", func(t *testing.T) {
+		assertHelper(t, AssertRectangle, r.Rotate(Pi/2), r.Rotate(-3*Pi/2), true)
+		assertHelper(t, AssertRectangle, r, r.Rotate(Pi/2), false)
+	})
 }
 
 func TestAssertPolygon(t *testing.T) {

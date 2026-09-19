@@ -85,7 +85,15 @@ b := geom.RectangleFromMinMax(geom.Pt(0, 0), geom.Pt(8, 6))
 b.Scale(2)    // Rectangle (-4,-3)-(12,9), scaled around the center
 b.Edges()[0]  // Line (0,0)-(8,0), the top edge
 b.Vertices()  // clockwise from the top-left corner
+
+d := geom.Rect(geom.Pt(0.0, 0.0), geom.Sz(2.0, 2.0)).Rotate(geom.Pi / 4) // a diamond
+d.Contains(geom.Pt(0.9, 0.9))                                            // false, outside the turned edges
+d.Bounds()                                                               // the axis-aligned box around it
+d.TopLeft()                                                              // the corner that was top-left before the turn
 ```
+
+A rectangle turned by `Rotate` keeps its center, size and corner names; `Min`, `Max` and `Bounds` become the box
+around its vertices. Two rectangles of the same angle intersect and unite in a rectangle of that angle.
 
 ### Circles, lines and polygons
 
@@ -213,8 +221,10 @@ turn.
 
 **Boundaries.** `Contains`, `Intersects` and `Vector.LessOrEqual` are closed and tolerant: a point within
 `Epsilon[T]()` of the boundary counts as on it, so a float rectangle contains the corners it was built from and a
-polygon contains its vertices. `DistanceTo` is zero exactly where `Contains` holds, and `Intersection` answers exactly
-where `Intersects` holds, apart from parallel and coincident cases that have no single answer. `Vector.Less` is strict.
+polygon contains its vertices. Every boundary is judged on a distance, never on a coordinate, so two rectangles that
+meet corner to corner intersect exactly where their polygons do. `DistanceTo` is zero exactly where `Contains` holds,
+and `Intersection` answers exactly where `Intersects` holds, apart from parallel and coincident segments and
+rectangles of different angles, which have no single answer. `Vector.Less` is strict.
 
 **Matrices.** An integer `Matrix` composes lattice transforms exactly: translation, integer scale, reflection, quarter
 turns. Anything else rounds into a different matrix; use a float `Matrix` there. `Transform` takes a float matrix, so
@@ -236,8 +246,6 @@ JSON last.
 - **`Circle.RegularPolygon(n, orientation)` and `RegularPolygon.Circle()`** – the conversion between the two shapes,
   with two options for where the polygon meets the circle.
 - **`Line.Clip()`** – the part of a segment inside a shape.
-- **`Rectangle.Angle`** – an oriented rectangle. `Contains`, `Clamp`, `Intersects`, `Intersection` and `Union` assume
-  axis alignment today.
 - **`Polygon.Winding`, `IsConvex` and `ConvexHull`** – convexity also unlocks a separating-axis `Intersects`, the slow
   case in `BenchmarkPolygon_Intersects` today.
 - **`Polygon.Simplify(tolerance)`** – drops every vertex within the tolerance of the edge between its neighbours.
@@ -247,7 +255,12 @@ JSON last.
   two polygons with different vertex counts have no shape between them and the answer for that case is not settled.
 - **`Ray`** – a half-line with origin and direction, for casts against every shape.
 - **`Ellipse`** – `RegularPolygon` already takes semi-axes; the continuous shape has no type.
-- **`Transform` on every shape** – a rotated rectangle needs `Rectangle.Angle`, a non-uniformly scaled circle is an `Ellipse`.
+- **`Rectangle.Transform`** – a general affine matrix turns a rectangle into a parallelogram; the similarity case, a
+  rotation with a uniform scale and a translation, could stay a rectangle.
+- **`Polygon.Intersection(polygon)`** – the overlap of two convex polygons, and with it the overlap of two rectangles
+  of different angles, which `Rectangle.Intersection` declines today.
+- **One vertex walk for `Rectangle` and `Polygon`** – the edge walk, the intersection test, `minMax` and `edges` are
+  duplicated between the two shapes; the plan to share them without an allocation is in [TODO.md](TODO.md).
 
 ## Credits
 

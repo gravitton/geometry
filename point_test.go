@@ -224,10 +224,14 @@ func TestPoint_Between(t *testing.T) {
 		assert.True(t, Pt(2.0+Delta/2, 1.0).Between(Pt(0.0, 0.0), Pt(2.0, 2.0)))
 		assert.False(t, Pt(2.0+2*Delta, 1.0).Between(Pt(0.0, 0.0), Pt(2.0, 2.0)))
 	})
-	t.Run("matches Rectangle.Contains", func(t *testing.T) {
+	t.Run("matches Rectangle.Contains before a turn, and never rejects a contained point after one", func(t *testing.T) {
 		for _, r := range rectFixtures {
 			for _, p := range pointFixtures {
-				assert.Equal(t, p.Between(r.MinMax()), r.Contains(p), fmt.Sprintf("%s in %s: ", p, r))
+				if r.IsAligned() {
+					assert.Equal(t, p.Between(r.MinMax()), r.Contains(p), fmt.Sprintf("%s in %s: ", p, r))
+				} else if r.Contains(p) {
+					assert.True(t, p.Between(r.MinMax()), fmt.Sprintf("%s in %s: ", p, r))
+				}
 			}
 		}
 	})

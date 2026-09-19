@@ -261,6 +261,21 @@ func NormalizeAngle(angle float64) float64 {
 	return a
 }
 
+// snapAngle returns angle normalized to [0, 2π) with a rounding residue removed: an angle
+// within Delta of zero or of a full turn is exactly zero, the angle EqualAngle already calls
+// the same. It is the repair Canonical applies to a shape's angle, so a shape turned back by
+// what it was turned by is aligned again and its corners exact; Rotate and Lerp do not apply
+// it, since the tolerance is on the angle and a turn below Delta still moves a far corner of
+// a large shape by more than Epsilon.
+func snapAngle(angle float64) float64 {
+	angle = NormalizeAngle(angle)
+	if angle <= Delta || 2*math.Pi-angle <= Delta {
+		return 0
+	}
+
+	return angle
+}
+
 // AngleDistance returns the shortest angular distance between a and b, in [0, π].
 func AngleDistance(a, b float64) float64 {
 	d := NormalizeAngle(a - b)

@@ -307,6 +307,14 @@ func TestRegularPolygon_Canonical(t *testing.T) {
 		AssertRegularPolygon(t, RegularPolygon[float64]{Pt(0.0, 0.0), SzU(2.0), 4, 7}.Canonical(), RegPol(Pt(0.0, 0.0), SzU(2.0), 4, 7-2*Pi))
 		AssertNumber(t, RegularPolygon[float64]{Pt(0.0, 0.0), SzU(2.0), 4, -Pi / 2}.Canonical().Angle, 3*Pi/2)
 	})
+	t.Run("snaps a residue of turning back to exactly zero, where Rotate does not", func(t *testing.T) {
+		drifted := RegPol(Pt(0.0, 0.0), SzU(2.0), 4, 0).Rotate(0.1).Rotate(0.2).Rotate(-0.3)
+
+		assert.True(t, drifted.Angle != 0)
+		assert.Equal(t, drifted.Canonical().Angle, 0.0)
+		assert.Equal(t, RegularPolygon[int]{Pt(0, 0), SzU(2), 4, -Delta / 2}.Canonical().Angle, 0.0)
+		assert.Equal(t, RegularPolygon[int]{Pt(0, 0), SzU(2), 4, 2 * Delta}.Canonical().Angle, 2*Delta)
+	})
 	t.Run("a well-formed polygon is unchanged", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
 			AssertRegularPolygon(t, rp.Canonical(), rp, rp.String())
@@ -457,7 +465,7 @@ func TestRegularPolygon_Float(t *testing.T) {
 
 func TestRegularPolygon_String(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		assert.Equal(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).String(), "RegPol((1,2);2x2;4;0.00)")
+		assert.Equal(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).String(), "RegPol((1,2);2x2;4)")
 	})
 	t.Run("float", func(t *testing.T) {
 		assert.Equal(t, RegPol(Pt(0.5, -1.25), Sz(2.5, 3.75), 6, Pi).String(), "RegPol((0.50,-1.25);2.50x3.75;6;3.14)")
@@ -465,10 +473,12 @@ func TestRegularPolygon_String(t *testing.T) {
 }
 
 func TestRegularPolygon_JSON(t *testing.T) {
-	t.Run("int wire format", func(t *testing.T) {
-		assert.JSON(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0), `{"x":1,"y":2,"w":2,"h":2,"n":4,"a":0}`)
+	t.Run("int wire format omits a zero angle", func(t *testing.T) {
+		assert.JSON(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0), `{"x":1,"y":2,"w":2,"h":2,"n":4}`)
 
 		var rp RegularPolygon[int]
+		assert.NoError(t, json.Unmarshal([]byte(`{"x":1,"y":2,"w":2,"h":2,"n":4}`), &rp))
+		AssertRegularPolygon(t, rp, RegPol(Pt(1, 2), Sz(2, 2), 4, 0))
 		assert.NoError(t, json.Unmarshal([]byte(`{"x":1,"y":2,"w":2,"h":2,"n":4,"a":0}`), &rp))
 		AssertRegularPolygon(t, rp, RegPol(Pt(1, 2), Sz(2, 2), 4, 0))
 	})
@@ -573,5 +583,5 @@ var regularPolygonFixtures = []RegularPolygon[float64]{
 
 func ExampleRegPol() {
 	fmt.Println(RegPol(Pt(1, 2), Sz(2, 2), 4, 0))
-	// Output: RegPol((1,2);2x2;4;0.00)
+	// Output: RegPol((1,2);2x2;4)
 }

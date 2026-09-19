@@ -69,16 +69,16 @@ func TestLine_Direction(t *testing.T) {
 	})
 }
 
-func TestLine_MinMax(t *testing.T) {
+func TestLine_minMax(t *testing.T) {
 	t.Run("orders the corners", func(t *testing.T) {
-		a, b := Ln(Pt(4, 1), Pt(0, 3)).MinMax()
+		a, b := Ln(Pt(4, 1), Pt(0, 3)).minMax()
 
 		AssertPoint(t, a, Pt(0, 1))
 		AssertPoint(t, b, Pt(4, 3))
 	})
 	t.Run("matches the corners of Bounds", func(t *testing.T) {
 		for _, l := range lineFixtures {
-			a, b := l.MinMax()
+			a, b := l.minMax()
 			c, d := l.Bounds().MinMax()
 
 			AssertPoint(t, a, c, l.String())

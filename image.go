@@ -27,7 +27,8 @@ func (p Point[T]) Point() image.Point {
 // Rectangle converts the rectangle to a half-open image.Rectangle, the Min and Max of its Int:
 // it spans exactly Size.Int pixels for any T, so a sprite keeps its width as it moves through
 // sub-pixel positions, where rounding the two corners on their own would have it flicker by a
-// pixel. The box is placed where Int places it.
+// pixel. The box is placed where Int places it. A rotated rectangle gives the box around its
+// rounded vertices, since an image.Rectangle has no angle.
 func (r Rectangle[T]) Rectangle() image.Rectangle {
 	rounded := r.Int()
 

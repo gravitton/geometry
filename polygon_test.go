@@ -19,22 +19,22 @@ func TestPolygon_Constructor(t *testing.T) {
 	})
 }
 
-func TestPolygon_MinMax(t *testing.T) {
+func TestPolygon_minMax(t *testing.T) {
 	t.Run("spans the vertices", func(t *testing.T) {
-		a, b := Pol([]Point[int]{Pt(3, 1), Pt(-2, 4), Pt(0, 0)}).MinMax()
+		a, b := Pol([]Point[int]{Pt(3, 1), Pt(-2, 4), Pt(0, 0)}).minMax()
 
 		AssertPoint(t, a, Pt(-2, 0))
 		AssertPoint(t, b, Pt(3, 4))
 	})
 	t.Run("an empty polygon has zero corners", func(t *testing.T) {
-		a, b := Pol[int](nil).MinMax()
+		a, b := Pol[int](nil).minMax()
 
 		AssertPoint(t, a, Pt(0, 0))
 		AssertPoint(t, b, Pt(0, 0))
 	})
 	t.Run("matches the corners of Bounds", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
-			a, b := p.MinMax()
+			a, b := p.minMax()
 			c, d := p.Bounds().MinMax()
 
 			AssertPoint(t, a, c, p.String())

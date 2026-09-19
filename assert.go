@@ -107,6 +107,7 @@ func AssertLine[T Number](t Testing, actual, expected Line[T], messages ...strin
 }
 
 // AssertRectangle asserts that actual equals expected (exactly for an integer T, within [EpsilonRelative] for a float T).
+// Angles are compared with EqualAngle, like Rectangle.Equal.
 func AssertRectangle[T Number](t Testing, actual, expected Rectangle[T], messages ...string) bool {
 	t.Helper()
 
@@ -116,6 +117,9 @@ func AssertRectangle[T Number](t Testing, actual, expected Rectangle[T], message
 		ok = false
 	}
 	if !AssertSize(t, actual.Size, expected.Size, prefixed(messages, "Size.")...) {
+		ok = false
+	}
+	if !assert.True(t, EqualAngle(actual.Angle, expected.Angle), prefixed(messages, fmt.Sprintf("Angle: %v should equal %v modulo 2π: ", actual.Angle, expected.Angle))...) {
 		ok = false
 	}
 
