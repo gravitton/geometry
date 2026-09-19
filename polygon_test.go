@@ -12,10 +12,10 @@ import (
 
 func TestPolygon_Constructor(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertPolygon(t, Pol(squareVertices()), Polygon[int]{Vertices: squareVertices()})
+		AssertPolygon(t, Pol(squareVertices()), Polygon[int]{Points: squareVertices()})
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertPolygon(t, Pol(triangleVertices()), Polygon[float64]{Vertices: triangleVertices()})
+		AssertPolygon(t, Pol(triangleVertices()), Polygon[float64]{Points: triangleVertices()})
 	})
 }
 
@@ -45,21 +45,56 @@ func TestPolygon_minMax(t *testing.T) {
 
 func TestPolygon_Edges(t *testing.T) {
 	t.Run("closes back to the first vertex", func(t *testing.T) {
-		edges := Pol(squareVertices()).Edges()
+		edges := slices.Collect(Pol(squareVertices()).Edges())
 
 		assert.Equal(t, len(edges), 4)
 		AssertLine(t, edges[0], Ln(Pt(0, 0), Pt(2, 0)))
 		AssertLine(t, edges[3], Ln(Pt(0, 2), Pt(0, 0)))
 	})
 	t.Run("single vertex is one zero-length edge", func(t *testing.T) {
-		edges := Pol([]Point[int]{Pt(1, 1)}).Edges()
+		edges := slices.Collect(Pol([]Point[int]{Pt(1, 1)}).Edges())
 
 		assert.Equal(t, len(edges), 1)
 		AssertLine(t, edges[0], Ln(Pt(1, 1), Pt(1, 1)))
 	})
-	t.Run("nil stays nil and empty stays empty", func(t *testing.T) {
-		assert.Nil(t, Pol[int](nil).Edges())
-		assert.Equal(t, len(Pol([]Point[int]{}).Edges()), 0)
+	t.Run("nil and empty yield nothing", func(t *testing.T) {
+		assert.Nil(t, slices.Collect(Pol[int](nil).Edges()))
+		assert.Nil(t, slices.Collect(Pol([]Point[int]{}).Edges()))
+	})
+	t.Run("stops where the caller breaks", func(t *testing.T) {
+		for edge := range Pol(squareVertices()).Edges() {
+			AssertLine(t, edge, Ln(Pt(0, 0), Pt(2, 0)))
+
+			break
+		}
+	})
+	t.Run("ranging allocates nothing", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			AssertNumber(t, testing.AllocsPerRun(100, func() {
+				for edge := range p.Edges() {
+					sinkBool = edge.IsZero()
+				}
+			}), 0, fmt.Sprintf("%s: ", p))
+		}
+	})
+}
+
+func TestPolygon_Vertices(t *testing.T) {
+	t.Run("iterates the points in order", func(t *testing.T) {
+		AssertVertices(t, slices.Collect(Pol(squareVertices()).Vertices()), squareVertices())
+	})
+	t.Run("nil and empty yield nothing", func(t *testing.T) {
+		assert.Nil(t, slices.Collect(Pol[int](nil).Vertices()))
+		assert.Nil(t, slices.Collect(Pol([]Point[int]{}).Vertices()))
+	})
+	t.Run("ranging allocates nothing", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			AssertNumber(t, testing.AllocsPerRun(100, func() {
+				for vertex := range p.Vertices() {
+					sinkBool = vertex.IsZero()
+				}
+			}), 0, fmt.Sprintf("%s: ", p))
+		}
 	})
 }
 
@@ -487,7 +522,7 @@ func TestPolygon_IntersectsLine(t *testing.T) {
 	t.Run("matches Intersects on the segment as a polygon", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
 			for _, l := range lineFixtures {
-				assert.Equal(t, p.IntersectsLine(l), p.Intersects(Pol(l.Vertices())), fmt.Sprintf("%s → %s: ", p, l))
+				assert.Equal(t, p.IntersectsLine(l), p.Intersects(Pol(slices.Collect(l.Vertices()))), fmt.Sprintf("%s → %s: ", p, l))
 			}
 		}
 	})
@@ -516,6 +551,16 @@ func TestPolygon_IntersectionLine(t *testing.T) {
 		assert.Nil(t, square.IntersectionLine(Ln(Pt(3, -1), Pt(3, 3))))
 		assert.Nil(t, Pol[int](nil).IntersectionLine(Ln(Pt(-1, 1), Pt(5, 1))))
 	})
+	t.Run("allocates the result alone", func(t *testing.T) {
+		through, apart := Ln(Pt(-1, 1), Pt(5, 1)), Ln(Pt(3, -1), Pt(3, 3))
+
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = square.IntersectionLine(through)
+		}), 1)
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = square.IntersectionLine(apart)
+		}), 0)
+	})
 	t.Run("matches the rectangle crossings on the rectangle as a polygon", func(t *testing.T) {
 		for _, r := range rectFixtures {
 			for _, l := range lineFixtures {
@@ -530,7 +575,7 @@ func TestPolygon_IntersectionLine(t *testing.T) {
 
 				for _, point := range points {
 					assert.True(t, l.Contains(point), fmt.Sprintf("%s → %s: %s on the segment: ", p, l, point))
-					assert.True(t, slices.ContainsFunc(p.Edges(), func(edge Line[float64]) bool {
+					assert.True(t, slices.ContainsFunc(slices.Collect(p.Edges()), func(edge Line[float64]) bool {
 						return edge.Contains(point)
 					}), fmt.Sprintf("%s → %s: %s on the boundary: ", p, l, point))
 				}
@@ -589,7 +634,7 @@ func TestPolygon_IntersectsCircle(t *testing.T) {
 	t.Run("matches the circle test on the polygon edges", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
 			for _, c := range circleFixtures {
-				expected := p.Contains(c.Center) || slices.ContainsFunc(p.Edges(), func(edge Line[float64]) bool {
+				expected := p.Contains(c.Center) || slices.ContainsFunc(slices.Collect(p.Edges()), func(edge Line[float64]) bool {
 					return edge.IntersectsCircle(c)
 				})
 
@@ -731,8 +776,8 @@ func TestPolygon_Properties(t *testing.T) {
 				moved := polygon.Translate(vector)
 
 				assert.True(t, moved.Center().Equal(polygon.Center().Add(vector)), fmt.Sprintf("%s → %s: ", polygon, vector))
-				for i, vertex := range moved.Vertices {
-					assert.True(t, vertex.Equal(polygon.Vertices[i].Add(vector)), fmt.Sprintf("%s → %s: ", polygon, vector))
+				for i, vertex := range moved.Points {
+					assert.True(t, vertex.Equal(polygon.Points[i].Add(vector)), fmt.Sprintf("%s → %s: ", polygon, vector))
 				}
 			}
 		}
@@ -761,12 +806,12 @@ func TestPolygon_Properties(t *testing.T) {
 	})
 	t.Run("centroid of a triangle is the average of the vertices", func(t *testing.T) {
 		for _, polygon := range polygonFixtures() {
-			if len(polygon.Vertices) != 3 {
+			if len(polygon.Points) != 3 {
 				continue
 			}
 
 			var sum Point[float64]
-			for _, vertex := range polygon.Vertices {
+			for _, vertex := range polygon.Points {
 				sum = sum.AddXY(vertex.XY())
 			}
 
@@ -789,7 +834,7 @@ func TestPolygon_Immutable(t *testing.T) {
 	p.Scale(2)
 	p.ScaleXY(2, 3)
 
-	AssertVertices(t, p.Vertices, []Point[int]{Pt(0, 0), Pt(2, 0)})
+	AssertVertices(t, p.Points, []Point[int]{Pt(0, 0), Pt(2, 0)})
 }
 
 // squareVertices and triangleVertices build fresh slices, so a test that mutates one

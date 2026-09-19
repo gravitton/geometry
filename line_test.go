@@ -89,10 +89,44 @@ func TestLine_minMax(t *testing.T) {
 
 func TestLine_Vertices(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertVertices(t, Ln(Pt(1, 2), Pt(3, 5)).Vertices(), []Point[int]{{1, 2}, {3, 5}})
+		AssertVertices(t, slices.Collect(Ln(Pt(1, 2), Pt(3, 5)).Vertices()), []Point[int]{{1, 2}, {3, 5}})
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertVertices(t, Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Vertices(), []Point[float64]{{0.6, -0.25}, {1.2, 3.4}})
+		AssertVertices(t, slices.Collect(Ln(Pt(0.6, -0.25), Pt(1.2, 3.4)).Vertices()), []Point[float64]{{0.6, -0.25}, {1.2, 3.4}})
+	})
+	t.Run("stops where the caller breaks", func(t *testing.T) {
+		for vertex := range Ln(Pt(1, 2), Pt(3, 5)).Vertices() {
+			AssertPoint(t, vertex, Pt(1, 2))
+
+			break
+		}
+	})
+	t.Run("ranging allocates nothing", func(t *testing.T) {
+		l := Ln(Pt(1, 2), Pt(3, 5))
+
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			for vertex := range l.Vertices() {
+				sinkBool = vertex.IsZero()
+			}
+		}), 0)
+	})
+}
+
+func TestLine_Edges(t *testing.T) {
+	l := Ln(Pt(1, 2), Pt(3, 5))
+
+	t.Run("is the segment itself", func(t *testing.T) {
+		edges := slices.Collect(l.Edges())
+
+		assert.Equal(t, len(edges), 1)
+		AssertLine(t, edges[0], l)
+	})
+	t.Run("ranging allocates nothing", func(t *testing.T) {
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			for edge := range l.Edges() {
+				sinkBool = edge.IsZero()
+			}
+		}), 0)
 	})
 }
 
@@ -302,7 +336,7 @@ func TestLine_Normal(t *testing.T) {
 	t.Run("points inward on a rectangle edge", func(t *testing.T) {
 		r := Rect(Pt(0, 0), Sz(4, 4))
 
-		for _, edge := range r.Edges() {
+		for edge := range r.Edges() {
 			assert.True(t, r.Contains(edge.Midpoint().Add(edge.Normal().Resize(1))), edge.String())
 		}
 	})
@@ -790,6 +824,19 @@ func TestLine_IntersectionRectangle(t *testing.T) {
 		assert.Nil(t, Ln(Pt(3, -5), Pt(3, 5)).IntersectionRectangle(rectangle))
 		assert.Nil(t, Ln(Pt(-1, -1), Pt(1, 1)).IntersectionRectangle(rectangle))
 	})
+	t.Run("allocates the result alone", func(t *testing.T) {
+		through, apart := Ln(Pt(-5, 1), Pt(5, 1)), Ln(Pt(3, -5), Pt(3, 5))
+
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = through.IntersectionRectangle(rectangle)
+		}), 1)
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = through.IntersectionRectangle(rectangle.Rotate(Pi / 5))
+		}), 1)
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = apart.IntersectionRectangle(rectangle)
+		}), 0)
+	})
 	t.Run("float keeps the crossings", func(t *testing.T) {
 		AssertVertices(t, Ln(Pt(-5.0, 1.0), Pt(5.0, 1.0)).IntersectionRectangle(Rect(Pt(0.0, 0.0), Sz(3.0, 3.0))), []Point[float64]{Pt(-1.5, 1.0), Pt(1.5, 1.0)})
 	})
@@ -800,7 +847,7 @@ func TestLine_IntersectionRectangle(t *testing.T) {
 
 				for _, p := range points {
 					assert.True(t, l.Contains(p), fmt.Sprintf("%s → %s: %s on the segment: ", l, r, p))
-					assert.True(t, slices.ContainsFunc(r.Edges(), func(edge Line[float64]) bool {
+					assert.True(t, slices.ContainsFunc(slices.Collect(r.Edges()), func(edge Line[float64]) bool {
 						return edge.Contains(p)
 					}), fmt.Sprintf("%s → %s: %s on the boundary: ", l, r, p))
 				}
@@ -928,7 +975,7 @@ func FuzzLine_IntersectionRectangle(f *testing.F) {
 
 		for _, p := range points {
 			assert.True(t, l.Contains(p), fmt.Sprintf("%s → %s: %s on the segment: ", l, r, p))
-			assert.True(t, slices.ContainsFunc(r.Edges(), func(edge Line[float64]) bool {
+			assert.True(t, slices.ContainsFunc(slices.Collect(r.Edges()), func(edge Line[float64]) bool {
 				return edge.Contains(p)
 			}), fmt.Sprintf("%s → %s: %s on the boundary: ", l, r, p))
 		}
@@ -1121,7 +1168,7 @@ func TestLine_Properties(t *testing.T) {
 	})
 	t.Run("vertices are the endpoints", func(t *testing.T) {
 		for _, line := range lineFixtures {
-			AssertVertices(t, line.Vertices(), []Point[float64]{line.Start, line.End})
+			AssertVertices(t, slices.Collect(line.Vertices()), []Point[float64]{line.Start, line.End})
 		}
 	})
 }

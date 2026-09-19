@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"slices"
 	"testing"
 
 	"github.com/gravitton/assert"
@@ -38,7 +39,7 @@ func TestRegularPolygonOrientationAngle(t *testing.T) {
 	})
 	t.Run("flat top puts an edge midpoint at the top for any n", func(t *testing.T) {
 		for n := 3; n <= 9; n++ {
-			vertices := RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), n, FlatTop).Vertices()
+			vertices := slices.Collect(RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), n, FlatTop).Vertices())
 
 			AssertPoint(t, vertices[0].Midpoint(vertices[1]), Pt(0.0, -10*math.Cos(Pi/float64(n))), fmt.Sprintf("n=%d: ", n))
 		}
@@ -74,10 +75,10 @@ func TestRegularPolygonWithOrientation(t *testing.T) {
 		assert.NotEqual(t, pointy.Angle, flat.Angle)
 	})
 	t.Run("pointy top starts above the center", func(t *testing.T) {
-		assert.True(t, pointy.Vertices()[0].Y < center.Y)
+		assert.True(t, slices.Collect(pointy.Vertices())[0].Y < center.Y)
 	})
 	t.Run("flat top starts left of and above the center", func(t *testing.T) {
-		first := flat.Vertices()[0]
+		first := slices.Collect(flat.Vertices())[0]
 
 		assert.True(t, first.X < center.X)
 		assert.True(t, first.Y < center.Y)
@@ -93,7 +94,7 @@ func TestTriangle(t *testing.T) {
 	t.Run("integer vertices round after scaling", func(t *testing.T) {
 		// vertices 1 and 2 land within one unit of the exact (3.598, 0.5) and (-1.598, 0.5);
 		// their Y of 0.5 falls just below the .5 tie in float64 and rounds down to 0
-		AssertVertices(t, triangle.Vertices(), []Point[int]{Pt(1, -4), Pt(4, 0), Pt(-2, 0)})
+		AssertVertices(t, slices.Collect(triangle.Vertices()), []Point[int]{Pt(1, -4), Pt(4, 0), Pt(-2, 0)})
 	})
 }
 
@@ -104,7 +105,7 @@ func TestSquare(t *testing.T) {
 		AssertRegularPolygon(t, square, RegPol(Pt(50.0, 50.0), Sz(100.0, 100.0), 4, RegularPolygonOrientationAngle(4, PointyTop)))
 	})
 	t.Run("pointy top starts at the visual top and winds to the right", func(t *testing.T) {
-		AssertVertices(t, square.Vertices(), []Point[float64]{Pt(50.0, -50.0), Pt(150.0, 50.0), Pt(50.0, 150.0), Pt(-50.0, 50.0)})
+		AssertVertices(t, slices.Collect(square.Vertices()), []Point[float64]{Pt(50.0, -50.0), Pt(150.0, 50.0), Pt(50.0, 150.0), Pt(-50.0, 50.0)})
 	})
 }
 
@@ -116,7 +117,7 @@ func TestHexagon(t *testing.T) {
 		AssertRegularPolygon(t, hexagon, RegPol(Pt(0.0, 0.0), Sz(10.0, 10.0), 6, RegularPolygonOrientationAngle(6, PointyTop)))
 	})
 	t.Run("pointy top has vertices at top and bottom and flat sides left and right", func(t *testing.T) {
-		AssertVertices(t, hexagon.Vertices(), []Point[float64]{
+		AssertVertices(t, slices.Collect(hexagon.Vertices()), []Point[float64]{
 			Pt(0.0, -10.0),
 			Pt(5*Sqrt3, -5.0),
 			Pt(5*Sqrt3, 5.0),
@@ -128,13 +129,12 @@ func TestHexagon(t *testing.T) {
 }
 
 func TestRegularPolygon_Vertices(t *testing.T) {
-	t.Run("fewer than one side has nil vertices", func(t *testing.T) {
-		assert.Nil(t, RegPol(Pt(0, 0), Sz(1, 1), 0, 0).Vertices())
-		assert.Nil(t, RegPol(Pt(0.0, 0.0), Sz(1.0, 1.0), -3, 0).Vertices())
-		assert.True(t, RegPol(Pt(0, 0), Sz(1, 1), 0, 0).Polygon().IsZero())
+	t.Run("fewer than one side yields nothing", func(t *testing.T) {
+		assert.Nil(t, slices.Collect(RegPol(Pt(0, 0), Sz(1, 1), 0, 0).Vertices()))
+		assert.Nil(t, slices.Collect(RegPol(Pt(0.0, 0.0), Sz(1.0, 1.0), -3, 0).Vertices()))
 	})
 	t.Run("int", func(t *testing.T) {
-		AssertVertices(t, RegPol(Pt(0, 0), Sz(1, 1), 4, 0).Vertices(), []Point[int]{
+		AssertVertices(t, slices.Collect(RegPol(Pt(0, 0), Sz(1, 1), 4, 0).Vertices()), []Point[int]{
 			Pt(1, 0),
 			Pt(0, 1),
 			Pt(-1, 0),
@@ -142,7 +142,7 @@ func TestRegularPolygon_Vertices(t *testing.T) {
 		})
 	})
 	t.Run("non-square size stretches the ellipse", func(t *testing.T) {
-		AssertVertices(t, RegPol(Pt(0, 0), Sz(2, 3), 4, 0).Vertices(), []Point[int]{
+		AssertVertices(t, slices.Collect(RegPol(Pt(0, 0), Sz(2, 3), 4, 0).Vertices()), []Point[int]{
 			Pt(2, 0),
 			Pt(0, 3),
 			Pt(-2, 0),
@@ -150,7 +150,7 @@ func TestRegularPolygon_Vertices(t *testing.T) {
 		})
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertVertices(t, RegPol(Pt(0.0, 0.0), Sz(2.0, 3.0), 6, 0).Vertices(), []Point[float64]{
+		AssertVertices(t, slices.Collect(RegPol(Pt(0.0, 0.0), Sz(2.0, 3.0), 6, 0).Vertices()), []Point[float64]{
 			Pt(2.0, 0.0),
 			Pt(1.0, 1.5*Sqrt3),
 			Pt(-1.0, 1.5*Sqrt3),
@@ -159,8 +159,67 @@ func TestRegularPolygon_Vertices(t *testing.T) {
 			Pt(1.0, -1.5*Sqrt3),
 		})
 	})
-	t.Run("no sides means no vertices", func(t *testing.T) {
-		AssertVertices(t, RegPol(Pt(3, 4), Sz(10, 10), 0, 0).Vertices(), []Point[int]{})
+	t.Run("stops where the caller breaks", func(t *testing.T) {
+		for vertex := range RegPol(Pt(0, 0), Sz(1, 1), 4, 0).Vertices() {
+			AssertPoint(t, vertex, Pt(1, 0))
+
+			break
+		}
+	})
+	t.Run("ranging allocates nothing", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			AssertNumber(t, testing.AllocsPerRun(100, func() {
+				for vertex := range rp.Vertices() {
+					sinkBool = vertex.IsZero()
+				}
+			}), 0, fmt.Sprintf("%s: ", rp))
+		}
+	})
+}
+
+func TestRegularPolygon_Edges(t *testing.T) {
+	t.Run("closes back to the first vertex", func(t *testing.T) {
+		edges := slices.Collect(RegPol(Pt(0, 0), Sz(1, 1), 4, 0).Edges())
+
+		assert.Equal(t, len(edges), 4)
+		AssertLine(t, edges[0], Ln(Pt(1, 0), Pt(0, 1)))
+		AssertLine(t, edges[3], Ln(Pt(0, -1), Pt(1, 0)))
+	})
+	t.Run("single vertex is one zero-length edge", func(t *testing.T) {
+		edges := slices.Collect(RegPol(Pt(0.0, 0.0), Sz(1.0, 1.0), 1, 0).Edges())
+
+		assert.Equal(t, len(edges), 1)
+		AssertLine(t, edges[0], Ln(Pt(1.0, 0.0), Pt(1.0, 0.0)))
+	})
+	t.Run("fewer than one side yields nothing", func(t *testing.T) {
+		assert.Nil(t, slices.Collect(RegPol(Pt(0, 0), Sz(1, 1), 0, 0).Edges()))
+		assert.Nil(t, slices.Collect(RegPol(Pt(0.0, 0.0), Sz(1.0, 1.0), -3, 0).Edges()))
+	})
+	t.Run("stops where the caller breaks", func(t *testing.T) {
+		for edge := range RegPol(Pt(0, 0), Sz(1, 1), 4, 0).Edges() {
+			AssertLine(t, edge, Ln(Pt(1, 0), Pt(0, 1)))
+
+			break
+		}
+	})
+	t.Run("are the edges of the polygon", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			edges, expected := slices.Collect(rp.Edges()), slices.Collect(rp.Polygon().Edges())
+
+			assert.Equal(t, len(edges), len(expected), fmt.Sprintf("%s: ", rp))
+			for i := range edges {
+				AssertLine(t, edges[i], expected[i], fmt.Sprintf("%s #%d: ", rp, i))
+			}
+		}
+	})
+	t.Run("ranging allocates nothing", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			AssertNumber(t, testing.AllocsPerRun(100, func() {
+				for edge := range rp.Edges() {
+					sinkBool = edge.IsZero()
+				}
+			}), 0, fmt.Sprintf("%s: ", rp))
+		}
 	})
 }
 
@@ -301,7 +360,7 @@ func TestRegularPolygon_Canonical(t *testing.T) {
 		rp := RegularPolygon[float64]{Pt(0.5, -1.25), Sz(-2.5, -3.75), 5, 1}
 
 		AssertRegularPolygon(t, rp.Canonical(), RegPol(rp.Center, rp.Size, rp.N, rp.Angle))
-		AssertVertices(t, rp.Canonical().Vertices(), RegPol(rp.Center, rp.Size, rp.N, rp.Angle).Vertices())
+		AssertVertices(t, slices.Collect(rp.Canonical().Vertices()), slices.Collect(RegPol(rp.Center, rp.Size, rp.N, rp.Angle).Vertices()))
 	})
 	t.Run("normalizes the angle the way Rotate stores it", func(t *testing.T) {
 		AssertRegularPolygon(t, RegularPolygon[float64]{Pt(0.0, 0.0), SzU(2.0), 4, 7}.Canonical(), RegPol(Pt(0.0, 0.0), SzU(2.0), 4, 7-2*Pi))
@@ -438,10 +497,14 @@ func TestRegularPolygon_Polygon(t *testing.T) {
 	p := rp.Polygon()
 
 	t.Run("carries the vertices", func(t *testing.T) {
-		AssertVertices(t, p.Vertices, rp.Vertices())
+		AssertVertices(t, p.Points, slices.Collect(rp.Vertices()))
 	})
 	t.Run("owns its slice", func(t *testing.T) {
-		assert.NotSame(t, p.Vertices, rp.Vertices())
+		assert.NotSame(t, p.Points, rp.Polygon().Points)
+	})
+	t.Run("fewer than one side is the zero polygon", func(t *testing.T) {
+		assert.True(t, RegPol(Pt(0, 0), Sz(1, 1), 0, 0).Polygon().IsZero())
+		assert.True(t, RegPol(Pt(0.0, 0.0), Sz(1.0, 1.0), -3, 0).Polygon().IsZero())
 	})
 }
 
@@ -504,12 +567,12 @@ func TestRegularPolygon_JSON(t *testing.T) {
 func TestRegularPolygon_Properties(t *testing.T) {
 	t.Run("vertex count matches the side count", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
-			assert.Equal(t, len(rp.Vertices()), rp.N, fmt.Sprintf("%s: ", rp))
+			assert.Equal(t, len(slices.Collect(rp.Vertices())), rp.N, fmt.Sprintf("%s: ", rp))
 		}
 	})
 	t.Run("vertices lie on the ellipse of the size", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
-			for _, vertex := range rp.Vertices() {
+			for vertex := range rp.Vertices() {
 				offset := vertex.Subtract(rp.Center)
 				normalized := offset.X*offset.X/(rp.Size.Width*rp.Size.Width) + offset.Y*offset.Y/(rp.Size.Height*rp.Size.Height)
 
@@ -519,13 +582,13 @@ func TestRegularPolygon_Properties(t *testing.T) {
 	})
 	t.Run("a full turn restores the vertices", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
-			AssertVertices(t, rp.Rotate(2*Pi).Vertices(), rp.Vertices(), fmt.Sprintf("%s: ", rp))
+			AssertVertices(t, slices.Collect(rp.Rotate(2*Pi).Vertices()), slices.Collect(rp.Vertices()), fmt.Sprintf("%s: ", rp))
 		}
 	})
 	t.Run("rotating by one step permutes the vertices", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
-			rotated := rp.Rotate(2 * Pi / float64(rp.N)).Vertices()
-			vertices := rp.Vertices()
+			rotated := slices.Collect(rp.Rotate(2 * Pi / float64(rp.N)).Vertices())
+			vertices := slices.Collect(rp.Vertices())
 
 			for i := range vertices {
 				assert.True(t, rotated[i].Equal(vertices[(i+1)%rp.N]), fmt.Sprintf("%s #%d: ", rp, i))
@@ -547,7 +610,7 @@ func TestRegularPolygon_Properties(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
 			bounds := rp.Bounds()
 
-			for _, vertex := range rp.Vertices() {
+			for vertex := range rp.Vertices() {
 				assert.True(t, vertex.X >= bounds.Min().X-Delta && vertex.X <= bounds.Max().X+Delta, fmt.Sprintf("%s: ", rp))
 				assert.True(t, vertex.Y >= bounds.Min().Y-Delta && vertex.Y <= bounds.Max().Y+Delta, fmt.Sprintf("%s: ", rp))
 			}
@@ -555,7 +618,7 @@ func TestRegularPolygon_Properties(t *testing.T) {
 	})
 	t.Run("polygon carries the vertices", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
-			AssertVertices(t, rp.Polygon().Vertices, rp.Vertices(), fmt.Sprintf("%s: ", rp))
+			AssertVertices(t, rp.Polygon().Points, slices.Collect(rp.Vertices()), fmt.Sprintf("%s: ", rp))
 		}
 	})
 }

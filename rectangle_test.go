@@ -3,6 +3,7 @@ package geom
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/gravitton/assert"
@@ -271,7 +272,7 @@ func TestRectangle_EdgeAccessors(t *testing.T) {
 
 func TestRectangle_Edges(t *testing.T) {
 	r := Rect(Pt(0, 0), Sz(2, 2))
-	edges := r.Edges()
+	edges := slices.Collect(r.Edges())
 
 	t.Run("clockwise from the top", func(t *testing.T) {
 		assert.Equal(t, len(edges), 4)
@@ -295,13 +296,29 @@ func TestRectangle_Edges(t *testing.T) {
 		turned := Rect(Pt(0, 0), Sz(4, 2)).Rotate(Pi / 2)
 
 		AssertLine(t, turned.TopEdge(), Ln(Pt(1, -2), Pt(1, 2)))
-		AssertLine(t, turned.Edges()[2], Ln(Pt(-1, 2), Pt(-1, -2)))
+		AssertLine(t, slices.Collect(turned.Edges())[2], Ln(Pt(-1, 2), Pt(-1, -2)))
+	})
+	t.Run("stops where the caller breaks", func(t *testing.T) {
+		for edge := range r.Edges() {
+			AssertLine(t, edge, r.TopEdge())
+
+			break
+		}
+	})
+	t.Run("ranging allocates nothing", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			AssertNumber(t, testing.AllocsPerRun(100, func() {
+				for edge := range r.Edges() {
+					sinkBool = edge.IsZero()
+				}
+			}), 0, fmt.Sprintf("%s: ", r))
+		}
 	})
 }
 
 func TestRectangle_Vertices(t *testing.T) {
 	r := Rect(Pt(0, 0), Sz(2, 2))
-	vertices := r.Vertices()
+	vertices := slices.Collect(r.Vertices())
 
 	t.Run("clockwise from the top left", func(t *testing.T) {
 		AssertVertices(t, vertices, []Point[int]{{-1, -1}, {1, -1}, {1, 1}, {-1, 1}})
@@ -313,14 +330,32 @@ func TestRectangle_Vertices(t *testing.T) {
 		AssertPoint(t, vertices[3], r.BottomLeft())
 	})
 	t.Run("agrees with the edge starts", func(t *testing.T) {
-		for i, edge := range r.Edges() {
+		edges := slices.Collect(r.Edges())
+
+		for i, edge := range edges {
 			AssertPoint(t, edge.Start, vertices[i])
 		}
 	})
 	t.Run("rotated vertices are the corners turned about the center", func(t *testing.T) {
 		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
 
-		AssertVertices(t, diamond.Vertices(), []Point[float64]{{0, -Sqrt2}, {Sqrt2, 0}, {0, Sqrt2}, {-Sqrt2, 0}})
+		AssertVertices(t, slices.Collect(diamond.Vertices()), []Point[float64]{{0, -Sqrt2}, {Sqrt2, 0}, {0, Sqrt2}, {-Sqrt2, 0}})
+	})
+	t.Run("stops where the caller breaks", func(t *testing.T) {
+		for vertex := range r.Vertices() {
+			AssertPoint(t, vertex, r.TopLeft())
+
+			break
+		}
+	})
+	t.Run("ranging allocates nothing", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			AssertNumber(t, testing.AllocsPerRun(100, func() {
+				for vertex := range r.Vertices() {
+					sinkBool = vertex.IsZero()
+				}
+			}), 0, fmt.Sprintf("%s: ", r))
+		}
 	})
 }
 
@@ -612,7 +647,7 @@ func TestRectangle_Rotate(t *testing.T) {
 	})
 	t.Run("a full turn is the rectangle itself, corners exact", func(t *testing.T) {
 		assert.True(t, r.Rotate(2*Pi).IsAligned())
-		AssertVertices(t, r.Rotate(2*Pi).Vertices(), r.Vertices())
+		AssertVertices(t, slices.Collect(r.Rotate(2*Pi).Vertices()), slices.Collect(r.Vertices()))
 	})
 	t.Run("turning back undoes the turn", func(t *testing.T) {
 		for _, r := range rectFixtures {
@@ -918,7 +953,7 @@ func TestRectangle_Intersection(t *testing.T) {
 				}
 
 				AssertRectangle(t, ab, ba, fmt.Sprintf("%s → %s: ", a, b))
-				for _, corner := range ab.Vertices() {
+				for corner := range ab.Vertices() {
 					assert.True(t, a.Contains(corner), fmt.Sprintf("%s → %s: %s in a: ", a, b, corner))
 					assert.True(t, b.Contains(corner), fmt.Sprintf("%s → %s: %s in b: ", a, b, corner))
 				}
@@ -958,8 +993,10 @@ func TestRectangle_Union(t *testing.T) {
 				union := a.Union(b)
 
 				AssertRectangle(t, union, b.Union(a), fmt.Sprintf("%s → %s: ", a, b))
-				for _, corner := range append(a.Vertices(), b.Vertices()...) {
-					assert.True(t, union.Contains(corner), fmt.Sprintf("%s → %s: %s: ", a, b, corner))
+				for _, r := range [2]Rectangle[float64]{a, b} {
+					for corner := range r.Vertices() {
+						assert.True(t, union.Contains(corner), fmt.Sprintf("%s → %s: %s: ", a, b, corner))
+					}
 				}
 			}
 		}
@@ -1118,15 +1155,15 @@ func TestRectangle_Polygon(t *testing.T) {
 	p := r.Polygon()
 
 	t.Run("carries the vertices", func(t *testing.T) {
-		AssertVertices(t, p.Vertices, r.Vertices())
+		AssertVertices(t, p.Points, slices.Collect(r.Vertices()))
 	})
 	t.Run("owns its slice", func(t *testing.T) {
-		assert.NotSame(t, p.Vertices, r.Vertices())
+		assert.NotSame(t, p.Points, r.Polygon().Points)
 	})
 	t.Run("rotated carries the turned vertices", func(t *testing.T) {
 		turned := r.Rotate(Pi / 2)
 
-		AssertVertices(t, turned.Polygon().Vertices, turned.Vertices())
+		AssertVertices(t, turned.Polygon().Points, slices.Collect(turned.Vertices()))
 		assert.True(t, turned.Polygon().Contains(Pt(1, 1)))
 	})
 }
@@ -1321,7 +1358,7 @@ func TestRectangle_Properties(t *testing.T) {
 	})
 	t.Run("vertices and edges describe the same outline", func(t *testing.T) {
 		for _, r := range rectFixtures {
-			vertices, edges := r.Vertices(), r.Edges()
+			vertices, edges := slices.Collect(r.Vertices()), slices.Collect(r.Edges())
 
 			assert.Equal(t, len(vertices), 4, fmt.Sprintf("%s: ", r))
 			assert.Equal(t, len(edges), 4, fmt.Sprintf("%s: ", r))
@@ -1341,7 +1378,7 @@ func TestRectangle_Properties(t *testing.T) {
 	})
 	t.Run("polygon carries the vertices", func(t *testing.T) {
 		for _, r := range rectFixtures {
-			AssertVertices(t, r.Polygon().Vertices, r.Vertices())
+			AssertVertices(t, r.Polygon().Points, slices.Collect(r.Vertices()))
 		}
 	})
 }

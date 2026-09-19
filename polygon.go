@@ -14,12 +14,12 @@ import (
 // Polygon is a 2D polygon given by its vertices. The vertex count is not checked: a polygon with
 // fewer than three vertices is degenerate but every method still answers for it.
 //
-// Vertices is shared, not copied: Pol keeps the slice it is given and every method that
+// Points is shared, not copied: Pol keeps the slice it is given and every method that
 // returns a Polygon allocates a new one. The polygon is immutable as long as its caller does
-// not write into that slice. A nil Vertices stays nil through every method, so IsZero holds
+// not write into that slice. A nil Points stays nil through every method, so IsZero holds
 // after Translate, Scale, Int or Float.
 type Polygon[T Number] struct {
-	Vertices []Point[T]
+	Points []Point[T]
 }
 
 // Pol is shorthand for Polygon{vertices}.
@@ -36,8 +36,8 @@ func (p Polygon[T]) minMax() (Point[T], Point[T]) {
 		return Point[T]{}, Point[T]{}
 	}
 
-	a, b := p.Vertices[0], p.Vertices[0]
-	for _, v := range p.Vertices[1:] {
+	a, b := p.Points[0], p.Points[0]
+	for _, v := range p.Points[1:] {
 		a = Point[T]{min(a.X, v.X), min(a.Y, v.Y)}
 		b = Point[T]{max(b.X, v.X), max(b.Y, v.Y)}
 	}
@@ -45,15 +45,35 @@ func (p Polygon[T]) minMax() (Point[T], Point[T]) {
 	return a, b
 }
 
-// Edges returns the polygon edges in vertex order, each from a vertex to the next and the
-// last one closing back to the first. A single vertex yields one zero-length edge, and a nil
-// Vertices maps to nil edges like every other mapping.
-func (p Polygon[T]) Edges() []Line[T] {
-	if p.IsZero() {
-		return nil
-	}
+// Edges iterates the polygon edges in vertex order, each from a vertex to the next and the
+// last one closing back to the first, without allocating; collect them with slices.Collect
+// where a slice is needed. A single vertex yields one zero-length edge and an empty polygon
+// yields nothing. Every walk over the outline, containment, distance and the crossings of a
+// segment, reads these edges, so the boundary they join is the one every test agrees on.
+func (p Polygon[T]) Edges() iter.Seq[Line[T]] {
+	return edgesOf(p.Points)
+}
 
-	return slices.AppendSeq(make([]Line[T], 0, len(p.Vertices)), p.edges())
+// Vertices iterates Points in order, the form every shape with an outline offers, so a
+// polygon is drawn or measured by the same loop as a Rectangle or a RegularPolygon. Index
+// Points directly where a position is needed.
+func (p Polygon[T]) Vertices() iter.Seq[Point[T]] {
+	return slices.Values(p.Points)
+}
+
+// edgesOf iterates the edges joining the vertices in order, the last one closing back to the
+// first: the one iterator Polygon.Edges, Rectangle.Edges and Line.crossings walk, so the
+// edges a segment crosses are the edges the walk reads. The slice is read as the edges are
+// yielded and never retained, so a caller may pass a slice of a local array.
+func edgesOf[T Number](vertices []Point[T]) iter.Seq[Line[T]] {
+	return func(yield func(Line[T]) bool) {
+		n := len(vertices)
+		for i, vertex := range vertices {
+			if !yield(Line[T]{vertex, vertices[(i+1)%n]}) {
+				return
+			}
+		}
+	}
 }
 
 // Center returns the polygon centroid: the center of the enclosed area, so a vertex added in
@@ -71,11 +91,11 @@ func (p Polygon[T]) Center() Point[T] {
 		return Point[T]{}
 	}
 
-	origin := p.Vertices[0].Float()
+	origin := p.Points[0].Float()
 	offset := origin.Vector().Negate()
 
 	var x, y, twiceArea float64
-	for edge := range p.edges() {
+	for edge := range p.Edges() {
 		shifted := edge.Float().Translate(offset)
 		wedge := shifted.wedge()
 
@@ -98,7 +118,7 @@ func (p Polygon[T]) Center() Point[T] {
 // a self-intersecting polygon has its lobes cancel where they wind the opposite way.
 func (p Polygon[T]) Area() float64 {
 	var twiceArea float64
-	for edge := range p.edges() {
+	for edge := range p.Edges() {
 		twiceArea += edge.wedge()
 	}
 
@@ -108,7 +128,7 @@ func (p Polygon[T]) Area() float64 {
 // Perimeter returns the total length of the edges.
 func (p Polygon[T]) Perimeter() float64 {
 	var perimeter float64
-	for edge := range p.edges() {
+	for edge := range p.Edges() {
 		perimeter += edge.Length()
 	}
 
@@ -125,31 +145,18 @@ func (p Polygon[T]) Bounds() Rectangle[T] {
 // polygon encloses no area.
 func (p Polygon[T]) mean() Point[T] {
 	var x, y float64
-	for _, v := range p.Vertices {
+	for _, v := range p.Points {
 		x, y = x+float64(v.X), y+float64(v.Y)
 	}
 
-	n := float64(len(p.Vertices))
+	n := float64(len(p.Points))
 
 	return Point[T]{Cast[T](x / n), Cast[T](y / n)}
 }
 
-// edges iterates the edges Edges returns without allocating them, for the methods that only
-// need to walk them once.
-func (p Polygon[T]) edges() iter.Seq[Line[T]] {
-	return func(yield func(Line[T]) bool) {
-		n := len(p.Vertices)
-		for i, vertex := range p.Vertices {
-			if !yield(Line[T]{vertex, p.Vertices[(i+1)%n]}) {
-				return
-			}
-		}
-	}
-}
-
 // Translate creates a new Polygon translated by the given vector (applied to all vertices).
 func (p Polygon[T]) Translate(vector Vector[T]) Polygon[T] {
-	return Polygon[T]{xslices.Map(p.Vertices, func(point Point[T]) Point[T] {
+	return Polygon[T]{xslices.Map(p.Points, func(point Point[T]) Point[T] {
 		return point.Add(vector)
 	})}
 }
@@ -166,7 +173,7 @@ func (p Polygon[T]) MoveTo(point Point[T]) Polygon[T] {
 func (p Polygon[T]) Scale(factor float64) Polygon[T] {
 	center := p.Center()
 
-	return Polygon[T]{xslices.Map(p.Vertices, func(point Point[T]) Point[T] {
+	return Polygon[T]{xslices.Map(p.Points, func(point Point[T]) Point[T] {
 		return center.Add(point.Subtract(center).Multiply(factor))
 	})}
 }
@@ -175,7 +182,7 @@ func (p Polygon[T]) Scale(factor float64) Polygon[T] {
 func (p Polygon[T]) ScaleXY(factorX, factorY float64) Polygon[T] {
 	center := p.Center()
 
-	return Polygon[T]{xslices.Map(p.Vertices, func(point Point[T]) Point[T] {
+	return Polygon[T]{xslices.Map(p.Points, func(point Point[T]) Point[T] {
 		return center.Add(point.Subtract(center).MultiplyXY(factorX, factorY))
 	})}
 }
@@ -185,7 +192,7 @@ func (p Polygon[T]) ScaleXY(factorX, factorY float64) Polygon[T] {
 func (p Polygon[T]) Unscale(factor float64) Polygon[T] {
 	center := p.Center()
 
-	return Polygon[T]{xslices.Map(p.Vertices, func(point Point[T]) Point[T] {
+	return Polygon[T]{xslices.Map(p.Points, func(point Point[T]) Point[T] {
 		return center.Add(point.Subtract(center).Divide(factor))
 	})}
 }
@@ -195,14 +202,14 @@ func (p Polygon[T]) Unscale(factor float64) Polygon[T] {
 func (p Polygon[T]) UnscaleXY(factorX, factorY float64) Polygon[T] {
 	center := p.Center()
 
-	return Polygon[T]{xslices.Map(p.Vertices, func(point Point[T]) Point[T] {
+	return Polygon[T]{xslices.Map(p.Points, func(point Point[T]) Point[T] {
 		return center.Add(point.Subtract(center).DivideXY(factorX, factorY))
 	})}
 }
 
 // Transform creates a new Polygon by applying the given matrix to every vertex, like Point.Transform.
 func (p Polygon[T]) Transform[M Float](matrix Matrix[M]) Polygon[T] {
-	return Polygon[T]{xslices.Map(p.Vertices, func(point Point[T]) Point[T] {
+	return Polygon[T]{xslices.Map(p.Points, func(point Point[T]) Point[T] {
 		return point.Transform(matrix)
 	})}
 }
@@ -213,7 +220,7 @@ func (p Polygon[T]) Transform[M Float](matrix Matrix[M]) Polygon[T] {
 func (p Polygon[T]) Rotate(angle float64) Polygon[T] {
 	pivot := p.Center()
 
-	return Polygon[T]{xslices.Map(p.Vertices, func(point Point[T]) Point[T] {
+	return Polygon[T]{xslices.Map(p.Points, func(point Point[T]) Point[T] {
 		return point.RotateAround(pivot, angle)
 	})}
 }
@@ -254,7 +261,7 @@ func (p Polygon[T]) DistanceSquaredTo(point Point[T]) float64 {
 func (p Polygon[T]) walk(point Point[T]) float64 {
 	inside, distance := false, math.Inf(1)
 
-	for edge := range p.edges() {
+	for edge := range p.Edges() {
 		distance = min(distance, edge.distanceSquaredTo(point))
 		if lessOrEqualSquared[T](distance, 0) {
 			return 0
@@ -294,11 +301,11 @@ func (p Polygon[T]) Intersects(polygon Polygon[T]) bool {
 		return false
 	}
 
-	if polygon.encloses(p.Vertices[0], a2, b2) || p.encloses(polygon.Vertices[0], a1, b1) {
+	if polygon.encloses(p.Points[0], a2, b2) || p.encloses(polygon.Points[0], a1, b1) {
 		return true
 	}
 
-	for edge := range p.edges() {
+	for edge := range p.Edges() {
 		if polygon.crossesEdge(edge, a2, b2) {
 			return true
 		}
@@ -327,7 +334,7 @@ func (p Polygon[T]) IntersectsLine(line Line[T]) bool {
 // while IntersectsLine still reports it, a segment along an edge is parallel to it and crosses
 // only the edges at its ends, and an empty polygon has no boundary to cross.
 func (p Polygon[T]) IntersectionLine(line Line[T]) []Point[T] {
-	return line.crossings(p.edges())
+	return line.crossings(p.Points)
 }
 
 // IntersectsRectangle reports whether the polygon and the rectangle share a point, the same
@@ -346,11 +353,11 @@ func (p Polygon[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 		return false
 	}
 
-	if rectangle.Contains(p.Vertices[0]) || p.encloses(rectangle.TopLeft(), a1, b1) {
+	if rectangle.Contains(p.Points[0]) || p.encloses(rectangle.TopLeft(), a1, b1) {
 		return true
 	}
 
-	for edge := range rectangle.edges() {
+	for edge := range rectangle.Edges() {
 		if p.crossesEdge(edge, a1, b1) {
 			return true
 		}
@@ -384,7 +391,7 @@ func (p Polygon[T]) crossesEdge(line Line[T], a, b Point[T]) bool {
 		return false
 	}
 
-	for edge := range p.edges() {
+	for edge := range p.Edges() {
 		if e, f := edge.minMax(); overlaps(c, d, e, f) && edge.Intersects(line) {
 			return true
 		}
@@ -393,15 +400,15 @@ func (p Polygon[T]) crossesEdge(line Line[T], a, b Point[T]) bool {
 	return false
 }
 
-// Equal checks if two polygons have the same vertices. A nil and an empty Vertices are equal,
+// Equal checks if two polygons have the same vertices. A nil and an empty Points are equal,
 // having the same none; only IsZero tells them apart.
 func (p Polygon[T]) Equal(polygon Polygon[T]) bool {
-	if len(p.Vertices) != len(polygon.Vertices) {
+	if len(p.Points) != len(polygon.Points) {
 		return false
 	}
 
-	for i, v := range p.Vertices {
-		if !v.Equal(polygon.Vertices[i]) {
+	for i, v := range p.Points {
+		if !v.Equal(polygon.Points[i]) {
 			return false
 		}
 	}
@@ -411,33 +418,33 @@ func (p Polygon[T]) Equal(polygon Polygon[T]) bool {
 
 // IsZero checks if the vertices slice is nil.
 func (p Polygon[T]) IsZero() bool {
-	return p.Vertices == nil
+	return p.Points == nil
 }
 
 // Empty checks if number of vertices is zero.
 func (p Polygon[T]) Empty() bool {
-	return len(p.Vertices) == 0
+	return len(p.Points) == 0
 }
 
 // Int converts the polygon to a Polygon[int].
 func (p Polygon[T]) Int() Polygon[int] {
-	return Polygon[int]{xslices.Map(p.Vertices, Point[T].Int)}
+	return Polygon[int]{xslices.Map(p.Points, Point[T].Int)}
 }
 
 // Float converts the polygon to a Polygon[float64].
 func (p Polygon[T]) Float() Polygon[float64] {
-	return Polygon[float64]{xslices.Map(p.Vertices, Point[T].Float)}
+	return Polygon[float64]{xslices.Map(p.Points, Point[T].Float)}
 }
 
 // String returns the polygon in the form of its constructor: Pol((x,y);(x,y);...), the
 // vertices separated as every other shape separates its fields.
 func (p Polygon[T]) String() string {
-	return fmt.Sprintf("Pol(%s)", strings.Join(xslices.Map(p.Vertices, Point[T].String), ";"))
+	return fmt.Sprintf("Pol(%s)", strings.Join(xslices.Map(p.Points, Point[T].String), ";"))
 }
 
 // MarshalJSON implements json.Marshaler.
 func (p Polygon[T]) MarshalJSON() ([]byte, error) {
-	return json.Marshal(p.Vertices)
+	return json.Marshal(p.Points)
 }
 
 // UnmarshalJSON implements json.Unmarshaler. The vertices are decoded into a fresh slice, so a
@@ -448,7 +455,7 @@ func (p *Polygon[T]) UnmarshalJSON(bytes []byte) error {
 		return err
 	}
 
-	p.Vertices = vertices
+	p.Points = vertices
 
 	return nil
 }

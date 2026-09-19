@@ -82,9 +82,11 @@ r.Inset(geom.PadU(2)).Anchor(geom.TopRight) // Point{58, 47}
 r.AlignTo(geom.TopLeft, geom.Pt(0, 0))      // Rectangle (0,0)-(20,10)
 
 b := geom.RectangleFromMinMax(geom.Pt(0, 0), geom.Pt(8, 6))
-b.Scale(2)    // Rectangle (-4,-3)-(12,9), scaled around the center
-b.Edges()[0]  // Line (0,0)-(8,0), the top edge
-b.Vertices()  // clockwise from the top-left corner
+b.Scale(2)                    // Rectangle (-4,-3)-(12,9), scaled around the center
+for edge := range b.Edges() { // clockwise from the top edge, Line (0,0)-(8,0), without allocating
+	edge.Midpoint()
+}
+slices.Collect(b.Vertices()) // the four corners as a slice, clockwise from the top-left
 
 d := geom.Rect(geom.Pt(0.0, 0.0), geom.Sz(2.0, 2.0)).Rotate(geom.Pi / 4) // a diamond
 d.Contains(geom.Pt(0.9, 0.9))                                            // false, outside the turned edges
@@ -109,13 +111,20 @@ l.Contains(geom.Pt(6, 8))   // false, the segment ends at (3,4)
 p := geom.Pol([]geom.Point[int]{{0, 0}, {4, 0}, {4, 4}, {2, 1}, {0, 4}})
 p.Area()                  // 10
 p.Contains(geom.Pt(2, 3)) // false, inside the notch
+p.Points[3]               // Point{2, 1}, the notch
+
+for vertex := range p.Vertices() { // the same loop draws a Line, Rectangle or RegularPolygon
+	vertex.Float()
+}
 
 hex := geom.Hexagon(geom.Pt(0, 0), geom.SzU(20), geom.FlatTop)
 hex.Bounds() // Rectangle (-20,-17)-(20,17)
 hex.Area()   // 1039, 3√3/2 · r²
 ```
 
-Every shape has `Translate`, `MoveTo`, `Scale`, `Unscale`, `Lerp`, `Bounds`, `Contains` and `DistanceTo`.
+Every shape has `Translate`, `MoveTo`, `Scale`, `Unscale`, `Lerp`, `Bounds`, `Contains` and `DistanceTo`. Every shape
+with an outline, `Line`, `Rectangle`, `Polygon` and `RegularPolygon`, iterates it with `Vertices` and `Edges` and
+satisfies `Outline`; ranging a concrete shape allocates nothing, ranging through the interface does.
 
 ### Intersections
 
@@ -241,8 +250,6 @@ JSON last.
 - **`Nearest(point)`** – the closest point of a shape to a point, on every shape.
 - **`Encloses`** – shape-in-shape containment for culling, distinct from `Contains`, which takes a point.
 - **`Rectangle.Clamp(rectangle)`** – moves a rectangle so it lies within another.
-- **Vertex and edge iterators** – public `iter.Seq` forms of `Vertices` and `Edges`, forward and backward as
-  `slices.Backward` spells it.
 - **`Circle.RegularPolygon(n, orientation)` and `RegularPolygon.Circle()`** – the conversion between the two shapes,
   with two options for where the polygon meets the circle.
 - **`Line.Clip()`** – the part of a segment inside a shape.

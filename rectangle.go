@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"iter"
 	"math"
-	"slices"
 )
 
 // Rectangle is a 2D rectangle represented by its center, size and angle: the axis-aligned box
@@ -219,38 +218,38 @@ func (r Rectangle[T]) LeftEdge() Line[T] {
 	return Ln(r.BottomLeft(), r.TopLeft())
 }
 
-// Edges returns the rectangle edges as lines in order starting at the top-left corner, by
-// increasing angle — the same winding as Directions and RegularPolygon.Vertices, and clockwise
-// as drawn on a screen with Y pointing down. Each edge starts where the previous one ends.
-func (r Rectangle[T]) Edges() []Line[T] {
-	return slices.AppendSeq(make([]Line[T], 0, 4), r.edges())
-}
-
-// edges iterates the edges Edges returns without allocating them, for the methods that only
-// need to walk them once.
-func (r Rectangle[T]) edges() iter.Seq[Line[T]] {
+// Edges iterates the rectangle edges in order starting at the top-left corner, by increasing
+// angle — the same winding as Directions and RegularPolygon.Points, and clockwise as drawn on
+// a screen with Y pointing down. Each edge starts where the previous one ends. The edges are
+// built from the corners as they are walked, without allocating; collect them with
+// slices.Collect where a slice is needed. Every walk over the outline, containment, distance
+// and the crossings of a segment, reads these edges, so the boundary they join is the one
+// every test agrees on.
+func (r Rectangle[T]) Edges() iter.Seq[Line[T]] {
 	return func(yield func(Line[T]) bool) {
 		corners := r.corners()
-		for i, corner := range corners {
-			if !yield(Line[T]{corner, corners[(i+1)%4]}) {
+
+		edgesOf(corners[:])(yield)
+	}
+}
+
+// Vertices iterates the rectangle vertices in order starting at the top-left corner, by
+// increasing angle — the same winding as Directions and RegularPolygon.Points, and clockwise
+// as drawn on a screen with Y pointing down, without allocating; collect them with
+// slices.Collect where a slice is needed. For integer T each vertex of a rotated rectangle is
+// rounded onto the lattice.
+func (r Rectangle[T]) Vertices() iter.Seq[Point[T]] {
+	return func(yield func(Point[T]) bool) {
+		for _, corner := range r.corners() {
+			if !yield(corner) {
 				return
 			}
 		}
 	}
 }
 
-// Vertices returns the rectangle vertices in order starting at the top-left corner, by
-// increasing angle — the same winding as Directions and RegularPolygon.Vertices, and clockwise
-// as drawn on a screen with Y pointing down. For integer T each vertex of a rotated rectangle
-// is rounded onto the lattice.
-func (r Rectangle[T]) Vertices() []Point[T] {
-	corners := r.corners()
-
-	return corners[:]
-}
-
-// corners returns the vertices as an array from a single frame, for Vertices and the edge
-// walk, so neither recomputes the corners it shares.
+// corners returns the vertices as an array from a single frame, for Vertices, Edges and
+// Polygon, so none recomputes the corners it shares.
 func (r Rectangle[T]) corners() [4]Point[T] {
 	a, b := r.frame()
 
@@ -488,7 +487,7 @@ func (r Rectangle[T]) walk(point Point[T]) float64 {
 	}
 
 	inside, distance := false, math.Inf(1)
-	for edge := range r.edges() {
+	for edge := range r.Edges() {
 		distance = min(distance, edge.distanceSquaredTo(point))
 		if lessOrEqualSquared[T](distance, 0) {
 			return 0
@@ -628,8 +627,8 @@ func (r Rectangle[T]) meets(rectangle Rectangle[T]) bool {
 		return true
 	}
 
-	for edge := range r.edges() {
-		for other := range rectangle.edges() {
+	for edge := range r.Edges() {
+		for other := range rectangle.Edges() {
 			if edge.Intersects(other) {
 				return true
 			}
@@ -683,9 +682,12 @@ func (r Rectangle[T]) IsAligned() bool {
 	return r.Angle == 0
 }
 
-// Polygon converts the rectangle into a generic Polygon with computed vertices.
+// Polygon converts the rectangle into a generic Polygon with the vertices Vertices iterates,
+// in one allocation.
 func (r Rectangle[T]) Polygon() Polygon[T] {
-	return Polygon[T]{r.Vertices()}
+	corners := r.corners()
+
+	return Polygon[T]{corners[:]}
 }
 
 // Int converts the rectangle to a Rectangle[int], rounding the center and the size on their

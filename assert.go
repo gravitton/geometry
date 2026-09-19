@@ -130,7 +130,7 @@ func AssertRectangle[T Number](t Testing, actual, expected Rectangle[T], message
 func AssertPolygon[T Number](t Testing, actual, expected Polygon[T], messages ...string) bool {
 	t.Helper()
 
-	return AssertVertices(t, actual.Vertices, expected.Vertices, messages...)
+	return AssertVertices(t, actual.Points, expected.Points, messages...)
 }
 
 // AssertVertices asserts that actual matches expected element-by-element (exactly for an integer T, within [EpsilonRelative] for a float T).

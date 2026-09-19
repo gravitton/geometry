@@ -48,9 +48,20 @@ func (l Line[T]) minMax() (Point[T], Point[T]) {
 	return Point[T]{min(l.Start.X, l.End.X), min(l.Start.Y, l.End.Y)}, Point[T]{max(l.Start.X, l.End.X), max(l.Start.Y, l.End.Y)}
 }
 
-// Vertices returns the start and end points as a slice.
-func (l Line[T]) Vertices() []Point[T] {
-	return []Point[T]{l.Start, l.End}
+// Vertices iterates the start and end points, in that order, without allocating; collect
+// them with slices.Collect where a slice is needed.
+func (l Line[T]) Vertices() iter.Seq[Point[T]] {
+	return func(yield func(Point[T]) bool) {
+		_ = yield(l.Start) && yield(l.End)
+	}
+}
+
+// Edges iterates the one edge of the segment, itself: a segment is an open outline, so
+// unlike the closed shapes no edge returns to the first vertex.
+func (l Line[T]) Edges() iter.Seq[Line[T]] {
+	return func(yield func(Line[T]) bool) {
+		yield(l)
+	}
 }
 
 // Midpoint returns the midpoint of the line, Lerp(0.5).
@@ -323,7 +334,7 @@ func (l Line[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 		return true
 	}
 
-	for edge := range rectangle.edges() {
+	for edge := range rectangle.Edges() {
 		if l.Intersects(edge) {
 			return true
 		}
@@ -338,7 +349,9 @@ func (l Line[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 // IntersectsRectangle still reports it, and a segment along an edge is parallel to it and
 // crosses only the edges at its ends, if it reaches them.
 func (l Line[T]) IntersectionRectangle(rectangle Rectangle[T]) []Point[T] {
-	return l.crossings(rectangle.edges())
+	corners := rectangle.corners()
+
+	return l.crossings(corners[:])
 }
 
 // IntersectsPolygon reports whether the segment and the polygon share a point, as
@@ -353,21 +366,30 @@ func (l Line[T]) IntersectionPolygon(polygon Polygon[T]) []Point[T] {
 	return polygon.IntersectionLine(l)
 }
 
-// crossings returns the points where the segment crosses the given edges, from Start to End:
-// each crossing by Intersection, with a vertex hit by two edges counted once. It is the loop
-// IntersectionRectangle and Polygon.IntersectionLine share.
-func (l Line[T]) crossings(edges iter.Seq[Line[T]]) []Point[T] {
+// crossings returns the points where the segment crosses the edges joining the vertices, as
+// edgesOf joins them, from Start to End: each crossing by Intersection, with a vertex hit by
+// two edges counted once. It is the loop IntersectionRectangle and Polygon.IntersectionLine
+// share. The vertices are read once and never retained, so a caller may pass a slice of a
+// local array. The result is allocated on the first crossing with room for the two a convex
+// outline can have, and is nil where there is none; only a concave outline grows it.
+func (l Line[T]) crossings(vertices []Point[T]) []Point[T] {
 	var points []Point[T]
-	for edge := range edges {
+	for edge := range edgesOf(vertices) {
 		point, ok := l.Intersection(edge)
 		if !ok || slices.ContainsFunc(points, point.Equal) {
 			continue
 		}
 
+		if points == nil {
+			points = make([]Point[T], 0, 2)
+		}
+
 		points = append(points, point)
 	}
 
-	slices.SortFunc(points, l.nearer)
+	slices.SortFunc(points, func(a, b Point[T]) int {
+		return l.nearer(a, b)
+	})
 
 	return points
 }

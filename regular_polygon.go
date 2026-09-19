@@ -2,6 +2,7 @@ package geom
 
 import (
 	"fmt"
+	"iter"
 	"math"
 )
 
@@ -72,23 +73,34 @@ func Hexagon[T Number](center Point[T], size Size[T], orientation Orientation) R
 	return RegularPolygonWithOrientation(center, size, 6, orientation)
 }
 
-// Vertices returns the polygon vertices in order starting from Angle, by increasing angle —
-// the same winding as Directions and Rectangle.Vertices, and clockwise as drawn on a screen
-// with Y pointing down. A polygon with N < 1 has no vertices and returns nil, so its Polygon
-// is zero like Pol(nil).
+// Vertices iterates the polygon vertices in order starting from Angle, by increasing angle —
+// the same winding as Directions and Rectangle.Points, and clockwise as drawn on a screen
+// with Y pointing down, without allocating; collect them with slices.Collect where a slice is
+// needed. A polygon with N < 1 has no vertices and yields nothing.
 // For integer T, each vertex component is rounded to the nearest integer, so vertices at
 // non-right angles may be off by up to half a unit. Use float64 for exact positions.
-func (rp RegularPolygon[T]) Vertices() []Point[T] {
-	if rp.Empty() {
-		return nil
+func (rp RegularPolygon[T]) Vertices() iter.Seq[Point[T]] {
+	return func(yield func(Point[T]) bool) {
+		for i := 0; i < rp.N; i++ {
+			if !yield(rp.vertex(i)) {
+				return
+			}
+		}
 	}
+}
 
-	vertices := make([]Point[T], rp.N)
-	for i := range vertices {
-		vertices[i] = rp.vertex(i)
+// Edges iterates the polygon edges in vertex order, each from a vertex to the next and the
+// last one closing back to the first, the edges Polygon().Edges() iterates, without building
+// the vertices. A polygon with N < 1 has no edges and yields nothing; one with a single
+// vertex yields one zero-length edge.
+func (rp RegularPolygon[T]) Edges() iter.Seq[Line[T]] {
+	return func(yield func(Line[T]) bool) {
+		for i := 0; i < rp.N; i++ {
+			if !yield(Line[T]{rp.vertex(i), rp.vertex((i + 1) % rp.N)}) {
+				return
+			}
+		}
 	}
-
-	return vertices
 }
 
 // Area returns the area enclosed by the polygon, in closed form: n/2 · w · h · sin(2π/n), the
@@ -255,9 +267,20 @@ func (rp RegularPolygon[T]) Empty() bool {
 	return rp.N < 1
 }
 
-// Polygon converts the regular polygon into a generic Polygon with computed vertices.
+// Polygon converts the regular polygon into a generic Polygon with the vertices Vertices
+// iterates, in one allocation. A polygon with N < 1 has nil vertices, so its Polygon is zero
+// like Pol(nil).
 func (rp RegularPolygon[T]) Polygon() Polygon[T] {
-	return Polygon[T]{rp.Vertices()}
+	if rp.Empty() {
+		return Polygon[T]{}
+	}
+
+	vertices := make([]Point[T], rp.N)
+	for i := range vertices {
+		vertices[i] = rp.vertex(i)
+	}
+
+	return Polygon[T]{vertices}
 }
 
 // Int converts the regular polygon to a RegularPolygon[int].
