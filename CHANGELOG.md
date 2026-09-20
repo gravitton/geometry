@@ -37,23 +37,31 @@ The main change is the oriented rectangle: `Rectangle` gains an `Angle`, every r
 
 ## [v1.13.0 (2026-09-18)](https://github.com/gravitton/geometry/compare/v1.12.0...v1.13.0)
 
+One rule for every boundary: closed within `Epsilon[T]()`, `DistanceTo` zero exactly where `Contains` holds, and collision as methods on the shapes rather than free functions. Arithmetic computes in `float64`, no shape stores a negative extent, and an input with no meaning panics.
+
 Every entry, with breaking changes marked, is in [docs/releases/v1.13.0.md](docs/releases/v1.13.0.md).
 
+### Breaking
+- Boundaries are closed, so touching shapes collide and an edge is inside
+- No negative size or radius; the empty circle of a negative radius is gone
+- `float64` arithmetic rounded back into `T` changes narrow integer and large `int64` results
+- A non-finite `Cast`, a zero divisor and a singular `Inverse` panic
+- `Collision*` become methods, `AssertRect` is `AssertRectangle`, and `Assert*` take a shape value
+- `String`, `Line` JSON keys and the `Direction` and `Axis` encodings change form
+- `Polygon.Center` is the area centroid
+- `Directions` and `Axes` are functions; `Normalize` and `Direction.Unit` give an axis-aligned unit vector
+- Fixed answers change: `Circle.Bounds`, `Rectangle.Inset`, `FlatTop` and `Matrix.Unscale`
+
 ### Added
-- `Intersects` between every pair of shapes, with `Intersection` for lines, rectangles and circles and the boundary crossings of a segment
-- `Contains`, `DistanceTo` and `DistanceSquaredTo` on every shape
-- `Polygon.Area`, `Perimeter`, `Contains`, `Edges`, `Bounds`, `Rotate` and `Transform`
-- `Unscale`, `Lerp`, `Canonical` and `AlignTo` across the shapes; `Line.Scale`, `Resize`, `Rotate`, `Normal`; `Point.RotateAround`; `Vector.Project`, `Reflect`, `AtMost`; `Size.Fit`, `Fill`, `Transpose`
-- `ShearMatrix`, `ReflectionMatrix`, and `Matrix.Angle`, `Scaling`, `IsInvertible`
-- `Epsilon`, `EqualRelative`, `LessOrEqual`, `AngleDistance`, `LerpAngle`, `ParseDirection`, `ParseAxis`
+- `Intersects` and `Intersection` between shapes, and `Contains`, `DistanceTo` and `DistanceSquaredTo` on every shape
+- `Polygon` measurement and transforms: `Area`, `Perimeter`, `Edges`, `Bounds`, `Rotate`, `Transform`
+- `Unscale`, `Lerp`, `Canonical` and `AlignTo` across the shapes, with gaps filled on `Line`, `Vector` and `Size`
+- `ShearMatrix`, `ReflectionMatrix` and the matrix queries
+- Tolerance, angle and parsing helpers in `math.go`
 
 ### Changed
-- Boundaries are closed and tolerant within `Epsilon[T]()`, and `DistanceTo` is zero exactly where `Contains` holds
-- No shape stores a negative size or radius; the empty circle of a negative radius is gone
-- Arithmetic computes in `float64` and rounds back into `T`, so narrow integers never overflow mid-computation
-- `Cast`, `Divide`, `Unscale` and `Matrix.Inverse` panic on a non-finite, zero or singular input
-- `Polygon.Center` is the area centroid; `RegularPolygon` measures without building its vertices
-- `Collision*` functions replaced by methods, `AssertRect` renamed, `Line` JSON keys `s`/`e`, `Direction` and `Axis` marshal as names
+- `RegularPolygon` measures without building its vertices
+- Every shape's `String` and JSON follow one form
 
 ### Fixed
 - `Circle.Bounds`, `Rectangle.Inset`, `Axis.Project`, `Vector.Normalize`, `NormalizeAngle`, `Matrix.Unscale`, `Polygon.UnmarshalJSON` and `Cast` on defined integer types
