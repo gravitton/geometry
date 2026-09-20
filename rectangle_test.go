@@ -270,6 +270,49 @@ func TestRectangle_EdgeAccessors(t *testing.T) {
 	})
 }
 
+func TestRectangle_Vertices(t *testing.T) {
+	r := Rect(Pt(0, 0), Sz(2, 2))
+	vertices := slices.Collect(r.Vertices())
+
+	t.Run("clockwise from the top left", func(t *testing.T) {
+		AssertVertices(t, vertices, []Point[int]{{-1, -1}, {1, -1}, {1, 1}, {-1, 1}})
+	})
+	t.Run("agrees with the corner accessors", func(t *testing.T) {
+		AssertPoint(t, vertices[0], r.TopLeft())
+		AssertPoint(t, vertices[1], r.TopRight())
+		AssertPoint(t, vertices[2], r.BottomRight())
+		AssertPoint(t, vertices[3], r.BottomLeft())
+	})
+	t.Run("agrees with the edge starts", func(t *testing.T) {
+		edges := slices.Collect(r.Edges())
+
+		for i, edge := range edges {
+			AssertPoint(t, edge.Start, vertices[i])
+		}
+	})
+	t.Run("rotated vertices are the corners turned about the center", func(t *testing.T) {
+		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
+
+		AssertVertices(t, slices.Collect(diamond.Vertices()), []Point[float64]{{0, -Sqrt2}, {Sqrt2, 0}, {0, Sqrt2}, {-Sqrt2, 0}})
+	})
+	t.Run("stops where the caller breaks", func(t *testing.T) {
+		for vertex := range r.Vertices() {
+			AssertPoint(t, vertex, r.TopLeft())
+
+			break
+		}
+	})
+	t.Run("ranging allocates nothing", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			AssertNumber(t, testing.AllocsPerRun(100, func() {
+				for vertex := range r.Vertices() {
+					sinkBool = vertex.IsZero()
+				}
+			}), 0, fmt.Sprintf("%s: ", r))
+		}
+	})
+}
+
 func TestRectangle_Edges(t *testing.T) {
 	r := Rect(Pt(0, 0), Sz(2, 2))
 	edges := slices.Collect(r.Edges())
@@ -310,49 +353,6 @@ func TestRectangle_Edges(t *testing.T) {
 			AssertNumber(t, testing.AllocsPerRun(100, func() {
 				for edge := range r.Edges() {
 					sinkBool = edge.IsZero()
-				}
-			}), 0, fmt.Sprintf("%s: ", r))
-		}
-	})
-}
-
-func TestRectangle_Vertices(t *testing.T) {
-	r := Rect(Pt(0, 0), Sz(2, 2))
-	vertices := slices.Collect(r.Vertices())
-
-	t.Run("clockwise from the top left", func(t *testing.T) {
-		AssertVertices(t, vertices, []Point[int]{{-1, -1}, {1, -1}, {1, 1}, {-1, 1}})
-	})
-	t.Run("agrees with the corner accessors", func(t *testing.T) {
-		AssertPoint(t, vertices[0], r.TopLeft())
-		AssertPoint(t, vertices[1], r.TopRight())
-		AssertPoint(t, vertices[2], r.BottomRight())
-		AssertPoint(t, vertices[3], r.BottomLeft())
-	})
-	t.Run("agrees with the edge starts", func(t *testing.T) {
-		edges := slices.Collect(r.Edges())
-
-		for i, edge := range edges {
-			AssertPoint(t, edge.Start, vertices[i])
-		}
-	})
-	t.Run("rotated vertices are the corners turned about the center", func(t *testing.T) {
-		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
-
-		AssertVertices(t, slices.Collect(diamond.Vertices()), []Point[float64]{{0, -Sqrt2}, {Sqrt2, 0}, {0, Sqrt2}, {-Sqrt2, 0}})
-	})
-	t.Run("stops where the caller breaks", func(t *testing.T) {
-		for vertex := range r.Vertices() {
-			AssertPoint(t, vertex, r.TopLeft())
-
-			break
-		}
-	})
-	t.Run("ranging allocates nothing", func(t *testing.T) {
-		for _, r := range rectFixtures {
-			AssertNumber(t, testing.AllocsPerRun(100, func() {
-				for vertex := range r.Vertices() {
-					sinkBool = vertex.IsZero()
 				}
 			}), 0, fmt.Sprintf("%s: ", r))
 		}

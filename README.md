@@ -149,6 +149,7 @@ hex.Ellipse()                // the ellipse its vertices lie on, exactly; Circle
 hex.Bounds()                 // Rectangle (-20,-17)-(20,17)
 hex.Area()                   // 1039, 3√3/2 · r²
 hex.Contains(geom.Pt(10, 5)) // true, walked on the edges without building the vertices
+hex.Rotate(geom.Pi / 6).IsAligned() // false; exactly zero after a full turn, like Rectangle.IsAligned
 ```
 
 ### Interfaces
@@ -204,7 +205,7 @@ The pair logic is written once, on the earlier shape of `Circle`, `Segment`, `Po
 
 ```go
 dir := geom.DirectionUp
-dir.Rotate(2)   // DirectionRight, two 45° steps
+dir.Turn(2)     // DirectionRight, two 45° steps
 dir.Vector(5.0) // Vector{0, -5}
 
 geom.DirectionFromAxes(up, down, left, right) // keyboard input to an 8-way direction

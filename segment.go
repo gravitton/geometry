@@ -337,7 +337,7 @@ func (s Segment[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 }
 
 // IntersectionRectangle returns the points where the segment crosses the rectangle boundary,
-// from Start to End: the crossings with its edges by Intersection, with a corner hit by two
+// from Start to End: the crossings with its edges by IntersectionSegment, with a corner hit by two
 // edges counted once. A segment inside crosses no boundary and returns none while
 // IntersectsRectangle still reports it, and a segment along an edge is parallel to it and
 // crosses only the edges at its ends, if it reaches them.
@@ -475,8 +475,9 @@ func (s Segment[T]) touch(segment Segment[T]) (Point[T], bool) {
 // squared distance of the line, the expression DistanceSquaredTo evaluates for a point beside
 // the segment, by the same comparison IntersectsCircle makes, so the two agree to the last
 // bit. A chord whose ends lie within Epsilon of T of each other is a tangent and both
-// fractions are its midpoint: the tolerance collapses two crossings only where they would
-// compare Equal, never a chord that merely grazes the boundary within the tolerance.
+// fractions are its midpoint, judged on the squared chord by the same comparison, before any
+// root is taken: the tolerance collapses two crossings only where they would compare Equal,
+// never a chord that merely grazes the boundary within the tolerance.
 func (s Segment[T]) chord(circle Circle[T]) (float64, float64, bool) {
 	direction, offset := s.Vector().Float(), circle.Center.Subtract(s.Start).Float()
 	if !direction.hasDirection() {
@@ -493,12 +494,12 @@ func (s Segment[T]) chord(circle Circle[T]) (float64, float64, bool) {
 
 	along := offset.Dot(direction) / lengthSquared
 	radius := float64(circle.Radius)
-	halfChord := math.Sqrt(max(radius*radius-gapSquared, 0))
-	if 2*halfChord <= Epsilon[T]() {
+	halfChordSquared := max(radius*radius-gapSquared, 0)
+	if lessOrEqualSquared[T](4*halfChordSquared, 0) {
 		return along, along, true
 	}
 
-	half := halfChord / math.Sqrt(lengthSquared)
+	half := math.Sqrt(halfChordSquared / lengthSquared)
 
 	return along - half, along + half, true
 }
@@ -518,7 +519,8 @@ func (Segment[T]) snapToEndpoint(entry, exit, endpoint float64) (float64, float6
 // pointsAt returns the points at the given fractions along the segment that lie within it,
 // the endpoints included within Epsilon of T scaled to the length, so the tolerance is the same
 // distance the Intersects methods apply, with points that compare Equal counted once, as
-// crossings counts them. The fractions must be in increasing order.
+// crossings counts them, allocated once on the first point with room for the two a segment can
+// have. The fractions must be in increasing order.
 func (s Segment[T]) pointsAt(fractions ...float64) []Point[T] {
 	var points []Point[T]
 	for _, t := range fractions {
@@ -530,6 +532,10 @@ func (s Segment[T]) pointsAt(fractions ...float64) []Point[T] {
 		point := lerped.Cast[T]()
 		if slices.ContainsFunc(points, point.Equal) {
 			continue
+		}
+
+		if points == nil {
+			points = make([]Point[T], 0, 2)
 		}
 
 		points = append(points, point)

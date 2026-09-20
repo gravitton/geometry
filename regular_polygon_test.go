@@ -775,6 +775,25 @@ func TestRegularPolygon_IsEmpty(t *testing.T) {
 	})
 }
 
+func TestRegularPolygon_IsAligned(t *testing.T) {
+	t.Run("no turn", func(t *testing.T) {
+		assert.True(t, RegPol(Pt(1, 2), Sz(3, 4), 6, 0).IsAligned())
+	})
+
+	t.Run("turned", func(t *testing.T) {
+		assert.False(t, RegPol(Pt(1, 2), Sz(3, 4), 6, Pi/6).IsAligned())
+	})
+
+	t.Run("a full turn is exactly zero again", func(t *testing.T) {
+		assert.True(t, RegPol(Pt(1.0, 2.0), Sz(3.0, 4.0), 6, 0).Rotate(2*Pi).IsAligned())
+	})
+
+	t.Run("no tolerance", func(t *testing.T) {
+		assert.False(t, RegPol(Pt(1.0, 2.0), Sz(3.0, 4.0), 6, 1e-9).IsAligned())
+		assert.True(t, RegPol(Pt(1.0, 2.0), Sz(3.0, 4.0), 6, 1e-9).Canonical().IsAligned())
+	})
+}
+
 func TestRegularPolygon_Polygon(t *testing.T) {
 	rp := RegPol(Pt(0.0, 0.0), Sz(1.0, 1.0), 5, 0)
 	p := rp.Polygon()

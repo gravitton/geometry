@@ -45,9 +45,10 @@
 // recomputed with a rounding error. Every such test is one comparison on a squared distance,
 // never on a coordinate, so containment, the distance methods and the intersection tests
 // round alike at the boundary. Vector.Less is the strict counterpart and applies no tolerance.
-// DistanceTo is zero exactly where Contains holds, and Intersection returns a point or a
-// rectangle exactly where Intersects holds, less the parallel and coincident segments and the
-// rectangles of different angles that have no single answer. The boundary crossings of a segment, IntersectionCircle, IntersectionRectangle
+// DistanceTo is zero exactly where Contains holds, and IntersectionSegment and
+// IntersectionRectangle return a point or a rectangle exactly where the Intersects methods hold,
+// less the parallel and coincident segments and the rectangles of different angles that have
+// no single answer. The boundary crossings of a segment, IntersectionCircle, IntersectionRectangle
 // and IntersectionPolygon, follow the same rule with one more exception: a segment entirely
 // inside a shape crosses no boundary and returns none while Intersects reports it.
 package geom

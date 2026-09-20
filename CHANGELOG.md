@@ -39,11 +39,13 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.14.0.md](docs
 - `Transform` on `Rectangle` and `RegularPolygon`, `Rotate` on `Circle`, and `Cast[R]()` on every type
 - `Intersects` between every remaining pair of shapes, `RegularPolygon` included on both sides
 - `Canonical` snapping an angle residue, the `Orientation` text encoding, and `AssertEllipse` with `AssertAngle`
+- `RegularPolygon.IsAligned`, the exact-zero angle test `Rectangle` and `Ellipse` already have
 
 ### Changed
 - Every boundary is one squared-distance comparison, and every closed shape walks its own `Edges` through the shared `edge.go` accumulators
 - Every shape pair is held by one shape and delegated to from the other, in the order `Circle`, `Segment`, `Polygon`, `Rectangle`, `RegularPolygon`
-- Only a method whose result is a slice allocates: the outline iterators and the intersection walks allocate nothing
+- Only a method whose result is a slice allocates: the outline iterators and the intersection walks allocate nothing, and `Circle.IntersectionSegment` allocates its result once
+- Every earlier release with a breaking change opens with a **Breaking** group
 
 
 ## [v1.13.0 (2026-09-18)](https://github.com/gravitton/geometry/compare/v1.12.0...v1.13.0)
@@ -84,12 +86,14 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.13.0.md](docs
 
 
 ## [v1.11.0 (2026-08-26)](https://github.com/gravitton/geometry/compare/v1.10.0...v1.11.0)
-### Changed
+### Breaking
 - `Direction` constants are renumbered to run by increasing angle — `Right`, `DownRight`, `Down`, `DownLeft`, `Left`, `UpLeft`, `Up`, `UpRight` — so a positive `Rotate` step turns the same way as a positive `Vector.Rotate` angle: counterclockwise in math coordinates, clockwise as drawn on a screen with Y pointing down. Previously the order ran the opposite way and `DirectionFromAngle` negated its input to compensate (**breaking**)
 - `Directions`, `CardinalDirections`, and `DiagonalDirections` follow the new order (**breaking**)
-- `DirectionFromAngle` no longer negates its argument, now that direction numbering follows the angle directly
 - `Rectangle.Vertices` and `Rectangle.Edges` now wind by increasing angle, matching `Directions` and `RegularPolygon.Vertices` — clockwise as drawn on a screen with Y pointing down. `Rectangle.Polygon()` winds the same way as a result (**breaking**)
 - `Rectangle.TopEdge`, `RightEdge`, `BottomEdge`, and `LeftEdge` are reversed so the edges still form a closed chain in the new winding (**breaking**)
+
+### Changed
+- `DirectionFromAngle` no longer negates its argument, now that direction numbering follows the angle directly
 
 ### Fixed
 - `Direction.Rotate` documentation had the screen sense inverted — it claimed positive steps appear clockwise while the old ordering made them appear counterclockwise
@@ -98,6 +102,14 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.13.0.md](docs
 
 
 ## [v1.10.0 (2026-08-26)](https://github.com/gravitton/geometry/compare/v1.9.0...v1.10.0)
+### Breaking
+- `Direction[T](x T) T` renamed to `Sign[T](x T) T`, freeing the name for the new `Direction` type (**breaking**)
+- `Line.Direction() Vector[T]` renamed to `Line.Vector()`, since it returns the start-to-end vector rather than a `Direction` (**breaking**)
+- `Line.Reversed()` renamed to `Line.Reverse()`, matching the imperative naming of every other immutable method (**breaking**)
+- `DirectionFromAxes(up, down, left, right bool)` now returns `Direction` instead of `Vector[float64]` (**breaking**)
+- `RectFromMin`, `RectFromMax`, `RectFromMinMax`, `RectFromSize`, `RectFromImage` renamed to `RectangleFrom…`, so every `From` constructor uses its full type name like `PointFromImage` and `VectorFromAngle` (**breaking**)
+- `UpVector`, `DownVector`, `LeftVector`, `RightVector`, `UpLeftVector`, `UpRightVector`, `DownLeftVector`, `DownRightVector` removed – superseded by `DirectionX.Unit[T]()` (**breaking**)
+
 ### Added
 - `Integer` and `Float` constraints – split out of `Number`, which is now `Integer | Float`
 - `Mod[T Integer](n, m T) T` – wraps `n` into `[0, m)`, correctly for negative `n`
@@ -115,15 +127,7 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.13.0.md](docs
 
 ### Changed
 - Require Go 1.27
-- `Direction[T](x T) T` renamed to `Sign[T](x T) T`, freeing the name for the new `Direction` type
-- `Line.Direction() Vector[T]` renamed to `Line.Vector()`, since it returns the start-to-end vector rather than a `Direction`
-- `Line.Reversed()` renamed to `Line.Reverse()`, matching the imperative naming of every other immutable method
-- `DirectionFromAxes(up, down, left, right bool)` now returns `Direction` instead of `Vector[float64]` (**breaking**)
-- `RectFromMin`, `RectFromMax`, `RectFromMinMax`, `RectFromSize`, `RectFromImage` renamed to `RectangleFrom…`, so every `From` constructor uses its full type name like `PointFromImage` and `VectorFromAngle` (**breaking**)
 - `Assert*` helpers take `assert.Testing` instead of `*testing.T`, matching the interface `gravitton/assert` already uses; existing calls passing `*testing.T` are unaffected
-
-### Removed
-- `UpVector`, `DownVector`, `LeftVector`, `RightVector`, `UpLeftVector`, `UpRightVector`, `DownLeftVector`, `DownRightVector` – superseded by `DirectionX.Unit[T]()` (**breaking**)
 
 ### Fixed
 - `Matrix.Int()` now rounds to the nearest integer via `Cast` instead of truncating toward zero, matching every other `Int()` conversion
@@ -157,11 +161,11 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.13.0.md](docs
 
 
 ## [v1.6.0 (2026-05-03)](https://github.com/gravitton/geometry/compare/v1.5.0...v1.6.0)
+### Breaking
+- `Matrix[T Number]` — `Matrix` is now generic over the full `Number` constraint (was restricted to `float64`), so every use of the bare type name takes a type argument (**breaking**)
+
 ### Added
 - `RegPolWithOrientation` – constructor for `RegularPolygon` with orientation
-
-### Changed
-- `Matrix[T Number]` — `Matrix` is now generic over the full `Number` constraint (was restricted to `float64`)
 
 
 ## [v1.5.0 (2026-04-25)](https://github.com/gravitton/geometry/compare/v1.4.0...v1.5.0)
@@ -195,6 +199,10 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.13.0.md](docs
 
 
 ## [v1.2.0 (2026-04-19)](https://github.com/gravitton/geometry/compare/v1.1.1...v1.2.0)
+### Breaking
+- Renamed `PointTop` → `PointyTop` in `RegularPolygon` orientation constants (**breaking**)
+- `Shrink` and `ShrinkXY` now clamp to `0` — negative dimensions are no longer possible (**breaking**)
+
 ### Added
 - `Point.Abs()`, `Point.Round()`, `Point.Floor()`, `Point.Ceil()` methods
 - `Size.Unscale(factor)`, `Size.UnscaleXY(factorX, factorY)`, `Size.AtLeast(size)`, `Size.AtMost(size)` methods
@@ -204,8 +212,6 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.13.0.md](docs
 - `Polygon.UnmarshalJSON` support
 
 ### Changed
-- `Shrink` and `ShrinkXY` now clamp to `0` — negative dimensions are no longer possible
-- Renamed `PointTop` → `PointyTop` in `RegularPolygon` orientation constants (**breaking**)
 - Updated minimum Go version to 1.26
 
 ### Fixed

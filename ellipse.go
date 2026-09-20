@@ -398,7 +398,9 @@ func (e Ellipse[T]) foot(a, b, x, y float64) (float64, float64) {
 // units of the semi-axes, off both axes, and aspect is the squared ratio of the longer
 // semi-axis to the shorter. The parameter is the sole root of a function falling through zero
 // over the bracket the point itself gives, negative from inside the boundary and positive from
-// outside.
+// outside. Only a point outside reaches it through DistanceSquaredTo, which decides the
+// interior on the quadratic form first; the inside bracket keeps nearestOffset right on both
+// sides, as the nearest point of the boundary is asked from either.
 //
 // It is found by bisection, which halves that bracket until the midpoint is one of its ends
 // and no float lies between them, so it ends in the precision of a float64 and no iteration

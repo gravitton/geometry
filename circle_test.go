@@ -514,6 +514,17 @@ func TestCircle_IntersectionSegment(t *testing.T) {
 		AssertVertices(t, circle.IntersectionSegment(Seg(Pt(-2.0, 0.0), Pt(0.0, 0.0))), []Point[float64]{Pt(-1.0, 0.0)})
 		AssertVertices(t, circle.IntersectionSegment(Seg(Pt(0.5, 0.0), Pt(5.0, 0.0))), []Point[float64]{Pt(1.0, 0.0)})
 	})
+	t.Run("allocates once for the result and not at all for none", func(t *testing.T) {
+		unit := Circ(Pt(0, 0), 5)
+		through, apart := Seg(Pt(-10, 0), Pt(10, 0)), Seg(Pt(-10, 9), Pt(10, 9))
+
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = unit.IntersectionSegment(through)
+		}), 1)
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = unit.IntersectionSegment(apart)
+		}), 0)
+	})
 	t.Run("tangent gives one point", func(t *testing.T) {
 		AssertVertices(t, circle.IntersectionSegment(Seg(Pt(-2.0, 1.0), Pt(2.0, 1.0))), []Point[float64]{Pt(0.0, 1.0)})
 		AssertVertices(t, circle.IntersectionSegment(Seg(Pt(-2.0, 1.0+Delta/2), Pt(2.0, 1.0+Delta/2))), []Point[float64]{Pt(0.0, 1.0+Delta/2)})

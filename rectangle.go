@@ -212,23 +212,8 @@ func (r Rectangle[T]) LeftEdge() Segment[T] {
 	return Seg(r.BottomLeft(), r.TopLeft())
 }
 
-// Edges iterates the rectangle edges in order starting at the top-left corner, by increasing
-// angle — the same winding as Directions and RegularPolygon.Points, and clockwise as drawn on
-// a screen with Y pointing down. Each edge starts where the previous one ends. The edges are
-// built from the corners as they are walked, without allocating; collect them with
-// slices.Collect where a slice is needed. Every walk over the outline, containment, distance
-// and the crossings of a segment, reads these edges, so the boundary they join is the one
-// every test agrees on.
-func (r Rectangle[T]) Edges() iter.Seq[Segment[T]] {
-	return func(yield func(Segment[T]) bool) {
-		corners := r.corners()
-
-		edgesOf(corners[:])(yield)
-	}
-}
-
 // Vertices iterates the rectangle vertices in order starting at the top-left corner, by
-// increasing angle — the same winding as Directions and RegularPolygon.Points, and clockwise
+// increasing angle — the same winding as Directions and RegularPolygon.Vertices, and clockwise
 // as drawn on a screen with Y pointing down, without allocating; collect them with
 // slices.Collect where a slice is needed. For integer T each vertex of a rotated rectangle is
 // rounded onto the lattice.
@@ -239,6 +224,21 @@ func (r Rectangle[T]) Vertices() iter.Seq[Point[T]] {
 				return
 			}
 		}
+	}
+}
+
+// Edges iterates the rectangle edges in order starting at the top-left corner, by increasing
+// angle — the same winding as Directions and RegularPolygon.Vertices, and clockwise as drawn on
+// a screen with Y pointing down. Each edge starts where the previous one ends. The edges are
+// built from the corners as they are walked, without allocating; collect them with
+// slices.Collect where a slice is needed. Every walk over the outline, containment, distance
+// and the crossings of a segment, reads these edges, so the boundary they join is the one
+// every test agrees on.
+func (r Rectangle[T]) Edges() iter.Seq[Segment[T]] {
+	return func(yield func(Segment[T]) bool) {
+		corners := r.corners()
+
+		edgesOf(corners[:])(yield)
 	}
 }
 
@@ -575,7 +575,7 @@ func (r Rectangle[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 // before any edge is examined, and two rectangles that are not rotated whose extents overlap
 // exactly are decided there, since an exact overlap of two aligned boxes always shares a
 // corner or a crossing; only a gap within the tolerance goes to the edges. Two rectangles of
-// the same angle are tested in their shared frame, as Intersection finds their overlap.
+// the same angle are tested in their shared frame, as IntersectionRectangle finds their overlap.
 func (r Rectangle[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 	a1, b1 := r.MinMax()
 	a2, b2 := rectangle.MinMax()
@@ -586,11 +586,11 @@ func (r Rectangle[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 	case r.IsAligned() && rectangle.IsAligned() && a1.X <= b2.X && a2.X <= b1.X && a1.Y <= b2.Y && a2.Y <= b1.Y:
 		return true
 	case r.IsAligned() && rectangle.IsAligned():
-		return r.meets(rectangle)
+		return r.meetsWithin(rectangle, a1, b1, a2, b2)
 	case r.parallel(rectangle):
 		return r.localRectangle(r).IntersectsRectangle(r.localRectangle(rectangle))
 	default:
-		return r.meets(rectangle)
+		return r.meetsWithin(rectangle, a1, b1, a2, b2)
 	}
 }
 
@@ -693,13 +693,11 @@ func (r Rectangle[T]) containsWithin(point, a, b Point[T]) bool {
 	return point.Between(a, b) && r.DistanceSquaredTo(point) == 0
 }
 
-// meets reports whether two rectangles whose extents overlap share a point, the way
+// meetsWithin reports whether two rectangles whose extents overlap share a point, the way
 // Polygon.IntersectsPolygon decides it: a corner of one lies within the other, or an edge of one
-// meets an edge of the other by Segment.IntersectsSegment.
-func (r Rectangle[T]) meets(rectangle Rectangle[T]) bool {
-	a1, b1 := r.MinMax()
-	a2, b2 := rectangle.MinMax()
-
+// meets an edge of the other by Segment.IntersectsSegment. The caller already holds the corners
+// of both MinMax, so a rotated rectangle turns its corners once for the extent and the edges.
+func (r Rectangle[T]) meetsWithin(rectangle Rectangle[T], a1, b1, a2, b2 Point[T]) bool {
 	if rectangle.containsWithin(r.TopLeft(), a2, b2) || r.containsWithin(rectangle.TopLeft(), a1, b1) {
 		return true
 	}

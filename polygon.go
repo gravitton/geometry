@@ -27,6 +27,13 @@ func Pol[T Number](vertices []Point[T]) Polygon[T] {
 	return Polygon[T]{vertices}
 }
 
+// Vertices iterates Points in order, the form every shape with an outline offers, so a
+// polygon is drawn or measured by the same loop as a Rectangle or a RegularPolygon. Index
+// Points directly where a position is needed.
+func (p Polygon[T]) Vertices() iter.Seq[Point[T]] {
+	return slices.Values(p.Points)
+}
+
 // Edges iterates the polygon edges in vertex order, each from a vertex to the next and the
 // last one closing back to the first, without allocating; collect them with slices.Collect
 // where a slice is needed. A single vertex yields one zero-length edge and an empty polygon
@@ -34,13 +41,6 @@ func Pol[T Number](vertices []Point[T]) Polygon[T] {
 // segment, reads these edges, so the boundary they join is the one every test agrees on.
 func (p Polygon[T]) Edges() iter.Seq[Segment[T]] {
 	return edgesOf(p.Points)
-}
-
-// Vertices iterates Points in order, the form every shape with an outline offers, so a
-// polygon is drawn or measured by the same loop as a Rectangle or a RegularPolygon. Index
-// Points directly where a position is needed.
-func (p Polygon[T]) Vertices() iter.Seq[Point[T]] {
-	return slices.Values(p.Points)
 }
 
 // Centroid returns the center of the enclosed area, so a vertex added in
@@ -325,7 +325,7 @@ func (p Polygon[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 }
 
 // IntersectsRectangle reports whether the polygon and the rectangle share a point, the same
-// answer as Intersects on the rectangle's Polygon, without building it: a corner of one lies
+// answer as IntersectsPolygon on the rectangle's Polygon, without building it: a corner of one lies
 // within the other, or an edge of the rectangle crosses an edge of the polygon. The
 // rectangle's extent rejects it before any edge is examined, whatever its angle.
 func (p Polygon[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {

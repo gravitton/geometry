@@ -19,6 +19,25 @@ func TestPolygon_Constructor(t *testing.T) {
 	})
 }
 
+func TestPolygon_Vertices(t *testing.T) {
+	t.Run("iterates the points in order", func(t *testing.T) {
+		AssertVertices(t, slices.Collect(Pol(squareVertices()).Vertices()), squareVertices())
+	})
+	t.Run("nil and empty yield nothing", func(t *testing.T) {
+		assert.Nil(t, slices.Collect(Pol[int](nil).Vertices()))
+		assert.Nil(t, slices.Collect(Pol([]Point[int]{}).Vertices()))
+	})
+	t.Run("ranging allocates nothing", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			AssertNumber(t, testing.AllocsPerRun(100, func() {
+				for vertex := range p.Vertices() {
+					sinkBool = vertex.IsZero()
+				}
+			}), 0, fmt.Sprintf("%s: ", p))
+		}
+	})
+}
+
 func TestPolygon_Edges(t *testing.T) {
 	t.Run("closes back to the first vertex", func(t *testing.T) {
 		edges := slices.Collect(Pol(squareVertices()).Edges())
@@ -55,26 +74,7 @@ func TestPolygon_Edges(t *testing.T) {
 	})
 }
 
-func TestPolygon_Vertices(t *testing.T) {
-	t.Run("iterates the points in order", func(t *testing.T) {
-		AssertVertices(t, slices.Collect(Pol(squareVertices()).Vertices()), squareVertices())
-	})
-	t.Run("nil and empty yield nothing", func(t *testing.T) {
-		assert.Nil(t, slices.Collect(Pol[int](nil).Vertices()))
-		assert.Nil(t, slices.Collect(Pol([]Point[int]{}).Vertices()))
-	})
-	t.Run("ranging allocates nothing", func(t *testing.T) {
-		for _, p := range polygonFixtures() {
-			AssertNumber(t, testing.AllocsPerRun(100, func() {
-				for vertex := range p.Vertices() {
-					sinkBool = vertex.IsZero()
-				}
-			}), 0, fmt.Sprintf("%s: ", p))
-		}
-	})
-}
-
-func TestPolygon_Center(t *testing.T) {
+func TestPolygon_Centroid(t *testing.T) {
 	t.Run("int rounds the average", func(t *testing.T) {
 		AssertPoint(t, Pol(squareVertices()).Centroid(), Pt(1, 1))
 		AssertPoint(t, Pol([]Point[int]{Pt(-1, -2), Pt(0, 0), Pt(0, 0)}).Centroid(), Pt(0, -1))

@@ -79,7 +79,7 @@ func RegularPolygonOrientationAngle(n int, orientation Orientation) float64 {
 }
 
 // Vertices iterates the polygon vertices in order starting from Angle, by increasing angle —
-// the same winding as Directions and Rectangle.Points, and clockwise as drawn on a screen
+// the same winding as Directions and Rectangle.Vertices, and clockwise as drawn on a screen
 // with Y pointing down, without allocating; collect them with slices.Collect where a slice is
 // needed. A polygon with N < 1 has no vertices and yields nothing.
 // For integer T, each vertex component is rounded to the nearest integer, so vertices at
@@ -476,6 +476,14 @@ func (rp RegularPolygon[T]) IsEmpty() bool {
 	return rp.N < 1
 }
 
+// IsAligned reports whether the polygon is not turned: its Angle is exactly zero, as RegPol
+// with no angle and Rotate by a full turn leave it, the same exact test Rectangle.IsAligned
+// makes. No tolerance is applied; Canonical snaps a residue to zero. An aligned polygon of
+// equal semi-axes has its first vertex at the end of the width semi-axis.
+func (rp RegularPolygon[T]) IsAligned() bool {
+	return rp.Angle == 0
+}
+
 // Polygon converts the regular polygon into a generic Polygon with the vertices Vertices
 // iterates, in one allocation. A polygon with N < 1 has nil vertices, so its Polygon is zero
 // like Pol(nil).
@@ -527,7 +535,7 @@ func (rp RegularPolygon[T]) Float() RegularPolygon[float64] {
 // and vertex count, with the angle appended as RegPol((x,y);WxH;n;a) for a rotated polygon, as
 // the JSON carries it only then.
 func (rp RegularPolygon[T]) String() string {
-	if rp.Angle == 0 {
+	if rp.IsAligned() {
 		return fmt.Sprintf("RegPol(%s;%s;%s)", rp.Center.String(), rp.Size.String(), String(rp.N))
 	}
 
