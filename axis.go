@@ -38,8 +38,8 @@ func ParseAxis(name string) (Axis, error) {
 	return AxisNone, fmt.Errorf("geom: unknown axis %q", name)
 }
 
-// Cross returns the perpendicular axis.
-func (a Axis) Cross() Axis {
+// Perpendicular returns the perpendicular axis.
+func (a Axis) Perpendicular() Axis {
 	switch a {
 	case AxisHorizontal:
 		return AxisVertical
@@ -87,7 +87,7 @@ func (a Axis) Along[T Number](size Size[T]) T {
 
 // Across returns the extent of the given size on the cross axis.
 func (a Axis) Across[T Number](size Size[T]) T {
-	return a.Cross().Along(size)
+	return a.Perpendicular().Along(size)
 }
 
 // Project returns the signed component of the given vector on the main axis.
@@ -115,7 +115,7 @@ func (a Axis) ScaleAlong[T Number](size Size[T], factor float64) Size[T] {
 // ScaleAcross creates a new Size scaled by the given factor on the cross axis only.
 // AxisNone has no axis to scale across and returns the size unchanged.
 func (a Axis) ScaleAcross[T Number](size Size[T], factor float64) Size[T] {
-	return a.Cross().ScaleAlong(size, factor)
+	return a.Perpendicular().ScaleAlong(size, factor)
 }
 
 // IsNone reports whether the axis is neither AxisHorizontal nor AxisVertical. Unlike

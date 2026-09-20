@@ -19,18 +19,18 @@ func TestRegularPolygon_Constructor(t *testing.T) {
 	})
 	t.Run("a negative size is taken absolute", func(t *testing.T) {
 		AssertRegularPolygon(t, RegPol(Pt(0, 0), Sz(-2, 3), 4, 0), RegPol(Pt(0, 0), Sz(2, 3), 4, 0))
-		AssertRegularPolygon(t, Square(Pt(0.0, 0.0), Sz(-2.0, -3.0), PointyTop), Square(Pt(0.0, 0.0), Sz(2.0, 3.0), PointyTop))
+		AssertRegularPolygon(t, Square(Pt(0.0, 0.0), Sz(-2.0, -3.0), OrientationPointyTop), Square(Pt(0.0, 0.0), Sz(2.0, 3.0), OrientationPointyTop))
 	})
 }
 
 func TestRegularPolygonWithOrientation(t *testing.T) {
 	center, size := Pt(0, 0), Sz(10, 10)
-	pointy := RegularPolygonWithOrientation(center, size, 6, PointyTop)
-	flat := RegularPolygonWithOrientation(center, size, 6, FlatTop)
+	pointy := RegularPolygonWithOrientation(center, size, 6, OrientationPointyTop)
+	flat := RegularPolygonWithOrientation(center, size, 6, OrientationFlatTop)
 
 	t.Run("carries the orientation angle", func(t *testing.T) {
-		AssertRegularPolygon(t, pointy, RegPol(center, size, 6, RegularPolygonOrientationAngle(6, PointyTop)))
-		AssertRegularPolygon(t, flat, RegPol(center, size, 6, RegularPolygonOrientationAngle(6, FlatTop)))
+		AssertRegularPolygon(t, pointy, RegPol(center, size, 6, RegularPolygonOrientationAngle(6, OrientationPointyTop)))
+		AssertRegularPolygon(t, flat, RegPol(center, size, 6, RegularPolygonOrientationAngle(6, OrientationFlatTop)))
 
 		assert.NotEqual(t, pointy.Angle, flat.Angle)
 	})
@@ -46,10 +46,10 @@ func TestRegularPolygonWithOrientation(t *testing.T) {
 }
 
 func TestTriangle(t *testing.T) {
-	triangle := Triangle(Pt(1, -1), Sz(3, 3), PointyTop)
+	triangle := Triangle(Pt(1, -1), Sz(3, 3), OrientationPointyTop)
 
 	t.Run("has three sides at the orientation angle", func(t *testing.T) {
-		AssertRegularPolygon(t, triangle, RegPol(Pt(1, -1), Sz(3, 3), 3, RegularPolygonOrientationAngle(3, PointyTop)))
+		AssertRegularPolygon(t, triangle, RegPol(Pt(1, -1), Sz(3, 3), 3, RegularPolygonOrientationAngle(3, OrientationPointyTop)))
 	})
 	t.Run("integer vertices round after scaling", func(t *testing.T) {
 		// vertices 1 and 2 land within one unit of the exact (3.598, 0.5) and (-1.598, 0.5);
@@ -59,10 +59,10 @@ func TestTriangle(t *testing.T) {
 }
 
 func TestSquare(t *testing.T) {
-	square := Square(Pt(50.0, 50.0), Sz(100.0, 100.0), PointyTop)
+	square := Square(Pt(50.0, 50.0), Sz(100.0, 100.0), OrientationPointyTop)
 
 	t.Run("has four sides at the orientation angle", func(t *testing.T) {
-		AssertRegularPolygon(t, square, RegPol(Pt(50.0, 50.0), Sz(100.0, 100.0), 4, RegularPolygonOrientationAngle(4, PointyTop)))
+		AssertRegularPolygon(t, square, RegPol(Pt(50.0, 50.0), Sz(100.0, 100.0), 4, RegularPolygonOrientationAngle(4, OrientationPointyTop)))
 	})
 	t.Run("pointy top starts at the visual top and winds to the right", func(t *testing.T) {
 		AssertVertices(t, slices.Collect(square.Vertices()), []Point[float64]{Pt(50.0, -50.0), Pt(150.0, 50.0), Pt(50.0, 150.0), Pt(-50.0, 50.0)})
@@ -71,10 +71,10 @@ func TestSquare(t *testing.T) {
 
 func TestHexagon(t *testing.T) {
 	// float64 avoids the int-rounding collapse where sin(±π/6) ≈ 0.4999 would truncate to 0
-	hexagon := Hexagon(Pt(0.0, 0.0), Sz(10.0, 10.0), PointyTop)
+	hexagon := Hexagon(Pt(0.0, 0.0), Sz(10.0, 10.0), OrientationPointyTop)
 
 	t.Run("has six sides at the orientation angle", func(t *testing.T) {
-		AssertRegularPolygon(t, hexagon, RegPol(Pt(0.0, 0.0), Sz(10.0, 10.0), 6, RegularPolygonOrientationAngle(6, PointyTop)))
+		AssertRegularPolygon(t, hexagon, RegPol(Pt(0.0, 0.0), Sz(10.0, 10.0), 6, RegularPolygonOrientationAngle(6, OrientationPointyTop)))
 	})
 	t.Run("pointy top has vertices at top and bottom and flat sides left and right", func(t *testing.T) {
 		AssertVertices(t, slices.Collect(hexagon.Vertices()), []Point[float64]{
@@ -92,19 +92,19 @@ func TestRegularPolygonOrientationAngle(t *testing.T) {
 	t.Run("pointy top points at -Y", func(t *testing.T) {
 		// in +Y-down screen coordinates, "top" means minimum Y, so the first vertex
 		// has to point in the -Y direction: angle = -π/2, stored normalized as 3π/2
-		AssertNumber(t, RegularPolygonOrientationAngle(3, PointyTop), 270*DegToRad)
-		AssertNumber(t, RegularPolygonOrientationAngle(4, PointyTop), 270*DegToRad)
-		AssertNumber(t, RegularPolygonOrientationAngle(6, PointyTop), 270*DegToRad)
+		AssertNumber(t, RegularPolygonOrientationAngle(3, OrientationPointyTop), 270*DegToRad)
+		AssertNumber(t, RegularPolygonOrientationAngle(4, OrientationPointyTop), 270*DegToRad)
+		AssertNumber(t, RegularPolygonOrientationAngle(6, OrientationPointyTop), 270*DegToRad)
 	})
 	t.Run("flat top sits half a step before the top", func(t *testing.T) {
-		AssertNumber(t, RegularPolygonOrientationAngle(3, FlatTop), 210*DegToRad)
-		AssertNumber(t, RegularPolygonOrientationAngle(4, FlatTop), 225*DegToRad)
-		AssertNumber(t, RegularPolygonOrientationAngle(5, FlatTop), 234*DegToRad)
-		AssertNumber(t, RegularPolygonOrientationAngle(6, FlatTop), 240*DegToRad)
+		AssertNumber(t, RegularPolygonOrientationAngle(3, OrientationFlatTop), 210*DegToRad)
+		AssertNumber(t, RegularPolygonOrientationAngle(4, OrientationFlatTop), 225*DegToRad)
+		AssertNumber(t, RegularPolygonOrientationAngle(5, OrientationFlatTop), 234*DegToRad)
+		AssertNumber(t, RegularPolygonOrientationAngle(6, OrientationFlatTop), 240*DegToRad)
 	})
 	t.Run("flat top puts an edge midpoint at the top for any n", func(t *testing.T) {
 		for n := 3; n <= 9; n++ {
-			vertices := slices.Collect(RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), n, FlatTop).Vertices())
+			vertices := slices.Collect(RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), n, OrientationFlatTop).Vertices())
 
 			AssertPoint(t, vertices[0].Midpoint(vertices[1]), Pt(0.0, -10*math.Cos(Pi/float64(n))), fmt.Sprintf("n=%d: ", n))
 		}
@@ -119,11 +119,11 @@ func TestRegularPolygonOrientationAngle(t *testing.T) {
 		}, "geom: unknown orientation -1")
 	})
 	t.Run("no vertices give the top angle instead of dividing by n", func(t *testing.T) {
-		AssertNumber(t, RegularPolygonOrientationAngle(0, FlatTop), 270*DegToRad)
-		AssertNumber(t, RegularPolygonOrientationAngle(-1, FlatTop), 270*DegToRad)
-		AssertNumber(t, RegularPolygonOrientationAngle(0, PointyTop), 270*DegToRad)
+		AssertNumber(t, RegularPolygonOrientationAngle(0, OrientationFlatTop), 270*DegToRad)
+		AssertNumber(t, RegularPolygonOrientationAngle(-1, OrientationFlatTop), 270*DegToRad)
+		AssertNumber(t, RegularPolygonOrientationAngle(0, OrientationPointyTop), 270*DegToRad)
 
-		empty := RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 0, FlatTop)
+		empty := RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 0, OrientationFlatTop)
 		assert.True(t, empty.Equal(empty))
 	})
 }
@@ -223,18 +223,22 @@ func TestRegularPolygon_Edges(t *testing.T) {
 	})
 }
 
+func TestRegularPolygon_Centroid(t *testing.T) {
+	AssertPoint(t, Hexagon(Pt(1, 2), SzU(10), OrientationFlatTop).Centroid(), Pt(1, 2))
+}
+
 func TestRegularPolygon_Area(t *testing.T) {
 	t.Run("agrees with the polygon", func(t *testing.T) {
-		hexagon := Hexagon(Pt(0.0, 0.0), SzU(2.0), FlatTop)
+		hexagon := Hexagon(Pt(0.0, 0.0), SzU(2.0), OrientationFlatTop)
 
 		AssertNumber(t, hexagon.Area(), hexagon.Polygon().Area())
 		AssertNumber(t, hexagon.Area(), 3*Sqrt3/2*4) // 3√3/2 · r²
 	})
 	t.Run("a square of semi-axis r encloses 2r²", func(t *testing.T) {
-		AssertNumber(t, Square(Pt(0.0, 0.0), SzU(3.0), PointyTop).Area(), 18.0)
+		AssertNumber(t, Square(Pt(0.0, 0.0), SzU(3.0), OrientationPointyTop).Area(), 18.0)
 	})
 	t.Run("an ellipse scales the area by both semi-axes", func(t *testing.T) {
-		AssertNumber(t, Square(Pt(0.0, 0.0), Sz(2.0, 5.0), PointyTop).Area(), 20.0)
+		AssertNumber(t, Square(Pt(0.0, 0.0), Sz(2.0, 5.0), OrientationPointyTop).Area(), 20.0)
 	})
 	t.Run("fewer than three vertices enclose nothing", func(t *testing.T) {
 		AssertNumber(t, RegPol(Pt(3.0, 4.0), SzU(10.0), 0, 0).Area(), 0.0)
@@ -247,18 +251,45 @@ func TestRegularPolygon_Area(t *testing.T) {
 	})
 }
 
+func TestRegularPolygon_Inertia(t *testing.T) {
+	t.Run("agrees with the polygon", func(t *testing.T) {
+		hexagon := Hexagon(Pt(0.0, 0.0), SzU(2.0), OrientationFlatTop)
+
+		AssertNumber(t, hexagon.Inertia(), hexagon.Polygon().Inertia())
+		AssertNumber(t, hexagon.Inertia(), 5*Sqrt3/8*16) // 5√3/8 · r⁴
+	})
+	t.Run("a square of semi-axis r has the moment 2r⁴/3", func(t *testing.T) {
+		AssertNumber(t, Square(Pt(0.0, 0.0), SzU(3.0), OrientationPointyTop).Inertia(), 54.0)
+	})
+	t.Run("an ellipse scales each axis by the cube of one semi-axis", func(t *testing.T) {
+		square := Square(Pt(0.0, 0.0), Sz(2.0, 5.0), OrientationPointyTop)
+
+		AssertNumber(t, square.Inertia(), square.Polygon().Inertia())
+		AssertNumber(t, square.Inertia(), 4*10*(16+100)/48.0) // a rhombus of diagonals p, q: pq(p²+q²)/48
+	})
+	t.Run("fewer than three vertices enclose nothing", func(t *testing.T) {
+		AssertNumber(t, RegPol(Pt(3.0, 4.0), SzU(10.0), 0, 0).Inertia(), 0.0)
+		AssertNumber(t, RegPol(Pt(3.0, 4.0), SzU(10.0), 2, 0).Inertia(), 0.0)
+	})
+	t.Run("agrees with the polygon at any angle and size", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			AssertNumber(t, rp.Inertia(), rp.Polygon().Inertia(), rp.String())
+		}
+	})
+}
+
 func TestRegularPolygon_Perimeter(t *testing.T) {
 	t.Run("agrees with the polygon", func(t *testing.T) {
-		hexagon := Hexagon(Pt(0.0, 0.0), SzU(2.0), FlatTop)
+		hexagon := Hexagon(Pt(0.0, 0.0), SzU(2.0), OrientationFlatTop)
 
 		AssertNumber(t, hexagon.Perimeter(), hexagon.Polygon().Perimeter())
 		AssertNumber(t, hexagon.Perimeter(), 12.0) // six edges of length r
 	})
 	t.Run("a square of semi-axis r has edges of r√2", func(t *testing.T) {
-		AssertNumber(t, Square(Pt(0.0, 0.0), SzU(3.0), PointyTop).Perimeter(), 12*Sqrt2)
+		AssertNumber(t, Square(Pt(0.0, 0.0), SzU(3.0), OrientationPointyTop).Perimeter(), 12*Sqrt2)
 	})
 	t.Run("an ellipse sums chords of different lengths", func(t *testing.T) {
-		square := Square(Pt(0.0, 0.0), Sz(2.0, 5.0), PointyTop)
+		square := Square(Pt(0.0, 0.0), Sz(2.0, 5.0), OrientationPointyTop)
 
 		AssertNumber(t, square.Perimeter(), 4*math.Hypot(2, 5))
 		AssertNumber(t, square.Perimeter(), square.Polygon().Perimeter())
@@ -269,7 +300,7 @@ func TestRegularPolygon_Perimeter(t *testing.T) {
 		AssertNumber(t, RegPol(Pt(3.0, 4.0), SzU(10.0), 2, 0).Perimeter(), 40.0)
 	})
 	t.Run("int measures the exact polygon, not the rounded vertices", func(t *testing.T) {
-		hexagon := Hexagon(Pt(0, 0), SzU(1), PointyTop)
+		hexagon := Hexagon(Pt(0, 0), SzU(1), OrientationPointyTop)
 
 		AssertNumber(t, hexagon.Perimeter(), 6.0)
 		assert.NotEqual(t, hexagon.Polygon().Perimeter(), 6.0)
@@ -287,7 +318,7 @@ func TestRegularPolygon_Bounds(t *testing.T) {
 	})
 	t.Run("hexagon is tight around its vertices", func(t *testing.T) {
 		// width = 2r, height = √3 r
-		bounds := Hexagon(Pt(0.0, 0.0), Sz(2.0, 2.0), FlatTop).Bounds()
+		bounds := Hexagon(Pt(0.0, 0.0), Sz(2.0, 2.0), OrientationFlatTop).Bounds()
 
 		AssertNumber(t, bounds.Size.Width, 4.0)
 		AssertNumber(t, bounds.Size.Height, 2.0*Sqrt3)
@@ -426,7 +457,7 @@ func TestRegularPolygon_Lerp(t *testing.T) {
 }
 
 func TestRegularPolygon_Transform(t *testing.T) {
-	hexagon := Hexagon(Pt(2.0, 3.0), SzU(4.0), FlatTop)
+	hexagon := Hexagon(Pt(2.0, 3.0), SzU(4.0), OrientationFlatTop)
 
 	t.Run("the identity keeps the polygon", func(t *testing.T) {
 		AssertRegularPolygon(t, hexagon.Transform(IdentityMatrix[float64]()), hexagon)
@@ -438,10 +469,10 @@ func TestRegularPolygon_Transform(t *testing.T) {
 		assert.Equal(t, moved.N, 6)
 	})
 	t.Run("a uniform scale scales the semi-axes", func(t *testing.T) {
-		AssertRegularPolygon(t, hexagon.Transform(ScaleMatrix(2.0, 2.0)), Hexagon(Pt(4.0, 6.0), SzU(8.0), FlatTop))
+		AssertRegularPolygon(t, hexagon.Transform(ScaleMatrix(2.0, 2.0)), Hexagon(Pt(4.0, 6.0), SzU(8.0), OrientationFlatTop))
 	})
 	t.Run("a rotation turns the angle", func(t *testing.T) {
-		AssertRegularPolygon(t, hexagon.Transform(RotationMatrix[float64](Pi/2)), Hexagon(Pt(-3.0, 2.0), SzU(4.0), FlatTop).Rotate(Pi/2))
+		AssertRegularPolygon(t, hexagon.Transform(RotationMatrix[float64](Pi/2)), Hexagon(Pt(-3.0, 2.0), SzU(4.0), OrientationFlatTop).Rotate(Pi/2))
 	})
 	t.Run("a reflection mirrors the angle about the axis of the matrix", func(t *testing.T) {
 		turned := hexagon.Rotate(Pi / 6)
@@ -449,10 +480,10 @@ func TestRegularPolygon_Transform(t *testing.T) {
 		AssertRegularPolygon(t, turned.Transform(ReflectionMatrix[float64](AxisHorizontal)), RegPol(Pt(2.0, -3.0), SzU(4.0), 6, -turned.Angle))
 	})
 	t.Run("a shear gives the nearest polygon", func(t *testing.T) {
-		AssertRegularPolygon(t, hexagon.Transform(ShearMatrix(1.0, 0.0)), Hexagon(Pt(5.0, 3.0), SzU(4.0), FlatTop))
+		AssertRegularPolygon(t, hexagon.Transform(ShearMatrix(1.0, 0.0)), Hexagon(Pt(5.0, 3.0), SzU(4.0), OrientationFlatTop))
 	})
 	t.Run("an empty polygon stays empty", func(t *testing.T) {
-		assert.True(t, RegPol(Pt(1.0, 1.0), SzU(2.0), 0, 0).Transform(ScaleMatrix(2.0, 2.0)).Empty())
+		assert.True(t, RegPol(Pt(1.0, 1.0), SzU(2.0), 0, 0).Transform(ScaleMatrix(2.0, 2.0)).IsEmpty())
 	})
 	t.Run("int rounds the center and the semi-axes once", func(t *testing.T) {
 		AssertRegularPolygon(t, RegPol(Pt(1, 1), SzU(3), 6, 0).Transform(ScaleMatrix(1.5, 1.5)), RegPol(Pt(2, 2), SzU(5), 6, 0))
@@ -540,7 +571,7 @@ func TestRegularPolygon_Contains(t *testing.T) {
 }
 
 func BenchmarkRegularPolygon_Contains(b *testing.B) {
-	hexagon := Hexagon(Pt(0.0, 0.0), SzU(10.0), FlatTop)
+	hexagon := Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationFlatTop)
 	inside, outside := Pt(1.0, 2.0), Pt(9.0, 9.0)
 
 	b.Run("inside", func(b *testing.B) {
@@ -700,14 +731,14 @@ func TestRegularPolygon_Equal(t *testing.T) {
 		assert.True(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0.5).Equal(RegPol(Pt(1, 2), Sz(2, 2), 4, 0.5)))
 	})
 	t.Run("the angle is compared normalized", func(t *testing.T) {
-		hexagon := Hexagon(Pt(0.0, 0.0), SzU(10.0), PointyTop)
+		hexagon := Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationPointyTop)
 
 		assert.True(t, hexagon.Equal(hexagon.Rotate(0)))
 		assert.True(t, hexagon.Equal(hexagon.Rotate(2*Pi)))
 		assert.True(t, RegPol(Pt(1, 2), Sz(2, 2), 4, -Pi/2).Equal(RegPol(Pt(1, 2), Sz(2, 2), 4, 3*Pi/2)))
 	})
 	t.Run("the angle is compared across the seam", func(t *testing.T) {
-		hexagon := Hexagon(Pt(0.0, 0.0), SzU(10.0), PointyTop)
+		hexagon := Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationPointyTop)
 
 		assert.True(t, hexagon.Equal(hexagon.Rotate(-1e-9)))
 		assert.True(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Equal(RegPol(Pt(1, 2), Sz(2, 2), 4, 2*Pi-1e-9)))
@@ -733,14 +764,14 @@ func TestRegularPolygon_IsZero(t *testing.T) {
 	})
 }
 
-func TestRegularPolygon_Empty(t *testing.T) {
+func TestRegularPolygon_IsEmpty(t *testing.T) {
 	t.Run("no sides", func(t *testing.T) {
-		assert.True(t, RegularPolygon[int]{}.Empty())
-		assert.True(t, RegPol(Pt(1, 2), Sz(2, 2), 0, 0).Empty())
-		assert.True(t, RegPol(Pt(1, 2), Sz(2, 2), -1, 0).Empty())
+		assert.True(t, RegularPolygon[int]{}.IsEmpty())
+		assert.True(t, RegPol(Pt(1, 2), Sz(2, 2), 0, 0).IsEmpty())
+		assert.True(t, RegPol(Pt(1, 2), Sz(2, 2), -1, 0).IsEmpty())
 	})
 	t.Run("with sides", func(t *testing.T) {
-		assert.False(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Empty())
+		assert.False(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).IsEmpty())
 	})
 }
 
@@ -779,7 +810,7 @@ func TestRegularPolygon_Ellipse(t *testing.T) {
 
 func TestRegularPolygon_Circle(t *testing.T) {
 	t.Run("the circumscribed circle of a polygon of equal semi-axes", func(t *testing.T) {
-		AssertCircle(t, Hexagon(Pt(1, 2), SzU(10), FlatTop).Circle(), Circ(Pt(1, 2), 10))
+		AssertCircle(t, Hexagon(Pt(1, 2), SzU(10), OrientationFlatTop).Circle(), Circ(Pt(1, 2), 10))
 	})
 	t.Run("the circle around an elliptical polygon", func(t *testing.T) {
 		AssertCircle(t, RegPol(Pt(1, 2), Sz(4, 10), 5, 0).Circle(), Circ(Pt(1, 2), 10))
@@ -950,9 +981,9 @@ func TestRegularPolygon_Immutable(t *testing.T) {
 
 // regularPolygonFixtures span the triangle, square, and hexagon at both orientations.
 var regularPolygonFixtures = []RegularPolygon[float64]{
-	Triangle(Pt(0.0, 0.0), Sz(3.0, 3.0), PointyTop),
-	Square(Pt(50.0, 50.0), Sz(100.0, 100.0), PointyTop),
-	Hexagon(Pt(0.0, 0.0), Sz(10.0, 10.0), FlatTop),
+	Triangle(Pt(0.0, 0.0), Sz(3.0, 3.0), OrientationPointyTop),
+	Square(Pt(50.0, 50.0), Sz(100.0, 100.0), OrientationPointyTop),
+	Hexagon(Pt(0.0, 0.0), Sz(10.0, 10.0), OrientationFlatTop),
 	RegPol(Pt(-3.5, 0.25), Sz(2.0, 3.0), 5, Pi/7),
 	RegPol(Pt(12.5, -0.1), Sz(0.5, 0.5), 8, 0),
 }

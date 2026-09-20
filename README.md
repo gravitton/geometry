@@ -26,8 +26,8 @@ Generic, immutable 2D geometry library for game development
 - **Generic** over every integer and float type, named types included.
 - **Immutable** – every method returns a new value.
 - **Shapes** – point, vector, size, padding, rectangle, circle, ellipse, segment, (regular) polygon, affine matrix.
-- **Interfaces** – `Shape`, `Outline`, `Collider`, `Measured` and `Movable`, so a spatial index, a renderer or a
-  collision pass holds a shape without knowing which one.
+- **Interfaces** – `Shape`, `Outline`, `Collider`, `Body` and `Transformable`, so a spatial index, a renderer, a
+  collision pass or a physics body holds a shape without knowing which one.
 - **Directions, axes and orientations** as enums, with compass and rectangle-anchor aliases.
 - **Screen space** – top-left origin, `+Y` down, one winding order everywhere.
 - **Extras** – `image` interop, JSON, string parsing, numeric helpers, test assertions.
@@ -122,9 +122,9 @@ walks one, and it converts back exactly.
 
 ```go
 e.RegularPolygon(64)                // every vertex on the boundary, and Ellipse() converts back
-c.RegularPolygon(6, geom.PointyTop) // only a circle also places the first vertex
+c.RegularPolygon(6, geom.OrientationPointyTop) // only a circle also places the first vertex
 
-slices.Collect(c.RegularPolygon(64, geom.FlatTop).Vertices()) // the points that draw the circle
+slices.Collect(c.RegularPolygon(64, geom.OrientationFlatTop).Vertices()) // the points that draw the circle
 ```
 
 ### Segments and polygons
@@ -144,7 +144,7 @@ for vertex := range p.Vertices() { // the same loop draws a Segment, Rectangle o
 	vertex.Float()
 }
 
-hex := geom.Hexagon(geom.Pt(0, 0), geom.SzU(20), geom.FlatTop)
+hex := geom.Hexagon(geom.Pt(0, 0), geom.SzU(20), geom.OrientationFlatTop)
 hex.Ellipse()                // the ellipse its vertices lie on, exactly; Circle() is the one around
 hex.Bounds()                 // Rectangle (-20,-17)-(20,17)
 hex.Area()                   // 1039, 3√3/2 · r²
@@ -164,16 +164,16 @@ s.DistanceTo(geom.Pt(10.0, 5.0))
 var o geom.Outline[float64] = d // Vertices, Edges — Segment, Rectangle, Polygon, RegularPolygon
 slices.Collect(o.Vertices())      // a Circle and an Ellipse have none; take RegularPolygon(n) first
 
-var m geom.Measured[float64] = c // Area and Perimeter, in the type that measures them: T for
-m.Area()                         // Size and Rectangle, float64 where a curve encloses what no integer expresses
-
 geom.Intersects(d, c) // two shapes held as Collider, dispatched on the kind of the second
+
+var b geom.Body[float64] = c // Area, Centroid, Inertia — the mass properties at unit density,
+b.Inertia()                  // for a physics body to scale by its density; every shape but Segment
 ```
 
-`Movable[T, S]` is a constraint rather than a value type, returning the shape's own type so a generic tween keeps it:
+`Transformable[T, S]` is a constraint rather than a value type, returning the shape's own type so a generic tween keeps it:
 
 ```go
-func Tween[T geom.Number, S geom.Movable[T, S]](shape S, to geom.Point[T], t float64) S
+func Tween[T geom.Number, S geom.Transformable[T, S]](shape S, to geom.Point[T], t float64) S
 ```
 
 The interfaces are for the code around a hot loop: a call through one, or through a type parameter constrained by
@@ -214,7 +214,7 @@ axis := geom.AxisVertical
 axis.Along(size)             // Height, because the axis is vertical
 axis.Size(length, thickness) // Size{thickness, length}
 
-geom.Hexagon(center, size, geom.PointyTop) // orientation places a vertex or an edge at the top
+geom.Hexagon(center, size, geom.OrientationPointyTop) // orientation places a vertex or an edge at the top
 geom.ParseOrientation("FlatTop")           // the name back to the constant, "None" to OrientationNone
 ```
 
@@ -252,7 +252,7 @@ geom.RectangleFromMin(geom.Pt(0, 0), geom.Sz(4, 2)).Rectangle() // image.Rectang
 
 json.Marshal(geom.Rect(geom.Pt(1, 2), geom.Sz(3, 4))) // {"x":1,"y":2,"w":3,"h":4}
 json.Marshal(geom.DirectionUp)                        // "Up"
-json.Marshal(geom.PointyTop)                          // "PointyTop"
+json.Marshal(geom.OrientationPointyTop)                          // "PointyTop"
 geom.ParseSize[int]("4x2")                            // Size{4, 2}
 ```
 

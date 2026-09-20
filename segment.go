@@ -57,7 +57,7 @@ func (s Segment[T]) Edges() iter.Seq[Segment[T]] {
 	}
 }
 
-// Midpoint returns the midpoint of the segment, Lerp(0.5).
+// Midpoint returns the midpoint of the segment, PointAt(0.5).
 func (s Segment[T]) Midpoint() Point[T] {
 	return s.Start.Midpoint(s.End)
 }
@@ -145,9 +145,9 @@ func (s Segment[T]) Reverse() Segment[T] {
 	return Segment[T]{s.End, s.Start}
 }
 
-// Lerp returns the point at the fraction t of the way from Start to End, extrapolating along
-// the segment outside [0, 1] like Point.Lerp. Midpoint is Lerp(0.5).
-func (s Segment[T]) Lerp(t float64) Point[T] {
+// PointAt returns the point at the fraction t of the way from Start to End, extrapolating along
+// the segment outside [0, 1] like Point.Lerp. Midpoint is PointAt(0.5).
+func (s Segment[T]) PointAt(t float64) Point[T] {
 	return s.Start.Lerp(s.End, t)
 }
 
@@ -273,7 +273,7 @@ func (s Segment[T]) IntersectionSegment(segment Segment[T]) (Point[T], bool) {
 // within Epsilon of T. A segment whose extent lies outside the polygon is rejected before any
 // edge is examined, and an empty polygon intersects nothing.
 func (s Segment[T]) IntersectsPolygon(polygon Polygon[T]) bool {
-	if polygon.Empty() {
+	if polygon.IsEmpty() {
 		return false
 	}
 
@@ -356,7 +356,7 @@ func (s Segment[T]) IntersectionRectangle(rectangle Rectangle[T]) []Point[T] {
 // intersect, within Epsilon of T. A segment whose extent lies outside the polygon's Bounds is
 // rejected before any edge is examined, and an empty polygon intersects nothing.
 func (s Segment[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
-	if polygon.Empty() {
+	if polygon.IsEmpty() {
 		return false
 	}
 
@@ -438,7 +438,7 @@ func (s Segment[T]) crossing(segment Segment[T]) Point[T] {
 	a, b := s.Float(), segment.Float()
 
 	t := b.Start.Subtract(a.Start).Cross(b.Vector()) / a.Vector().Cross(b.Vector())
-	point := a.Lerp(t)
+	point := a.PointAt(t)
 
 	return point.Cast[T]()
 }
@@ -526,7 +526,7 @@ func (s Segment[T]) pointsAt(fractions ...float64) []Point[T] {
 			continue
 		}
 
-		lerped := s.Float().Lerp(Clamp(t, 0, 1))
+		lerped := s.Float().PointAt(Clamp(t, 0, 1))
 		point := lerped.Cast[T]()
 		if slices.ContainsFunc(points, point.Equal) {
 			continue

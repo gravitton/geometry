@@ -32,12 +32,12 @@ func TestParseAxis(t *testing.T) {
 
 func TestAxis_Cross(t *testing.T) {
 	t.Run("swaps the two axes", func(t *testing.T) {
-		assert.Equal(t, AxisHorizontal.Cross(), AxisVertical)
-		assert.Equal(t, AxisVertical.Cross(), AxisHorizontal)
+		assert.Equal(t, AxisHorizontal.Perpendicular(), AxisVertical)
+		assert.Equal(t, AxisVertical.Perpendicular(), AxisHorizontal)
 	})
 	t.Run("none has no cross", func(t *testing.T) {
-		assert.Equal(t, AxisNone.Cross(), AxisNone)
-		assert.Equal(t, Axis(2).Cross(), AxisNone)
+		assert.Equal(t, AxisNone.Perpendicular(), AxisNone)
+		assert.Equal(t, Axis(2).Perpendicular(), AxisNone)
 	})
 }
 
@@ -199,15 +199,15 @@ func TestAxis_JSON(t *testing.T) {
 func TestAxis_Properties(t *testing.T) {
 	t.Run("cross is its own inverse", func(t *testing.T) {
 		for _, axis := range Axes() {
-			assert.Equal(t, axis.Cross().Cross(), axis, axis.String()+": ")
+			assert.Equal(t, axis.Perpendicular().Perpendicular(), axis, axis.String()+": ")
 		}
 	})
 	t.Run("along and across swap on the cross axis", func(t *testing.T) {
 		size := Sz(10.0, 20.0)
 
 		for _, axis := range Axes() {
-			AssertNumber(t, axis.Cross().Along(size), axis.Across(size), axis.String()+": ")
-			AssertNumber(t, axis.Cross().Across(size), axis.Along(size), axis.String()+": ")
+			AssertNumber(t, axis.Perpendicular().Along(size), axis.Across(size), axis.String()+": ")
+			AssertNumber(t, axis.Perpendicular().Across(size), axis.Along(size), axis.String()+": ")
 		}
 	})
 	t.Run("size and along are inverse", func(t *testing.T) {
@@ -232,8 +232,8 @@ func TestAxis_Properties(t *testing.T) {
 		size := Sz(10.0, 20.0)
 
 		for _, axis := range Axes() {
-			AssertSize(t, axis.Cross().ScaleAlong(size, 0.5), axis.ScaleAcross(size, 0.5), axis.String()+": ")
-			AssertSize(t, axis.Cross().ScaleAcross(size, 0.5), axis.ScaleAlong(size, 0.5), axis.String()+": ")
+			AssertSize(t, axis.Perpendicular().ScaleAlong(size, 0.5), axis.ScaleAcross(size, 0.5), axis.String()+": ")
+			AssertSize(t, axis.Perpendicular().ScaleAcross(size, 0.5), axis.ScaleAlong(size, 0.5), axis.String()+": ")
 		}
 	})
 	t.Run("project is the component of the vector", func(t *testing.T) {

@@ -10,13 +10,13 @@ import (
 
 func TestOrientations(t *testing.T) {
 	t.Run("lists both orientations in order", func(t *testing.T) {
-		assert.Equal(t, Orientations(), [2]Orientation{FlatTop, PointyTop})
+		assert.Equal(t, Orientations(), [2]Orientation{OrientationFlatTop, OrientationPointyTop})
 	})
 	t.Run("returns a fresh array", func(t *testing.T) {
 		orientations := Orientations()
-		orientations[0] = PointyTop
+		orientations[0] = OrientationPointyTop
 
-		assert.Equal(t, Orientations()[0], FlatTop)
+		assert.Equal(t, Orientations()[0], OrientationFlatTop)
 	})
 }
 
@@ -45,8 +45,8 @@ func TestParseOrientation(t *testing.T) {
 
 func TestOrientation_IsNone(t *testing.T) {
 	t.Run("the two constants are an orientation", func(t *testing.T) {
-		assert.False(t, FlatTop.IsNone())
-		assert.False(t, PointyTop.IsNone())
+		assert.False(t, OrientationFlatTop.IsNone())
+		assert.False(t, OrientationPointyTop.IsNone())
 	})
 	t.Run("none and out of range", func(t *testing.T) {
 		assert.True(t, OrientationNone.IsNone())
@@ -56,8 +56,8 @@ func TestOrientation_IsNone(t *testing.T) {
 
 func TestOrientation_String(t *testing.T) {
 	t.Run("named orientations", func(t *testing.T) {
-		assert.Equal(t, FlatTop.String(), "FlatTop")
-		assert.Equal(t, PointyTop.String(), "PointyTop")
+		assert.Equal(t, OrientationFlatTop.String(), "FlatTop")
+		assert.Equal(t, OrientationPointyTop.String(), "PointyTop")
 	})
 	t.Run("none and out of range", func(t *testing.T) {
 		assert.Equal(t, OrientationNone.String(), "None")
@@ -67,7 +67,7 @@ func TestOrientation_String(t *testing.T) {
 
 func TestOrientation_JSON(t *testing.T) {
 	t.Run("wire format is the name", func(t *testing.T) {
-		assert.JSON(t, PointyTop, `"PointyTop"`)
+		assert.JSON(t, OrientationPointyTop, `"PointyTop"`)
 		assert.JSON(t, OrientationNone, `"None"`)
 	})
 	t.Run("round-trip", func(t *testing.T) {
@@ -105,7 +105,7 @@ func TestOrientation_Properties(t *testing.T) {
 				vertices := slices.Collect(polygon.Vertices())
 				top := vertices[0]
 
-				if orientation == PointyTop {
+				if orientation == OrientationPointyTop {
 					AssertPoint(t, top, Pt(0.0, -10.0), orientation.String()+": ")
 				} else {
 					AssertVector(t, top.Midpoint(vertices[1]).Vector().Normalize(), Vec(0.0, -1.0), orientation.String()+": ")

@@ -101,6 +101,10 @@ func TestEllipse_Anchor(t *testing.T) {
 	})
 }
 
+func TestEllipse_Centroid(t *testing.T) {
+	AssertPoint(t, Ell(Pt(1, 2), Sz(10, 4), 0).Centroid(), Pt(1, 2))
+}
+
 func TestEllipse_Area(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		AssertNumber(t, Ell(Pt(1, 2), Sz(10, 4), 0).Area(), Pi*40.0)
@@ -110,6 +114,26 @@ func TestEllipse_Area(t *testing.T) {
 	})
 	t.Run("the turn does not change it", func(t *testing.T) {
 		AssertNumber(t, Ell(Pt(1, 2), Sz(10, 4), 1.0).Area(), Pi*40.0)
+	})
+}
+
+func TestEllipse_Inertia(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertNumber(t, Ell(Pt(1, 2), Sz(10, 4), 0).Inertia(), Pi*1160.0)
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Ell(Pt(0.6, -0.25), Sz(1.2, 0.5), 0).Inertia(), Pi*0.6*1.69/4)
+	})
+	t.Run("the turn does not change it", func(t *testing.T) {
+		AssertNumber(t, Ell(Pt(1, 2), Sz(10, 4), 1.0).Inertia(), Pi*1160.0)
+	})
+	t.Run("a circle agrees with Circle", func(t *testing.T) {
+		AssertNumber(t, Ell(Pt(1.0, 2.0), SzU(10.0), 0).Inertia(), Circ(Pt(1.0, 2.0), 10.0).Inertia())
+	})
+	t.Run("is approached by the polygon", func(t *testing.T) {
+		for _, e := range ellipseFixtures {
+			assert.EqualDelta(t, e.Inertia(), e.RegularPolygon(360).Inertia(), e.Inertia()*1e-3, e.String())
+		}
 	})
 }
 
@@ -542,7 +566,7 @@ func TestEllipse_RegularPolygon(t *testing.T) {
 		}
 	})
 	t.Run("fewer than one vertex is empty", func(t *testing.T) {
-		assert.True(t, e.RegularPolygon(0).Empty())
+		assert.True(t, e.RegularPolygon(0).IsEmpty())
 	})
 	t.Run("it round-trips through Ellipse", func(t *testing.T) {
 		AssertEllipse(t, e.RegularPolygon(6).Ellipse(), e)

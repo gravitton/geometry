@@ -43,7 +43,7 @@ func (p Polygon[T]) Vertices() iter.Seq[Point[T]] {
 	return slices.Values(p.Points)
 }
 
-// Center returns the polygon centroid: the center of the enclosed area, so a vertex added in
+// Centroid returns the center of the enclosed area, so a vertex added in
 // the middle of an edge does not move it. A polygon that encloses no area, with fewer than
 // three vertices or all of them collinear, has no such center and falls back to the average of
 // its vertices; an empty polygon returns the zero point.
@@ -53,8 +53,8 @@ func (p Polygon[T]) Vertices() iter.Seq[Point[T]] {
 // The sum is taken with the origin moved to the first vertex, so the products stay small and
 // every edge at that vertex contributes exactly zero: a polygon of one or two vertices has an
 // exact zero area whatever its coordinates.
-func (p Polygon[T]) Center() Point[T] {
-	if p.Empty() {
+func (p Polygon[T]) Centroid() Point[T] {
+	if p.IsEmpty() {
 		return Point[T]{}
 	}
 
@@ -102,13 +102,45 @@ func (p Polygon[T]) Perimeter() float64 {
 	return perimeter
 }
 
+// Inertia returns the polar second moment of area about the centroid, the rotational inertia
+// of the enclosed area at unit density, summed per edge like Area and Centroid: about the
+// first vertex, so the products stay small, then moved to the centroid by the parallel axis
+// theorem. Winding does not matter, and a polygon that encloses no area has no moment.
+func (p Polygon[T]) Inertia() float64 {
+	if p.IsEmpty() {
+		return 0
+	}
+
+	offset := p.Points[0].Vector().Float().Negate()
+
+	var x, y, twiceArea, moment float64
+	for edge := range p.Edges() {
+		shifted := edge.Float().Translate(offset)
+		a, b := shifted.Start.Vector(), shifted.End.Vector()
+		cross := shifted.cross()
+
+		x += (a.X + b.X) * cross
+		y += (a.Y + b.Y) * cross
+		twiceArea += cross
+		moment += (a.Dot(a) + a.Dot(b) + b.Dot(b)) * cross
+	}
+
+	if twiceArea == 0 {
+		return 0
+	}
+
+	centroid := Vector[float64]{x / (3 * twiceArea), y / (3 * twiceArea)}
+
+	return math.Abs(moment)/12 - math.Abs(twiceArea)/2*centroid.LengthSquared()
+}
+
 // Bounds returns the axis-aligned bounding rectangle of the vertices, or the zero rectangle
 // for a polygon without vertices.
 func (p Polygon[T]) Bounds() Rectangle[T] {
 	return RectangleFromMinMax(p.minMax())
 }
 
-// mean returns the average of the vertices, which Center falls back to when the
+// mean returns the average of the vertices, which Centroid falls back to when the
 // polygon encloses no area.
 func (p Polygon[T]) mean() Point[T] {
 	var x, y float64
@@ -139,12 +171,12 @@ func (p Polygon[T]) Translate(vector Vector[T]) Polygon[T] {
 // the fractional part of the centroid, so the moved centroid lands on point except when it sits
 // exactly on a half and rounding away from zero flips side as the sign changes.
 func (p Polygon[T]) MoveTo(point Point[T]) Polygon[T] {
-	return p.Translate(point.Subtract(p.Center()))
+	return p.Translate(point.Subtract(p.Centroid()))
 }
 
 // Scale creates a new Polygon uniformly scaled about its centroid by the factor.
 func (p Polygon[T]) Scale(factor float64) Polygon[T] {
-	center := p.Center()
+	center := p.Centroid()
 
 	return Polygon[T]{xslices.Map(p.Points, func(point Point[T]) Point[T] {
 		return center.Add(point.Subtract(center).Multiply(factor))
@@ -153,7 +185,7 @@ func (p Polygon[T]) Scale(factor float64) Polygon[T] {
 
 // ScaleXY creates a new Polygon scaled about its centroid by the factors.
 func (p Polygon[T]) ScaleXY(factorX, factorY float64) Polygon[T] {
-	center := p.Center()
+	center := p.Centroid()
 
 	return Polygon[T]{xslices.Map(p.Points, func(point Point[T]) Point[T] {
 		return center.Add(point.Subtract(center).MultiplyXY(factorX, factorY))
@@ -163,7 +195,7 @@ func (p Polygon[T]) ScaleXY(factorX, factorY float64) Polygon[T] {
 // Unscale creates a new Polygon uniformly scaled about its centroid by the inverse factor, the
 // inverse of Scale. Like Divide it panics for a zero factor.
 func (p Polygon[T]) Unscale(factor float64) Polygon[T] {
-	center := p.Center()
+	center := p.Centroid()
 
 	return Polygon[T]{xslices.Map(p.Points, func(point Point[T]) Point[T] {
 		return center.Add(point.Subtract(center).Divide(factor))
@@ -173,7 +205,7 @@ func (p Polygon[T]) Unscale(factor float64) Polygon[T] {
 // UnscaleXY creates a new Polygon scaled about its centroid by the inverse of the given
 // factors, the inverse of ScaleXY. Like Divide it panics for a zero factor.
 func (p Polygon[T]) UnscaleXY(factorX, factorY float64) Polygon[T] {
-	center := p.Center()
+	center := p.Centroid()
 
 	return Polygon[T]{xslices.Map(p.Points, func(point Point[T]) Point[T] {
 		return center.Add(point.Subtract(center).DivideXY(factorX, factorY))
@@ -191,7 +223,7 @@ func (p Polygon[T]) Transform[M Float](matrix Matrix[M]) Polygon[T] {
 // the same sense as Vector.Rotate. For integer T the centroid and every rotated vertex are
 // rounded; only multiples of 90° keep the shape exactly.
 func (p Polygon[T]) Rotate(angle float64) Polygon[T] {
-	pivot := p.Center()
+	pivot := p.Centroid()
 
 	return Polygon[T]{xslices.Map(p.Points, func(point Point[T]) Point[T] {
 		return point.RotateAround(pivot, angle)
@@ -203,7 +235,7 @@ func (p Polygon[T]) Rotate(angle float64) Polygon[T] {
 // even-odd rule, so a self-intersecting polygon excludes the regions it winds around twice.
 // A point outside the extent of the vertices is rejected before any edge is examined.
 func (p Polygon[T]) Contains(point Point[T]) bool {
-	if p.Empty() {
+	if p.IsEmpty() {
 		return false
 	}
 
@@ -261,7 +293,7 @@ func (p Polygon[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
 // Polygons whose extents do not overlap are rejected before any edge pair is examined, and so
 // is every edge whose extent lies outside the other polygon.
 func (p Polygon[T]) IntersectsPolygon(polygon Polygon[T]) bool {
-	if p.Empty() || polygon.Empty() {
+	if p.IsEmpty() || polygon.IsEmpty() {
 		return false
 	}
 
@@ -297,7 +329,7 @@ func (p Polygon[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 // within the other, or an edge of the rectangle crosses an edge of the polygon. The
 // rectangle's extent rejects it before any edge is examined, whatever its angle.
 func (p Polygon[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
-	if p.Empty() {
+	if p.IsEmpty() {
 		return false
 	}
 
@@ -334,7 +366,7 @@ func (p Polygon[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 // the polygon. The two Bounds reject the pair before any edge is examined, and an empty
 // polygon on either side intersects nothing.
 func (p Polygon[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
-	if p.Empty() || polygon.Empty() {
+	if p.IsEmpty() || polygon.IsEmpty() {
 		return false
 	}
 
@@ -392,8 +424,8 @@ func (p Polygon[T]) IsZero() bool {
 	return p.Points == nil
 }
 
-// Empty checks if number of vertices is zero.
-func (p Polygon[T]) Empty() bool {
+// IsEmpty checks if number of vertices is zero.
+func (p Polygon[T]) IsEmpty() bool {
 	return len(p.Points) == 0
 }
 

@@ -8,10 +8,10 @@ import (
 type Orientation int
 
 const (
-	// FlatTop places a flat edge at the top of the polygon.
-	FlatTop Orientation = iota
-	// PointyTop places a vertex at the top of the polygon.
-	PointyTop
+	// OrientationFlatTop places a flat edge at the top of the polygon.
+	OrientationFlatTop Orientation = iota
+	// OrientationPointyTop places a vertex at the top of the polygon.
+	OrientationPointyTop
 
 	// OrientationNone is the absence of an orientation. It names no alignment, so
 	// RegularPolygonOrientationAngle has no angle to give for it and panics.
@@ -21,7 +21,7 @@ const (
 // Orientations lists both orientations in order. It returns a fresh array, so a caller cannot
 // alter the list.
 func Orientations() [2]Orientation {
-	return [2]Orientation{FlatTop, PointyTop}
+	return [2]Orientation{OrientationFlatTop, OrientationPointyTop}
 }
 
 // ParseOrientation returns the orientation with the given name, as String prints it, and an
@@ -40,19 +40,19 @@ func ParseOrientation(name string) (Orientation, error) {
 	return OrientationNone, fmt.Errorf("geom: unknown orientation %q", name)
 }
 
-// IsNone reports whether the orientation is neither FlatTop nor PointyTop. Like Axis, an
+// IsNone reports whether the orientation is neither OrientationFlatTop nor OrientationPointyTop. Like Axis, an
 // Orientation outside the constants is not normalized, so every such value counts as
 // OrientationNone.
 func (o Orientation) IsNone() bool {
-	return o != FlatTop && o != PointyTop
+	return o != OrientationFlatTop && o != OrientationPointyTop
 }
 
 // String returns the name of the orientation constant.
 func (o Orientation) String() string {
 	switch o {
-	case FlatTop:
+	case OrientationFlatTop:
 		return "FlatTop"
-	case PointyTop:
+	case OrientationPointyTop:
 		return "PointyTop"
 	default:
 		return "None"

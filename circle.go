@@ -22,6 +22,11 @@ func Circ[T Number](center Point[T], radius T) Circle[T] {
 	return Circle[T]{center, Abs(radius)}
 }
 
+// Centroid returns the center of the enclosed area, the Center of the circle.
+func (c Circle[T]) Centroid() Point[T] {
+	return c.Center
+}
+
 // Area returns the circle area (π * radius^2). It is a float64 even for an integer T, since
 // the factor π leaves no radius with an area T could express.
 func (c Circle[T]) Area() float64 {
@@ -33,6 +38,14 @@ func (c Circle[T]) Area() float64 {
 // Perimeter returns the circle circumference (2 * π * radius).
 func (c Circle[T]) Perimeter() float64 {
 	return 2 * Pi * float64(c.Radius)
+}
+
+// Inertia returns the polar second moment of area about the center (π * radius^4 / 2), the
+// rotational inertia of the disc at unit density.
+func (c Circle[T]) Inertia() float64 {
+	radius := float64(c.Radius)
+
+	return Pi * radius * radius * radius * radius / 2
 }
 
 // Diameter returns the circle diameter (2 * radius). It stays in T like a sum, since doubling
@@ -118,7 +131,7 @@ func (c Circle[T]) Lerp(circle Circle[T], t float64) Circle[T] {
 
 // Rotate creates a new Circle turned by the given angle (in radians) about its center, in the
 // same sense as Vector.Rotate, which is the circle itself: a circle is symmetric about its
-// center, so no angle moves it. It is here so every shape turns the same way and Movable can
+// center, so no angle moves it. It is here so every shape turns the same way and Transformable can
 // name it.
 func (c Circle[T]) Rotate(angle float64) Circle[T] {
 	return c
@@ -251,7 +264,7 @@ func (c Circle[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
 // DistanceSquaredTo measures. A circle whose Bounds lie outside the polygon is rejected before
 // any edge is examined, and an empty polygon intersects nothing.
 func (c Circle[T]) IntersectsPolygon(polygon Polygon[T]) bool {
-	if polygon.Empty() {
+	if polygon.IsEmpty() {
 		return false
 	}
 
@@ -275,7 +288,7 @@ func (c Circle[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 // A circle whose Bounds lie outside the polygon's is rejected before any edge is examined, and
 // an empty polygon intersects nothing.
 func (c Circle[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
-	if polygon.Empty() {
+	if polygon.IsEmpty() {
 		return false
 	}
 
@@ -346,13 +359,13 @@ func (c Circle[T]) Ellipse() Ellipse[T] {
 
 // RegularPolygon converts the circle into the RegularPolygon of n vertices inscribed in it,
 // with the given orientation, as Ellipse.RegularPolygon does without one: every vertex lies on
-// the boundary, and the orientation places the first of them, PointyTop at the top and FlatTop
+// the boundary, and the orientation places the first of them, OrientationPointyTop at the top and OrientationFlatTop
 // half a step before it, so the midpoint of an edge is there instead. It is the outline a
 // circle does not have, so its Vertices and Edges are what draws or walks one.
 //
 // Only a circle takes an Orientation, since turning it and stepping around it are the same
 // thing. Like RegularPolygonOrientationAngle it panics for an orientation that is neither
-// FlatTop nor PointyTop.
+// OrientationFlatTop nor OrientationPointyTop.
 func (c Circle[T]) RegularPolygon(n int, orientation Orientation) RegularPolygon[T] {
 	return c.Ellipse().RegularPolygon(n).Rotate(RegularPolygonOrientationAngle(n, orientation))
 }

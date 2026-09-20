@@ -137,29 +137,29 @@ func (r Rectangle[T]) TopRight() Point[T] {
 	return r.worldPoint(Vector[T]{b.X, a.Y})
 }
 
-// Top returns the midpoint of the top edge, named in the frame of the rectangle before its turn.
-func (r Rectangle[T]) Top() Point[T] {
+// TopCenter returns the midpoint of the top edge, named in the frame of the rectangle before its turn.
+func (r Rectangle[T]) TopCenter() Point[T] {
 	a, _ := r.localMinMax()
 
 	return r.worldPoint(Vector[T]{0, a.Y})
 }
 
-// Bottom returns the midpoint of the bottom edge, named in the frame of the rectangle before its turn.
-func (r Rectangle[T]) Bottom() Point[T] {
+// BottomCenter returns the midpoint of the bottom edge, named in the frame of the rectangle before its turn.
+func (r Rectangle[T]) BottomCenter() Point[T] {
 	_, b := r.localMinMax()
 
 	return r.worldPoint(Vector[T]{0, b.Y})
 }
 
-// Left returns the midpoint of the left edge, named in the frame of the rectangle before its turn.
-func (r Rectangle[T]) Left() Point[T] {
+// LeftCenter returns the midpoint of the left edge, named in the frame of the rectangle before its turn.
+func (r Rectangle[T]) LeftCenter() Point[T] {
 	a, _ := r.localMinMax()
 
 	return r.worldPoint(Vector[T]{a.X, 0})
 }
 
-// Right returns the midpoint of the right edge, named in the frame of the rectangle before its turn.
-func (r Rectangle[T]) Right() Point[T] {
+// RightCenter returns the midpoint of the right edge, named in the frame of the rectangle before its turn.
+func (r Rectangle[T]) RightCenter() Point[T] {
 	_, b := r.localMinMax()
 
 	return r.worldPoint(Vector[T]{b.X, 0})
@@ -174,19 +174,19 @@ func (r Rectangle[T]) Anchor(direction Direction) Point[T] {
 	case TopLeft:
 		return r.TopLeft()
 	case Top:
-		return r.Top()
+		return r.TopCenter()
 	case TopRight:
 		return r.TopRight()
 	case Right:
-		return r.Right()
+		return r.RightCenter()
 	case BottomRight:
 		return r.BottomRight()
 	case Bottom:
-		return r.Bottom()
+		return r.BottomCenter()
 	case BottomLeft:
 		return r.BottomLeft()
 	case Left:
-		return r.Left()
+		return r.LeftCenter()
 	default:
 		return r.Center
 	}
@@ -242,14 +242,29 @@ func (r Rectangle[T]) Vertices() iter.Seq[Point[T]] {
 	}
 }
 
-// Area returns the rectangle area.
-func (r Rectangle[T]) Area() T {
-	return r.Size.Area()
+// Centroid returns the center of the enclosed area, the Center of the rectangle.
+func (r Rectangle[T]) Centroid() Point[T] {
+	return r.Center
+}
+
+// Area returns the rectangle area (width * height). It is a float64 even for an integer T,
+// like every product, so the rectangle is a Body beside the curved shapes; Size.Area keeps
+// the exact integer area of a box.
+func (r Rectangle[T]) Area() float64 {
+	return float64(r.Size.Width) * float64(r.Size.Height)
 }
 
 // Perimeter returns the rectangle perimeter.
 func (r Rectangle[T]) Perimeter() T {
 	return r.Size.Perimeter()
+}
+
+// Inertia returns the polar second moment of area about the center, the rotational inertia
+// of the box at unit density: w * h * (w^2 + h^2) / 12, which the turn does not change.
+func (r Rectangle[T]) Inertia() float64 {
+	w, h := r.Size.Float().XY()
+
+	return w * h * (w*w + h*h) / 12
 }
 
 // AspectRatio returns width/height.
@@ -641,7 +656,7 @@ func (r Rectangle[T]) Union(rectangle Rectangle[T]) Rectangle[T] {
 // rectangle. The two Bounds reject the pair before any edge is examined, whatever the
 // rectangle's angle, and an empty polygon intersects nothing.
 func (r Rectangle[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
-	if polygon.Empty() {
+	if polygon.IsEmpty() {
 		return false
 	}
 

@@ -76,37 +76,37 @@ func TestPolygon_Vertices(t *testing.T) {
 
 func TestPolygon_Center(t *testing.T) {
 	t.Run("int rounds the average", func(t *testing.T) {
-		AssertPoint(t, Pol(squareVertices()).Center(), Pt(1, 1))
-		AssertPoint(t, Pol([]Point[int]{Pt(-1, -2), Pt(0, 0), Pt(0, 0)}).Center(), Pt(0, -1))
+		AssertPoint(t, Pol(squareVertices()).Centroid(), Pt(1, 1))
+		AssertPoint(t, Pol([]Point[int]{Pt(-1, -2), Pt(0, 0), Pt(0, 0)}).Centroid(), Pt(0, -1))
 	})
 	t.Run("narrow integers do not overflow the sum", func(t *testing.T) {
-		AssertPoint(t, Pol([]Point[int8]{Pt[int8](100, 100), Pt[int8](100, 100), Pt[int8](100, 100)}).Center(), Pt[int8](100, 100))
+		AssertPoint(t, Pol([]Point[int8]{Pt[int8](100, 100), Pt[int8](100, 100), Pt[int8](100, 100)}).Centroid(), Pt[int8](100, 100))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertPoint(t, Pol(triangleVertices()).Center(), Pt(1.5, 0.5))
+		AssertPoint(t, Pol(triangleVertices()).Centroid(), Pt(1.5, 0.5))
 	})
 	t.Run("a vertex on an edge does not move the centroid", func(t *testing.T) {
 		subdivided := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(1.0, 0.0), Pt(2.0, 0.0), Pt(2.0, 2.0), Pt(0.0, 2.0)})
 
-		AssertPoint(t, subdivided.Center(), Pt(1.0, 1.0))
+		AssertPoint(t, subdivided.Centroid(), Pt(1.0, 1.0))
 	})
 	t.Run("winding does not matter", func(t *testing.T) {
 		reversed := Pol([]Point[float64]{Pt(0.0, 2.0), Pt(2.0, 2.0), Pt(2.0, 0.0), Pt(1.0, 0.0), Pt(0.0, 0.0)})
 
-		AssertPoint(t, reversed.Center(), Pt(1.0, 1.0))
+		AssertPoint(t, reversed.Centroid(), Pt(1.0, 1.0))
 	})
 	t.Run("degenerate float vertices are their own center exactly", func(t *testing.T) {
 		repeated := Pol([]Point[float64]{Pt(13.5, 1.9), Pt(13.5, 1.9)})
 
-		assert.Equal(t, repeated.Center(), Pt(13.5, 1.9))
+		assert.Equal(t, repeated.Centroid(), Pt(13.5, 1.9))
 	})
 	t.Run("collinear falls back to the vertex average", func(t *testing.T) {
-		AssertPoint(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(1.0, 1.0), Pt(3.0, 3.0)}).Center(), Pt(4.0/3, 4.0/3))
-		AssertPoint(t, Pol([]Point[int]{Pt(0, 0), Pt(4, 0)}).Center(), Pt(2, 0))
+		AssertPoint(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(1.0, 1.0), Pt(3.0, 3.0)}).Centroid(), Pt(4.0/3, 4.0/3))
+		AssertPoint(t, Pol([]Point[int]{Pt(0, 0), Pt(4, 0)}).Centroid(), Pt(2, 0))
 	})
 	t.Run("empty is the zero point", func(t *testing.T) {
-		AssertPoint(t, Pol([]Point[int]{}).Center(), Pt(0, 0))
-		AssertPoint(t, Polygon[float64]{}.Center(), Pt(0.0, 0.0))
+		AssertPoint(t, Pol([]Point[int]{}).Centroid(), Pt(0, 0))
+		AssertPoint(t, Polygon[float64]{}.Centroid(), Pt(0.0, 0.0))
 	})
 }
 
@@ -147,6 +147,42 @@ func TestPolygon_Perimeter(t *testing.T) {
 	})
 	t.Run("empty is zero", func(t *testing.T) {
 		AssertNumber(t, Polygon[float64]{}.Perimeter(), 0.0)
+	})
+}
+
+func TestPolygon_Inertia(t *testing.T) {
+	t.Run("square", func(t *testing.T) {
+		AssertNumber(t, Pol(squareVertices()).Inertia(), 8.0/3)
+	})
+	t.Run("winding does not matter", func(t *testing.T) {
+		reversed := Pol([]Point[int]{Pt(0, 2), Pt(2, 2), Pt(2, 0), Pt(0, 0)})
+
+		AssertNumber(t, reversed.Inertia(), 8.0/3)
+	})
+	t.Run("is taken about the centroid wherever the polygon lies", func(t *testing.T) {
+		square := Pol(squareVertices())
+
+		AssertNumber(t, square.Translate(Vec(100, -250)).Inertia(), square.Inertia())
+		AssertNumber(t, Pol(triangleVertices()).Translate(Vec(100.0, -250.0)).Inertia(), Pol(triangleVertices()).Inertia())
+	})
+	t.Run("a triangle has the moment of its sides, A(a²+b²+c²)/36", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			if len(p.Points) != 3 {
+				continue
+			}
+
+			var sides float64
+			for edge := range p.Edges() {
+				sides += edge.Vector().LengthSquared()
+			}
+
+			AssertNumber(t, p.Inertia(), p.Area()*sides/36, p.String())
+		}
+	})
+	t.Run("degenerate is zero", func(t *testing.T) {
+		AssertNumber(t, Pol([]Point[int]{}).Inertia(), 0.0)
+		AssertNumber(t, Pol([]Point[int]{Pt(1, 1), Pt(4, 4)}).Inertia(), 0.0)
+		AssertNumber(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(1.0, 1.0), Pt(3.0, 3.0)}).Inertia(), 0.0)
 	})
 }
 
@@ -209,12 +245,12 @@ func TestPolygon_MoveTo(t *testing.T) {
 	t.Run("int lands on the point when the average crosses zero", func(t *testing.T) {
 		moved := Pol([]Point[int]{Pt(-1, 0), Pt(0, 0), Pt(0, 0)}).MoveTo(Pt(1, 0))
 
-		AssertPoint(t, moved.Center(), Pt(1, 0))
+		AssertPoint(t, moved.Centroid(), Pt(1, 0))
 	})
 	t.Run("int misses by one when a half average changes sign", func(t *testing.T) {
 		moved := Pol([]Point[int]{Pt(-1, 0), Pt(0, 0)}).MoveTo(Pt(0, 0))
 
-		AssertPoint(t, moved.Center(), Pt(1, 0))
+		AssertPoint(t, moved.Centroid(), Pt(1, 0))
 	})
 }
 
@@ -283,7 +319,7 @@ func TestPolygon_Rotate(t *testing.T) {
 		p := Pol(triangleVertices())
 		rotated := p.Rotate(0.7)
 
-		AssertPoint(t, rotated.Center(), p.Center())
+		AssertPoint(t, rotated.Centroid(), p.Centroid())
 		AssertNumber(t, rotated.Area(), p.Area())
 		AssertNumber(t, rotated.Perimeter(), p.Perimeter())
 	})
@@ -621,14 +657,14 @@ func TestPolygon_IsZero(t *testing.T) {
 	})
 }
 
-func TestPolygon_Empty(t *testing.T) {
+func TestPolygon_IsEmpty(t *testing.T) {
 	t.Run("no vertices", func(t *testing.T) {
-		assert.True(t, Polygon[int]{}.Empty())
-		assert.True(t, Polygon[int]{[]Point[int]{}}.Empty())
+		assert.True(t, Polygon[int]{}.IsEmpty())
+		assert.True(t, Polygon[int]{[]Point[int]{}}.IsEmpty())
 	})
 	t.Run("with vertices", func(t *testing.T) {
-		assert.False(t, Pol(squareVertices()).Empty())
-		assert.False(t, Pol(triangleVertices()).Empty())
+		assert.False(t, Pol(squareVertices()).IsEmpty())
+		assert.False(t, Pol(triangleVertices()).IsEmpty())
 	})
 }
 
@@ -727,7 +763,7 @@ func TestPolygon_Properties(t *testing.T) {
 			for _, vector := range vectorFixtures {
 				moved := polygon.Translate(vector)
 
-				assert.True(t, moved.Center().Equal(polygon.Center().Add(vector)), fmt.Sprintf("%s → %s: ", polygon, vector))
+				assert.True(t, moved.Centroid().Equal(polygon.Centroid().Add(vector)), fmt.Sprintf("%s → %s: ", polygon, vector))
 				for i, vertex := range moved.Points {
 					assert.True(t, vertex.Equal(polygon.Points[i].Add(vector)), fmt.Sprintf("%s → %s: ", polygon, vector))
 				}
@@ -737,7 +773,7 @@ func TestPolygon_Properties(t *testing.T) {
 	t.Run("move to centers where asked", func(t *testing.T) {
 		for _, polygon := range polygonFixtures() {
 			for _, point := range pointFixtures {
-				assert.True(t, polygon.MoveTo(point).Center().Equal(point), fmt.Sprintf("%s → %s: ", polygon, point))
+				assert.True(t, polygon.MoveTo(point).Centroid().Equal(point), fmt.Sprintf("%s → %s: ", polygon, point))
 			}
 		}
 	})
@@ -746,7 +782,7 @@ func TestPolygon_Properties(t *testing.T) {
 			for _, factor := range []float64{0.5, 1, 2.5, -3} {
 				scaled := polygon.Scale(factor)
 
-				assert.True(t, scaled.Center().Equal(polygon.Center()), fmt.Sprintf("%s ×%v: ", polygon, factor))
+				assert.True(t, scaled.Centroid().Equal(polygon.Centroid()), fmt.Sprintf("%s ×%v: ", polygon, factor))
 			}
 		}
 	})
@@ -768,12 +804,12 @@ func TestPolygon_Properties(t *testing.T) {
 			}
 
 			expected := sum.Divide(3)
-			assert.True(t, polygon.Center().Equal(expected), fmt.Sprintf("%s: ", polygon))
+			assert.True(t, polygon.Centroid().Equal(expected), fmt.Sprintf("%s: ", polygon))
 		}
 	})
 	t.Run("centroid lies within the bounds", func(t *testing.T) {
 		for _, polygon := range polygonFixtures() {
-			assert.True(t, polygon.Bounds().Contains(polygon.Center()), fmt.Sprintf("%s: ", polygon))
+			assert.True(t, polygon.Bounds().Contains(polygon.Centroid()), fmt.Sprintf("%s: ", polygon))
 		}
 	})
 }

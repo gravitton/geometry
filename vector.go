@@ -181,7 +181,7 @@ func (v Vector[T]) Transform[M Float](matrix Matrix[M]) Vector[T] {
 
 // Rotate creates a new Vector rotated by the given angle (in radians), in the standard math
 // convention where Y grows upward, so a positive angle appears clockwise on a screen with Y
-// pointing down. This is the same sense as a positive Direction.Rotate step.
+// pointing down. This is the same sense as a positive Direction.Turn step.
 // For integer T, sin/cos components are rounded; only multiples of 90° give exact results.
 func (v Vector[T]) Rotate(angle float64) Vector[T] {
 	sin, cos := math.Sincos(angle)

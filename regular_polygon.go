@@ -56,22 +56,22 @@ func Hexagon[T Number](center Point[T], size Size[T], orientation Orientation) R
 }
 
 // RegularPolygonOrientationAngle returns the initial vertex angle for a regular polygon with n sides
-// and the given orientation, normalized to [0, 2π) like Rotate. PointyTop puts the first vertex at
-// the top (-Y, 3π/2); FlatTop puts the midpoint of an edge there, so the first vertex sits half a
+// and the given orientation, normalized to [0, 2π) like Rotate. OrientationPointyTop puts the first vertex at
+// the top (-Y, 3π/2); OrientationFlatTop puts the midpoint of an edge there, so the first vertex sits half a
 // step before it at 3π/2 - π/n. A polygon with n < 1 has no edge to place, so both orientations
-// give the top angle rather than dividing by n. An orientation other than FlatTop and PointyTop
+// give the top angle rather than dividing by n. An orientation other than OrientationFlatTop and OrientationPointyTop
 // has no meaning and panics.
 func RegularPolygonOrientationAngle(n int, orientation Orientation) float64 {
 	top := 3 * Pi / 2
 
 	switch orientation {
-	case FlatTop:
+	case OrientationFlatTop:
 		if n < 1 {
 			return top
 		}
 
 		return NormalizeAngle(top - Pi/float64(n))
-	case PointyTop:
+	case OrientationPointyTop:
 		return top
 	default:
 		panic(fmt.Sprintf("geom: unknown orientation %d", orientation))
@@ -100,7 +100,7 @@ func (rp RegularPolygon[T]) Vertices() iter.Seq[Point[T]] {
 // vertex yields one zero-length edge.
 func (rp RegularPolygon[T]) Edges() iter.Seq[Segment[T]] {
 	return func(yield func(Segment[T]) bool) {
-		if rp.Empty() {
+		if rp.IsEmpty() {
 			return
 		}
 
@@ -118,6 +118,11 @@ func (rp RegularPolygon[T]) Edges() iter.Seq[Segment[T]] {
 			previous = next
 		}
 	}
+}
+
+// Centroid returns the center of the enclosed area, the Center of the polygon.
+func (rp RegularPolygon[T]) Centroid() Point[T] {
+	return rp.Center
 }
 
 // Area returns the area enclosed by the polygon, in closed form: n/2 · w · h · sin(2π/n), the
@@ -157,6 +162,25 @@ func (rp RegularPolygon[T]) Perimeter() float64 {
 	}
 
 	return perimeter
+}
+
+// Inertia returns the polar second moment of area about the center, the rotational inertia
+// of the enclosed area at unit density, in closed form: the moment of the polygon inscribed
+// in the unit circle, n · sin(2π/n) · (2 + cos(2π/n)) / 12, scaled by w · h · (w² + h²) / 2
+// for the semi-axes Size holds, since a regular polygon has the same moment about every
+// axis through its center and each axis scales by the cube of one semi-axis and the first
+// power of the other. The turn and the orientation do not change it, and a polygon with
+// N < 3 encloses no area. For integer T it is the moment of the exact polygon, like Area,
+// which Polygon().Inertia() measures from the rounded vertices.
+func (rp RegularPolygon[T]) Inertia() float64 {
+	if rp.N < 3 {
+		return 0
+	}
+
+	n, central := float64(rp.N), rp.centralAngle()
+	w, h := rp.Size.Float().XY()
+
+	return n * math.Sin(central) * (2 + math.Cos(central)) / 24 * w * h * (w*w + h*h)
 }
 
 // Bounds returns the axis-aligned bounding rectangle of the vertices without building them, or
@@ -223,7 +247,7 @@ func (rp RegularPolygon[T]) nearestIndex(direction float64) int {
 // places it, so the corners are exactly those of Polygon().Bounds(), rounded alike for an
 // integer T. An empty polygon returns two zero points.
 func (rp RegularPolygon[T]) minMax() (Point[T], Point[T]) {
-	if rp.Empty() {
+	if rp.IsEmpty() {
 		return Point[T]{}, Point[T]{}
 	}
 
@@ -329,7 +353,7 @@ func (rp RegularPolygon[T]) Rotate(angle float64) RegularPolygon[T] {
 // of the vertices contains, for an integer T on the rounded vertices. A point outside Bounds
 // is rejected before any edge is examined; an empty polygon contains nothing.
 func (rp RegularPolygon[T]) Contains(point Point[T]) bool {
-	if rp.Empty() {
+	if rp.IsEmpty() {
 		return false
 	}
 
@@ -398,7 +422,7 @@ func (rp RegularPolygon[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 // T, and an empty polygon intersects nothing. Polygons whose Bounds do not overlap are
 // rejected before any edge pair is examined.
 func (rp RegularPolygon[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
-	if rp.Empty() || polygon.Empty() {
+	if rp.IsEmpty() || polygon.IsEmpty() {
 		return false
 	}
 
@@ -447,8 +471,8 @@ func (rp RegularPolygon[T]) IsZero() bool {
 	return rp.Equal(RegularPolygon[T]{})
 }
 
-// Empty checks if the polygon has no vertices.
-func (rp RegularPolygon[T]) Empty() bool {
+// IsEmpty checks if the polygon has no vertices.
+func (rp RegularPolygon[T]) IsEmpty() bool {
 	return rp.N < 1
 }
 
@@ -456,7 +480,7 @@ func (rp RegularPolygon[T]) Empty() bool {
 // iterates, in one allocation. A polygon with N < 1 has nil vertices, so its Polygon is zero
 // like Pol(nil).
 func (rp RegularPolygon[T]) Polygon() Polygon[T] {
-	if rp.Empty() {
+	if rp.IsEmpty() {
 		return Polygon[T]{}
 	}
 
@@ -478,7 +502,8 @@ func (rp RegularPolygon[T]) Ellipse() Ellipse[T] {
 
 // Circle converts the polygon into the circle around it, the circle around the Ellipse it is
 // inscribed in: the one of the major semi-axis, which passes through the vertices of a polygon
-// of equal semi-axes and contains every other.
+// of equal semi-axes and contains every other. Only the circumscribed circle is offered: it
+// names the RegularPolygon of the same center, size and angle, and the inscribed one does not.
 func (rp RegularPolygon[T]) Circle() Circle[T] {
 	return rp.Ellipse().Circle()
 }

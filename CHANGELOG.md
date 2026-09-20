@@ -28,12 +28,14 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.14.0.md](docs
 - `Line` is `Segment`, the same-kind `Intersects` and `Intersection` carry the shape name, `Circle.Circumference` is `Perimeter`, and `Polygon.Vertices` is the `Points` field
 - `Segment.MoveTo` places the midpoint, `Size.Grow` and `Shrink` no longer clamp, and `Rectangle.Rectangle` spans exactly `Size.Int` pixels
 - `String` and JSON change form for `Polygon` and a turned `RegularPolygon`
+- `Rectangle.Area` returns `float64`, like every product, so the rectangle is a `Body`
+- Names settle on one vocabulary: `Empty` is `IsEmpty`, `FlatTop` is `OrientationFlatTop`, `Segment.Lerp` is `PointAt`, `Axis.Cross` is `Perpendicular`, `Direction.Rotate` is `Turn`, `Polygon.Center` is `Centroid`, and the rectangle edge midpoints are `TopCenter` and its siblings
 
 ### Added
 - `Ellipse` – the continuous shape of two semi-axes and an angle, with the foci, the Ramanujan perimeter and a boundary distance found by bisection
 - `Rectangle.Angle`, `Rotate` and `IsAligned` – the oriented box, with corners, edges, anchors and `Inset` named in the frame before the turn
 - The conversions between a curved boundary and the polygon of the wanted resolution, in both directions and exact
-- `Shape`, `Outline`, `Collider`, `Measured` and `Movable`, with the `Intersects(a, b)` package function over two colliders
+- `Shape`, `Outline`, `Collider`, `Body` and `Transformable`, with the `Intersects(a, b)` package function over two colliders and `Centroid` with `Inertia` on every shape that encloses an area
 - `Transform` on `Rectangle` and `RegularPolygon`, `Rotate` on `Circle`, and `Cast[R]()` on every type
 - `Intersects` between every remaining pair of shapes, `RegularPolygon` included on both sides
 - `Canonical` snapping an angle residue, the `Orientation` text encoding, and `AssertEllipse` with `AssertAngle`

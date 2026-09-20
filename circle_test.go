@@ -22,6 +22,10 @@ func TestCircle_Constructor(t *testing.T) {
 	})
 }
 
+func TestCircle_Centroid(t *testing.T) {
+	AssertPoint(t, Circ(Pt(1, 2), 10).Centroid(), Pt(1, 2))
+}
+
 func TestCircle_Area(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		AssertNumber(t, Circ(Pt(1, 2), 10).Area(), Pi*100.0)
@@ -40,6 +44,21 @@ func TestCircle_Perimeter(t *testing.T) {
 	})
 	t.Run("float", func(t *testing.T) {
 		AssertNumber(t, Circ(Pt(0.6, -0.25), 1.2).Perimeter(), Pi*2.4)
+	})
+}
+
+func TestCircle_Inertia(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertNumber(t, Circ(Pt(1, 2), 10).Inertia(), Pi*5000.0)
+	})
+	t.Run("float", func(t *testing.T) {
+		AssertNumber(t, Circ(Pt(0.6, -0.25), 1.2).Inertia(), Pi*1.0368)
+	})
+	t.Run("agrees with the ellipse and is approached by the polygon", func(t *testing.T) {
+		for _, c := range circleFixtures {
+			AssertNumber(t, c.Inertia(), c.Ellipse().Inertia(), c.String())
+			assert.EqualDelta(t, c.Inertia(), c.RegularPolygon(360, OrientationFlatTop).Inertia(), c.Inertia()*1e-3, c.String())
+		}
 	})
 }
 
@@ -777,14 +796,14 @@ func TestCircle_RegularPolygon(t *testing.T) {
 	c := Circ(Pt(0.0, 0.0), 10.0)
 
 	t.Run("pointy top places a vertex at the top", func(t *testing.T) {
-		AssertRegularPolygon(t, c.RegularPolygon(6, PointyTop), Hexagon(Pt(0.0, 0.0), SzU(10.0), PointyTop))
-		AssertPoint(t, slices.Collect(c.RegularPolygon(6, PointyTop).Vertices())[0], Pt(0.0, -10.0))
+		AssertRegularPolygon(t, c.RegularPolygon(6, OrientationPointyTop), Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationPointyTop))
+		AssertPoint(t, slices.Collect(c.RegularPolygon(6, OrientationPointyTop).Vertices())[0], Pt(0.0, -10.0))
 	})
 	t.Run("flat top places an edge at the top", func(t *testing.T) {
-		AssertRegularPolygon(t, c.RegularPolygon(6, FlatTop), Hexagon(Pt(0.0, 0.0), SzU(10.0), FlatTop))
+		AssertRegularPolygon(t, c.RegularPolygon(6, OrientationFlatTop), Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationFlatTop))
 	})
 	t.Run("every vertex lies on the boundary", func(t *testing.T) {
-		for vertex := range c.RegularPolygon(7, PointyTop).Vertices() {
+		for vertex := range c.RegularPolygon(7, OrientationPointyTop).Vertices() {
 			AssertNumber(t, c.Center.DistanceTo(vertex), c.Radius, fmt.Sprintf("%s: ", vertex))
 		}
 	})

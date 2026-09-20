@@ -148,13 +148,13 @@ func ParseDirection(name string) (Direction, error) {
 
 // Opposite returns the opposite direction, rotated 180°.
 func (d Direction) Opposite() Direction {
-	return d.Rotate(4)
+	return d.Turn(4)
 }
 
-// Rotate advances the direction by steps eighth-turns of increasing angle, the same sense as a
+// Turn advances the direction by steps eighth-turns of increasing angle, the same sense as a
 // positive Vector.Rotate angle: counterclockwise in math coordinates, clockwise as drawn on a
 // screen with Y pointing down. Negative steps go the other way.
-func (d Direction) Rotate(steps int) Direction {
+func (d Direction) Turn(steps int) Direction {
 	if d.IsNone() {
 		return DirectionNone
 	}

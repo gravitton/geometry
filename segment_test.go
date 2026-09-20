@@ -264,29 +264,29 @@ func TestSegment_Reverse(t *testing.T) {
 	})
 }
 
-func TestSegment_Lerp(t *testing.T) {
+func TestSegment_PointAt(t *testing.T) {
 	segment := Seg(Pt(0.0, 0.0), Pt(4.0, 2.0))
 
 	t.Run("endpoints at 0 and 1", func(t *testing.T) {
-		AssertPoint(t, segment.Lerp(0), segment.Start)
-		AssertPoint(t, segment.Lerp(1), segment.End)
+		AssertPoint(t, segment.PointAt(0), segment.Start)
+		AssertPoint(t, segment.PointAt(1), segment.End)
 	})
 	t.Run("along the segment", func(t *testing.T) {
-		AssertPoint(t, segment.Lerp(0.25), Pt(1.0, 0.5))
-		AssertPoint(t, segment.Lerp(0.5), segment.Midpoint())
+		AssertPoint(t, segment.PointAt(0.25), Pt(1.0, 0.5))
+		AssertPoint(t, segment.PointAt(0.5), segment.Midpoint())
 	})
 	t.Run("extrapolates beyond the segment", func(t *testing.T) {
-		AssertPoint(t, segment.Lerp(-0.5), Pt(-2.0, -1.0))
-		AssertPoint(t, segment.Lerp(1.5), Pt(6.0, 3.0))
+		AssertPoint(t, segment.PointAt(-0.5), Pt(-2.0, -1.0))
+		AssertPoint(t, segment.PointAt(1.5), Pt(6.0, 3.0))
 	})
 	t.Run("int rounds the half away from zero", func(t *testing.T) {
-		AssertPoint(t, Seg(Pt(0, 0), Pt(3, 3)).Lerp(0.5), Pt(2, 2))
-		AssertPoint(t, Seg(Pt(0, 0), Pt(-3, -3)).Lerp(0.5), Pt(-2, -2))
+		AssertPoint(t, Seg(Pt(0, 0), Pt(3, 3)).PointAt(0.5), Pt(2, 2))
+		AssertPoint(t, Seg(Pt(0, 0), Pt(-3, -3)).PointAt(0.5), Pt(-2, -2))
 	})
 	t.Run("lands on the segment", func(t *testing.T) {
 		for _, s := range segmentFixtures {
 			for _, fraction := range []float64{0, 0.25, 0.5, 0.75, 1} {
-				assert.True(t, s.Contains(s.Lerp(fraction)), fmt.Sprintf("%s at %v: ", s, fraction))
+				assert.True(t, s.Contains(s.PointAt(fraction)), fmt.Sprintf("%s at %v: ", s, fraction))
 			}
 		}
 	})

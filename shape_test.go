@@ -9,28 +9,33 @@ import (
 )
 
 var (
-	_ Shape[int]        = Segment[int]{}
-	_ Shape[int]        = Rectangle[int]{}
-	_ Shape[int]        = Circle[int]{}
-	_ Shape[int]        = Ellipse[int]{}
-	_ Shape[int]        = Polygon[int]{}
-	_ Shape[int]        = RegularPolygon[int]{}
-	_ Outline[int]      = Segment[int]{}
-	_ Outline[int]      = Rectangle[int]{}
-	_ Outline[int]      = Polygon[int]{}
-	_ Outline[int]      = RegularPolygon[int]{}
-	_ Collider[int]     = Segment[int]{}
-	_ Collider[int]     = Rectangle[int]{}
-	_ Collider[int]     = Circle[int]{}
-	_ Collider[int]     = Polygon[int]{}
-	_ Collider[int]     = RegularPolygon[int]{}
-	_ Measured[int]     = Size[int]{}
-	_ Measured[int]     = Rectangle[int]{}
-	_ Measured[float64] = Circle[int]{}
-	_ Measured[float64] = Ellipse[int]{}
-	_ Measured[float64] = Polygon[int]{}
-	_ Measured[float64] = RegularPolygon[int]{}
+	_ Shape[int]    = Segment[int]{}
+	_ Shape[int]    = Rectangle[int]{}
+	_ Shape[int]    = Circle[int]{}
+	_ Shape[int]    = Ellipse[int]{}
+	_ Shape[int]    = Polygon[int]{}
+	_ Shape[int]    = RegularPolygon[int]{}
+	_ Outline[int]  = Segment[int]{}
+	_ Outline[int]  = Rectangle[int]{}
+	_ Outline[int]  = Polygon[int]{}
+	_ Outline[int]  = RegularPolygon[int]{}
+	_ Collider[int] = Segment[int]{}
+	_ Collider[int] = Rectangle[int]{}
+	_ Collider[int] = Circle[int]{}
+	_ Collider[int] = Polygon[int]{}
+	_ Collider[int] = RegularPolygon[int]{}
+	_ Body[int]     = Rectangle[int]{}
+	_ Body[int]     = Circle[int]{}
+	_ Body[int]     = Ellipse[int]{}
+	_ Body[int]     = Polygon[int]{}
+	_ Body[int]     = RegularPolygon[int]{}
 )
+
+// solid is a shape with mass properties, the pair the Body properties are checked through.
+type solid[T Number] interface {
+	Shape[T]
+	Body[T]
+}
 
 func TestShape(t *testing.T) {
 	shapes := []Shape[float64]{
@@ -39,7 +44,7 @@ func TestShape(t *testing.T) {
 		Circ(Pt(1.0, 1.0), 2.0),
 		Ell(Pt(1.0, 2.0), Sz(4.0, 2.0), Pi/6),
 		Pol(triangleVertices()),
-		Hexagon(Pt(0.0, 0.0), SzU(10.0), FlatTop),
+		Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationFlatTop),
 	}
 
 	t.Run("distance is zero exactly where contains holds", func(t *testing.T) {
@@ -64,7 +69,7 @@ func TestOutline(t *testing.T) {
 		Seg(Pt(0.0, 0.0), Pt(3.0, 4.0)),
 		Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi / 6),
 		Pol(triangleVertices()),
-		Hexagon(Pt(0.0, 0.0), SzU(10.0), FlatTop),
+		Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationFlatTop),
 	}
 
 	t.Run("every edge starts at a vertex and ends at the next", func(t *testing.T) {
@@ -81,7 +86,7 @@ func TestOutline(t *testing.T) {
 		assert.False(t, closed[float64](Seg(Pt(0.0, 0.0), Pt(3.0, 4.0))))
 		assert.True(t, closed[float64](Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi/6)))
 		assert.True(t, closed[float64](Pol(triangleVertices())))
-		assert.True(t, closed[float64](Hexagon(Pt(0.0, 0.0), SzU(10.0), FlatTop)))
+		assert.True(t, closed[float64](Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationFlatTop)))
 	})
 }
 
@@ -91,7 +96,7 @@ func TestCollider(t *testing.T) {
 		Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi / 6),
 		Circ(Pt(1.0, 1.0), 2.0),
 		Pol(triangleVertices()),
-		Hexagon(Pt(0.0, 0.0), SzU(10.0), FlatTop),
+		Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationFlatTop),
 	}
 	for _, s := range segmentFixtures {
 		colliders = append(colliders, s)
@@ -152,23 +157,6 @@ func (s stubCollider) IntersectsRegularPolygon(RegularPolygon[float64]) bool {
 	return s.result
 }
 
-func TestMeasured(t *testing.T) {
-	measured := []Measured[float64]{
-		Sz(3.0, 4.0),
-		Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)),
-		Circ(Pt(1.0, 1.0), 2.0),
-		Pol(triangleVertices()),
-		Hexagon(Pt(0.0, 0.0), SzU(10.0), FlatTop),
-	}
-
-	t.Run("area and perimeter are non-negative", func(t *testing.T) {
-		for _, m := range measured {
-			assert.True(t, m.Area() >= 0, fmt.Sprintf("%v: ", m))
-			assert.True(t, m.Perimeter() >= 0, fmt.Sprintf("%v: ", m))
-		}
-	})
-}
-
 // closed reports whether the last edge returns to the first vertex, through the interface as
 // a caller would.
 func closed[T Number](outline Outline[T]) bool {
@@ -185,7 +173,32 @@ func closed[T Number](outline Outline[T]) bool {
 	return first.Equal(last)
 }
 
-func TestMovable(t *testing.T) {
+func TestBody(t *testing.T) {
+	solids := []solid[float64]{
+		Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi / 6),
+		Circ(Pt(1.0, 1.0), 2.0),
+		Ell(Pt(1.0, 2.0), Sz(4.0, 2.0), Pi/6),
+		Pol(triangleVertices()),
+		Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationFlatTop),
+	}
+
+	t.Run("the centroid lies within the shape", func(t *testing.T) {
+		for _, s := range solids {
+			assert.True(t, s.Contains(s.Centroid()), fmt.Sprintf("%v: ", s))
+		}
+	})
+	t.Run("the inertia is positive and below the area at the farthest corner", func(t *testing.T) {
+		for _, s := range solids {
+			a, b := s.Bounds().MinMax()
+			reach := max(a.DistanceSquaredTo(s.Centroid()), b.DistanceSquaredTo(s.Centroid()))
+
+			assert.True(t, s.Inertia() > 0, fmt.Sprintf("%v: ", s))
+			assert.True(t, s.Inertia() < s.Area()*reach, fmt.Sprintf("%v: ", s))
+		}
+	})
+}
+
+func TestTransformable(t *testing.T) {
 	t.Run("every shape moves and scales in its own type", func(t *testing.T) {
 		AssertSegment(t, moved(Seg(Pt(0, 0), Pt(2, 2)), Vec(1, 1)), Seg(Pt(1, 1), Pt(3, 3)))
 		AssertRectangle(t, moved(Rect(Pt(0, 0), Sz(2, 2)), Vec(1, 1)), Rect(Pt(1, 1), Sz(2, 2)))
@@ -197,6 +210,6 @@ func TestMovable(t *testing.T) {
 
 // moved translates a shape and turns and scales it back and forth through the constraint, the
 // call a generic tween makes.
-func moved[T Number, S Movable[T, S]](shape S, vector Vector[T]) S {
+func moved[T Number, S Transformable[T, S]](shape S, vector Vector[T]) S {
 	return shape.Translate(vector).Rotate(2 * Pi).Scale(2).Unscale(2)
 }

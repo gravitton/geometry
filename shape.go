@@ -47,29 +47,30 @@ type Collider[T Number] interface {
 	IntersectsRegularPolygon(polygon RegularPolygon[T]) bool
 }
 
-// Measured is a shape with an area and a perimeter, in the number type M that measures them:
-// Size and Rectangle measure in their own T, since a box of an integer size has an exact
-// integer area and perimeter, while Circle, Ellipse, Polygon and RegularPolygon measure in float64,
-// since a curve or a turned edge encloses what no integer expresses. Every float64 shape is a
-// Measured[float64]; an integer Rectangle or Size is a Measured[int].
-type Measured[M Number] interface {
-	Area() M
-	Perimeter() M
+// Body is a shape with an area, the mass properties a physics engine takes from it: Rectangle,
+// Circle, Ellipse, Polygon and RegularPolygon. Area is the mass at unit density, Centroid the
+// center of mass and Inertia the polar second moment of area about it, the rotational inertia
+// at unit density; a physics body multiplies the last two by its density and never asks which
+// shape it holds. Segment is not a Body, since it encloses no area, and Size is not a shape.
+type Body[T Number] interface {
+	Area() float64
+	Centroid() Point[T]
+	Inertia() float64
 }
 
-// Movable is a shape that can be moved, turned and scaled, in its own type: Segment, Rectangle, Circle,
+// Transformable is a shape that can be moved, turned and scaled, in its own type: Segment, Rectangle, Circle,
 // Ellipse, Polygon and RegularPolygon, each returning itself rather than a common type, so the parameter
 // S stands for the shape and every method returns it. It is a constraint, not a value type,
 // and is written self-referentially at the call site:
 //
-//	func Tween[T Number, S Movable[T, S]](shape S, to Point[T], t float64) S
+//	func Tween[T Number, S Transformable[T, S]](shape S, to Point[T], t float64) S
 //
 // Every shape turns about its own center, Circle.Rotate giving the circle back. Lerp is
-// deliberately absent: Segment.Lerp is the point a fraction along the segment rather than
+// deliberately absent: Segment.PointAt is the point a fraction along the segment rather than
 // a step toward another segment, and Polygon has none, so the six shapes do not share it.
 // A call through a type parameter constrained by an interface allocates, so this is for the
 // code around a hot loop, never inside one.
-type Movable[T Number, S any] interface {
+type Transformable[T Number, S any] interface {
 	Translate(vector Vector[T]) S
 	MoveTo(point Point[T]) S
 	Rotate(angle float64) S

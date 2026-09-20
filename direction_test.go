@@ -93,22 +93,22 @@ func TestDirection_Opposite(t *testing.T) {
 	})
 }
 
-func TestDirection_Rotate(t *testing.T) {
+func TestDirection_Turn(t *testing.T) {
 	t.Run("positive steps increase the angle", func(t *testing.T) {
 		// clockwise as drawn on screen, counterclockwise in math coordinates
-		assert.Equal(t, DirectionRight.Rotate(1), DirectionDownRight)
-		assert.Equal(t, DirectionRight.Rotate(2), DirectionDown)
-		assert.Equal(t, DirectionUp.Rotate(2), DirectionRight)
+		assert.Equal(t, DirectionRight.Turn(1), DirectionDownRight)
+		assert.Equal(t, DirectionRight.Turn(2), DirectionDown)
+		assert.Equal(t, DirectionUp.Turn(2), DirectionRight)
 	})
 	t.Run("negative steps decrease it", func(t *testing.T) {
-		assert.Equal(t, DirectionRight.Rotate(-1), DirectionUpRight)
-		assert.Equal(t, DirectionRight.Rotate(-9), DirectionUpRight)
+		assert.Equal(t, DirectionRight.Turn(-1), DirectionUpRight)
+		assert.Equal(t, DirectionRight.Turn(-9), DirectionUpRight)
 	})
 	t.Run("a full turn is the identity", func(t *testing.T) {
-		assert.Equal(t, DirectionRight.Rotate(8), DirectionRight)
+		assert.Equal(t, DirectionRight.Turn(8), DirectionRight)
 	})
 	t.Run("none does not rotate", func(t *testing.T) {
-		assert.Equal(t, DirectionNone.Rotate(3), DirectionNone)
+		assert.Equal(t, DirectionNone.Turn(3), DirectionNone)
 	})
 }
 
@@ -328,7 +328,7 @@ func TestDirection_Properties(t *testing.T) {
 	})
 	t.Run("opposite is four steps and its own inverse", func(t *testing.T) {
 		for _, direction := range Directions() {
-			assert.Equal(t, direction.Opposite(), direction.Rotate(4), direction.String()+": ")
+			assert.Equal(t, direction.Opposite(), direction.Turn(4), direction.String()+": ")
 			assert.Equal(t, direction.Opposite().Opposite(), direction, direction.String()+": ")
 
 			AssertVector(t, direction.Offset[int]().Add(direction.Opposite().Offset[int]()), Vec(0, 0), direction.String()+": ")
@@ -344,7 +344,7 @@ func TestDirection_Properties(t *testing.T) {
 			for steps := -8; steps <= 8; steps++ {
 				rotated := DirectionFromAngle(direction.Angle() + float64(steps)*Pi/4)
 
-				assert.Equal(t, rotated, direction.Rotate(steps), direction.String()+": ")
+				assert.Equal(t, rotated, direction.Turn(steps), direction.String()+": ")
 			}
 		}
 	})
@@ -352,7 +352,7 @@ func TestDirection_Properties(t *testing.T) {
 		for _, direction := range Directions() {
 			rotated := direction.Offset[float64]().Rotate(Pi / 2)
 
-			assert.Equal(t, rotated.Direction(), direction.Rotate(2), direction.String()+": ")
+			assert.Equal(t, rotated.Direction(), direction.Turn(2), direction.String()+": ")
 		}
 	})
 	t.Run("every unit vector has length one", func(t *testing.T) {

@@ -28,7 +28,7 @@ import (
 // A zero semi-axis is not repaired: it is the degenerate ellipse, the segment the other axis
 // spans, and Contains, DistanceTo and Bounds answer for it as for that segment.
 //
-// The ellipse is a Shape, a Measured and a Movable, and deliberately not an Outline or a
+// The ellipse is a Shape and a Transformable, and deliberately not an Outline or a
 // Collider: it has no vertices, and two ellipses meet at the roots of a quartic rather than at
 // anything the circle pairs are built on. Both are left to RegularPolygon, which holds the
 // same center, semi-axes and angle: RegularPolygon(n) is the polygon of the wanted resolution
@@ -96,6 +96,11 @@ func (e Ellipse[T]) Anchor(direction Direction) Point[T] {
 	return e.worldPoint(VectorFromAngleSize(direction.Angle(), e.Size.Float()))
 }
 
+// Centroid returns the center of the enclosed area, the Center of the ellipse.
+func (e Ellipse[T]) Centroid() Point[T] {
+	return e.Center
+}
+
 // Area returns the area enclosed by the boundary (π * width * height). It is a float64 even
 // for an integer T, since the factor π leaves no pair of semi-axes with an area T could
 // express, as Circle.Area is.
@@ -120,6 +125,15 @@ func (e Ellipse[T]) Perimeter() float64 {
 	t := 3 * ratio * ratio
 
 	return Pi * sum * (1 + t/(10+math.Sqrt(4-t)))
+}
+
+// Inertia returns the polar second moment of area about the center, the rotational inertia
+// of the enclosed area at unit density: π * w * h * (w^2 + h^2) / 4 for the semi-axes w and h,
+// the sum of the moments about each axis, which the turn does not change.
+func (e Ellipse[T]) Inertia() float64 {
+	w, h := e.Size.Float().XY()
+
+	return Pi * w * h * (w*w + h*h) / 4
 }
 
 // Bounds returns the axis-aligned bounding rectangle: the box on the corners minMax finds,
