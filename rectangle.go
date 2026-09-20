@@ -137,79 +137,34 @@ func (r Rectangle[T]) TopRight() Point[T] {
 	return r.worldPoint(Vector[T]{b.X, a.Y})
 }
 
-// TopCenter returns the midpoint of the top edge, named in the frame of the rectangle before its turn.
-func (r Rectangle[T]) TopCenter() Point[T] {
-	a, _ := r.localMinMax()
-
-	return r.worldPoint(Vector[T]{0, a.Y})
-}
-
-// BottomCenter returns the midpoint of the bottom edge, named in the frame of the rectangle before its turn.
-func (r Rectangle[T]) BottomCenter() Point[T] {
-	_, b := r.localMinMax()
-
-	return r.worldPoint(Vector[T]{0, b.Y})
-}
-
-// LeftCenter returns the midpoint of the left edge, named in the frame of the rectangle before its turn.
-func (r Rectangle[T]) LeftCenter() Point[T] {
-	a, _ := r.localMinMax()
-
-	return r.worldPoint(Vector[T]{a.X, 0})
-}
-
-// RightCenter returns the midpoint of the right edge, named in the frame of the rectangle before its turn.
-func (r Rectangle[T]) RightCenter() Point[T] {
-	_, b := r.localMinMax()
-
-	return r.worldPoint(Vector[T]{b.X, 0})
-}
-
 // Anchor returns the point on the rectangle in the given direction from its center, in the
-// frame of the rectangle before its turn: a corner for diagonals and the midpoint of an edge
-// for cardinals, so the Top anchor of a rotated rectangle is the midpoint of the edge that was
-// on top before the turn.
+// frame of the rectangle before its turn: a corner for diagonals, the midpoint of an edge for
+// cardinals and the center for DirectionNone, so the Top anchor of a rotated rectangle is the
+// midpoint of the edge that was on top before the turn. The corners are also TopLeft and its
+// siblings; the edge midpoints have no getter of their own, as no other shape gives one.
 func (r Rectangle[T]) Anchor(direction Direction) Point[T] {
+	a, b := r.localMinMax()
+
 	switch direction.normalize() {
 	case TopLeft:
-		return r.TopLeft()
+		return r.worldPoint(a)
 	case Top:
-		return r.TopCenter()
+		return r.worldPoint(Vector[T]{0, a.Y})
 	case TopRight:
-		return r.TopRight()
+		return r.worldPoint(Vector[T]{b.X, a.Y})
 	case Right:
-		return r.RightCenter()
+		return r.worldPoint(Vector[T]{b.X, 0})
 	case BottomRight:
-		return r.BottomRight()
+		return r.worldPoint(b)
 	case Bottom:
-		return r.BottomCenter()
+		return r.worldPoint(Vector[T]{0, b.Y})
 	case BottomLeft:
-		return r.BottomLeft()
+		return r.worldPoint(Vector[T]{a.X, b.Y})
 	case Left:
-		return r.LeftCenter()
+		return r.worldPoint(Vector[T]{a.X, 0})
 	default:
 		return r.Center
 	}
-}
-
-// TopEdge returns the top edge, from the top-left to the top-right corner.
-func (r Rectangle[T]) TopEdge() Segment[T] {
-	return Seg(r.TopLeft(), r.TopRight())
-}
-
-// RightEdge returns the right edge, from the top-right to the bottom-right corner.
-func (r Rectangle[T]) RightEdge() Segment[T] {
-	return Seg(r.TopRight(), r.BottomRight())
-}
-
-// BottomEdge returns the bottom edge, from the bottom-right to the bottom-left corner.
-func (r Rectangle[T]) BottomEdge() Segment[T] {
-	return Seg(r.BottomRight(), r.BottomLeft())
-}
-
-// LeftEdge returns the left edge, from the bottom-left to the top-left corner.
-func (r Rectangle[T]) LeftEdge() Segment[T] {
-	return Seg(r.BottomLeft(), r.TopLeft())
 }
 
 // Vertices iterates the rectangle vertices in order starting at the top-left corner, by
@@ -397,26 +352,26 @@ func (r Rectangle[T]) Canonical() Rectangle[T] {
 // the new extent is even, on Max when it is odd, as Min and Max place the center. Use Outset
 // to move a chosen side by a whole amount.
 func (r Rectangle[T]) Grow(amount T) Rectangle[T] {
-	return Rectangle[T]{r.Center, r.Size.Grow(amount).AtLeast(Size[T]{}), r.Angle}
+	return Rectangle[T]{r.Center, r.Size.Grow(amount).AtLeastZero(), r.Angle}
 }
 
 // GrowXY creates a new Rectangle with size expanded by the given amounts along its own axes, clamped to zero.
 // Each amount is the total change of that extent and an odd integer one lands on one side only, like Grow.
 func (r Rectangle[T]) GrowXY(amountX, amountY T) Rectangle[T] {
-	return Rectangle[T]{r.Center, r.Size.GrowXY(amountX, amountY).AtLeast(Size[T]{}), r.Angle}
+	return Rectangle[T]{r.Center, r.Size.GrowXY(amountX, amountY).AtLeastZero(), r.Angle}
 }
 
 // Shrink creates a new Rectangle with size reduced by the same amount in both dimensions, clamped to zero.
 // The amount is the total change of each extent, so each side moves in by half of it, where
 // Inset moves every side by the full padding. An odd integer amount comes off one side only, like Grow.
 func (r Rectangle[T]) Shrink(amount T) Rectangle[T] {
-	return Rectangle[T]{r.Center, r.Size.Shrink(amount).AtLeast(Size[T]{}), r.Angle}
+	return Rectangle[T]{r.Center, r.Size.Shrink(amount).AtLeastZero(), r.Angle}
 }
 
 // ShrinkXY creates a new Rectangle with size reduced by the given amounts along its own axes, clamped to zero.
 // Each amount is the total change of that extent and an odd integer one comes off one side only, like Shrink.
 func (r Rectangle[T]) ShrinkXY(amountX, amountY T) Rectangle[T] {
-	return Rectangle[T]{r.Center, r.Size.ShrinkXY(amountX, amountY).AtLeast(Size[T]{}), r.Angle}
+	return Rectangle[T]{r.Center, r.Size.ShrinkXY(amountX, amountY).AtLeastZero(), r.Angle}
 }
 
 // Inset creates a new Rectangle inset by the given padding amounts, each edge moved in the
@@ -575,7 +530,12 @@ func (r Rectangle[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 // before any edge is examined, and two rectangles that are not rotated whose extents overlap
 // exactly are decided there, since an exact overlap of two aligned boxes always shares a
 // corner or a crossing; only a gap within the tolerance goes to the edges. Two rectangles of
-// the same angle are tested in their shared frame, as IntersectionRectangle finds their overlap.
+// the same angle are tested in their shared frame, as IntersectionRectangle finds their overlap,
+// once the extents of their vertices overlap. For integer T the offset between the centers is
+// rounded into that frame, where the vertices were rounded in the world, so two rotated
+// integer rectangles of one angle can answer differently from IntersectsPolygon on the Polygon
+// of their rounded corners; the frame is what IntersectionRectangle and Union measure in, and
+// the three agree with each other.
 func (r Rectangle[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 	a1, b1 := r.MinMax()
 	a2, b2 := rectangle.MinMax()
@@ -596,19 +556,21 @@ func (r Rectangle[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 
 // IntersectionRectangle returns the rectangle common to both, and false when they do not intersect.
 // Touching rectangles intersect in a rectangle of zero width or height, within Epsilon of T,
-// exactly where Intersects holds: a corner admitted by the tolerance is placed on the boundary
-// of the other rectangle, never beyond it. Two rectangles of the same angle overlap in a
-// rectangle of that angle, found in their shared frame; rectangles of different angles overlap
-// in a polygon that is not a rectangle and return false even where Intersects holds, as
-// parallel segments do for Segment.IntersectionSegment. For integer T the offset between the centers of
-// two rotated rectangles is rounded into the shared frame and the result rounded back.
+// exactly where IntersectsRectangle holds, which is asked first: a corner admitted by the
+// tolerance is placed on the boundary of the other rectangle, never beyond it. Two rectangles
+// of the same angle overlap in a rectangle of that angle, found in their shared frame;
+// rectangles of different angles overlap in a polygon that is not a rectangle and return
+// false even where IntersectsRectangle holds, as parallel segments do for
+// Segment.IntersectionSegment. The shared frame holds an overlap wherever IntersectsRectangle
+// found one there, since it judged the same frame. For integer T the offset between the
+// centers of two rotated rectangles is rounded into the shared frame and the result rounded back.
 func (r Rectangle[T]) IntersectionRectangle(rectangle Rectangle[T]) (Rectangle[T], bool) {
+	if !r.IntersectsRectangle(rectangle) {
+		return Rectangle[T]{}, false
+	}
+
 	switch {
 	case r.IsAligned() && rectangle.IsAligned():
-		if !r.IntersectsRectangle(rectangle) {
-			return Rectangle[T]{}, false
-		}
-
 		a1, b1 := r.MinMax()
 		a2, b2 := rectangle.MinMax()
 
@@ -617,10 +579,7 @@ func (r Rectangle[T]) IntersectionRectangle(rectangle Rectangle[T]) (Rectangle[T
 
 		return RectangleFromMinMax(a, b), true
 	case r.parallel(rectangle):
-		overlap, ok := r.localRectangle(r).IntersectionRectangle(r.localRectangle(rectangle))
-		if !ok {
-			return Rectangle[T]{}, false
-		}
+		overlap, _ := r.localRectangle(r).IntersectionRectangle(r.localRectangle(rectangle))
 
 		return r.worldRectangle(overlap), true
 	default:

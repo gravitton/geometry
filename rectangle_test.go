@@ -163,39 +163,6 @@ func TestRectangle_Corners(t *testing.T) {
 	})
 }
 
-func TestRectangle_EdgeMidpoints(t *testing.T) {
-	r := RectangleFromMin(Pt(0, 0), Sz(10, 20))
-
-	t.Run("halve the edge they sit on", func(t *testing.T) {
-		AssertPoint(t, r.TopCenter(), Pt(5, 0))
-		AssertPoint(t, r.RightCenter(), Pt(10, 10))
-		AssertPoint(t, r.BottomCenter(), Pt(5, 20))
-		AssertPoint(t, r.LeftCenter(), Pt(0, 10))
-	})
-	t.Run("share a coordinate with the center", func(t *testing.T) {
-		AssertNumber(t, r.TopCenter().X, r.Center.X)
-		AssertNumber(t, r.BottomCenter().X, r.Center.X)
-		AssertNumber(t, r.LeftCenter().Y, r.Center.Y)
-		AssertNumber(t, r.RightCenter().Y, r.Center.Y)
-	})
-	t.Run("float", func(t *testing.T) {
-		f := RectangleFromMin(Pt(0.5, 1.25), Sz(2.0, 3.0))
-
-		AssertPoint(t, f.TopCenter(), Pt(1.5, 1.25))
-		AssertPoint(t, f.RightCenter(), Pt(2.5, 2.75))
-		AssertPoint(t, f.BottomCenter(), Pt(1.5, 4.25))
-		AssertPoint(t, f.LeftCenter(), Pt(0.5, 2.75))
-	})
-	t.Run("rotated midpoints keep their names and turn about the center", func(t *testing.T) {
-		turned := Rect(Pt(0, 0), Sz(4, 2)).Rotate(Pi / 2)
-
-		AssertPoint(t, turned.TopCenter(), Pt(1, 0))
-		AssertPoint(t, turned.RightCenter(), Pt(0, 2))
-		AssertPoint(t, turned.BottomCenter(), Pt(-1, 0))
-		AssertPoint(t, turned.LeftCenter(), Pt(0, -2))
-	})
-}
-
 func TestRectangle_Anchor(t *testing.T) {
 	r := RectangleFromMin(Pt(0, 0), Sz(10, 20))
 
@@ -205,11 +172,25 @@ func TestRectangle_Anchor(t *testing.T) {
 		AssertPoint(t, r.Anchor(BottomLeft), Pt(0, 20))
 		AssertPoint(t, r.Anchor(BottomRight), Pt(10, 20))
 	})
-	t.Run("edge midpoints", func(t *testing.T) {
+	t.Run("edge midpoints halve the edge they sit on", func(t *testing.T) {
 		AssertPoint(t, r.Anchor(Top), Pt(5, 0))
 		AssertPoint(t, r.Anchor(Bottom), Pt(5, 20))
 		AssertPoint(t, r.Anchor(DirectionLeft), Pt(0, 10))
 		AssertPoint(t, r.Anchor(DirectionRight), Pt(10, 10))
+	})
+	t.Run("edge midpoints share a coordinate with the center", func(t *testing.T) {
+		AssertNumber(t, r.Anchor(Top).X, r.Center.X)
+		AssertNumber(t, r.Anchor(Bottom).X, r.Center.X)
+		AssertNumber(t, r.Anchor(DirectionLeft).Y, r.Center.Y)
+		AssertNumber(t, r.Anchor(DirectionRight).Y, r.Center.Y)
+	})
+	t.Run("float", func(t *testing.T) {
+		f := RectangleFromMin(Pt(0.5, 1.25), Sz(2.0, 3.0))
+
+		AssertPoint(t, f.Anchor(Top), Pt(1.5, 1.25))
+		AssertPoint(t, f.Anchor(DirectionRight), Pt(2.5, 2.75))
+		AssertPoint(t, f.Anchor(Bottom), Pt(1.5, 4.25))
+		AssertPoint(t, f.Anchor(DirectionLeft), Pt(0.5, 2.75))
 	})
 	t.Run("none is the center", func(t *testing.T) {
 		AssertPoint(t, r.Anchor(DirectionNone), Pt(5, 10))
@@ -223,15 +204,14 @@ func TestRectangle_Anchor(t *testing.T) {
 		AssertPoint(t, r.Anchor(TopRight), r.TopRight())
 		AssertPoint(t, r.Anchor(BottomLeft), r.BottomLeft())
 		AssertPoint(t, r.Anchor(BottomRight), r.BottomRight())
-		AssertPoint(t, r.Anchor(Top), r.TopCenter())
-		AssertPoint(t, r.Anchor(Bottom), r.BottomCenter())
-		AssertPoint(t, r.Anchor(DirectionLeft), r.LeftCenter())
-		AssertPoint(t, r.Anchor(DirectionRight), r.RightCenter())
 	})
 	t.Run("rotated anchors are named before the turn", func(t *testing.T) {
 		turned := Rect(Pt(0, 0), Sz(4, 2)).Rotate(Pi / 2)
 
 		AssertPoint(t, turned.Anchor(Top), Pt(1, 0))
+		AssertPoint(t, turned.Anchor(DirectionRight), Pt(0, 2))
+		AssertPoint(t, turned.Anchor(Bottom), Pt(-1, 0))
+		AssertPoint(t, turned.Anchor(DirectionLeft), Pt(0, -2))
 		AssertPoint(t, turned.Anchor(TopLeft), Pt(1, -2))
 		AssertPoint(t, turned.Anchor(DirectionNone), Pt(0, 0))
 	})
@@ -240,33 +220,10 @@ func TestRectangle_Anchor(t *testing.T) {
 
 		AssertPoint(t, odd.Anchor(TopLeft), Pt(0, 0))
 		AssertPoint(t, odd.Anchor(BottomRight), Pt(3, 3))
-		AssertPoint(t, odd.TopCenter(), Pt(1, 0))
-		AssertPoint(t, odd.BottomCenter(), Pt(1, 3))
-		AssertPoint(t, odd.LeftCenter(), Pt(0, 1))
-		AssertPoint(t, odd.RightCenter(), Pt(3, 1))
-	})
-}
-
-func TestRectangle_EdgeAccessors(t *testing.T) {
-	r := RectangleFromMin(Pt(0, 0), Sz(10, 20))
-
-	t.Run("each runs clockwise from its first corner", func(t *testing.T) {
-		AssertSegment(t, r.TopEdge(), Seg(Pt(0, 0), Pt(10, 0)))
-		AssertSegment(t, r.RightEdge(), Seg(Pt(10, 0), Pt(10, 20)))
-		AssertSegment(t, r.BottomEdge(), Seg(Pt(10, 20), Pt(0, 20)))
-		AssertSegment(t, r.LeftEdge(), Seg(Pt(0, 20), Pt(0, 0)))
-	})
-	t.Run("their midpoints are the edge anchors", func(t *testing.T) {
-		AssertPoint(t, r.TopEdge().Midpoint(), r.TopCenter())
-		AssertPoint(t, r.RightEdge().Midpoint(), r.RightCenter())
-		AssertPoint(t, r.BottomEdge().Midpoint(), r.BottomCenter())
-		AssertPoint(t, r.LeftEdge().Midpoint(), r.LeftCenter())
-	})
-	t.Run("their lengths are the extents", func(t *testing.T) {
-		AssertNumber(t, r.TopEdge().Length(), float64(r.Width()))
-		AssertNumber(t, r.BottomEdge().Length(), float64(r.Width()))
-		AssertNumber(t, r.LeftEdge().Length(), float64(r.Height()))
-		AssertNumber(t, r.RightEdge().Length(), float64(r.Height()))
+		AssertPoint(t, odd.Anchor(Top), Pt(1, 0))
+		AssertPoint(t, odd.Anchor(Bottom), Pt(1, 3))
+		AssertPoint(t, odd.Anchor(DirectionLeft), Pt(0, 1))
+		AssertPoint(t, odd.Anchor(DirectionRight), Pt(3, 1))
 	})
 }
 
@@ -324,11 +281,29 @@ func TestRectangle_Edges(t *testing.T) {
 		AssertSegment(t, edges[2], Seg(Pt(1, 1), Pt(-1, 1)))
 		AssertSegment(t, edges[3], Seg(Pt(-1, 1), Pt(-1, -1)))
 	})
-	t.Run("agrees with the dedicated accessors", func(t *testing.T) {
-		AssertSegment(t, edges[0], r.TopEdge())
-		AssertSegment(t, edges[1], r.RightEdge())
-		AssertSegment(t, edges[2], r.BottomEdge())
-		AssertSegment(t, edges[3], r.LeftEdge())
+	t.Run("run clockwise from their first corner", func(t *testing.T) {
+		box := RectangleFromMin(Pt(0, 0), Sz(10, 20))
+		boxEdges := slices.Collect(box.Edges())
+
+		AssertSegment(t, boxEdges[0], Seg(Pt(0, 0), Pt(10, 0)))
+		AssertSegment(t, boxEdges[1], Seg(Pt(10, 0), Pt(10, 20)))
+		AssertSegment(t, boxEdges[2], Seg(Pt(10, 20), Pt(0, 20)))
+		AssertSegment(t, boxEdges[3], Seg(Pt(0, 20), Pt(0, 0)))
+	})
+	t.Run("their midpoints are the cardinal anchors", func(t *testing.T) {
+		AssertPoint(t, edges[0].Midpoint(), r.Anchor(Top))
+		AssertPoint(t, edges[1].Midpoint(), r.Anchor(DirectionRight))
+		AssertPoint(t, edges[2].Midpoint(), r.Anchor(Bottom))
+		AssertPoint(t, edges[3].Midpoint(), r.Anchor(DirectionLeft))
+	})
+	t.Run("their lengths are the extents", func(t *testing.T) {
+		box := RectangleFromMin(Pt(0, 0), Sz(10, 20))
+		boxEdges := slices.Collect(box.Edges())
+
+		AssertNumber(t, boxEdges[0].Length(), float64(box.Width()))
+		AssertNumber(t, boxEdges[2].Length(), float64(box.Width()))
+		AssertNumber(t, boxEdges[1].Length(), float64(box.Height()))
+		AssertNumber(t, boxEdges[3].Length(), float64(box.Height()))
 	})
 	t.Run("form a closed chain", func(t *testing.T) {
 		for i, edge := range edges {
@@ -338,12 +313,12 @@ func TestRectangle_Edges(t *testing.T) {
 	t.Run("rotated edges join the turned corners", func(t *testing.T) {
 		turned := Rect(Pt(0, 0), Sz(4, 2)).Rotate(Pi / 2)
 
-		AssertSegment(t, turned.TopEdge(), Seg(Pt(1, -2), Pt(1, 2)))
+		AssertSegment(t, slices.Collect(turned.Edges())[0], Seg(Pt(1, -2), Pt(1, 2)))
 		AssertSegment(t, slices.Collect(turned.Edges())[2], Seg(Pt(-1, 2), Pt(-1, -2)))
 	})
 	t.Run("stops where the caller breaks", func(t *testing.T) {
 		for edge := range r.Edges() {
-			AssertSegment(t, edge, r.TopEdge())
+			AssertSegment(t, edge, edges[0])
 
 			break
 		}
@@ -605,8 +580,8 @@ func TestRectangle_Inset(t *testing.T) {
 		inset := turned.Inset(Pad(0.0, 0.0, 0.0, 4.0))
 
 		AssertRectangle(t, inset, Rect(Pt(0.0, 2.0), Sz(6.0, 10.0)).Rotate(Pi/2))
-		AssertPoint(t, inset.LeftCenter(), Pt(0.0, -1.0))
-		AssertPoint(t, inset.RightCenter(), turned.RightCenter())
+		AssertPoint(t, inset.Anchor(DirectionLeft), Pt(0.0, -1.0))
+		AssertPoint(t, inset.Anchor(DirectionRight), turned.Anchor(DirectionRight))
 	})
 }
 
@@ -737,8 +712,8 @@ func TestRectangle_AlignTo(t *testing.T) {
 		AssertRectangle(t, r.AlignTo(BottomRight, Pt(100, 50)), RectangleFromMax(Pt(100, 50), Sz(10, 20)))
 	})
 	t.Run("an edge midpoint lands on the point", func(t *testing.T) {
-		AssertPoint(t, r.AlignTo(Top, Pt(100, 50)).TopCenter(), Pt(100, 50))
-		AssertPoint(t, r.AlignTo(DirectionLeft, Pt(100, 50)).LeftCenter(), Pt(100, 50))
+		AssertPoint(t, r.AlignTo(Top, Pt(100, 50)).Anchor(Top), Pt(100, 50))
+		AssertPoint(t, r.AlignTo(DirectionLeft, Pt(100, 50)).Anchor(DirectionLeft), Pt(100, 50))
 	})
 	t.Run("none aligns the center", func(t *testing.T) {
 		AssertRectangle(t, r.AlignTo(DirectionNone, Pt(100, 50)), r.MoveTo(Pt(100, 50)))
@@ -1060,6 +1035,26 @@ func TestRectangle_IntersectionRectangle(t *testing.T) {
 		assert.False(t, ok)
 		assert.True(t, diamond.IntersectsRectangle(square))
 	})
+	t.Run("rotated int answers exactly where Intersects holds", func(t *testing.T) {
+		// the world extent of the rounded corners rejects these pairs while the rounded
+		// offset in the shared frame still finds a touch
+		a, b := Rect(Pt(37, 39), Sz(10, 3)).Rotate(3.22), Rect(Pt(29, 34), Sz(9, 5)).Rotate(3.22)
+
+		assert.False(t, a.IntersectsRectangle(b))
+		_, ok := a.IntersectionRectangle(b)
+		assert.False(t, ok)
+
+		for _, a := range rectFixtures {
+			for _, b := range rectFixtures {
+				for _, angle := range []float64{Pi / 5, 3.22, -1.16} {
+					ra, rb := a.Int().Rotate(angle), b.Int().Rotate(angle)
+					_, ok := ra.IntersectionRectangle(rb)
+
+					assert.Equal(t, ok, ra.IntersectsRectangle(rb) && ra.parallel(rb), fmt.Sprintf("%s → %s: ", ra, rb))
+				}
+			}
+		}
+	})
 	t.Run("symmetric and contained by both where the angles agree", func(t *testing.T) {
 		for _, a := range rectFixtures {
 			for _, b := range rectFixtures {
@@ -1359,10 +1354,12 @@ func TestRectangle_Properties(t *testing.T) {
 			AssertPoint(t, r.TopRight(), Pt(b.X, a.Y).RotateAround(r.Center, r.Angle), fmt.Sprintf("%s: ", r))
 			AssertPoint(t, r.BottomLeft(), Pt(a.X, b.Y).RotateAround(r.Center, r.Angle), fmt.Sprintf("%s: ", r))
 
-			AssertPoint(t, r.TopEdge().Midpoint(), r.TopCenter(), fmt.Sprintf("%s: ", r))
-			AssertPoint(t, r.RightEdge().Midpoint(), r.RightCenter(), fmt.Sprintf("%s: ", r))
-			AssertPoint(t, r.BottomEdge().Midpoint(), r.BottomCenter(), fmt.Sprintf("%s: ", r))
-			AssertPoint(t, r.LeftEdge().Midpoint(), r.LeftCenter(), fmt.Sprintf("%s: ", r))
+			edges := slices.Collect(r.Edges())
+
+			AssertPoint(t, edges[0].Midpoint(), r.Anchor(Top), fmt.Sprintf("%s: ", r))
+			AssertPoint(t, edges[1].Midpoint(), r.Anchor(DirectionRight), fmt.Sprintf("%s: ", r))
+			AssertPoint(t, edges[2].Midpoint(), r.Anchor(Bottom), fmt.Sprintf("%s: ", r))
+			AssertPoint(t, edges[3].Midpoint(), r.Anchor(DirectionLeft), fmt.Sprintf("%s: ", r))
 		}
 	})
 	t.Run("lerp ends on the two rectangles", func(t *testing.T) {
