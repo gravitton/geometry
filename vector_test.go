@@ -725,8 +725,13 @@ func TestVector_Size(t *testing.T) {
 	t.Run("positive components", func(t *testing.T) {
 		AssertSize(t, Vec(10, 16).Size(), Sz(10, 16))
 	})
-	t.Run("negative components become absolute", func(t *testing.T) {
-		AssertSize(t, Vec(0.6, -0.25).Size(), Sz(0.6, 0.25))
+	t.Run("negative components keep their sign", func(t *testing.T) {
+		AssertSize(t, Vec(0.6, -0.25).Size(), Sz(0.6, -0.25))
+	})
+	t.Run("round-trips with Size.Vector", func(t *testing.T) {
+		size := Sz(-3.5, 2.0)
+
+		AssertSize(t, size.Vector().Size(), size)
 	})
 }
 

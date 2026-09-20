@@ -83,10 +83,20 @@ func (p Polygon[T]) Centroid() Point[T] {
 // Area returns the area enclosed by the polygon, by the shoelace formula, regardless of winding.
 // It is a float64 even for an integer T, since a lattice polygon can enclose half a unit;
 // a self-intersecting polygon has its lobes cancel where they wind the opposite way.
+//
+// The sum is taken with the origin moved to the first vertex, as Centroid and Inertia take
+// theirs, so the products stay small and a polygon far from the origin keeps its area rather
+// than losing it between two large coordinates; an empty polygon encloses nothing.
 func (p Polygon[T]) Area() float64 {
+	if p.IsEmpty() {
+		return 0
+	}
+
+	offset := p.Points[0].Vector().Float().Negate()
+
 	var twiceArea float64
 	for edge := range p.Edges() {
-		twiceArea += edge.cross()
+		twiceArea += edge.Float().Translate(offset).cross()
 	}
 
 	return math.Abs(twiceArea) / 2
@@ -106,6 +116,10 @@ func (p Polygon[T]) Perimeter() float64 {
 // of the enclosed area at unit density, summed per edge like Area and Centroid: about the
 // first vertex, so the products stay small, then moved to the centroid by the parallel axis
 // theorem. Winding does not matter, and a polygon that encloses no area has no moment.
+//
+// The moment is the one a simple polygon has. Where the outline crosses itself the two sums
+// cancel by different amounts, the way Area has its lobes cancel, and what is left is no
+// longer a moment of area: it can come out negative, which no area about its own centroid has.
 func (p Polygon[T]) Inertia() float64 {
 	if p.IsEmpty() {
 		return 0

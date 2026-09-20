@@ -327,6 +327,8 @@ JSON last.
 - **`Ray`** – a half-line with origin and direction, for casts against every shape.
 - **`Ellipse` as a `Collider`** – the `Intersects` pairs with an ellipse, which meet at the roots of a quartic that
   none of the circle pairs' closed forms reach; test its `RegularPolygon` of the wanted resolution until then.
+- **`Parse*` for every shape** – the inverse of `String`, which prints each shape in the form of its constructor;
+  `ParseSize` is the only one today, so no other shape reads back the string it printed.
 
 ## Credits
 

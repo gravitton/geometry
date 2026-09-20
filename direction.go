@@ -218,7 +218,7 @@ func (d Direction) Angle() float64 {
 	return d.Offset[float64]().Angle()
 }
 
-// normalize returns the direction wrapped into [DirectionRight, DirectionDownRight],
+// normalize returns the direction wrapped into [DirectionRight, DirectionUpRight],
 // preserving DirectionNone.
 func (d Direction) normalize() Direction {
 	if d.IsNone() {

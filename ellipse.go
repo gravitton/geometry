@@ -292,7 +292,7 @@ func (e Ellipse[T]) Transform[M Float](matrix Matrix[M]) Ellipse[T] {
 	m := matrix.Float()
 	scaling := m.Scaling()
 
-	return Ellipse[T]{e.Center.Transform(matrix), e.Size.ScaleXY(scaling.X, scaling.Y).Abs(), m.turnedAngle(e.Angle)}
+	return Ellipse[T]{e.Center.Transform(matrix), e.Size.ScaleXY(scaling.X, scaling.Y).Abs(), m.turnedAngle(e.Angle, scaling)}
 }
 
 // Rotate creates a new Ellipse turned by the given angle (in radians) about its center, in the

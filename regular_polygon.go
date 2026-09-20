@@ -413,7 +413,7 @@ func (rp RegularPolygon[T]) Transform[M Float](matrix Matrix[M]) RegularPolygon[
 	m := matrix.Float()
 	scaling := m.Scaling()
 
-	return RegularPolygon[T]{rp.Center.Transform(matrix), rp.Size.ScaleXY(scaling.X, scaling.Y).Abs(), rp.N, m.turnedAngle(rp.Angle)}
+	return RegularPolygon[T]{rp.Center.Transform(matrix), rp.Size.ScaleXY(scaling.X, scaling.Y).Abs(), rp.N, m.turnedAngle(rp.Angle, scaling)}
 }
 
 // Rotate creates a new RegularPolygon turned by the given angle (in radians) about its center,

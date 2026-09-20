@@ -141,10 +141,12 @@ func (m Matrix[T]) determinant() float64 {
 
 // turnedAngle returns the angle a shape at the given angle takes under the matrix: its own
 // angle plus the angle of the matrix, or mirrored about that angle where the matrix reflects,
-// normalized to [0, 2π) like Rotate. It is the angle Rectangle.Transform and
-// RegularPolygon.Transform place, so the two oriented shapes turn alike.
-func (m Matrix[T]) turnedAngle(angle float64) float64 {
-	if m.Scaling().Y < 0 {
+// which the negative Y factor of Scaling names. It is normalized to [0, 2π) like Rotate, and
+// is the angle Rectangle.Transform, Ellipse.Transform and RegularPolygon.Transform place, so
+// the three oriented shapes turn alike. The factors are the ones the caller already scaled
+// the shape by, rather than read from the matrix a second time.
+func (m Matrix[T]) turnedAngle(angle float64, scaling Vector[T]) float64 {
+	if scaling.Y < 0 {
 		return NormalizeAngle(m.Angle() - angle)
 	}
 

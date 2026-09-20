@@ -133,6 +133,12 @@ func TestPolygon_Area(t *testing.T) {
 		assert.Equal(t, Pol([]Point[float64]{Pt(13.5, 1.9), Pt(13.5, 1.9)}).Area(), 0.0)
 		assert.Equal(t, Pol([]Point[float64]{Pt(0.1, 0.2), Pt(0.3, 0.6), Pt(0.1, 0.2)}).Area(), 0.0)
 	})
+	t.Run("far from the origin keeps the area", func(t *testing.T) {
+		square := Pol(squareVertices()).Float()
+
+		AssertNumber(t, square.Translate(Vec(1e9, 1e9)).Area(), square.Area())
+		AssertNumber(t, Pol(triangleVertices()).Translate(Vec(1e9, -1e9)).Area(), Pol(triangleVertices()).Area())
+	})
 }
 
 func TestPolygon_Perimeter(t *testing.T) {

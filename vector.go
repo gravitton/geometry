@@ -367,9 +367,13 @@ func (v Vector[T]) Point() Point[T] {
 	return Point[T](v)
 }
 
-// Size converts the vector to a Size (using absolute component values).
+// Size converts the vector to a Size, the extents it spans, keeping the sign of each
+// component: the inverse of Size.Vector, as Point and Vector convert into each other. A size
+// is signed, so a vector running toward the origin gives a negative extent, which measures
+// the other way; take Abs where an extent must be positive, as every shape does with the size
+// it stores.
 func (v Vector[T]) Size() Size[T] {
-	return Size[T]{Abs(v.X), Abs(v.Y)}
+	return Size[T]{v.X, v.Y}
 }
 
 // Cast converts the vector to a Vector of another number type, rounding as Cast does.

@@ -425,7 +425,7 @@ func (r Rectangle[T]) Transform[M Float](matrix Matrix[M]) Rectangle[T] {
 	m := matrix.Float()
 	scaling := m.Scaling()
 
-	return Rectangle[T]{r.Center.Transform(matrix), r.Size.ScaleXY(scaling.X, scaling.Y).Abs(), m.turnedAngle(r.Angle)}
+	return Rectangle[T]{r.Center.Transform(matrix), r.Size.ScaleXY(scaling.X, scaling.Y).Abs(), m.turnedAngle(r.Angle, scaling)}
 }
 
 // Rotate creates a new Rectangle turned by the given angle (in radians) about its center, in
@@ -542,15 +542,14 @@ func (r Rectangle[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 func (r Rectangle[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 	a1, b1 := r.MinMax()
 	a2, b2 := rectangle.MinMax()
+	aligned := r.IsAligned() && rectangle.IsAligned()
 
 	switch {
 	case !overlaps(a1, b1, a2, b2):
 		return false
-	case r.IsAligned() && rectangle.IsAligned() && a1.X <= b2.X && a2.X <= b1.X && a1.Y <= b2.Y && a2.Y <= b1.Y:
+	case aligned && a1.X <= b2.X && a2.X <= b1.X && a1.Y <= b2.Y && a2.Y <= b1.Y:
 		return true
-	case r.IsAligned() && rectangle.IsAligned():
-		return r.meetsWithin(rectangle, a1, b1, a2, b2)
-	case r.parallel(rectangle):
+	case !aligned && r.parallel(rectangle):
 		return r.localRectangle(r).IntersectsRectangle(r.localRectangle(rectangle))
 	default:
 		return r.meetsWithin(rectangle, a1, b1, a2, b2)
