@@ -3,36 +3,45 @@
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
-and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
+and this project follows [Semantic Versioning](http://semver.org/spec/v2.0.0.html) with one deliberate exception:
+
+**a breaking change may ship in a minor release.** Breaking changes are avoided where the cost is reasonable, but a
+Go major version changes the import path for every user, and for a package with a small user base that is often the
+more expensive of the two. A breaking change is marked **breaking** in its entry, and every release that has one
+lists them under **Breaking** at the top of its section. Renames land as a rename; no deprecated alias is kept.
 
 
-## [Unreleased](https://github.com/gravitton/geometry/compare/v1.13.0...main)
+## [Unreleased](https://github.com/gravitton/geometry/compare/v1.14.0...main)
 
-The main change is the oriented rectangle: `Rectangle` gains an `Angle`, every rectangle method answers for a turned one, and rectangle against rectangle is decided on the edges like every other pair, so no boundary in the package is judged on a coordinate any more.
+
+## [v1.14.0 (2026-09-20)](https://github.com/gravitton/geometry/compare/v1.13.0...v1.14.0)
+
+Oriented shapes and one normalized surface. `Rectangle` carries an `Angle` that turns it about its center, `RegularPolygon.Angle` turns the polygon rather than phasing its vertices, and `Ellipse` is the continuous shape an affine matrix makes of a circle. Every shape pair has one name and one holder, every closed shape walks the same edges, the outlines are `iter.Seq`, and five interfaces name what the shapes share.
+
+Every entry, with breaking changes marked, is in [docs/releases/v1.14.0.md](docs/releases/v1.14.0.md).
+
+### Breaking
+- A rotated `Rectangle` answers from its vertices: `Min`, `Max`, `MinMax` and `Bounds` are their extent, `Clamp` snaps to the nearest turned edge, and `DistanceSquaredTo` returns `float64`
+- Rectangles of different angles have no common rectangle, so `IntersectionRectangle` declines and `Union` gives the box around both `Bounds`
+- `RegularPolygon.Angle` turns the polygon instead of phasing its vertices along a fixed ellipse
+- `Vertices` and `Edges` return an `iter.Seq` instead of a slice
+- `Line` is `Segment`, the same-kind `Intersects` and `Intersection` carry the shape name, `Circle.Circumference` is `Perimeter`, and `Polygon.Vertices` is the `Points` field
+- `Segment.MoveTo` places the midpoint, `Size.Grow` and `Shrink` no longer clamp, and `Rectangle.Rectangle` spans exactly `Size.Int` pixels
+- `String` and JSON change form for `Polygon` and a turned `RegularPolygon`
 
 ### Added
-- `Rectangle.Angle` – the box of `Size` about `Center`, turned by the angle in the sense of `Vector.Rotate`. `Rect` and the corner constructors leave it zero; `Rotate` turns the rectangle about its center, normalized to `[0, 2π)`; `Lerp` turns along the shorter arc; `Equal`, `IsZero` and `AssertRectangle` compare it modulo a full turn. It marshals as `a` with `omitzero`, so the JSON and `String` of a rectangle that is not rotated are unchanged, and a rotated one prints as `Rect((x,y);WxH;a)`
-- `Rectangle.Rotate(angle)` and `IsAligned` – the turn, and the exact test for a rectangle with no turn, which has exact corners and coincides with its `Bounds`
-- `Rectangle.Canonical` and `RegularPolygon.Canonical` snap an angle within `Delta` of zero or of a full turn to exactly zero, the residue a chain of turns can leave; `Rotate` and `Lerp` never snap, since a turn that small still moves a far corner of a large shape by more than `Epsilon`
-- `Orientation.String`, `MarshalText`, `UnmarshalText`, `ParseOrientation`, `Orientations` and `OrientationNone` with `IsNone`, like `Direction` and `Axis`
-- `RegularPolygon.Edges` – the edges of the polygon in vertex order, iterated without building the vertices
-- `Line.Edges` – the one edge of a segment, itself, so a segment is an open outline
-- `Outline` – the interface of every shape whose boundary is a chain of edges, `Vertices` and `Edges` on `Line`, `Rectangle`, `Polygon` and `RegularPolygon`; the iterators are free on a concrete shape only, a call through the interface allocates
+- `Ellipse` – the continuous shape of two semi-axes and an angle, with the foci, the Ramanujan perimeter and a boundary distance found by bisection
+- `Rectangle.Angle`, `Rotate` and `IsAligned` – the oriented box, with corners, edges, anchors and `Inset` named in the frame before the turn
+- The conversions between a curved boundary and the polygon of the wanted resolution, in both directions and exact
+- `Shape`, `Outline`, `Collider`, `Measured` and `Movable`, with the `Intersects(a, b)` package function over two colliders
+- `Transform` on `Rectangle` and `RegularPolygon`, `Rotate` on `Circle`, and `Cast[R]()` on every type
+- `Intersects` between every remaining pair of shapes, `RegularPolygon` included on both sides
+- `Canonical` snapping an angle residue, the `Orientation` text encoding, and `AssertEllipse` with `AssertAngle`
 
 ### Changed
-- A turned rectangle keeps the names of its corners, edges, anchors and `Inset` paddings from the frame before the turn; `Min`, `Max`, `MinMax` and `Bounds` become the axis-aligned extent of its vertices, and `Clamp` snaps to the nearest turned edge. `Contains`, `DistanceTo` and `IntersectsCircle` walk the edges as `Polygon` does, so a rotated integer rectangle contains exactly what the polygon of its rounded corners contains, and `DistanceSquaredTo` returns `float64` like `Line.DistanceSquaredTo`, since the nearest point is no longer a lattice point (**breaking**)
-- `Rectangle.Intersects` is decided on the edges, a corner of one within the other or an edge meeting an edge, with the extent test as a prefilter and an exact overlap of two aligned extents decided at once. Rectangles of the same angle intersect and unite in a rectangle of that angle, found in their shared frame; rectangles of different angles have no rectangle in common, so `Intersection` returns false for them, as `Line.Intersection` does for parallel segments, and `Union` gives the box around both `Bounds` (**breaking**)
-- Every test against a radius or a segment is one squared-distance comparison.
-- `Line.IntersectionCircle` never returns more than two points and counts points that compare `Equal` once; `Circle.Intersection` places a tangent point halfway between the two boundaries, within half the tolerance of both
-- `Line.MoveTo` places the midpoint on the point, the center every other shape places with `MoveTo` and the pivot its `Scale`, `Resize` and `Rotate` turn about (**breaking**)
-- `Rectangle.Rectangle` builds the `image.Rectangle` from `Int`, so it spans exactly `Size.Int` pixels and a sprite keeps its width at sub-pixel positions (**breaking**)
-- `Line.MinMax` and `Polygon.MinMax` are unexported: they are the corners of `Bounds`, so `Bounds().MinMax()` gives the same pair at the same cost; `Rectangle` alone keeps `Min`, `Max` and `MinMax` public (**breaking**)
-- `Size.Grow`, `GrowXY`, `Shrink` and `ShrinkXY` no longer clamp at zero, since a size is signed; `Rectangle.Grow` and `Shrink` clamp their own extent as before (**breaking**)
-- `Polygon.String` separates the vertices with `;` like every other shape: `Pol((0,0);(2,0);(2,2))`; `RegularPolygon` omits a zero angle from its JSON and `String`, as `Rectangle` does: `RegPol((1,2);2x2;4)` (**breaking**)
-- `Polygon.Edges` moved before `Vertices` and `Center`, in the method order every shape follows
-- `Vertices` and `Edges` on `Line`, `Rectangle`, `Polygon` and `RegularPolygon` return an `iter.Seq` instead of a slice, so ranging over an outline allocates nothing; `slices.Collect` gives the slice where one is needed, and the `Polygon()` conversions still build theirs in one allocation. An empty polygon yields nothing where `Edges` returned nil before (**breaking**)
-- `Polygon.Vertices` is renamed `Points`, and `Polygon.Vertices()` iterates it, so `Vertices` and `Edges` are the same API on every shape with an outline. The JSON, a bare array, is unchanged (**breaking**)
-- `Line.IntersectionRectangle`, `IntersectionPolygon` and their mirrors allocate the result alone, once on the first crossing with room for the two a convex outline can have, and nothing where the segment misses; the shared loop takes the vertices instead of an edge iterator, since an iterator called through a parameter escapes with its loop body
+- Every boundary is one squared-distance comparison, and every closed shape walks its own `Edges` through the shared `edge.go` accumulators
+- Every shape pair is held by one shape and delegated to from the other, in the order `Circle`, `Segment`, `Polygon`, `Rectangle`, `RegularPolygon`
+- Only a method whose result is a slice allocates: the outline iterators and the intersection walks allocate nothing
 
 
 ## [v1.13.0 (2026-09-18)](https://github.com/gravitton/geometry/compare/v1.12.0...v1.13.0)
