@@ -65,10 +65,11 @@ Vectors also have `Project`, `Reject`, `AngleBetween`, and `AtMost` and `AtLeast
 
 ```go
 s := geom.Sz(1920, 1080)
-s.Scale(0.5)            // Size{960, 540}
-s.AtMost(geom.SzU(800)) // Size{800, 800}, clamped per axis
-s.Fit(geom.SzU(800))    // Size{800, 450}, largest with the same ratio inside
-s.Fill(geom.SzU(800))   // Size{1422, 800}, smallest with the same ratio around
+s.Scale(0.5)                 // Size{960, 540}
+s.AtMost(geom.SzU(800))      // Size{800, 800}, clamped per axis
+s.Shrink(2000).AtLeastZero() // Size{0, 0}, the clamp every shape applies to its own size
+s.Fit(geom.SzU(800))         // Size{800, 450}, largest with the same ratio inside
+s.Fill(geom.SzU(800))        // Size{1422, 800}, smallest with the same ratio around
 
 geom.PadXY(4, 8).Size() // Size{16, 8}, horizontal and vertical total
 ```
@@ -121,7 +122,7 @@ Neither has vertices, so neither is an `Outline`: the `RegularPolygon` of the wa
 walks one, and it converts back exactly.
 
 ```go
-e.RegularPolygon(64)                // every vertex on the boundary, and Ellipse() converts back
+e.RegularPolygon(64)                           // every vertex on the boundary, and Ellipse() converts back
 c.RegularPolygon(6, geom.OrientationPointyTop) // only a circle also places the first vertex
 
 slices.Collect(c.RegularPolygon(64, geom.OrientationFlatTop).Vertices()) // the points that draw the circle
@@ -145,11 +146,14 @@ for vertex := range p.Vertices() { // the same loop draws a Segment, Rectangle o
 }
 
 hex := geom.Hexagon(geom.Pt(0, 0), geom.SzU(20), geom.OrientationFlatTop)
-hex.Ellipse()                // the ellipse its vertices lie on, exactly; Circle() is the one around
-hex.Bounds()                 // Rectangle (-20,-17)-(20,17)
-hex.Area()                   // 1039, 3√3/2 · r²
-hex.Contains(geom.Pt(10, 5)) // true, walked on the edges without building the vertices
-hex.Rotate(geom.Pi / 6).IsAligned() // false; exactly zero after a full turn, like Rectangle.IsAligned
+hex.Ellipse()                        // the ellipse its vertices lie on, exactly; Circle() is the one around
+hex.Grow(2).Resize(geom.SzU(20))     // the semi-axes grow, shrink and resize as an Ellipse's do
+hex.Anchor(geom.Top)                 // Point{0, -17}, the midpoint of the top edge; a pointy-top one gives its top vertex
+hex.AlignTo(geom.Top, geom.Pt(0, 0)) // the hexagon moved so that anchor is at the origin
+hex.Bounds()                         // Rectangle (-20,-17)-(20,17)
+hex.Area()                           // 1039, 3√3/2 · r²
+hex.Contains(geom.Pt(10, 5))         // true, walked on the edges without building the vertices
+hex.Rotate(geom.Pi / 6).IsAligned()  // false; exactly zero after a full turn, like Rectangle.IsAligned
 ```
 
 ### Interfaces
@@ -163,7 +167,7 @@ var s geom.Shape[float64] = c // Bounds, Contains, DistanceTo, DistanceSquaredTo
 s.DistanceTo(geom.Pt(10.0, 5.0))
 
 var o geom.Outline[float64] = d // Vertices, Edges — Segment, Rectangle, Polygon, RegularPolygon
-slices.Collect(o.Vertices())      // a Circle and an Ellipse have none; take RegularPolygon(n) first
+slices.Collect(o.Vertices())    // a Circle and an Ellipse have none; take RegularPolygon(n) first
 
 geom.Intersects(d, c) // two shapes held as Collider, dispatched on the kind of the second
 
@@ -216,7 +220,7 @@ axis.Along(size)             // Height, because the axis is vertical
 axis.Size(length, thickness) // Size{thickness, length}
 
 geom.Hexagon(center, size, geom.OrientationPointyTop) // orientation places a vertex or an edge at the top
-geom.ParseOrientation("FlatTop")           // the name back to the constant, "None" to OrientationNone
+geom.ParseOrientation("FlatTop")                      // the name back to the constant, "None" to OrientationNone
 ```
 
 ### Matrices
@@ -253,7 +257,7 @@ geom.RectangleFromMin(geom.Pt(0, 0), geom.Sz(4, 2)).Rectangle() // image.Rectang
 
 json.Marshal(geom.Rect(geom.Pt(1, 2), geom.Sz(3, 4))) // {"x":1,"y":2,"w":3,"h":4}
 json.Marshal(geom.DirectionUp)                        // "Up"
-json.Marshal(geom.OrientationPointyTop)                          // "PointyTop"
+json.Marshal(geom.OrientationPointyTop)               // "PointyTop"
 geom.ParseSize[int]("4x2")                            // Size{4, 2}
 ```
 
@@ -321,6 +325,8 @@ JSON last.
 - **`Polygon.Lerp(polygon, t)`** – vertex-by-vertex interpolation for shape morphing, left out of the `Lerp` pass because
   two polygons with different vertex counts have no shape between them and the answer for that case is not settled.
 - **`Ray`** – a half-line with origin and direction, for casts against every shape.
+- **`Ellipse` as a `Collider`** – the `Intersects` pairs with an ellipse, which meet at the roots of a quartic that
+  none of the circle pairs' closed forms reach; test its `RegularPolygon` of the wanted resolution until then.
 
 ## Credits
 

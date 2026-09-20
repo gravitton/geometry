@@ -10,8 +10,8 @@ import (
 // Vector.Rotate. Ell builds one, and Rotate turns it.
 //
 // Size holds the semi-axes, so it is a radius, not an extent, the meaning it has on
-// RegularPolygon and the one Circle.Radius has: an ellipse of Size 10x4 spans 20x8, and the
-// circle of radius r is the ellipse of Size r x r. Use Bounds for the extent.
+// RegularPolygon and the one Circle.Radius has: an aligned ellipse spans twice its Size, and
+// the circle of radius r is the ellipse of Size r x r. Use Bounds for the extent.
 //
 // Angle turns the ellipse about its center, the same meaning it has on Rectangle and
 // RegularPolygon: the semi-axes are named in the frame before the turn, so Size.Width is the
@@ -82,18 +82,20 @@ func (e Ellipse[T]) Foci() (Point[T], Point[T]) {
 	return e.worldPoint(focal.Negate()), e.worldPoint(focal)
 }
 
-// Anchor returns the point on the boundary in the given direction from the center, named in
-// the frame of the ellipse before its turn, or the center itself for DirectionNone: the end of
-// a semi-axis for a cardinal direction, and the point of the boundary at an eighth of a turn
-// for a diagonal, which is the corner of Bounds scaled onto the ellipse rather than the corner
-// itself. Unlike Circle.Anchor it lies on the boundary at every angle, since the point is
-// placed on the ellipse rather than rounded from a lattice step.
+// Anchor returns the point of the boundary that lies in the given direction from the center,
+// named in the frame of the ellipse before its turn, or the center itself for DirectionNone:
+// the end of a semi-axis for a cardinal direction, and the point where the diagonal through
+// the center leaves the ellipse for a diagonal one, the direction Circle.Anchor takes rather
+// than an eighth of a turn of the parameter, which lies off the diagonal on every ellipse that
+// is not a circle. Unlike Circle.Anchor it lies on the boundary at every angle, since the
+// point is placed on the ellipse rather than rounded from a lattice step. A degenerate
+// ellipse is a segment and answers with the point of it at that parameter.
 func (e Ellipse[T]) Anchor(direction Direction) Point[T] {
 	if direction.IsNone() {
 		return e.Center
 	}
 
-	return e.worldPoint(VectorFromAngleSize(direction.Angle(), e.Size.Float()))
+	return e.worldPoint(VectorFromAngleSize(e.parametricAngle(direction.Angle()), e.Size.Float()))
 }
 
 // Centroid returns the center of the enclosed area, the Center of the ellipse.
@@ -154,6 +156,22 @@ func (e Ellipse[T]) worldPoint(offset Vector[float64]) Point[T] {
 // ellipse of the semi-axes in, where every distance is measured.
 func (e Ellipse[T]) localOffset(point Point[T]) Vector[float64] {
 	return point.Subtract(e.Center).Float().Rotate(-e.Angle)
+}
+
+// parametricAngle returns the parameter of the boundary point that lies in the given direction
+// from the center, in the frame before the turn: the angle VectorFromAngleSize places it from,
+// which is the direction itself only on a circle, since the semi-axes stretch the parameter
+// away from it. A degenerate ellipse has no such point off its one axis and keeps the
+// direction as the parameter, so the point lands on the segment it is.
+func (e Ellipse[T]) parametricAngle(direction float64) float64 {
+	w, h := e.Size.Float().XY()
+	if w == 0 || h == 0 {
+		return direction
+	}
+
+	sin, cos := math.Sincos(direction)
+
+	return math.Atan2(w*sin, h*cos)
 }
 
 // extent returns half the axis-aligned extent of the ellipse, in float64: the reach of the
@@ -230,24 +248,24 @@ func (e Ellipse[T]) Canonical() Ellipse[T] {
 // amount is added to each radius, as Circle.Grow adds it to the one radius, so each extent of
 // Bounds grows by twice it.
 func (e Ellipse[T]) Grow(amount T) Ellipse[T] {
-	return Ellipse[T]{e.Center, e.Size.Grow(amount).AtLeast(Size[T]{}), e.Angle}
+	return Ellipse[T]{e.Center, e.Size.Grow(amount).AtLeastZero(), e.Angle}
 }
 
 // GrowXY creates a new Ellipse with the semi-axes increased by the given amounts along its own
 // axes, clamped to zero. Each amount is added to that radius, like Grow.
 func (e Ellipse[T]) GrowXY(amountX, amountY T) Ellipse[T] {
-	return Ellipse[T]{e.Center, e.Size.GrowXY(amountX, amountY).AtLeast(Size[T]{}), e.Angle}
+	return Ellipse[T]{e.Center, e.Size.GrowXY(amountX, amountY).AtLeastZero(), e.Angle}
 }
 
 // Shrink creates a new Ellipse with both semi-axes decreased by amount, clamped to zero.
 func (e Ellipse[T]) Shrink(amount T) Ellipse[T] {
-	return Ellipse[T]{e.Center, e.Size.Shrink(amount).AtLeast(Size[T]{}), e.Angle}
+	return Ellipse[T]{e.Center, e.Size.Shrink(amount).AtLeastZero(), e.Angle}
 }
 
 // ShrinkXY creates a new Ellipse with the semi-axes decreased by the given amounts along its
 // own axes, clamped to zero.
 func (e Ellipse[T]) ShrinkXY(amountX, amountY T) Ellipse[T] {
-	return Ellipse[T]{e.Center, e.Size.ShrinkXY(amountX, amountY).AtLeast(Size[T]{}), e.Angle}
+	return Ellipse[T]{e.Center, e.Size.ShrinkXY(amountX, amountY).AtLeastZero(), e.Angle}
 }
 
 // Lerp creates a new Ellipse in linear interpolation towards the given ellipse, moving the

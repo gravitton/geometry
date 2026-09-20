@@ -90,8 +90,18 @@ func TestEllipse_Anchor(t *testing.T) {
 		AssertPoint(t, e.Anchor(Top), Pt(10.0, 7.0))
 		AssertPoint(t, e.Anchor(Bottom), Pt(10.0, 13.0))
 	})
-	t.Run("diagonals land on the boundary", func(t *testing.T) {
-		AssertPoint(t, e.Anchor(DirectionDownRight), Pt(10+5*OneOverSqrt2, 10+3*OneOverSqrt2))
+	t.Run("diagonals land on the boundary in their direction", func(t *testing.T) {
+		reach := 15 / math.Sqrt(34)
+
+		AssertPoint(t, e.Anchor(DirectionDownRight), Pt(10+reach, 10+reach))
+		AssertPoint(t, e.Anchor(DirectionUpLeft), Pt(10-reach, 10-reach))
+	})
+	t.Run("a circle anchors like Circle", func(t *testing.T) {
+		AssertPoint(t, Ell(Pt(10.0, 10.0), SzU(5.0), 0).Anchor(DirectionDownRight), Circ(Pt(10.0, 10.0), 5.0).Anchor(DirectionDownRight))
+	})
+	t.Run("a degenerate ellipse anchors on its segment", func(t *testing.T) {
+		AssertPoint(t, Ell(Pt(10.0, 10.0), Sz(0.0, 3.0), 0).Anchor(Top), Pt(10.0, 7.0))
+		AssertPoint(t, Ell(Pt(10.0, 10.0), Sz(0.0, 3.0), 0).Anchor(DirectionDownRight), Pt(10.0, 10+3*OneOverSqrt2))
 	})
 	t.Run("none is the center", func(t *testing.T) {
 		AssertPoint(t, e.Anchor(DirectionNone), Pt(10.0, 10.0))
@@ -654,13 +664,16 @@ func TestEllipse_Properties(t *testing.T) {
 			assert.True(t, e.Perimeter() <= 2*Pi*major+Delta, fmt.Sprintf("%s: ", e))
 		}
 	})
-	t.Run("every anchor is on the boundary", func(t *testing.T) {
+	t.Run("every anchor is on the boundary in its direction", func(t *testing.T) {
 		for _, e := range ellipseFixtures {
 			for _, direction := range Directions() {
 				anchor := e.Anchor(direction)
 
 				AssertNumber(t, e.DistanceTo(anchor), 0.0, fmt.Sprintf("%s → %s: ", e, direction))
 				assert.True(t, e.Bounds().Contains(anchor), fmt.Sprintf("%s → %s: ", e, direction))
+				if e.SemiMinor() > 0 {
+					AssertAngle(t, e.Center.AngleTo(anchor), e.Angle+direction.Angle(), fmt.Sprintf("%s → %s: ", e, direction))
+				}
 			}
 		}
 	})

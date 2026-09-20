@@ -309,6 +309,23 @@ func TestSize_AtMost(t *testing.T) {
 	})
 }
 
+func TestSize_AtLeastZero(t *testing.T) {
+	t.Run("raises a negative extent to zero", func(t *testing.T) {
+		AssertSize(t, Sz(-2, 3).AtLeastZero(), Sz(0, 3))
+		AssertSize(t, Sz(2, -3).AtLeastZero(), Sz(2, 0))
+		AssertSize(t, Sz(-0.5, -1.5).AtLeastZero(), Sz(0.0, 0.0))
+	})
+	t.Run("a non-negative size is unchanged", func(t *testing.T) {
+		AssertSize(t, Sz(2, 3).AtLeastZero(), Sz(2, 3))
+		AssertSize(t, Sz(0, 0).AtLeastZero(), Sz(0, 0))
+	})
+	t.Run("is at least the zero size", func(t *testing.T) {
+		for _, s := range []Size[float64]{Sz(-2.0, 3.0), Sz(2.0, -3.0), Sz(-1.0, -1.0), Sz(4.0, 5.0)} {
+			AssertSize(t, s.AtLeastZero(), s.AtLeast(Size[float64]{}), s.String())
+		}
+	})
+}
+
 func TestSize_Equal(t *testing.T) {
 	t.Run("same size", func(t *testing.T) {
 		assert.True(t, Sz(1, 2).Equal(Sz(1, 2)))

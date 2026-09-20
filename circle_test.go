@@ -22,6 +22,24 @@ func TestCircle_Constructor(t *testing.T) {
 	})
 }
 
+func TestCircle_Anchor(t *testing.T) {
+	c := Circ(Pt(10.0, 10.0), 5.0)
+
+	t.Run("cardinal directions", func(t *testing.T) {
+		AssertPoint(t, c.Anchor(Right), Pt(15.0, 10.0))
+		AssertPoint(t, c.Anchor(Left), Pt(5.0, 10.0))
+		AssertPoint(t, c.Anchor(Top), Pt(10.0, 5.0))
+		AssertPoint(t, c.Anchor(Bottom), Pt(10.0, 15.0))
+	})
+	t.Run("diagonals land on the boundary", func(t *testing.T) {
+		// unlike Rectangle, whose diagonals reach the corners
+		AssertNumber(t, c.Center.DistanceTo(c.Anchor(DirectionUpRight)), c.Radius)
+	})
+	t.Run("none is the center", func(t *testing.T) {
+		AssertPoint(t, c.Anchor(DirectionNone), Pt(10.0, 10.0))
+	})
+}
+
 func TestCircle_Centroid(t *testing.T) {
 	AssertPoint(t, Circ(Pt(1, 2), 10).Centroid(), Pt(1, 2))
 }
@@ -77,24 +95,6 @@ func TestCircle_Bounds(t *testing.T) {
 	})
 	t.Run("float", func(t *testing.T) {
 		AssertRectangle(t, Circ(Pt(0.6, -0.25), 1.2).Bounds(), Rect(Pt(0.6, -0.25), Sz(2.4, 2.4)))
-	})
-}
-
-func TestCircle_Anchor(t *testing.T) {
-	c := Circ(Pt(10.0, 10.0), 5.0)
-
-	t.Run("cardinal directions", func(t *testing.T) {
-		AssertPoint(t, c.Anchor(Right), Pt(15.0, 10.0))
-		AssertPoint(t, c.Anchor(Left), Pt(5.0, 10.0))
-		AssertPoint(t, c.Anchor(Top), Pt(10.0, 5.0))
-		AssertPoint(t, c.Anchor(Bottom), Pt(10.0, 15.0))
-	})
-	t.Run("diagonals land on the boundary", func(t *testing.T) {
-		// unlike Rectangle, whose diagonals reach the corners
-		AssertNumber(t, c.Center.DistanceTo(c.Anchor(DirectionUpRight)), c.Radius)
-	})
-	t.Run("none is the center", func(t *testing.T) {
-		AssertPoint(t, c.Anchor(DirectionNone), Pt(10.0, 10.0))
 	})
 }
 

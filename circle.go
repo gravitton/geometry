@@ -22,6 +22,14 @@ func Circ[T Number](center Point[T], radius T) Circle[T] {
 	return Circle[T]{center, Abs(radius)}
 }
 
+// Anchor returns the point on the circle boundary in the given direction from its center,
+// or the center itself for DirectionNone. For integer T a diagonal anchor is rounded like
+// Direction.Vector and only approximates the boundary: at a small radius the rounding can
+// carry it outside the circle, where Contains rejects it.
+func (c Circle[T]) Anchor(direction Direction) Point[T] {
+	return c.Center.Add(direction.Vector(c.Radius))
+}
+
 // Centroid returns the center of the enclosed area, the Center of the circle.
 func (c Circle[T]) Centroid() Point[T] {
 	return c.Center
@@ -61,14 +69,6 @@ func (c Circle[T]) Bounds() Rectangle[T] {
 	side := c.Diameter()
 
 	return Rectangle[T]{c.Center, Size[T]{side, side}, 0}
-}
-
-// Anchor returns the point on the circle boundary in the given direction from its center,
-// or the center itself for DirectionNone. For integer T a diagonal anchor is rounded like
-// Direction.Vector and only approximates the boundary: at a small radius it can land outside
-// the circle, so Circ(Pt(0, 0), 1).Anchor(BottomRight) is (1,1), which Contains rejects.
-func (c Circle[T]) Anchor(direction Direction) Point[T] {
-	return c.Center.Add(direction.Vector(c.Radius))
 }
 
 // minMax returns the minimum and maximum corner of the circle, the corners of Bounds, exact

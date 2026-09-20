@@ -196,9 +196,8 @@ func (d Direction) Unit[T Number]() Vector[T] {
 // A negative length points the other way, as Vector.Resize gives it, so the result runs along
 // the opposite direction with the absolute length.
 // For integer T, a diagonal has both components rounded, so its actual length is only
-// approximate: DirectionDownRight.Vector(5) is (4,4), of length 5.66. The diagonal is kept,
-// unlike Unit, which snaps to an axis: DirectionDownRight.Vector(1) is the lattice step (1,1),
-// not Unit's (1,0).
+// approximate. The diagonal is kept, unlike Unit, which snaps to an axis: a diagonal of unit
+// length is the lattice step of the direction, not the axis vector Unit gives.
 func (d Direction) Vector[T Number](length T) Vector[T] {
 	if d.IsNone() {
 		return Vector[T]{}

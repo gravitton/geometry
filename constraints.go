@@ -30,7 +30,7 @@ type Number interface {
 // follows for a zero factor. A float T keeps them.
 //
 // A finite value outside the range of an integer T is not checked: Go leaves that conversion
-// platform-dependent, so Cast[int8](300) or Multiply(int(1), 1e30) stores an arbitrary value.
+// platform-dependent, so a value beyond the range of T stores an arbitrary one.
 // Keep results within the range of T, or use a wider T.
 func Cast[T Number](a float64) T {
 	if isInt[T]() {

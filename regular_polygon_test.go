@@ -223,6 +223,53 @@ func TestRegularPolygon_Edges(t *testing.T) {
 	})
 }
 
+func TestRegularPolygon_Anchor(t *testing.T) {
+	t.Run("a flat-top hexagon anchors the top edge midpoint", func(t *testing.T) {
+		hex := Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationFlatTop)
+
+		AssertPoint(t, hex.Anchor(Top), Pt(0.0, -10*math.Cos(Pi/6)))
+		AssertPoint(t, hex.Anchor(Bottom), Pt(0.0, 10*math.Cos(Pi/6)))
+		AssertPoint(t, hex.Anchor(Right), Pt(10.0, 0.0))
+	})
+	t.Run("a pointy-top hexagon anchors the top vertex", func(t *testing.T) {
+		hex := Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationPointyTop)
+
+		AssertPoint(t, hex.Anchor(Top), Pt(0.0, -10.0))
+		AssertPoint(t, hex.Anchor(Right), Pt(10*math.Cos(Pi/6), 0.0))
+	})
+	t.Run("a diagonal leaves through the edge on the diagonal", func(t *testing.T) {
+		diamond := RegPol(Pt(0.0, 0.0), Sz(10.0, 4.0), 4, 0)
+		reach := 1 / (1/10.0 + 1/4.0)
+
+		AssertPoint(t, diamond.Anchor(DirectionDownRight), Pt(reach, reach))
+		AssertPoint(t, diamond.Anchor(DirectionUpLeft), Pt(-reach, -reach))
+	})
+	t.Run("the direction is taken in the world, so a turn moves the anchor along the boundary", func(t *testing.T) {
+		square := RegPol(Pt(0.0, 0.0), SzU(10.0), 4, 0)
+
+		AssertPoint(t, square.Anchor(Right), Pt(10.0, 0.0))
+		AssertPoint(t, square.Rotate(Pi/4).Anchor(Right), Pt(10*OneOverSqrt2, 0.0))
+		AssertPoint(t, square.Rotate(Pi/2).Anchor(Right), Pt(10.0, 0.0))
+	})
+	t.Run("int lands on the rounded edge", func(t *testing.T) {
+		hex := Hexagon(Pt(0, 0), SzU(10), OrientationPointyTop)
+
+		AssertPoint(t, hex.Anchor(Top), Pt(0, -10))
+		assert.True(t, hex.Contains(hex.Anchor(DirectionDownRight)))
+	})
+	t.Run("none is the center", func(t *testing.T) {
+		AssertPoint(t, Hexagon(Pt(1.0, 2.0), SzU(10.0), OrientationFlatTop).Anchor(DirectionNone), Pt(1.0, 2.0))
+	})
+	t.Run("fewer than three vertices anchor at the center", func(t *testing.T) {
+		AssertPoint(t, RegPol(Pt(1.0, 2.0), SzU(10.0), 2, 0).Anchor(Right), Pt(1.0, 2.0))
+		AssertPoint(t, RegPol(Pt(1.0, 2.0), SzU(10.0), 0, 0).Anchor(Right), Pt(1.0, 2.0))
+	})
+	t.Run("a semi-axis along the ray anchors at the center", func(t *testing.T) {
+		AssertPoint(t, RegPol(Pt(1.0, 2.0), Sz(10.0, 0.0), 4, 0).Anchor(Right), Pt(1.0, 2.0))
+		AssertPoint(t, RegPol(Pt(1.0, 2.0), Sz(10.0, 0.0), 4, 0).Anchor(Top), Pt(1.0, 2.0))
+	})
+}
+
 func TestRegularPolygon_Centroid(t *testing.T) {
 	AssertPoint(t, Hexagon(Pt(1, 2), SzU(10), OrientationFlatTop).Centroid(), Pt(1, 2))
 }
@@ -383,6 +430,23 @@ func TestRegularPolygon_Unscale(t *testing.T) {
 	})
 }
 
+func TestRegularPolygon_Resize(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(10, 4), 6, 0).Resize(Sz(3, 7)), RegPol(Pt(1, 2), Sz(3, 7), 6, 0))
+	})
+	t.Run("a negative semi-axis is taken absolute", func(t *testing.T) {
+		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(10, 4), 6, 0).Resize(Sz(-3, 7)), RegPol(Pt(1, 2), Sz(3, 7), 6, 0))
+	})
+	t.Run("keeps the vertex count and the angle", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			resized := rp.Resize(Sz(3.0, 7.0))
+
+			AssertRegularPolygon(t, resized, RegPol(rp.Center, Sz(3.0, 7.0), rp.N, rp.Angle), rp.String())
+			AssertRegularPolygon(t, resized.Resize(rp.Size), rp, rp.String())
+		}
+	})
+}
+
 func TestRegularPolygon_Canonical(t *testing.T) {
 	t.Run("takes a literal negative size absolute and keeps the rest", func(t *testing.T) {
 		AssertRegularPolygon(t, RegularPolygon[int]{Pt(1, 2), Sz(-2, 3), 6, Pi / 3}.Canonical(), RegPol(Pt(1, 2), Sz(2, 3), 6, Pi/3))
@@ -410,6 +474,47 @@ func TestRegularPolygon_Canonical(t *testing.T) {
 			AssertRegularPolygon(t, rp.Canonical(), rp, rp.String())
 			AssertRegularPolygon(t, rp.Rotate(0).Canonical(), rp.Rotate(0), rp.String())
 		}
+	})
+}
+
+func TestRegularPolygon_Grow(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(10, 4), 6, 0).Grow(2), RegPol(Pt(1, 2), Sz(12, 6), 6, 0))
+	})
+	t.Run("clamped at zero", func(t *testing.T) {
+		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(10, 4), 6, 0).Grow(-6), RegPol(Pt(1, 2), Sz(4, 0), 6, 0))
+	})
+	t.Run("shrink undoes it", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			AssertRegularPolygon(t, rp.Grow(1.5).Shrink(1.5), rp, rp.String())
+		}
+	})
+}
+
+func TestRegularPolygon_GrowXY(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(10, 4), 6, 0).GrowXY(2, 3), RegPol(Pt(1, 2), Sz(12, 7), 6, 0))
+	})
+	t.Run("clamped at zero", func(t *testing.T) {
+		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(10, 4), 6, 0).GrowXY(0, -6), RegPol(Pt(1, 2), Sz(10, 0), 6, 0))
+	})
+}
+
+func TestRegularPolygon_Shrink(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(10, 4), 6, 0).Shrink(2), RegPol(Pt(1, 2), Sz(8, 2), 6, 0))
+	})
+	t.Run("clamped at zero", func(t *testing.T) {
+		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(10, 4), 6, 0).Shrink(6), RegPol(Pt(1, 2), Sz(4, 0), 6, 0))
+	})
+}
+
+func TestRegularPolygon_ShrinkXY(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(10, 4), 6, 0).ShrinkXY(2, 3), RegPol(Pt(1, 2), Sz(8, 1), 6, 0))
+	})
+	t.Run("clamped at zero", func(t *testing.T) {
+		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(10, 4), 6, 0).ShrinkXY(0, 6), RegPol(Pt(1, 2), Sz(10, 0), 6, 0))
 	})
 }
 
@@ -529,6 +634,17 @@ func TestRegularPolygon_Rotate(t *testing.T) {
 	t.Run("normalizes to the unit turn", func(t *testing.T) {
 		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Rotate(3*Pi), RegPol(Pt(1, 2), Sz(2, 2), 4, Pi))      // 0 + 3π → π
 		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Rotate(-Pi/2), RegPol(Pt(1, 2), Sz(2, 2), 4, 3*Pi/2)) // 0 − π/2 → 3π/2
+	})
+}
+
+func TestRegularPolygon_AlignTo(t *testing.T) {
+	hex := Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationPointyTop)
+
+	t.Run("an anchor lands on the point", func(t *testing.T) {
+		AssertRegularPolygon(t, hex.AlignTo(Top, Pt(5.0, 5.0)), Hexagon(Pt(5.0, 15.0), SzU(10.0), OrientationPointyTop))
+	})
+	t.Run("none aligns the center", func(t *testing.T) {
+		AssertRegularPolygon(t, hex.AlignTo(DirectionNone, Pt(5.0, 5.0)), Hexagon(Pt(5.0, 5.0), SzU(10.0), OrientationPointyTop))
 	})
 }
 
@@ -917,6 +1033,17 @@ func TestRegularPolygon_Properties(t *testing.T) {
 				normalized := offset.X*offset.X/(rp.Size.Width*rp.Size.Width) + offset.Y*offset.Y/(rp.Size.Height*rp.Size.Height)
 
 				AssertNumber(t, normalized, 1.0, fmt.Sprintf("%s: ", rp))
+			}
+		}
+	})
+	t.Run("every anchor is on the boundary in its direction", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for _, direction := range Directions() {
+				anchor := rp.Anchor(direction)
+
+				AssertNumber(t, rp.DistanceTo(anchor), 0.0, fmt.Sprintf("%s → %s: ", rp, direction))
+				AssertAngle(t, rp.Center.AngleTo(anchor), direction.Angle(), fmt.Sprintf("%s → %s: ", rp, direction))
+				AssertRegularPolygon(t, rp.AlignTo(direction, anchor), rp, fmt.Sprintf("%s → %s: ", rp, direction))
 			}
 		}
 	})

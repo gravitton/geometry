@@ -10,10 +10,9 @@
 //
 // A float result stored into an integer T goes through Cast, which rounds half away from
 // zero: Lerp, Midpoint, Multiply, Divide, Int and every method built on them follow it, so
-// Pt(0, 0).Midpoint(Pt(5, 5)) is (3,3). The exception is Rectangle, whose center is placed
-// by truncating half the size toward Min so that Max-Min stays exactly the size:
-// RectangleFromMinMax(Pt(0, 0), Pt(5, 5)).Center is (2,2), and Segment.Bounds().Center can
-// therefore differ from Segment.Midpoint() by one unit on an odd span.
+// the midpoint of an odd span rounds up. The exception is Rectangle, whose center is placed
+// by truncating half the size toward Min so that Max-Min stays exactly the size, and
+// Segment.Bounds().Center can therefore differ from Segment.Midpoint() by one unit on an odd span.
 //
 // # Panics
 //
@@ -27,7 +26,8 @@
 // stores a platform-dependent value, as Cast documents. RegularPolygonOrientationAngle panics
 // for an Orientation that is neither OrientationFlatTop nor OrientationPointyTop, OrientationNone included: the
 // absence of an alignment has no angle to give. RegularPolygon.Lerp panics for a polygon with
-// a different vertex count, which has no shape between.
+// a different vertex count, which has no shape between. Intersects panics for two Colliders
+// of another package, which have no method this package can reach.
 // These are the only panics: every other guard returns a value the type can express, such as
 // DirectionNone, an empty polygon, or the 0 that Size.AspectRatio gives for a zero height.
 //
@@ -40,7 +40,7 @@
 // # Boundaries
 //
 // Rectangle.Contains, Circle.Contains, Ellipse.Contains, Segment.Contains, Polygon.Contains,
-// Vector.LessOrEqual and the Intersects methods are closed and tolerant: a point within Epsilon of the boundary counts
+// RegularPolygon.Contains, Vector.LessOrEqual and the Intersects methods are closed and tolerant: a point within Epsilon of the boundary counts
 // as on it, so a float rectangle contains the corners it was built from even where Min is
 // recomputed with a rounding error. Every such test is one comparison on a squared distance,
 // never on a coordinate, so containment, the distance methods and the intersection tests

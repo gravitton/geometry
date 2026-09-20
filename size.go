@@ -10,7 +10,8 @@ import (
 // Scale, Lerp and Vector.Size can produce one. A shape that stores a size as its own extent
 // takes it absolute where it enters the shape, so a rectangle or regular polygon never holds a
 // negative one; Abs is the same operation on the size alone. The size itself never clamps or
-// takes an extent absolute, so a struct literal, Grow and Shrink carry a negative extent as it is.
+// takes an extent absolute, so a struct literal, Grow and Shrink carry a negative extent as it is;
+// AtLeastZero is the clamp a shape applies on request.
 type Size[T Number] struct {
 	Width  T `json:"w"`
 	Height T `json:"h"`
@@ -26,7 +27,7 @@ func SzU[T Number](size T) Size[T] {
 	return Size[T]{size, size}
 }
 
-// ParseSize parses a size string in the form "WxH" (e.g. "16x16" or "23.0x12.1").
+// ParseSize parses a size string in the form "WxH", the form String prints, each side a number Parse accepts.
 // For integer T, only integer strings parse; a fractional value is an error, not a rounded size.
 func ParseSize[T Number](s string) (Size[T], error) {
 	width, height, ok := strings.Cut(s, "x")
@@ -172,6 +173,14 @@ func (s Size[T]) AtLeast(size Size[T]) Size[T] {
 // AtMost creates a new Size with at most the given width and height values.
 func (s Size[T]) AtMost(size Size[T]) Size[T] {
 	return Size[T]{min(s.Width, size.Width), min(s.Height, size.Height)}
+}
+
+// AtLeastZero creates a new Size with each negative extent raised to zero, AtLeast the zero
+// size: the clamp Rectangle, Ellipse and RegularPolygon apply after Grow and Shrink, so an
+// extent shrunk past zero stops there rather than measuring the other way. Abs is the other
+// repair, which mirrors a negative extent instead of stopping it.
+func (s Size[T]) AtLeastZero() Size[T] {
+	return Size[T]{max(s.Width, 0), max(s.Height, 0)}
 }
 
 // ratios returns the factors that scale the width and the height onto the given size, both

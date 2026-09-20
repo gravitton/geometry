@@ -54,7 +54,7 @@ func TranslationMatrix[T Number](deltaX, deltaY T) Matrix[T] {
 
 // RotationMatrix creates a new rotation matrix (angle in radians).
 // For integer T, sin/cos components are rounded; only multiples of 90° give exact results.
-// Any other angle is not a rotation at all: π/6 rounds to [[1, -1], [1, 1]], scaling by √2 and shearing.
+// Any other angle is not a rotation at all: the rounded entries scale and shear as well as turn.
 func RotationMatrix[T Number](angle float64) Matrix[T] {
 	sin, cos := math.Sincos(angle)
 
@@ -170,7 +170,7 @@ func (m Matrix[T]) Multiply(matrix Matrix[T]) Matrix[T] {
 // when the matrix may be singular.
 // For integer T, all six components are rounded; only |det| = 1 gives exact results, which covers
 // translations, reflections and quarter turns. Otherwise the inverse does not undo the matrix:
-// ScaleMatrix(2, 2).Inverse() rounds 0.5 back up to identity.
+// the inverse of an integer scale rounds its fractional factor to a whole one.
 func (m Matrix[T]) Inverse() Matrix[T] {
 	det := m.determinant()
 	if det == 0 {
@@ -237,7 +237,7 @@ func (m Matrix[T]) Scale(factorX, factorY float64) Matrix[T] {
 // Composition order: result = m * m_S(1/factorX,1/factorY).
 // Each column is divided on its own, following Divide, which panics for a zero factor.
 // For integer T, each component is rounded, so the result is exact when the components of the
-// column are multiples of its factor: ScaleMatrix(4, 6).Unscale(2, 3) is ScaleMatrix(2, 2).
+// column are multiples of its factor.
 func (m Matrix[T]) Unscale(factorX, factorY float64) Matrix[T] {
 	return Matrix[T]{
 		Divide(m.A, factorX), Divide(m.B, factorY), m.C,
@@ -298,7 +298,7 @@ func (m Matrix[T]) IsIdentity() bool {
 
 // IsInvertible reports whether the matrix has an inverse: its determinant is not exactly zero.
 // No tolerance is applied, since a determinant scales with the square of the matrix and a small
-// one only means a large inverse, not a missing one: ScaleMatrix(0.001, 0.001) is invertible.
+// one only means a large inverse, not a missing one: a tiny uniform scale is invertible.
 func (m Matrix[T]) IsInvertible() bool {
 	return m.determinant() != 0
 }

@@ -29,7 +29,8 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.14.0.md](docs
 - `Segment.MoveTo` places the midpoint, `Size.Grow` and `Shrink` no longer clamp, and `Rectangle.Rectangle` spans exactly `Size.Int` pixels
 - `String` and JSON change form for `Polygon` and a turned `RegularPolygon`
 - `Rectangle.Area` returns `float64`, like every product, so the rectangle is a `Body`
-- Names settle on one vocabulary: `Empty` is `IsEmpty`, `FlatTop` is `OrientationFlatTop`, `Segment.Lerp` is `PointAt`, `Axis.Cross` is `Perpendicular`, `Direction.Rotate` is `Turn`, `Polygon.Center` is `Centroid`, and the rectangle edge midpoints are `TopCenter` and its siblings
+- Names settle on one vocabulary: `Empty` is `IsEmpty`, `FlatTop` is `OrientationFlatTop`, `Segment.Lerp` is `PointAt`, `Axis.Cross` is `Perpendicular`, `Direction.Rotate` is `Turn` and `Polygon.Center` is `Centroid`
+- `Rectangle` keeps its corner getters alone: the edge midpoints `Top` and its siblings and the edge getters `TopEdge` and its siblings are gone, since `Anchor(Top)` names the point on every shape and `Edges` yields the edges
 
 ### Added
 - `Ellipse` – the continuous shape of two semi-axes and an angle, with the foci, the Ramanujan perimeter and a boundary distance found by bisection
@@ -40,6 +41,7 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.14.0.md](docs
 - `Intersects` between every remaining pair of shapes, `RegularPolygon` included on both sides
 - `Canonical` snapping an angle residue, the `Orientation` text encoding, and `AssertEllipse` with `AssertAngle`
 - `RegularPolygon.IsAligned`, the exact-zero angle test `Rectangle` and `Ellipse` already have
+- `RegularPolygon.Anchor` and `AlignTo` on the point where the ray leaves the polygon, with `Resize`, `Grow` and `Shrink` as on `Ellipse`, and `Size.AtLeastZero`, the clamp behind every `Grow`
 
 ### Changed
 - Every boundary is one squared-distance comparison, and every closed shape walks its own `Edges` through the shared `edge.go` accumulators
