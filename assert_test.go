@@ -21,6 +21,19 @@ func TestAssertNumber(t *testing.T) {
 	})
 }
 
+func TestAssertAngle(t *testing.T) {
+	t.Run("equal", func(t *testing.T) {
+		assertHelper(t, AssertAngle, Pi/2, Pi/2, true)
+	})
+	t.Run("a full turn does not matter", func(t *testing.T) {
+		assertHelper(t, AssertAngle, Pi/2, Pi/2+2*Pi, true)
+		assertHelper(t, AssertAngle, 0.0, -2*Pi, true)
+	})
+	t.Run("differs", func(t *testing.T) {
+		assertHelper(t, AssertAngle, Pi/2, Pi, false)
+	})
+}
+
 func TestAssertPoint(t *testing.T) {
 	t.Run("equal", func(t *testing.T) {
 		assertHelper(t, AssertPoint, Pt(1, 2), Pt(1, 2), true)
@@ -65,6 +78,24 @@ func TestAssertCircle(t *testing.T) {
 	})
 	t.Run("radius differs", func(t *testing.T) {
 		assertHelper(t, AssertCircle, c, Circ(Pt(1, 2), 9), false)
+	})
+}
+
+func TestAssertEllipse(t *testing.T) {
+	e := Ell(Pt(1, 2), Sz(3, 4), 0)
+
+	t.Run("equal", func(t *testing.T) {
+		assertHelper(t, AssertEllipse, e, Ell(Pt(1, 2), Sz(3, 4), 0), true)
+	})
+	t.Run("center differs", func(t *testing.T) {
+		assertHelper(t, AssertEllipse, e, Ell(Pt(9, 2), Sz(3, 4), 0), false)
+	})
+	t.Run("size differs", func(t *testing.T) {
+		assertHelper(t, AssertEllipse, e, Ell(Pt(1, 2), Sz(9, 4), 0), false)
+	})
+	t.Run("angle is compared normalized", func(t *testing.T) {
+		assertHelper(t, AssertEllipse, e.Rotate(Pi/2), e.Rotate(-3*Pi/2), true)
+		assertHelper(t, AssertEllipse, e, e.Rotate(Pi/2), false)
 	})
 }
 

@@ -12,6 +12,7 @@ var (
 	_ Shape[int]        = Segment[int]{}
 	_ Shape[int]        = Rectangle[int]{}
 	_ Shape[int]        = Circle[int]{}
+	_ Shape[int]        = Ellipse[int]{}
 	_ Shape[int]        = Polygon[int]{}
 	_ Shape[int]        = RegularPolygon[int]{}
 	_ Outline[int]      = Segment[int]{}
@@ -26,6 +27,7 @@ var (
 	_ Measured[int]     = Size[int]{}
 	_ Measured[int]     = Rectangle[int]{}
 	_ Measured[float64] = Circle[int]{}
+	_ Measured[float64] = Ellipse[int]{}
 	_ Measured[float64] = Polygon[int]{}
 	_ Measured[float64] = RegularPolygon[int]{}
 )
@@ -35,6 +37,7 @@ func TestShape(t *testing.T) {
 		Seg(Pt(0.0, 0.0), Pt(3.0, 4.0)),
 		Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi / 6),
 		Circ(Pt(1.0, 1.0), 2.0),
+		Ell(Pt(1.0, 2.0), Sz(4.0, 2.0), Pi/6),
 		Pol(triangleVertices()),
 		Hexagon(Pt(0.0, 0.0), SzU(10.0), FlatTop),
 	}

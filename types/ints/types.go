@@ -17,6 +17,9 @@ type Size = geom.Size[int]
 // Circle is geom.Circle[int].
 type Circle = geom.Circle[int]
 
+// Ellipse is geom.Ellipse[int].
+type Ellipse = geom.Ellipse[int]
+
 // Segment is geom.Segment[int].
 type Segment = geom.Segment[int]
 
@@ -53,6 +56,11 @@ func Sz[T geom.Number](width, height T) Size {
 // Circ is shorthand for geom.Circ(center, radius).Int()
 func Circ[T geom.Number](center geom.Point[T], radius T) Circle {
 	return geom.Circ(center, radius).Int()
+}
+
+// Ell is shorthand for geom.Ell(center, size, angle).Int()
+func Ell[T geom.Number](center geom.Point[T], size geom.Size[T], angle float64) Ellipse {
+	return geom.Ell(center, size, angle).Int()
 }
 
 // Seg is shorthand for geom.Seg(start, end).Int()

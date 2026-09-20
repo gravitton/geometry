@@ -26,6 +26,15 @@ func AssertNumber[T Number](t Testing, actual, expected T, messages ...string) b
 	return assert.EqualDelta(t, float64(actual), float64(expected), EpsilonRelative(actual, expected), messages...)
 }
 
+// AssertAngle asserts that actual equals expected as an angle in radians: within [Delta] and
+// modulo a full turn, as [EqualAngle] compares them, the comparison every shape carrying an
+// Angle makes. An angle is a float64 wherever the package stores one, so it is not generic.
+func AssertAngle(t Testing, actual, expected float64, messages ...string) bool {
+	t.Helper()
+
+	return assert.True(t, EqualAngle(actual, expected), prefixed(messages, fmt.Sprintf("Angle: %v should equal %v modulo 2π: ", actual, expected))...)
+}
+
 // AssertPoint asserts that actual equals expected (exactly for an integer T, within [EpsilonRelative] for a float T).
 func AssertPoint[T Number](t Testing, actual, expected Point[T], messages ...string) bool {
 	t.Helper()
@@ -90,6 +99,26 @@ func AssertCircle[T Number](t Testing, actual, expected Circle[T], messages ...s
 	return ok
 }
 
+// AssertEllipse asserts that actual equals expected (exactly for an integer T, within [EpsilonRelative] for a float T).
+// The angle goes through AssertAngle, so a full turn does not matter, like Ellipse.Equal.
+func AssertEllipse[T Number](t Testing, actual, expected Ellipse[T], messages ...string) bool {
+	t.Helper()
+
+	ok := true
+
+	if !AssertPoint(t, actual.Center, expected.Center, prefixed(messages, "Center.")...) {
+		ok = false
+	}
+	if !AssertSize(t, actual.Size, expected.Size, prefixed(messages, "Size.")...) {
+		ok = false
+	}
+	if !AssertAngle(t, actual.Angle, expected.Angle, messages...) {
+		ok = false
+	}
+
+	return ok
+}
+
 // AssertSegment asserts that actual equals expected (exactly for an integer T, within [EpsilonRelative] for a float T).
 func AssertSegment[T Number](t Testing, actual, expected Segment[T], messages ...string) bool {
 	t.Helper()
@@ -107,7 +136,7 @@ func AssertSegment[T Number](t Testing, actual, expected Segment[T], messages ..
 }
 
 // AssertRectangle asserts that actual equals expected (exactly for an integer T, within [EpsilonRelative] for a float T).
-// Angles are compared with EqualAngle, like Rectangle.Equal.
+// The angle goes through AssertAngle, so a full turn does not matter, like Rectangle.Equal.
 func AssertRectangle[T Number](t Testing, actual, expected Rectangle[T], messages ...string) bool {
 	t.Helper()
 
@@ -119,7 +148,7 @@ func AssertRectangle[T Number](t Testing, actual, expected Rectangle[T], message
 	if !AssertSize(t, actual.Size, expected.Size, prefixed(messages, "Size.")...) {
 		ok = false
 	}
-	if !assert.True(t, EqualAngle(actual.Angle, expected.Angle), prefixed(messages, fmt.Sprintf("Angle: %v should equal %v modulo 2π: ", actual.Angle, expected.Angle))...) {
+	if !AssertAngle(t, actual.Angle, expected.Angle, messages...) {
 		ok = false
 	}
 
@@ -152,7 +181,7 @@ func AssertVertices[T Number](t Testing, actual, expected []Point[T], messages .
 }
 
 // AssertRegularPolygon asserts that actual equals expected (exactly for an integer T, within [EpsilonRelative] for a float T).
-// Angles are compared with EqualAngle, like RegularPolygon.Equal.
+// The angle goes through AssertAngle, so a full turn does not matter, like RegularPolygon.Equal.
 func AssertRegularPolygon[T Number](t Testing, actual, expected RegularPolygon[T], messages ...string) bool {
 	t.Helper()
 
@@ -167,7 +196,7 @@ func AssertRegularPolygon[T Number](t Testing, actual, expected RegularPolygon[T
 	if !assert.Equal(t, actual.N, expected.N, prefixed(messages, "N: ")...) {
 		ok = false
 	}
-	if !assert.True(t, EqualAngle(actual.Angle, expected.Angle), prefixed(messages, fmt.Sprintf("Angle: %v should equal %v modulo 2π: ", actual.Angle, expected.Angle))...) {
+	if !AssertAngle(t, actual.Angle, expected.Angle, messages...) {
 		ok = false
 	}
 

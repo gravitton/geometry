@@ -2,8 +2,8 @@ package geom
 
 import "iter"
 
-// Shape is what every shape answers about a point: Segment, Rectangle, Circle, Polygon and
-// RegularPolygon. Bounds is the axis-aligned box around it, Contains includes the boundary
+// Shape is what every shape answers about a point: Segment, Rectangle, Circle, Ellipse,
+// Polygon and RegularPolygon. Bounds is the axis-aligned box around it, Contains includes the boundary
 // within Epsilon of T, DistanceTo is zero exactly where Contains holds and DistanceSquaredTo is
 // the value it takes the root of. A spatial index or a picking routine holds a Shape and never
 // needs to know which one.
@@ -18,7 +18,8 @@ type Shape[T Number] interface {
 // RegularPolygon. Vertices iterates the corners in order and Edges the segments joining them,
 // each edge starting where the previous one ends, the last one closing back to the first on a
 // closed shape. Both iterate without allocating, so one loop draws or measures any of the four.
-// A Circle has no vertices; convert it through a RegularPolygon of the wanted resolution.
+// A Circle and an Ellipse have no vertices; convert one through a RegularPolygon of the
+// wanted resolution.
 //
 // The iterators are free only on a concrete shape, where the compiler inlines them into the
 // loop. Called through an Outline value, or through a type parameter constrained by it, the
@@ -33,6 +34,10 @@ type Outline[T Number] interface {
 // RegularPolygon, each with the five Intersects methods, its own kind included. Every test is
 // symmetric and includes a touch within Epsilon of T, so a broad collision pass calls the
 // method for the other side's kind and gets the same answer from either.
+//
+// Ellipse is deliberately not one: two ellipses meet at the roots of a quartic, which none of
+// the closed forms the circle pairs are built on reaches. Test an ellipse through the
+// RegularPolygon of the wanted resolution until the pairs land.
 type Collider[T Number] interface {
 	IntersectsSegment(segment Segment[T]) bool
 	IntersectsRectangle(rectangle Rectangle[T]) bool
@@ -43,7 +48,7 @@ type Collider[T Number] interface {
 
 // Measured is a shape with an area and a perimeter, in the number type M that measures them:
 // Size and Rectangle measure in their own T, since a box of an integer size has an exact
-// integer area and perimeter, while Circle, Polygon and RegularPolygon measure in float64,
+// integer area and perimeter, while Circle, Ellipse, Polygon and RegularPolygon measure in float64,
 // since a curve or a turned edge encloses what no integer expresses. Every float64 shape is a
 // Measured[float64]; an integer Rectangle or Size is a Measured[int].
 type Measured[M Number] interface {
@@ -52,7 +57,7 @@ type Measured[M Number] interface {
 }
 
 // Movable is a shape that can be moved, turned and scaled, in its own type: Segment, Rectangle, Circle,
-// Polygon and RegularPolygon, each returning itself rather than a common type, so the parameter
+// Ellipse, Polygon and RegularPolygon, each returning itself rather than a common type, so the parameter
 // S stands for the shape and every method returns it. It is a constraint, not a value type,
 // and is written self-referentially at the call site:
 //
@@ -60,7 +65,7 @@ type Measured[M Number] interface {
 //
 // Every shape turns about its own center, Circle.Rotate giving the circle back. Lerp is
 // deliberately absent: Segment.Lerp is the point a fraction along the segment rather than
-// a step toward another segment, and Polygon has none, so the five shapes do not share it.
+// a step toward another segment, and Polygon has none, so the six shapes do not share it.
 // A call through a type parameter constrained by an interface allocates, so this is for the
 // code around a hot loop, never inside one.
 type Movable[T Number, S any] interface {

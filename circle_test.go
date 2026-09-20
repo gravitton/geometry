@@ -752,6 +752,27 @@ func TestCircle_IsZero(t *testing.T) {
 	})
 }
 
+func TestCircle_Ellipse(t *testing.T) {
+	t.Run("equal semi-axes and no angle", func(t *testing.T) {
+		AssertEllipse(t, Circ(Pt(1, 2), 10).Ellipse(), Ell(Pt(1, 2), SzU(10), 0))
+	})
+	t.Run("round-trips through Circle", func(t *testing.T) {
+		AssertCircle(t, Circ(Pt(1, 2), 10).Ellipse().Circle(), Circ(Pt(1, 2), 10))
+	})
+	t.Run("it is what a matrix transforms", func(t *testing.T) {
+		c := Circ(Pt(2.0, 3.0), 4.0)
+
+		AssertEllipse(t, c.Ellipse().Transform(ScaleMatrix(3.0, 1.0)), Ell(Pt(6.0, 3.0), Sz(12.0, 4.0), 0))
+	})
+	t.Run("a uniform transform converts back", func(t *testing.T) {
+		c, m := Circ(Pt(2.0, 3.0), 4.0), RotationMatrix[float64](Pi/3)
+		turned := c.Ellipse().Transform(m)
+
+		assert.True(t, turned.IsCircle())
+		AssertCircle(t, turned.Circle(), c.MoveTo(c.Center.Transform(m)))
+	})
+}
+
 func TestCircle_Cast(t *testing.T) {
 	c := Circ(Pt(1.5, -2.5), 3.5)
 

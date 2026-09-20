@@ -336,6 +336,14 @@ func (c Circle[T]) IsZero() bool {
 	return c.Equal(Circle[T]{})
 }
 
+// Ellipse converts the circle into an Ellipse of equal semi-axes, with no angle, and the one
+// Ellipse.Circle gives back unchanged: the circle has no Transform of its own, since an affine
+// matrix takes it to an ellipse, so a transform of a circle goes Ellipse().Transform(matrix),
+// which says plainly that the circle is left behind.
+func (c Circle[T]) Ellipse() Ellipse[T] {
+	return Ellipse[T]{c.Center, SzU(c.Radius), 0}
+}
+
 // Cast converts the circle to a Circle of another number type, rounding as Cast does.
 func (c Circle[T]) Cast[R Number]() Circle[R] {
 	return Circle[R]{c.Center.Cast[R](), Cast[R](float64(c.Radius))}
