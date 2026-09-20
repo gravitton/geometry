@@ -199,6 +199,20 @@ func TestCircle_Lerp(t *testing.T) {
 	})
 }
 
+func TestCircle_Rotate(t *testing.T) {
+	circle := Circ(Pt(1.0, 2.0), 3.0)
+
+	t.Run("no angle moves a circle", func(t *testing.T) {
+		AssertCircle(t, circle.Rotate(Pi/3), circle)
+		AssertCircle(t, circle.Rotate(-Pi), circle)
+	})
+	t.Run("the bounds turn with nothing", func(t *testing.T) {
+		for _, c := range circleFixtures {
+			AssertCircle(t, c.Rotate(Pi/7), c, c.String())
+		}
+	})
+}
+
 func TestCircle_AlignTo(t *testing.T) {
 	c := Circ(Pt(10.0, 10.0), 5.0)
 

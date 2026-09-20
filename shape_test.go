@@ -106,28 +106,47 @@ func TestCollider(t *testing.T) {
 	t.Run("either side gives the same answer", func(t *testing.T) {
 		for _, a := range colliders {
 			for _, b := range colliders {
-				assert.Equal(t, intersects(a, b), intersects(b, a), fmt.Sprintf("%s → %s: ", a, b))
+				assert.Equal(t, Intersects(a, b), Intersects(b, a), fmt.Sprintf("%s → %s: ", a, b))
 			}
 		}
 	})
+	t.Run("a collider of another kind is tested from the side that has one", func(t *testing.T) {
+		rectangle := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0))
+
+		assert.True(t, Intersects[float64](rectangle, stubCollider{result: true}))
+		assert.False(t, Intersects[float64](stubCollider{result: false}, rectangle))
+	})
+	t.Run("two colliders of another kind panic", func(t *testing.T) {
+		assert.Panics(t, func() {
+			Intersects[float64](stubCollider{}, stubCollider{})
+		})
+	})
 }
 
-// intersects tests a against b by a's method for b's kind, the switch a broad pass makes.
-func intersects[T Number](a, b Collider[T]) bool {
-	switch shape := b.(type) {
-	case Line[T]:
-		return a.IntersectsLine(shape)
-	case Rectangle[T]:
-		return a.IntersectsRectangle(shape)
-	case Circle[T]:
-		return a.IntersectsCircle(shape)
-	case Polygon[T]:
-		return a.IntersectsPolygon(shape)
-	case RegularPolygon[T]:
-		return a.IntersectsRegularPolygon(shape)
-	}
+// stubCollider is a Collider of no kind this package knows, for the paths Intersects takes
+// when it cannot name one.
+type stubCollider struct {
+	result bool
+}
 
-	panic("unknown collider")
+func (s stubCollider) IntersectsCircle(Circle[float64]) bool {
+	return s.result
+}
+
+func (s stubCollider) IntersectsLine(Line[float64]) bool {
+	return s.result
+}
+
+func (s stubCollider) IntersectsPolygon(Polygon[float64]) bool {
+	return s.result
+}
+
+func (s stubCollider) IntersectsRectangle(Rectangle[float64]) bool {
+	return s.result
+}
+
+func (s stubCollider) IntersectsRegularPolygon(RegularPolygon[float64]) bool {
+	return s.result
 }
 
 func TestMeasured(t *testing.T) {
@@ -161,4 +180,20 @@ func closed[T Number](outline Outline[T]) bool {
 	}
 
 	return first.Equal(last)
+}
+
+func TestMovable(t *testing.T) {
+	t.Run("every shape moves and scales in its own type", func(t *testing.T) {
+		AssertLine(t, moved(Ln(Pt(0, 0), Pt(2, 2)), Vec(1, 1)), Ln(Pt(1, 1), Pt(3, 3)))
+		AssertRectangle(t, moved(Rect(Pt(0, 0), Sz(2, 2)), Vec(1, 1)), Rect(Pt(1, 1), Sz(2, 2)))
+		AssertCircle(t, moved(Circ(Pt(0, 0), 2), Vec(1, 1)), Circ(Pt(1, 1), 2))
+		AssertPolygon(t, moved(Pol(squareVertices()), Vec(1, 1)), Pol([]Point[int]{Pt(1, 1), Pt(3, 1), Pt(3, 3), Pt(1, 3)}))
+		AssertRegularPolygon(t, moved(RegPol(Pt(0, 0), Sz(2, 2), 6, 0), Vec(1, 1)), RegPol(Pt(1, 1), Sz(2, 2), 6, 0))
+	})
+}
+
+// moved translates a shape and turns and scales it back and forth through the constraint, the
+// call a generic tween makes.
+func moved[T Number, S Movable[T, S]](shape S, vector Vector[T]) S {
+	return shape.Translate(vector).Rotate(2 * Pi).Scale(2).Unscale(2)
 }

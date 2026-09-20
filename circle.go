@@ -116,6 +116,14 @@ func (c Circle[T]) Lerp(circle Circle[T], t float64) Circle[T] {
 	return Circle[T]{c.Center.Lerp(circle.Center, t), Abs(Lerp(c.Radius, circle.Radius, t))}
 }
 
+// Rotate creates a new Circle turned by the given angle (in radians) about its center, in the
+// same sense as Vector.Rotate, which is the circle itself: a circle is symmetric about its
+// center, so no angle moves it. It is here so every shape turns the same way and Movable can
+// name it.
+func (c Circle[T]) Rotate(angle float64) Circle[T] {
+	return c
+}
+
 // AlignTo creates a new Circle moved so that its Anchor in the given direction lands on the
 // point, the inverse of Anchor: DirectionNone aligns the center, like MoveTo.
 func (c Circle[T]) AlignTo(direction Direction, point Point[T]) Circle[T] {
