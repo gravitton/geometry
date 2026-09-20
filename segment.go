@@ -565,7 +565,8 @@ func (s Segment[T]) compareDistance(a, b Point[T]) int {
 //
 // The ray crosses when the point lies on the side of the segment facing -X: the left side of a
 // segment running toward +Y, the right side of one running toward -Y. The side comes from the
-// sign of a cross product, which needs no division by the segment's Y span.
+// sign of a cross product, which needs no division by the segment's Y span, and each side is
+// asked for by its own sign, so a NaN coordinate, which has neither, crosses nothing.
 func (s Segment[T]) crossesRay(point Point[T]) bool {
 	start, end, p := s.Start.Float(), s.End.Float(), point.Float()
 
@@ -573,10 +574,12 @@ func (s Segment[T]) crossesRay(point Point[T]) bool {
 		return false
 	}
 
-	upward := end.Y > start.Y
-	left := end.Subtract(start).Cross(p.Subtract(start)) > 0
+	cross := end.Subtract(start).Cross(p.Subtract(start))
+	if end.Y > start.Y {
+		return cross > 0
+	}
 
-	return left == upward
+	return cross < 0
 }
 
 // Equal checks if the start and end points of the segments are equal.

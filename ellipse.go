@@ -87,8 +87,10 @@ func (e Ellipse[T]) Foci() (Point[T], Point[T]) {
 // the end of a semi-axis for a cardinal direction, and the point where the diagonal through
 // the center leaves the ellipse for a diagonal one, the direction Circle.Anchor takes rather
 // than an eighth of a turn of the parameter, which lies off the diagonal on every ellipse that
-// is not a circle. Unlike Circle.Anchor it lies on the boundary at every angle, since the
-// point is placed on the ellipse rather than rounded from a lattice step. A degenerate
+// is not a circle. For a float T it lies on the boundary at every angle, since the point is
+// placed on the ellipse rather than rounded from a lattice step; for an integer T it is rounded
+// once, which can carry it off the boundary by up to half a diagonal, where Contains rejects
+// it, as a diagonal Circle.Anchor is. A degenerate
 // ellipse is a segment and answers with the point of it at that parameter.
 func (e Ellipse[T]) Anchor(direction Direction) Point[T] {
 	if direction.IsNone() {
@@ -123,8 +125,8 @@ func (e Ellipse[T]) Perimeter() float64 {
 		return 0
 	}
 
-	ratio := (w - h) / sum
-	t := 3 * ratio * ratio
+	r := (w - h) / sum
+	t := 3 * r * r
 
 	return Pi * sum * (1 + t/(10+math.Sqrt(4-t)))
 }
@@ -393,9 +395,9 @@ func (e Ellipse[T]) nearestOffset(local Vector[float64]) Vector[float64] {
 func (e Ellipse[T]) foot(a, b, x, y float64) (float64, float64) {
 	if y == 0 {
 		if evolute, center := a*x, a*a-b*b; evolute < center {
-			ratio := evolute / center
+			cosine := evolute / center
 
-			return a * ratio, b * math.Sqrt(1-ratio*ratio)
+			return a * cosine, b * math.Sqrt(1-cosine*cosine)
 		}
 
 		return a, 0
@@ -423,7 +425,8 @@ func (e Ellipse[T]) foot(a, b, x, y float64) (float64, float64) {
 // It is found by bisection, which halves that bracket until the midpoint is one of its ends
 // and no float lies between them, so it ends in the precision of a float64 and no iteration
 // count has to be chosen; a midpoint that lands exactly on the root is kept as the far end and
-// the halving runs down to it. It reads no field of the ellipse, only the point in the frame
+// the halving runs down to it. A NaN coordinate gives a bracket with no midpoint at all and is
+// returned as it is, so the loop ends on it too. It reads no field of the ellipse, only the point in the frame
 // of its semi-axes, so the receiver is unnamed.
 func (Ellipse[T]) root(aspect, x, y float64) float64 {
 	gradient := aspect * x
@@ -435,7 +438,7 @@ func (Ellipse[T]) root(aspect, x, y float64) float64 {
 
 	for {
 		s := (s0 + s1) / 2
-		if s == s0 || s == s1 {
+		if s == s0 || s == s1 || math.IsNaN(s) {
 			return s
 		}
 

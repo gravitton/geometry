@@ -2,6 +2,7 @@ package geom
 
 import (
 	"fmt"
+	"math"
 	"slices"
 	"testing"
 
@@ -59,6 +60,14 @@ func TestShape(t *testing.T) {
 		for _, shape := range shapes {
 			for _, p := range pointFixtures {
 				assert.True(t, !shape.Contains(p) || shape.Bounds().Contains(p), fmt.Sprintf("%s → %s: ", shape, p))
+			}
+		}
+	})
+	t.Run("a NaN coordinate is contained by nothing and at NaN distance", func(t *testing.T) {
+		for _, shape := range shapes {
+			for _, p := range []Point[float64]{Pt(math.NaN(), 0.0), Pt(1.0, math.NaN()), Pt(math.Inf(1), 0.0)} {
+				assert.False(t, shape.Contains(p), fmt.Sprintf("%s → %s: ", shape, p))
+				assert.True(t, math.IsNaN(shape.DistanceTo(p)) || math.IsInf(shape.DistanceTo(p), 1), fmt.Sprintf("%s → %s: ", shape, p))
 			}
 		}
 	})

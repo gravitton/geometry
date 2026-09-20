@@ -128,6 +128,53 @@ func TestRegularPolygonOrientationAngle(t *testing.T) {
 	})
 }
 
+func TestRegularPolygon_Anchor(t *testing.T) {
+	t.Run("a flat-top hexagon anchors the top edge midpoint", func(t *testing.T) {
+		hex := Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationFlatTop)
+
+		AssertPoint(t, hex.Anchor(Top), Pt(0.0, -10*math.Cos(Pi/6)))
+		AssertPoint(t, hex.Anchor(Bottom), Pt(0.0, 10*math.Cos(Pi/6)))
+		AssertPoint(t, hex.Anchor(Right), Pt(10.0, 0.0))
+	})
+	t.Run("a pointy-top hexagon anchors the top vertex", func(t *testing.T) {
+		hex := Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationPointyTop)
+
+		AssertPoint(t, hex.Anchor(Top), Pt(0.0, -10.0))
+		AssertPoint(t, hex.Anchor(Right), Pt(10*math.Cos(Pi/6), 0.0))
+	})
+	t.Run("a diagonal leaves through the edge on the diagonal", func(t *testing.T) {
+		diamond := RegPol(Pt(0.0, 0.0), Sz(10.0, 4.0), 4, 0)
+		reach := 1 / (1/10.0 + 1/4.0)
+
+		AssertPoint(t, diamond.Anchor(DirectionDownRight), Pt(reach, reach))
+		AssertPoint(t, diamond.Anchor(DirectionUpLeft), Pt(-reach, -reach))
+	})
+	t.Run("the direction is taken in the world, so a turn moves the anchor along the boundary", func(t *testing.T) {
+		square := RegPol(Pt(0.0, 0.0), SzU(10.0), 4, 0)
+
+		AssertPoint(t, square.Anchor(Right), Pt(10.0, 0.0))
+		AssertPoint(t, square.Rotate(Pi/4).Anchor(Right), Pt(10*OneOverSqrt2, 0.0))
+		AssertPoint(t, square.Rotate(Pi/2).Anchor(Right), Pt(10.0, 0.0))
+	})
+	t.Run("int lands on the rounded edge", func(t *testing.T) {
+		hex := Hexagon(Pt(0, 0), SzU(10), OrientationPointyTop)
+
+		AssertPoint(t, hex.Anchor(Top), Pt(0, -10))
+		assert.True(t, hex.Contains(hex.Anchor(DirectionDownRight)))
+	})
+	t.Run("none is the center", func(t *testing.T) {
+		AssertPoint(t, Hexagon(Pt(1.0, 2.0), SzU(10.0), OrientationFlatTop).Anchor(DirectionNone), Pt(1.0, 2.0))
+	})
+	t.Run("fewer than three vertices anchor at the center", func(t *testing.T) {
+		AssertPoint(t, RegPol(Pt(1.0, 2.0), SzU(10.0), 2, 0).Anchor(Right), Pt(1.0, 2.0))
+		AssertPoint(t, RegPol(Pt(1.0, 2.0), SzU(10.0), 0, 0).Anchor(Right), Pt(1.0, 2.0))
+	})
+	t.Run("a semi-axis along the ray anchors at the center", func(t *testing.T) {
+		AssertPoint(t, RegPol(Pt(1.0, 2.0), Sz(10.0, 0.0), 4, 0).Anchor(Right), Pt(1.0, 2.0))
+		AssertPoint(t, RegPol(Pt(1.0, 2.0), Sz(10.0, 0.0), 4, 0).Anchor(Top), Pt(1.0, 2.0))
+	})
+}
+
 func TestRegularPolygon_Vertices(t *testing.T) {
 	t.Run("fewer than one side yields nothing", func(t *testing.T) {
 		assert.Nil(t, slices.Collect(RegPol(Pt(0, 0), Sz(1, 1), 0, 0).Vertices()))
@@ -220,53 +267,6 @@ func TestRegularPolygon_Edges(t *testing.T) {
 				}
 			}), 0, fmt.Sprintf("%s: ", rp))
 		}
-	})
-}
-
-func TestRegularPolygon_Anchor(t *testing.T) {
-	t.Run("a flat-top hexagon anchors the top edge midpoint", func(t *testing.T) {
-		hex := Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationFlatTop)
-
-		AssertPoint(t, hex.Anchor(Top), Pt(0.0, -10*math.Cos(Pi/6)))
-		AssertPoint(t, hex.Anchor(Bottom), Pt(0.0, 10*math.Cos(Pi/6)))
-		AssertPoint(t, hex.Anchor(Right), Pt(10.0, 0.0))
-	})
-	t.Run("a pointy-top hexagon anchors the top vertex", func(t *testing.T) {
-		hex := Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationPointyTop)
-
-		AssertPoint(t, hex.Anchor(Top), Pt(0.0, -10.0))
-		AssertPoint(t, hex.Anchor(Right), Pt(10*math.Cos(Pi/6), 0.0))
-	})
-	t.Run("a diagonal leaves through the edge on the diagonal", func(t *testing.T) {
-		diamond := RegPol(Pt(0.0, 0.0), Sz(10.0, 4.0), 4, 0)
-		reach := 1 / (1/10.0 + 1/4.0)
-
-		AssertPoint(t, diamond.Anchor(DirectionDownRight), Pt(reach, reach))
-		AssertPoint(t, diamond.Anchor(DirectionUpLeft), Pt(-reach, -reach))
-	})
-	t.Run("the direction is taken in the world, so a turn moves the anchor along the boundary", func(t *testing.T) {
-		square := RegPol(Pt(0.0, 0.0), SzU(10.0), 4, 0)
-
-		AssertPoint(t, square.Anchor(Right), Pt(10.0, 0.0))
-		AssertPoint(t, square.Rotate(Pi/4).Anchor(Right), Pt(10*OneOverSqrt2, 0.0))
-		AssertPoint(t, square.Rotate(Pi/2).Anchor(Right), Pt(10.0, 0.0))
-	})
-	t.Run("int lands on the rounded edge", func(t *testing.T) {
-		hex := Hexagon(Pt(0, 0), SzU(10), OrientationPointyTop)
-
-		AssertPoint(t, hex.Anchor(Top), Pt(0, -10))
-		assert.True(t, hex.Contains(hex.Anchor(DirectionDownRight)))
-	})
-	t.Run("none is the center", func(t *testing.T) {
-		AssertPoint(t, Hexagon(Pt(1.0, 2.0), SzU(10.0), OrientationFlatTop).Anchor(DirectionNone), Pt(1.0, 2.0))
-	})
-	t.Run("fewer than three vertices anchor at the center", func(t *testing.T) {
-		AssertPoint(t, RegPol(Pt(1.0, 2.0), SzU(10.0), 2, 0).Anchor(Right), Pt(1.0, 2.0))
-		AssertPoint(t, RegPol(Pt(1.0, 2.0), SzU(10.0), 0, 0).Anchor(Right), Pt(1.0, 2.0))
-	})
-	t.Run("a semi-axis along the ray anchors at the center", func(t *testing.T) {
-		AssertPoint(t, RegPol(Pt(1.0, 2.0), Sz(10.0, 0.0), 4, 0).Anchor(Right), Pt(1.0, 2.0))
-		AssertPoint(t, RegPol(Pt(1.0, 2.0), Sz(10.0, 0.0), 4, 0).Anchor(Top), Pt(1.0, 2.0))
 	})
 }
 

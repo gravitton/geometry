@@ -116,11 +116,11 @@ func (r Rectangle[T]) TopLeft() Point[T] {
 	return r.worldPoint(a)
 }
 
-// BottomLeft returns the bottom-left corner, named in the frame of the rectangle before its turn.
-func (r Rectangle[T]) BottomLeft() Point[T] {
+// TopRight returns the top-right corner, named in the frame of the rectangle before its turn.
+func (r Rectangle[T]) TopRight() Point[T] {
 	a, b := r.localMinMax()
 
-	return r.worldPoint(Vector[T]{a.X, b.Y})
+	return r.worldPoint(Vector[T]{b.X, a.Y})
 }
 
 // BottomRight returns the bottom-right corner, named in the frame of the rectangle before its turn.
@@ -130,18 +130,21 @@ func (r Rectangle[T]) BottomRight() Point[T] {
 	return r.worldPoint(b)
 }
 
-// TopRight returns the top-right corner, named in the frame of the rectangle before its turn.
-func (r Rectangle[T]) TopRight() Point[T] {
+// BottomLeft returns the bottom-left corner, named in the frame of the rectangle before its turn.
+func (r Rectangle[T]) BottomLeft() Point[T] {
 	a, b := r.localMinMax()
 
-	return r.worldPoint(Vector[T]{b.X, a.Y})
+	return r.worldPoint(Vector[T]{a.X, b.Y})
 }
 
 // Anchor returns the point on the rectangle in the given direction from its center, in the
 // frame of the rectangle before its turn: a corner for diagonals, the midpoint of an edge for
 // cardinals and the center for DirectionNone, so the Top anchor of a rotated rectangle is the
 // midpoint of the edge that was on top before the turn. The corners are also TopLeft and its
-// siblings; the edge midpoints have no getter of their own, as no other shape gives one.
+// siblings; the edge midpoints have no getter of their own, as no other shape gives one. For
+// integer T a point of a rotated rectangle is rounded once, which can carry an edge midpoint
+// off the edge between the rounded corners, where Contains rejects it; the corners are the
+// vertices themselves and are always contained.
 func (r Rectangle[T]) Anchor(direction Direction) Point[T] {
 	a, b := r.localMinMax()
 
@@ -613,7 +616,8 @@ func (r Rectangle[T]) Union(rectangle Rectangle[T]) Rectangle[T] {
 // point, the answer IntersectsPolygon gives on the polygon's Polygon form, without building
 // it: a corner of one lies within the other, or an edge of the polygon crosses an edge of the
 // rectangle. The two Bounds reject the pair before any edge is examined, whatever the
-// rectangle's angle, and an empty polygon intersects nothing.
+// rectangle's angle, and an empty polygon intersects nothing. The polygon places its vertices
+// again for every edge of the rectangle, since no vertex slice is built.
 func (r Rectangle[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 	if polygon.IsEmpty() {
 		return false
@@ -655,19 +659,23 @@ func (r Rectangle[T]) containsWithin(point, a, b Point[T]) bool {
 // meetsWithin reports whether two rectangles whose extents overlap share a point, the way
 // Polygon.IntersectsPolygon decides it: a corner of one lies within the other, or an edge of one
 // meets an edge of the other by Segment.IntersectsSegment. The caller already holds the corners
-// of both MinMax, so a rotated rectangle turns its corners once for the extent and the edges.
+// of both MinMax, and each side turns its corners once more here and probes the edges edgesOf
+// joins between them, the edges Edges yields, rather than turning them again for every edge of
+// the other side; the containment tests still walk Edges of their own.
 func (r Rectangle[T]) meetsWithin(rectangle Rectangle[T], a1, b1, a2, b2 Point[T]) bool {
-	if rectangle.containsWithin(r.TopLeft(), a2, b2) || r.containsWithin(rectangle.TopLeft(), a1, b1) {
+	corners, others := r.corners(), rectangle.corners()
+
+	if rectangle.containsWithin(corners[0], a2, b2) || r.containsWithin(others[0], a1, b1) {
 		return true
 	}
 
 	probe := edgeProbe[T]{a: a2, b: b2}
-	for edge := range r.Edges() {
+	for edge := range edgesOf(corners[:]) {
 		if !probe.aim(edge) {
 			continue
 		}
 
-		for other := range rectangle.Edges() {
+		for other := range edgesOf(others[:]) {
 			if probe.meets(other) {
 				return true
 			}

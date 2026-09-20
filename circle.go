@@ -133,7 +133,7 @@ func (c Circle[T]) Lerp(circle Circle[T], t float64) Circle[T] {
 // same sense as Vector.Rotate, which is the circle itself: a circle is symmetric about its
 // center, so no angle moves it. It is here so every shape turns the same way and Transformable can
 // name it.
-func (c Circle[T]) Rotate(angle float64) Circle[T] {
+func (c Circle[T]) Rotate(_ float64) Circle[T] {
 	return c
 }
 

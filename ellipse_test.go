@@ -396,6 +396,11 @@ func TestEllipse_Contains(t *testing.T) {
 		assert.True(t, e.Rotate(Pi/2).Contains(Pt(0.0, 4.0)))
 		assert.False(t, e.Rotate(Pi/2).Contains(Pt(4.0, 0.0)))
 	})
+	t.Run("a NaN coordinate ends the bisection and is not contained", func(t *testing.T) {
+		assert.False(t, e.Contains(Pt(math.NaN(), 0.0)))
+		assert.False(t, e.Rotate(0.3).Contains(Pt(math.Inf(1), 0.0)))
+		assert.True(t, math.IsNaN(e.DistanceTo(Pt(1.0, math.NaN()))))
+	})
 	t.Run("a degenerate ellipse is its segment", func(t *testing.T) {
 		d := Ell(Pt(0.0, 0.0), Sz(5.0, 0.0), 0)
 

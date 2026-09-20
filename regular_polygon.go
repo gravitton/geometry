@@ -78,6 +78,36 @@ func RegularPolygonOrientationAngle(n int, orientation Orientation) float64 {
 	}
 }
 
+// Anchor returns the point of the boundary in the given direction from the center, or the
+// center itself for DirectionNone: the point where the ray from the center leaves the polygon,
+// as Rectangle.Anchor gives a corner or an edge midpoint and Ellipse.Anchor the point of its
+// boundary. The direction is taken in the world, where the polygon stands after its turn,
+// unlike Rectangle.Anchor, since the orientation constructors turn the polygon to place its
+// top: on a flat-top polygon the Top anchor is the midpoint of the top edge, on a pointy-top
+// one its top vertex, and Rotate moves every anchor along the boundary. For integer T
+// the point of the edge between the rounded vertices is rounded once more, which can carry it
+// off that edge by up to half a diagonal, where Contains rejects it, as a diagonal
+// Circle.Anchor is. A polygon with fewer than three vertices encloses no area and
+// anchors at its center, as does one whose semi-axis lies along the ray.
+func (rp RegularPolygon[T]) Anchor(direction Direction) Point[T] {
+	if direction.IsNone() || rp.N < 3 {
+		return rp.Center
+	}
+
+	center := rp.Center.Float()
+	ray := VectorFromAngle(direction.Angle(), 1.0)
+	edge := rp.edge(rp.edgeIndex(direction.Angle() - rp.Angle)).Float()
+
+	denominator := ray.Cross(edge.Vector())
+	if denominator == 0 {
+		return rp.Center
+	}
+
+	along := Clamp(edge.Start.Subtract(center).Cross(ray)/denominator, 0, 1)
+
+	return edge.PointAt(along).Cast[T]()
+}
+
 // Vertices iterates the polygon vertices in order starting from Angle, by increasing angle —
 // the same winding as Directions and Rectangle.Vertices, and clockwise as drawn on a screen
 // with Y pointing down, without allocating; collect them with slices.Collect where a slice is
@@ -86,7 +116,7 @@ func RegularPolygonOrientationAngle(n int, orientation Orientation) float64 {
 // non-right angles may be off by up to half a unit. Use float64 for exact positions.
 func (rp RegularPolygon[T]) Vertices() iter.Seq[Point[T]] {
 	return func(yield func(Point[T]) bool) {
-		for i := 0; i < rp.N; i++ {
+		for i := range rp.N {
 			if !yield(rp.vertex(i)) {
 				return
 			}
@@ -118,35 +148,6 @@ func (rp RegularPolygon[T]) Edges() iter.Seq[Segment[T]] {
 			previous = next
 		}
 	}
-}
-
-// Anchor returns the point of the boundary in the given direction from the center, or the
-// center itself for DirectionNone: the point where the ray from the center leaves the polygon,
-// as Rectangle.Anchor gives a corner or an edge midpoint and Ellipse.Anchor the point of its
-// boundary. The direction is taken in the world, where the polygon stands after its turn,
-// unlike Rectangle.Anchor, since the orientation constructors turn the polygon to place its
-// top: on a flat-top polygon the Top anchor is the midpoint of the top edge, on a pointy-top
-// one its top vertex, and Rotate moves every anchor along the boundary. For integer T
-// the edge is the one between the rounded vertices, so the anchor lies on the boundary
-// Contains judges, rounded once. A polygon with fewer than three vertices encloses no area and
-// anchors at its center, as does one whose semi-axis lies along the ray.
-func (rp RegularPolygon[T]) Anchor(direction Direction) Point[T] {
-	if direction.IsNone() || rp.N < 3 {
-		return rp.Center
-	}
-
-	center := rp.Center.Float()
-	ray := VectorFromAngle(direction.Angle(), 1.0)
-	edge := rp.edge(rp.edgeIndex(direction.Angle() - rp.Angle)).Float()
-
-	denominator := ray.Cross(edge.Vector())
-	if denominator == 0 {
-		return rp.Center
-	}
-
-	along := Clamp(edge.Start.Subtract(center).Cross(ray)/denominator, 0, 1)
-
-	return edge.PointAt(along).Cast[T]()
 }
 
 // Centroid returns the center of the enclosed area, the Center of the polygon.
@@ -500,7 +501,9 @@ func (rp RegularPolygon[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 // other, or an edge of one crosses an edge of the other, as Polygon.IntersectsPolygon decides on
 // their Polygon forms, without building them. Touching polygons intersect, within Epsilon of
 // T, and an empty polygon intersects nothing. Polygons whose Bounds do not overlap are
-// rejected before any edge pair is examined.
+// rejected before any edge pair is examined. The vertices of the given polygon are placed
+// again for every edge of this one, since no vertex slice is built: the cost is a sine and
+// cosine per edge pair, not an allocation.
 func (rp RegularPolygon[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 	if rp.IsEmpty() || polygon.IsEmpty() {
 		return false

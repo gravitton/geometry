@@ -16,7 +16,8 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 
 ## [v1.14.0 (2026-09-20)](https://github.com/gravitton/geometry/compare/v1.13.0...v1.14.0)
 
-Oriented shapes and one normalized surface. `Rectangle` carries an `Angle` that turns it about its center, `RegularPolygon.Angle` turns the polygon rather than phasing its vertices, and `Ellipse` is the continuous shape an affine matrix makes of a circle. Every shape pair has one name and one holder, every closed shape walks the same edges, the outlines are `iter.Seq`, and five interfaces name what the shapes share.
+Oriented shapes and one normalized surface. `Rectangle` carries an `Angle` that turns it about its center, `RegularPolygon.Angle` turns the polygon rather than phasing its vertices, and `Ellipse` is the continuous shape an affine matrix makes of a circle.
+Every shape pair has one name and one holder, every closed shape walks the same edges, the outlines are `iter.Seq`, and five interfaces name what the shapes share.
 
 Every entry, with breaking changes marked, is in [docs/releases/v1.14.0.md](docs/releases/v1.14.0.md).
 
@@ -49,10 +50,14 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.14.0.md](docs
 - Only a method whose result is a slice allocates: the outline iterators and the intersection walks allocate nothing, and `Circle.IntersectionSegment` allocates its result once
 - Every earlier release with a breaking change opens with a **Breaking** group
 
+### Fixed
+- A point with a NaN coordinate is inside no shape, where it was inside every rectangle and polygon
+
 
 ## [v1.13.0 (2026-09-18)](https://github.com/gravitton/geometry/compare/v1.12.0...v1.13.0)
 
-One rule for every boundary: closed within `Epsilon[T]()`, `DistanceTo` zero exactly where `Contains` holds, and collision as methods on the shapes rather than free functions. Arithmetic computes in `float64`, no shape stores a negative extent, and an input with no meaning panics.
+One rule for every boundary: closed within `Epsilon[T]()`, `DistanceTo` zero exactly where `Contains` holds, and collision as methods on the shapes rather than free functions.
+Arithmetic computes in `float64`, no shape stores a negative extent, and an input with no meaning panics.
 
 Every entry, with breaking changes marked, is in [docs/releases/v1.13.0.md](docs/releases/v1.13.0.md).
 

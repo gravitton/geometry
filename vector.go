@@ -338,10 +338,13 @@ func (v Vector[T]) IsNormalized() bool {
 	return equalSquared[T](v.Float().LengthSquared(), 1)
 }
 
-// Less reports whether the vector is strictly shorter than the given length. No tolerance is
-// applied, and no vector is shorter than a non-positive length.
+// Less reports whether the vector is strictly shorter than the given length, judged on the
+// squared length like LessOrEqual. No tolerance is applied, and no vector is shorter than a
+// non-positive length.
 func (v Vector[T]) Less(length T) bool {
-	return v.Length() < float64(length)
+	reach := float64(length)
+
+	return reach > 0 && v.Float().LengthSquared() < reach*reach
 }
 
 // LessOrEqual reports whether the vector is at most the given length, within Epsilon of T,

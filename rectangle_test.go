@@ -3,6 +3,7 @@ package geom
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"slices"
 	"testing"
 
@@ -801,6 +802,13 @@ func TestRectangle_Contains(t *testing.T) {
 		assert.True(t, turned.Contains(Pt(1, 2)))
 		assert.True(t, turned.Contains(Pt(0, 2)))
 		assert.False(t, turned.Contains(Pt(2, 0)))
+	})
+	t.Run("a NaN coordinate is contained by no rectangle", func(t *testing.T) {
+		r := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0))
+
+		assert.False(t, r.Contains(Pt(math.NaN(), 0.0)))
+		assert.False(t, r.Rotate(0.3).Contains(Pt(math.NaN(), 0.0)))
+		assert.False(t, r.Polygon().Contains(Pt(0.0, math.NaN())))
 	})
 }
 
