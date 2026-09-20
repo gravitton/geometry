@@ -630,6 +630,55 @@ func TestRectangle_Lerp(t *testing.T) {
 	})
 }
 
+func TestRectangle_Transform(t *testing.T) {
+	rectangle := Rect(Pt(2.0, 3.0), Sz(4.0, 2.0))
+
+	t.Run("the identity keeps the rectangle", func(t *testing.T) {
+		AssertRectangle(t, rectangle.Transform(IdentityMatrix[float64]()), rectangle)
+	})
+	t.Run("a translation moves the center", func(t *testing.T) {
+		AssertRectangle(t, rectangle.Transform(TranslationMatrix(1.0, -1.0)), Rect(Pt(3.0, 2.0), Sz(4.0, 2.0)))
+	})
+	t.Run("a uniform scale scales the size", func(t *testing.T) {
+		AssertRectangle(t, rectangle.Transform(ScaleMatrix(2.0, 2.0)), Rect(Pt(4.0, 6.0), Sz(8.0, 4.0)))
+	})
+	t.Run("axes scaled by different factors stay a rectangle while it is aligned", func(t *testing.T) {
+		AssertRectangle(t, rectangle.Transform(ScaleMatrix(2.0, 3.0)), Rect(Pt(4.0, 9.0), Sz(8.0, 6.0)))
+	})
+	t.Run("a rotation turns the angle", func(t *testing.T) {
+		AssertRectangle(t, rectangle.Transform(RotationMatrix[float64](Pi/2)), Rect(Pt(-3.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi/2))
+	})
+	t.Run("a reflection mirrors the angle about the axis of the matrix", func(t *testing.T) {
+		turned := rectangle.Rotate(Pi / 6)
+
+		AssertRectangle(t, turned.Transform(ReflectionMatrix[float64](AxisHorizontal)), Rect(Pt(2.0, -3.0), Sz(4.0, 2.0)).Rotate(-Pi/6))
+	})
+	t.Run("a shear gives the nearest rectangle", func(t *testing.T) {
+		AssertRectangle(t, rectangle.Transform(ShearMatrix(1.0, 0.0)), Rect(Pt(5.0, 3.0), Sz(4.0, 2.0)))
+	})
+	t.Run("a matrix that collapses the plane gives the zero size", func(t *testing.T) {
+		AssertRectangle(t, rectangle.Transform(ScaleMatrix(0.0, 0.0)), Rect(Pt(0.0, 0.0), Sz(0.0, 0.0)))
+	})
+	t.Run("int rounds the center and the size once", func(t *testing.T) {
+		AssertRectangle(t, Rect(Pt(1, 1), Sz(3, 3)).Transform(ScaleMatrix(1.5, 1.5)), Rect(Pt(2, 2), Sz(5, 5)))
+	})
+	t.Run("matches the polygon of the rectangle wherever the matrix keeps one", func(t *testing.T) {
+		matrices := []Matrix[float64]{
+			IdentityMatrix[float64](),
+			TranslationMatrix(3.0, -2.0),
+			ScaleMatrix(2.0, 2.0),
+			RotationMatrix[float64](Pi / 3),
+			RotationMatrix[float64](Pi / 3).Multiply(ScaleMatrix(2.0, 2.0)),
+		}
+
+		for _, r := range rectFixtures {
+			for _, m := range matrices {
+				AssertPolygon(t, r.Transform(m).Polygon(), r.Polygon().Transform(m), fmt.Sprintf("%s → %s: ", r, m))
+			}
+		}
+	})
+}
+
 func TestRectangle_Rotate(t *testing.T) {
 	r := Rect(Pt(1, 2), Sz(2, 3))
 

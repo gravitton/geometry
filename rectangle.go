@@ -438,6 +438,22 @@ func (r Rectangle[T]) Lerp(rectangle Rectangle[T], t float64) Rectangle[T] {
 	return Rectangle[T]{r.Center.Lerp(rectangle.Center, t), r.Size.Lerp(rectangle.Size, t).Abs(), NormalizeAngle(LerpAngle(r.Angle, rectangle.Angle, t))}
 }
 
+// Transform creates a new Rectangle by applying the given matrix, like Point.Transform: the
+// center moves, the size scales by the factors the matrix applies along its axes, and the angle
+// turns by the angle of the matrix, or is mirrored about it for a reflection. A matrix that
+// turns, reflects, moves or scales the axes maps a rectangle onto a rectangle and the result is
+// exact. One that shears maps it onto a parallelogram this type cannot hold, and the result is
+// the nearest rectangle, on the factors and the angle Matrix.Scaling and Matrix.Angle report
+// for a sheared matrix; take the exact quadrilateral through Polygon().Transform. A matrix that
+// collapses the plane gives the zero size at the point everything maps to. For integer T the
+// center and the size are each rounded once.
+func (r Rectangle[T]) Transform[M Float](matrix Matrix[M]) Rectangle[T] {
+	m := matrix.Float()
+	scaling := m.Scaling()
+
+	return Rectangle[T]{r.Center.Transform(matrix), r.Size.ScaleXY(scaling.X, scaling.Y).Abs(), m.turnedAngle(r.Angle)}
+}
+
 // Rotate creates a new Rectangle turned by the given angle (in radians) about its center, in
 // the same sense as Vector.Rotate. The stored angle is normalized to [0, 2π) to prevent drift
 // from repeated rotations, so a rectangle turned back by its own angle is not rotated at all

@@ -425,6 +425,65 @@ func TestRegularPolygon_Lerp(t *testing.T) {
 	})
 }
 
+func TestRegularPolygon_Transform(t *testing.T) {
+	hexagon := Hexagon(Pt(2.0, 3.0), SzU(4.0), FlatTop)
+
+	t.Run("the identity keeps the polygon", func(t *testing.T) {
+		AssertRegularPolygon(t, hexagon.Transform(IdentityMatrix[float64]()), hexagon)
+	})
+	t.Run("a translation moves the center and keeps the vertex count", func(t *testing.T) {
+		moved := hexagon.Transform(TranslationMatrix(1.0, -1.0))
+
+		AssertRegularPolygon(t, moved, hexagon.Translate(Vec(1.0, -1.0)))
+		assert.Equal(t, moved.N, 6)
+	})
+	t.Run("a uniform scale scales the semi-axes", func(t *testing.T) {
+		AssertRegularPolygon(t, hexagon.Transform(ScaleMatrix(2.0, 2.0)), Hexagon(Pt(4.0, 6.0), SzU(8.0), FlatTop))
+	})
+	t.Run("a rotation turns the angle", func(t *testing.T) {
+		AssertRegularPolygon(t, hexagon.Transform(RotationMatrix[float64](Pi/2)), Hexagon(Pt(-3.0, 2.0), SzU(4.0), FlatTop).Rotate(Pi/2))
+	})
+	t.Run("a reflection mirrors the angle about the axis of the matrix", func(t *testing.T) {
+		turned := hexagon.Rotate(Pi / 6)
+
+		AssertRegularPolygon(t, turned.Transform(ReflectionMatrix[float64](AxisHorizontal)), RegPol(Pt(2.0, -3.0), SzU(4.0), 6, -turned.Angle))
+	})
+	t.Run("a shear gives the nearest polygon", func(t *testing.T) {
+		AssertRegularPolygon(t, hexagon.Transform(ShearMatrix(1.0, 0.0)), Hexagon(Pt(5.0, 3.0), SzU(4.0), FlatTop))
+	})
+	t.Run("an empty polygon stays empty", func(t *testing.T) {
+		assert.True(t, RegPol(Pt(1.0, 1.0), SzU(2.0), 0, 0).Transform(ScaleMatrix(2.0, 2.0)).Empty())
+	})
+	t.Run("int rounds the center and the semi-axes once", func(t *testing.T) {
+		AssertRegularPolygon(t, RegPol(Pt(1, 1), SzU(3), 6, 0).Transform(ScaleMatrix(1.5, 1.5)), RegPol(Pt(2, 2), SzU(5), 6, 0))
+	})
+	t.Run("a turn of unequal semi-axes gives the nearest polygon", func(t *testing.T) {
+		ellipse := RegPol(Pt(0.0, 0.0), Sz(2.0, 4.0), 5, 0)
+		turn := RotationMatrix[float64](Pi / 2)
+
+		AssertRegularPolygon(t, ellipse.Transform(turn), RegPol(Pt(0.0, 0.0), Sz(2.0, 4.0), 5, Pi/2))
+		assert.False(t, ellipse.Transform(turn).Polygon().Equal(ellipse.Polygon().Transform(turn)))
+	})
+	t.Run("matches the polygon of the vertices wherever the matrix keeps one", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			matrices := []Matrix[float64]{
+				IdentityMatrix[float64](),
+				TranslationMatrix(3.0, -2.0),
+				ScaleMatrix(2.0, 2.0),
+				ScaleMatrix(2.0, 3.0),
+			}
+
+			if rp.Size.Width == rp.Size.Height {
+				matrices = append(matrices, RotationMatrix[float64](Pi/3), RotationMatrix[float64](Pi/3).Multiply(ScaleMatrix(2.0, 2.0)))
+			}
+
+			for _, m := range matrices {
+				AssertPolygon(t, rp.Transform(m).Polygon(), rp.Polygon().Transform(m), fmt.Sprintf("%s → %s: ", rp, m))
+			}
+		}
+	})
+}
+
 func TestRegularPolygon_Rotate(t *testing.T) {
 	t.Run("adds to the stored angle", func(t *testing.T) {
 		AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Rotate(Pi), RegPol(Pt(1, 2), Sz(2, 2), 4, Pi))

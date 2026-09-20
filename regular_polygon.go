@@ -272,6 +272,22 @@ func (rp RegularPolygon[T]) Lerp(polygon RegularPolygon[T], t float64) RegularPo
 	}
 }
 
+// Transform creates a new RegularPolygon by applying the given matrix: the center moves, the
+// semi-axes scale by the factors the matrix applies along its axes, the angle turns by the
+// angle of the matrix or is mirrored about it for a reflection, and the vertex count is kept.
+// A move, a scale of the axes and a reflection are exact, and so is a turn of a polygon whose
+// semi-axes are equal. A turn of one with unequal semi-axes is not: Size names the semi-axes of
+// an axis-aligned ellipse and Angle only places the first vertex on it, so a turned ellipse is
+// no value of this type and the result is the nearest polygon, as it is for a shear. Take
+// either case exactly through Polygon().Transform, which holds any vertices. For integer T the
+// center and the semi-axes are each rounded once.
+func (rp RegularPolygon[T]) Transform[M Float](matrix Matrix[M]) RegularPolygon[T] {
+	m := matrix.Float()
+	scaling := m.Scaling()
+
+	return RegularPolygon[T]{rp.Center.Transform(matrix), rp.Size.ScaleXY(scaling.X, scaling.Y).Abs(), rp.N, m.turnedAngle(rp.Angle)}
+}
+
 // Rotate creates a new RegularPolygon rotated by the given angle (in radians).
 // The stored angle is normalized to [0, 2π) to prevent drift from repeated rotations.
 func (rp RegularPolygon[T]) Rotate(angle float64) RegularPolygon[T] {

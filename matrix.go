@@ -178,6 +178,18 @@ func (m Matrix[T]) Inverse() Matrix[T] {
 	}
 }
 
+// turnedAngle returns the angle a shape at the given angle takes under the matrix: its own
+// angle plus the angle of the matrix, or mirrored about that angle where the matrix reflects,
+// normalized to [0, 2π) like Rotate. It is the angle Rectangle.Transform and
+// RegularPolygon.Transform place, so the two oriented shapes turn alike.
+func (m Matrix[T]) turnedAngle(angle float64) float64 {
+	if m.Scaling().Y < 0 {
+		return NormalizeAngle(m.Angle() - angle)
+	}
+
+	return NormalizeAngle(angle + m.Angle())
+}
+
 // Translate creates a new matrix by right-multiplying a translation matrix.
 // Composition order: result = m * m_T(deltaX,deltaY).
 func (m Matrix[T]) Translate(deltaX, deltaY T) Matrix[T] {
