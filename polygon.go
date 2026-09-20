@@ -27,24 +27,6 @@ func Pol[T Number](vertices []Point[T]) Polygon[T] {
 	return Polygon[T]{vertices}
 }
 
-// minMax returns the minimum and maximum corner of the vertices, the corners of Bounds, exact
-// for an integer T where Bounds places a center: the pair the intersection tests reject shapes
-// by before examining any edge, without placing a rectangle. An empty polygon has no corners
-// and returns two zero points.
-func (p Polygon[T]) minMax() (Point[T], Point[T]) {
-	if p.Empty() {
-		return Point[T]{}, Point[T]{}
-	}
-
-	a, b := p.Points[0], p.Points[0]
-	for _, v := range p.Points[1:] {
-		a = Point[T]{min(a.X, v.X), min(a.Y, v.Y)}
-		b = Point[T]{max(b.X, v.X), max(b.Y, v.Y)}
-	}
-
-	return a, b
-}
-
 // Edges iterates the polygon edges in vertex order, each from a vertex to the next and the
 // last one closing back to the first, without allocating; collect them with slices.Collect
 // where a slice is needed. A single vertex yields one zero-length edge and an empty polygon
@@ -59,21 +41,6 @@ func (p Polygon[T]) Edges() iter.Seq[Line[T]] {
 // Points directly where a position is needed.
 func (p Polygon[T]) Vertices() iter.Seq[Point[T]] {
 	return slices.Values(p.Points)
-}
-
-// edgesOf iterates the edges joining the vertices in order, the last one closing back to the
-// first: the one iterator Polygon.Edges, Rectangle.Edges and Line.crossings walk, so the
-// edges a segment crosses are the edges the walk reads. The slice is read as the edges are
-// yielded and never retained, so a caller may pass a slice of a local array.
-func edgesOf[T Number](vertices []Point[T]) iter.Seq[Line[T]] {
-	return func(yield func(Line[T]) bool) {
-		n := len(vertices)
-		for i, vertex := range vertices {
-			if !yield(Line[T]{vertex, vertices[(i+1)%n]}) {
-				return
-			}
-		}
-	}
 }
 
 // Center returns the polygon centroid: the center of the enclosed area, so a vertex added in
@@ -97,11 +64,11 @@ func (p Polygon[T]) Center() Point[T] {
 	var x, y, twiceArea float64
 	for edge := range p.Edges() {
 		shifted := edge.Float().Translate(offset)
-		wedge := shifted.wedge()
+		cross := shifted.cross()
 
-		x += (shifted.Start.X + shifted.End.X) * wedge
-		y += (shifted.Start.Y + shifted.End.Y) * wedge
-		twiceArea += wedge
+		x += (shifted.Start.X + shifted.End.X) * cross
+		y += (shifted.Start.Y + shifted.End.Y) * cross
+		twiceArea += cross
 	}
 
 	if twiceArea == 0 {
@@ -110,7 +77,7 @@ func (p Polygon[T]) Center() Point[T] {
 
 	centroid := origin.AddXY(x/(3*twiceArea), y/(3*twiceArea))
 
-	return Point[T]{Cast[T](centroid.X), Cast[T](centroid.Y)}
+	return centroid.Cast[T]()
 }
 
 // Area returns the area enclosed by the polygon, by the shoelace formula, regardless of winding.
@@ -119,7 +86,7 @@ func (p Polygon[T]) Center() Point[T] {
 func (p Polygon[T]) Area() float64 {
 	var twiceArea float64
 	for edge := range p.Edges() {
-		twiceArea += edge.wedge()
+		twiceArea += edge.cross()
 	}
 
 	return math.Abs(twiceArea) / 2
@@ -145,13 +112,19 @@ func (p Polygon[T]) Bounds() Rectangle[T] {
 // polygon encloses no area.
 func (p Polygon[T]) mean() Point[T] {
 	var x, y float64
-	for _, v := range p.Points {
-		x, y = x+float64(v.X), y+float64(v.Y)
+	for _, vertex := range p.Points {
+		x, y = x+float64(vertex.X), y+float64(vertex.Y)
 	}
 
 	n := float64(len(p.Points))
 
 	return Point[T]{Cast[T](x / n), Cast[T](y / n)}
+}
+
+// minMax returns the minimum and maximum corner of the vertices, the corners of Bounds, as
+// minMaxOf finds them; an empty polygon returns two zero points.
+func (p Polygon[T]) minMax() (Point[T], Point[T]) {
+	return minMaxOf(p.Points)
 }
 
 // Translate creates a new Polygon translated by the given vector (applied to all vertices).
@@ -236,7 +209,7 @@ func (p Polygon[T]) Contains(point Point[T]) bool {
 
 	a, b := p.minMax()
 
-	return p.encloses(point, a, b)
+	return p.containsWithin(point, a, b)
 }
 
 // DistanceTo returns the distance from the given point to the nearest point of the polygon:
@@ -247,49 +220,47 @@ func (p Polygon[T]) DistanceTo(point Point[T]) float64 {
 }
 
 // DistanceSquaredTo returns the squared distance DistanceTo takes the root of, faster for
-// comparisons. It is a float64 even for an integer T, like Line.DistanceSquaredTo, since the
-// nearest point of an edge is not a lattice point in general.
+// comparisons, in one pass over the edges, the edgeWalk every closed shape makes: zero for a
+// point on an edge within Epsilon of T, snapped the way Line.DistanceSquaredTo snaps it, or
+// inside by the even-odd rule, the squared distance to the nearest edge otherwise, and
+// infinity for an empty polygon. It is a float64 even for an integer T, since the nearest
+// point of an edge is not a lattice point in general. Contains and IntersectsCircle are built
+// on it, so the three agree by construction.
 func (p Polygon[T]) DistanceSquaredTo(point Point[T]) float64 {
-	return p.walk(point)
-}
-
-// walk returns the squared distance from the point to the polygon in one pass over the edges:
-// zero for a point on an edge within Epsilon of T, snapped the way Line.DistanceSquaredTo
-// snaps it with the tolerance computed once for the walk, or inside by the even-odd rule, the
-// squared distance to the nearest edge otherwise, and infinity for an empty polygon. Contains
-// and DistanceSquaredTo are both built on it, so the two agree by construction.
-func (p Polygon[T]) walk(point Point[T]) float64 {
-	inside, distance := false, math.Inf(1)
-
+	w := edgeWalk[T]{distance: math.Inf(1)}
 	for edge := range p.Edges() {
-		distance = min(distance, edge.distanceSquaredTo(point))
-		if lessOrEqualSquared[T](distance, 0) {
+		if w.step(edge, point) {
 			return 0
 		}
-		if edge.crossesRay(point) {
-			inside = !inside
-		}
 	}
 
-	if inside {
-		return 0
-	}
-
-	return distance
+	return w.result()
 }
 
-// encloses is Contains for a caller that already holds the extent of the vertices, so the
-// intersection tests walk the vertices once for the box and reuse it for every point they test.
-func (p Polygon[T]) encloses(point, a, b Point[T]) bool {
-	return point.Between(a, b) && p.walk(point) == 0
+// IntersectsCircle reports whether the polygon and the circle share a point, as
+// Circle.IntersectsPolygon does.
+func (p Polygon[T]) IntersectsCircle(circle Circle[T]) bool {
+	return circle.IntersectsPolygon(p)
 }
 
-// Intersects reports whether the polygons share a point: a vertex of one lies within the other,
+// IntersectsLine reports whether the polygon and the segment share a point, as
+// Line.IntersectsPolygon does.
+func (p Polygon[T]) IntersectsLine(line Line[T]) bool {
+	return line.IntersectsPolygon(p)
+}
+
+// IntersectionLine returns the points where the segment crosses the polygon boundary, as
+// Line.IntersectionPolygon does.
+func (p Polygon[T]) IntersectionLine(line Line[T]) []Point[T] {
+	return line.IntersectionPolygon(p)
+}
+
+// IntersectsPolygon reports whether the polygons share a point: a vertex of one lies within the other,
 // or an edge of one crosses an edge of the other. Touching polygons intersect, within Epsilon
 // of T, the same closed convention as Contains, and an empty polygon intersects nothing.
 // Polygons whose extents do not overlap are rejected before any edge pair is examined, and so
 // is every edge whose extent lies outside the other polygon.
-func (p Polygon[T]) Intersects(polygon Polygon[T]) bool {
+func (p Polygon[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 	if p.Empty() || polygon.Empty() {
 		return false
 	}
@@ -301,40 +272,24 @@ func (p Polygon[T]) Intersects(polygon Polygon[T]) bool {
 		return false
 	}
 
-	if polygon.encloses(p.Points[0], a2, b2) || p.encloses(polygon.Points[0], a1, b1) {
+	if polygon.containsWithin(p.Points[0], a2, b2) || p.containsWithin(polygon.Points[0], a1, b1) {
 		return true
 	}
 
+	probe := edgeProbe[T]{a: a2, b: b2}
 	for edge := range p.Edges() {
-		if polygon.crossesEdge(edge, a2, b2) {
-			return true
+		if !probe.aim(edge) {
+			continue
+		}
+
+		for other := range polygon.Edges() {
+			if probe.meets(other) {
+				return true
+			}
 		}
 	}
 
 	return false
-}
-
-// IntersectsLine reports whether the polygon and the segment share a point: an endpoint lies
-// within the polygon, or the segment crosses one of its edges. Touching shapes intersect,
-// within Epsilon of T. A segment whose extent lies outside the polygon is rejected before any
-// edge is examined.
-func (p Polygon[T]) IntersectsLine(line Line[T]) bool {
-	if p.Empty() {
-		return false
-	}
-
-	a, b := p.minMax()
-
-	return p.encloses(line.Start, a, b) || p.crossesEdge(line, a, b)
-}
-
-// IntersectionLine returns the points where the segment crosses the polygon boundary, from
-// the segment's Start to its End: the crossings with its edges by Line.Intersection, with a
-// vertex hit by two edges counted once. A segment inside crosses no boundary and returns none
-// while IntersectsLine still reports it, a segment along an edge is parallel to it and crosses
-// only the edges at its ends, and an empty polygon has no boundary to cross.
-func (p Polygon[T]) IntersectionLine(line Line[T]) []Point[T] {
-	return line.crossings(p.Points)
 }
 
 // IntersectsRectangle reports whether the polygon and the rectangle share a point, the same
@@ -353,51 +308,67 @@ func (p Polygon[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 		return false
 	}
 
-	if rectangle.Contains(p.Points[0]) || p.encloses(rectangle.TopLeft(), a1, b1) {
+	if rectangle.containsWithin(p.Points[0], a2, b2) || p.containsWithin(rectangle.TopLeft(), a1, b1) {
 		return true
 	}
 
-	for edge := range rectangle.Edges() {
-		if p.crossesEdge(edge, a1, b1) {
-			return true
+	probe := edgeProbe[T]{a: a2, b: b2}
+	for edge := range p.Edges() {
+		if !probe.aim(edge) {
+			continue
+		}
+
+		for other := range rectangle.Edges() {
+			if probe.meets(other) {
+				return true
+			}
 		}
 	}
 
 	return false
 }
 
-// IntersectsCircle reports whether the polygon and the circle share a point: the center lies
-// within the polygon, or an edge passes within the radius. Touching shapes intersect, within
-// Epsilon of T, by the same comparison Circle.Contains makes on the squared distance Contains
-// and DistanceSquaredTo measure. A circle whose Bounds lie outside the polygon is rejected
-// before any edge is examined.
-func (p Polygon[T]) IntersectsCircle(circle Circle[T]) bool {
-	if p.Empty() {
+// IntersectsRegularPolygon reports whether the polygon and the regular polygon share a point,
+// the same answer as IntersectsPolygon on the regular polygon's Polygon, without building it: a
+// vertex of one lies within the other, or an edge of the regular polygon crosses an edge of
+// the polygon. The two Bounds reject the pair before any edge is examined, and an empty
+// polygon on either side intersects nothing.
+func (p Polygon[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
+	if p.Empty() || polygon.Empty() {
 		return false
 	}
 
 	a1, b1 := p.minMax()
-	a2, b2 := circle.Bounds().MinMax()
+	a2, b2 := polygon.minMax()
 
-	return overlaps(a1, b1, a2, b2) && circle.reaches(p.walk(circle.Center))
-}
-
-// crossesEdge reports whether the segment intersects any edge of the polygon, given the extent
-// of the vertices. The segment is rejected by its own extent against that box, and each edge by
-// its extent against the segment, so the segment test runs only on edges that can share a point.
-func (p Polygon[T]) crossesEdge(line Line[T], a, b Point[T]) bool {
-	c, d := line.minMax()
-	if !overlaps(a, b, c, d) {
+	if !overlaps(a1, b1, a2, b2) {
 		return false
 	}
 
+	if polygon.containsWithin(p.Points[0], a2, b2) || p.containsWithin(polygon.vertex(0), a1, b1) {
+		return true
+	}
+
+	probe := edgeProbe[T]{a: a2, b: b2}
 	for edge := range p.Edges() {
-		if e, f := edge.minMax(); overlaps(c, d, e, f) && edge.Intersects(line) {
-			return true
+		if !probe.aim(edge) {
+			continue
+		}
+
+		for other := range polygon.Edges() {
+			if probe.meets(other) {
+				return true
+			}
 		}
 	}
 
 	return false
+}
+
+// containsWithin is Contains for a caller that already holds the extent of the vertices, so the
+// intersection tests walk the vertices once for the box and reuse it for every point they test.
+func (p Polygon[T]) containsWithin(point, a, b Point[T]) bool {
+	return point.Between(a, b) && p.DistanceSquaredTo(point) == 0
 }
 
 // Equal checks if two polygons have the same vertices. A nil and an empty Points are equal,
@@ -407,8 +378,8 @@ func (p Polygon[T]) Equal(polygon Polygon[T]) bool {
 		return false
 	}
 
-	for i, v := range p.Points {
-		if !v.Equal(polygon.Points[i]) {
+	for i, vertex := range p.Points {
+		if !vertex.Equal(polygon.Points[i]) {
 			return false
 		}
 	}
