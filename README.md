@@ -25,7 +25,9 @@ Generic, immutable 2D geometry library for game development
 
 - **Generic** over every integer and float type, named types included.
 - **Immutable** – every method returns a new value.
-- **Shapes** – point, vector, size, padding, rectangle, circle, line, polygon, regular polygon, affine matrix.
+- **Shapes** – point, vector, size, padding, rectangle, circle, ellipse, segment, (regular) polygon, affine matrix.
+- **Interfaces** – `Shape`, `Outline`, `Collider`, `Measured` and `Movable`, so a spatial index, a renderer or a
+  collision pass holds a shape without knowing which one.
 - **Directions, axes and orientations** as enums, with compass and rectangle-anchor aliases.
 - **Screen space** – top-left origin, `+Y` down, one winding order everywhere.
 - **Extras** – `image` interop, JSON, string parsing, numeric helpers, test assertions.
@@ -83,7 +85,7 @@ r.AlignTo(geom.TopLeft, geom.Pt(0, 0))      // Rectangle (0,0)-(20,10)
 
 b := geom.RectangleFromMinMax(geom.Pt(0, 0), geom.Pt(8, 6))
 b.Scale(2)                    // Rectangle (-4,-3)-(12,9), scaled around the center
-for edge := range b.Edges() { // clockwise from the top edge, Line (0,0)-(8,0), without allocating
+for edge := range b.Edges() { // clockwise from the top edge, Segment (0,0)-(8,0), without allocating
 	edge.Midpoint()
 }
 slices.Collect(b.Vertices()) // the four corners as a slice, clockwise from the top-left
@@ -92,53 +94,111 @@ d := geom.Rect(geom.Pt(0.0, 0.0), geom.Sz(2.0, 2.0)).Rotate(geom.Pi / 4) // a di
 d.Contains(geom.Pt(0.9, 0.9))                                            // false, outside the turned edges
 d.Bounds()                                                               // the axis-aligned box around it
 d.TopLeft()                                                              // the corner that was top-left before the turn
+
+d.Transform(geom.RotationMatrix[float64](geom.Pi / 2)) // a turn is exact, and so is a move, a reflection or a scale
+d.Transform(geom.ShearMatrix(1.0, 0.0))                // the nearest rectangle; Polygon() holds the parallelogram
 ```
 
 A rectangle turned by `Rotate` keeps its center, size and corner names; `Min`, `Max` and `Bounds` become the box
 around its vertices. Two rectangles of the same angle intersect and unite in a rectangle of that angle.
 
-### Circles, lines and polygons
+### Circles and ellipses
 
 ```go
 c := geom.Circ(geom.Pt(0.0, 0.0), 5.0)
 c.Anchor(geom.Bottom) // Point{0, 5}
 
-l := geom.Ln(geom.Pt(0, 0), geom.Pt(3, 4))
-l.Length()                  // 5
-l.DistanceTo(geom.Pt(3, 0)) // 2.4, to the nearest point of the segment
-l.Contains(geom.Pt(6, 8))   // false, the segment ends at (3,4)
+// a circle has no Transform of its own: an affine matrix takes it to an ellipse
+e := c.Ellipse().Transform(geom.ScaleMatrix(2.0, 1.0)) // Ellipse, semi-axes 10x5
+e.Contains(geom.Pt(9.0, 0.0))                          // true
+e.DistanceTo(geom.Pt(0.0, 9.0))                        // 4, to the nearest point of the boundary
+e.Rotate(geom.Pi / 2).Bounds()                         // the box around the turned ellipse, 10x20
+e.Foci()                                               // the two focal points, on the major axis
+e.Circle()                                             // the circle around it, of the major semi-axis
+```
+
+Neither has vertices, so neither is an `Outline`: the `RegularPolygon` of the wanted resolution is what draws or
+walks one, and it converts back exactly.
+
+```go
+e.RegularPolygon(64)                // every vertex on the boundary, and Ellipse() converts back
+c.RegularPolygon(6, geom.PointyTop) // only a circle also places the first vertex
+
+slices.Collect(c.RegularPolygon(64, geom.FlatTop).Vertices()) // the points that draw the circle
+```
+
+### Segments and polygons
+
+```go
+s := geom.Seg(geom.Pt(0, 0), geom.Pt(3, 4))
+s.Length()                  // 5
+s.DistanceTo(geom.Pt(3, 0)) // 2.4, to the nearest point of the segment
+s.Contains(geom.Pt(6, 8))   // false, the segment ends at (3,4)
 
 p := geom.Pol([]geom.Point[int]{{0, 0}, {4, 0}, {4, 4}, {2, 1}, {0, 4}})
 p.Area()                  // 10
 p.Contains(geom.Pt(2, 3)) // false, inside the notch
 p.Points[3]               // Point{2, 1}, the notch
 
-for vertex := range p.Vertices() { // the same loop draws a Line, Rectangle or RegularPolygon
+for vertex := range p.Vertices() { // the same loop draws a Segment, Rectangle or RegularPolygon
 	vertex.Float()
 }
 
 hex := geom.Hexagon(geom.Pt(0, 0), geom.SzU(20), geom.FlatTop)
-hex.Bounds() // Rectangle (-20,-17)-(20,17)
-hex.Area()   // 1039, 3√3/2 · r²
+hex.Ellipse()                // the ellipse its vertices lie on, exactly; Circle() is the one around
+hex.Bounds()                 // Rectangle (-20,-17)-(20,17)
+hex.Area()                   // 1039, 3√3/2 · r²
+hex.Contains(geom.Pt(10, 5)) // true, walked on the edges without building the vertices
 ```
 
-Every shape has `Translate`, `MoveTo`, `Scale`, `Unscale`, `Lerp`, `Bounds`, `Contains` and `DistanceTo`. Every shape
-with an outline, `Line`, `Rectangle`, `Polygon` and `RegularPolygon`, iterates it with `Vertices` and `Edges` and
-satisfies `Outline`; ranging a concrete shape allocates nothing, ranging through the interface does.
+### Interfaces
+
+Every shape has `Translate`, `MoveTo`, `Scale`, `Unscale`, `Rotate`, `Lerp`, `Bounds`, `Contains` and `DistanceTo`,
+and every one of them returns a new value. Five interfaces name what they share, so a spatial index, a renderer or a
+broad collision pass holds a shape without knowing which one:
+
+```go
+var s geom.Shape[float64] = c // Bounds, Contains, DistanceTo, DistanceSquaredTo — every shape
+s.DistanceTo(geom.Pt(10.0, 5.0))
+
+var o geom.Outline[float64] = d // Vertices, Edges — Segment, Rectangle, Polygon, RegularPolygon
+slices.Collect(o.Vertices())      // a Circle and an Ellipse have none; take RegularPolygon(n) first
+
+var m geom.Measured[float64] = c // Area and Perimeter, in the type that measures them: T for
+m.Area()                         // Size and Rectangle, float64 where a curve encloses what no integer expresses
+
+geom.Intersects(d, c) // two shapes held as Collider, dispatched on the kind of the second
+```
+
+`Movable[T, S]` is a constraint rather than a value type, returning the shape's own type so a generic tween keeps it:
+
+```go
+func Tween[T geom.Number, S geom.Movable[T, S]](shape S, to geom.Point[T], t float64) S
+```
+
+The interfaces are for the code around a hot loop: a call through one, or through a type parameter constrained by
+one, allocates, where the same call on a concrete shape does not. `Ellipse` is the one shape that is not a
+`Collider` — see [Planned](#planned).
 
 ### Intersections
 
-Every pair of shapes has a test on both sides, and the derived result where one exists:
+Every shape carries one test per shape kind, named for the kind it takes and its own kind included, so the family
+reads the same on all of them and an interface can list it. The test is symmetric and includes a touch within
+`Epsilon[T]()`; where a derived result exists it is `Intersection<Kind>`, answering exactly where `Intersects` holds:
 
 ```go
-a.Intersects(b)       // any shape with its own kind
-r.IntersectsCircle(c) // and IntersectsLine, IntersectsPolygon, on every shape
+a.IntersectsRectangle(b) // IntersectsSegment, IntersectsRectangle, IntersectsCircle,
+r.IntersectsCircle(c)    // IntersectsPolygon and IntersectsRegularPolygon, on every shape but Ellipse
+geom.Intersects(a, c)    // the same answer without knowing either type
 
-point, ok := l.Intersection(m) // where two segments cross
-box, ok := a.Intersection(b)   // the overlap of two rectangles
-c.Intersection(d)              // zero, one or two points where two circles cross
-l.IntersectionCircle(c)        // where a segment crosses a boundary; also of a rectangle or a polygon
+point, ok := s.IntersectionSegment(m) // where two segments cross
+box, ok := a.IntersectionRectangle(b) // the overlap of two rectangles
+c.IntersectionCircle(d)               // zero, one or two points where two circles cross
+s.IntersectionCircle(c)               // where a segment crosses a boundary; also of a rectangle or a polygon
 ```
+
+The pair logic is written once, on the earlier shape of `Circle`, `Segment`, `Polygon`, `Rectangle`,
+`RegularPolygon`, and the other side delegates to it, so both sides always answer the same.
 
 ### Directions, axes and orientations
 
@@ -239,7 +299,8 @@ rectangles of different angles, which have no single answer. `Vector.Less` is st
 turns. Anything else rounds into a different matrix; use a float `Matrix` there. `Transform` takes a float matrix, so
 convert an integer one with `Float()` at the call.
 
-**Methods.** Every type has `Equal`, `Int` and `String`; every shape adds `Bounds`, `Contains` and `Intersects`.
+**Methods.** Every type has `Equal`, `Int` and `String`; every shape adds `Bounds` and `Contains`, and every shape but
+`Ellipse` adds `Intersects`.
 Each file lists its methods in the same order, and the tests follow it: constructors, properties (`Width`, `Area`,
 `Bounds`), arithmetic (`Add`, `Scale`, `Inset`), geometry (`Transform`, `Rotate`, `Project`), relations (`Contains`,
 `DistanceTo`, `Intersects`), equality and state (`Equal`, `IsZero`), conversions (`Int`, `Float`), and `String` with
@@ -250,9 +311,7 @@ JSON last.
 - **`Nearest(point)`** – the closest point of a shape to a point, on every shape.
 - **`Encloses`** – shape-in-shape containment for culling, distinct from `Contains`, which takes a point.
 - **`Rectangle.Clamp(rectangle)`** – moves a rectangle so it lies within another.
-- **`Circle.RegularPolygon(n, orientation)` and `RegularPolygon.Circle()`** – the conversion between the two shapes,
-  with two options for where the polygon meets the circle.
-- **`Line.Clip()`** – the part of a segment inside a shape.
+- **`Segment.Clip()`** – the part of a segment inside a shape.
 - **`Polygon.Winding`, `IsConvex` and `ConvexHull`** – convexity also unlocks a separating-axis `Intersects`, the slow
   case in `BenchmarkPolygon_Intersects` today.
 - **`Polygon.Simplify(tolerance)`** – drops every vertex within the tolerance of the edge between its neighbours.
@@ -261,13 +320,6 @@ JSON last.
 - **`Polygon.Lerp(polygon, t)`** – vertex-by-vertex interpolation for shape morphing, left out of the `Lerp` pass because
   two polygons with different vertex counts have no shape between them and the answer for that case is not settled.
 - **`Ray`** – a half-line with origin and direction, for casts against every shape.
-- **`Ellipse`** – `RegularPolygon` already takes semi-axes; the continuous shape has no type.
-- **`Rectangle.Transform`** – a general affine matrix turns a rectangle into a parallelogram; the similarity case, a
-  rotation with a uniform scale and a translation, could stay a rectangle.
-- **`Polygon.Intersection(polygon)`** – the overlap of two convex polygons, and with it the overlap of two rectangles
-  of different angles, which `Rectangle.Intersection` declines today.
-- **One vertex walk for `Rectangle` and `Polygon`** – the edge walk, the intersection test, `minMax` and `edges` are
-  duplicated between the two shapes; the plan to share them without an allocation is in [TODO.md](TODO.md).
 
 ## Credits
 
