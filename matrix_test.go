@@ -483,6 +483,18 @@ func TestMatrix_IsIdentity(t *testing.T) {
 	})
 }
 
+func TestMatrix_Cast(t *testing.T) {
+	m := Mat(1.5, -1.5, 2.5, -2.5, 3.5, -3.5)
+
+	t.Run("matches Int and Float", func(t *testing.T) {
+		AssertMatrix(t, m.Cast[int](), m.Int())
+		AssertMatrix(t, m.Cast[float64](), m.Float())
+	})
+	t.Run("a type the other conversions cannot name", func(t *testing.T) {
+		AssertMatrix(t, m.Cast[int8](), Mat[int8](2, -2, 3, -3, 4, -4))
+	})
+}
+
 func TestMatrix_Int(t *testing.T) {
 	t.Run("int is a no-op", func(t *testing.T) {
 		AssertMatrix(t, TranslationMatrix(5, 3).Int(), TranslationMatrix(5, 3))

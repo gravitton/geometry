@@ -291,6 +291,14 @@ func (m Matrix[T]) IsIdentity() bool {
 	return m.Equal(IdentityMatrix[T]())
 }
 
+// Cast converts the matrix to a Matrix of another number type, rounding as Cast does.
+func (m Matrix[T]) Cast[R Number]() Matrix[R] {
+	return Matrix[R]{
+		Cast[R](float64(m.A)), Cast[R](float64(m.B)), Cast[R](float64(m.C)),
+		Cast[R](float64(m.D)), Cast[R](float64(m.E)), Cast[R](float64(m.F)),
+	}
+}
+
 // Int converts the matrix to a Matrix[int], rounding each component.
 func (m Matrix[T]) Int() Matrix[int] {
 	return Matrix[int]{

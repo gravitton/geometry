@@ -217,10 +217,10 @@ func (c Circle[T]) IntersectionLine(line Line[T]) []Point[T] {
 	switch {
 	case ok && entry < exit:
 		if start {
-			entry, exit = snap(entry, exit, 0)
+			entry, exit = line.snapToEndpoint(entry, exit, 0)
 		}
 		if end {
-			entry, exit = snap(entry, exit, 1)
+			entry, exit = line.snapToEndpoint(entry, exit, 1)
 		}
 
 		return line.pointsAt(entry, exit)
