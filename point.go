@@ -205,10 +205,9 @@ func (p Point[T]) String() string {
 }
 
 // overlaps reports whether the box from a1 to b1 and the box from a2 to b2 share a point,
-// boundary included within Epsilon of T. It is the check Rectangle.Intersects makes on its
+// boundary included within Epsilon of T. It is the check Rectangle.IntersectsRectangle makes on its
 // corners and the rejection every other intersection test makes before examining edges, and
 // like Between it expects each a to be the lesser corner on each axis.
 func overlaps[T Number](a1, b1, a2, b2 Point[T]) bool {
-	return LessOrEqual(a1.X, b2.X) && LessOrEqual(a2.X, b1.X) &&
-		LessOrEqual(a1.Y, b2.Y) && LessOrEqual(a2.Y, b1.Y)
+	return LessOrEqual(a1.X, b2.X) && LessOrEqual(a2.X, b1.X) && LessOrEqual(a1.Y, b2.Y) && LessOrEqual(a2.Y, b1.Y)
 }

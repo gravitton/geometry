@@ -19,7 +19,7 @@ type Testing interface {
 func AssertNumber[T Number](t Testing, actual, expected T, messages ...string) bool {
 	t.Helper()
 
-	if isIntType[T]() {
+	if isInt[T]() {
 		return assert.Equal(t, actual, expected, messages...)
 	}
 

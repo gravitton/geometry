@@ -132,13 +132,13 @@ func TestIsIntType(t *testing.T) {
 
 func BenchmarkIsIntType_Int(b *testing.B) {
 	for b.Loop() {
-		isIntType[int]()
+		isInt[int]()
 	}
 }
 
 func BenchmarkIsIntType_Float64(b *testing.B) {
 	for b.Loop() {
-		isIntType[float64]()
+		isInt[float64]()
 	}
 }
 
@@ -173,7 +173,7 @@ func assertString[T Number](t *testing.T, value T, expected string) {
 func assertIsIntType[T Number](t *testing.T, expected bool) {
 	t.Helper()
 
-	assert.Equal(t, isIntType[T](), expected)
+	assert.Equal(t, isInt[T](), expected)
 }
 
 func assertIsFloat32[T Number](t *testing.T, expected bool) {

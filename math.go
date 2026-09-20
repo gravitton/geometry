@@ -74,7 +74,7 @@ func Sign[T Number](x T) T {
 
 // Round returns x rounded to the nearest integer. An integer T is returned unchanged.
 func Round[T Number](x T) T {
-	if isIntType[T]() {
+	if isInt[T]() {
 		return x
 	}
 
@@ -83,7 +83,7 @@ func Round[T Number](x T) T {
 
 // Floor returns the largest integer value less than or equal to x. An integer T is returned unchanged.
 func Floor[T Number](x T) T {
-	if isIntType[T]() {
+	if isInt[T]() {
 		return x
 	}
 
@@ -92,7 +92,7 @@ func Floor[T Number](x T) T {
 
 // Ceil returns the smallest integer value greater than or equal to x. An integer T is returned unchanged.
 func Ceil[T Number](x T) T {
-	if isIntType[T]() {
+	if isInt[T]() {
 		return x
 	}
 
@@ -148,7 +148,7 @@ func Midpoint[T Number](a, b T) T {
 // for float32 and ~1e10 for float64 — where it degenerates into exact equality.
 // Use EqualRelative when the magnitude is large or unknown.
 func Equal[T Number](a, b T) bool {
-	if isIntType[T]() {
+	if isInt[T]() {
 		return a == b
 	}
 
@@ -165,7 +165,7 @@ func EqualDelta[T Number](a, b T, delta float64) bool {
 // their magnitude: Epsilon of T near zero, and Epsilon of T times the larger magnitude
 // above it. Unlike Equal it holds at any scale, at the cost of the extra arithmetic.
 func EqualRelative[T Number](a, b T) bool {
-	if isIntType[T]() {
+	if isInt[T]() {
 		return a == b
 	}
 
@@ -176,7 +176,7 @@ func EqualRelative[T Number](a, b T) bool {
 // and with the same tolerance as Equal for a float T, so that a value a rounding error past
 // a boundary still counts as on it.
 func LessOrEqual[T Number](a, b T) bool {
-	if isIntType[T]() {
+	if isInt[T]() {
 		return a <= b
 	}
 
@@ -221,7 +221,7 @@ func equalSquared[T Number](a2, b float64) bool {
 // compared exactly, Delta32 for float32, and Delta for float64. It depends only on T,
 // never on the values compared.
 func Epsilon[T Number]() float64 {
-	if isIntType[T]() {
+	if isInt[T]() {
 		return 0
 	}
 
@@ -309,7 +309,7 @@ func EqualAngle(a, b float64) bool {
 // never a wrapped integer or an overflowed infinity. The literals strconv.ParseFloat accepts,
 // "NaN" and "Inf" among them, parse into a float T as they would into float64.
 func Parse[T Number](s string) (T, error) {
-	if isIntType[T]() {
+	if isInt[T]() {
 		v, err := strconv.ParseInt(s, 10, 64)
 		if err != nil {
 			return 0, err

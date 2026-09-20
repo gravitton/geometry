@@ -217,7 +217,7 @@ func (v Vector[T]) Normalize() Vector[T] {
 		return Vector[T]{1, 0}
 	}
 
-	if isIntType[T]() {
+	if isInt[T]() {
 		if Abs(v.X) >= Abs(v.Y) {
 			return Vector[T]{Sign(v.X), 0}
 		}

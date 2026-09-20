@@ -33,7 +33,7 @@ type Number interface {
 // platform-dependent, so Cast[int8](300) or Multiply(int(1), 1e30) stores an arbitrary value.
 // Keep results within the range of T, or use a wider T.
 func Cast[T Number](a float64) T {
-	if isIntType[T]() {
+	if isInt[T]() {
 		if math.IsNaN(a) || math.IsInf(a, 0) {
 			panic("geom: cast of a non-finite value to an integer")
 		}
@@ -48,7 +48,7 @@ func Cast[T Number](a float64) T {
 // least as wide as T and truncated otherwise (int64 on a 32-bit target), and a float T rounded
 // through Cast.
 func Int[T Number](value T) int {
-	if isIntType[T]() {
+	if isInt[T]() {
 		return int(value)
 	}
 
@@ -59,7 +59,7 @@ func Int[T Number](value T) int {
 // float types with two decimals. The formatting follows T, not the value. A value that rounds
 // to zero prints as 0.00 without a sign, whether it is a negative zero or a small negative.
 func String[T Number](value T) string {
-	if isIntType[T]() {
+	if isInt[T]() {
 		return fmt.Sprintf("%d", int64(value))
 	}
 
@@ -71,8 +71,8 @@ func String[T Number](value T) string {
 	return s
 }
 
-// isIntType reports whether T is an integer type.
-func isIntType[T Number]() bool {
+// isInt reports whether T is an integer type.
+func isInt[T Number]() bool {
 	return T(1)/T(2) == 0
 }
 
@@ -84,7 +84,7 @@ func isIntType[T Number]() bool {
 // The arithmetic detection is deliberate: unsafe.Sizeof would be more direct, but the package
 // stays free of the unsafe import.
 func isFloat32[T Number]() bool {
-	if isIntType[T]() {
+	if isInt[T]() {
 		return false
 	}
 
