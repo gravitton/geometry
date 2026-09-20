@@ -209,6 +209,24 @@ func (p Point[T]) String() string {
 	return fmt.Sprintf("(%s,%s)", String(p.X), String(p.Y))
 }
 
+// minMaxOf returns the minimum and maximum corner of the vertices, the corners of their
+// Bounds, exact for an integer T where Bounds places a center: the pair the intersection tests
+// reject shapes by before examining any edge, without placing a rectangle. No vertices have no
+// corners and return two zero points.
+func minMaxOf[T Number](vertices []Point[T]) (Point[T], Point[T]) {
+	if len(vertices) == 0 {
+		return Point[T]{}, Point[T]{}
+	}
+
+	a, b := vertices[0], vertices[0]
+	for _, vertex := range vertices[1:] {
+		a = Point[T]{min(a.X, vertex.X), min(a.Y, vertex.Y)}
+		b = Point[T]{max(b.X, vertex.X), max(b.Y, vertex.Y)}
+	}
+
+	return a, b
+}
+
 // overlaps reports whether the box from a1 to b1 and the box from a2 to b2 share a point,
 // boundary included within Epsilon of T. It is the check Rectangle.IntersectsRectangle makes on its
 // corners and the rejection every other intersection test makes before examining edges, and

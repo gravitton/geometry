@@ -288,6 +288,32 @@ func (r Rectangle[T]) worldPoint(offset Vector[T]) Point[T] {
 	return r.Center.Add(offset.Rotate(r.Angle))
 }
 
+// localOffset returns the offset of the point from the center in the frame of the rectangle before
+// its turn, in float64, the inverse of world, so that Clamp can clamp a rotated rectangle as
+// an aligned one.
+func (r Rectangle[T]) localOffset(point Point[T]) Vector[float64] {
+	return point.Subtract(r.Center).Float().Rotate(-r.Angle)
+}
+
+// localRectangle returns the given rectangle as it lies in the local frame of this one, the
+// frame before its turn: the offset between the centers turned back by Angle, about the origin,
+// with no angle of its own. Two rectangles of the same angle taken into the local frame of the
+// same rectangle, itself included, are aligned about the origin and overlap, intersect and
+// unite as aligned rectangles do; worldRectangle turns the result back. For integer T the
+// turned offset is rounded.
+func (r Rectangle[T]) localRectangle(rectangle Rectangle[T]) Rectangle[T] {
+	offset := rectangle.Center.Subtract(r.Center).Rotate(-r.Angle)
+
+	return Rectangle[T]{offset.Point(), rectangle.Size, 0}
+}
+
+// worldRectangle returns a rectangle found in the local frame of this one, as localRectangle
+// gives it, turned back into the world: its center turned by Angle about this center, with
+// this angle.
+func (r Rectangle[T]) worldRectangle(rectangle Rectangle[T]) Rectangle[T] {
+	return Rectangle[T]{r.worldPoint(rectangle.Center.Vector()), rectangle.Size, r.Angle}
+}
+
 // corners returns the vertices as an array from a single frame, for Vertices, Edges and
 // Polygon, so none recomputes the corners it shares.
 func (r Rectangle[T]) corners() [4]Point[T] {
@@ -387,7 +413,7 @@ func (r Rectangle[T]) ShrinkXY(amountX, amountY T) Rectangle[T] {
 // over-run, Left and Top win, since the minimum corner moves first and the maximum is then
 // stopped at it.
 // A negative padding outsets the rectangle, so Outset undoes Inset as long as nothing was clamped.
-// For integer T the moved center of a rotated rectangle is rounded once, as world places it.
+// For integer T the moved center of a rotated rectangle is rounded once, as worldRectangle places it.
 func (r Rectangle[T]) Inset(padding Padding[T]) Rectangle[T] {
 	a, b := r.localMinMax()
 
@@ -395,7 +421,7 @@ func (r Rectangle[T]) Inset(padding Padding[T]) Rectangle[T] {
 	b = Vector[T]{max(b.X-padding.Right, a.X), max(b.Y-padding.Bottom, a.Y)}
 	inset := RectangleFromMinMax(a.Point(), b.Point())
 
-	return Rectangle[T]{r.worldPoint(inset.Center.Vector()), inset.Size, r.Angle}
+	return r.worldRectangle(inset)
 }
 
 // Outset creates a new Rectangle expanded by the given padding amounts, the inverse of Inset.
@@ -629,13 +655,6 @@ func (r Rectangle[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 	return false
 }
 
-// localOffset returns the offset of the point from the center in the frame of the rectangle before
-// its turn, in float64, the inverse of world, so that Clamp can clamp a rotated rectangle as
-// an aligned one.
-func (r Rectangle[T]) localOffset(point Point[T]) Vector[float64] {
-	return point.Subtract(r.Center).Float().Rotate(-r.Angle)
-}
-
 // containsWithin is Contains for a caller that already holds the corners of MinMax, so the
 // intersection tests read the extent once and reuse it for every point they test.
 func (r Rectangle[T]) containsWithin(point, a, b Point[T]) bool {
@@ -673,25 +692,6 @@ func (r Rectangle[T]) meets(rectangle Rectangle[T]) bool {
 // a full turn as EqualAngle judges it, so the two share a frame.
 func (r Rectangle[T]) parallel(rectangle Rectangle[T]) bool {
 	return EqualAngle(r.Angle, rectangle.Angle)
-}
-
-// localRectangle returns the given rectangle as it lies in the local frame of this one, the
-// frame before its turn: the offset between the centers turned back by Angle, about the origin,
-// with no angle of its own. Two rectangles of the same angle taken into the local frame of the
-// same rectangle, itself included, are aligned about the origin and overlap, intersect and
-// unite as aligned rectangles do; worldRectangle turns the result back. For integer T the
-// turned offset is rounded.
-func (r Rectangle[T]) localRectangle(rectangle Rectangle[T]) Rectangle[T] {
-	offset := rectangle.Center.Subtract(r.Center).Rotate(-r.Angle)
-
-	return Rectangle[T]{offset.Point(), rectangle.Size, 0}
-}
-
-// worldRectangle returns a rectangle found in the local frame of this one, as localRectangle
-// gives it, turned back into the world: its center turned by Angle about this center, with
-// this angle.
-func (r Rectangle[T]) worldRectangle(rectangle Rectangle[T]) Rectangle[T] {
-	return Rectangle[T]{r.worldPoint(rectangle.Center.Vector()), rectangle.Size, r.Angle}
 }
 
 // Equal checks for equal center, size and angle values using tolerant numeric comparison.
