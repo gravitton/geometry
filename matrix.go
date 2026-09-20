@@ -139,6 +139,18 @@ func (m Matrix[T]) determinant() float64 {
 	return float64(f.A*f.E) - float64(f.B*f.D)
 }
 
+// turnedAngle returns the angle a shape at the given angle takes under the matrix: its own
+// angle plus the angle of the matrix, or mirrored about that angle where the matrix reflects,
+// normalized to [0, 2π) like Rotate. It is the angle Rectangle.Transform and
+// RegularPolygon.Transform place, so the two oriented shapes turn alike.
+func (m Matrix[T]) turnedAngle(angle float64) float64 {
+	if m.Scaling().Y < 0 {
+		return NormalizeAngle(m.Angle() - angle)
+	}
+
+	return NormalizeAngle(angle + m.Angle())
+}
+
 // Multiply creates a new matrix by multiplying the current matrix with given matrix.
 func (m Matrix[T]) Multiply(matrix Matrix[T]) Matrix[T] {
 	l, r := m.Float(), matrix.Float()
@@ -176,18 +188,6 @@ func (m Matrix[T]) Inverse() Matrix[T] {
 		Cast[T](f.A * invDet),
 		Cast[T]((f.C*f.D - f.A*f.F) * invDet),
 	}
-}
-
-// turnedAngle returns the angle a shape at the given angle takes under the matrix: its own
-// angle plus the angle of the matrix, or mirrored about that angle where the matrix reflects,
-// normalized to [0, 2π) like Rotate. It is the angle Rectangle.Transform and
-// RegularPolygon.Transform place, so the two oriented shapes turn alike.
-func (m Matrix[T]) turnedAngle(angle float64) float64 {
-	if m.Scaling().Y < 0 {
-		return NormalizeAngle(m.Angle() - angle)
-	}
-
-	return NormalizeAngle(angle + m.Angle())
 }
 
 // Translate creates a new matrix by right-multiplying a translation matrix.

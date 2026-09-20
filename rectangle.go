@@ -440,11 +440,12 @@ func (r Rectangle[T]) Lerp(rectangle Rectangle[T], t float64) Rectangle[T] {
 
 // Transform creates a new Rectangle by applying the given matrix, like Point.Transform: the
 // center moves, the size scales by the factors the matrix applies along its axes, and the angle
-// turns by the angle of the matrix, or is mirrored about it for a reflection. A matrix that
-// turns, reflects, moves or scales the axes maps a rectangle onto a rectangle and the result is
-// exact. One that shears maps it onto a parallelogram this type cannot hold, and the result is
-// the nearest rectangle, on the factors and the angle Matrix.Scaling and Matrix.Angle report
-// for a sheared matrix; take the exact quadrilateral through Polygon().Transform. A matrix that
+// turns by the angle of the matrix, or is mirrored about it for a reflection. A move, a turn, a
+// reflection and a uniform scale are exact, and so is a scale of the axes while the rectangle
+// is not turned. A shear, or a scale of the axes of a turned rectangle, maps it onto a
+// parallelogram this type cannot hold, and the result is the nearest rectangle, on the factors
+// and the angle Matrix.Scaling and Matrix.Angle report for such a matrix; take the exact
+// quadrilateral through Polygon().Transform. A matrix that
 // collapses the plane gives the zero size at the point everything maps to. For integer T the
 // center and the size are each rounded once.
 func (r Rectangle[T]) Transform[M Float](matrix Matrix[M]) Rectangle[T] {

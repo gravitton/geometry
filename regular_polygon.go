@@ -13,6 +13,11 @@ import (
 // radius r has Size r x r. This differs from Rectangle, whose Size is the full width and
 // height. Use Bounds for the extent.
 //
+// Angle turns the polygon about its center, the same meaning it has on Rectangle: the vertices
+// are placed on the ellipse of the semi-axes, the first at angle zero, and the whole ring is
+// then turned. Where the semi-axes are equal, turning and stepping around the ring are the
+// same thing and the first vertex lies at Angle.
+//
 // The size is never negative: RegPol and the orientation constructors take it absolute, and
 // Scale takes a negative factor absolute, since a negative semi-axis would place
 // every vertex half a turn away rather than describe a different polygon. A negative size can
@@ -166,25 +171,49 @@ func (rp RegularPolygon[T]) centralAngle() float64 {
 	return 2 * Pi / float64(rp.N)
 }
 
-// vertexAngle returns the direction of the vertex at the given index from the center, Angle
-// plus that many central angles: the one expression every vertex is placed from, so a measure
-// taken without building the vertices reads the same angles Vertices does, and nearestIndex
-// inverts it.
+// vertexAngle returns the angle of the vertex at the given index on the ellipse before the
+// turn, that many central angles from the first: the one expression every vertex is placed
+// from, so a measure taken without building the vertices reads the same angles Vertices does,
+// and nearestIndex inverts it.
 func (rp RegularPolygon[T]) vertexAngle(i int) float64 {
-	return rp.Angle + float64(i)*rp.centralAngle()
+	return float64(i) * rp.centralAngle()
 }
 
-// vertex returns the vertex at the given index, the point Vertices places there: the center
-// displaced along the ellipse at Angle plus that many steps, rounded for an integer T.
+// worldPoint returns the point at the given offset from the center on the ellipse before the
+// turn, turned by Angle, as Rectangle.worldPoint places a corner: the offset is rotated once
+// and the sum rounded once for an integer T.
+func (rp RegularPolygon[T]) worldPoint(offset Vector[float64]) Point[T] {
+	return rp.Center.Float().Add(offset.Rotate(rp.Angle)).Cast[T]()
+}
+
+// vertex returns the vertex at the given index, the point Vertices places there: the point that
+// many steps around the ellipse of the semi-axes, turned by Angle about the center. Equal
+// semi-axes take the turn into the angle of the single displacement, since turning a circle and
+// stepping around it are the same thing, which keeps an integer vertex where one rounding puts
+// it; an ellipse is placed and then turned, and rounded once after.
 func (rp RegularPolygon[T]) vertex(i int) Point[T] {
-	return rp.Center.Add(VectorFromAngleSize(rp.vertexAngle(i), rp.Size))
+	if rp.Size.Width == rp.Size.Height {
+		return rp.Center.Add(VectorFromAngleSize(rp.Angle+rp.vertexAngle(i), rp.Size))
+	}
+
+	return rp.worldPoint(VectorFromAngleSize(rp.vertexAngle(i), rp.Size.Float()))
 }
 
-// nearestIndex returns the index of the vertex nearest to the given direction, at most half a
-// central angle away, the one that reaches farthest that way. With one or two vertices it can be more than
-// a quarter turn off, so the reach is negative exactly where no vertex lies on that side.
+// nearestIndex returns the index of the vertex that reaches farthest in the given direction of
+// the world, at most half a central angle from the point that reaches farthest there. The
+// direction is taken into the frame before the turn, and for unequal semi-axes onto the
+// ellipse, where a semi-axis stretches it away from the direction itself; equal semi-axes take
+// the direction as it is, the same expression vertex places them from. With one or two
+// vertices the nearest can be more than a quarter turn off, so the reach is negative exactly
+// where no vertex lies on that side.
 func (rp RegularPolygon[T]) nearestIndex(direction float64) int {
-	return Mod(int(math.Round((direction-rp.Angle)/rp.centralAngle())), rp.N)
+	local := direction - rp.Angle
+	if rp.Size.Width != rp.Size.Height {
+		sin, cos := math.Sincos(local)
+		local = math.Atan2(float64(rp.Size.Height)*sin, float64(rp.Size.Width)*cos)
+	}
+
+	return Mod(int(math.Round(local/rp.centralAngle())), rp.N)
 }
 
 // minMax returns the minimum and maximum corner of the vertices, the corners of Bounds, exact
@@ -275,11 +304,11 @@ func (rp RegularPolygon[T]) Lerp(polygon RegularPolygon[T], t float64) RegularPo
 // Transform creates a new RegularPolygon by applying the given matrix: the center moves, the
 // semi-axes scale by the factors the matrix applies along its axes, the angle turns by the
 // angle of the matrix or is mirrored about it for a reflection, and the vertex count is kept.
-// A move, a scale of the axes and a reflection are exact, and so is a turn of a polygon whose
-// semi-axes are equal. A turn of one with unequal semi-axes is not: Size names the semi-axes of
-// an axis-aligned ellipse and Angle only places the first vertex on it, so a turned ellipse is
-// no value of this type and the result is the nearest polygon, as it is for a shear. Take
-// either case exactly through Polygon().Transform, which holds any vertices. For integer T the
+// A move, a turn, a reflection and a uniform scale are exact, and so is a scale of the axes
+// while the polygon is not turned, exactly as they are for a rectangle. A shear, or a scale of
+// the axes of a turned polygon, maps it onto one no value of this type holds and gives the
+// nearest, on the factors Matrix.Scaling reports. Take that case exactly through
+// Polygon().Transform. For integer T the
 // center and the semi-axes are each rounded once.
 func (rp RegularPolygon[T]) Transform[M Float](matrix Matrix[M]) RegularPolygon[T] {
 	m := matrix.Float()
@@ -288,7 +317,8 @@ func (rp RegularPolygon[T]) Transform[M Float](matrix Matrix[M]) RegularPolygon[
 	return RegularPolygon[T]{rp.Center.Transform(matrix), rp.Size.ScaleXY(scaling.X, scaling.Y).Abs(), rp.N, m.turnedAngle(rp.Angle)}
 }
 
-// Rotate creates a new RegularPolygon rotated by the given angle (in radians).
+// Rotate creates a new RegularPolygon turned by the given angle (in radians) about its center,
+// in the same sense as Vector.Rotate and as Rectangle.Rotate turns a box.
 // The stored angle is normalized to [0, 2π) to prevent drift from repeated rotations.
 func (rp RegularPolygon[T]) Rotate(angle float64) RegularPolygon[T] {
 	return RegularPolygon[T]{rp.Center, rp.Size, rp.N, NormalizeAngle(rp.Angle + angle)}

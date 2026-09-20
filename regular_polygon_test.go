@@ -457,12 +457,18 @@ func TestRegularPolygon_Transform(t *testing.T) {
 	t.Run("int rounds the center and the semi-axes once", func(t *testing.T) {
 		AssertRegularPolygon(t, RegPol(Pt(1, 1), SzU(3), 6, 0).Transform(ScaleMatrix(1.5, 1.5)), RegPol(Pt(2, 2), SzU(5), 6, 0))
 	})
-	t.Run("a turn of unequal semi-axes gives the nearest polygon", func(t *testing.T) {
+	t.Run("a turn of unequal semi-axes is exact too", func(t *testing.T) {
 		ellipse := RegPol(Pt(0.0, 0.0), Sz(2.0, 4.0), 5, 0)
 		turn := RotationMatrix[float64](Pi / 2)
 
 		AssertRegularPolygon(t, ellipse.Transform(turn), RegPol(Pt(0.0, 0.0), Sz(2.0, 4.0), 5, Pi/2))
-		assert.False(t, ellipse.Transform(turn).Polygon().Equal(ellipse.Polygon().Transform(turn)))
+		AssertPolygon(t, ellipse.Transform(turn).Polygon(), ellipse.Polygon().Transform(turn))
+	})
+	t.Run("axes scaled by different factors turn the polygon into one it cannot hold", func(t *testing.T) {
+		turned := RegPol(Pt(0.0, 0.0), SzU(4.0), 5, Pi/4)
+		squeeze := ScaleMatrix(2.0, 3.0)
+
+		assert.False(t, turned.Transform(squeeze).Polygon().Equal(turned.Polygon().Transform(squeeze)))
 	})
 	t.Run("matches the polygon of the vertices wherever the matrix keeps one", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
@@ -470,11 +476,12 @@ func TestRegularPolygon_Transform(t *testing.T) {
 				IdentityMatrix[float64](),
 				TranslationMatrix(3.0, -2.0),
 				ScaleMatrix(2.0, 2.0),
-				ScaleMatrix(2.0, 3.0),
+				RotationMatrix[float64](Pi / 3),
+				RotationMatrix[float64](Pi / 3).Multiply(ScaleMatrix(2.0, 2.0)),
 			}
 
-			if rp.Size.Width == rp.Size.Height {
-				matrices = append(matrices, RotationMatrix[float64](Pi/3), RotationMatrix[float64](Pi/3).Multiply(ScaleMatrix(2.0, 2.0)))
+			if rp.Angle == 0 {
+				matrices = append(matrices, ScaleMatrix(2.0, 3.0))
 			}
 
 			for _, m := range matrices {
@@ -827,10 +834,10 @@ func TestRegularPolygon_Properties(t *testing.T) {
 			assert.Equal(t, len(slices.Collect(rp.Vertices())), rp.N, fmt.Sprintf("%s: ", rp))
 		}
 	})
-	t.Run("vertices lie on the ellipse of the size", func(t *testing.T) {
+	t.Run("vertices lie on the ellipse of the size, in the frame before the turn", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
 			for vertex := range rp.Vertices() {
-				offset := vertex.Subtract(rp.Center)
+				offset := vertex.Subtract(rp.Center).Rotate(-rp.Angle)
 				normalized := offset.X*offset.X/(rp.Size.Width*rp.Size.Width) + offset.Y*offset.Y/(rp.Size.Height*rp.Size.Height)
 
 				AssertNumber(t, normalized, 1.0, fmt.Sprintf("%s: ", rp))
@@ -842,8 +849,12 @@ func TestRegularPolygon_Properties(t *testing.T) {
 			AssertVertices(t, slices.Collect(rp.Rotate(2*Pi).Vertices()), slices.Collect(rp.Vertices()), fmt.Sprintf("%s: ", rp))
 		}
 	})
-	t.Run("rotating by one step permutes the vertices", func(t *testing.T) {
+	t.Run("rotating by one step permutes the vertices of equal semi-axes", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
+			if rp.Size.Width != rp.Size.Height {
+				continue // a turned ellipse is a different shape, not the same ring one step on
+			}
+
 			rotated := slices.Collect(rp.Rotate(2 * Pi / float64(rp.N)).Vertices())
 			vertices := slices.Collect(rp.Vertices())
 
