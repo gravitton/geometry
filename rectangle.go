@@ -193,23 +193,23 @@ func (r Rectangle[T]) Anchor(direction Direction) Point[T] {
 }
 
 // TopEdge returns the top edge, from the top-left to the top-right corner.
-func (r Rectangle[T]) TopEdge() Line[T] {
-	return Ln(r.TopLeft(), r.TopRight())
+func (r Rectangle[T]) TopEdge() Segment[T] {
+	return Seg(r.TopLeft(), r.TopRight())
 }
 
 // RightEdge returns the right edge, from the top-right to the bottom-right corner.
-func (r Rectangle[T]) RightEdge() Line[T] {
-	return Ln(r.TopRight(), r.BottomRight())
+func (r Rectangle[T]) RightEdge() Segment[T] {
+	return Seg(r.TopRight(), r.BottomRight())
 }
 
 // BottomEdge returns the bottom edge, from the bottom-right to the bottom-left corner.
-func (r Rectangle[T]) BottomEdge() Line[T] {
-	return Ln(r.BottomRight(), r.BottomLeft())
+func (r Rectangle[T]) BottomEdge() Segment[T] {
+	return Seg(r.BottomRight(), r.BottomLeft())
 }
 
 // LeftEdge returns the left edge, from the bottom-left to the top-left corner.
-func (r Rectangle[T]) LeftEdge() Line[T] {
-	return Ln(r.BottomLeft(), r.TopLeft())
+func (r Rectangle[T]) LeftEdge() Segment[T] {
+	return Seg(r.BottomLeft(), r.TopLeft())
 }
 
 // Edges iterates the rectangle edges in order starting at the top-left corner, by increasing
@@ -219,8 +219,8 @@ func (r Rectangle[T]) LeftEdge() Line[T] {
 // slices.Collect where a slice is needed. Every walk over the outline, containment, distance
 // and the crossings of a segment, reads these edges, so the boundary they join is the one
 // every test agrees on.
-func (r Rectangle[T]) Edges() iter.Seq[Line[T]] {
-	return func(yield func(Line[T]) bool) {
+func (r Rectangle[T]) Edges() iter.Seq[Segment[T]] {
+	return func(yield func(Segment[T]) bool) {
 		corners := r.corners()
 
 		edgesOf(corners[:])(yield)
@@ -489,7 +489,7 @@ func (r Rectangle[T]) Clamp(point Point[T]) Point[T] {
 }
 
 // Contains reports whether the given point lies within the rectangle, boundary included within
-// Epsilon of T: strictly inside, or on an edge as Line.Contains judges it, so the rectangle
+// Epsilon of T: strictly inside, or on an edge as Segment.Contains judges it, so the rectangle
 // contains exactly the points its edges contain and the points between them.
 func (r Rectangle[T]) Contains(point Point[T]) bool {
 	return r.DistanceSquaredTo(point) == 0
@@ -506,12 +506,12 @@ func (r Rectangle[T]) DistanceTo(point Point[T]) float64 {
 // DistanceSquaredTo returns the squared distance DistanceTo takes the root of, faster for
 // comparisons, in one pass over the edges, the edgeWalk every closed shape makes: zero for a
 // point inside by the even-odd rule, or on an edge within Epsilon of T as
-// Line.DistanceSquaredTo snaps it, and the squared distance to the nearest edge otherwise. A
+// Segment.DistanceSquaredTo snaps it, and the squared distance to the nearest edge otherwise. A
 // rectangle that is not rotated answers a point Clamp leaves where it is before any edge is
 // examined. It is a float64 even for an integer T, since the nearest point of a rotated
 // rectangle is a foot on a turned edge, not a lattice point in general; only
 // Point.DistanceSquaredTo stays in T. Contains and IntersectsCircle are built on it, and the
-// edges are the ones Line.IntersectionLine and Polygon read, so containment, the boundary
+// edges are the ones Segment.IntersectionSegment and Polygon read, so containment, the boundary
 // crossings of a segment and the polygon of the rectangle agree by construction, for a
 // rotated integer rectangle on the rounded corners its edges join.
 func (r Rectangle[T]) DistanceSquaredTo(point Point[T]) float64 {
@@ -535,16 +535,16 @@ func (r Rectangle[T]) IntersectsCircle(circle Circle[T]) bool {
 	return circle.IntersectsRectangle(r)
 }
 
-// IntersectsLine reports whether the rectangle and the segment share a point, as
-// Line.IntersectsRectangle does.
-func (r Rectangle[T]) IntersectsLine(line Line[T]) bool {
-	return line.IntersectsRectangle(r)
+// IntersectsSegment reports whether the rectangle and the segment share a point, as
+// Segment.IntersectsRectangle does.
+func (r Rectangle[T]) IntersectsSegment(segment Segment[T]) bool {
+	return segment.IntersectsRectangle(r)
 }
 
-// IntersectionLine returns the points where the segment crosses the rectangle boundary, as
-// Line.IntersectionRectangle does.
-func (r Rectangle[T]) IntersectionLine(line Line[T]) []Point[T] {
-	return line.IntersectionRectangle(r)
+// IntersectionSegment returns the points where the segment crosses the rectangle boundary, as
+// Segment.IntersectionRectangle does.
+func (r Rectangle[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
+	return segment.IntersectionRectangle(r)
 }
 
 // IntersectsPolygon reports whether the rectangle and the polygon share a point, as
@@ -585,7 +585,7 @@ func (r Rectangle[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 // of the other rectangle, never beyond it. Two rectangles of the same angle overlap in a
 // rectangle of that angle, found in their shared frame; rectangles of different angles overlap
 // in a polygon that is not a rectangle and return false even where Intersects holds, as
-// parallel segments do for Line.IntersectionLine. For integer T the offset between the centers of
+// parallel segments do for Segment.IntersectionSegment. For integer T the offset between the centers of
 // two rotated rectangles is rounded into the shared frame and the result rounded back.
 func (r Rectangle[T]) IntersectionRectangle(rectangle Rectangle[T]) (Rectangle[T], bool) {
 	switch {
@@ -680,7 +680,7 @@ func (r Rectangle[T]) containsWithin(point, a, b Point[T]) bool {
 
 // meets reports whether two rectangles whose extents overlap share a point, the way
 // Polygon.IntersectsPolygon decides it: a corner of one lies within the other, or an edge of one
-// meets an edge of the other by Line.IntersectsLine.
+// meets an edge of the other by Segment.IntersectsSegment.
 func (r Rectangle[T]) meets(rectangle Rectangle[T]) bool {
 	a1, b1 := r.MinMax()
 	a2, b2 := rectangle.MinMax()

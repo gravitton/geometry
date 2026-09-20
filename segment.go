@@ -8,122 +8,122 @@ import (
 	"slices"
 )
 
-// Line is a 2D line.
-type Line[T Number] struct {
+// Segment is a 2D line segment, bounded by Start and End.
+type Segment[T Number] struct {
 	Start Point[T] `json:"s"`
 	End   Point[T] `json:"e"`
 }
 
-// Ln is shorthand for Line{start, end}.
-func Ln[T Number](start, end Point[T]) Line[T] {
-	return Line[T]{start, end}
+// Seg is shorthand for Segment{start, end}.
+func Seg[T Number](start, end Point[T]) Segment[T] {
+	return Segment[T]{start, end}
 }
 
-// Vector returns the line as a vector, from start to end.
-func (l Line[T]) Vector() Vector[T] {
-	return l.End.Subtract(l.Start)
+// Vector returns the segment as a vector, from start to end.
+func (s Segment[T]) Vector() Vector[T] {
+	return s.End.Subtract(s.Start)
 }
 
-// Length returns the length of the line.
-func (l Line[T]) Length() float64 {
-	return l.Vector().Length()
+// Length returns the length of the segment.
+func (s Segment[T]) Length() float64 {
+	return s.Vector().Length()
 }
 
 // Angle returns the angle of the segment in radians, the angle of the vector from Start to End.
 // A zero-length segment has no direction and gives 0, the angle Vector.Angle gives it.
-func (l Line[T]) Angle() float64 {
-	return l.Vector().Angle()
+func (s Segment[T]) Angle() float64 {
+	return s.Vector().Angle()
 }
 
 // Direction returns the direction nearest to the segment, from Start to End, or DirectionNone
 // for a zero-length segment, as Vector.Direction judges it.
-func (l Line[T]) Direction() Direction {
-	return l.Vector().Direction()
+func (s Segment[T]) Direction() Direction {
+	return s.Vector().Direction()
 }
 
 // Vertices iterates the start and end points, in that order, without allocating; collect
 // them with slices.Collect where a slice is needed.
-func (l Line[T]) Vertices() iter.Seq[Point[T]] {
+func (s Segment[T]) Vertices() iter.Seq[Point[T]] {
 	return func(yield func(Point[T]) bool) {
-		_ = yield(l.Start) && yield(l.End)
+		_ = yield(s.Start) && yield(s.End)
 	}
 }
 
 // Edges iterates the one edge of the segment, itself: a segment is an open outline, so
 // unlike the closed shapes no edge returns to the first vertex.
-func (l Line[T]) Edges() iter.Seq[Line[T]] {
-	return func(yield func(Line[T]) bool) {
-		yield(l)
+func (s Segment[T]) Edges() iter.Seq[Segment[T]] {
+	return func(yield func(Segment[T]) bool) {
+		yield(s)
 	}
 }
 
-// Midpoint returns the midpoint of the line, Lerp(0.5).
-func (l Line[T]) Midpoint() Point[T] {
-	return l.Start.Midpoint(l.End)
+// Midpoint returns the midpoint of the segment, Lerp(0.5).
+func (s Segment[T]) Midpoint() Point[T] {
+	return s.Start.Midpoint(s.End)
 }
 
 // Bounds returns the axis-aligned bounding rectangle.
-func (l Line[T]) Bounds() Rectangle[T] {
-	return RectangleFromMinMax(l.minMax())
+func (s Segment[T]) Bounds() Rectangle[T] {
+	return RectangleFromMinMax(s.minMax())
 }
 
 // minMax returns the minimum and maximum corner of the segment, the corners of Bounds, exact
 // for an integer T where Bounds places a center: the pair the intersection tests reject shapes
 // by before examining any edge, without placing a rectangle.
-func (l Line[T]) minMax() (Point[T], Point[T]) {
-	return Point[T]{min(l.Start.X, l.End.X), min(l.Start.Y, l.End.Y)}, Point[T]{max(l.Start.X, l.End.X), max(l.Start.Y, l.End.Y)}
+func (s Segment[T]) minMax() (Point[T], Point[T]) {
+	return Point[T]{min(s.Start.X, s.End.X), min(s.Start.Y, s.End.Y)}, Point[T]{max(s.Start.X, s.End.X), max(s.Start.Y, s.End.Y)}
 }
 
 // cross returns Start × End in float64, the term the shoelace formula sums per edge. Cross is
 // exact for parallel vectors, so a degenerate edge contributes exactly zero.
-func (l Line[T]) cross() float64 {
-	return l.Start.Vector().Float().Cross(l.End.Vector().Float())
+func (s Segment[T]) cross() float64 {
+	return s.Start.Vector().Float().Cross(s.End.Vector().Float())
 }
 
-// Translate creates a new Line translated by the given vector.
-func (l Line[T]) Translate(vector Vector[T]) Line[T] {
-	return Line[T]{l.Start.Add(vector), l.End.Add(vector)}
+// Translate creates a new Segment translated by the given vector.
+func (s Segment[T]) Translate(vector Vector[T]) Segment[T] {
+	return Segment[T]{s.Start.Add(vector), s.End.Add(vector)}
 }
 
-// MoveTo creates a new Line with its midpoint moved to point and the same length and
+// MoveTo creates a new Segment with its midpoint moved to point and the same length and
 // direction, the center every shape places with MoveTo and the pivot Scale, Resize and Rotate
 // turn about. For integer T the midpoint is rounded, so an odd span lands within half a unit
 // of the point, on the side Midpoint rounds to.
-func (l Line[T]) MoveTo(point Point[T]) Line[T] {
-	return l.Translate(point.Subtract(l.Midpoint()))
+func (s Segment[T]) MoveTo(point Point[T]) Segment[T] {
+	return s.Translate(point.Subtract(s.Midpoint()))
 }
 
-// Scale creates a new Line uniformly scaled about its midpoint by the factor: the midpoint and
-// direction stay, the length multiplies. A zero factor collapses the line onto its midpoint.
+// Scale creates a new Segment uniformly scaled about its midpoint by the factor: the midpoint and
+// direction stay, the length multiplies. A zero factor collapses the segment onto its midpoint.
 // For integer T the midpoint and both scaled points are rounded, so an odd span scaled by one
-// is not exactly the same line.
-func (l Line[T]) Scale(factor float64) Line[T] {
-	return l.ScaleXY(factor, factor)
+// is not exactly the same segment.
+func (s Segment[T]) Scale(factor float64) Segment[T] {
+	return s.ScaleXY(factor, factor)
 }
 
-// ScaleXY creates a new Line scaled about its midpoint by the factors along X and Y, which
+// ScaleXY creates a new Segment scaled about its midpoint by the factors along X and Y, which
 // changes the direction unless the factors are equal.
-func (l Line[T]) ScaleXY(factorX, factorY float64) Line[T] {
-	pivot := l.Midpoint()
+func (s Segment[T]) ScaleXY(factorX, factorY float64) Segment[T] {
+	pivot := s.Midpoint()
 
-	return Line[T]{pivot.Add(l.Start.Subtract(pivot).MultiplyXY(factorX, factorY)), pivot.Add(l.End.Subtract(pivot).MultiplyXY(factorX, factorY))}
+	return Segment[T]{pivot.Add(s.Start.Subtract(pivot).MultiplyXY(factorX, factorY)), pivot.Add(s.End.Subtract(pivot).MultiplyXY(factorX, factorY))}
 }
 
-// Unscale creates a new Line uniformly scaled about its midpoint by the inverse factor, the
+// Unscale creates a new Segment uniformly scaled about its midpoint by the inverse factor, the
 // inverse of Scale. Like Divide it panics for a zero factor.
-func (l Line[T]) Unscale(factor float64) Line[T] {
-	return l.UnscaleXY(factor, factor)
+func (s Segment[T]) Unscale(factor float64) Segment[T] {
+	return s.UnscaleXY(factor, factor)
 }
 
-// UnscaleXY creates a new Line scaled about its midpoint by the inverse of the given factors,
+// UnscaleXY creates a new Segment scaled about its midpoint by the inverse of the given factors,
 // the inverse of ScaleXY. Like Divide it panics for a zero factor.
-func (l Line[T]) UnscaleXY(factorX, factorY float64) Line[T] {
-	pivot := l.Midpoint()
+func (s Segment[T]) UnscaleXY(factorX, factorY float64) Segment[T] {
+	pivot := s.Midpoint()
 
-	return Line[T]{pivot.Add(l.Start.Subtract(pivot).DivideXY(factorX, factorY)), pivot.Add(l.End.Subtract(pivot).DivideXY(factorX, factorY))}
+	return Segment[T]{pivot.Add(s.Start.Subtract(pivot).DivideXY(factorX, factorY)), pivot.Add(s.End.Subtract(pivot).DivideXY(factorX, factorY))}
 }
 
-// Resize creates a new Line of the given length about its midpoint, where Scale multiplies the
+// Resize creates a new Segment of the given length about its midpoint, where Scale multiplies the
 // length it has: the midpoint and direction stay and both ends move to half the length either
 // side. A zero-length segment has no direction and resizes along +X, the convention
 // Vector.Resize follows, and a negative length flips the ends, giving the reverse of the
@@ -131,38 +131,38 @@ func (l Line[T]) UnscaleXY(factorX, factorY float64) Line[T] {
 // The length is a float64 like the one Length returns, so an integer segment can be resized to
 // a length no integer expresses; for integer T the midpoint and both ends are rounded, and the
 // actual length may differ from the requested value.
-func (l Line[T]) Resize(length float64) Line[T] {
-	pivot := l.Midpoint().Float()
-	half := l.Vector().Float().Resize(length / 2)
+func (s Segment[T]) Resize(length float64) Segment[T] {
+	pivot := s.Midpoint().Float()
+	half := s.Vector().Float().Resize(length / 2)
 
 	start, end := pivot.Add(half.Negate()), pivot.Add(half)
 
-	return Line[T]{start.Cast[T](), end.Cast[T]()}
+	return Segment[T]{start.Cast[T](), end.Cast[T]()}
 }
 
-// Reverse creates a new Line with the start and end points swapped.
-func (l Line[T]) Reverse() Line[T] {
-	return Line[T]{l.End, l.Start}
+// Reverse creates a new Segment with the start and end points swapped.
+func (s Segment[T]) Reverse() Segment[T] {
+	return Segment[T]{s.End, s.Start}
 }
 
 // Lerp returns the point at the fraction t of the way from Start to End, extrapolating along
-// the line outside [0, 1] like Point.Lerp. Midpoint is Lerp(0.5).
-func (l Line[T]) Lerp(t float64) Point[T] {
-	return l.Start.Lerp(l.End, t)
+// the segment outside [0, 1] like Point.Lerp. Midpoint is Lerp(0.5).
+func (s Segment[T]) Lerp(t float64) Point[T] {
+	return s.Start.Lerp(s.End, t)
 }
 
-// Transform creates a new Line by applying the given matrix to both points, like Point.Transform.
-func (l Line[T]) Transform[M Float](matrix Matrix[M]) Line[T] {
-	return Line[T]{l.Start.Transform(matrix), l.End.Transform(matrix)}
+// Transform creates a new Segment by applying the given matrix to both points, like Point.Transform.
+func (s Segment[T]) Transform[M Float](matrix Matrix[M]) Segment[T] {
+	return Segment[T]{s.Start.Transform(matrix), s.End.Transform(matrix)}
 }
 
-// Rotate creates a new Line rotated by the given angle (in radians) about its midpoint, in the
+// Rotate creates a new Segment rotated by the given angle (in radians) about its midpoint, in the
 // same sense as Vector.Rotate. For integer T the midpoint and both rotated points are rounded;
 // only multiples of 90° keep the length exactly.
-func (l Line[T]) Rotate(angle float64) Line[T] {
-	pivot := l.Midpoint()
+func (s Segment[T]) Rotate(angle float64) Segment[T] {
+	pivot := s.Midpoint()
 
-	return Line[T]{l.Start.RotateAround(pivot, angle), l.End.RotateAround(pivot, angle)}
+	return Segment[T]{s.Start.RotateAround(pivot, angle), s.End.RotateAround(pivot, angle)}
 }
 
 // Normal returns the perpendicular of the segment, Vector.Normal of its vector: the direction
@@ -170,14 +170,14 @@ func (l Line[T]) Rotate(angle float64) Line[T] {
 // a screen with Y pointing down, with the length of the segment. On an edge of a Rectangle, or
 // of any polygon wound the same way, it points inward. A zero-length segment has no normal and
 // gives the zero vector.
-func (l Line[T]) Normal() Vector[T] {
-	return l.Vector().Normal()
+func (s Segment[T]) Normal() Vector[T] {
+	return s.Vector().Normal()
 }
 
 // Contains reports whether the given point lies on the segment, within Epsilon of T, the same
 // closed convention as Rectangle.Contains: it holds exactly where DistanceTo is zero.
-func (l Line[T]) Contains(point Point[T]) bool {
-	return l.DistanceSquaredTo(point) == 0
+func (s Segment[T]) Contains(point Point[T]) bool {
+	return s.DistanceSquaredTo(point) == 0
 }
 
 // DistanceTo returns the distance from the given point to the nearest point of the segment:
@@ -185,8 +185,8 @@ func (l Line[T]) Contains(point Point[T]) bool {
 // distance zero rather than at the rounding error that put it there. A lattice point on a
 // lattice segment is at zero without any tolerance, since the perpendicular distance comes
 // from a cross product that is exact in float64 rather than from a projection.
-func (l Line[T]) DistanceTo(point Point[T]) float64 {
-	return math.Sqrt(l.DistanceSquaredTo(point))
+func (s Segment[T]) DistanceTo(point Point[T]) float64 {
+	return math.Sqrt(s.DistanceSquaredTo(point))
 }
 
 // DistanceSquaredTo returns the squared distance DistanceTo takes the root of, faster for
@@ -194,8 +194,8 @@ func (l Line[T]) DistanceTo(point Point[T]) float64 {
 // nearest point of a segment is not a lattice point in general. A distance within Epsilon of T
 // is snapped to zero, which is where Contains reads it, so a polygon boundary is walked without
 // a square root per edge.
-func (l Line[T]) DistanceSquaredTo(point Point[T]) float64 {
-	distance := l.distanceSquaredTo(point)
+func (s Segment[T]) DistanceSquaredTo(point Point[T]) float64 {
+	distance := s.distanceSquaredTo(point)
 	if lessOrEqualSquared[T](distance, 0) {
 		return 0
 	}
@@ -203,47 +203,47 @@ func (l Line[T]) DistanceSquaredTo(point Point[T]) float64 {
 	return distance
 }
 
-// DistanceToLine returns the distance between the nearest points of the two segments: zero
+// DistanceToSegment returns the distance between the nearest points of the two segments: zero
 // exactly where Intersects holds, and otherwise the smallest distance from an endpoint of one
 // to the other.
-func (l Line[T]) DistanceToLine(line Line[T]) float64 {
-	return math.Sqrt(l.DistanceSquaredToLine(line))
+func (s Segment[T]) DistanceToSegment(segment Segment[T]) float64 {
+	return math.Sqrt(s.DistanceSquaredToSegment(segment))
 }
 
-// DistanceSquaredToLine returns the squared distance DistanceToLine takes the root of, faster
+// DistanceSquaredToSegment returns the squared distance DistanceToSegment takes the root of, faster
 // for comparisons: zero where the segments properly cross or an endpoint of one lies on the
 // other within Epsilon of T, as DistanceSquaredTo snaps it.
-func (l Line[T]) DistanceSquaredToLine(line Line[T]) float64 {
-	if l.crosses(line) {
+func (s Segment[T]) DistanceSquaredToSegment(segment Segment[T]) float64 {
+	if s.crosses(segment) {
 		return 0
 	}
 
 	return min(
-		l.DistanceSquaredTo(line.Start), l.DistanceSquaredTo(line.End),
-		line.DistanceSquaredTo(l.Start), line.DistanceSquaredTo(l.End),
+		s.DistanceSquaredTo(segment.Start), s.DistanceSquaredTo(segment.End),
+		segment.DistanceSquaredTo(s.Start), segment.DistanceSquaredTo(s.End),
 	)
 }
 
 // IntersectsCircle reports whether the segment and the circle share a point, as
-// Circle.IntersectsLine does.
-func (l Line[T]) IntersectsCircle(circle Circle[T]) bool {
-	return circle.IntersectsLine(l)
+// Circle.IntersectsSegment does.
+func (s Segment[T]) IntersectsCircle(circle Circle[T]) bool {
+	return circle.IntersectsSegment(s)
 }
 
 // IntersectionCircle returns the points where the segment crosses the circle boundary, as
-// Circle.IntersectionLine does.
-func (l Line[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
-	return circle.IntersectionLine(l)
+// Circle.IntersectionSegment does.
+func (s Segment[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
+	return circle.IntersectionSegment(s)
 }
 
-// IntersectsLine reports whether the segments share a point, within Epsilon of T, the same closed
+// IntersectsSegment reports whether the segments share a point, within Epsilon of T, the same closed
 // convention as Contains: segments that touch at an endpoint or overlap collinearly intersect.
-// It holds exactly where DistanceToLine is zero.
-func (l Line[T]) IntersectsLine(line Line[T]) bool {
-	return l.DistanceSquaredToLine(line) == 0
+// It holds exactly where DistanceToSegment is zero.
+func (s Segment[T]) IntersectsSegment(segment Segment[T]) bool {
+	return s.DistanceSquaredToSegment(segment) == 0
 }
 
-// IntersectionLine returns the point where the segments cross, and false when they do not. It
+// IntersectionSegment returns the point where the segments cross, and false when they do not. It
 // answers exactly where Intersects holds, less the parallel case: parallel segments have no
 // single crossing point and return false even where they overlap, which Intersects still
 // reports. A zero-length segment is a point, parallel to nothing, and is the answer wherever it
@@ -256,23 +256,23 @@ func (l Line[T]) IntersectsLine(line Line[T]) bool {
 // the point. The touch is judged on the endpoint's distance, like Contains, rather than on the
 // fraction along the segment, which for a shallow crossing can put the same endpoint far
 // outside the other segment.
-func (l Line[T]) IntersectionLine(line Line[T]) (Point[T], bool) {
-	if l.crosses(line) {
-		return l.crossing(line), true
+func (s Segment[T]) IntersectionSegment(segment Segment[T]) (Point[T], bool) {
+	if s.crosses(segment) {
+		return s.crossing(segment), true
 	}
 
-	if l.parallel(line) {
+	if s.parallel(segment) {
 		return Point[T]{}, false
 	}
 
-	return l.touch(line)
+	return s.touch(segment)
 }
 
 // IntersectsPolygon reports whether the segment and the polygon share a point: the start lies
 // within the polygon, or the segment crosses one of its edges. Touching shapes intersect,
 // within Epsilon of T. A segment whose extent lies outside the polygon is rejected before any
 // edge is examined, and an empty polygon intersects nothing.
-func (l Line[T]) IntersectsPolygon(polygon Polygon[T]) bool {
+func (s Segment[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 	if polygon.Empty() {
 		return false
 	}
@@ -280,11 +280,11 @@ func (l Line[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 	a, b := polygon.minMax()
 	probe := edgeProbe[T]{a: a, b: b}
 
-	if !probe.aim(l) {
+	if !probe.aim(s) {
 		return false
 	}
 
-	if polygon.containsWithin(l.Start, a, b) {
+	if polygon.containsWithin(s.Start, a, b) {
 		return true
 	}
 
@@ -298,12 +298,12 @@ func (l Line[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 }
 
 // IntersectionPolygon returns the points where the segment crosses the polygon boundary, from
-// Start to End: the crossings with its edges by IntersectionLine, with a vertex hit by two
+// Start to End: the crossings with its edges by IntersectionSegment, with a vertex hit by two
 // edges counted once. A segment inside crosses no boundary and returns none while
 // IntersectsPolygon still reports it, a segment along an edge is parallel to it and crosses
 // only the edges at its ends, and an empty polygon has no boundary to cross.
-func (l Line[T]) IntersectionPolygon(polygon Polygon[T]) []Point[T] {
-	e := edgeIntersections[T]{line: l}
+func (s Segment[T]) IntersectionPolygon(polygon Polygon[T]) []Point[T] {
+	e := edgeIntersections[T]{segment: s}
 	for edge := range polygon.Edges() {
 		e.add(edge)
 	}
@@ -315,15 +315,15 @@ func (l Line[T]) IntersectionPolygon(polygon Polygon[T]) []Point[T] {
 // lies within the rectangle, or the segment crosses one of its edges. Touching shapes intersect,
 // within Epsilon of T. A segment whose extent lies outside the rectangle is rejected before any
 // edge is examined.
-func (l Line[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
+func (s Segment[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 	a, b := rectangle.MinMax()
 	probe := edgeProbe[T]{a: a, b: b}
 
-	if !probe.aim(l) {
+	if !probe.aim(s) {
 		return false
 	}
 
-	if rectangle.containsWithin(l.Start, a, b) {
+	if rectangle.containsWithin(s.Start, a, b) {
 		return true
 	}
 
@@ -341,8 +341,8 @@ func (l Line[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 // edges counted once. A segment inside crosses no boundary and returns none while
 // IntersectsRectangle still reports it, and a segment along an edge is parallel to it and
 // crosses only the edges at its ends, if it reaches them.
-func (l Line[T]) IntersectionRectangle(rectangle Rectangle[T]) []Point[T] {
-	e := edgeIntersections[T]{line: l}
+func (s Segment[T]) IntersectionRectangle(rectangle Rectangle[T]) []Point[T] {
+	e := edgeIntersections[T]{segment: s}
 	for edge := range rectangle.Edges() {
 		e.add(edge)
 	}
@@ -355,7 +355,7 @@ func (l Line[T]) IntersectionRectangle(rectangle Rectangle[T]) []Point[T] {
 // IntersectsPolygon gives on the polygon's Polygon form, without building it. Touching shapes
 // intersect, within Epsilon of T. A segment whose extent lies outside the polygon's Bounds is
 // rejected before any edge is examined, and an empty polygon intersects nothing.
-func (l Line[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
+func (s Segment[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 	if polygon.Empty() {
 		return false
 	}
@@ -363,11 +363,11 @@ func (l Line[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 	a, b := polygon.minMax()
 	probe := edgeProbe[T]{a: a, b: b}
 
-	if !probe.aim(l) {
+	if !probe.aim(s) {
 		return false
 	}
 
-	if polygon.containsWithin(l.Start, a, b) {
+	if polygon.containsWithin(s.Start, a, b) {
 		return true
 	}
 
@@ -383,11 +383,11 @@ func (l Line[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 // IntersectionRegularPolygon returns the points where the segment crosses the regular polygon
 // boundary, from Start to End, the points IntersectionPolygon returns on the polygon's Polygon
 // form, collected over the edges Edges iterates without building the vertices: the crossings
-// by IntersectionLine, with a vertex hit by two edges counted once. A segment inside crosses
+// by IntersectionSegment, with a vertex hit by two edges counted once. A segment inside crosses
 // no boundary and returns none while IntersectsRegularPolygon still reports it, and an empty
 // polygon has no boundary to cross.
-func (l Line[T]) IntersectionRegularPolygon(polygon RegularPolygon[T]) []Point[T] {
-	e := edgeIntersections[T]{line: l}
+func (s Segment[T]) IntersectionRegularPolygon(polygon RegularPolygon[T]) []Point[T] {
+	e := edgeIntersections[T]{segment: s}
 	for edge := range polygon.Edges() {
 		e.add(edge)
 	}
@@ -397,8 +397,8 @@ func (l Line[T]) IntersectionRegularPolygon(polygon RegularPolygon[T]) []Point[T
 
 // distanceSquaredTo returns the squared distance to the point with no tolerance applied, which
 // DistanceSquaredTo snaps to zero within Epsilon of T.
-func (l Line[T]) distanceSquaredTo(point Point[T]) float64 {
-	direction, offset := l.Vector().Float(), point.Subtract(l.Start).Float()
+func (s Segment[T]) distanceSquaredTo(point Point[T]) float64 {
+	direction, offset := s.Vector().Float(), point.Subtract(s.Start).Float()
 
 	along := offset.Dot(direction)
 	if along <= 0 {
@@ -407,7 +407,7 @@ func (l Line[T]) distanceSquaredTo(point Point[T]) float64 {
 
 	lengthSquared := direction.LengthSquared()
 	if along >= lengthSquared {
-		return point.Subtract(l.End).Float().LengthSquared()
+		return point.Subtract(s.End).Float().LengthSquared()
 	}
 
 	cross := offset.Cross(direction)
@@ -418,24 +418,24 @@ func (l Line[T]) distanceSquaredTo(point Point[T]) float64 {
 // crosses reports whether the segments properly cross: each has its endpoints on opposite sides
 // of the other. Touching and collinear segments do not cross and are left to the endpoint
 // distances, which cover them within the tolerance of the caller.
-func (l Line[T]) crosses(line Line[T]) bool {
-	return l.separates(line) && line.separates(l)
+func (s Segment[T]) crosses(segment Segment[T]) bool {
+	return s.separates(segment) && segment.separates(s)
 }
 
 // separates reports whether the endpoints of the given segment lie strictly on opposite sides
 // of the line through this one.
-func (l Line[T]) separates(line Line[T]) bool {
-	direction := l.Vector().Float()
-	start := direction.Cross(line.Start.Subtract(l.Start).Float())
-	end := direction.Cross(line.End.Subtract(l.Start).Float())
+func (s Segment[T]) separates(segment Segment[T]) bool {
+	direction := s.Vector().Float()
+	start := direction.Cross(segment.Start.Subtract(s.Start).Float())
+	end := direction.Cross(segment.End.Subtract(s.Start).Float())
 
 	return (start > 0 && end < 0) || (start < 0 && end > 0)
 }
 
 // crossing returns the point where the lines through two properly crossing segments meet, the
 // fraction of the way along this segment from the same cross products crosses decided on.
-func (l Line[T]) crossing(line Line[T]) Point[T] {
-	a, b := l.Float(), line.Float()
+func (s Segment[T]) crossing(segment Segment[T]) Point[T] {
+	a, b := s.Float(), segment.Float()
 
 	t := b.Start.Subtract(a.Start).Cross(b.Vector()) / a.Vector().Cross(b.Vector())
 	point := a.Lerp(t)
@@ -445,8 +445,8 @@ func (l Line[T]) crossing(line Line[T]) Point[T] {
 
 // parallel reports whether the segments run along the same direction. A zero-length segment
 // has no direction and is parallel to nothing, so its point can still be found on the other.
-func (l Line[T]) parallel(line Line[T]) bool {
-	a, b := l.Vector(), line.Vector()
+func (s Segment[T]) parallel(segment Segment[T]) bool {
+	a, b := s.Vector(), segment.Vector()
 
 	return a.hasDirection() && b.hasDirection() && a.Float().Cross(b.Float()) == 0
 }
@@ -454,16 +454,16 @@ func (l Line[T]) parallel(line Line[T]) bool {
 // touch returns the endpoint of either segment that lies on the other, within Epsilon of T
 // as Contains judges it, and false when there is none. Non-parallel segments that do not
 // properly cross can share a point only this way.
-func (l Line[T]) touch(line Line[T]) (Point[T], bool) {
+func (s Segment[T]) touch(segment Segment[T]) (Point[T], bool) {
 	switch {
-	case l.Contains(line.Start):
-		return line.Start, true
-	case l.Contains(line.End):
-		return line.End, true
-	case line.Contains(l.Start):
-		return l.Start, true
-	case line.Contains(l.End):
-		return l.End, true
+	case s.Contains(segment.Start):
+		return segment.Start, true
+	case s.Contains(segment.End):
+		return segment.End, true
+	case segment.Contains(s.Start):
+		return s.Start, true
+	case segment.Contains(s.End):
+		return s.End, true
 	default:
 		return Point[T]{}, false
 	}
@@ -477,8 +477,8 @@ func (l Line[T]) touch(line Line[T]) (Point[T], bool) {
 // bit. A chord whose ends lie within Epsilon of T of each other is a tangent and both
 // fractions are its midpoint: the tolerance collapses two crossings only where they would
 // compare Equal, never a chord that merely grazes the boundary within the tolerance.
-func (l Line[T]) chord(circle Circle[T]) (float64, float64, bool) {
-	direction, offset := l.Vector().Float(), circle.Center.Subtract(l.Start).Float()
+func (s Segment[T]) chord(circle Circle[T]) (float64, float64, bool) {
+	direction, offset := s.Vector().Float(), circle.Center.Subtract(s.Start).Float()
 	if !direction.hasDirection() {
 		return 0, 0, false
 	}
@@ -507,7 +507,7 @@ func (l Line[T]) chord(circle Circle[T]) (float64, float64, bool) {
 // 0 for Start and 1 for End, with the endpoint itself: an endpoint on the boundary is the
 // crossing nearest to it, not a third crossing beside it. It reads no field of the segment,
 // only the fractions along it, so the receiver is unnamed.
-func (Line[T]) snapToEndpoint(entry, exit, endpoint float64) (float64, float64) {
+func (Segment[T]) snapToEndpoint(entry, exit, endpoint float64) (float64, float64) {
 	if math.Abs(entry-endpoint) <= math.Abs(exit-endpoint) {
 		return endpoint, exit
 	}
@@ -519,14 +519,14 @@ func (Line[T]) snapToEndpoint(entry, exit, endpoint float64) (float64, float64) 
 // the endpoints included within Epsilon of T scaled to the length, so the tolerance is the same
 // distance the Intersects methods apply, with points that compare Equal counted once, as
 // crossings counts them. The fractions must be in increasing order.
-func (l Line[T]) pointsAt(fractions ...float64) []Point[T] {
+func (s Segment[T]) pointsAt(fractions ...float64) []Point[T] {
 	var points []Point[T]
 	for _, t := range fractions {
-		if !l.containsAt(t) {
+		if !s.containsAt(t) {
 			continue
 		}
 
-		lerped := l.Float().Lerp(Clamp(t, 0, 1))
+		lerped := s.Float().Lerp(Clamp(t, 0, 1))
 		point := lerped.Cast[T]()
 		if slices.ContainsFunc(points, point.Equal) {
 			continue
@@ -541,16 +541,16 @@ func (l Line[T]) pointsAt(fractions ...float64) []Point[T] {
 // containsAt reports whether the fraction t of the way along the segment lies within it, the
 // endpoints included within Epsilon of T scaled to the length, so that the tolerance is the
 // same distance Contains and Intersects apply.
-func (l Line[T]) containsAt(t float64) bool {
-	epsilon := ratio(Epsilon[T](), l.Length())
+func (s Segment[T]) containsAt(t float64) bool {
+	epsilon := ratio(Epsilon[T](), s.Length())
 
 	return LessOrEqualDelta(0, t, epsilon) && LessOrEqualDelta(t, 1, epsilon)
 }
 
 // compareDistance orders two points by their distance from Start, the order every boundary crossing
 // method returns its points in.
-func (l Line[T]) compareDistance(a, b Point[T]) int {
-	return cmp.Compare(l.Start.DistanceSquaredTo(a), l.Start.DistanceSquaredTo(b))
+func (s Segment[T]) compareDistance(a, b Point[T]) int {
+	return cmp.Compare(s.Start.DistanceSquaredTo(a), s.Start.DistanceSquaredTo(b))
 }
 
 // crossesRay reports whether a ray cast from the point along +X crosses the segment, counting
@@ -560,8 +560,8 @@ func (l Line[T]) compareDistance(a, b Point[T]) int {
 // The ray crosses when the point lies on the side of the segment facing -X: the left side of a
 // segment running toward +Y, the right side of one running toward -Y. The side comes from the
 // sign of a cross product, which needs no division by the segment's Y span.
-func (l Line[T]) crossesRay(point Point[T]) bool {
-	start, end, p := l.Start.Float(), l.End.Float(), point.Float()
+func (s Segment[T]) crossesRay(point Point[T]) bool {
+	start, end, p := s.Start.Float(), s.End.Float(), point.Float()
 
 	if (start.Y > p.Y) == (end.Y > p.Y) {
 		return false
@@ -573,32 +573,32 @@ func (l Line[T]) crossesRay(point Point[T]) bool {
 	return left == upward
 }
 
-// Equal checks if the start and end points of the lines are equal.
-func (l Line[T]) Equal(line Line[T]) bool {
-	return l.Start.Equal(line.Start) && l.End.Equal(line.End)
+// Equal checks if the start and end points of the segments are equal.
+func (s Segment[T]) Equal(segment Segment[T]) bool {
+	return s.Start.Equal(segment.Start) && s.End.Equal(segment.End)
 }
 
 // IsZero checks if start and end points are zero.
-func (l Line[T]) IsZero() bool {
-	return l.Equal(Line[T]{})
+func (s Segment[T]) IsZero() bool {
+	return s.Equal(Segment[T]{})
 }
 
-// Cast converts the segment to a Line of another number type, rounding as Cast does.
-func (l Line[T]) Cast[R Number]() Line[R] {
-	return Line[R]{l.Start.Cast[R](), l.End.Cast[R]()}
+// Cast converts the segment to a Segment of another number type, rounding as Cast does.
+func (s Segment[T]) Cast[R Number]() Segment[R] {
+	return Segment[R]{s.Start.Cast[R](), s.End.Cast[R]()}
 }
 
-// Int converts the line to a Line[int].
-func (l Line[T]) Int() Line[int] {
-	return Line[int]{l.Start.Int(), l.End.Int()}
+// Int converts the segment to a Segment[int].
+func (s Segment[T]) Int() Segment[int] {
+	return Segment[int]{s.Start.Int(), s.End.Int()}
 }
 
-// Float converts the line to a Line[float64].
-func (l Line[T]) Float() Line[float64] {
-	return Line[float64]{l.Start.Float(), l.End.Float()}
+// Float converts the segment to a Segment[float64].
+func (s Segment[T]) Float() Segment[float64] {
+	return Segment[float64]{s.Start.Float(), s.End.Float()}
 }
 
-// String returns the line in the form of its constructor: Ln((x,y);(x,y)).
-func (l Line[T]) String() string {
-	return fmt.Sprintf("Ln(%s;%s)", l.Start.String(), l.End.String())
+// String returns the segment in the form of its constructor: Seg((x,y);(x,y)).
+func (s Segment[T]) String() string {
+	return fmt.Sprintf("Seg(%s;%s)", s.Start.String(), s.End.String())
 }

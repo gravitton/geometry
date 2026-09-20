@@ -202,44 +202,44 @@ func (c Circle[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
 	return []Point[T]{first.Cast[T](), second.Cast[T]()}
 }
 
-// IntersectsLine reports whether the circle and the segment share a point: the point of the
+// IntersectsSegment reports whether the circle and the segment share a point: the point of the
 // segment closest to the center lies within the radius. Touching shapes intersect, within
 // Epsilon of T, by the same comparison Contains makes, on the squared distance.
-func (c Circle[T]) IntersectsLine(line Line[T]) bool {
-	return c.containsSquared(line.DistanceSquaredTo(c.Center))
+func (c Circle[T]) IntersectsSegment(segment Segment[T]) bool {
+	return c.containsSquared(segment.DistanceSquaredTo(c.Center))
 }
 
-// IntersectionLine returns the points where the segment crosses the circle boundary, from the
+// IntersectionSegment returns the points where the segment crosses the circle boundary, from the
 // segment's Start to its End: two where it passes through, one where it is tangent or ends
-// inside, within Epsilon of T like IntersectsLine, and none where it misses or lies entirely
-// inside. A segment inside crosses no boundary, so it returns none while IntersectsLine still
+// inside, within Epsilon of T like IntersectsSegment, and none where it misses or lies entirely
+// inside. A segment inside crosses no boundary, so it returns none while IntersectsSegment still
 // reports it. An endpoint within Epsilon of the boundary is the crossing nearest to it, judged
-// by the same comparison IntersectsLine makes, so a shallow touch is not lost to the fraction
+// by the same comparison IntersectsSegment makes, so a shallow touch is not lost to the fraction
 // along the chord and the two agree to the last bit; where the chord is a tangent the endpoint
 // replaces it. For integer T the points are rounded like every other result stored into T.
-func (c Circle[T]) IntersectionLine(line Line[T]) []Point[T] {
-	entry, exit, ok := line.chord(c)
-	start := c.touchesSquared(c.centerDistanceSquared(line.Start))
-	end := c.touchesSquared(c.centerDistanceSquared(line.End))
+func (c Circle[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
+	entry, exit, ok := segment.chord(c)
+	start := c.touchesSquared(c.centerDistanceSquared(segment.Start))
+	end := c.touchesSquared(c.centerDistanceSquared(segment.End))
 
 	switch {
 	case ok && entry < exit:
 		if start {
-			entry, exit = line.snapToEndpoint(entry, exit, 0)
+			entry, exit = segment.snapToEndpoint(entry, exit, 0)
 		}
 		if end {
-			entry, exit = line.snapToEndpoint(entry, exit, 1)
+			entry, exit = segment.snapToEndpoint(entry, exit, 1)
 		}
 
-		return line.pointsAt(entry, exit)
-	case start && end && line.Vector().hasDirection():
-		return line.pointsAt(0, 1)
+		return segment.pointsAt(entry, exit)
+	case start && end && segment.Vector().hasDirection():
+		return segment.pointsAt(0, 1)
 	case start:
-		return line.pointsAt(0)
+		return segment.pointsAt(0)
 	case end:
-		return line.pointsAt(1)
+		return segment.pointsAt(1)
 	case ok:
-		return line.pointsAt(entry)
+		return segment.pointsAt(entry)
 	default:
 		return nil
 	}
@@ -287,7 +287,7 @@ func (c Circle[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 
 // centerDistanceSquared returns the squared distance from the center to the point, in
 // float64: the value every test of the circle compares against its radius, so Contains,
-// DistanceTo, IntersectsCircle, IntersectionCircle and IntersectionLine agree to the last bit.
+// DistanceTo, IntersectsCircle, IntersectionCircle and IntersectionSegment agree to the last bit.
 func (c Circle[T]) centerDistanceSquared(point Point[T]) float64 {
 	return c.Center.Float().DistanceSquaredTo(point.Float())
 }
@@ -301,7 +301,7 @@ func (c Circle[T]) containsSquared(distanceSquared float64) bool {
 
 // touchesSquared reports whether a point at the given squared distance from the center lies on the
 // boundary within Epsilon of T: equalSquared on the radius, the endpoint test of
-// IntersectionLine.
+// IntersectionSegment.
 func (c Circle[T]) touchesSquared(distanceSquared float64) bool {
 	return equalSquared[T](distanceSquared, float64(c.Radius))
 }

@@ -193,7 +193,7 @@ func LessOrEqualDelta[T Number](a, b T, delta float64) bool {
 // square of a: the squared form of LessOrEqual, for a distance that is only ever measured
 // squared. It is the one comparison against a radius or a segment in the package: every
 // Contains, DistanceTo and Intersects makes it, and a b of zero is the tolerance alone, the snap
-// Line.DistanceSquaredTo applies to a point on a segment. Made on the square, no test pays a
+// Segment.DistanceSquaredTo applies to a point on a segment. Made on the square, no test pays a
 // square root and all of them round alike at the boundary.
 func lessOrEqualSquared[T Number](a2, b float64) bool {
 	reach := b + Epsilon[T]()

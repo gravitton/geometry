@@ -182,14 +182,14 @@ func TestRegularPolygon_Edges(t *testing.T) {
 		edges := slices.Collect(RegPol(Pt(0, 0), Sz(1, 1), 4, 0).Edges())
 
 		assert.Equal(t, len(edges), 4)
-		AssertLine(t, edges[0], Ln(Pt(1, 0), Pt(0, 1)))
-		AssertLine(t, edges[3], Ln(Pt(0, -1), Pt(1, 0)))
+		AssertSegment(t, edges[0], Seg(Pt(1, 0), Pt(0, 1)))
+		AssertSegment(t, edges[3], Seg(Pt(0, -1), Pt(1, 0)))
 	})
 	t.Run("single vertex is one zero-length edge", func(t *testing.T) {
 		edges := slices.Collect(RegPol(Pt(0.0, 0.0), Sz(1.0, 1.0), 1, 0).Edges())
 
 		assert.Equal(t, len(edges), 1)
-		AssertLine(t, edges[0], Ln(Pt(1.0, 0.0), Pt(1.0, 0.0)))
+		AssertSegment(t, edges[0], Seg(Pt(1.0, 0.0), Pt(1.0, 0.0)))
 	})
 	t.Run("fewer than one side yields nothing", func(t *testing.T) {
 		assert.Nil(t, slices.Collect(RegPol(Pt(0, 0), Sz(1, 1), 0, 0).Edges()))
@@ -197,7 +197,7 @@ func TestRegularPolygon_Edges(t *testing.T) {
 	})
 	t.Run("stops where the caller breaks", func(t *testing.T) {
 		for edge := range RegPol(Pt(0, 0), Sz(1, 1), 4, 0).Edges() {
-			AssertLine(t, edge, Ln(Pt(1, 0), Pt(0, 1)))
+			AssertSegment(t, edge, Seg(Pt(1, 0), Pt(0, 1)))
 
 			break
 		}
@@ -208,7 +208,7 @@ func TestRegularPolygon_Edges(t *testing.T) {
 
 			assert.Equal(t, len(edges), len(expected), fmt.Sprintf("%s: ", rp))
 			for i := range edges {
-				AssertLine(t, edges[i], expected[i], fmt.Sprintf("%s #%d: ", rp, i))
+				AssertSegment(t, edges[i], expected[i], fmt.Sprintf("%s #%d: ", rp, i))
 			}
 		}
 	})
@@ -607,21 +607,21 @@ func TestRegularPolygon_IntersectsCircle(t *testing.T) {
 	})
 }
 
-func TestRegularPolygon_IntersectsLine(t *testing.T) {
-	t.Run("mirrors Line.IntersectsRegularPolygon", func(t *testing.T) {
+func TestRegularPolygon_IntersectsSegment(t *testing.T) {
+	t.Run("mirrors Segment.IntersectsRegularPolygon", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
-			for _, l := range lineFixtures {
-				assert.Equal(t, rp.IntersectsLine(l), l.IntersectsRegularPolygon(rp), fmt.Sprintf("%s → %s: ", rp, l))
+			for _, s := range segmentFixtures {
+				assert.Equal(t, rp.IntersectsSegment(s), s.IntersectsRegularPolygon(rp), fmt.Sprintf("%s → %s: ", rp, s))
 			}
 		}
 	})
 }
 
-func TestRegularPolygon_IntersectionLine(t *testing.T) {
-	t.Run("mirrors Line.IntersectionRegularPolygon", func(t *testing.T) {
+func TestRegularPolygon_IntersectionSegment(t *testing.T) {
+	t.Run("mirrors Segment.IntersectionRegularPolygon", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
-			for _, l := range lineFixtures {
-				AssertVertices(t, rp.IntersectionLine(l), l.IntersectionRegularPolygon(rp), fmt.Sprintf("%s → %s: ", rp, l))
+			for _, s := range segmentFixtures {
+				AssertVertices(t, rp.IntersectionSegment(s), s.IntersectionRegularPolygon(rp), fmt.Sprintf("%s → %s: ", rp, s))
 			}
 		}
 	})

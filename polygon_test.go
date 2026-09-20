@@ -24,14 +24,14 @@ func TestPolygon_Edges(t *testing.T) {
 		edges := slices.Collect(Pol(squareVertices()).Edges())
 
 		assert.Equal(t, len(edges), 4)
-		AssertLine(t, edges[0], Ln(Pt(0, 0), Pt(2, 0)))
-		AssertLine(t, edges[3], Ln(Pt(0, 2), Pt(0, 0)))
+		AssertSegment(t, edges[0], Seg(Pt(0, 0), Pt(2, 0)))
+		AssertSegment(t, edges[3], Seg(Pt(0, 2), Pt(0, 0)))
 	})
 	t.Run("single vertex is one zero-length edge", func(t *testing.T) {
 		edges := slices.Collect(Pol([]Point[int]{Pt(1, 1)}).Edges())
 
 		assert.Equal(t, len(edges), 1)
-		AssertLine(t, edges[0], Ln(Pt(1, 1), Pt(1, 1)))
+		AssertSegment(t, edges[0], Seg(Pt(1, 1), Pt(1, 1)))
 	})
 	t.Run("nil and empty yield nothing", func(t *testing.T) {
 		assert.Nil(t, slices.Collect(Pol[int](nil).Edges()))
@@ -39,7 +39,7 @@ func TestPolygon_Edges(t *testing.T) {
 	})
 	t.Run("stops where the caller breaks", func(t *testing.T) {
 		for edge := range Pol(squareVertices()).Edges() {
-			AssertLine(t, edge, Ln(Pt(0, 0), Pt(2, 0)))
+			AssertSegment(t, edge, Seg(Pt(0, 0), Pt(2, 0)))
 
 			break
 		}
@@ -446,21 +446,21 @@ func TestPolygon_IntersectsCircle(t *testing.T) {
 	})
 }
 
-func TestPolygon_IntersectsLine(t *testing.T) {
-	t.Run("mirrors Line.IntersectsPolygon", func(t *testing.T) {
+func TestPolygon_IntersectsSegment(t *testing.T) {
+	t.Run("mirrors Segment.IntersectsPolygon", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
-			for _, l := range lineFixtures {
-				assert.Equal(t, p.IntersectsLine(l), l.IntersectsPolygon(p), fmt.Sprintf("%s → %s: ", p, l))
+			for _, s := range segmentFixtures {
+				assert.Equal(t, p.IntersectsSegment(s), s.IntersectsPolygon(p), fmt.Sprintf("%s → %s: ", p, s))
 			}
 		}
 	})
 }
 
-func TestPolygon_IntersectionLine(t *testing.T) {
-	t.Run("matches Line.IntersectionPolygon", func(t *testing.T) {
+func TestPolygon_IntersectionSegment(t *testing.T) {
+	t.Run("matches Segment.IntersectionPolygon", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
-			for _, l := range lineFixtures {
-				AssertVertices(t, p.IntersectionLine(l), l.IntersectionPolygon(p), fmt.Sprintf("%s → %s: ", p, l))
+			for _, s := range segmentFixtures {
+				AssertVertices(t, p.IntersectionSegment(s), s.IntersectionPolygon(p), fmt.Sprintf("%s → %s: ", p, s))
 			}
 		}
 	})

@@ -9,11 +9,11 @@ import (
 // first: the one iterator Polygon.Edges and Rectangle.Edges walk, so the edges a segment
 // crosses are the edges the walk reads. The slice is read as the edges are
 // yielded and never retained, so a caller may pass a slice of a local array.
-func edgesOf[T Number](vertices []Point[T]) iter.Seq[Line[T]] {
-	return func(yield func(Line[T]) bool) {
+func edgesOf[T Number](vertices []Point[T]) iter.Seq[Segment[T]] {
+	return func(yield func(Segment[T]) bool) {
 		n := len(vertices)
 		for i, vertex := range vertices {
-			if !yield(Line[T]{vertex, vertices[(i+1)%n]}) {
+			if !yield(Segment[T]{vertex, vertices[(i+1)%n]}) {
 				return
 			}
 		}
@@ -31,9 +31,9 @@ type edgeWalk[T Number] struct {
 }
 
 // step folds one edge in and reports whether the point lies on it within Epsilon of T, as
-// Line.DistanceSquaredTo snaps it, where the walk is over: the point is on the boundary at
+// Segment.DistanceSquaredTo snaps it, where the walk is over: the point is on the boundary at
 // distance zero whatever the remaining edges say.
-func (w *edgeWalk[T]) step(edge Line[T], point Point[T]) bool {
+func (w *edgeWalk[T]) step(edge Segment[T], point Point[T]) bool {
 	w.distance = min(w.distance, edge.distanceSquaredTo(point))
 	if lessOrEqualSquared[T](w.distance, 0) {
 		return true
@@ -58,18 +58,18 @@ func (w *edgeWalk[T]) result() float64 {
 }
 
 // edgeIntersections collects the points where a segment crosses the edges of an outline, fed
-// one at a time by the shape ranging its own Edges, as edgeWalk folds a walk: each crossing by Line.IntersectionLine, a vertex hit
+// one at a time by the shape ranging its own Edges, as edgeWalk folds a walk: each crossing by Segment.IntersectionSegment, a vertex hit
 // by two edges counted once, allocated on the first crossing with room for the two a convex
 // outline can have. Only a concave outline grows it.
 type edgeIntersections[T Number] struct {
-	line   Line[T]
-	points []Point[T]
+	segment Segment[T]
+	points  []Point[T]
 }
 
 // add folds one edge in, keeping its crossing with the segment unless a previous edge gave
 // a point that compares Equal to it.
-func (e *edgeIntersections[T]) add(edge Line[T]) {
-	point, ok := e.line.IntersectionLine(edge)
+func (e *edgeIntersections[T]) add(edge Segment[T]) {
+	point, ok := e.segment.IntersectionSegment(edge)
 	if !ok || slices.ContainsFunc(e.points, point.Equal) {
 		return
 	}
@@ -84,7 +84,7 @@ func (e *edgeIntersections[T]) add(edge Line[T]) {
 // sorted returns the crossings from the segment's Start, and nil where there was none.
 func (e *edgeIntersections[T]) sorted() []Point[T] {
 	slices.SortFunc(e.points, func(a, b Point[T]) int {
-		return e.line.compareDistance(a, b)
+		return e.segment.compareDistance(a, b)
 	})
 
 	return e.points
@@ -97,24 +97,24 @@ func (e *edgeIntersections[T]) sorted() []Point[T] {
 // shares its two prefilters without an iterator crossing a function boundary, which would
 // allocate it.
 type edgeProbe[T Number] struct {
-	a, b Point[T]
-	line Line[T]
-	c, d Point[T]
+	a, b    Point[T]
+	segment Segment[T]
+	c, d    Point[T]
 }
 
 // aim points the probe at the segment and reports whether the segment's extent overlaps the
 // outline's, so a segment that cannot reach the outline is rejected before any edge is examined.
-func (p *edgeProbe[T]) aim(line Line[T]) bool {
-	p.line = line
-	p.c, p.d = line.minMax()
+func (p *edgeProbe[T]) aim(segment Segment[T]) bool {
+	p.segment = segment
+	p.c, p.d = segment.minMax()
 
 	return overlaps(p.a, p.b, p.c, p.d)
 }
 
-// meets reports whether the edge shares a point with the aimed segment, by Line.IntersectsLine,
+// meets reports whether the edge shares a point with the aimed segment, by Segment.IntersectsSegment,
 // run only where the extents of the two can share a point.
-func (p *edgeProbe[T]) meets(edge Line[T]) bool {
+func (p *edgeProbe[T]) meets(edge Segment[T]) bool {
 	e, f := edge.minMax()
 
-	return overlaps(p.c, p.d, e, f) && p.line.IntersectsLine(edge)
+	return overlaps(p.c, p.d, e, f) && p.segment.IntersectsSegment(edge)
 }

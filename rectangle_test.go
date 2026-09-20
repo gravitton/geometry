@@ -251,10 +251,10 @@ func TestRectangle_EdgeAccessors(t *testing.T) {
 	r := RectangleFromMin(Pt(0, 0), Sz(10, 20))
 
 	t.Run("each runs clockwise from its first corner", func(t *testing.T) {
-		AssertLine(t, r.TopEdge(), Ln(Pt(0, 0), Pt(10, 0)))
-		AssertLine(t, r.RightEdge(), Ln(Pt(10, 0), Pt(10, 20)))
-		AssertLine(t, r.BottomEdge(), Ln(Pt(10, 20), Pt(0, 20)))
-		AssertLine(t, r.LeftEdge(), Ln(Pt(0, 20), Pt(0, 0)))
+		AssertSegment(t, r.TopEdge(), Seg(Pt(0, 0), Pt(10, 0)))
+		AssertSegment(t, r.RightEdge(), Seg(Pt(10, 0), Pt(10, 20)))
+		AssertSegment(t, r.BottomEdge(), Seg(Pt(10, 20), Pt(0, 20)))
+		AssertSegment(t, r.LeftEdge(), Seg(Pt(0, 20), Pt(0, 0)))
 	})
 	t.Run("their midpoints are the edge anchors", func(t *testing.T) {
 		AssertPoint(t, r.TopEdge().Midpoint(), r.Top())
@@ -276,16 +276,16 @@ func TestRectangle_Edges(t *testing.T) {
 
 	t.Run("clockwise from the top", func(t *testing.T) {
 		assert.Equal(t, len(edges), 4)
-		AssertLine(t, edges[0], Ln(Pt(-1, -1), Pt(1, -1)))
-		AssertLine(t, edges[1], Ln(Pt(1, -1), Pt(1, 1)))
-		AssertLine(t, edges[2], Ln(Pt(1, 1), Pt(-1, 1)))
-		AssertLine(t, edges[3], Ln(Pt(-1, 1), Pt(-1, -1)))
+		AssertSegment(t, edges[0], Seg(Pt(-1, -1), Pt(1, -1)))
+		AssertSegment(t, edges[1], Seg(Pt(1, -1), Pt(1, 1)))
+		AssertSegment(t, edges[2], Seg(Pt(1, 1), Pt(-1, 1)))
+		AssertSegment(t, edges[3], Seg(Pt(-1, 1), Pt(-1, -1)))
 	})
 	t.Run("agrees with the dedicated accessors", func(t *testing.T) {
-		AssertLine(t, edges[0], r.TopEdge())
-		AssertLine(t, edges[1], r.RightEdge())
-		AssertLine(t, edges[2], r.BottomEdge())
-		AssertLine(t, edges[3], r.LeftEdge())
+		AssertSegment(t, edges[0], r.TopEdge())
+		AssertSegment(t, edges[1], r.RightEdge())
+		AssertSegment(t, edges[2], r.BottomEdge())
+		AssertSegment(t, edges[3], r.LeftEdge())
 	})
 	t.Run("form a closed chain", func(t *testing.T) {
 		for i, edge := range edges {
@@ -295,12 +295,12 @@ func TestRectangle_Edges(t *testing.T) {
 	t.Run("rotated edges join the turned corners", func(t *testing.T) {
 		turned := Rect(Pt(0, 0), Sz(4, 2)).Rotate(Pi / 2)
 
-		AssertLine(t, turned.TopEdge(), Ln(Pt(1, -2), Pt(1, 2)))
-		AssertLine(t, slices.Collect(turned.Edges())[2], Ln(Pt(-1, 2), Pt(-1, -2)))
+		AssertSegment(t, turned.TopEdge(), Seg(Pt(1, -2), Pt(1, 2)))
+		AssertSegment(t, slices.Collect(turned.Edges())[2], Seg(Pt(-1, 2), Pt(-1, -2)))
 	})
 	t.Run("stops where the caller breaks", func(t *testing.T) {
 		for edge := range r.Edges() {
-			AssertLine(t, edge, r.TopEdge())
+			AssertSegment(t, edge, r.TopEdge())
 
 			break
 		}
@@ -876,21 +876,21 @@ func TestRectangle_IntersectsCircle(t *testing.T) {
 	})
 }
 
-func TestRectangle_IntersectsLine(t *testing.T) {
-	t.Run("mirrors Line.IntersectsRectangle", func(t *testing.T) {
+func TestRectangle_IntersectsSegment(t *testing.T) {
+	t.Run("mirrors Segment.IntersectsRectangle", func(t *testing.T) {
 		for _, r := range rectFixtures {
-			for _, l := range lineFixtures {
-				assert.Equal(t, r.IntersectsLine(l), l.IntersectsRectangle(r), fmt.Sprintf("%s → %s: ", r, l))
+			for _, s := range segmentFixtures {
+				assert.Equal(t, r.IntersectsSegment(s), s.IntersectsRectangle(r), fmt.Sprintf("%s → %s: ", r, s))
 			}
 		}
 	})
 }
 
-func TestRectangle_IntersectionLine(t *testing.T) {
-	t.Run("matches Line.IntersectionRectangle", func(t *testing.T) {
+func TestRectangle_IntersectionSegment(t *testing.T) {
+	t.Run("matches Segment.IntersectionRectangle", func(t *testing.T) {
 		for _, r := range rectFixtures {
-			for _, l := range lineFixtures {
-				AssertVertices(t, r.IntersectionLine(l), l.IntersectionRectangle(r), fmt.Sprintf("%s → %s: ", r, l))
+			for _, s := range segmentFixtures {
+				AssertVertices(t, r.IntersectionSegment(s), s.IntersectionRectangle(r), fmt.Sprintf("%s → %s: ", r, s))
 			}
 		}
 	})

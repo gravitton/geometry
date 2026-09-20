@@ -68,17 +68,17 @@ func TestAssertCircle(t *testing.T) {
 	})
 }
 
-func TestAssertLine(t *testing.T) {
-	l := Ln(Pt(1, 2), Pt(3, 4))
+func TestAssertSegment(t *testing.T) {
+	s := Seg(Pt(1, 2), Pt(3, 4))
 
 	t.Run("equal", func(t *testing.T) {
-		assertHelper(t, AssertLine, l, Ln(Pt(1, 2), Pt(3, 4)), true)
+		assertHelper(t, AssertSegment, s, Seg(Pt(1, 2), Pt(3, 4)), true)
 	})
 	t.Run("start differs", func(t *testing.T) {
-		assertHelper(t, AssertLine, l, Ln(Pt(9, 2), Pt(3, 4)), false)
+		assertHelper(t, AssertSegment, s, Seg(Pt(9, 2), Pt(3, 4)), false)
 	})
 	t.Run("end differs", func(t *testing.T) {
-		assertHelper(t, AssertLine, l, Ln(Pt(1, 2), Pt(9, 4)), false)
+		assertHelper(t, AssertSegment, s, Seg(Pt(1, 2), Pt(9, 4)), false)
 	})
 }
 

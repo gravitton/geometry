@@ -98,8 +98,8 @@ func (rp RegularPolygon[T]) Vertices() iter.Seq[Point[T]] {
 // last one closing back to the first, the edges Polygon().Edges() iterates, without building
 // the vertices. A polygon with N < 1 has no edges and yields nothing; one with a single
 // vertex yields one zero-length edge.
-func (rp RegularPolygon[T]) Edges() iter.Seq[Line[T]] {
-	return func(yield func(Line[T]) bool) {
+func (rp RegularPolygon[T]) Edges() iter.Seq[Segment[T]] {
+	return func(yield func(Segment[T]) bool) {
 		if rp.Empty() {
 			return
 		}
@@ -111,7 +111,7 @@ func (rp RegularPolygon[T]) Edges() iter.Seq[Line[T]] {
 				next = rp.vertex(i)
 			}
 
-			if !yield(Line[T]{previous, next}) {
+			if !yield(Segment[T]{previous, next}) {
 				return
 			}
 
@@ -368,16 +368,16 @@ func (rp RegularPolygon[T]) IntersectsCircle(circle Circle[T]) bool {
 	return circle.IntersectsRegularPolygon(rp)
 }
 
-// IntersectsLine reports whether the polygon and the segment share a point, as
-// Line.IntersectsRegularPolygon does.
-func (rp RegularPolygon[T]) IntersectsLine(line Line[T]) bool {
-	return line.IntersectsRegularPolygon(rp)
+// IntersectsSegment reports whether the polygon and the segment share a point, as
+// Segment.IntersectsRegularPolygon does.
+func (rp RegularPolygon[T]) IntersectsSegment(segment Segment[T]) bool {
+	return segment.IntersectsRegularPolygon(rp)
 }
 
-// IntersectionLine returns the points where the segment crosses the polygon boundary, as
-// Line.IntersectionRegularPolygon does.
-func (rp RegularPolygon[T]) IntersectionLine(line Line[T]) []Point[T] {
-	return line.IntersectionRegularPolygon(rp)
+// IntersectionSegment returns the points where the segment crosses the polygon boundary, as
+// Segment.IntersectionRegularPolygon does.
+func (rp RegularPolygon[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
+	return segment.IntersectionRegularPolygon(rp)
 }
 
 // IntersectsPolygon reports whether the regular polygon and the polygon share a point, as

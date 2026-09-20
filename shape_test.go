@@ -9,16 +9,16 @@ import (
 )
 
 var (
-	_ Shape[int]        = Line[int]{}
+	_ Shape[int]        = Segment[int]{}
 	_ Shape[int]        = Rectangle[int]{}
 	_ Shape[int]        = Circle[int]{}
 	_ Shape[int]        = Polygon[int]{}
 	_ Shape[int]        = RegularPolygon[int]{}
-	_ Outline[int]      = Line[int]{}
+	_ Outline[int]      = Segment[int]{}
 	_ Outline[int]      = Rectangle[int]{}
 	_ Outline[int]      = Polygon[int]{}
 	_ Outline[int]      = RegularPolygon[int]{}
-	_ Collider[int]     = Line[int]{}
+	_ Collider[int]     = Segment[int]{}
 	_ Collider[int]     = Rectangle[int]{}
 	_ Collider[int]     = Circle[int]{}
 	_ Collider[int]     = Polygon[int]{}
@@ -32,7 +32,7 @@ var (
 
 func TestShape(t *testing.T) {
 	shapes := []Shape[float64]{
-		Ln(Pt(0.0, 0.0), Pt(3.0, 4.0)),
+		Seg(Pt(0.0, 0.0), Pt(3.0, 4.0)),
 		Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi / 6),
 		Circ(Pt(1.0, 1.0), 2.0),
 		Pol(triangleVertices()),
@@ -58,7 +58,7 @@ func TestShape(t *testing.T) {
 
 func TestOutline(t *testing.T) {
 	outlines := []Outline[float64]{
-		Ln(Pt(0.0, 0.0), Pt(3.0, 4.0)),
+		Seg(Pt(0.0, 0.0), Pt(3.0, 4.0)),
 		Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi / 6),
 		Pol(triangleVertices()),
 		Hexagon(Pt(0.0, 0.0), SzU(10.0), FlatTop),
@@ -75,7 +75,7 @@ func TestOutline(t *testing.T) {
 		}
 	})
 	t.Run("only the segment is open", func(t *testing.T) {
-		assert.False(t, closed[float64](Ln(Pt(0.0, 0.0), Pt(3.0, 4.0))))
+		assert.False(t, closed[float64](Seg(Pt(0.0, 0.0), Pt(3.0, 4.0))))
 		assert.True(t, closed[float64](Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi/6)))
 		assert.True(t, closed[float64](Pol(triangleVertices())))
 		assert.True(t, closed[float64](Hexagon(Pt(0.0, 0.0), SzU(10.0), FlatTop)))
@@ -84,14 +84,14 @@ func TestOutline(t *testing.T) {
 
 func TestCollider(t *testing.T) {
 	colliders := []Collider[float64]{
-		Ln(Pt(0.0, 0.0), Pt(3.0, 4.0)),
+		Seg(Pt(0.0, 0.0), Pt(3.0, 4.0)),
 		Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi / 6),
 		Circ(Pt(1.0, 1.0), 2.0),
 		Pol(triangleVertices()),
 		Hexagon(Pt(0.0, 0.0), SzU(10.0), FlatTop),
 	}
-	for _, l := range lineFixtures {
-		colliders = append(colliders, l)
+	for _, s := range segmentFixtures {
+		colliders = append(colliders, s)
 	}
 	for _, r := range rectFixtures {
 		colliders = append(colliders, r)
@@ -133,7 +133,7 @@ func (s stubCollider) IntersectsCircle(Circle[float64]) bool {
 	return s.result
 }
 
-func (s stubCollider) IntersectsLine(Line[float64]) bool {
+func (s stubCollider) IntersectsSegment(Segment[float64]) bool {
 	return s.result
 }
 
@@ -184,7 +184,7 @@ func closed[T Number](outline Outline[T]) bool {
 
 func TestMovable(t *testing.T) {
 	t.Run("every shape moves and scales in its own type", func(t *testing.T) {
-		AssertLine(t, moved(Ln(Pt(0, 0), Pt(2, 2)), Vec(1, 1)), Ln(Pt(1, 1), Pt(3, 3)))
+		AssertSegment(t, moved(Seg(Pt(0, 0), Pt(2, 2)), Vec(1, 1)), Seg(Pt(1, 1), Pt(3, 3)))
 		AssertRectangle(t, moved(Rect(Pt(0, 0), Sz(2, 2)), Vec(1, 1)), Rect(Pt(1, 1), Sz(2, 2)))
 		AssertCircle(t, moved(Circ(Pt(0, 0), 2), Vec(1, 1)), Circ(Pt(1, 1), 2))
 		AssertPolygon(t, moved(Pol(squareVertices()), Vec(1, 1)), Pol([]Point[int]{Pt(1, 1), Pt(3, 1), Pt(3, 3), Pt(1, 3)}))

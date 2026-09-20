@@ -251,7 +251,7 @@ func TestCircle_Contains(t *testing.T) {
 	t.Run("agrees with a zero-length segment at the point", func(t *testing.T) {
 		for _, c := range circleFixtures {
 			for _, p := range pointFixtures {
-				assert.Equal(t, c.Contains(p), Ln(p, p).IntersectsCircle(c), fmt.Sprintf("%s → %s: ", c, p))
+				assert.Equal(t, c.Contains(p), Seg(p, p).IntersectsCircle(c), fmt.Sprintf("%s → %s: ", c, p))
 			}
 		}
 	})
@@ -462,130 +462,130 @@ func FuzzCircle_IntersectionCircle(f *testing.F) {
 	})
 }
 
-func TestCircle_IntersectsLine(t *testing.T) {
+func TestCircle_IntersectsSegment(t *testing.T) {
 	circle := Circ(Pt(0.0, 0.0), 1.0)
 
 	t.Run("passing through", func(t *testing.T) {
-		assert.True(t, circle.IntersectsLine(Ln(Pt(-2.0, 0.0), Pt(2.0, 0.0))))
+		assert.True(t, circle.IntersectsSegment(Seg(Pt(-2.0, 0.0), Pt(2.0, 0.0))))
 	})
 	t.Run("apart", func(t *testing.T) {
-		assert.False(t, circle.IntersectsLine(Ln(Pt(-2.0, 2.0), Pt(2.0, 2.0))))
-		assert.False(t, circle.IntersectsLine(Ln(Pt(2.0, 0.0), Pt(3.0, 0.0))))
+		assert.False(t, circle.IntersectsSegment(Seg(Pt(-2.0, 2.0), Pt(2.0, 2.0))))
+		assert.False(t, circle.IntersectsSegment(Seg(Pt(2.0, 0.0), Pt(3.0, 0.0))))
 	})
 	t.Run("tangent counts", func(t *testing.T) {
-		assert.True(t, circle.IntersectsLine(Ln(Pt(-2.0, 1.0), Pt(2.0, 1.0))))
-		assert.False(t, circle.IntersectsLine(Ln(Pt(-2.0, 1.0+2*Delta), Pt(2.0, 1.0+2*Delta))))
+		assert.True(t, circle.IntersectsSegment(Seg(Pt(-2.0, 1.0), Pt(2.0, 1.0))))
+		assert.False(t, circle.IntersectsSegment(Seg(Pt(-2.0, 1.0+2*Delta), Pt(2.0, 1.0+2*Delta))))
 	})
 	t.Run("an endpoint inside counts", func(t *testing.T) {
-		assert.True(t, circle.IntersectsLine(Ln(Pt(0.5, 0.0), Pt(5.0, 0.0))))
+		assert.True(t, circle.IntersectsSegment(Seg(Pt(0.5, 0.0), Pt(5.0, 0.0))))
 	})
 	t.Run("a segment inside counts", func(t *testing.T) {
-		assert.True(t, circle.IntersectsLine(Ln(Pt(-0.5, 0.0), Pt(0.5, 0.0))))
+		assert.True(t, circle.IntersectsSegment(Seg(Pt(-0.5, 0.0), Pt(0.5, 0.0))))
 	})
 }
 
-func TestCircle_IntersectionLine(t *testing.T) {
+func TestCircle_IntersectionSegment(t *testing.T) {
 	circle := Circ(Pt(0.0, 0.0), 1.0)
 
 	t.Run("passing through gives both crossings from Start to End", func(t *testing.T) {
-		AssertVertices(t, circle.IntersectionLine(Ln(Pt(-2.0, 0.0), Pt(2.0, 0.0))), []Point[float64]{Pt(-1.0, 0.0), Pt(1.0, 0.0)})
-		AssertVertices(t, circle.IntersectionLine(Ln(Pt(2.0, 0.0), Pt(-2.0, 0.0))), []Point[float64]{Pt(1.0, 0.0), Pt(-1.0, 0.0)})
+		AssertVertices(t, circle.IntersectionSegment(Seg(Pt(-2.0, 0.0), Pt(2.0, 0.0))), []Point[float64]{Pt(-1.0, 0.0), Pt(1.0, 0.0)})
+		AssertVertices(t, circle.IntersectionSegment(Seg(Pt(2.0, 0.0), Pt(-2.0, 0.0))), []Point[float64]{Pt(1.0, 0.0), Pt(-1.0, 0.0)})
 	})
 	t.Run("ending inside gives one crossing", func(t *testing.T) {
-		AssertVertices(t, circle.IntersectionLine(Ln(Pt(-2.0, 0.0), Pt(0.0, 0.0))), []Point[float64]{Pt(-1.0, 0.0)})
-		AssertVertices(t, circle.IntersectionLine(Ln(Pt(0.5, 0.0), Pt(5.0, 0.0))), []Point[float64]{Pt(1.0, 0.0)})
+		AssertVertices(t, circle.IntersectionSegment(Seg(Pt(-2.0, 0.0), Pt(0.0, 0.0))), []Point[float64]{Pt(-1.0, 0.0)})
+		AssertVertices(t, circle.IntersectionSegment(Seg(Pt(0.5, 0.0), Pt(5.0, 0.0))), []Point[float64]{Pt(1.0, 0.0)})
 	})
 	t.Run("tangent gives one point", func(t *testing.T) {
-		AssertVertices(t, circle.IntersectionLine(Ln(Pt(-2.0, 1.0), Pt(2.0, 1.0))), []Point[float64]{Pt(0.0, 1.0)})
-		AssertVertices(t, circle.IntersectionLine(Ln(Pt(-2.0, 1.0+Delta/2), Pt(2.0, 1.0+Delta/2))), []Point[float64]{Pt(0.0, 1.0+Delta/2)})
-		assert.Nil(t, circle.IntersectionLine(Ln(Pt(-2.0, 1.0+2*Delta), Pt(2.0, 1.0+2*Delta))))
+		AssertVertices(t, circle.IntersectionSegment(Seg(Pt(-2.0, 1.0), Pt(2.0, 1.0))), []Point[float64]{Pt(0.0, 1.0)})
+		AssertVertices(t, circle.IntersectionSegment(Seg(Pt(-2.0, 1.0+Delta/2), Pt(2.0, 1.0+Delta/2))), []Point[float64]{Pt(0.0, 1.0+Delta/2)})
+		assert.Nil(t, circle.IntersectionSegment(Seg(Pt(-2.0, 1.0+2*Delta), Pt(2.0, 1.0+2*Delta))))
 	})
 	t.Run("a chord within the tolerance band of the gap keeps both ends", func(t *testing.T) {
 		height := 1.0 - Delta/2
 		half := math.Sqrt(1 - height*height)
 
-		AssertVertices(t, circle.IntersectionLine(Ln(Pt(-1.0, height), Pt(1.0, height))), []Point[float64]{Pt(-half, height), Pt(half, height)})
+		AssertVertices(t, circle.IntersectionSegment(Seg(Pt(-1.0, height), Pt(1.0, height))), []Point[float64]{Pt(-half, height), Pt(half, height)})
 	})
 	t.Run("a chord shorter than Delta is a tangent", func(t *testing.T) {
 		height := math.Sqrt(1 - Delta*Delta/16)
 
-		AssertVertices(t, circle.IntersectionLine(Ln(Pt(-1.0, height), Pt(1.0, height))), []Point[float64]{Pt(0.0, height)})
+		AssertVertices(t, circle.IntersectionSegment(Seg(Pt(-1.0, height), Pt(1.0, height))), []Point[float64]{Pt(0.0, height)})
 	})
 	t.Run("a segment within the tolerance with both ends on the boundary gives one point", func(t *testing.T) {
-		AssertVertices(t, circle.IntersectionLine(Ln(Pt(1.0, 0.0), Pt(1.0, Delta/10))), []Point[float64]{Pt(1.0, 0.0)})
+		AssertVertices(t, circle.IntersectionSegment(Seg(Pt(1.0, 0.0), Pt(1.0, Delta/10))), []Point[float64]{Pt(1.0, 0.0)})
 	})
 	t.Run("a tangent beyond the segment is missed", func(t *testing.T) {
-		assert.Nil(t, circle.IntersectionLine(Ln(Pt(1.0, 1.0), Pt(2.0, 1.0))))
+		assert.Nil(t, circle.IntersectionSegment(Seg(Pt(1.0, 1.0), Pt(2.0, 1.0))))
 	})
-	t.Run("a shallow touch is decided on the endpoint distance, like IntersectsLine", func(t *testing.T) {
-		shallow := Ln(Pt(-1.0, 1.0+Delta/2), Pt(-0.0005, 1.0+Delta/2))
+	t.Run("a shallow touch is decided on the endpoint distance, like IntersectsSegment", func(t *testing.T) {
+		shallow := Seg(Pt(-1.0, 1.0+Delta/2), Pt(-0.0005, 1.0+Delta/2))
 
-		assert.True(t, circle.IntersectsLine(shallow))
-		AssertVertices(t, circle.IntersectionLine(shallow), []Point[float64]{shallow.End})
-		AssertVertices(t, circle.IntersectionLine(shallow.Reverse()), []Point[float64]{shallow.End})
+		assert.True(t, circle.IntersectsSegment(shallow))
+		AssertVertices(t, circle.IntersectionSegment(shallow), []Point[float64]{shallow.End})
+		AssertVertices(t, circle.IntersectionSegment(shallow.Reverse()), []Point[float64]{shallow.End})
 	})
-	t.Run("an interior graze exactly Delta outside is judged like IntersectsLine", func(t *testing.T) {
-		l, c := Ln(Pt(-1.0, 1.000001), Pt(1.0, 1.000001)), Circ(Pt(0.0, 0.0), 1.0)
+	t.Run("an interior graze exactly Delta outside is judged like IntersectsSegment", func(t *testing.T) {
+		s, c := Seg(Pt(-1.0, 1.000001), Pt(1.0, 1.000001)), Circ(Pt(0.0, 0.0), 1.0)
 
-		assert.Equal(t, len(c.IntersectionLine(l)) > 0, c.IntersectsLine(l))
+		assert.Equal(t, len(c.IntersectionSegment(s)) > 0, c.IntersectsSegment(s))
 		for _, y := range []float64{1.0000009, 1.0000011, 1.0000015} {
-			l := Ln(Pt(-1.0, y), Pt(1.0, y))
+			s := Seg(Pt(-1.0, y), Pt(1.0, y))
 
-			assert.Equal(t, len(c.IntersectionLine(l)) > 0, c.IntersectsLine(l), l.String())
+			assert.Equal(t, len(c.IntersectionSegment(s)) > 0, c.IntersectsSegment(s), s.String())
 		}
 	})
-	t.Run("an endpoint exactly Delta outside is judged like IntersectsLine", func(t *testing.T) {
-		l, c := Ln(Pt(-1.0, 2.000001), Pt(-882.0315, 56.11111116666667)), Circ(Pt(-1.0, 0.0), 2.0)
+	t.Run("an endpoint exactly Delta outside is judged like IntersectsSegment", func(t *testing.T) {
+		s, c := Seg(Pt(-1.0, 2.000001), Pt(-882.0315, 56.11111116666667)), Circ(Pt(-1.0, 0.0), 2.0)
 
-		assert.Equal(t, len(c.IntersectionLine(l)) > 0, c.IntersectsLine(l))
+		assert.Equal(t, len(c.IntersectionSegment(s)) > 0, c.IntersectsSegment(s))
 	})
 	t.Run("an endpoint on the boundary is counted once with its crossing", func(t *testing.T) {
-		AssertVertices(t, circle.IntersectionLine(Ln(Pt(-1.0, 0.0), Pt(2.0, 0.0))), []Point[float64]{Pt(-1.0, 0.0), Pt(1.0, 0.0)})
-		AssertVertices(t, circle.IntersectionLine(Ln(Pt(-2.0, 0.0), Pt(1.0, 0.0))), []Point[float64]{Pt(-1.0, 0.0), Pt(1.0, 0.0)})
+		AssertVertices(t, circle.IntersectionSegment(Seg(Pt(-1.0, 0.0), Pt(2.0, 0.0))), []Point[float64]{Pt(-1.0, 0.0), Pt(1.0, 0.0)})
+		AssertVertices(t, circle.IntersectionSegment(Seg(Pt(-2.0, 0.0), Pt(1.0, 0.0))), []Point[float64]{Pt(-1.0, 0.0), Pt(1.0, 0.0)})
 	})
 	t.Run("an endpoint on the boundary replaces the crossing nearest to it", func(t *testing.T) {
-		l, c := Ln(Pt(-1.0, 2.000001), Pt(-877.0315, 0.11111116666666668)), Circ(Pt(-1.0, 0.0), 2.0)
-		points := c.IntersectionLine(l)
+		s, c := Seg(Pt(-1.0, 2.000001), Pt(-877.0315, 0.11111116666666668)), Circ(Pt(-1.0, 0.0), 2.0)
+		points := c.IntersectionSegment(s)
 
 		assert.Equal(t, len(points), 2)
-		AssertPoint(t, points[0], l.Start)
+		AssertPoint(t, points[0], s.Start)
 	})
 	t.Run("a tangent segment with both ends on the boundary gives its ends", func(t *testing.T) {
-		grazing := Ln(Pt(-0.0003, 1.0), Pt(0.0003, 1.0))
+		grazing := Seg(Pt(-0.0003, 1.0), Pt(0.0003, 1.0))
 
-		AssertVertices(t, circle.IntersectionLine(grazing), []Point[float64]{grazing.Start, grazing.End})
+		AssertVertices(t, circle.IntersectionSegment(grazing), []Point[float64]{grazing.Start, grazing.End})
 	})
 	t.Run("apart and inside give none", func(t *testing.T) {
-		assert.Nil(t, circle.IntersectionLine(Ln(Pt(-2.0, 2.0), Pt(2.0, 2.0))))
-		assert.Nil(t, circle.IntersectionLine(Ln(Pt(2.0, 0.0), Pt(3.0, 0.0))))
-		assert.Nil(t, circle.IntersectionLine(Ln(Pt(-0.5, 0.0), Pt(0.5, 0.0))))
+		assert.Nil(t, circle.IntersectionSegment(Seg(Pt(-2.0, 2.0), Pt(2.0, 2.0))))
+		assert.Nil(t, circle.IntersectionSegment(Seg(Pt(2.0, 0.0), Pt(3.0, 0.0))))
+		assert.Nil(t, circle.IntersectionSegment(Seg(Pt(-0.5, 0.0), Pt(0.5, 0.0))))
 	})
 	t.Run("a degenerate segment is a point on the boundary or nothing", func(t *testing.T) {
-		AssertVertices(t, circle.IntersectionLine(Ln(Pt(1.0, 0.0), Pt(1.0, 0.0))), []Point[float64]{Pt(1.0, 0.0)})
-		assert.Nil(t, circle.IntersectionLine(Ln(Pt(0.5, 0.0), Pt(0.5, 0.0))))
+		AssertVertices(t, circle.IntersectionSegment(Seg(Pt(1.0, 0.0), Pt(1.0, 0.0))), []Point[float64]{Pt(1.0, 0.0)})
+		assert.Nil(t, circle.IntersectionSegment(Seg(Pt(0.5, 0.0), Pt(0.5, 0.0))))
 	})
 	t.Run("int rounds the crossings", func(t *testing.T) {
-		AssertVertices(t, Circ(Pt(0, 0), 5).IntersectionLine(Ln(Pt(-5, -5), Pt(5, 5))), []Point[int]{Pt(-4, -4), Pt(4, 4)})
+		AssertVertices(t, Circ(Pt(0, 0), 5).IntersectionSegment(Seg(Pt(-5, -5), Pt(5, 5))), []Point[int]{Pt(-4, -4), Pt(4, 4)})
 	})
-	t.Run("every point lies on the segment and the boundary, and exists where IntersectsLine holds", func(t *testing.T) {
-		for _, l := range lineFixtures {
+	t.Run("every point lies on the segment and the boundary, and exists where IntersectsSegment holds", func(t *testing.T) {
+		for _, s := range segmentFixtures {
 			for _, c := range circleFixtures {
-				points := c.IntersectionLine(l)
+				points := c.IntersectionSegment(s)
 
-				assert.True(t, len(points) <= 2, fmt.Sprintf("%s → %s: at most two crossings: ", l, c))
+				assert.True(t, len(points) <= 2, fmt.Sprintf("%s → %s: at most two crossings: ", s, c))
 				for _, p := range points {
-					assert.True(t, l.Contains(p), fmt.Sprintf("%s → %s: %s on the segment: ", l, c, p))
-					assert.True(t, c.touchesSquared(c.Center.DistanceSquaredTo(p)), fmt.Sprintf("%s → %s: %s on the boundary: ", l, c, p))
+					assert.True(t, s.Contains(p), fmt.Sprintf("%s → %s: %s on the segment: ", s, c, p))
+					assert.True(t, c.touchesSquared(c.Center.DistanceSquaredTo(p)), fmt.Sprintf("%s → %s: %s on the boundary: ", s, c, p))
 				}
 				if len(points) > 0 {
-					assert.True(t, c.IntersectsLine(l), fmt.Sprintf("%s → %s: ", l, c))
+					assert.True(t, c.IntersectsSegment(s), fmt.Sprintf("%s → %s: ", s, c))
 				}
 			}
 		}
 	})
 }
 
-func FuzzCircle_IntersectionLine(f *testing.F) {
+func FuzzCircle_IntersectionSegment(f *testing.F) {
 	f.Add(-2.0, 0.0, 2.0, 0.0, 0.0, 0.0, 1.0)
 	f.Add(-1.0, 1.0+Delta/2, -0.0005, 1.0+Delta/2, 0.0, 0.0, 1.0)
 	f.Add(-0.5, 0.0, 0.5, 0.0, 0.0, 0.0, 1.0)
@@ -598,18 +598,18 @@ func FuzzCircle_IntersectionLine(f *testing.F) {
 			}
 		}
 
-		l, c := Ln(Pt(x1, y1), Pt(x2, y2)), Circ(Pt(cx, cy), r)
-		points := c.IntersectionLine(l)
+		s, c := Seg(Pt(x1, y1), Pt(x2, y2)), Circ(Pt(cx, cy), r)
+		points := c.IntersectionSegment(s)
 
-		assert.True(t, len(points) <= 2, fmt.Sprintf("%s → %s: at most two crossings, got %d: ", l, c, len(points)))
+		assert.True(t, len(points) <= 2, fmt.Sprintf("%s → %s: at most two crossings, got %d: ", s, c, len(points)))
 
 		for _, p := range points {
-			assert.True(t, l.Contains(p), fmt.Sprintf("%s → %s: %s on the segment: ", l, c, p))
-			assert.True(t, c.touchesSquared(c.Center.Float().DistanceSquaredTo(p.Float())), fmt.Sprintf("%s → %s: %s on the boundary: ", l, c, p))
+			assert.True(t, s.Contains(p), fmt.Sprintf("%s → %s: %s on the segment: ", s, c, p))
+			assert.True(t, c.touchesSquared(c.Center.Float().DistanceSquaredTo(p.Float())), fmt.Sprintf("%s → %s: %s on the boundary: ", s, c, p))
 		}
 
-		if inside := c.Contains(l.Start) && c.Contains(l.End); !inside {
-			assert.Equal(t, len(points) > 0, c.IntersectsLine(l), fmt.Sprintf("%s → %s: ", l, c))
+		if inside := c.Contains(s.Start) && c.Contains(s.End); !inside {
+			assert.Equal(t, len(points) > 0, c.IntersectsSegment(s), fmt.Sprintf("%s → %s: ", s, c))
 		}
 	})
 }
@@ -633,8 +633,8 @@ func TestCircle_IntersectsPolygon(t *testing.T) {
 	t.Run("matches the circle test on the polygon edges", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
 			for _, c := range circleFixtures {
-				expected := p.Contains(c.Center) || slices.ContainsFunc(slices.Collect(p.Edges()), func(edge Line[float64]) bool {
-					return c.IntersectsLine(edge)
+				expected := p.Contains(c.Center) || slices.ContainsFunc(slices.Collect(p.Edges()), func(edge Segment[float64]) bool {
+					return c.IntersectsSegment(edge)
 				})
 
 				assert.Equal(t, c.IntersectsPolygon(p), expected, fmt.Sprintf("%s → %s: ", p, c))

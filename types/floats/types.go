@@ -17,8 +17,8 @@ type Size = geom.Size[float64]
 // Circle is geom.Circle[float64].
 type Circle = geom.Circle[float64]
 
-// Line is geom.Line[float64].
-type Line = geom.Line[float64]
+// Segment is geom.Segment[float64].
+type Segment = geom.Segment[float64]
 
 // Rectangle is geom.Rectangle[float64].
 type Rectangle = geom.Rectangle[float64]
@@ -55,9 +55,9 @@ func Circ[T geom.Number](center geom.Point[T], radius T) Circle {
 	return geom.Circ(center, radius).Float()
 }
 
-// Ln is shorthand for geom.Ln(start, end).Float()
-func Ln[T geom.Number](start, end geom.Point[T]) Line {
-	return geom.Ln(start, end).Float()
+// Seg is shorthand for geom.Seg(start, end).Float()
+func Seg[T geom.Number](start, end geom.Point[T]) Segment {
+	return geom.Seg(start, end).Float()
 }
 
 // Rect is shorthand for geom.Rect(center, size).Float()

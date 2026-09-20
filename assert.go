@@ -90,8 +90,8 @@ func AssertCircle[T Number](t Testing, actual, expected Circle[T], messages ...s
 	return ok
 }
 
-// AssertLine asserts that actual equals expected (exactly for an integer T, within [EpsilonRelative] for a float T).
-func AssertLine[T Number](t Testing, actual, expected Line[T], messages ...string) bool {
+// AssertSegment asserts that actual equals expected (exactly for an integer T, within [EpsilonRelative] for a float T).
+func AssertSegment[T Number](t Testing, actual, expected Segment[T], messages ...string) bool {
 	t.Helper()
 
 	ok := true

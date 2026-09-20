@@ -2,7 +2,7 @@ package geom
 
 import "iter"
 
-// Shape is what every shape answers about a point: Line, Rectangle, Circle, Polygon and
+// Shape is what every shape answers about a point: Segment, Rectangle, Circle, Polygon and
 // RegularPolygon. Bounds is the axis-aligned box around it, Contains includes the boundary
 // within Epsilon of T, DistanceTo is zero exactly where Contains holds and DistanceSquaredTo is
 // the value it takes the root of. A spatial index or a picking routine holds a Shape and never
@@ -14,7 +14,7 @@ type Shape[T Number] interface {
 	DistanceSquaredTo(point Point[T]) float64
 }
 
-// Outline is a shape whose boundary is a chain of straight edges: Line, Rectangle, Polygon and
+// Outline is a shape whose boundary is a chain of straight edges: Segment, Rectangle, Polygon and
 // RegularPolygon. Vertices iterates the corners in order and Edges the segments joining them,
 // each edge starting where the previous one ends, the last one closing back to the first on a
 // closed shape. Both iterate without allocating, so one loop draws or measures any of the four.
@@ -26,15 +26,15 @@ type Shape[T Number] interface {
 // keeps the concrete type and switches on it; Outline is for the code around it.
 type Outline[T Number] interface {
 	Vertices() iter.Seq[Point[T]]
-	Edges() iter.Seq[Line[T]]
+	Edges() iter.Seq[Segment[T]]
 }
 
-// Collider is a shape tested against every shape: Line, Rectangle, Circle, Polygon and
+// Collider is a shape tested against every shape: Segment, Rectangle, Circle, Polygon and
 // RegularPolygon, each with the five Intersects methods, its own kind included. Every test is
 // symmetric and includes a touch within Epsilon of T, so a broad collision pass calls the
 // method for the other side's kind and gets the same answer from either.
 type Collider[T Number] interface {
-	IntersectsLine(line Line[T]) bool
+	IntersectsSegment(segment Segment[T]) bool
 	IntersectsRectangle(rectangle Rectangle[T]) bool
 	IntersectsCircle(circle Circle[T]) bool
 	IntersectsPolygon(polygon Polygon[T]) bool
@@ -51,7 +51,7 @@ type Measured[M Number] interface {
 	Perimeter() M
 }
 
-// Movable is a shape that can be moved, turned and scaled, in its own type: Line, Rectangle, Circle,
+// Movable is a shape that can be moved, turned and scaled, in its own type: Segment, Rectangle, Circle,
 // Polygon and RegularPolygon, each returning itself rather than a common type, so the parameter
 // S stands for the shape and every method returns it. It is a constraint, not a value type,
 // and is written self-referentially at the call site:
@@ -59,7 +59,7 @@ type Measured[M Number] interface {
 //	func Tween[T Number, S Movable[T, S]](shape S, to Point[T], t float64) S
 //
 // Every shape turns about its own center, Circle.Rotate giving the circle back. Lerp is
-// deliberately absent: Line.Lerp is the point a fraction along the segment rather than
+// deliberately absent: Segment.Lerp is the point a fraction along the segment rather than
 // a step toward another segment, and Polygon has none, so the five shapes do not share it.
 // A call through a type parameter constrained by an interface allocates, so this is for the
 // code around a hot loop, never inside one.
@@ -98,8 +98,8 @@ func intersectsKind[T Number](a, b Collider[T]) (bool, bool) {
 	switch shape := b.(type) {
 	case Circle[T]:
 		return a.IntersectsCircle(shape), true
-	case Line[T]:
-		return a.IntersectsLine(shape), true
+	case Segment[T]:
+		return a.IntersectsSegment(shape), true
 	case Polygon[T]:
 		return a.IntersectsPolygon(shape), true
 	case Rectangle[T]:

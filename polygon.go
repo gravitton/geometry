@@ -32,7 +32,7 @@ func Pol[T Number](vertices []Point[T]) Polygon[T] {
 // where a slice is needed. A single vertex yields one zero-length edge and an empty polygon
 // yields nothing. Every walk over the outline, containment, distance and the crossings of a
 // segment, reads these edges, so the boundary they join is the one every test agrees on.
-func (p Polygon[T]) Edges() iter.Seq[Line[T]] {
+func (p Polygon[T]) Edges() iter.Seq[Segment[T]] {
 	return edgesOf(p.Points)
 }
 
@@ -221,7 +221,7 @@ func (p Polygon[T]) DistanceTo(point Point[T]) float64 {
 
 // DistanceSquaredTo returns the squared distance DistanceTo takes the root of, faster for
 // comparisons, in one pass over the edges, the edgeWalk every closed shape makes: zero for a
-// point on an edge within Epsilon of T, snapped the way Line.DistanceSquaredTo snaps it, or
+// point on an edge within Epsilon of T, snapped the way Segment.DistanceSquaredTo snaps it, or
 // inside by the even-odd rule, the squared distance to the nearest edge otherwise, and
 // infinity for an empty polygon. It is a float64 even for an integer T, since the nearest
 // point of an edge is not a lattice point in general. Contains and IntersectsCircle are built
@@ -243,16 +243,16 @@ func (p Polygon[T]) IntersectsCircle(circle Circle[T]) bool {
 	return circle.IntersectsPolygon(p)
 }
 
-// IntersectsLine reports whether the polygon and the segment share a point, as
-// Line.IntersectsPolygon does.
-func (p Polygon[T]) IntersectsLine(line Line[T]) bool {
-	return line.IntersectsPolygon(p)
+// IntersectsSegment reports whether the polygon and the segment share a point, as
+// Segment.IntersectsPolygon does.
+func (p Polygon[T]) IntersectsSegment(segment Segment[T]) bool {
+	return segment.IntersectsPolygon(p)
 }
 
-// IntersectionLine returns the points where the segment crosses the polygon boundary, as
-// Line.IntersectionPolygon does.
-func (p Polygon[T]) IntersectionLine(line Line[T]) []Point[T] {
-	return line.IntersectionPolygon(p)
+// IntersectionSegment returns the points where the segment crosses the polygon boundary, as
+// Segment.IntersectionPolygon does.
+func (p Polygon[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
+	return segment.IntersectionPolygon(p)
 }
 
 // IntersectsPolygon reports whether the polygons share a point: a vertex of one lies within the other,
