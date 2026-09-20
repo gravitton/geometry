@@ -87,8 +87,7 @@ func (r Rectangle[T]) Min() Point[T] {
 
 // Max returns the maximum corner of the axis-aligned extent of the rectangle: the bottom-right
 // corner while it is not rotated, and the maximum of its four vertices once it is.
-// For integer types with odd Width or Height, w-w/2 != w/2 due to truncation;
-// using (w-w/2) here keeps Max-Min equal to exactly w (the extra unit goes to Max).
+// RectangleFromMax is its inverse for a rectangle that is not rotated.
 func (r Rectangle[T]) Max() Point[T] {
 	_, b := r.MinMax()
 
@@ -100,75 +99,70 @@ func (r Rectangle[T]) Max() Point[T] {
 // test as any other outline.
 func (r Rectangle[T]) MinMax() (Point[T], Point[T]) {
 	if r.IsAligned() {
-		a, b := r.frame()
+		a, b := r.localMinMax()
 
 		return r.Center.Add(a), r.Center.Add(b)
 	}
 
 	corners := r.corners()
-	a, b := corners[0], corners[0]
-	for _, corner := range corners[1:] {
-		a = Point[T]{min(a.X, corner.X), min(a.Y, corner.Y)}
-		b = Point[T]{max(b.X, corner.X), max(b.Y, corner.Y)}
-	}
 
-	return a, b
+	return minMaxOf(corners[:])
 }
 
 // TopLeft returns the top-left corner, named in the frame of the rectangle before its turn.
 func (r Rectangle[T]) TopLeft() Point[T] {
-	a, _ := r.frame()
+	a, _ := r.localMinMax()
 
-	return r.world(a)
+	return r.worldPoint(a)
 }
 
 // BottomLeft returns the bottom-left corner, named in the frame of the rectangle before its turn.
 func (r Rectangle[T]) BottomLeft() Point[T] {
-	a, b := r.frame()
+	a, b := r.localMinMax()
 
-	return r.world(Vector[T]{a.X, b.Y})
+	return r.worldPoint(Vector[T]{a.X, b.Y})
 }
 
 // BottomRight returns the bottom-right corner, named in the frame of the rectangle before its turn.
 func (r Rectangle[T]) BottomRight() Point[T] {
-	_, b := r.frame()
+	_, b := r.localMinMax()
 
-	return r.world(b)
+	return r.worldPoint(b)
 }
 
 // TopRight returns the top-right corner, named in the frame of the rectangle before its turn.
 func (r Rectangle[T]) TopRight() Point[T] {
-	a, b := r.frame()
+	a, b := r.localMinMax()
 
-	return r.world(Vector[T]{b.X, a.Y})
+	return r.worldPoint(Vector[T]{b.X, a.Y})
 }
 
 // Top returns the midpoint of the top edge, named in the frame of the rectangle before its turn.
 func (r Rectangle[T]) Top() Point[T] {
-	a, _ := r.frame()
+	a, _ := r.localMinMax()
 
-	return r.world(Vector[T]{0, a.Y})
+	return r.worldPoint(Vector[T]{0, a.Y})
 }
 
 // Bottom returns the midpoint of the bottom edge, named in the frame of the rectangle before its turn.
 func (r Rectangle[T]) Bottom() Point[T] {
-	_, b := r.frame()
+	_, b := r.localMinMax()
 
-	return r.world(Vector[T]{0, b.Y})
+	return r.worldPoint(Vector[T]{0, b.Y})
 }
 
 // Left returns the midpoint of the left edge, named in the frame of the rectangle before its turn.
 func (r Rectangle[T]) Left() Point[T] {
-	a, _ := r.frame()
+	a, _ := r.localMinMax()
 
-	return r.world(Vector[T]{a.X, 0})
+	return r.worldPoint(Vector[T]{a.X, 0})
 }
 
 // Right returns the midpoint of the right edge, named in the frame of the rectangle before its turn.
 func (r Rectangle[T]) Right() Point[T] {
-	_, b := r.frame()
+	_, b := r.localMinMax()
 
-	return r.world(Vector[T]{b.X, 0})
+	return r.worldPoint(Vector[T]{b.X, 0})
 }
 
 // Anchor returns the point on the rectangle in the given direction from its center, in the
@@ -248,34 +242,6 @@ func (r Rectangle[T]) Vertices() iter.Seq[Point[T]] {
 	}
 }
 
-// corners returns the vertices as an array from a single frame, for Vertices, Edges and
-// Polygon, so none recomputes the corners it shares.
-func (r Rectangle[T]) corners() [4]Point[T] {
-	a, b := r.frame()
-
-	return [4]Point[T]{r.world(a), r.world(Vector[T]{b.X, a.Y}), r.world(b), r.world(Vector[T]{a.X, b.Y})}
-}
-
-// frame returns the offsets of the minimum and maximum corner from the center in the frame of
-// the rectangle before its turn. For integer T the minimum offset truncates toward the center
-// and the maximum takes the rest, so the two differ by exactly the size.
-func (r Rectangle[T]) frame() (Vector[T], Vector[T]) {
-	w, h := r.Size.XY()
-
-	return Vector[T]{-w / 2, -h / 2}, Vector[T]{w - w/2, h - h/2}
-}
-
-// world returns the point at the given offset from the center in the frame before the turn,
-// turned by Angle: the sum alone while the rectangle is not rotated, so an integer rectangle
-// keeps its exact corners, and the offset rotated once and rounded otherwise.
-func (r Rectangle[T]) world(offset Vector[T]) Point[T] {
-	if r.IsAligned() {
-		return r.Center.Add(offset)
-	}
-
-	return r.Center.Add(offset.Rotate(r.Angle))
-}
-
 // Area returns the rectangle area.
 func (r Rectangle[T]) Area() T {
 	return r.Size.Area()
@@ -299,6 +265,35 @@ func (r Rectangle[T]) Bounds() Rectangle[T] {
 	}
 
 	return RectangleFromMinMax(r.MinMax())
+}
+
+// localMinMax returns the offsets of the minimum and maximum corner from the center in the
+// local frame of the rectangle, the frame before its turn, the pair MinMax gives in the world.
+// For integer T the minimum offset truncates toward the center and the maximum takes the rest,
+// so the two differ by exactly the size.
+func (r Rectangle[T]) localMinMax() (Vector[T], Vector[T]) {
+	w, h := r.Size.XY()
+
+	return Vector[T]{-w / 2, -h / 2}, Vector[T]{w - w/2, h - h/2}
+}
+
+// worldPoint returns the point at the given offset from the center in the frame before the turn,
+// turned by Angle: the sum alone while the rectangle is not rotated, so an integer rectangle
+// keeps its exact corners, and the offset rotated once and rounded otherwise.
+func (r Rectangle[T]) worldPoint(offset Vector[T]) Point[T] {
+	if r.IsAligned() {
+		return r.Center.Add(offset)
+	}
+
+	return r.Center.Add(offset.Rotate(r.Angle))
+}
+
+// corners returns the vertices as an array from a single frame, for Vertices, Edges and
+// Polygon, so none recomputes the corners it shares.
+func (r Rectangle[T]) corners() [4]Point[T] {
+	a, b := r.localMinMax()
+
+	return [4]Point[T]{r.worldPoint(a), r.worldPoint(Vector[T]{b.X, a.Y}), r.worldPoint(b), r.worldPoint(Vector[T]{a.X, b.Y})}
 }
 
 // Translate creates a new Rectangle translated by the given vector.
@@ -394,13 +389,13 @@ func (r Rectangle[T]) ShrinkXY(amountX, amountY T) Rectangle[T] {
 // A negative padding outsets the rectangle, so Outset undoes Inset as long as nothing was clamped.
 // For integer T the moved center of a rotated rectangle is rounded once, as world places it.
 func (r Rectangle[T]) Inset(padding Padding[T]) Rectangle[T] {
-	a, b := r.frame()
+	a, b := r.localMinMax()
 
 	a = Vector[T]{min(a.X+padding.Left, b.X), min(a.Y+padding.Top, b.Y)}
 	b = Vector[T]{max(b.X-padding.Right, a.X), max(b.Y-padding.Bottom, a.Y)}
 	inset := RectangleFromMinMax(a.Point(), b.Point())
 
-	return Rectangle[T]{r.world(inset.Center.Vector()), inset.Size, r.Angle}
+	return Rectangle[T]{r.worldPoint(inset.Center.Vector()), inset.Size, r.Angle}
 }
 
 // Outset creates a new Rectangle expanded by the given padding amounts, the inverse of Inset.
@@ -442,19 +437,19 @@ func (r Rectangle[T]) Clamp(point Point[T]) Point[T] {
 		return Point[T]{Clamp(point.X, a.X, b.X), Clamp(point.Y, a.Y, b.Y)}
 	}
 
-	a, b := r.frame()
-	local := r.local(point)
+	a, b := r.localMinMax()
+	local := r.localOffset(point)
 	clamped := Vector[float64]{Clamp(local.X, float64(a.X), float64(b.X)), Clamp(local.Y, float64(a.Y), float64(b.Y))}
 	placed := r.Center.Float().Add(clamped.Rotate(r.Angle))
 
-	return Point[T]{Cast[T](placed.X), Cast[T](placed.Y)}
+	return placed.Cast[T]()
 }
 
 // Contains reports whether the given point lies within the rectangle, boundary included within
 // Epsilon of T: strictly inside, or on an edge as Line.Contains judges it, so the rectangle
 // contains exactly the points its edges contain and the points between them.
 func (r Rectangle[T]) Contains(point Point[T]) bool {
-	return r.walk(point) == 0
+	return r.DistanceSquaredTo(point) == 0
 }
 
 // DistanceTo returns the distance from the given point to the nearest point of the rectangle:
@@ -466,60 +461,64 @@ func (r Rectangle[T]) DistanceTo(point Point[T]) float64 {
 }
 
 // DistanceSquaredTo returns the squared distance DistanceTo takes the root of, faster for
-// comparisons. It is a float64 even for an integer T, like Line.DistanceSquaredTo, since the
-// nearest point of a rotated rectangle is a foot on a turned edge, not a lattice point in
-// general; only Point.DistanceSquaredTo stays in T.
+// comparisons, in one pass over the edges, the edgeWalk every closed shape makes: zero for a
+// point inside by the even-odd rule, or on an edge within Epsilon of T as
+// Line.DistanceSquaredTo snaps it, and the squared distance to the nearest edge otherwise. A
+// rectangle that is not rotated answers a point Clamp leaves where it is before any edge is
+// examined. It is a float64 even for an integer T, since the nearest point of a rotated
+// rectangle is a foot on a turned edge, not a lattice point in general; only
+// Point.DistanceSquaredTo stays in T. Contains and IntersectsCircle are built on it, and the
+// edges are the ones Line.IntersectionLine and Polygon read, so containment, the boundary
+// crossings of a segment and the polygon of the rectangle agree by construction, for a
+// rotated integer rectangle on the rounded corners its edges join.
 func (r Rectangle[T]) DistanceSquaredTo(point Point[T]) float64 {
-	return r.walk(point)
-}
-
-// walk returns the squared distance from the point to the rectangle in one pass over the
-// edges, the walk Polygon.walk makes: zero for a point inside by the even-odd rule, or on an
-// edge within Epsilon of T as Line.DistanceSquaredTo snaps it, and the squared distance to the
-// nearest edge otherwise. A rectangle that is not rotated answers a point Clamp leaves where it
-// is before any edge is examined. Contains, DistanceSquaredTo and IntersectsCircle are built on
-// it, and the edges are the ones Line.Intersection and Polygon read, so containment, the
-// boundary crossings of a segment and the polygon of the rectangle agree by construction, for
-// a rotated integer rectangle on the rounded corners its edges join.
-func (r Rectangle[T]) walk(point Point[T]) float64 {
 	if r.IsAligned() && r.Clamp(point) == point {
 		return 0
 	}
 
-	inside, distance := false, math.Inf(1)
+	w := edgeWalk[T]{distance: math.Inf(1)}
 	for edge := range r.Edges() {
-		distance = min(distance, edge.distanceSquaredTo(point))
-		if lessOrEqualSquared[T](distance, 0) {
+		if w.step(edge, point) {
 			return 0
 		}
-		if edge.crossesRay(point) {
-			inside = !inside
-		}
 	}
 
-	if inside {
-		return 0
-	}
-
-	return distance
+	return w.result()
 }
 
-// local returns the offset of the point from the center in the frame of the rectangle before
-// its turn, in float64, the inverse of world, so that Clamp can clamp a rotated rectangle as
-// an aligned one.
-func (r Rectangle[T]) local(point Point[T]) Vector[float64] {
-	return point.Subtract(r.Center).Float().Rotate(-r.Angle)
+// IntersectsCircle reports whether the rectangle and the circle overlap, as
+// Circle.IntersectsRectangle does.
+func (r Rectangle[T]) IntersectsCircle(circle Circle[T]) bool {
+	return circle.IntersectsRectangle(r)
 }
 
-// Intersects reports whether the rectangles share a point: a corner of one lies within the
-// other, or an edge of one meets an edge of the other, as Polygon.Intersects decides and by
+// IntersectsLine reports whether the rectangle and the segment share a point, as
+// Line.IntersectsRectangle does.
+func (r Rectangle[T]) IntersectsLine(line Line[T]) bool {
+	return line.IntersectsRectangle(r)
+}
+
+// IntersectionLine returns the points where the segment crosses the rectangle boundary, as
+// Line.IntersectionRectangle does.
+func (r Rectangle[T]) IntersectionLine(line Line[T]) []Point[T] {
+	return line.IntersectionRectangle(r)
+}
+
+// IntersectsPolygon reports whether the rectangle and the polygon share a point, as
+// Polygon.IntersectsRectangle does.
+func (r Rectangle[T]) IntersectsPolygon(polygon Polygon[T]) bool {
+	return polygon.IntersectsRectangle(r)
+}
+
+// IntersectsRectangle reports whether the rectangles share a point: a corner of one lies within the
+// other, or an edge of one meets an edge of the other, as Polygon.IntersectsPolygon decides and by
 // the same tolerance on the distance, so touching rectangles intersect within Epsilon of T,
 // the same closed convention as Contains. Rectangles whose extents do not overlap are rejected
 // before any edge is examined, and two rectangles that are not rotated whose extents overlap
 // exactly are decided there, since an exact overlap of two aligned boxes always shares a
 // corner or a crossing; only a gap within the tolerance goes to the edges. Two rectangles of
 // the same angle are tested in their shared frame, as Intersection finds their overlap.
-func (r Rectangle[T]) Intersects(rectangle Rectangle[T]) bool {
+func (r Rectangle[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 	a1, b1 := r.MinMax()
 	a2, b2 := rectangle.MinMax()
 
@@ -531,24 +530,24 @@ func (r Rectangle[T]) Intersects(rectangle Rectangle[T]) bool {
 	case r.IsAligned() && rectangle.IsAligned():
 		return r.meets(rectangle)
 	case r.parallel(rectangle):
-		return r.unturn(r).Intersects(r.unturn(rectangle))
+		return r.localRectangle(r).IntersectsRectangle(r.localRectangle(rectangle))
 	default:
 		return r.meets(rectangle)
 	}
 }
 
-// Intersection returns the rectangle common to both, and false when they do not intersect.
+// IntersectionRectangle returns the rectangle common to both, and false when they do not intersect.
 // Touching rectangles intersect in a rectangle of zero width or height, within Epsilon of T,
 // exactly where Intersects holds: a corner admitted by the tolerance is placed on the boundary
 // of the other rectangle, never beyond it. Two rectangles of the same angle overlap in a
 // rectangle of that angle, found in their shared frame; rectangles of different angles overlap
 // in a polygon that is not a rectangle and return false even where Intersects holds, as
-// parallel segments do for Line.Intersection. For integer T the offset between the centers of
+// parallel segments do for Line.IntersectionLine. For integer T the offset between the centers of
 // two rotated rectangles is rounded into the shared frame and the result rounded back.
-func (r Rectangle[T]) Intersection(rectangle Rectangle[T]) (Rectangle[T], bool) {
+func (r Rectangle[T]) IntersectionRectangle(rectangle Rectangle[T]) (Rectangle[T], bool) {
 	switch {
 	case r.IsAligned() && rectangle.IsAligned():
-		if !r.Intersects(rectangle) {
+		if !r.IntersectsRectangle(rectangle) {
 			return Rectangle[T]{}, false
 		}
 
@@ -560,12 +559,12 @@ func (r Rectangle[T]) Intersection(rectangle Rectangle[T]) (Rectangle[T], bool) 
 
 		return RectangleFromMinMax(a, b), true
 	case r.parallel(rectangle):
-		overlap, ok := r.unturn(r).Intersection(r.unturn(rectangle))
+		overlap, ok := r.localRectangle(r).IntersectionRectangle(r.localRectangle(rectangle))
 		if !ok {
 			return Rectangle[T]{}, false
 		}
 
-		return r.place(overlap), true
+		return r.worldRectangle(overlap), true
 	default:
 		return Rectangle[T]{}, false
 	}
@@ -587,49 +586,81 @@ func (r Rectangle[T]) Union(rectangle Rectangle[T]) Rectangle[T] {
 			Point[T]{max(b1.X, b2.X), max(b1.Y, b2.Y)},
 		)
 	case r.parallel(rectangle):
-		return r.place(r.unturn(r).Union(r.unturn(rectangle)))
+		return r.worldRectangle(r.localRectangle(r).Union(r.localRectangle(rectangle)))
 	default:
 		return r.Bounds().Union(rectangle.Bounds())
 	}
 }
 
-// IntersectsCircle reports whether the rectangle and the circle overlap: the center lies within
-// the rectangle, or an edge passes within the radius. Touching shapes intersect, within Epsilon
-// of T, by the same comparison Circle.Contains makes on the squared distance Contains and
-// DistanceSquaredTo measure.
-func (r Rectangle[T]) IntersectsCircle(circle Circle[T]) bool {
-	return circle.reaches(r.walk(circle.Center))
-}
+// IntersectsRegularPolygon reports whether the rectangle and the regular polygon share a
+// point, the answer IntersectsPolygon gives on the polygon's Polygon form, without building
+// it: a corner of one lies within the other, or an edge of the polygon crosses an edge of the
+// rectangle. The two Bounds reject the pair before any edge is examined, whatever the
+// rectangle's angle, and an empty polygon intersects nothing.
+func (r Rectangle[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
+	if polygon.Empty() {
+		return false
+	}
 
-// IntersectsLine reports whether the rectangle and the segment share a point, as
-// Line.IntersectsRectangle does.
-func (r Rectangle[T]) IntersectsLine(line Line[T]) bool {
-	return line.IntersectsRectangle(r)
-}
+	a1, b1 := r.MinMax()
+	a2, b2 := polygon.minMax()
 
-// IntersectionLine returns the points where the segment crosses the rectangle boundary, as
-// Line.IntersectionRectangle does.
-func (r Rectangle[T]) IntersectionLine(line Line[T]) []Point[T] {
-	return line.IntersectionRectangle(r)
-}
+	if !overlaps(a1, b1, a2, b2) {
+		return false
+	}
 
-// IntersectsPolygon reports whether the rectangle and the polygon share a point, as
-// Polygon.IntersectsRectangle does.
-func (r Rectangle[T]) IntersectsPolygon(polygon Polygon[T]) bool {
-	return polygon.IntersectsRectangle(r)
-}
-
-// meets reports whether two rectangles whose extents overlap share a point, the way
-// Polygon.Intersects decides it: a corner of one lies within the other, or an edge of one
-// meets an edge of the other by Line.Intersects.
-func (r Rectangle[T]) meets(rectangle Rectangle[T]) bool {
-	if rectangle.Contains(r.TopLeft()) || r.Contains(rectangle.TopLeft()) {
+	if polygon.containsWithin(r.TopLeft(), a2, b2) || r.containsWithin(polygon.vertex(0), a1, b1) {
 		return true
 	}
 
+	probe := edgeProbe[T]{a: a2, b: b2}
 	for edge := range r.Edges() {
+		if !probe.aim(edge) {
+			continue
+		}
+
+		for other := range polygon.Edges() {
+			if probe.meets(other) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// localOffset returns the offset of the point from the center in the frame of the rectangle before
+// its turn, in float64, the inverse of world, so that Clamp can clamp a rotated rectangle as
+// an aligned one.
+func (r Rectangle[T]) localOffset(point Point[T]) Vector[float64] {
+	return point.Subtract(r.Center).Float().Rotate(-r.Angle)
+}
+
+// containsWithin is Contains for a caller that already holds the corners of MinMax, so the
+// intersection tests read the extent once and reuse it for every point they test.
+func (r Rectangle[T]) containsWithin(point, a, b Point[T]) bool {
+	return point.Between(a, b) && r.DistanceSquaredTo(point) == 0
+}
+
+// meets reports whether two rectangles whose extents overlap share a point, the way
+// Polygon.IntersectsPolygon decides it: a corner of one lies within the other, or an edge of one
+// meets an edge of the other by Line.IntersectsLine.
+func (r Rectangle[T]) meets(rectangle Rectangle[T]) bool {
+	a1, b1 := r.MinMax()
+	a2, b2 := rectangle.MinMax()
+
+	if rectangle.containsWithin(r.TopLeft(), a2, b2) || r.containsWithin(rectangle.TopLeft(), a1, b1) {
+		return true
+	}
+
+	probe := edgeProbe[T]{a: a2, b: b2}
+	for edge := range r.Edges() {
+		if !probe.aim(edge) {
+			continue
+		}
+
 		for other := range rectangle.Edges() {
-			if edge.Intersects(other) {
+			if probe.meets(other) {
 				return true
 			}
 		}
@@ -644,21 +675,23 @@ func (r Rectangle[T]) parallel(rectangle Rectangle[T]) bool {
 	return EqualAngle(r.Angle, rectangle.Angle)
 }
 
-// unturn returns the given rectangle as it lies in the frame of this one before its turn: the
-// offset between the centers turned back by Angle, about the origin, with no angle of its own.
-// Two rectangles of the same angle unturned by the same rectangle, itself included, are
-// aligned about the origin and overlap, intersect and unite as aligned rectangles do; place
-// turns the result back. For integer T the turned offset is rounded.
-func (r Rectangle[T]) unturn(rectangle Rectangle[T]) Rectangle[T] {
+// localRectangle returns the given rectangle as it lies in the local frame of this one, the
+// frame before its turn: the offset between the centers turned back by Angle, about the origin,
+// with no angle of its own. Two rectangles of the same angle taken into the local frame of the
+// same rectangle, itself included, are aligned about the origin and overlap, intersect and
+// unite as aligned rectangles do; worldRectangle turns the result back. For integer T the
+// turned offset is rounded.
+func (r Rectangle[T]) localRectangle(rectangle Rectangle[T]) Rectangle[T] {
 	offset := rectangle.Center.Subtract(r.Center).Rotate(-r.Angle)
 
 	return Rectangle[T]{offset.Point(), rectangle.Size, 0}
 }
 
-// place returns a rectangle found in the frame of this one before its turn, as unturn gives
-// it, turned back into place: its center turned by Angle about this center, with this angle.
-func (r Rectangle[T]) place(rectangle Rectangle[T]) Rectangle[T] {
-	return Rectangle[T]{r.world(rectangle.Center.Vector()), rectangle.Size, r.Angle}
+// worldRectangle returns a rectangle found in the local frame of this one, as localRectangle
+// gives it, turned back into the world: its center turned by Angle about this center, with
+// this angle.
+func (r Rectangle[T]) worldRectangle(rectangle Rectangle[T]) Rectangle[T] {
+	return Rectangle[T]{r.worldPoint(rectangle.Center.Vector()), rectangle.Size, r.Angle}
 }
 
 // Equal checks for equal center, size and angle values using tolerant numeric comparison.

@@ -817,79 +817,126 @@ func TestRectangle_DistanceSquaredTo(t *testing.T) {
 	})
 }
 
-func TestRectangle_Intersects(t *testing.T) {
-	rectangle := Rect(Pt(0.0, 0.0), Sz(200.0, 100.0))
-
-	t.Run("overlapping", func(t *testing.T) {
-		assert.True(t, rectangle.Intersects(Rect(Pt(100.0, -50.0), Sz(200.0, 50.0))))
-	})
-	t.Run("apart", func(t *testing.T) {
-		assert.False(t, rectangle.Intersects(Rect(Pt(100.0, 350.0), Sz(200.0, 450.0))))
-	})
-	t.Run("a shared edge counts as an intersection", func(t *testing.T) {
-		assert.True(t, rectangle.Intersects(Rect(Pt(200.0, 0.0), Sz(200.0, 100.0))))
-		assert.False(t, rectangle.Intersects(Rect(Pt(201.0, 0.0), Sz(200.0, 100.0))))
-	})
-	t.Run("one contained in the other", func(t *testing.T) {
-		assert.True(t, rectangle.Intersects(Rect(Pt(0.0, 0.0), Sz(50.0, 50.0))))
-	})
-	t.Run("a corner gap within the tolerance on both axes is decided on the distance", func(t *testing.T) {
-		r := RectangleFromMinMax(Pt(0.0, 0.0), Pt(1.0, 1.0))
-
-		assert.True(t, r.Intersects(RectangleFromMinMax(Pt(1.0+Delta/2, 1.0), Pt(2.0, 2.0))))
-		assert.False(t, r.Intersects(RectangleFromMinMax(Pt(1.0+0.9*Delta, 1.0+0.9*Delta), Pt(2.0, 2.0))))
-		assert.True(t, r.Intersects(RectangleFromMinMax(Pt(1.0+0.7*Delta, 1.0+0.7*Delta), Pt(2.0, 2.0))))
-	})
-	t.Run("rotated against aligned is decided on the edges, not the bounds", func(t *testing.T) {
-		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
-
-		assert.False(t, diamond.Intersects(RectangleFromMinMax(Pt(1.0, 1.0), Pt(3.0, 3.0))))
-		assert.True(t, diamond.Bounds().Intersects(RectangleFromMinMax(Pt(1.0, 1.0), Pt(3.0, 3.0))))
-		assert.True(t, diamond.Intersects(Rect(Pt(1.2, 0.0), Sz(1.0, 1.0))))
-		assert.True(t, diamond.Intersects(Rect(Pt(0.0, 0.0), Sz(0.5, 0.5))))
-		assert.True(t, Rect(Pt(0.0, 0.0), Sz(0.5, 0.5)).Intersects(diamond))
-	})
-	t.Run("rotated of the same angle is tested in the shared frame", func(t *testing.T) {
-		a := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(Pi / 2)
-
-		assert.True(t, a.Intersects(Rect(Pt(0.0, 1.0), Sz(4.0, 2.0)).Rotate(Pi/2)))
-		assert.True(t, a.Intersects(Rect(Pt(2.0, 0.0), Sz(4.0, 2.0)).Rotate(Pi/2)))
-		assert.False(t, a.Intersects(Rect(Pt(3.0, 0.0), Sz(4.0, 2.0)).Rotate(Pi/2)))
-	})
-	t.Run("symmetric", func(t *testing.T) {
-		for _, a := range rectFixtures {
-			for _, b := range rectFixtures {
-				assert.Equal(t, a.Intersects(b), b.Intersects(a), fmt.Sprintf("%s → %s: ", a, b))
+func TestRectangle_IntersectsCircle(t *testing.T) {
+	t.Run("mirrors Circle.IntersectsRectangle", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, c := range circleFixtures {
+				assert.Equal(t, r.IntersectsCircle(c), c.IntersectsRectangle(r), fmt.Sprintf("%s → %s: ", r, c))
 			}
 		}
 	})
 }
 
-func BenchmarkRectangle_Intersects(b *testing.B) {
+func TestRectangle_IntersectsLine(t *testing.T) {
+	t.Run("mirrors Line.IntersectsRectangle", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, l := range lineFixtures {
+				assert.Equal(t, r.IntersectsLine(l), l.IntersectsRectangle(r), fmt.Sprintf("%s → %s: ", r, l))
+			}
+		}
+	})
+}
+
+func TestRectangle_IntersectionLine(t *testing.T) {
+	t.Run("matches Line.IntersectionRectangle", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, l := range lineFixtures {
+				AssertVertices(t, r.IntersectionLine(l), l.IntersectionRectangle(r), fmt.Sprintf("%s → %s: ", r, l))
+			}
+		}
+	})
+}
+
+func TestRectangle_IntersectsPolygon(t *testing.T) {
+	t.Run("rotated is tested on its turned edges", func(t *testing.T) {
+		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
+		corner := Pol([]Point[float64]{{1, 1}, {3, 1}, {3, 3}})
+
+		assert.False(t, diamond.IntersectsPolygon(corner))
+		assert.True(t, diamond.Bounds().IntersectsPolygon(corner))
+	})
+	t.Run("mirrors Polygon.IntersectsRectangle", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, p := range polygonFixtures() {
+				assert.Equal(t, r.IntersectsPolygon(p), p.IntersectsRectangle(r), fmt.Sprintf("%s → %s: ", r, p))
+			}
+		}
+	})
+}
+
+func TestRectangle_IntersectsRectangle(t *testing.T) {
+	rectangle := Rect(Pt(0.0, 0.0), Sz(200.0, 100.0))
+
+	t.Run("overlapping", func(t *testing.T) {
+		assert.True(t, rectangle.IntersectsRectangle(Rect(Pt(100.0, -50.0), Sz(200.0, 50.0))))
+	})
+	t.Run("apart", func(t *testing.T) {
+		assert.False(t, rectangle.IntersectsRectangle(Rect(Pt(100.0, 350.0), Sz(200.0, 450.0))))
+	})
+	t.Run("a shared edge counts as an intersection", func(t *testing.T) {
+		assert.True(t, rectangle.IntersectsRectangle(Rect(Pt(200.0, 0.0), Sz(200.0, 100.0))))
+		assert.False(t, rectangle.IntersectsRectangle(Rect(Pt(201.0, 0.0), Sz(200.0, 100.0))))
+	})
+	t.Run("one contained in the other", func(t *testing.T) {
+		assert.True(t, rectangle.IntersectsRectangle(Rect(Pt(0.0, 0.0), Sz(50.0, 50.0))))
+	})
+	t.Run("a corner gap within the tolerance on both axes is decided on the distance", func(t *testing.T) {
+		r := RectangleFromMinMax(Pt(0.0, 0.0), Pt(1.0, 1.0))
+
+		assert.True(t, r.IntersectsRectangle(RectangleFromMinMax(Pt(1.0+Delta/2, 1.0), Pt(2.0, 2.0))))
+		assert.False(t, r.IntersectsRectangle(RectangleFromMinMax(Pt(1.0+0.9*Delta, 1.0+0.9*Delta), Pt(2.0, 2.0))))
+		assert.True(t, r.IntersectsRectangle(RectangleFromMinMax(Pt(1.0+0.7*Delta, 1.0+0.7*Delta), Pt(2.0, 2.0))))
+	})
+	t.Run("rotated against aligned is decided on the edges, not the bounds", func(t *testing.T) {
+		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
+
+		assert.False(t, diamond.IntersectsRectangle(RectangleFromMinMax(Pt(1.0, 1.0), Pt(3.0, 3.0))))
+		assert.True(t, diamond.Bounds().IntersectsRectangle(RectangleFromMinMax(Pt(1.0, 1.0), Pt(3.0, 3.0))))
+		assert.True(t, diamond.IntersectsRectangle(Rect(Pt(1.2, 0.0), Sz(1.0, 1.0))))
+		assert.True(t, diamond.IntersectsRectangle(Rect(Pt(0.0, 0.0), Sz(0.5, 0.5))))
+		assert.True(t, Rect(Pt(0.0, 0.0), Sz(0.5, 0.5)).IntersectsRectangle(diamond))
+	})
+	t.Run("rotated of the same angle is tested in the shared frame", func(t *testing.T) {
+		a := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(Pi / 2)
+
+		assert.True(t, a.IntersectsRectangle(Rect(Pt(0.0, 1.0), Sz(4.0, 2.0)).Rotate(Pi/2)))
+		assert.True(t, a.IntersectsRectangle(Rect(Pt(2.0, 0.0), Sz(4.0, 2.0)).Rotate(Pi/2)))
+		assert.False(t, a.IntersectsRectangle(Rect(Pt(3.0, 0.0), Sz(4.0, 2.0)).Rotate(Pi/2)))
+	})
+	t.Run("symmetric", func(t *testing.T) {
+		for _, a := range rectFixtures {
+			for _, b := range rectFixtures {
+				assert.Equal(t, a.IntersectsRectangle(b), b.IntersectsRectangle(a), fmt.Sprintf("%s → %s: ", a, b))
+			}
+		}
+	})
+}
+
+func BenchmarkRectangle_IntersectsRectangle(b *testing.B) {
 	rectangle := Rect(Pt(0.0, 0.0), Sz(10.0, 10.0))
 	other := Rect(Pt(5.0, 5.0), Sz(10.0, 10.0))
 
 	for b.Loop() {
-		sinkBool = rectangle.Intersects(other)
+		sinkBool = rectangle.IntersectsRectangle(other)
 	}
 }
 
-func TestRectangle_Intersection(t *testing.T) {
+func TestRectangle_IntersectionRectangle(t *testing.T) {
 	rectangle := Rect(Pt(0, 0), Sz(4, 4))
 
 	t.Run("overlapping", func(t *testing.T) {
-		overlap, ok := rectangle.Intersection(Rect(Pt(2, 2), Sz(4, 4)))
+		overlap, ok := rectangle.IntersectionRectangle(Rect(Pt(2, 2), Sz(4, 4)))
 
 		assert.True(t, ok)
 		AssertRectangle(t, overlap, RectangleFromMinMax(Pt(0, 0), Pt(2, 2)))
 	})
 	t.Run("apart", func(t *testing.T) {
-		_, ok := rectangle.Intersection(Rect(Pt(10, 10), Sz(4, 4)))
+		_, ok := rectangle.IntersectionRectangle(Rect(Pt(10, 10), Sz(4, 4)))
 
 		assert.False(t, ok)
 	})
 	t.Run("touching gives a zero extent", func(t *testing.T) {
-		overlap, ok := rectangle.Intersection(Rect(Pt(4, 0), Sz(4, 4)))
+		overlap, ok := rectangle.IntersectionRectangle(Rect(Pt(4, 0), Sz(4, 4)))
 
 		assert.True(t, ok)
 		AssertRectangle(t, overlap, RectangleFromMinMax(Pt(2, -2), Pt(2, 2)))
@@ -897,13 +944,13 @@ func TestRectangle_Intersection(t *testing.T) {
 	t.Run("one contained in the other", func(t *testing.T) {
 		inner := Rect(Pt(0, 0), Sz(2, 2))
 
-		overlap, ok := rectangle.Intersection(inner)
+		overlap, ok := rectangle.IntersectionRectangle(inner)
 
 		assert.True(t, ok)
 		AssertRectangle(t, overlap, inner)
 	})
 	t.Run("float", func(t *testing.T) {
-		overlap, ok := Rect(Pt(0.0, 0.0), Sz(3.0, 3.0)).Intersection(Rect(Pt(1.0, 1.0), Sz(3.0, 3.0)))
+		overlap, ok := Rect(Pt(0.0, 0.0), Sz(3.0, 3.0)).IntersectionRectangle(Rect(Pt(1.0, 1.0), Sz(3.0, 3.0)))
 
 		assert.True(t, ok)
 		AssertRectangle(t, overlap, RectangleFromMinMax(Pt(-0.5, -0.5), Pt(1.5, 1.5)))
@@ -911,7 +958,7 @@ func TestRectangle_Intersection(t *testing.T) {
 	t.Run("rotated of the same angle overlap in a rectangle of that angle", func(t *testing.T) {
 		a := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(Pi / 2)
 
-		overlap, ok := a.Intersection(Rect(Pt(0.0, 1.0), Sz(4.0, 2.0)).Rotate(Pi / 2))
+		overlap, ok := a.IntersectionRectangle(Rect(Pt(0.0, 1.0), Sz(4.0, 2.0)).Rotate(Pi / 2))
 
 		assert.True(t, ok)
 		AssertRectangle(t, overlap, Rect(Pt(0.0, 0.5), Sz(3.0, 2.0)).Rotate(Pi/2))
@@ -919,7 +966,7 @@ func TestRectangle_Intersection(t *testing.T) {
 	t.Run("rotated int rounds the shared frame", func(t *testing.T) {
 		a := Rect(Pt(0, 0), Sz(4, 2)).Rotate(Pi / 2)
 
-		overlap, ok := a.Intersection(Rect(Pt(0, 1), Sz(4, 2)).Rotate(Pi / 2))
+		overlap, ok := a.IntersectionRectangle(Rect(Pt(0, 1), Sz(4, 2)).Rotate(Pi / 2))
 
 		assert.True(t, ok)
 		AssertRectangle(t, overlap, Rect(Pt(0, 0), Sz(3, 2)).Rotate(Pi/2))
@@ -927,7 +974,7 @@ func TestRectangle_Intersection(t *testing.T) {
 	t.Run("rotated of the same angle apart", func(t *testing.T) {
 		a := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(Pi / 2)
 
-		_, ok := a.Intersection(Rect(Pt(3.0, 0.0), Sz(4.0, 2.0)).Rotate(Pi / 2))
+		_, ok := a.IntersectionRectangle(Rect(Pt(3.0, 0.0), Sz(4.0, 2.0)).Rotate(Pi / 2))
 
 		assert.False(t, ok)
 	})
@@ -935,19 +982,19 @@ func TestRectangle_Intersection(t *testing.T) {
 		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
 		square := Rect(Pt(1.2, 0.0), Sz(1.0, 1.0))
 
-		_, ok := diamond.Intersection(square)
+		_, ok := diamond.IntersectionRectangle(square)
 
 		assert.False(t, ok)
-		assert.True(t, diamond.Intersects(square))
+		assert.True(t, diamond.IntersectsRectangle(square))
 	})
 	t.Run("symmetric and contained by both where the angles agree", func(t *testing.T) {
 		for _, a := range rectFixtures {
 			for _, b := range rectFixtures {
-				ab, okAB := a.Intersection(b)
-				ba, okBA := b.Intersection(a)
+				ab, okAB := a.IntersectionRectangle(b)
+				ba, okBA := b.IntersectionRectangle(a)
 
 				assert.Equal(t, okAB, okBA, fmt.Sprintf("%s → %s: ", a, b))
-				assert.Equal(t, okAB, a.Intersects(b) && a.parallel(b), fmt.Sprintf("%s → %s: ", a, b))
+				assert.Equal(t, okAB, a.IntersectsRectangle(b) && a.parallel(b), fmt.Sprintf("%s → %s: ", a, b))
 				if !okAB {
 					continue
 				}
@@ -1003,86 +1050,37 @@ func TestRectangle_Union(t *testing.T) {
 	})
 }
 
-func TestRectangle_IntersectsCircle(t *testing.T) {
-	rectangle := Rect(Pt(0.0, 0.0), Sz(200.0, 100.0))
+func TestRectangle_IntersectsRegularPolygon(t *testing.T) {
+	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0)
 
 	t.Run("overlapping", func(t *testing.T) {
-		assert.True(t, rectangle.IntersectsCircle(Circ(Pt(150.0, 0.0), 60.0)))
-		assert.True(t, rectangle.IntersectsCircle(Circ(Pt(110.0, 80.0), 60.0)))
+		assert.True(t, Rect(Pt(1, 1), Sz(2, 2)).IntersectsRegularPolygon(diamond))
 	})
 	t.Run("apart", func(t *testing.T) {
-		assert.False(t, rectangle.IntersectsCircle(Circ(Pt(150.0, 0.0), 40.0)))
+		assert.False(t, Rect(Pt(4, 4), Sz(2, 2)).IntersectsRegularPolygon(diamond))
+		assert.False(t, Rect(Pt(2, 2), Sz(1, 1)).IntersectsRegularPolygon(diamond))
 	})
-	t.Run("the circle center on the boundary counts", func(t *testing.T) {
-		assert.True(t, rectangle.IntersectsCircle(Circ(Pt(100.0, 0.0), 1.0)))
+	t.Run("one contained in the other", func(t *testing.T) {
+		assert.True(t, Rect(Pt(0, 0), Sz(10, 10)).IntersectsRegularPolygon(diamond))
+		assert.True(t, Rect(Pt(0, 0), Sz(1, 1)).IntersectsRegularPolygon(diamond))
 	})
-	t.Run("touching the edge from outside counts", func(t *testing.T) {
-		assert.True(t, rectangle.IntersectsCircle(Circ(Pt(200.0, 0.0), 100.0)))
-		assert.False(t, rectangle.IntersectsCircle(Circ(Pt(201.0, 0.0), 100.0)))
+	t.Run("edges crossing without a corner inside", func(t *testing.T) {
+		assert.True(t, Rect(Pt(0, 0), Sz(10, 1)).IntersectsRegularPolygon(RegPol(Pt(0, 0), Sz(2, 20), 4, 0)))
 	})
-	t.Run("touching the corner from outside counts", func(t *testing.T) {
-		assert.True(t, rectangle.IntersectsCircle(Circ(Pt(103.0, 54.0), 5.0)))
-		assert.False(t, rectangle.IntersectsCircle(Circ(Pt(104.0, 54.0), 5.0)))
-	})
-	t.Run("odd integer sizes keep exact half extents", func(t *testing.T) {
-		odd := Rect(Pt(0, 0), Sz(3, 3))
-
-		assert.True(t, odd.IntersectsCircle(Circ(Pt(3, 0), 1)))
-		assert.False(t, odd.IntersectsCircle(Circ(Pt(4, 0), 1)))
-	})
-	t.Run("circle fully inside the rectangle", func(t *testing.T) {
-		assert.True(t, rectangle.IntersectsCircle(Circ(Pt(0.0, 0.0), 10.0)))
-	})
-	t.Run("rotated measures to the turned edge", func(t *testing.T) {
-		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
-
-		assert.False(t, diamond.IntersectsCircle(Circ(Pt(1.5, 1.5), 0.5)))
-		assert.True(t, diamond.Bounds().IntersectsCircle(Circ(Pt(1.5, 1.5), 0.5)))
-		assert.True(t, diamond.IntersectsCircle(Circ(Pt(1.0, 1.0), 0.5)))
-	})
-	t.Run("a circle intersects its own bounds", func(t *testing.T) {
-		for _, c := range circleFixtures {
-			if c.Radius == 0 {
-				continue // a degenerate circle touches nothing
-			}
-
-			assert.True(t, c.Bounds().IntersectsCircle(c), fmt.Sprintf("%s: ", c))
-		}
-	})
-}
-
-func TestRectangle_IntersectsLine(t *testing.T) {
-	t.Run("mirrors Line.IntersectsRectangle", func(t *testing.T) {
-		for _, r := range rectFixtures {
-			for _, l := range lineFixtures {
-				assert.Equal(t, r.IntersectsLine(l), l.IntersectsRectangle(r), fmt.Sprintf("%s → %s: ", r, l))
-			}
-		}
-	})
-}
-
-func TestRectangle_IntersectionLine(t *testing.T) {
-	t.Run("matches Line.IntersectionRectangle", func(t *testing.T) {
-		for _, r := range rectFixtures {
-			for _, l := range lineFixtures {
-				AssertVertices(t, r.IntersectionLine(l), l.IntersectionRectangle(r), fmt.Sprintf("%s → %s: ", r, l))
-			}
-		}
-	})
-}
-
-func TestRectangle_IntersectsPolygon(t *testing.T) {
 	t.Run("rotated is tested on its turned edges", func(t *testing.T) {
-		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
-		corner := Pol([]Point[float64]{{1, 1}, {3, 1}, {3, 3}})
+		turned := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
+		corner := RegPol(Pt(1.5, 1.5), Sz(0.5, 0.5), 3, 0)
 
-		assert.False(t, diamond.IntersectsPolygon(corner))
-		assert.True(t, diamond.Bounds().IntersectsPolygon(corner))
+		assert.False(t, turned.IntersectsRegularPolygon(corner))
+		assert.True(t, turned.Bounds().IntersectsRegularPolygon(corner))
 	})
-	t.Run("mirrors Polygon.IntersectsRectangle", func(t *testing.T) {
+	t.Run("an empty polygon intersects nothing", func(t *testing.T) {
+		assert.False(t, Rect(Pt(0, 0), Sz(2, 2)).IntersectsRegularPolygon(RegPol(Pt(0, 0), Sz(2, 2), 0, 0)))
+	})
+	t.Run("matches the polygon of the vertices", func(t *testing.T) {
 		for _, r := range rectFixtures {
-			for _, p := range polygonFixtures() {
-				assert.Equal(t, r.IntersectsPolygon(p), p.IntersectsRectangle(r), fmt.Sprintf("%s → %s: ", r, p))
+			for _, rp := range regularPolygonFixtures {
+				assert.Equal(t, r.IntersectsRegularPolygon(rp), r.IntersectsPolygon(rp.Polygon()), fmt.Sprintf("%s → %s: ", r, rp))
 			}
 		}
 	})
@@ -1165,6 +1163,18 @@ func TestRectangle_Polygon(t *testing.T) {
 
 		AssertVertices(t, turned.Polygon().Points, slices.Collect(turned.Vertices()))
 		assert.True(t, turned.Polygon().Contains(Pt(1, 1)))
+	})
+}
+
+func TestRectangle_Cast(t *testing.T) {
+	r := Rect(Pt(1.5, -2.5), Sz(3.5, 4.5)).Rotate(Pi / 6)
+
+	t.Run("matches Int and Float", func(t *testing.T) {
+		AssertRectangle(t, r.Cast[int](), r.Int())
+		AssertRectangle(t, r.Cast[float64](), r.Float())
+	})
+	t.Run("a type the other conversions cannot name, and the angle is kept", func(t *testing.T) {
+		AssertRectangle(t, r.Cast[int8](), Rect(Pt[int8](2, -3), Sz[int8](4, 5)).Rotate(Pi/6))
 	})
 }
 
