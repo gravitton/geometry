@@ -95,6 +95,50 @@ func ReflectionMatrix[T Number](axis Axis) Matrix[T] {
 	}
 }
 
+// Determinant calculates the determinant of the 2x2 matrix.
+func (m Matrix[T]) Determinant() T {
+	return Cast[T](m.determinant())
+}
+
+// Translation returns the translation the matrix applies, its C and F components.
+func (m Matrix[T]) Translation() Vector[T] {
+	return Vector[T]{m.C, m.F}
+}
+
+// Angle returns the rotation the matrix applies, in radians: the angle of the transformed X
+// axis, so a matrix built from a rotation, a scale and a translation gives the rotation back.
+// A sheared matrix has no single rotation and gives the angle of its X axis. The zero matrix
+// gives 0.
+func (m Matrix[T]) Angle() float64 {
+	return math.Atan2(float64(m.D), float64(m.A))
+}
+
+// Scaling returns the scale factors the matrix applies along its rotated X and Y axes: the
+// length of the transformed X axis, and the signed length of the Y axis, negative for a
+// reflection. A matrix built from a rotation, a scale and a translation gives the scale back;
+// a sheared matrix gives the factors of the nearest rotation and scale. For integer T the
+// factors are rounded; the zero matrix gives the zero vector.
+func (m Matrix[T]) Scaling() Vector[T] {
+	f := m.Float()
+
+	x := math.Hypot(f.A, f.D)
+	if x == 0 {
+		return Vector[T]{}
+	}
+
+	return Vector[T]{Cast[T](x), Cast[T](f.determinant() / x)}
+}
+
+// determinant calculates the determinant in float64, the form Inverse and IsInvertible use
+// so that an integer matrix is judged on its exact determinant, not a rounded one.
+// The two products are rounded separately, which keeps a fused multiply-add from turning the
+// determinant of a singular matrix into a rounding residue: it is exactly zero on every platform.
+func (m Matrix[T]) determinant() float64 {
+	f := m.Float()
+
+	return float64(f.A*f.E) - float64(f.B*f.D)
+}
+
 // Multiply creates a new matrix by multiplying the current matrix with given matrix.
 func (m Matrix[T]) Multiply(matrix Matrix[T]) Matrix[T] {
 	l, r := m.Float(), matrix.Float()
@@ -132,57 +176,6 @@ func (m Matrix[T]) Inverse() Matrix[T] {
 		Cast[T](f.A * invDet),
 		Cast[T]((f.C*f.D - f.A*f.F) * invDet),
 	}
-}
-
-// IsInvertible reports whether the matrix has an inverse: its determinant is not exactly zero.
-// No tolerance is applied, since a determinant scales with the square of the matrix and a small
-// one only means a large inverse, not a missing one: ScaleMatrix(0.001, 0.001) is invertible.
-func (m Matrix[T]) IsInvertible() bool {
-	return m.determinant() != 0
-}
-
-// Determinant calculates the determinant of the 2x2 matrix.
-func (m Matrix[T]) Determinant() T {
-	return Cast[T](m.determinant())
-}
-
-// determinant calculates the determinant in float64, the form Inverse and IsInvertible use
-// so that an integer matrix is judged on its exact determinant, not a rounded one.
-// The two products are rounded separately, which keeps a fused multiply-add from turning the
-// determinant of a singular matrix into a rounding residue: it is exactly zero on every platform.
-func (m Matrix[T]) determinant() float64 {
-	f := m.Float()
-
-	return float64(f.A*f.E) - float64(f.B*f.D)
-}
-
-// Translation returns the translation the matrix applies, its C and F components.
-func (m Matrix[T]) Translation() Vector[T] {
-	return Vector[T]{m.C, m.F}
-}
-
-// Angle returns the rotation the matrix applies, in radians: the angle of the transformed X
-// axis, so a matrix built from a rotation, a scale and a translation gives the rotation back.
-// A sheared matrix has no single rotation and gives the angle of its X axis. The zero matrix
-// gives 0.
-func (m Matrix[T]) Angle() float64 {
-	return math.Atan2(float64(m.D), float64(m.A))
-}
-
-// Scaling returns the scale factors the matrix applies along its rotated X and Y axes: the
-// length of the transformed X axis, and the signed length of the Y axis, negative for a
-// reflection. A matrix built from a rotation, a scale and a translation gives the scale back;
-// a sheared matrix gives the factors of the nearest rotation and scale. For integer T the
-// factors are rounded; the zero matrix gives the zero vector.
-func (m Matrix[T]) Scaling() Vector[T] {
-	f := m.Float()
-
-	x := math.Hypot(f.A, f.D)
-	if x == 0 {
-		return Vector[T]{}
-	}
-
-	return Vector[T]{Cast[T](x), Cast[T](f.determinant() / x)}
 }
 
 // Translate creates a new matrix by right-multiplying a translation matrix.
@@ -289,6 +282,13 @@ func (m Matrix[T]) IsZero() bool {
 // where it is, comparing like Equal.
 func (m Matrix[T]) IsIdentity() bool {
 	return m.Equal(IdentityMatrix[T]())
+}
+
+// IsInvertible reports whether the matrix has an inverse: its determinant is not exactly zero.
+// No tolerance is applied, since a determinant scales with the square of the matrix and a small
+// one only means a large inverse, not a missing one: ScaleMatrix(0.001, 0.001) is invertible.
+func (m Matrix[T]) IsInvertible() bool {
+	return m.determinant() != 0
 }
 
 // Cast converts the matrix to a Matrix of another number type, rounding as Cast does.

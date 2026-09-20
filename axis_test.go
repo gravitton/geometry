@@ -120,6 +120,18 @@ func TestAxis_ScaleAcross(t *testing.T) {
 	})
 }
 
+func TestAxis_IsNone(t *testing.T) {
+	t.Run("the two axes", func(t *testing.T) {
+		assert.False(t, AxisHorizontal.IsNone())
+		assert.False(t, AxisVertical.IsNone())
+		assert.Equal(t, Axis(0), AxisHorizontal)
+	})
+	t.Run("anything else", func(t *testing.T) {
+		assert.True(t, AxisNone.IsNone())
+		assert.True(t, Axis(2).IsNone())
+	})
+}
+
 func TestAxis_Vector(t *testing.T) {
 	t.Run("horizontal keeps the order", func(t *testing.T) {
 		AssertVector(t, AxisHorizontal.Vector(3, 4), Vec(3, 4))
@@ -147,18 +159,6 @@ func TestAxis_Size(t *testing.T) {
 	})
 	t.Run("none has no extent", func(t *testing.T) {
 		AssertSize(t, AxisNone.Size(3, 4), Sz(0, 0))
-	})
-}
-
-func TestAxis_IsNone(t *testing.T) {
-	t.Run("the two axes", func(t *testing.T) {
-		assert.False(t, AxisHorizontal.IsNone())
-		assert.False(t, AxisVertical.IsNone())
-		assert.Equal(t, Axis(0), AxisHorizontal)
-	})
-	t.Run("anything else", func(t *testing.T) {
-		assert.True(t, AxisNone.IsNone())
-		assert.True(t, Axis(2).IsNone())
 	})
 }
 

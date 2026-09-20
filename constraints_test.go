@@ -112,21 +112,21 @@ func TestString(t *testing.T) {
 
 func TestIsIntType(t *testing.T) {
 	t.Run("integers", func(t *testing.T) {
-		assertIsIntType[int](t, true)
-		assertIsIntType[int8](t, true)
-		assertIsIntType[int16](t, true)
-		assertIsIntType[int32](t, true)
-		assertIsIntType[int64](t, true)
+		assertIsInt[int](t, true)
+		assertIsInt[int8](t, true)
+		assertIsInt[int16](t, true)
+		assertIsInt[int32](t, true)
+		assertIsInt[int64](t, true)
 	})
 	t.Run("floats", func(t *testing.T) {
-		assertIsIntType[float32](t, false)
-		assertIsIntType[float64](t, false)
+		assertIsInt[float32](t, false)
+		assertIsInt[float64](t, false)
 	})
 	t.Run("defined types follow their underlying kind", func(t *testing.T) {
-		assertIsIntType[namedInt](t, true)
-		assertIsIntType[namedInt8](t, true)
-		assertIsIntType[namedFloat32](t, false)
-		assertIsIntType[namedFloat64](t, false)
+		assertIsInt[namedInt](t, true)
+		assertIsInt[namedInt8](t, true)
+		assertIsInt[namedFloat32](t, false)
+		assertIsInt[namedFloat64](t, false)
 	})
 }
 
@@ -170,7 +170,7 @@ func assertString[T Number](t *testing.T, value T, expected string) {
 	assert.Equal(t, String(value), expected)
 }
 
-func assertIsIntType[T Number](t *testing.T, expected bool) {
+func assertIsInt[T Number](t *testing.T, expected bool) {
 	t.Helper()
 
 	assert.Equal(t, isInt[T](), expected)

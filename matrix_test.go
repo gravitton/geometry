@@ -66,86 +66,6 @@ func TestMatrix_Constructor(t *testing.T) {
 	})
 }
 
-func TestMatrix_Multiply(t *testing.T) {
-	t.Run("identity is neutral", func(t *testing.T) {
-		AssertMatrix(t, IdentityMatrix[float64]().Multiply(TranslationMatrix(5.0, 3.0)), TranslationMatrix(5.0, 3.0))
-		AssertMatrix(t, TranslationMatrix(5.0, 3.0).Multiply(IdentityMatrix[float64]()), TranslationMatrix(5.0, 3.0))
-		AssertMatrix(t, IdentityMatrix[int]().Multiply(TranslationMatrix(5, 3)), TranslationMatrix(5, 3))
-	})
-	t.Run("narrow integers do not overflow mid-computation", func(t *testing.T) {
-		AssertMatrix(t, Mat[int8](100, 50, 0, 0, 1, 0).Multiply(Mat[int8](2, 0, 0, -2, 1, 0)), Mat[int8](100, 50, 0, -2, 1, 0))
-	})
-	t.Run("translations compose additively", func(t *testing.T) {
-		AssertMatrix(t, TranslationMatrix(5.0, 3.0).Multiply(TranslationMatrix(2.0, 1.0)), TranslationMatrix(7.0, 4.0))
-		AssertMatrix(t, TranslationMatrix[float32](5, 3).Multiply(TranslationMatrix[float32](2, 1)), TranslationMatrix[float32](7, 4))
-		AssertMatrix(t, TranslationMatrix(5, 3).Multiply(TranslationMatrix(2, 1)), TranslationMatrix(7, 4))
-	})
-	t.Run("scales compose multiplicatively", func(t *testing.T) {
-		AssertMatrix(t, ScaleMatrix(2.0, 3.0).Multiply(ScaleMatrix(4.0, 2.0)), ScaleMatrix(8.0, 6.0))
-		AssertMatrix(t, ScaleMatrix[float32](2, 3).Multiply(ScaleMatrix[float32](4, 2)), ScaleMatrix[float32](8, 6))
-		AssertMatrix(t, ScaleMatrix(2, 3).Multiply(ScaleMatrix(4, 2)), ScaleMatrix(8, 6))
-	})
-}
-
-func TestMatrix_Inverse(t *testing.T) {
-	t.Run("float", func(t *testing.T) {
-		AssertMatrix(t, IdentityMatrix[float64]().Inverse(), IdentityMatrix[float64]())
-		AssertMatrix(t, TranslationMatrix(5.0, 3.0).Inverse(), TranslationMatrix(-5.0, -3.0))
-		AssertMatrix(t, ScaleMatrix(2.0, 4.0).Inverse(), ScaleMatrix(0.5, 0.25))
-		AssertMatrix(t, ScaleMatrix(0.0005, 0.0005).Inverse(), ScaleMatrix(2000.0, 2000.0))
-
-		// float32 inverts exactly too — the fractions are not rounded away
-		AssertMatrix(t, ScaleMatrix[float32](2, 4).Inverse(), ScaleMatrix[float32](0.5, 0.25))
-		AssertMatrix(t, ScaleMatrix[float32](0.005, 0.005).Inverse(), ScaleMatrix[float32](200, 200))
-		AssertMatrix(t, TranslationMatrix[float32](5, 3).Inverse(), TranslationMatrix[float32](-5, -3))
-	})
-	t.Run("singular matrix panics", func(t *testing.T) {
-		assert.Panics(t, func() {
-			Mat(0.0, 0.0, 0.0, 0.0, 0.0, 0.0).Inverse()
-		}, "geom: inverse of a singular matrix")
-		assert.Panics(t, func() {
-			ScaleMatrix(1, 0).Inverse()
-		}, "geom: inverse of a singular matrix")
-		assert.Panics(t, func() {
-			Mat(0.1, 0.3, 0.0, 0.1, 0.3, 0.0).Inverse()
-		}, "geom: inverse of a singular matrix")
-	})
-	t.Run("negative zero prints as zero", func(t *testing.T) {
-		assert.Equal(t, ScaleMatrix(2.0, 4.0).Translate(1, 1).Inverse().String(), "[[0.50, 0.00, -1.00], [0.00, 0.25, -1.00]]")
-	})
-	t.Run("large translations do not overflow", func(t *testing.T) {
-		m := Mat[int64](1, 0, 1<<40, 0, 1, 1<<40)
-		AssertMatrix(t, m.Inverse(), Mat[int64](1, 0, -(1<<40), 0, 1, -(1<<40)))
-	})
-	t.Run("integer is exact only for unit determinant", func(t *testing.T) {
-		AssertMatrix(t, IdentityMatrix[int]().Inverse(), IdentityMatrix[int]())
-		AssertMatrix(t, TranslationMatrix(5, 3).Inverse(), TranslationMatrix(-5, -3))
-		AssertMatrix(t, RotationMatrix[int](Pi/2).Inverse(), RotationMatrix[int](-Pi/2))
-
-		// det=4, invDet=0.25 → Cast[int](2*0.25) = Cast[int](0.5) = 1, so the inverse does not undo it
-		AssertMatrix(t, ScaleMatrix(2, 2).Inverse(), IdentityMatrix[int]())
-	})
-}
-
-func TestMatrix_IsInvertible(t *testing.T) {
-	t.Run("non-zero determinant", func(t *testing.T) {
-		assert.True(t, IdentityMatrix[int]().IsInvertible())
-		assert.True(t, ScaleMatrix(2.0, 0.5).IsInvertible())
-		assert.True(t, ScaleMatrix(0.0005, 0.0005).IsInvertible())
-		assert.True(t, ScaleMatrix[float32](0.005, 0.005).IsInvertible())
-	})
-	t.Run("zero determinant", func(t *testing.T) {
-		assert.False(t, Matrix[int]{}.IsInvertible())
-		assert.False(t, ScaleMatrix(1.0, 0.0).IsInvertible())
-		assert.False(t, Mat(1.0, 2.0, 0.0, 2.0, 4.0, 0.0).IsInvertible())
-	})
-	t.Run("equal rows are singular without a fused multiply-add residue", func(t *testing.T) {
-		assert.False(t, Mat(0.1, 0.3, 0.0, 0.1, 0.3, 0.0).IsInvertible())
-		assert.False(t, Mat(2.3, 7.7, 1.0, 2.3, 7.7, 2.0).IsInvertible())
-		assert.False(t, Mat[float32](0.7, 0.9, 0.0, 0.7, 0.9, 0.0).IsInvertible())
-	})
-}
-
 func TestMatrix_Determinant(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
 		AssertNumber(t, IdentityMatrix[float64]().Determinant(), 1.0)
@@ -221,6 +141,67 @@ func TestMatrix_Scaling(t *testing.T) {
 
 			AssertMatrix(t, rebuilt, m, fmt.Sprintf("%s: ", m))
 		}
+	})
+}
+
+func TestMatrix_Multiply(t *testing.T) {
+	t.Run("identity is neutral", func(t *testing.T) {
+		AssertMatrix(t, IdentityMatrix[float64]().Multiply(TranslationMatrix(5.0, 3.0)), TranslationMatrix(5.0, 3.0))
+		AssertMatrix(t, TranslationMatrix(5.0, 3.0).Multiply(IdentityMatrix[float64]()), TranslationMatrix(5.0, 3.0))
+		AssertMatrix(t, IdentityMatrix[int]().Multiply(TranslationMatrix(5, 3)), TranslationMatrix(5, 3))
+	})
+	t.Run("narrow integers do not overflow mid-computation", func(t *testing.T) {
+		AssertMatrix(t, Mat[int8](100, 50, 0, 0, 1, 0).Multiply(Mat[int8](2, 0, 0, -2, 1, 0)), Mat[int8](100, 50, 0, -2, 1, 0))
+	})
+	t.Run("translations compose additively", func(t *testing.T) {
+		AssertMatrix(t, TranslationMatrix(5.0, 3.0).Multiply(TranslationMatrix(2.0, 1.0)), TranslationMatrix(7.0, 4.0))
+		AssertMatrix(t, TranslationMatrix[float32](5, 3).Multiply(TranslationMatrix[float32](2, 1)), TranslationMatrix[float32](7, 4))
+		AssertMatrix(t, TranslationMatrix(5, 3).Multiply(TranslationMatrix(2, 1)), TranslationMatrix(7, 4))
+	})
+	t.Run("scales compose multiplicatively", func(t *testing.T) {
+		AssertMatrix(t, ScaleMatrix(2.0, 3.0).Multiply(ScaleMatrix(4.0, 2.0)), ScaleMatrix(8.0, 6.0))
+		AssertMatrix(t, ScaleMatrix[float32](2, 3).Multiply(ScaleMatrix[float32](4, 2)), ScaleMatrix[float32](8, 6))
+		AssertMatrix(t, ScaleMatrix(2, 3).Multiply(ScaleMatrix(4, 2)), ScaleMatrix(8, 6))
+	})
+}
+
+func TestMatrix_Inverse(t *testing.T) {
+	t.Run("float", func(t *testing.T) {
+		AssertMatrix(t, IdentityMatrix[float64]().Inverse(), IdentityMatrix[float64]())
+		AssertMatrix(t, TranslationMatrix(5.0, 3.0).Inverse(), TranslationMatrix(-5.0, -3.0))
+		AssertMatrix(t, ScaleMatrix(2.0, 4.0).Inverse(), ScaleMatrix(0.5, 0.25))
+		AssertMatrix(t, ScaleMatrix(0.0005, 0.0005).Inverse(), ScaleMatrix(2000.0, 2000.0))
+
+		// float32 inverts exactly too — the fractions are not rounded away
+		AssertMatrix(t, ScaleMatrix[float32](2, 4).Inverse(), ScaleMatrix[float32](0.5, 0.25))
+		AssertMatrix(t, ScaleMatrix[float32](0.005, 0.005).Inverse(), ScaleMatrix[float32](200, 200))
+		AssertMatrix(t, TranslationMatrix[float32](5, 3).Inverse(), TranslationMatrix[float32](-5, -3))
+	})
+	t.Run("singular matrix panics", func(t *testing.T) {
+		assert.Panics(t, func() {
+			Mat(0.0, 0.0, 0.0, 0.0, 0.0, 0.0).Inverse()
+		}, "geom: inverse of a singular matrix")
+		assert.Panics(t, func() {
+			ScaleMatrix(1, 0).Inverse()
+		}, "geom: inverse of a singular matrix")
+		assert.Panics(t, func() {
+			Mat(0.1, 0.3, 0.0, 0.1, 0.3, 0.0).Inverse()
+		}, "geom: inverse of a singular matrix")
+	})
+	t.Run("negative zero prints as zero", func(t *testing.T) {
+		assert.Equal(t, ScaleMatrix(2.0, 4.0).Translate(1, 1).Inverse().String(), "[[0.50, 0.00, -1.00], [0.00, 0.25, -1.00]]")
+	})
+	t.Run("large translations do not overflow", func(t *testing.T) {
+		m := Mat[int64](1, 0, 1<<40, 0, 1, 1<<40)
+		AssertMatrix(t, m.Inverse(), Mat[int64](1, 0, -(1<<40), 0, 1, -(1<<40)))
+	})
+	t.Run("integer is exact only for unit determinant", func(t *testing.T) {
+		AssertMatrix(t, IdentityMatrix[int]().Inverse(), IdentityMatrix[int]())
+		AssertMatrix(t, TranslationMatrix(5, 3).Inverse(), TranslationMatrix(-5, -3))
+		AssertMatrix(t, RotationMatrix[int](Pi/2).Inverse(), RotationMatrix[int](-Pi/2))
+
+		// det=4, invDet=0.25 → Cast[int](2*0.25) = Cast[int](0.5) = 1, so the inverse does not undo it
+		AssertMatrix(t, ScaleMatrix(2, 2).Inverse(), IdentityMatrix[int]())
 	})
 }
 
@@ -480,6 +461,25 @@ func TestMatrix_IsIdentity(t *testing.T) {
 		for _, p := range pointFixtures {
 			AssertPoint(t, p.Transform(m), p, p.String()+": ")
 		}
+	})
+}
+
+func TestMatrix_IsInvertible(t *testing.T) {
+	t.Run("non-zero determinant", func(t *testing.T) {
+		assert.True(t, IdentityMatrix[int]().IsInvertible())
+		assert.True(t, ScaleMatrix(2.0, 0.5).IsInvertible())
+		assert.True(t, ScaleMatrix(0.0005, 0.0005).IsInvertible())
+		assert.True(t, ScaleMatrix[float32](0.005, 0.005).IsInvertible())
+	})
+	t.Run("zero determinant", func(t *testing.T) {
+		assert.False(t, Matrix[int]{}.IsInvertible())
+		assert.False(t, ScaleMatrix(1.0, 0.0).IsInvertible())
+		assert.False(t, Mat(1.0, 2.0, 0.0, 2.0, 4.0, 0.0).IsInvertible())
+	})
+	t.Run("equal rows are singular without a fused multiply-add residue", func(t *testing.T) {
+		assert.False(t, Mat(0.1, 0.3, 0.0, 0.1, 0.3, 0.0).IsInvertible())
+		assert.False(t, Mat(2.3, 7.7, 1.0, 2.3, 7.7, 2.0).IsInvertible())
+		assert.False(t, Mat[float32](0.7, 0.9, 0.0, 0.7, 0.9, 0.0).IsInvertible())
 	})
 }
 

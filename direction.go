@@ -219,6 +219,25 @@ func (d Direction) Angle() float64 {
 	return d.Offset[float64]().Angle()
 }
 
+// normalize returns the direction wrapped into [DirectionRight, DirectionDownRight],
+// preserving DirectionNone.
+func (d Direction) normalize() Direction {
+	if d.IsNone() {
+		return DirectionNone
+	}
+
+	return Mod(d, 8)
+}
+
+// offset returns the lattice step of the direction, or a zero step for DirectionNone.
+func (d Direction) offset() Vector[int] {
+	if d.IsNone() {
+		return Vector[int]{}
+	}
+
+	return directionOffsets[d.normalize()]
+}
+
 // IsNone reports whether the direction is DirectionNone.
 func (d Direction) IsNone() bool {
 	return d == DirectionNone
@@ -296,23 +315,4 @@ func (d *Direction) UnmarshalText(text []byte) error {
 	*d = direction
 
 	return nil
-}
-
-// normalize returns the direction wrapped into [DirectionRight, DirectionDownRight],
-// preserving DirectionNone.
-func (d Direction) normalize() Direction {
-	if d.IsNone() {
-		return DirectionNone
-	}
-
-	return Mod(d, 8)
-}
-
-// offset returns the lattice step of the direction, or a zero step for DirectionNone.
-func (d Direction) offset() Vector[int] {
-	if d.IsNone() {
-		return Vector[int]{}
-	}
-
-	return directionOffsets[d.normalize()]
 }

@@ -118,6 +118,13 @@ func (a Axis) ScaleAcross[T Number](size Size[T], factor float64) Size[T] {
 	return a.Cross().ScaleAlong(size, factor)
 }
 
+// IsNone reports whether the axis is neither AxisHorizontal nor AxisVertical. Unlike
+// Direction, which wraps any value into the eight directions, an Axis outside the two
+// constants is not normalized, so every such value counts as AxisNone.
+func (a Axis) IsNone() bool {
+	return a != AxisHorizontal && a != AxisVertical
+}
+
 // Vector creates a new Vector displaced by along on the main axis and across on the cross axis.
 func (a Axis) Vector[T Number](along, across T) Vector[T] {
 	switch a {
@@ -141,13 +148,6 @@ func (a Axis) Size[T Number](along, across T) Size[T] {
 	default:
 		return Size[T]{}
 	}
-}
-
-// IsNone reports whether the axis is neither AxisHorizontal nor AxisVertical. Unlike
-// Direction, which wraps any value into the eight directions, an Axis outside the two
-// constants is not normalized, so every such value counts as AxisNone.
-func (a Axis) IsNone() bool {
-	return a != AxisHorizontal && a != AxisVertical
 }
 
 // String returns the name of the axis constant.
