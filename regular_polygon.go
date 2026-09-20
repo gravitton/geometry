@@ -29,6 +29,27 @@ func RegPol[T Number](center Point[T], size Size[T], n int, angle float64) Regul
 	return RegularPolygon[T]{center, size.Abs(), n, angle}
 }
 
+// RegularPolygonWithOrientation creates a RegularPolygon with the given orientation, with the
+// size taken absolute like RegPol.
+func RegularPolygonWithOrientation[T Number](center Point[T], size Size[T], n int, orientation Orientation) RegularPolygon[T] {
+	return RegPol(center, size, n, RegularPolygonOrientationAngle(n, orientation))
+}
+
+// Triangle creates a RegularPolygon with 3 vertices.
+func Triangle[T Number](center Point[T], size Size[T], orientation Orientation) RegularPolygon[T] {
+	return RegularPolygonWithOrientation(center, size, 3, orientation)
+}
+
+// Square creates a RegularPolygon with 4 vertices.
+func Square[T Number](center Point[T], size Size[T], orientation Orientation) RegularPolygon[T] {
+	return RegularPolygonWithOrientation(center, size, 4, orientation)
+}
+
+// Hexagon creates a RegularPolygon with 6 vertices.
+func Hexagon[T Number](center Point[T], size Size[T], orientation Orientation) RegularPolygon[T] {
+	return RegularPolygonWithOrientation(center, size, 6, orientation)
+}
+
 // RegularPolygonOrientationAngle returns the initial vertex angle for a regular polygon with n sides
 // and the given orientation, normalized to [0, 2π) like Rotate. PointyTop puts the first vertex at
 // the top (-Y, 3π/2); FlatTop puts the midpoint of an edge there, so the first vertex sits half a
@@ -50,27 +71,6 @@ func RegularPolygonOrientationAngle(n int, orientation Orientation) float64 {
 	default:
 		panic(fmt.Sprintf("geom: unknown orientation %d", orientation))
 	}
-}
-
-// RegularPolygonWithOrientation creates a RegularPolygon with the given orientation, with the
-// size taken absolute like RegPol.
-func RegularPolygonWithOrientation[T Number](center Point[T], size Size[T], n int, orientation Orientation) RegularPolygon[T] {
-	return RegPol(center, size, n, RegularPolygonOrientationAngle(n, orientation))
-}
-
-// Triangle creates a RegularPolygon with 3 vertices.
-func Triangle[T Number](center Point[T], size Size[T], orientation Orientation) RegularPolygon[T] {
-	return RegularPolygonWithOrientation(center, size, 3, orientation)
-}
-
-// Square creates a RegularPolygon with 4 vertices.
-func Square[T Number](center Point[T], size Size[T], orientation Orientation) RegularPolygon[T] {
-	return RegularPolygonWithOrientation(center, size, 4, orientation)
-}
-
-// Hexagon creates a RegularPolygon with 6 vertices.
-func Hexagon[T Number](center Point[T], size Size[T], orientation Orientation) RegularPolygon[T] {
-	return RegularPolygonWithOrientation(center, size, 6, orientation)
 }
 
 // Vertices iterates the polygon vertices in order starting from Angle, by increasing angle —
@@ -95,10 +95,22 @@ func (rp RegularPolygon[T]) Vertices() iter.Seq[Point[T]] {
 // vertex yields one zero-length edge.
 func (rp RegularPolygon[T]) Edges() iter.Seq[Line[T]] {
 	return func(yield func(Line[T]) bool) {
-		for i := 0; i < rp.N; i++ {
-			if !yield(Line[T]{rp.vertex(i), rp.vertex((i + 1) % rp.N)}) {
+		if rp.Empty() {
+			return
+		}
+
+		start := rp.vertex(0)
+		for i, previous := 1, start; i <= rp.N; i++ {
+			next := start
+			if i < rp.N {
+				next = rp.vertex(i)
+			}
+
+			if !yield(Line[T]{previous, next}) {
 				return
 			}
+
+			previous = next
 		}
 	}
 }
@@ -133,47 +145,63 @@ func (rp RegularPolygon[T]) Perimeter() float64 {
 		return 2 * n * size.Width * math.Sin(Pi/n)
 	}
 
-	perimeter, previous := 0.0, VectorFromAngleSize(rp.Angle, size)
+	perimeter, previous := 0.0, VectorFromAngleSize(rp.vertexAngle(0), size)
 	for i := 1; i <= rp.N; i++ {
-		vertex := VectorFromAngleSize(rp.Angle+float64(i)*rp.step(), size)
-		perimeter, previous = perimeter+vertex.Subtract(previous).Length(), vertex
+		offset := VectorFromAngleSize(rp.vertexAngle(i), size)
+		perimeter, previous = perimeter+offset.Subtract(previous).Length(), offset
 	}
 
 	return perimeter
 }
 
 // Bounds returns the axis-aligned bounding rectangle of the vertices without building them, or
-// the zero rectangle for a polygon without vertices, like Polygon.Bounds. Each side of the box
-// is set by the vertex nearest to that direction, at most half a step away, and reads that
-// vertex as Vertices places it, so the box is exactly the one Polygon().Bounds() would place,
-// rounded alike for an integer T.
+// the zero rectangle for a polygon without vertices, like Polygon.Bounds: the rectangle on the
+// corners minMax finds.
 func (rp RegularPolygon[T]) Bounds() Rectangle[T] {
-	if rp.Empty() {
-		return Rectangle[T]{}
-	}
+	return RectangleFromMinMax(rp.minMax())
+}
 
-	a := Point[T]{rp.vertex(rp.nearest(Pi)).X, rp.vertex(rp.nearest(3 * Pi / 2)).Y}
-	b := Point[T]{rp.vertex(rp.nearest(0)).X, rp.vertex(rp.nearest(Pi / 2)).Y}
+// centralAngle returns the angle between consecutive vertices.
+func (rp RegularPolygon[T]) centralAngle() float64 {
+	return 2 * Pi / float64(rp.N)
+}
 
-	return RectangleFromMinMax(a, b)
+// vertexAngle returns the direction of the vertex at the given index from the center, Angle
+// plus that many central angles: the one expression every vertex is placed from, so a measure
+// taken without building the vertices reads the same angles Vertices does, and nearestIndex
+// inverts it.
+func (rp RegularPolygon[T]) vertexAngle(i int) float64 {
+	return rp.Angle + float64(i)*rp.centralAngle()
 }
 
 // vertex returns the vertex at the given index, the point Vertices places there: the center
 // displaced along the ellipse at Angle plus that many steps, rounded for an integer T.
 func (rp RegularPolygon[T]) vertex(i int) Point[T] {
-	return rp.Center.Add(VectorFromAngleSize(rp.Angle+float64(i)*rp.step(), rp.Size))
+	return rp.Center.Add(VectorFromAngleSize(rp.vertexAngle(i), rp.Size))
 }
 
-// nearest returns the index of the vertex nearest to the given direction, at most half a step
-// away, the one that reaches farthest that way. With one or two vertices it can be more than
+// nearestIndex returns the index of the vertex nearest to the given direction, at most half a
+// central angle away, the one that reaches farthest that way. With one or two vertices it can be more than
 // a quarter turn off, so the reach is negative exactly where no vertex lies on that side.
-func (rp RegularPolygon[T]) nearest(direction float64) int {
-	return Mod(int(math.Round((direction-rp.Angle)/rp.step())), rp.N)
+func (rp RegularPolygon[T]) nearestIndex(direction float64) int {
+	return Mod(int(math.Round((direction-rp.Angle)/rp.centralAngle())), rp.N)
 }
 
-// step returns the angle between consecutive vertices.
-func (rp RegularPolygon[T]) step() float64 {
-	return 2 * Pi / float64(rp.N)
+// minMax returns the minimum and maximum corner of the vertices, the corners of Bounds, exact
+// for an integer T where Bounds places a center: the pair the intersection tests reject shapes
+// by before examining any edge, without placing a rectangle. Each side is set by the vertex
+// nearest to that direction, at most half a step away, and reads that vertex as Vertices
+// places it, so the corners are exactly those of Polygon().Bounds(), rounded alike for an
+// integer T. An empty polygon returns two zero points.
+func (rp RegularPolygon[T]) minMax() (Point[T], Point[T]) {
+	if rp.Empty() {
+		return Point[T]{}, Point[T]{}
+	}
+
+	a := Point[T]{rp.vertex(rp.nearestIndex(Pi)).X, rp.vertex(rp.nearestIndex(3 * Pi / 2)).Y}
+	b := Point[T]{rp.vertex(rp.nearestIndex(0)).X, rp.vertex(rp.nearestIndex(Pi / 2)).Y}
+
+	return a, b
 }
 
 // Translate creates a new RegularPolygon translated by the given vector.
@@ -248,6 +276,117 @@ func (rp RegularPolygon[T]) Lerp(polygon RegularPolygon[T], t float64) RegularPo
 // The stored angle is normalized to [0, 2π) to prevent drift from repeated rotations.
 func (rp RegularPolygon[T]) Rotate(angle float64) RegularPolygon[T] {
 	return RegularPolygon[T]{rp.Center, rp.Size, rp.N, NormalizeAngle(rp.Angle + angle)}
+}
+
+// Contains reports whether the given point lies within the polygon, boundary included within
+// Epsilon of T, the same closed convention as Polygon.Contains, and exactly what the Polygon
+// of the vertices contains, for an integer T on the rounded vertices. A point outside Bounds
+// is rejected before any edge is examined; an empty polygon contains nothing.
+func (rp RegularPolygon[T]) Contains(point Point[T]) bool {
+	if rp.Empty() {
+		return false
+	}
+
+	a, b := rp.minMax()
+
+	return rp.containsWithin(point, a, b)
+}
+
+// DistanceTo returns the distance from the given point to the nearest point of the polygon:
+// zero for a point within it, the same closed convention as Contains, and otherwise the
+// distance to the nearest edge. An empty polygon is infinitely far from every point.
+func (rp RegularPolygon[T]) DistanceTo(point Point[T]) float64 {
+	return math.Sqrt(rp.DistanceSquaredTo(point))
+}
+
+// DistanceSquaredTo returns the squared distance DistanceTo takes the root of, faster for
+// comparisons, in one pass over the edges Edges iterates without building the vertices, the
+// edgeWalk every closed shape makes: zero for a point on an edge within Epsilon of T or
+// inside by the even-odd rule, the squared distance to the nearest edge otherwise, and
+// infinity for an empty polygon. It is a float64 even for an integer T, like
+// Polygon.DistanceSquaredTo. Contains and IntersectsCircle are built on it.
+func (rp RegularPolygon[T]) DistanceSquaredTo(point Point[T]) float64 {
+	w := edgeWalk[T]{distance: math.Inf(1)}
+	for edge := range rp.Edges() {
+		if w.step(edge, point) {
+			return 0
+		}
+	}
+
+	return w.result()
+}
+
+// IntersectsCircle reports whether the polygon and the circle share a point, as
+// Circle.IntersectsRegularPolygon does.
+func (rp RegularPolygon[T]) IntersectsCircle(circle Circle[T]) bool {
+	return circle.IntersectsRegularPolygon(rp)
+}
+
+// IntersectsLine reports whether the polygon and the segment share a point, as
+// Line.IntersectsRegularPolygon does.
+func (rp RegularPolygon[T]) IntersectsLine(line Line[T]) bool {
+	return line.IntersectsRegularPolygon(rp)
+}
+
+// IntersectionLine returns the points where the segment crosses the polygon boundary, as
+// Line.IntersectionRegularPolygon does.
+func (rp RegularPolygon[T]) IntersectionLine(line Line[T]) []Point[T] {
+	return line.IntersectionRegularPolygon(rp)
+}
+
+// IntersectsPolygon reports whether the regular polygon and the polygon share a point, as
+// Polygon.IntersectsRegularPolygon does.
+func (rp RegularPolygon[T]) IntersectsPolygon(polygon Polygon[T]) bool {
+	return polygon.IntersectsRegularPolygon(rp)
+}
+
+// IntersectsRectangle reports whether the polygon and the rectangle share a point, as
+// Rectangle.IntersectsRegularPolygon does.
+func (rp RegularPolygon[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
+	return rectangle.IntersectsRegularPolygon(rp)
+}
+
+// IntersectsRegularPolygon reports whether the polygons share a point: a vertex of one lies within the
+// other, or an edge of one crosses an edge of the other, as Polygon.IntersectsPolygon decides on
+// their Polygon forms, without building them. Touching polygons intersect, within Epsilon of
+// T, and an empty polygon intersects nothing. Polygons whose Bounds do not overlap are
+// rejected before any edge pair is examined.
+func (rp RegularPolygon[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
+	if rp.Empty() || polygon.Empty() {
+		return false
+	}
+
+	a1, b1 := rp.minMax()
+	a2, b2 := polygon.minMax()
+
+	if !overlaps(a1, b1, a2, b2) {
+		return false
+	}
+
+	if polygon.containsWithin(rp.vertex(0), a2, b2) || rp.containsWithin(polygon.vertex(0), a1, b1) {
+		return true
+	}
+
+	probe := edgeProbe[T]{a: a2, b: b2}
+	for edge := range rp.Edges() {
+		if !probe.aim(edge) {
+			continue
+		}
+
+		for other := range polygon.Edges() {
+			if probe.meets(other) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// containsWithin is Contains for a caller that already holds the corners of Bounds, so the
+// intersection tests place the box once and reuse it for every point they test.
+func (rp RegularPolygon[T]) containsWithin(point, a, b Point[T]) bool {
+	return point.Between(a, b) && rp.DistanceSquaredTo(point) == 0
 }
 
 // Equal checks if center point, size, number of vertices and angle are equal. Angles are
