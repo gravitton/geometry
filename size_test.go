@@ -350,6 +350,18 @@ func TestSize_Vector(t *testing.T) {
 	})
 }
 
+func TestSize_Cast(t *testing.T) {
+	s := Sz(1.5, 2.5)
+
+	t.Run("matches Int and Float", func(t *testing.T) {
+		AssertSize(t, s.Cast[int](), s.Int())
+		AssertSize(t, s.Cast[float64](), s.Float())
+	})
+	t.Run("a type the other conversions cannot name", func(t *testing.T) {
+		AssertSize(t, s.Cast[int8](), Sz[int8](2, 3))
+	})
+}
+
 func TestSize_Int(t *testing.T) {
 	t.Run("int is a no-op", func(t *testing.T) {
 		AssertSize(t, Sz(2, 3).Int(), Sz(2, 3))

@@ -400,6 +400,23 @@ func TestPoint_Vector(t *testing.T) {
 	})
 }
 
+func TestPoint_Cast(t *testing.T) {
+	t.Run("float rounds half away from zero", func(t *testing.T) {
+		AssertPoint(t, Pt(0.6, -0.25).Cast[int](), Pt(1, 0))
+		AssertPoint(t, Pt(-1.5, 2.5).Cast[int](), Pt(-2, 3))
+	})
+	t.Run("a narrow type the other conversions cannot name", func(t *testing.T) {
+		AssertPoint(t, Pt(1.5, -2.5).Cast[int8](), Pt[int8](2, -3))
+		AssertPoint(t, Pt[int8](1, 2).Cast[float32](), Pt[float32](1, 2))
+	})
+	t.Run("matches Int and Float over the fixtures", func(t *testing.T) {
+		for _, p := range pointFixtures {
+			AssertPoint(t, p.Cast[int](), p.Int(), p.String())
+			AssertPoint(t, p.Cast[float64](), p.Float(), p.String())
+		}
+	})
+}
+
 func TestPoint_Int(t *testing.T) {
 	t.Run("int is a no-op", func(t *testing.T) {
 		AssertPoint(t, Pt(1, 2).Int(), Pt(1, 2))

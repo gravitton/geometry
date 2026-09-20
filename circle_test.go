@@ -738,6 +738,18 @@ func TestCircle_IsZero(t *testing.T) {
 	})
 }
 
+func TestCircle_Cast(t *testing.T) {
+	c := Circ(Pt(1.5, -2.5), 3.5)
+
+	t.Run("matches Int and Float", func(t *testing.T) {
+		AssertCircle(t, c.Cast[int](), c.Int())
+		AssertCircle(t, c.Cast[float64](), c.Float())
+	})
+	t.Run("a type the other conversions cannot name", func(t *testing.T) {
+		AssertCircle(t, c.Cast[int8](), Circ(Pt[int8](2, -3), 4))
+	})
+}
+
 func TestCircle_Int(t *testing.T) {
 	t.Run("int is a no-op", func(t *testing.T) {
 		AssertCircle(t, Circ(Pt(1, 2), 10).Int(), Circ(Pt(1, 2), 10))

@@ -283,6 +283,11 @@ func (rp RegularPolygon[T]) Polygon() Polygon[T] {
 	return Polygon[T]{vertices}
 }
 
+// Cast converts the polygon to a RegularPolygon of another number type, rounding as Cast does.
+func (rp RegularPolygon[T]) Cast[R Number]() RegularPolygon[R] {
+	return RegularPolygon[R]{rp.Center.Cast[R](), rp.Size.Cast[R](), rp.N, rp.Angle}
+}
+
 // Int converts the regular polygon to a RegularPolygon[int].
 func (rp RegularPolygon[T]) Int() RegularPolygon[int] {
 	return RegularPolygon[int]{rp.Center.Int(), rp.Size.Int(), rp.N, rp.Angle}

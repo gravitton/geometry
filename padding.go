@@ -86,6 +86,11 @@ func (p Padding[T]) Size() Size[T] {
 	return Size[T]{p.Width(), p.Height()}
 }
 
+// Cast converts the padding to a Padding of another number type, rounding as Cast does.
+func (p Padding[T]) Cast[R Number]() Padding[R] {
+	return Padding[R]{Cast[R](float64(p.Top)), Cast[R](float64(p.Right)), Cast[R](float64(p.Bottom)), Cast[R](float64(p.Left))}
+}
+
 // Int converts the padding to a Padding[int].
 func (p Padding[T]) Int() Padding[int] {
 	return Padding[int]{Int(p.Top), Int(p.Right), Int(p.Bottom), Int(p.Left)}

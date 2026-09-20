@@ -561,6 +561,11 @@ func (l Line[T]) IsZero() bool {
 	return l.Equal(Line[T]{})
 }
 
+// Cast converts the segment to a Line of another number type, rounding as Cast does.
+func (l Line[T]) Cast[R Number]() Line[R] {
+	return Line[R]{l.Start.Cast[R](), l.End.Cast[R]()}
+}
+
 // Int converts the line to a Line[int].
 func (l Line[T]) Int() Line[int] {
 	return Line[int]{l.Start.Int(), l.End.Int()}

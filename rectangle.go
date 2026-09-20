@@ -690,6 +690,12 @@ func (r Rectangle[T]) Polygon() Polygon[T] {
 	return Polygon[T]{corners[:]}
 }
 
+// Cast converts the rectangle to a Rectangle of another number type, rounding as Cast does and
+// keeping the angle.
+func (r Rectangle[T]) Cast[R Number]() Rectangle[R] {
+	return Rectangle[R]{r.Center.Cast[R](), r.Size.Cast[R](), r.Angle}
+}
+
 // Int converts the rectangle to a Rectangle[int], rounding the center and the size on their
 // own like every other Int, so the size is exact and a rectangle keeps its extent as it moves
 // through positions no lattice expresses. The box moves instead: a center on a half rounds

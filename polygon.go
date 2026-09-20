@@ -426,6 +426,11 @@ func (p Polygon[T]) Empty() bool {
 	return len(p.Points) == 0
 }
 
+// Cast converts the polygon to a Polygon of another number type, rounding as Cast does.
+func (p Polygon[T]) Cast[R Number]() Polygon[R] {
+	return Polygon[R]{xslices.Map(p.Points, Point[T].Cast[R])}
+}
+
 // Int converts the polygon to a Polygon[int].
 func (p Polygon[T]) Int() Polygon[int] {
 	return Polygon[int]{xslices.Map(p.Points, Point[T].Int)}

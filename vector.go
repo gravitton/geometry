@@ -369,6 +369,11 @@ func (v Vector[T]) Size() Size[T] {
 	return Size[T]{Abs(v.X), Abs(v.Y)}
 }
 
+// Cast converts the vector to a Vector of another number type, rounding as Cast does.
+func (v Vector[T]) Cast[R Number]() Vector[R] {
+	return Vector[R]{Cast[R](float64(v.X)), Cast[R](float64(v.Y))}
+}
+
 // Int converts the vector to a Vector[int].
 func (v Vector[T]) Int() Vector[int] {
 	return Vector[int]{Int(v.X), Int(v.Y)}

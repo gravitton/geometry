@@ -157,6 +157,18 @@ func TestPadding_Size(t *testing.T) {
 	})
 }
 
+func TestPadding_Cast(t *testing.T) {
+	p := Pad(1.5, 2.5, -1.5, -2.5)
+
+	t.Run("matches Int and Float", func(t *testing.T) {
+		AssertPadding(t, p.Cast[int](), p.Int())
+		AssertPadding(t, p.Cast[float64](), p.Float())
+	})
+	t.Run("a type the other conversions cannot name", func(t *testing.T) {
+		AssertPadding(t, p.Cast[int8](), Pad[int8](2, 3, -2, -3))
+	})
+}
+
 func TestPadding_Int(t *testing.T) {
 	t.Run("int is a no-op", func(t *testing.T) {
 		AssertPadding(t, Pad(2, 4, 3, 5).Int(), Pad(2, 4, 3, 5))

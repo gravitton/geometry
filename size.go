@@ -199,6 +199,11 @@ func (s Size[T]) Vector() Vector[T] {
 	return Vector[T]{s.Width, s.Height}
 }
 
+// Cast converts the size to a Size of another number type, rounding as Cast does.
+func (s Size[T]) Cast[R Number]() Size[R] {
+	return Size[R]{Cast[R](float64(s.Width)), Cast[R](float64(s.Height))}
+}
+
 // Int converts the size to a Size[int].
 func (s Size[T]) Int() Size[int] {
 	return Size[int]{Int(s.Width), Int(s.Height)}

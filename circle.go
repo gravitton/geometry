@@ -183,7 +183,7 @@ func (c Circle[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
 	if external, internal := equalSquared[T](distanceSquared, outer), equalSquared[T](distanceSquared, inner); external || internal {
 		point := c.Center.Float().Add(direction.Resize(c.tangent(circle, distance, external)))
 
-		return []Point[T]{{Cast[T](point.X), Cast[T](point.Y)}}
+		return []Point[T]{point.Cast[T]()}
 	}
 
 	along := (r1*r1 - r2*r2 + distanceSquared) / (2 * distance)
@@ -191,7 +191,7 @@ func (c Circle[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
 	normal := direction.Normal().Resize(math.Sqrt(max(r1*r1-along*along, 0)))
 	first, second := middle.Add(normal), middle.Add(normal.Negate())
 
-	return []Point[T]{{Cast[T](first.X), Cast[T](first.Y)}, {Cast[T](second.X), Cast[T](second.Y)}}
+	return []Point[T]{first.Cast[T](), second.Cast[T]()}
 }
 
 // IntersectsLine reports whether the circle and the segment share a point: the point of the
@@ -326,6 +326,11 @@ func (c Circle[T]) Equal(circle Circle[T]) bool {
 // IsZero checks if center point and radius are zero.
 func (c Circle[T]) IsZero() bool {
 	return c.Equal(Circle[T]{})
+}
+
+// Cast converts the circle to a Circle of another number type, rounding as Cast does.
+func (c Circle[T]) Cast[R Number]() Circle[R] {
+	return Circle[R]{c.Center.Cast[R](), Cast[R](float64(c.Radius))}
 }
 
 // Int converts the circle to a Circle[int].

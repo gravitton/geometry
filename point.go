@@ -189,6 +189,11 @@ func (p Point[T]) Vector() Vector[T] {
 	return Vector[T](p)
 }
 
+// Cast converts the point to a Point of another number type, rounding as Cast does.
+func (p Point[T]) Cast[R Number]() Point[R] {
+	return Point[R]{Cast[R](float64(p.X)), Cast[R](float64(p.Y))}
+}
+
 // Int converts the point to a Point[int].
 func (p Point[T]) Int() Point[int] {
 	return Point[int]{Int(p.X), Int(p.Y)}
