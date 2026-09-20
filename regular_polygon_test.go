@@ -760,6 +760,32 @@ func TestRegularPolygon_Polygon(t *testing.T) {
 	})
 }
 
+func TestRegularPolygon_Ellipse(t *testing.T) {
+	t.Run("the same center, semi-axes and angle", func(t *testing.T) {
+		AssertEllipse(t, RegPol(Pt(1, 2), Sz(10, 4), 6, 0).Ellipse(), Ell(Pt(1, 2), Sz(10, 4), 0))
+		AssertEllipse(t, RegPol(Pt(1.0, 2.0), Sz(10.0, 4.0), 6, 1.0).Ellipse(), Ell(Pt(1.0, 2.0), Sz(10.0, 4.0), 1.0))
+	})
+	t.Run("every vertex lies on it", func(t *testing.T) {
+		rp := RegPol(Pt(-3.5, 0.25), Sz(2.0, 3.0), 5, Pi/7)
+
+		for vertex := range rp.Vertices() {
+			AssertNumber(t, rp.Ellipse().DistanceTo(vertex), 0.0, fmt.Sprintf("%s: ", vertex))
+		}
+	})
+	t.Run("an empty polygon still names its ellipse", func(t *testing.T) {
+		AssertEllipse(t, RegPol(Pt(1, 2), Sz(10, 4), 0, 0).Ellipse(), Ell(Pt(1, 2), Sz(10, 4), 0))
+	})
+}
+
+func TestRegularPolygon_Circle(t *testing.T) {
+	t.Run("the circumscribed circle of a polygon of equal semi-axes", func(t *testing.T) {
+		AssertCircle(t, Hexagon(Pt(1, 2), SzU(10), FlatTop).Circle(), Circ(Pt(1, 2), 10))
+	})
+	t.Run("the circle around an elliptical polygon", func(t *testing.T) {
+		AssertCircle(t, RegPol(Pt(1, 2), Sz(4, 10), 5, 0).Circle(), Circ(Pt(1, 2), 10))
+	})
+}
+
 func TestRegularPolygon_Cast(t *testing.T) {
 	rp := RegPol(Pt(1.5, -2.5), Sz(3.5, 4.5), 6, Pi/6)
 
@@ -887,6 +913,25 @@ func TestRegularPolygon_Properties(t *testing.T) {
 	t.Run("polygon carries the vertices", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
 			AssertVertices(t, rp.Polygon().Points, slices.Collect(rp.Vertices()), fmt.Sprintf("%s: ", rp))
+		}
+	})
+	t.Run("every vertex lies on the ellipse", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for vertex := range rp.Vertices() {
+				AssertNumber(t, rp.Ellipse().DistanceTo(vertex), 0.0, fmt.Sprintf("%s → %s: ", rp, vertex))
+			}
+		}
+	})
+	t.Run("the ellipse round-trips through the polygon", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			AssertRegularPolygon(t, rp.Ellipse().RegularPolygon(rp.N), rp, fmt.Sprintf("%s: ", rp))
+		}
+	})
+	t.Run("the circle around holds every vertex", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for vertex := range rp.Vertices() {
+				assert.True(t, rp.Circle().Contains(vertex), fmt.Sprintf("%s → %s: ", rp, vertex))
+			}
 		}
 	})
 }

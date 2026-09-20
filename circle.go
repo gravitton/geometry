@@ -344,6 +344,19 @@ func (c Circle[T]) Ellipse() Ellipse[T] {
 	return Ellipse[T]{c.Center, SzU(c.Radius), 0}
 }
 
+// RegularPolygon converts the circle into the RegularPolygon of n vertices inscribed in it,
+// with the given orientation, as Ellipse.RegularPolygon does without one: every vertex lies on
+// the boundary, and the orientation places the first of them, PointyTop at the top and FlatTop
+// half a step before it, so the midpoint of an edge is there instead. It is the outline a
+// circle does not have, so its Vertices and Edges are what draws or walks one.
+//
+// Only a circle takes an Orientation, since turning it and stepping around it are the same
+// thing. Like RegularPolygonOrientationAngle it panics for an orientation that is neither
+// FlatTop nor PointyTop.
+func (c Circle[T]) RegularPolygon(n int, orientation Orientation) RegularPolygon[T] {
+	return c.Ellipse().RegularPolygon(n).Rotate(RegularPolygonOrientationAngle(n, orientation))
+}
+
 // Cast converts the circle to a Circle of another number type, rounding as Cast does.
 func (c Circle[T]) Cast[R Number]() Circle[R] {
 	return Circle[R]{c.Center.Cast[R](), Cast[R](float64(c.Radius))}

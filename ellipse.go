@@ -28,9 +28,11 @@ import (
 // A zero semi-axis is not repaired: it is the degenerate ellipse, the segment the other axis
 // spans, and Contains, DistanceTo and Bounds answer for it as for that segment.
 //
-// The ellipse is a Shape, a Measured and a Movable, and deliberately not a Collider: the shape
-// against shape tests are left to the RegularPolygon of the wanted resolution, since two
-// ellipses meet at the roots of a quartic rather than at anything the circle pairs are built on.
+// The ellipse is a Shape, a Measured and a Movable, and deliberately not an Outline or a
+// Collider: it has no vertices, and two ellipses meet at the roots of a quartic rather than at
+// anything the circle pairs are built on. Both are left to RegularPolygon, which holds the
+// same center, semi-axes and angle: RegularPolygon(n) is the polygon of the wanted resolution
+// inscribed in the ellipse, and RegularPolygon.Ellipse converts back.
 type Ellipse[T Number] struct {
 	Center Point[T] `json:",embed"`
 	Size   Size[T]  `json:",embed"`
@@ -446,6 +448,25 @@ func (e Ellipse[T]) IsCircle() bool {
 // of Circle.Ellipse there; anywhere else it is the round hull, not the same shape.
 func (e Ellipse[T]) Circle() Circle[T] {
 	return Circle[T]{e.Center, e.SemiMajor()}
+}
+
+// RegularPolygon converts the ellipse into the RegularPolygon of n vertices inscribed in it,
+// on the same center, semi-axes and angle: every vertex lies on the boundary, the first at the
+// end of the width semi-axis, and the polygon is the outline a circle and an ellipse do not
+// have, so its Vertices and Edges are what draws or walks one. The resolution is the caller's:
+// the polygon is the ellipse only in the limit, and it is always inside it.
+//
+// It takes no Orientation, where Circle.RegularPolygon does: an orientation is the phase of the
+// first vertex around the ring, and only a circle can be turned to place it, since turning the
+// ring and stepping around it are the same thing there. A polygon with fewer than one vertex
+// is empty, as RegPol builds it.
+//
+// It is the polygon within the ellipse, the only one that converts back exactly. For the
+// polygon about it, whose edges touch the boundary at their midpoints, scale the ellipse by
+// the ratio of the circumradius of a regular polygon to its apothem first:
+// e.Scale(1 / math.Cos(Pi / float64(n))).RegularPolygon(n).
+func (e Ellipse[T]) RegularPolygon(n int) RegularPolygon[T] {
+	return RegularPolygon[T]{e.Center, e.Size, n, e.Angle}
 }
 
 // Cast converts the ellipse to an Ellipse of another number type, rounding as Cast does and

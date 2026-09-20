@@ -525,6 +525,30 @@ func TestEllipse_Circle(t *testing.T) {
 	})
 }
 
+func TestEllipse_RegularPolygon(t *testing.T) {
+	e := Ell(Pt(1.0, 2.0), Sz(10.0, 4.0), Pi/6)
+
+	t.Run("the same center, semi-axes and angle", func(t *testing.T) {
+		AssertRegularPolygon(t, e.RegularPolygon(6), RegPol(Pt(1.0, 2.0), Sz(10.0, 4.0), 6, Pi/6))
+	})
+	t.Run("every vertex lies on the boundary", func(t *testing.T) {
+		for vertex := range e.RegularPolygon(7).Vertices() {
+			AssertNumber(t, e.DistanceTo(vertex), 0.0, fmt.Sprintf("%s: ", vertex))
+		}
+	})
+	t.Run("the polygon is inside the ellipse", func(t *testing.T) {
+		for edge := range e.RegularPolygon(7).Edges() {
+			assert.True(t, e.Contains(edge.Midpoint()), fmt.Sprintf("%s: ", edge))
+		}
+	})
+	t.Run("fewer than one vertex is empty", func(t *testing.T) {
+		assert.True(t, e.RegularPolygon(0).Empty())
+	})
+	t.Run("it round-trips through Ellipse", func(t *testing.T) {
+		AssertEllipse(t, e.RegularPolygon(6).Ellipse(), e)
+	})
+}
+
 func TestEllipse_Cast(t *testing.T) {
 	e := Ell(Pt(1.5, -2.5), Sz(3.5, 1.5), 1.0)
 
@@ -696,6 +720,37 @@ func TestEllipse_Properties(t *testing.T) {
 
 				assert.True(t, around.Contains(point), fmt.Sprintf("%s → %s: ", e, point))
 			}
+		}
+	})
+	t.Run("the polygon lies within the ellipse, on its boundary", func(t *testing.T) {
+		for _, e := range ellipseFixtures {
+			for _, n := range []int{3, 5, 8, 32} {
+				polygon := e.RegularPolygon(n)
+
+				for vertex := range polygon.Vertices() {
+					AssertNumber(t, e.DistanceTo(vertex), 0.0, fmt.Sprintf("%s ×%d → %s: ", e, n, vertex))
+				}
+
+				for edge := range polygon.Edges() {
+					assert.True(t, e.Contains(edge.Midpoint()), fmt.Sprintf("%s ×%d → %s: ", e, n, edge))
+				}
+			}
+		}
+	})
+	t.Run("scaling by the apothem ratio puts the polygon about the ellipse", func(t *testing.T) {
+		for _, e := range ellipseFixtures {
+			for _, n := range []int{3, 5, 8, 32} {
+				around := e.Scale(1 / math.Cos(Pi/float64(n))).RegularPolygon(n)
+
+				for edge := range around.Edges() {
+					AssertNumber(t, e.DistanceTo(edge.Midpoint()), 0.0, fmt.Sprintf("%s ×%d → %s: ", e, n, edge))
+				}
+			}
+		}
+	})
+	t.Run("the polygon round-trips through the ellipse", func(t *testing.T) {
+		for _, e := range ellipseFixtures {
+			AssertEllipse(t, e.RegularPolygon(6).Ellipse(), e, fmt.Sprintf("%s: ", e))
 		}
 	})
 	t.Run("a circle answers as the circle of the same radius", func(t *testing.T) {

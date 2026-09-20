@@ -18,8 +18,9 @@ type Shape[T Number] interface {
 // RegularPolygon. Vertices iterates the corners in order and Edges the segments joining them,
 // each edge starting where the previous one ends, the last one closing back to the first on a
 // closed shape. Both iterate without allocating, so one loop draws or measures any of the four.
-// A Circle and an Ellipse have no vertices; convert one through a RegularPolygon of the
-// wanted resolution.
+// A Circle and an Ellipse have no vertices: take the RegularPolygon of the wanted resolution
+// with Circle.RegularPolygon or Ellipse.RegularPolygon, whose vertices lie on the boundary,
+// and walk that.
 //
 // The iterators are free only on a concrete shape, where the compiler inlines them into the
 // loop. Called through an Outline value, or through a type parameter constrained by it, the
@@ -36,7 +37,7 @@ type Outline[T Number] interface {
 // method for the other side's kind and gets the same answer from either.
 //
 // Ellipse is deliberately not one: two ellipses meet at the roots of a quartic, which none of
-// the closed forms the circle pairs are built on reaches. Test an ellipse through the
+// the closed forms the circle pairs are built on reaches. Test an ellipse as its
 // RegularPolygon of the wanted resolution until the pairs land.
 type Collider[T Number] interface {
 	IntersectsSegment(segment Segment[T]) bool

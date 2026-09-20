@@ -773,6 +773,28 @@ func TestCircle_Ellipse(t *testing.T) {
 	})
 }
 
+func TestCircle_RegularPolygon(t *testing.T) {
+	c := Circ(Pt(0.0, 0.0), 10.0)
+
+	t.Run("pointy top places a vertex at the top", func(t *testing.T) {
+		AssertRegularPolygon(t, c.RegularPolygon(6, PointyTop), Hexagon(Pt(0.0, 0.0), SzU(10.0), PointyTop))
+		AssertPoint(t, slices.Collect(c.RegularPolygon(6, PointyTop).Vertices())[0], Pt(0.0, -10.0))
+	})
+	t.Run("flat top places an edge at the top", func(t *testing.T) {
+		AssertRegularPolygon(t, c.RegularPolygon(6, FlatTop), Hexagon(Pt(0.0, 0.0), SzU(10.0), FlatTop))
+	})
+	t.Run("every vertex lies on the boundary", func(t *testing.T) {
+		for vertex := range c.RegularPolygon(7, PointyTop).Vertices() {
+			AssertNumber(t, c.Center.DistanceTo(vertex), c.Radius, fmt.Sprintf("%s: ", vertex))
+		}
+	})
+	t.Run("an orientation with no meaning panics", func(t *testing.T) {
+		assert.Panics(t, func() {
+			c.RegularPolygon(6, OrientationNone)
+		})
+	})
+}
+
 func TestCircle_Cast(t *testing.T) {
 	c := Circ(Pt(1.5, -2.5), 3.5)
 

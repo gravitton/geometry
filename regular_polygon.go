@@ -8,8 +8,8 @@ import (
 
 // RegularPolygon is a polygon with equally spaced vertices around a center.
 //
-// Size holds the semi-axes of the ellipse the vertices lie on, so it is a radius, not an
-// extent: a hexagon of Size 10x10 spans 17.32x20, and the polygon inscribed in a circle of
+// Size holds the semi-axes of the Ellipse the vertices lie on, the one Ellipse() gives back,
+// so it is a radius, not an extent: a hexagon of Size 10x10 spans 17.32x20, and the polygon inscribed in a circle of
 // radius r has Size r x r. This differs from Rectangle, whose Size is the full width and
 // height. Use Bounds for the extent.
 //
@@ -466,6 +466,21 @@ func (rp RegularPolygon[T]) Polygon() Polygon[T] {
 	}
 
 	return Polygon[T]{vertices}
+}
+
+// Ellipse converts the polygon into the Ellipse its vertices lie on, the one it is inscribed
+// in: the same center, semi-axes and angle, so the conversion is exact and Ellipse.RegularPolygon
+// is its inverse for the same vertex count. A polygon with N < 1 has no vertices and still
+// names the ellipse its Size and Angle describe.
+func (rp RegularPolygon[T]) Ellipse() Ellipse[T] {
+	return Ellipse[T]{rp.Center, rp.Size, rp.Angle}
+}
+
+// Circle converts the polygon into the circle around it, the circle around the Ellipse it is
+// inscribed in: the one of the major semi-axis, which passes through the vertices of a polygon
+// of equal semi-axes and contains every other.
+func (rp RegularPolygon[T]) Circle() Circle[T] {
+	return rp.Ellipse().Circle()
 }
 
 // Cast converts the polygon to a RegularPolygon of another number type, rounding as Cast does.
