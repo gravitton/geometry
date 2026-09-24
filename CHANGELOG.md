@@ -18,6 +18,7 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 
 ### Added
 - `Nearest(point)` on every shape, and in the `Shape` interface: the point itself exactly where `Contains` holds, and otherwise the nearest point of the boundary, read off the same walk `DistanceSquaredTo` makes
+- `Rectangle.Clamp(rectangle)` – moves a rectangle by the shortest distance that brings it within another, at any two angles, centered on an axis of the other where it is the larger
 
 
 ## [v1.14.0 (2026-09-20)](https://github.com/gravitton/geometry/compare/v1.13.0...v1.14.0)

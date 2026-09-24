@@ -84,6 +84,9 @@ r.Nearest(geom.Pt(80, 0))                   // Point{60, 45}, the nearest point,
 r.Inset(geom.PadU(2)).Anchor(geom.TopRight) // Point{58, 47}
 r.AlignTo(geom.TopLeft, geom.Pt(0, 0))      // Rectangle (0,0)-(20,10)
 
+screen := geom.RectangleFromMinMax(geom.Pt(0, 0), geom.Pt(55, 100))
+r.Clamp(screen) // Rectangle (35,45)-(55,55), moved by the least that brings it inside
+
 b := geom.RectangleFromMinMax(geom.Pt(0, 0), geom.Pt(8, 6))
 b.Scale(2)                    // Rectangle (-4,-3)-(12,9), scaled around the center
 for edge := range b.Edges() { // clockwise from the top edge, Segment (0,0)-(8,0), without allocating
@@ -314,7 +317,6 @@ JSON last.
 ## Planned
 
 - **`Encloses`** – shape-in-shape containment for culling, distinct from `Contains`, which takes a point.
-- **`Rectangle.Clamp(rectangle)`** – moves a rectangle so it lies within another.
 - **`Segment.Clip()`** – the part of a segment inside a shape.
 - **`Polygon.Winding`, `IsConvex` and `ConvexHull`** – convexity also unlocks a separating-axis `Intersects`, the slow
   case in `BenchmarkPolygon_Intersects` today.

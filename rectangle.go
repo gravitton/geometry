@@ -261,6 +261,13 @@ func (r Rectangle[T]) worldPoint(offset Vector[T]) Point[T] {
 	return r.Center.Add(offset.Rotate(r.Angle))
 }
 
+// localOffset returns the offset of the point from the center in the frame of the rectangle
+// before its turn, in float64, the inverse of worldPoint, so that Clamp can measure another
+// rectangle as an aligned box in this one.
+func (r Rectangle[T]) localOffset(point Point[T]) Vector[float64] {
+	return point.Subtract(r.Center).Float().Rotate(-r.Angle)
+}
+
 // localRectangle returns the given rectangle as it lies in the local frame of this one, the
 // frame before its turn: the offset between the centers turned back by Angle, about the origin,
 // with no angle of its own. Two rectangles of the same angle taken into the local frame of the
@@ -433,6 +440,37 @@ func (r Rectangle[T]) Rotate(angle float64) Rectangle[T] {
 // point, the inverse of Anchor: DirectionNone aligns the center, like MoveTo.
 func (r Rectangle[T]) AlignTo(direction Direction, point Point[T]) Rectangle[T] {
 	return r.Translate(point.Subtract(r.Anchor(direction)))
+}
+
+// Clamp creates a new Rectangle moved so that it lies within the given one, keeping its size
+// and angle: the rectangle itself where it already lies within, and otherwise moved by the
+// shortest distance that brings it in. On an axis of the other rectangle along which it is the
+// larger it is centered on the other instead. Two rectangles that are not rotated are clamped
+// exactly; otherwise the corners of this one are taken into the frame of the other, where it
+// is an aligned box and the extent of the corners lies within it exactly where the rectangle
+// does, and the move found there is turned back into the world. For integer T the move is
+// rounded once, so the corners can land a unit past the edges of a rotated rectangle.
+func (r Rectangle[T]) Clamp(rectangle Rectangle[T]) Rectangle[T] {
+	if r.IsAligned() && rectangle.IsAligned() {
+		a1, b1 := r.MinMax()
+		a2, b2 := rectangle.MinMax()
+
+		return r.Translate(Vector[T]{
+			r.clampAxis(a1.X, b1.X, r.Center.X, a2.X, b2.X, rectangle.Center.X),
+			r.clampAxis(a1.Y, b1.Y, r.Center.Y, a2.Y, b2.Y, rectangle.Center.Y),
+		})
+	}
+
+	var local [4]Point[float64]
+	for i, corner := range r.corners() {
+		local[i] = rectangle.localOffset(corner).Point()
+	}
+
+	extent := RectangleFromMinMax(minMaxOf(local[:]))
+	frame := Rectangle[float64]{Point[float64]{}, rectangle.Size.Float(), 0}
+	move := extent.Clamp(frame).Center.Subtract(extent.Center)
+
+	return r.Translate(move.Rotate(rectangle.Angle).Cast[T]())
 }
 
 // Contains reports whether the given point lies within the rectangle, boundary included within
@@ -619,6 +657,24 @@ func (r Rectangle[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 	}
 
 	return false
+}
+
+// clampAxis returns the move along one axis that Clamp makes, from the extent a1 to b1 and the
+// center c1 of the rectangle being moved and those of the one it is clamped within: the
+// difference of the centers where the first is the larger, the least move that brings it
+// within otherwise, and zero where it already lies within. It reads no field of the
+// rectangle, only the extents it is given, so the receiver is unnamed.
+func (Rectangle[T]) clampAxis(a1, b1, c1, a2, b2, c2 T) T {
+	switch {
+	case b1-a1 > b2-a2:
+		return c2 - c1
+	case a1 < a2:
+		return a2 - a1
+	case b1 > b2:
+		return b2 - b1
+	default:
+		return 0
+	}
 }
 
 // walk folds every edge into the edgeWalk DistanceSquaredTo and Nearest both read, stopping

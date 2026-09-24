@@ -736,6 +736,76 @@ func TestRectangle_AlignTo(t *testing.T) {
 	})
 }
 
+func TestRectangle_Clamp(t *testing.T) {
+	box := RectangleFromMinMax(Pt(0, 0), Pt(10, 10))
+
+	t.Run("a rectangle within is unchanged", func(t *testing.T) {
+		AssertRectangle(t, Rect(Pt(5, 5), Sz(2, 2)).Clamp(box), Rect(Pt(5, 5), Sz(2, 2)))
+	})
+	t.Run("a rectangle outside moves in by the least", func(t *testing.T) {
+		AssertRectangle(t, Rect(Pt(12, 5), Sz(4, 2)).Clamp(box), Rect(Pt(8, 5), Sz(4, 2)))
+		AssertRectangle(t, Rect(Pt(-3, -3), Sz(2, 2)).Clamp(box), Rect(Pt(1, 1), Sz(2, 2)))
+	})
+	t.Run("an axis larger than the other is centered", func(t *testing.T) {
+		AssertRectangle(t, Rect(Pt(20, 3), Sz(14, 2)).Clamp(box), Rect(Pt(5, 3), Sz(14, 2)))
+		AssertRectangle(t, Rect(Pt(-7, 30), Sz(12, 16)).Clamp(box), Rect(Pt(5, 5), Sz(12, 16)))
+	})
+	t.Run("the same angle clamps in the shared frame", func(t *testing.T) {
+		container := Rect(Pt(0.0, 0.0), Sz(10.0, 4.0)).Rotate(Pi / 2)
+
+		AssertRectangle(t, Rect(Pt(0.0, 9.0), Sz(2.0, 2.0)).Rotate(Pi/2).Clamp(container), Rect(Pt(0.0, 4.0), Sz(2.0, 2.0)).Rotate(Pi/2))
+	})
+	t.Run("a rotated rectangle is clamped by its corners", func(t *testing.T) {
+		diamond := Rect(Pt(10.0, 5.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
+
+		AssertRectangle(t, diamond.Clamp(box.Float()), Rect(Pt(10.0-Sqrt2, 5.0), Sz(2.0, 2.0)).Rotate(Pi/4))
+	})
+	t.Run("different angles clamp within the turned edges, not the bounds", func(t *testing.T) {
+		container := Rect(Pt(0.0, 0.0), Sz(10.0, 2.0)).Rotate(Pi / 4)
+		clamped := Rect(Pt(10.0, 10.0), Sz(1.0, 1.0)).Clamp(container)
+
+		AssertRectangle(t, clamped, Rect(Pt(5*OneOverSqrt2-0.5, 5*OneOverSqrt2-0.5), Sz(1.0, 1.0)))
+		assert.True(t, within(clamped, container))
+	})
+	t.Run("int rounds the move once", func(t *testing.T) {
+		container := Rect(Pt(0, 0), Sz(10, 4)).Rotate(Pi / 2)
+
+		AssertRectangle(t, Rect(Pt(0, 9), Sz(2, 2)).Clamp(container), Rect(Pt(0, 4), Sz(2, 2)))
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, container := range rectFixtures {
+				clamped := r.Clamp(container)
+				message := fmt.Sprintf("%s → %s: ", r, container)
+
+				AssertSize(t, clamped.Size, r.Size, message)
+				AssertAngle(t, clamped.Angle, r.Angle, message)
+				assert.True(t, clamped.Clamp(container).Equal(clamped), message)
+				if within(r, container) {
+					assert.True(t, clamped.Equal(r), message)
+				}
+				if r.parallel(container) && r.Width() <= container.Width() && r.Height() <= container.Height() {
+					assert.True(t, within(clamped, container), message)
+				}
+				if math.Hypot(r.Width(), r.Height()) <= min(container.Width(), container.Height()) {
+					assert.True(t, within(clamped, container), message)
+				}
+			}
+		}
+	})
+}
+
+// within reports whether every vertex of the rectangle lies within the other.
+func within[T Number](r, container Rectangle[T]) bool {
+	for vertex := range r.Vertices() {
+		if !container.Contains(vertex) {
+			return false
+		}
+	}
+
+	return true
+}
+
 func TestRectangle_Contains(t *testing.T) {
 	t.Run("inside", func(t *testing.T) {
 		assert.True(t, Rect(Pt(1, 2), Sz(2, 3)).Contains(Pt(1, 1)))
