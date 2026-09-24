@@ -13,6 +13,12 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 
 ## [Unreleased](https://github.com/gravitton/geometry/compare/v1.14.0...main)
 
+### Breaking
+- **breaking** `Rectangle.Clamp(point)` is `Nearest`, which keeps a point within `Epsilon[T]()` of the boundary as it is, as `Contains` does, and on a rotated integer rectangle gives the foot on the edges of its rounded corners rather than a clamp in its own frame
+
+### Added
+- `Nearest(point)` on every shape, and in the `Shape` interface: the point itself exactly where `Contains` holds, and otherwise the nearest point of the boundary, read off the same walk `DistanceSquaredTo` makes
+
 
 ## [v1.14.0 (2026-09-20)](https://github.com/gravitton/geometry/compare/v1.13.0...v1.14.0)
 

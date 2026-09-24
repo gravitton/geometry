@@ -80,7 +80,7 @@ geom.PadXY(4, 8).Size() // Size{16, 8}, horizontal and vertical total
 r := geom.Rect(geom.Pt(50, 50), geom.Sz(20, 10)) // center and size
 
 r.Contains(geom.Pt(55, 52))                 // true
-r.Clamp(geom.Pt(80, 0))                     // Point{60, 45}, nearest point inside
+r.Nearest(geom.Pt(80, 0))                   // Point{60, 45}, the nearest point, on every shape
 r.Inset(geom.PadU(2)).Anchor(geom.TopRight) // Point{58, 47}
 r.AlignTo(geom.TopLeft, geom.Pt(0, 0))      // Rectangle (0,0)-(20,10)
 
@@ -313,7 +313,6 @@ JSON last.
 
 ## Planned
 
-- **`Nearest(point)`** – the closest point of a shape to a point, on every shape.
 - **`Encloses`** – shape-in-shape containment for culling, distinct from `Contains`, which takes a point.
 - **`Rectangle.Clamp(rectangle)`** – moves a rectangle so it lies within another.
 - **`Segment.Clip()`** – the part of a segment inside a shape.

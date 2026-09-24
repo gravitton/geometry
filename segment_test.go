@@ -427,6 +427,40 @@ func TestSegment_DistanceSquaredTo(t *testing.T) {
 	})
 }
 
+func TestSegment_Nearest(t *testing.T) {
+	s := Seg(Pt(0, 0), Pt(4, 0))
+
+	t.Run("the foot of the perpendicular", func(t *testing.T) {
+		AssertPoint(t, s.Nearest(Pt(2, 3)), Pt(2, 0))
+	})
+	t.Run("the endpoint where the foot falls beyond it", func(t *testing.T) {
+		AssertPoint(t, s.Nearest(Pt(-3, 4)), Pt(0, 0))
+		AssertPoint(t, s.Nearest(Pt(7, 4)), Pt(4, 0))
+	})
+	t.Run("a point on the segment is its own nearest point", func(t *testing.T) {
+		AssertPoint(t, s.Nearest(Pt(1, 0)), Pt(1, 0))
+	})
+	t.Run("a point within the tolerance is kept as it is", func(t *testing.T) {
+		assert.Equal(t, Seg(Pt(0.0, 0.0), Pt(4.0, 0.0)).Nearest(Pt(2.0, Delta/2)), Pt(2.0, Delta/2))
+	})
+	t.Run("int rounds once and can land off the segment", func(t *testing.T) {
+		skewed := Seg(Pt(0, 0), Pt(4, 2))
+
+		AssertPoint(t, skewed.Nearest(Pt(0, 3)), Pt(1, 1))
+		assert.False(t, skewed.Contains(Pt(1, 1)))
+	})
+	t.Run("a zero-length segment is its point", func(t *testing.T) {
+		AssertPoint(t, Seg(Pt(1, 1), Pt(1, 1)).Nearest(Pt(5, 4)), Pt(1, 1))
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, p := range pointFixtures {
+				assertNearest[float64](t, s, p)
+			}
+		}
+	})
+}
+
 func TestSegment_DistanceToSegment(t *testing.T) {
 	diagonal := Seg(Pt(0, 0), Pt(4, 4))
 

@@ -331,6 +331,34 @@ func TestCircle_DistanceSquaredTo(t *testing.T) {
 	})
 }
 
+func TestCircle_Nearest(t *testing.T) {
+	circle := Circ(Pt(0.0, 0.0), 3.0)
+
+	t.Run("the boundary toward the point", func(t *testing.T) {
+		AssertPoint(t, circle.Nearest(Pt(7.0, 0.0)), Pt(3.0, 0.0))
+		AssertPoint(t, circle.Nearest(Pt(3.0, 4.0)), Pt(1.8, 2.4))
+	})
+	t.Run("a point inside is its own nearest point", func(t *testing.T) {
+		AssertPoint(t, circle.Nearest(Pt(1.0, 1.0)), Pt(1.0, 1.0))
+	})
+	t.Run("a point within the tolerance is kept as it is", func(t *testing.T) {
+		assert.Equal(t, circle.Nearest(Pt(3.0+Delta/2, 0.0)), Pt(3.0+Delta/2, 0.0))
+	})
+	t.Run("int rounds once", func(t *testing.T) {
+		AssertPoint(t, Circ(Pt(0, 0), 2).Nearest(Pt(5, 1)), Pt(2, 0))
+	})
+	t.Run("a zero radius is its center", func(t *testing.T) {
+		AssertPoint(t, Circ(Pt(1.0, 1.0), 0.0).Nearest(Pt(5.0, 4.0)), Pt(1.0, 1.0))
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, c := range circleFixtures {
+			for _, p := range pointFixtures {
+				assertNearest[float64](t, c, p)
+			}
+		}
+	})
+}
+
 func TestCircle_IntersectsCircle(t *testing.T) {
 	circle := Circ(Pt(0.0, 0.0), 100.0)
 

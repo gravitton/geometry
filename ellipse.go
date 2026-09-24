@@ -334,17 +334,42 @@ func (e Ellipse[T]) DistanceTo(point Point[T]) float64 {
 // The interior is decided on the quadratic form, which is exact, and only a point outside it
 // pays for the foot, which no closed form gives and nearestOffset finds by bisection.
 func (e Ellipse[T]) DistanceSquaredTo(point Point[T]) float64 {
-	local := e.localOffset(point)
-	if e.form(local) <= 1 {
-		return 0
-	}
-
-	distanceSquared := local.Subtract(e.nearestOffset(local)).LengthSquared()
-	if lessOrEqualSquared[T](distanceSquared, 0) {
-		return 0
-	}
+	_, distanceSquared := e.nearestLocal(point)
 
 	return distanceSquared
+}
+
+// Nearest returns the point of the ellipse nearest to the given point: the point itself
+// exactly where Contains holds, and otherwise the foot of the perpendicular on the boundary,
+// the one DistanceSquaredTo measures to. For integer T it is rounded once and can land off the
+// boundary, where Contains rejects it.
+func (e Ellipse[T]) Nearest(point Point[T]) Point[T] {
+	foot, distanceSquared := e.nearestLocal(point)
+	if distanceSquared == 0 {
+		return point
+	}
+
+	return e.worldPoint(foot)
+}
+
+// nearestLocal returns the offset of the point of the ellipse nearest to the given point, in
+// the local frame, with the squared distance to it: the offset of the point itself at zero
+// within the boundary or within Epsilon of T of it, and the foot nearestOffset finds
+// otherwise. DistanceSquaredTo and Nearest both read it, so the one decides zero exactly where
+// the other returns the point.
+func (e Ellipse[T]) nearestLocal(point Point[T]) (Vector[float64], float64) {
+	local := e.localOffset(point)
+	if e.form(local) <= 1 {
+		return local, 0
+	}
+
+	foot := e.nearestOffset(local)
+	distanceSquared := local.Subtract(foot).LengthSquared()
+	if lessOrEqualSquared[T](distanceSquared, 0) {
+		return local, 0
+	}
+
+	return foot, distanceSquared
 }
 
 // form returns the quadratic form of the ellipse at the given offset in its local frame,

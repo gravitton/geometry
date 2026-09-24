@@ -736,28 +736,6 @@ func TestRectangle_AlignTo(t *testing.T) {
 	})
 }
 
-func TestRectangle_Clamp(t *testing.T) {
-	t.Run("inside point is unchanged", func(t *testing.T) {
-		AssertPoint(t, Rect(Pt(1, 2), Sz(2, 3)).Clamp(Pt(2, 2)), Pt(2, 2))
-	})
-	t.Run("outside point snaps to the edge", func(t *testing.T) {
-		AssertPoint(t, Rect(Pt(1, 2), Sz(2, 3)).Clamp(Pt(10, 10)), Pt(2, 4))
-		AssertPoint(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Clamp(Pt(-1.0, 1.2)), Pt(0.0, 1.2))
-	})
-	t.Run("rotated snaps to the turned edge, not the bounds", func(t *testing.T) {
-		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
-
-		AssertPoint(t, diamond.Clamp(Pt(2.0, 2.0)), Pt(OneOverSqrt2, OneOverSqrt2))
-		AssertPoint(t, diamond.Clamp(Pt(0.1, 0.2)), Pt(0.1, 0.2))
-	})
-	t.Run("rotated int rounds once", func(t *testing.T) {
-		turned := Rect(Pt(0, 0), Sz(4, 2)).Rotate(Pi / 2)
-
-		AssertPoint(t, turned.Clamp(Pt(5, 0)), Pt(1, 0))
-		AssertPoint(t, turned.Clamp(Pt(0, 7)), Pt(0, 2))
-	})
-}
-
 func TestRectangle_Contains(t *testing.T) {
 	t.Run("inside", func(t *testing.T) {
 		assert.True(t, Rect(Pt(1, 2), Sz(2, 3)).Contains(Pt(1, 1)))
@@ -870,6 +848,38 @@ func TestRectangle_DistanceSquaredTo(t *testing.T) {
 
 		AssertNumber(t, turned.DistanceTo(Pt(3, 3)), 3/Sqrt2)
 		assert.Equal(t, turned.DistanceSquaredTo(Pt(3, 3)), 4.5)
+	})
+}
+
+func TestRectangle_Nearest(t *testing.T) {
+	t.Run("a point inside is its own nearest point", func(t *testing.T) {
+		AssertPoint(t, Rect(Pt(1, 2), Sz(2, 3)).Nearest(Pt(2, 2)), Pt(2, 2))
+	})
+	t.Run("the foot on the nearest edge", func(t *testing.T) {
+		AssertPoint(t, Rect(Pt(1, 2), Sz(2, 3)).Nearest(Pt(10, 10)), Pt(2, 4))
+		AssertPoint(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Nearest(Pt(-1.0, 1.2)), Pt(0.0, 1.2))
+	})
+	t.Run("a point within the tolerance is kept as it is", func(t *testing.T) {
+		assert.Equal(t, Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Nearest(Pt(1.0+Delta/2, 0.5)), Pt(1.0+Delta/2, 0.5))
+	})
+	t.Run("rotated gives the turned edge, not the bounds", func(t *testing.T) {
+		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
+
+		AssertPoint(t, diamond.Nearest(Pt(2.0, 2.0)), Pt(OneOverSqrt2, OneOverSqrt2))
+		AssertPoint(t, diamond.Nearest(Pt(0.1, 0.2)), Pt(0.1, 0.2))
+	})
+	t.Run("rotated int rounds once", func(t *testing.T) {
+		turned := Rect(Pt(0, 0), Sz(4, 2)).Rotate(Pi / 2)
+
+		AssertPoint(t, turned.Nearest(Pt(5, 0)), Pt(1, 0))
+		AssertPoint(t, turned.Nearest(Pt(0, 7)), Pt(0, 2))
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, p := range pointFixtures {
+				assertNearest[float64](t, r, p)
+			}
+		}
 	})
 }
 
@@ -1433,17 +1443,7 @@ func TestRectangle_Properties(t *testing.T) {
 			assert.True(t, r.Grow(1).Shrink(1).Equal(r), fmt.Sprintf("%s: ", r))
 		}
 	})
-	t.Run("clamp lands inside and fixes inner points", func(t *testing.T) {
-		for _, r := range rectFixtures {
-			for _, point := range pointFixtures {
-				clamped := r.Clamp(point)
 
-				assert.True(t, r.Contains(clamped), fmt.Sprintf("%s → %s: ", r, point))
-				assert.True(t, r.Clamp(clamped).Equal(clamped), fmt.Sprintf("%s → %s: ", r, point))
-				assert.Equal(t, clamped.Equal(point), r.Contains(point), fmt.Sprintf("%s → %s: ", r, point))
-			}
-		}
-	})
 	t.Run("vertices and edges describe the same outline", func(t *testing.T) {
 		for _, r := range rectFixtures {
 			vertices, edges := slices.Collect(r.Vertices()), slices.Collect(r.Edges())

@@ -273,14 +273,15 @@ func (p Polygon[T]) DistanceTo(point Point[T]) float64 {
 // point of an edge is not a lattice point in general. Contains and IntersectsCircle are built
 // on it, so the three agree by construction.
 func (p Polygon[T]) DistanceSquaredTo(point Point[T]) float64 {
-	w := edgeWalk[T]{distance: math.Inf(1)}
-	for edge := range p.Edges() {
-		if w.step(edge, point) {
-			return 0
-		}
-	}
+	return p.walk(point).result()
+}
 
-	return w.result()
+// Nearest returns the point of the polygon nearest to the given point: the point itself
+// exactly where Contains holds, and otherwise the foot on the nearest edge, read off the same
+// walk DistanceSquaredTo makes. For integer T the foot is rounded once and can land off the
+// boundary, where Contains rejects it. An empty polygon returns the zero point.
+func (p Polygon[T]) Nearest(point Point[T]) Point[T] {
+	return p.walk(point).nearest(point)
 }
 
 // IntersectsCircle reports whether the polygon and the circle share a point, as
@@ -415,6 +416,19 @@ func (p Polygon[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 // intersection tests walk the vertices once for the box and reuse it for every point they test.
 func (p Polygon[T]) containsWithin(point, a, b Point[T]) bool {
 	return point.Between(a, b) && p.DistanceSquaredTo(point) == 0
+}
+
+// walk folds every edge into the edgeWalk DistanceSquaredTo and Nearest both read, stopping
+// at an edge the point lies on within Epsilon of T.
+func (p Polygon[T]) walk(point Point[T]) edgeWalk[T] {
+	w := edgeWalk[T]{distance: math.Inf(1)}
+	for edge := range p.Edges() {
+		if w.step(edge, point) {
+			break
+		}
+	}
+
+	return w
 }
 
 // Equal checks if two polygons have the same vertices. A nil and an empty Points are equal,

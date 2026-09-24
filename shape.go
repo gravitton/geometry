@@ -4,14 +4,16 @@ import "iter"
 
 // Shape is what every shape answers about a point: Segment, Rectangle, Circle, Ellipse,
 // Polygon and RegularPolygon. Bounds is the axis-aligned box around it, Contains includes the boundary
-// within Epsilon of T, DistanceTo is zero exactly where Contains holds and DistanceSquaredTo is
-// the value it takes the root of. A spatial index or a picking routine holds a Shape and never
+// within Epsilon of T, DistanceTo is zero exactly where Contains holds, DistanceSquaredTo is
+// the value it takes the root of, and Nearest is the point it is measured to, the point itself
+// exactly where Contains holds. A spatial index or a picking routine holds a Shape and never
 // needs to know which one.
 type Shape[T Number] interface {
 	Bounds() Rectangle[T]
 	Contains(point Point[T]) bool
 	DistanceTo(point Point[T]) float64
 	DistanceSquaredTo(point Point[T]) float64
+	Nearest(point Point[T]) Point[T]
 }
 
 // Outline is a shape whose boundary is a chain of straight edges: Segment, Rectangle, Polygon and

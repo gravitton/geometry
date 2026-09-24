@@ -478,6 +478,28 @@ func TestPolygon_DistanceSquaredTo(t *testing.T) {
 	})
 }
 
+func TestPolygon_Nearest(t *testing.T) {
+	square := Pol(squareVertices())
+
+	t.Run("the foot on the nearest edge", func(t *testing.T) {
+		AssertPoint(t, square.Nearest(Pt(5, 1)), Pt(2, 1))
+		AssertPoint(t, square.Nearest(Pt(5, 6)), Pt(2, 2))
+	})
+	t.Run("a point inside is its own nearest point", func(t *testing.T) {
+		AssertPoint(t, square.Nearest(Pt(1, 1)), Pt(1, 1))
+	})
+	t.Run("an empty polygon returns the zero point", func(t *testing.T) {
+		AssertPoint(t, Polygon[int]{}.Nearest(Pt(3, 4)), Pt(0, 0))
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, polygon := range polygonFixtures() {
+			for _, p := range pointFixtures {
+				assertNearest[float64](t, polygon, p)
+			}
+		}
+	})
+}
+
 func TestPolygon_IntersectsCircle(t *testing.T) {
 	t.Run("mirrors Circle.IntersectsPolygon", func(t *testing.T) {
 		for _, p := range polygonFixtures() {

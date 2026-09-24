@@ -462,6 +462,31 @@ func TestEllipse_DistanceSquaredTo(t *testing.T) {
 	})
 }
 
+func TestEllipse_Nearest(t *testing.T) {
+	e := Ell(Pt(0.0, 0.0), Sz(5.0, 3.0), 0)
+
+	t.Run("the foot of the perpendicular", func(t *testing.T) {
+		AssertPoint(t, e.Nearest(Pt(0.0, 10.0)), Pt(0.0, 3.0))
+		AssertPoint(t, e.Nearest(Pt(10.0, 0.0)), Pt(5.0, 0.0))
+	})
+	t.Run("rotated places the foot in the world", func(t *testing.T) {
+		AssertPoint(t, Ell(Pt(1.0, 2.0), Sz(5.0, 3.0), Pi/2).Nearest(Pt(1.0, 12.0)), Pt(1.0, 7.0))
+	})
+	t.Run("a point inside is its own nearest point", func(t *testing.T) {
+		AssertPoint(t, e.Nearest(Pt(1.0, 1.0)), Pt(1.0, 1.0))
+	})
+	t.Run("a point within the tolerance is kept as it is", func(t *testing.T) {
+		assert.Equal(t, e.Nearest(Pt(0.0, 3.0+Delta/2)), Pt(0.0, 3.0+Delta/2))
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, e := range ellipseFixtures {
+			for _, p := range pointFixtures {
+				assertNearest[float64](t, e, p)
+			}
+		}
+	})
+}
+
 func TestEllipse_nearestOffset(t *testing.T) {
 	e := Ell(Pt(0.0, 0.0), Sz(5.0, 3.0), 0)
 

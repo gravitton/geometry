@@ -457,14 +457,15 @@ func (rp RegularPolygon[T]) DistanceTo(point Point[T]) float64 {
 // infinity for an empty polygon. It is a float64 even for an integer T, like
 // Polygon.DistanceSquaredTo. Contains and IntersectsCircle are built on it.
 func (rp RegularPolygon[T]) DistanceSquaredTo(point Point[T]) float64 {
-	w := edgeWalk[T]{distance: math.Inf(1)}
-	for edge := range rp.Edges() {
-		if w.step(edge, point) {
-			return 0
-		}
-	}
+	return rp.walk(point).result()
+}
 
-	return w.result()
+// Nearest returns the point of the polygon nearest to the given point: the point itself
+// exactly where Contains holds, and otherwise the foot on the nearest edge, read off the same
+// walk DistanceSquaredTo makes. For integer T the foot is rounded once and can land off the
+// boundary, where Contains rejects it. An empty polygon returns the zero point.
+func (rp RegularPolygon[T]) Nearest(point Point[T]) Point[T] {
+	return rp.walk(point).nearest(point)
 }
 
 // IntersectsCircle reports whether the polygon and the circle share a point, as
@@ -540,6 +541,19 @@ func (rp RegularPolygon[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) 
 // intersection tests place the box once and reuse it for every point they test.
 func (rp RegularPolygon[T]) containsWithin(point, a, b Point[T]) bool {
 	return point.Between(a, b) && rp.DistanceSquaredTo(point) == 0
+}
+
+// walk folds every edge into the edgeWalk DistanceSquaredTo and Nearest both read, stopping
+// at an edge the point lies on within Epsilon of T.
+func (rp RegularPolygon[T]) walk(point Point[T]) edgeWalk[T] {
+	w := edgeWalk[T]{distance: math.Inf(1)}
+	for edge := range rp.Edges() {
+		if w.step(edge, point) {
+			break
+		}
+	}
+
+	return w
 }
 
 // Equal checks if center point, size, number of vertices and angle are equal. Angles are

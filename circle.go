@@ -172,6 +172,21 @@ func (c Circle[T]) DistanceSquaredTo(point Point[T]) float64 {
 	return distance * distance
 }
 
+// Nearest returns the point of the circle nearest to the given point: the point itself
+// exactly where Contains holds, and otherwise the point of the boundary toward it from the
+// center, on the squared distance Contains compares. For integer T it is rounded once and can
+// land off the boundary, where Contains rejects it.
+func (c Circle[T]) Nearest(point Point[T]) Point[T] {
+	distanceSquared := c.centerDistanceSquared(point)
+	if c.containsSquared(distanceSquared) {
+		return point
+	}
+
+	offset := point.Subtract(c.Center).Float().Multiply(float64(c.Radius) / math.Sqrt(distanceSquared))
+
+	return c.Center.Float().Add(offset).Cast[T]()
+}
+
 // IntersectsCircle reports whether the circles overlap: the center of one lies within the sum of the
 // radii of the other. Touching circles intersect, within Epsilon of T, by the same comparison
 // Contains makes, on the squared distance. The radii are summed in float64, so a narrow integer

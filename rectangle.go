@@ -13,7 +13,7 @@ import (
 // The size is never negative: Rect and Resize take it absolute, the corner constructors reorder
 // the corners they are given, and Scale flips a negative factor into a positive one, so a
 // rectangle with a negative extent can only be written as a struct literal or decoded from JSON,
-// and Contains, Clamp and the Intersects methods give no meaningful answer for it; Canonical repairs it.
+// and Contains, Nearest and the Intersects methods give no meaningful answer for it; Canonical repairs it.
 //
 // Width, Height, Area and the corners are those of the rectangle itself, named in its own frame
 // before the turn: TopLeft is the corner that was top-left before the rectangle was rotated,
@@ -23,7 +23,7 @@ import (
 //
 // The rectangle is closed: Contains and the Intersects methods include the boundary, within the
 // Epsilon that Equal applies, so a float rectangle contains the corners it was built from even
-// where Min is recomputed from Center with a rounding error; Clamp applies no tolerance.
+// where Min is recomputed from Center with a rounding error.
 // For integer T the corners are lattice points on that boundary, so a rectangle of width w
 // spans w+1 lattice columns from Min to Max inclusive, and a rotated rectangle has each corner
 // rounded onto the lattice, so its edges are the segments between those rounded corners. The
@@ -261,13 +261,6 @@ func (r Rectangle[T]) worldPoint(offset Vector[T]) Point[T] {
 	return r.Center.Add(offset.Rotate(r.Angle))
 }
 
-// localOffset returns the offset of the point from the center in the frame of the rectangle before
-// its turn, in float64, the inverse of world, so that Clamp can clamp a rotated rectangle as
-// an aligned one.
-func (r Rectangle[T]) localOffset(point Point[T]) Vector[float64] {
-	return point.Subtract(r.Center).Float().Rotate(-r.Angle)
-}
-
 // localRectangle returns the given rectangle as it lies in the local frame of this one, the
 // frame before its turn: the offset between the centers turned back by Angle, about the origin,
 // with no angle of its own. Two rectangles of the same angle taken into the local frame of the
@@ -339,7 +332,7 @@ func (r Rectangle[T]) Resize(size Size[T]) Rectangle[T] {
 // absolute and the angle normalized to [0, 2π): a rectangle mirrored about its own center is
 // the same rectangle, so the center is untouched and a well-formed rectangle is returned as it
 // is, up to the full turns Equal already ignores. It repairs a struct literal or decoded JSON
-// with a negative extent before Contains, Clamp or the Intersects methods read it, and brings
+// with a negative extent before Contains, Nearest or the Intersects methods read it, and brings
 // a decoded angle onto the seam Rotate keeps. An angle within Delta of zero or of a full turn,
 // the residue a chain of Rotate and Lerp calls can leave, becomes exactly zero, so the
 // rectangle IsAligned again and its corners are exact; Rotate itself never snaps, since a turn
@@ -442,25 +435,6 @@ func (r Rectangle[T]) AlignTo(direction Direction, point Point[T]) Rectangle[T] 
 	return r.Translate(point.Subtract(r.Anchor(direction)))
 }
 
-// Clamp returns the given Point clamped to the rectangle: the point itself inside, and the
-// nearest point of the rectangle outside, with no tolerance. A rotated rectangle clamps in its
-// own frame, so the result lies on the edge nearest to the point rather than in the box from
-// Min to Max; for integer T it is rounded once, after the turn back.
-func (r Rectangle[T]) Clamp(point Point[T]) Point[T] {
-	if r.IsAligned() {
-		a, b := r.MinMax()
-
-		return Point[T]{Clamp(point.X, a.X, b.X), Clamp(point.Y, a.Y, b.Y)}
-	}
-
-	a, b := r.localMinMax()
-	local := r.localOffset(point)
-	clamped := Vector[float64]{Clamp(local.X, float64(a.X), float64(b.X)), Clamp(local.Y, float64(a.Y), float64(b.Y))}
-	placed := r.Center.Float().Add(clamped.Rotate(r.Angle))
-
-	return placed.Cast[T]()
-}
-
 // Contains reports whether the given point lies within the rectangle, boundary included within
 // Epsilon of T: strictly inside, or on an edge as Segment.Contains judges it, so the rectangle
 // contains exactly the points its edges contain and the points between them.
@@ -480,26 +454,24 @@ func (r Rectangle[T]) DistanceTo(point Point[T]) float64 {
 // comparisons, in one pass over the edges, the edgeWalk every closed shape makes: zero for a
 // point inside by the even-odd rule, or on an edge within Epsilon of T as
 // Segment.DistanceSquaredTo snaps it, and the squared distance to the nearest edge otherwise. A
-// rectangle that is not rotated answers a point Clamp leaves where it is before any edge is
-// examined. It is a float64 even for an integer T, since the nearest point of a rotated
-// rectangle is a foot on a turned edge, not a lattice point in general; only
-// Point.DistanceSquaredTo stays in T. Contains and IntersectsCircle are built on it, and the
-// edges are the ones Segment.IntersectionSegment and Polygon read, so containment, the boundary
-// crossings of a segment and the polygon of the rectangle agree by construction, for a
-// rotated integer rectangle on the rounded corners its edges join.
+// rectangle that is not rotated answers a point within its extent before any edge is examined.
+// It is a float64 even for an integer T, since the nearest point of a rotated rectangle is a
+// foot on a turned edge, not a lattice point in general; only Point.DistanceSquaredTo stays in
+// T. Contains and IntersectsCircle are built on it, and the edges are the ones
+// Segment.IntersectionSegment and Polygon read, so containment, the boundary crossings of a
+// segment and the polygon of the rectangle agree by construction, for a rotated integer
+// rectangle on the rounded corners its edges join.
 func (r Rectangle[T]) DistanceSquaredTo(point Point[T]) float64 {
-	if r.IsAligned() && r.Clamp(point) == point {
-		return 0
-	}
+	return r.walk(point).result()
+}
 
-	w := edgeWalk[T]{distance: math.Inf(1)}
-	for edge := range r.Edges() {
-		if w.step(edge, point) {
-			return 0
-		}
-	}
-
-	return w.result()
+// Nearest returns the point of the rectangle nearest to the given point: the point itself
+// exactly where Contains holds, and otherwise the foot on the nearest edge, read off the same
+// walk DistanceSquaredTo makes, so a rotated rectangle gives a point of the turned edge
+// rather than of the box from Min to Max. For integer T the foot on a turned edge is rounded
+// once and can land off the boundary, where Contains rejects it.
+func (r Rectangle[T]) Nearest(point Point[T]) Point[T] {
+	return r.walk(point).nearest(point)
 }
 
 // IntersectsCircle reports whether the rectangle and the circle overlap, as
@@ -647,6 +619,26 @@ func (r Rectangle[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 	}
 
 	return false
+}
+
+// walk folds every edge into the edgeWalk DistanceSquaredTo and Nearest both read, stopping
+// at an edge the point lies on within Epsilon of T. A rectangle that is not rotated answers a
+// point within its extent, compared exactly, with a walk that is already over at zero.
+func (r Rectangle[T]) walk(point Point[T]) edgeWalk[T] {
+	if r.IsAligned() {
+		if a, b := r.MinMax(); a.X <= point.X && point.X <= b.X && a.Y <= point.Y && point.Y <= b.Y {
+			return edgeWalk[T]{}
+		}
+	}
+
+	w := edgeWalk[T]{distance: math.Inf(1)}
+	for edge := range r.Edges() {
+		if w.step(edge, point) {
+			break
+		}
+	}
+
+	return w
 }
 
 // containsWithin is Contains for a caller that already holds the corners of MinMax, so the

@@ -744,6 +744,28 @@ func TestRegularPolygon_DistanceSquaredTo(t *testing.T) {
 	})
 }
 
+func TestRegularPolygon_Nearest(t *testing.T) {
+	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0)
+
+	t.Run("the foot on the nearest edge", func(t *testing.T) {
+		AssertPoint(t, diamond.Nearest(Pt(2, 2)), Pt(1, 1))
+		AssertPoint(t, diamond.Nearest(Pt(3, 0)), Pt(2, 0))
+	})
+	t.Run("a point inside is its own nearest point", func(t *testing.T) {
+		AssertPoint(t, diamond.Nearest(Pt(0, 1)), Pt(0, 1))
+	})
+	t.Run("an empty polygon returns the zero point", func(t *testing.T) {
+		AssertPoint(t, RegPol(Pt(1, 1), Sz(2, 2), 0, 0).Nearest(Pt(3, 4)), Pt(0, 0))
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for _, p := range pointFixtures {
+				assertNearest[float64](t, rp, p)
+			}
+		}
+	})
+}
+
 func TestRegularPolygon_IntersectsCircle(t *testing.T) {
 	t.Run("mirrors Circle.IntersectsRegularPolygon", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {

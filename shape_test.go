@@ -71,6 +71,37 @@ func TestShape(t *testing.T) {
 			}
 		}
 	})
+	t.Run("the nearest point of a NaN coordinate is NaN", func(t *testing.T) {
+		for _, shape := range shapes {
+			for _, p := range []Point[float64]{Pt(math.NaN(), 0.0), Pt(1.0, math.NaN())} {
+				nearest := shape.Nearest(p)
+
+				assert.True(t, math.IsNaN(nearest.X) || math.IsNaN(nearest.Y), fmt.Sprintf("%s → %s: ", shape, p))
+			}
+		}
+	})
+	t.Run("the nearest point is contained and at the distance", func(t *testing.T) {
+		for _, shape := range shapes {
+			for _, p := range pointFixtures {
+				assertNearest(t, shape, p)
+			}
+		}
+	})
+}
+
+// assertNearest asserts the properties Nearest has on every shape: the point itself exactly
+// where Contains holds, contained itself, its own nearest point, and at DistanceSquaredTo
+// from the point.
+func assertNearest[T Number](t *testing.T, shape Shape[T], point Point[T]) {
+	t.Helper()
+
+	nearest := shape.Nearest(point)
+	message := fmt.Sprintf("%v → %v: ", shape, point)
+
+	assert.Equal(t, nearest.Equal(point), shape.Contains(point), message)
+	assert.True(t, shape.Contains(nearest), message)
+	assert.True(t, shape.Nearest(nearest).Equal(nearest), message)
+	AssertNumber(t, float64(point.DistanceSquaredTo(nearest)), shape.DistanceSquaredTo(point), message)
 }
 
 func TestOutline(t *testing.T) {

@@ -22,22 +22,34 @@ func edgesOf[T Number](vertices []Point[T]) iter.Seq[Segment[T]] {
 
 // edgeWalk folds the edges of a closed outline one at a time into the even-odd walk every
 // shape's walk makes: the squared distance to the nearest edge so far, starting infinitely
-// far, and whether a ray from the point has crossed an odd number of edges. A shape starts it
-// as a literal, ranges its own Edges and calls step on each, so the walk shares its rule
-// without an iterator crossing a function boundary, which would allocate it.
+// far, the edge it was measured to, and whether a ray from the point has crossed an odd number
+// of edges. A shape starts it as a literal, ranges its own Edges and calls step on each, so the
+// walk shares its rule without an iterator crossing a function boundary, which would allocate
+// it. The distance and the nearest point are both read off the one walk, so Nearest returns
+// the point itself exactly where DistanceSquaredTo is zero. The two readers take the walk by
+// value, so a shape reads them straight off the walk it returns.
 type edgeWalk[T Number] struct {
 	inside   bool
 	distance float64
+	edge     Segment[T]
 }
 
 // step folds one edge in and reports whether the point lies on it within Epsilon of T, as
 // Segment.DistanceSquaredTo snaps it, where the walk is over: the point is on the boundary at
 // distance zero whatever the remaining edges say.
 func (w *edgeWalk[T]) step(edge Segment[T], point Point[T]) bool {
-	w.distance = min(w.distance, edge.distanceSquaredTo(point))
-	if lessOrEqualSquared[T](w.distance, 0) {
+	distance := edge.distanceSquaredTo(point)
+	if lessOrEqualSquared[T](distance, 0) {
+		w.distance = 0
+
 		return true
 	}
+
+	if distance < w.distance {
+		w.edge = edge
+	}
+
+	w.distance = min(w.distance, distance)
 
 	if edge.crossesRay(point) {
 		w.inside = !w.inside
@@ -49,12 +61,23 @@ func (w *edgeWalk[T]) step(edge Segment[T], point Point[T]) bool {
 // result returns the squared distance from the point to the outline after every edge: zero
 // inside by the even-odd rule, the distance to the nearest edge otherwise, and infinity where
 // there was no edge.
-func (w *edgeWalk[T]) result() float64 {
+func (w edgeWalk[T]) result() float64 {
 	if w.inside {
 		return 0
 	}
 
 	return w.distance
+}
+
+// nearest returns the point of the outline nearest to the point after every edge: the point
+// itself where result is zero, and the foot on the nearest edge otherwise, which is the zero
+// point where there was no edge.
+func (w edgeWalk[T]) nearest(point Point[T]) Point[T] {
+	if w.result() == 0 {
+		return point
+	}
+
+	return w.edge.foot(point)
 }
 
 // edgeIntersections collects the points where a segment crosses the edges of an outline, fed

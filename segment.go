@@ -203,6 +203,18 @@ func (s Segment[T]) DistanceSquaredTo(point Point[T]) float64 {
 	return distance
 }
 
+// Nearest returns the point of the segment nearest to the given point: the point itself
+// exactly where Contains holds, and otherwise the foot of the perpendicular, or the endpoint
+// where the foot falls beyond it, decided on the projection DistanceSquaredTo makes. For
+// integer T the foot is rounded once and can land off the segment, where Contains rejects it.
+func (s Segment[T]) Nearest(point Point[T]) Point[T] {
+	if s.DistanceSquaredTo(point) == 0 {
+		return point
+	}
+
+	return s.foot(point)
+}
+
 // DistanceToSegment returns the distance between the nearest points of the two segments: zero
 // exactly where Intersects holds, and otherwise the smallest distance from an endpoint of one
 // to the other.
@@ -413,6 +425,25 @@ func (s Segment[T]) distanceSquaredTo(point Point[T]) float64 {
 	cross := offset.Cross(direction)
 
 	return cross * cross / lengthSquared
+}
+
+// foot returns the point of the segment nearest to the given point with no tolerance applied:
+// Start or End where the projection distanceSquaredTo makes falls beyond them, on the same
+// comparisons, and the point at that fraction along the segment otherwise.
+func (s Segment[T]) foot(point Point[T]) Point[T] {
+	direction, offset := s.Vector().Float(), point.Subtract(s.Start).Float()
+
+	along := offset.Dot(direction)
+	if along <= 0 {
+		return s.Start
+	}
+
+	lengthSquared := direction.LengthSquared()
+	if along >= lengthSquared {
+		return s.End
+	}
+
+	return s.PointAt(along / lengthSquared)
 }
 
 // crosses reports whether the segments properly cross: each has its endpoints on opposite sides
