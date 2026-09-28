@@ -421,6 +421,91 @@ func (p Polygon[T]) Nearest(point Point[T]) Point[T] {
 	return p.walk(point).nearest(point)
 }
 
+// EnclosesCircle reports whether the circle lies within the polygon: its center is contained
+// and every edge is at least the radius away, within Epsilon of T, read off the walk
+// DistanceSquaredTo makes, so a circle touching an edge from inside is enclosed. A circle clear
+// of every edge cannot reach outside, concave polygon or not. An empty polygon encloses nothing.
+func (p Polygon[T]) EnclosesCircle(circle Circle[T]) bool {
+	return p.walk(circle.Center).clears(float64(circle.Radius))
+}
+
+// EnclosesSegment reports whether the segment lies within the polygon: both endpoints are
+// contained, within Epsilon of T, and it leaves the polygon nowhere between them, which a
+// concave polygon can let it do. It leaves by properly crossing an edge, decided on exact
+// signs as Segment.IntersectsSegment decides a crossing, by passing a vertex into the outside,
+// or by running from an endpoint on an edge toward the outer side of it, the side read from
+// the Winding of the polygon. A crossing where an endpoint of either lies on the other within
+// Epsilon of T is a touch, and a segment that runs beyond the line of an edge by no more than
+// the tolerance runs along it. The polygon is taken to be simple: an edge crossing another edge
+// of a self-intersecting polygon counts as leaving it, so such a polygon does not enclose
+// itself. An empty polygon encloses nothing.
+func (p Polygon[T]) EnclosesSegment(segment Segment[T]) bool {
+	a, b := p.minMax()
+
+	return p.containsWithin(segment.Start, a, b) && p.containsWithin(segment.End, a, b) && p.keeps(segment, p.twiceArea())
+}
+
+// EnclosesPolygon reports whether the given polygon lies within this one: every edge of it is
+// enclosed, as EnclosesSegment decides, and an outline within a simple polygon holds its area
+// within it too. An empty polygon on either side encloses nothing.
+func (p Polygon[T]) EnclosesPolygon(polygon Polygon[T]) bool {
+	if polygon.IsEmpty() {
+		return false
+	}
+
+	a, b := p.minMax()
+	twiceArea := p.twiceArea()
+
+	for edge := range polygon.Edges() {
+		if !p.containsWithin(edge.Start, a, b) || !p.keeps(edge, twiceArea) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// EnclosesRectangle reports whether the rectangle lies within the polygon: every edge of it is
+// enclosed, as EnclosesSegment decides, whatever its angle.
+func (p Polygon[T]) EnclosesRectangle(rectangle Rectangle[T]) bool {
+	a, b := p.minMax()
+	twiceArea := p.twiceArea()
+
+	for edge := range rectangle.Edges() {
+		if !p.containsWithin(edge.Start, a, b) || !p.keeps(edge, twiceArea) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// EnclosesRegularPolygon reports whether the regular polygon lies within this one: every edge
+// of it is enclosed, as EnclosesSegment decides. An empty polygon on either side encloses
+// nothing.
+func (p Polygon[T]) EnclosesRegularPolygon(polygon RegularPolygon[T]) bool {
+	if polygon.IsEmpty() {
+		return false
+	}
+
+	a, b := p.minMax()
+	twiceArea := p.twiceArea()
+
+	for edge := range polygon.Edges() {
+		if !p.containsWithin(edge.Start, a, b) || !p.keeps(edge, twiceArea) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// EnclosesBox reports whether the box lies within the polygon, as EnclosesRectangle decides on
+// the box's Rectangle.
+func (p Polygon[T]) EnclosesBox(box Box[T]) bool {
+	return p.EnclosesRectangle(box.Rectangle())
+}
+
 // IntersectsCircle reports whether the polygon and the circle share a point, as
 // Circle.IntersectsPolygon does.
 func (p Polygon[T]) IntersectsCircle(circle Circle[T]) bool {
@@ -561,7 +646,7 @@ func (p Polygon[T]) containsWithin(point, a, b Point[T]) bool {
 	return point.Between(a, b) && p.DistanceSquaredTo(point) == 0
 }
 
-// walk folds every edge into the edgeWalk DistanceSquaredTo and Nearest both read, stopping
+// walk folds every edge into the edgeWalk DistanceSquaredTo, Nearest and EnclosesCircle read, stopping
 // at an edge the point lies on within Epsilon of T.
 func (p Polygon[T]) walk(point Point[T]) edgeWalk[T] {
 	w := edgeWalk[T]{distance: math.Inf(1)}
@@ -572,6 +657,84 @@ func (p Polygon[T]) walk(point Point[T]) edgeWalk[T] {
 	}
 
 	return w
+}
+
+// keeps reports whether the segment stays within the polygon between its endpoints, which the
+// caller has found contained. A segment leaves a simple polygon in one of three ways, each
+// judged on exact signs in the sense twiceArea gives: it properly crosses an edge, short of a
+// touch; it runs through a vertex into the outside; or it runs from an endpoint inside an edge
+// toward the outer side of that edge, a boundary point where the outline runs straight. The
+// last two are asked of leavesThrough, a vertex or an endpoint is found on the boundary within
+// Epsilon of T, and an endpoint at a vertex is left to the vertex, which judges both its edges.
+func (p Polygon[T]) keeps(segment Segment[T], twiceArea float64) bool {
+	previous := p.Points[len(p.Points)-1]
+
+	for edge := range p.Edges() {
+		if segment.crosses(edge) {
+			if _, touching := segment.touch(edge); !touching {
+				return false
+			}
+		}
+
+		along := edge.Vector().Float()
+
+		if vertex := edge.Start; segment.Contains(vertex) {
+			if p.leavesThrough(vertex, previous.Subtract(vertex).Float(), along, segment, twiceArea) {
+				return false
+			}
+		}
+
+		for _, endpoint := range [2]Point[T]{segment.Start, segment.End} {
+			if !edge.Contains(endpoint) || endpoint.coincides(edge.Start) || endpoint.coincides(edge.End) {
+				continue
+			}
+
+			if p.leavesThrough(endpoint, along.Negate(), along, segment, twiceArea) {
+				return false
+			}
+		}
+
+		previous = edge.Start
+	}
+
+	return true
+}
+
+// leavesThrough reports whether the segment, passing a point of the boundary where the outline
+// turns from the direction toward the previous vertex to the one toward the next, runs from
+// there into the outside toward either endpoint, as admits judges the turn in the sense
+// twiceArea gives.
+func (p Polygon[T]) leavesThrough(point Point[T], toPrevious, toNext Vector[float64], segment Segment[T], twiceArea float64) bool {
+	if twiceArea < 0 {
+		toPrevious, toNext = toNext, toPrevious
+	}
+
+	return !p.admits(toPrevious, toNext, segment.Start.Subtract(point).Float()) ||
+		!p.admits(toPrevious, toNext, segment.End.Subtract(point).Float())
+}
+
+// admits reports whether the offset from a point of the boundary stays within the polygon,
+// where the outline turns there from the direction toward the previous vertex to the one
+// toward the next with the area between them: on the inner side of both edges where the turn
+// is convex, straight or a spike, and of either where it is reflex, as stays judges each
+// side. The turn is decided on the exact sign of the cross product, as crosses decides.
+func (p Polygon[T]) admits(toPrevious, toNext, offset Vector[float64]) bool {
+	insideNext, insidePrevious := p.stays(toNext.Cross(offset), toNext), p.stays(offset.Cross(toPrevious), toPrevious)
+	if toNext.Cross(toPrevious) >= 0 {
+		return insideNext && insidePrevious
+	}
+
+	return insideNext || insidePrevious
+}
+
+// stays reports whether an offset lies on the inner side of an edge, given their cross
+// product, positive on that side, and the direction of the edge: on it, or beyond the line of
+// the edge by no more than Epsilon of T, on the squared gap Segment.distanceSquaredTo measures
+// beside a segment. An offset within the tolerance of the point stays on every side, so a
+// segment ending there is not judged by a direction it has not got. It reads no field of the
+// polygon, so the receiver is unnamed.
+func (Polygon[T]) stays(cross float64, edge Vector[float64]) bool {
+	return cross >= 0 || lessOrEqualSquared[T](cross*cross/edge.LengthSquared(), 0)
 }
 
 // Equal checks if two polygons have the same vertices. A nil and an empty Points are equal,

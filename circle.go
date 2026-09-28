@@ -186,6 +186,72 @@ func (c Circle[T]) Nearest(point Point[T]) Point[T] {
 	return c.Center.Float().Add(offset).Cast[T]()
 }
 
+// EnclosesCircle reports whether the given circle lies within this one: its far point, the
+// point of it farthest from this center, is contained within Epsilon of T by the comparison
+// Contains makes, so a circle touching the boundary from inside is enclosed.
+func (c Circle[T]) EnclosesCircle(circle Circle[T]) bool {
+	far := math.Sqrt(c.centerDistanceSquared(circle.Center)) + float64(circle.Radius)
+
+	return c.containsSquared(far * far)
+}
+
+// EnclosesSegment reports whether the segment lies within the circle: both endpoints are
+// contained, within Epsilon of T, and a circle holds every point between two it contains.
+func (c Circle[T]) EnclosesSegment(segment Segment[T]) bool {
+	return c.Contains(segment.Start) && c.Contains(segment.End)
+}
+
+// EnclosesPolygon reports whether the polygon lies within the circle: every vertex is
+// contained, within Epsilon of T, and a circle holds every point between points it contains.
+// An empty polygon is enclosed by nothing.
+func (c Circle[T]) EnclosesPolygon(polygon Polygon[T]) bool {
+	if polygon.IsEmpty() {
+		return false
+	}
+
+	for vertex := range polygon.Vertices() {
+		if !c.Contains(vertex) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// EnclosesRectangle reports whether the rectangle lies within the circle: every corner is
+// contained, within Epsilon of T, whatever the rectangle's angle.
+func (c Circle[T]) EnclosesRectangle(rectangle Rectangle[T]) bool {
+	for vertex := range rectangle.Vertices() {
+		if !c.Contains(vertex) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// EnclosesRegularPolygon reports whether the regular polygon lies within the circle: every
+// vertex is contained, within Epsilon of T. An empty polygon is enclosed by nothing.
+func (c Circle[T]) EnclosesRegularPolygon(polygon RegularPolygon[T]) bool {
+	if polygon.IsEmpty() {
+		return false
+	}
+
+	for vertex := range polygon.Vertices() {
+		if !c.Contains(vertex) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// EnclosesBox reports whether the box lies within the circle, as EnclosesRectangle decides on
+// the box's Rectangle.
+func (c Circle[T]) EnclosesBox(box Box[T]) bool {
+	return c.EnclosesRectangle(box.Rectangle())
+}
+
 // IntersectsCircle reports whether the circles overlap: the center of one lies within the sum of the
 // radii of the other. Touching circles intersect, within Epsilon of T, by the same comparison
 // Contains makes, on the squared distance. The radii are summed in float64, so a narrow integer

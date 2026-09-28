@@ -165,6 +165,22 @@ func TestCollider(t *testing.T) {
 			}
 		}
 	})
+	t.Run("a shape enclosed by another intersects it", func(t *testing.T) {
+		for _, a := range colliders {
+			if container, ok := a.(encloser[float64]); ok {
+				for _, b := range colliders {
+					assert.True(t, !encloses(container, b) || Intersects(a, b), fmt.Sprintf("%s → %s: ", a, b))
+				}
+			}
+		}
+	})
+	t.Run("every shape with an area encloses itself", func(t *testing.T) {
+		for _, a := range colliders {
+			if container, ok := a.(encloser[float64]); ok {
+				assert.True(t, encloses(container, a), fmt.Sprintf("%s: ", a))
+			}
+		}
+	})
 	t.Run("a collider of another kind is tested from the side that has one", func(t *testing.T) {
 		rectangle := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0))
 
@@ -206,6 +222,35 @@ func (s stubCollider) IntersectsRegularPolygon(RegularPolygon[float64]) bool {
 
 func (s stubCollider) IntersectsBox(Box[float64]) bool {
 	return s.result
+}
+
+// encloser is a shape with the six Encloses methods, every Collider but Segment.
+type encloser[T Number] interface {
+	EnclosesCircle(circle Circle[T]) bool
+	EnclosesSegment(segment Segment[T]) bool
+	EnclosesPolygon(polygon Polygon[T]) bool
+	EnclosesRectangle(rectangle Rectangle[T]) bool
+	EnclosesRegularPolygon(polygon RegularPolygon[T]) bool
+	EnclosesBox(box Box[T]) bool
+}
+
+// encloses tests the shape against the container by the method naming its kind, as
+// Intersects dispatches.
+func encloses[T Number](container encloser[T], shape Collider[T]) bool {
+	switch shape := shape.(type) {
+	case Circle[T]:
+		return container.EnclosesCircle(shape)
+	case Segment[T]:
+		return container.EnclosesSegment(shape)
+	case Polygon[T]:
+		return container.EnclosesPolygon(shape)
+	case Rectangle[T]:
+		return container.EnclosesRectangle(shape)
+	case RegularPolygon[T]:
+		return container.EnclosesRegularPolygon(shape)
+	default:
+		return container.EnclosesBox(shape.(Box[T]))
+	}
 }
 
 // closed reports whether the last edge returns to the first vertex, through the interface as

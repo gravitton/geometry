@@ -359,6 +359,105 @@ func TestCircle_Nearest(t *testing.T) {
 	})
 }
 
+func TestCircle_EnclosesCircle(t *testing.T) {
+	circle := Circ(Pt(0, 0), 10)
+
+	t.Run("inside", func(t *testing.T) {
+		assert.True(t, circle.EnclosesCircle(Circ(Pt(2, 0), 5)))
+		assert.True(t, circle.EnclosesCircle(Circ(Pt(0, 0), 0)))
+	})
+	t.Run("touching the boundary from inside counts", func(t *testing.T) {
+		assert.True(t, circle.EnclosesCircle(Circ(Pt(5, 0), 5)))
+		assert.False(t, circle.EnclosesCircle(Circ(Pt(6, 0), 5)))
+	})
+	t.Run("larger or apart", func(t *testing.T) {
+		assert.False(t, circle.EnclosesCircle(Circ(Pt(0, 0), 11)))
+		assert.False(t, circle.EnclosesCircle(Circ(Pt(30, 0), 1)))
+	})
+	t.Run("float within the tolerance of the boundary counts, beyond it not", func(t *testing.T) {
+		assert.True(t, Circ(Pt(0.0, 0.0), 10.0).EnclosesCircle(Circ(Pt(5.0+Delta/2, 0.0), 5.0)))
+		assert.False(t, Circ(Pt(0.0, 0.0), 10.0).EnclosesCircle(Circ(Pt(5.0+2*Delta, 0.0), 5.0)))
+	})
+	t.Run("encloses exactly where it encloses the far point", func(t *testing.T) {
+		for _, a := range circleFixtures {
+			for _, b := range circleFixtures {
+				far := b.Center.AddXY(b.Radius, 0)
+				if direction := b.Center.Subtract(a.Center); direction.hasDirection() {
+					far = b.Center.Add(direction.Resize(b.Radius))
+				}
+
+				assert.Equal(t, a.EnclosesCircle(b), a.Contains(far), fmt.Sprintf("%s → %s: ", a, b))
+			}
+		}
+	})
+}
+
+func TestCircle_EnclosesSegment(t *testing.T) {
+	circle := Circ(Pt(0, 0), 10)
+
+	t.Run("inside", func(t *testing.T) {
+		assert.True(t, circle.EnclosesSegment(Seg(Pt(-5, 0), Pt(5, 5))))
+	})
+	t.Run("a chord counts", func(t *testing.T) {
+		assert.True(t, circle.EnclosesSegment(Seg(Pt(-10, 0), Pt(10, 0))))
+		assert.True(t, circle.EnclosesSegment(Seg(Pt(-6, 8), Pt(8, -6))))
+	})
+	t.Run("an endpoint outside", func(t *testing.T) {
+		assert.False(t, circle.EnclosesSegment(Seg(Pt(0, 0), Pt(11, 0))))
+	})
+}
+
+func TestCircle_EnclosesPolygon(t *testing.T) {
+	circle := Circ(Pt(1, 1), 2)
+
+	t.Run("inside", func(t *testing.T) {
+		assert.True(t, circle.EnclosesPolygon(Pol(squareVertices())))
+	})
+	t.Run("a vertex outside", func(t *testing.T) {
+		assert.False(t, Circ(Pt(1, 1), 1).EnclosesPolygon(Pol(squareVertices())))
+	})
+	t.Run("an empty polygon is enclosed by nothing", func(t *testing.T) {
+		assert.False(t, circle.EnclosesPolygon(Pol[int](nil)))
+	})
+}
+
+func TestCircle_EnclosesRectangle(t *testing.T) {
+	t.Run("corners on the boundary count", func(t *testing.T) {
+		assert.True(t, Circ(Pt(0, 0), 5).EnclosesRectangle(Rect(Pt(0, 0), Sz(6, 8))))
+		assert.False(t, Circ(Pt(0, 0), 5).EnclosesRectangle(Rect(Pt(0, 0), Sz(6, 9))))
+	})
+	t.Run("rotated is tested on its turned corners", func(t *testing.T) {
+		long := Rect(Pt(0.0, 0.0), Sz(9.0, 1.0))
+
+		assert.False(t, Circ(Pt(0.0, 0.0), 4.0).EnclosesRectangle(long))
+		assert.False(t, Circ(Pt(0.0, 0.0), 4.0).EnclosesRectangle(long.Rotate(Pi/4)))
+		assert.True(t, Circ(Pt(0.0, 0.0), 5.0).EnclosesRectangle(long.Rotate(Pi/4)))
+	})
+}
+
+func TestCircle_EnclosesRegularPolygon(t *testing.T) {
+	t.Run("a circle encloses its inscribed polygon", func(t *testing.T) {
+		for _, c := range circleFixtures {
+			assert.True(t, c.EnclosesRegularPolygon(c.RegularPolygon(7, OrientationFlatTop)), c.String())
+		}
+	})
+	t.Run("a vertex outside", func(t *testing.T) {
+		assert.False(t, Circ(Pt(0, 0), 2).EnclosesRegularPolygon(RegPol(Pt(1, 0), Sz(2, 2), 4, 0)))
+	})
+	t.Run("an empty polygon is enclosed by nothing", func(t *testing.T) {
+		assert.False(t, Circ(Pt(0, 0), 2).EnclosesRegularPolygon(RegPol(Pt(0, 0), Sz(1, 1), 0, 0)))
+	})
+}
+
+func TestCircle_EnclosesBox(t *testing.T) {
+	t.Run("an inscribed box counts, the bounds of the circle not", func(t *testing.T) {
+		c := Circ(Pt(0, 0), 5)
+
+		assert.True(t, c.EnclosesBox(BoxFromMinMax(Pt(-3, -4), Pt(3, 4))))
+		assert.False(t, c.EnclosesBox(c.Bounds()))
+	})
+}
+
 func TestCircle_IntersectsCircle(t *testing.T) {
 	circle := Circ(Pt(0.0, 0.0), 100.0)
 

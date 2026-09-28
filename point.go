@@ -185,6 +185,12 @@ func (p Point[T]) deltas(point Point[T]) (float64, float64) {
 	return math.Abs(float64(point.X) - float64(p.X)), math.Abs(float64(point.Y) - float64(p.Y))
 }
 
+// coincides reports whether the points lie within Epsilon of T of each other, judged on the
+// squared distance as a point on a boundary is, where Equal compares each coordinate on its own.
+func (p Point[T]) coincides(point Point[T]) bool {
+	return lessOrEqualSquared[T](p.Float().DistanceSquaredTo(point.Float()), 0)
+}
+
 // Equal checks for equal X and Y values with given point.
 func (p Point[T]) Equal(point Point[T]) bool {
 	return Equal(p.X, point.X) && Equal(p.Y, point.Y)

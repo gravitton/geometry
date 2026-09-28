@@ -141,6 +141,42 @@ func (b Box[T]) Nearest(point Point[T]) Point[T] {
 	return Point[T]{Clamp(point.X, b.Min.X, b.Max.X), Clamp(point.Y, b.Min.Y, b.Max.Y)}
 }
 
+// EnclosesCircle reports whether the circle lies within the box, as Rectangle.EnclosesCircle
+// decides on the box's Rectangle.
+func (b Box[T]) EnclosesCircle(circle Circle[T]) bool {
+	return b.Rectangle().EnclosesCircle(circle)
+}
+
+// EnclosesSegment reports whether the segment lies within the box, as
+// Rectangle.EnclosesSegment decides on the box's Rectangle.
+func (b Box[T]) EnclosesSegment(segment Segment[T]) bool {
+	return b.Rectangle().EnclosesSegment(segment)
+}
+
+// EnclosesPolygon reports whether the polygon lies within the box, as
+// Rectangle.EnclosesPolygon decides on the box's Rectangle.
+func (b Box[T]) EnclosesPolygon(polygon Polygon[T]) bool {
+	return b.Rectangle().EnclosesPolygon(polygon)
+}
+
+// EnclosesRectangle reports whether the rectangle lies within the box, as
+// Rectangle.EnclosesRectangle decides on the box's Rectangle.
+func (b Box[T]) EnclosesRectangle(rectangle Rectangle[T]) bool {
+	return b.Rectangle().EnclosesRectangle(rectangle)
+}
+
+// EnclosesRegularPolygon reports whether the regular polygon lies within the box, as
+// Rectangle.EnclosesRegularPolygon decides on the box's Rectangle.
+func (b Box[T]) EnclosesRegularPolygon(polygon RegularPolygon[T]) bool {
+	return b.Rectangle().EnclosesRegularPolygon(polygon)
+}
+
+// EnclosesBox reports whether the given box lies within this one, as
+// Rectangle.EnclosesRectangle decides on the Rectangle of each.
+func (b Box[T]) EnclosesBox(box Box[T]) bool {
+	return b.Rectangle().EnclosesRectangle(box.Rectangle())
+}
+
 // IntersectsCircle reports whether the box and the circle overlap, as Circle.IntersectsBox does.
 func (b Box[T]) IntersectsCircle(circle Circle[T]) bool {
 	return circle.IntersectsBox(b)

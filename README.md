@@ -207,7 +207,7 @@ func Tween[T geom.Number, S geom.Transformable[T, S]](shape S, to geom.Point[T],
 
 The interfaces are for the code around a hot loop: a call through one, or through a type parameter constrained by
 one, allocates, where the same call on a concrete shape does not. `Ellipse` is the one shape that is not a
-`Collider` — see [Planned](#planned).
+`Collider`: test it as its `RegularPolygon(n)` of the wanted resolution.
 
 ### Intersections
 
@@ -216,8 +216,8 @@ reads the same on all of them and an interface can list it. The test is symmetri
 `Epsilon[T]()`; where a derived result exists it is `Intersection<Kind>`, answering exactly where `Intersects` holds:
 
 ```go
-a.IntersectsRectangle(b) // IntersectsSegment, IntersectsRectangle, IntersectsCircle,
-r.IntersectsCircle(c)    // IntersectsPolygon and IntersectsRegularPolygon, on every shape but Ellipse
+a.IntersectsRectangle(b) // IntersectsSegment, IntersectsRectangle, IntersectsCircle, IntersectsPolygon,
+r.IntersectsCircle(c)    // IntersectsRegularPolygon and IntersectsBox, on every shape but Ellipse
 geom.Intersects(a, c)    // the same answer without knowing either type
 
 point, ok := s.IntersectionSegment(m) // where two segments cross
@@ -227,7 +227,18 @@ s.IntersectionCircle(c)               // where a segment crosses a boundary; als
 ```
 
 The pair logic is written once, on the earlier shape of `Circle`, `Segment`, `Polygon`, `Rectangle`,
-`RegularPolygon`, and the other side delegates to it, so both sides always answer the same.
+`RegularPolygon`, `Box`, and the other side delegates to it, so both sides always answer the same.
+
+### Containment
+
+`Contains` takes a point; `Encloses<Kind>` takes a shape and reports whether every point of it lies within, the
+boundary included within `Epsilon[T]()`, on every shape with an area but `Ellipse`:
+
+```go
+view.EnclosesCircle(c)   // EnclosesCircle, EnclosesSegment, EnclosesPolygon, EnclosesRectangle,
+r.EnclosesPolygon(p)     // EnclosesRegularPolygon and EnclosesBox
+p.EnclosesSegment(s)     // a concave polygon also checks that s does not leave it between its ends
+```
 
 ### Directions, axes and orientations
 
@@ -338,11 +349,9 @@ JSON last.
 
 ## Planned
 
-- **`Encloses`** – shape-in-shape containment for culling, distinct from `Contains`, which takes a point.
 - **`Segment.Clip()`** – the part of a segment inside a shape.
 - **`Polygon.Simplify(tolerance)`** – drops every vertex within the tolerance of the edge between its neighbours.
 - **`Ray`** – a half-line with origin and direction, for casts against every shape.
-- **`Ellipse` as a `Collider`** – the `Intersects` pairs with an ellipse, which meet at the roots of a quartic that none of the circle pairs' closed forms reach.
 
 ## Credits
 

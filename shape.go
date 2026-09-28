@@ -40,7 +40,7 @@ type Outline[T Number] interface {
 //
 // Ellipse is deliberately not one: two ellipses meet at the roots of a quartic, which none of
 // the closed forms the circle pairs are built on reaches. Test an ellipse as its
-// RegularPolygon of the wanted resolution until the pairs land.
+// RegularPolygon of the wanted resolution.
 type Collider[T Number] interface {
 	IntersectsSegment(segment Segment[T]) bool
 	IntersectsRectangle(rectangle Rectangle[T]) bool

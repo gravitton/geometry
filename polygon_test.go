@@ -609,6 +609,121 @@ func TestPolygon_Nearest(t *testing.T) {
 	})
 }
 
+func TestPolygon_EnclosesCircle(t *testing.T) {
+	notched := Pol(notchedVertices())
+
+	t.Run("touching the sides and a reflex vertex from inside counts", func(t *testing.T) {
+		assert.True(t, notched.EnclosesCircle(Circ(Pt(4, 1), 1)))
+		assert.True(t, notched.EnclosesCircle(Circ(Pt(1, 4), 1)))
+	})
+	t.Run("reaching into the notch or past a side", func(t *testing.T) {
+		assert.False(t, notched.Float().EnclosesCircle(Circ(Pt(4.0, 1.0), 1.1)))
+		assert.False(t, notched.EnclosesCircle(Circ(Pt(4, 1), 2)))
+	})
+	t.Run("an empty polygon encloses nothing", func(t *testing.T) {
+		assert.False(t, Pol[int](nil).EnclosesCircle(Circ(Pt(0, 0), 0)))
+	})
+}
+
+func TestPolygon_EnclosesSegment(t *testing.T) {
+	backward := notchedVertices()
+	slices.Reverse(backward)
+	notched, reversed := Pol(notchedVertices()), Pol(backward)
+
+	t.Run("inside and along an edge", func(t *testing.T) {
+		assert.True(t, notched.EnclosesSegment(Seg(Pt(1, 1), Pt(7, 1))))
+		assert.True(t, notched.EnclosesSegment(Seg(Pt(0, 0), Pt(8, 0))))
+	})
+	t.Run("an endpoint in the notch", func(t *testing.T) {
+		assert.False(t, notched.EnclosesSegment(Seg(Pt(1, 7), Pt(4, 7))))
+	})
+	t.Run("crossing the edges of the notch", func(t *testing.T) {
+		assert.False(t, notched.EnclosesSegment(Seg(Pt(1, 5), Pt(7, 5))))
+	})
+	t.Run("leaving through two reflex vertices without crossing an edge", func(t *testing.T) {
+		assert.False(t, notched.EnclosesSegment(Seg(Pt(1, 4), Pt(7, 4))))
+		assert.False(t, reversed.EnclosesSegment(Seg(Pt(1, 4), Pt(7, 4))))
+	})
+	t.Run("a chord across the notch, touching an edge at each end", func(t *testing.T) {
+		assert.False(t, notched.EnclosesSegment(Seg(Pt(3, 3), Pt(5, 3))))
+		assert.False(t, reversed.EnclosesSegment(Seg(Pt(3, 3), Pt(5, 3))))
+	})
+	t.Run("passing a reflex vertex without leaving", func(t *testing.T) {
+		assert.True(t, notched.EnclosesSegment(Seg(Pt(1, 2), Pt(7, 2))))
+		assert.True(t, reversed.EnclosesSegment(Seg(Pt(1, 2), Pt(7, 2))))
+	})
+	t.Run("ending on a reflex vertex", func(t *testing.T) {
+		assert.True(t, notched.EnclosesSegment(Seg(Pt(1, 4), Pt(2, 4))))
+		assert.True(t, notched.EnclosesSegment(Seg(Pt(4, 0), Pt(4, 2))))
+	})
+	t.Run("an empty polygon encloses nothing", func(t *testing.T) {
+		assert.False(t, Pol[int](nil).EnclosesSegment(Seg(Pt(0, 0), Pt(0, 0))))
+	})
+	t.Run("every point of an enclosed segment is contained", func(t *testing.T) {
+		for _, p := range append(outlineFixtures(), notched.Float()) {
+			for _, s := range segmentFixtures {
+				if !p.EnclosesSegment(s) {
+					continue
+				}
+
+				for i := range 9 {
+					assert.True(t, p.Contains(s.PointAt(float64(i)/8)), fmt.Sprintf("%s → %s: ", p, s))
+				}
+			}
+		}
+	})
+}
+
+func TestPolygon_EnclosesPolygon(t *testing.T) {
+	notched := Pol(notchedVertices())
+
+	t.Run("inside and across the notch", func(t *testing.T) {
+		assert.True(t, notched.EnclosesPolygon(Pol([]Point[int]{Pt(1, 1), Pt(7, 1), Pt(4, 0)})))
+		assert.False(t, notched.EnclosesPolygon(Pol([]Point[int]{Pt(1, 3), Pt(7, 3), Pt(4, 1)})))
+	})
+	t.Run("an empty polygon on either side encloses nothing", func(t *testing.T) {
+		assert.False(t, notched.EnclosesPolygon(Pol[int](nil)))
+		assert.False(t, Pol[int](nil).EnclosesPolygon(notched))
+	})
+}
+
+func TestPolygon_EnclosesRectangle(t *testing.T) {
+	notched := Pol(notchedVertices())
+
+	t.Run("an edge along the bottom vertex of the notch stays inside", func(t *testing.T) {
+		assert.True(t, notched.EnclosesRectangle(Rect(Pt(4, 1), Sz(6, 2))))
+		assert.False(t, notched.EnclosesRectangle(Rect(Pt(4, 2), Sz(6, 2))))
+	})
+}
+
+func TestPolygon_EnclosesRegularPolygon(t *testing.T) {
+	notched := Pol(notchedVertices())
+
+	t.Run("beside the notch and reaching into it", func(t *testing.T) {
+		assert.True(t, notched.EnclosesRegularPolygon(RegPol(Pt(2, 2), Sz(1, 1), 4, 0)))
+		assert.False(t, notched.EnclosesRegularPolygon(RegPol(Pt(4, 2), Sz(2, 2), 4, 0)))
+	})
+	t.Run("an empty polygon is enclosed by nothing", func(t *testing.T) {
+		assert.False(t, notched.EnclosesRegularPolygon(RegPol(Pt(2, 2), Sz(1, 1), 0, 0)))
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		inside := RegPol(Pt(2, 2), Sz(1, 1), 6, Pi/5)
+
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkBool = notched.EnclosesRegularPolygon(inside)
+		}), 0)
+	})
+}
+
+func TestPolygon_EnclosesBox(t *testing.T) {
+	notched := Pol(notchedVertices())
+
+	t.Run("below the notch and across it", func(t *testing.T) {
+		assert.True(t, notched.EnclosesBox(BoxFromMinMax(Pt(1, 0), Pt(7, 2))))
+		assert.False(t, notched.EnclosesBox(BoxFromMinMax(Pt(1, 1), Pt(7, 3))))
+	})
+}
+
 func TestPolygon_IntersectsCircle(t *testing.T) {
 	t.Run("mirrors Circle.IntersectsPolygon", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
@@ -1040,6 +1155,14 @@ func TestPolygon_Immutable(t *testing.T) {
 // cannot leak into the next.
 func squareVertices() []Point[int] {
 	return []Point[int]{Pt(0, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2)}
+}
+
+// notchedVertices is a square with a notch cut in from the top that widens below into a diamond,
+// whose side corners are reflex vertices on one line with the outside between them.
+func notchedVertices() []Point[int] {
+	return []Point[int]{
+		Pt(0, 0), Pt(8, 0), Pt(8, 8), Pt(5, 8), Pt(5, 6), Pt(6, 4), Pt(4, 2), Pt(2, 4), Pt(3, 6), Pt(3, 8), Pt(0, 8),
+	}
 }
 
 // outlineFixtures returns the polygon fixtures with the polygons of the rectangle and the

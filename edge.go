@@ -26,7 +26,7 @@ func edgesOf[T Number](vertices []Point[T]) iter.Seq[Segment[T]] {
 // of edges. A shape starts it as a literal, ranges its own Edges and calls step on each, so the
 // walk shares its rule without an iterator crossing a function boundary, which would allocate
 // it. The distance and the nearest point are both read off the one walk, so Nearest returns
-// the point itself exactly where DistanceSquaredTo is zero. The two readers take the walk by
+// the point itself exactly where DistanceSquaredTo is zero. The three readers take the walk by
 // value, so a shape reads them straight off the walk it returns.
 type edgeWalk[T Number] struct {
 	inside   bool
@@ -78,6 +78,15 @@ func (w edgeWalk[T]) nearest(point Point[T]) Point[T] {
 	}
 
 	return w.edge.foot(point)
+}
+
+// clears reports whether a circle of the given radius about the point lies within the outline
+// after every edge: the point inside or on it, where result is zero, and the nearest edge no
+// nearer than the radius within Epsilon of T, so a circle touching an edge from inside is
+// enclosed. A point on the boundary is at distance zero and clears only a radius within the
+// tolerance.
+func (w edgeWalk[T]) clears(radius float64) bool {
+	return w.result() == 0 && greaterOrEqualSquared[T](w.distance, radius)
 }
 
 // edgeIntersections collects the points where a segment crosses the edges of an outline, fed

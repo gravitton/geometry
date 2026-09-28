@@ -280,6 +280,84 @@ func TestBox_Nearest(t *testing.T) {
 	})
 }
 
+func TestBox_EnclosesCircle(t *testing.T) {
+	box := BoxFromMinMax(Pt(0, 0), Pt(10, 6))
+
+	t.Run("touching a side from inside counts", func(t *testing.T) {
+		assert.True(t, box.EnclosesCircle(Circ(Pt(3, 3), 3)))
+		assert.False(t, box.EnclosesCircle(Circ(Pt(3, 2), 3)))
+	})
+	t.Run("encloses exactly where it encloses the bounds", func(t *testing.T) {
+		for _, b := range boxFixtures {
+			for _, c := range circleFixtures {
+				assert.Equal(t, b.EnclosesCircle(c), b.EnclosesBox(c.Bounds()), fmt.Sprintf("%s → %s: ", b, c))
+			}
+		}
+	})
+}
+
+func TestBox_EnclosesSegment(t *testing.T) {
+	t.Run("encloses exactly where it encloses the bounds", func(t *testing.T) {
+		for _, b := range boxFixtures {
+			for _, s := range segmentFixtures {
+				assert.Equal(t, b.EnclosesSegment(s), b.EnclosesBox(s.Bounds()), fmt.Sprintf("%s → %s: ", b, s))
+			}
+		}
+	})
+}
+
+func TestBox_EnclosesPolygon(t *testing.T) {
+	t.Run("an empty polygon is enclosed by nothing", func(t *testing.T) {
+		assert.False(t, BoxFromMinMax(Pt(0, 0), Pt(4, 4)).EnclosesPolygon(Pol[int](nil)))
+	})
+	t.Run("encloses exactly where it encloses the bounds", func(t *testing.T) {
+		for _, b := range boxFixtures {
+			for _, p := range polygonFixtures() {
+				assert.Equal(t, b.EnclosesPolygon(p), b.EnclosesBox(p.Bounds()), fmt.Sprintf("%s → %s: ", b, p))
+			}
+		}
+	})
+}
+
+func TestBox_EnclosesRectangle(t *testing.T) {
+	t.Run("encloses exactly where it encloses the bounds", func(t *testing.T) {
+		for _, b := range boxFixtures {
+			for _, r := range rectFixtures {
+				assert.Equal(t, b.EnclosesRectangle(r), b.EnclosesBox(r.Bounds()), fmt.Sprintf("%s → %s: ", b, r))
+			}
+		}
+	})
+}
+
+func TestBox_EnclosesRegularPolygon(t *testing.T) {
+	t.Run("encloses exactly where it encloses the bounds", func(t *testing.T) {
+		for _, b := range boxFixtures {
+			for _, rp := range regularPolygonFixtures {
+				assert.Equal(t, b.EnclosesRegularPolygon(rp), b.EnclosesBox(rp.Bounds()), fmt.Sprintf("%s → %s: ", b, rp))
+			}
+		}
+	})
+}
+
+func TestBox_EnclosesBox(t *testing.T) {
+	box := BoxFromMinMax(Pt(0, 0), Pt(4, 4))
+
+	t.Run("inside and sharing an edge", func(t *testing.T) {
+		assert.True(t, box.EnclosesBox(BoxFromMinMax(Pt(1, 1), Pt(2, 2))))
+		assert.True(t, box.EnclosesBox(BoxFromMinMax(Pt(0, 1), Pt(4, 3))))
+	})
+	t.Run("overlapping and apart", func(t *testing.T) {
+		assert.False(t, box.EnclosesBox(BoxFromMinMax(Pt(2, 2), Pt(6, 6))))
+		assert.False(t, box.EnclosesBox(BoxFromMinMax(Pt(5, 5), Pt(6, 6))))
+	})
+	t.Run("float within the tolerance of a corner counts, beyond it not", func(t *testing.T) {
+		unit := BoxFromMinMax(Pt(0.0, 0.0), Pt(1.0, 1.0))
+
+		assert.True(t, unit.EnclosesBox(BoxFromMinMax(Pt(0.5, 0.5), Pt(1+Delta/2, 1+Delta/2))))
+		assert.False(t, unit.EnclosesBox(BoxFromMinMax(Pt(0.5, 0.5), Pt(1+0.8*Delta, 1+0.8*Delta))))
+	})
+}
+
 func TestBox_IntersectsCircle(t *testing.T) {
 	t.Run("mirrors Circle.IntersectsBox", func(t *testing.T) {
 		for _, b := range boxFixtures {

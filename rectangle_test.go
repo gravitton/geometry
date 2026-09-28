@@ -953,6 +953,123 @@ func TestRectangle_Nearest(t *testing.T) {
 	})
 }
 
+func TestRectangle_EnclosesCircle(t *testing.T) {
+	rectangle := Rect(Pt(0, 0), Sz(10, 6))
+
+	t.Run("inside", func(t *testing.T) {
+		assert.True(t, rectangle.EnclosesCircle(Circ(Pt(1, 0), 2)))
+	})
+	t.Run("touching a side from inside counts", func(t *testing.T) {
+		assert.True(t, rectangle.EnclosesCircle(Circ(Pt(0, 0), 3)))
+		assert.False(t, rectangle.EnclosesCircle(Circ(Pt(0, 1), 3)))
+	})
+	t.Run("the center outside", func(t *testing.T) {
+		assert.False(t, rectangle.EnclosesCircle(Circ(Pt(6, 0), 0)))
+	})
+	t.Run("rotated measures to the turned sides", func(t *testing.T) {
+		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
+
+		assert.True(t, diamond.EnclosesCircle(Circ(Pt(0.0, 0.0), 1.0)))
+		assert.False(t, diamond.EnclosesCircle(Circ(Pt(0.0, 0.0), 1.1)))
+	})
+	t.Run("matches the polygon of the corners", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, c := range circleFixtures {
+				assert.Equal(t, r.EnclosesCircle(c), r.Polygon().EnclosesCircle(c), fmt.Sprintf("%s → %s: ", r, c))
+			}
+		}
+	})
+}
+
+func TestRectangle_EnclosesSegment(t *testing.T) {
+	rectangle := Rect(Pt(0, 0), Sz(4, 4))
+
+	t.Run("inside and along a side", func(t *testing.T) {
+		assert.True(t, rectangle.EnclosesSegment(Seg(Pt(-1, -1), Pt(1, 2))))
+		assert.True(t, rectangle.EnclosesSegment(Seg(Pt(-2, 2), Pt(2, 2))))
+	})
+	t.Run("an endpoint outside", func(t *testing.T) {
+		assert.False(t, rectangle.EnclosesSegment(Seg(Pt(0, 0), Pt(3, 0))))
+	})
+	t.Run("matches the polygon of the corners", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, s := range segmentFixtures {
+				assert.Equal(t, r.EnclosesSegment(s), r.Polygon().EnclosesSegment(s), fmt.Sprintf("%s → %s: ", r, s))
+			}
+		}
+	})
+}
+
+func TestRectangle_EnclosesPolygon(t *testing.T) {
+	t.Run("inside and outside", func(t *testing.T) {
+		assert.True(t, Rect(Pt(1, 1), Sz(2, 2)).EnclosesPolygon(Pol(squareVertices())))
+		assert.False(t, Rect(Pt(1, 1), Sz(2, 1)).EnclosesPolygon(Pol(squareVertices())))
+	})
+	t.Run("an empty polygon is enclosed by nothing", func(t *testing.T) {
+		assert.False(t, Rect(Pt(0, 0), Sz(4, 4)).EnclosesPolygon(Pol[int](nil)))
+	})
+	t.Run("matches the polygon of the corners", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, p := range polygonFixtures() {
+				assert.Equal(t, r.EnclosesPolygon(p), r.Polygon().EnclosesPolygon(p), fmt.Sprintf("%s → %s: ", r, p))
+			}
+		}
+	})
+}
+
+func TestRectangle_EnclosesRectangle(t *testing.T) {
+	t.Run("inside and sharing a side", func(t *testing.T) {
+		assert.True(t, Rect(Pt(0, 0), Sz(4, 4)).EnclosesRectangle(Rect(Pt(1, 0), Sz(2, 4))))
+		assert.False(t, Rect(Pt(0, 0), Sz(4, 4)).EnclosesRectangle(Rect(Pt(1, 0), Sz(2, 6))))
+	})
+	t.Run("a turned square fits only where its corners do", func(t *testing.T) {
+		square := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0))
+
+		assert.False(t, square.EnclosesRectangle(square.Rotate(Pi/4)))
+		assert.True(t, square.Rotate(Pi/4).EnclosesRectangle(square.Unscale(2)))
+	})
+	t.Run("matches the polygon of the corners", func(t *testing.T) {
+		for _, a := range rectFixtures {
+			for _, b := range rectFixtures {
+				assert.Equal(t, a.EnclosesRectangle(b), a.Polygon().EnclosesRectangle(b), fmt.Sprintf("%s → %s: ", a, b))
+			}
+		}
+	})
+}
+
+func TestRectangle_EnclosesRegularPolygon(t *testing.T) {
+	t.Run("inside and outside", func(t *testing.T) {
+		assert.True(t, Rect(Pt(0, 0), Sz(4, 4)).EnclosesRegularPolygon(RegPol(Pt(0, 0), Sz(2, 2), 6, 0)))
+		assert.False(t, Rect(Pt(0, 0), Sz(4, 4)).EnclosesRegularPolygon(RegPol(Pt(1, 0), Sz(2, 2), 6, 0)))
+	})
+	t.Run("an empty polygon is enclosed by nothing", func(t *testing.T) {
+		assert.False(t, Rect(Pt(0, 0), Sz(4, 4)).EnclosesRegularPolygon(RegPol(Pt(0, 0), Sz(2, 2), 0, 0)))
+	})
+	t.Run("matches the polygon of the corners", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, rp := range regularPolygonFixtures {
+				assert.Equal(t, r.EnclosesRegularPolygon(rp), r.Polygon().EnclosesRegularPolygon(rp), fmt.Sprintf("%s → %s: ", r, rp))
+			}
+		}
+	})
+}
+
+func TestRectangle_EnclosesBox(t *testing.T) {
+	t.Run("the bounds of a rotated rectangle are not enclosed by it", func(t *testing.T) {
+		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
+
+		assert.False(t, diamond.EnclosesBox(diamond.Bounds()))
+		assert.True(t, diamond.Bounds().Rectangle().EnclosesRectangle(diamond))
+	})
+	t.Run("matches the polygon of the corners", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, b := range boxFixtures {
+				assert.Equal(t, r.EnclosesBox(b), r.Polygon().EnclosesBox(b), fmt.Sprintf("%s → %s: ", r, b))
+			}
+		}
+	})
+}
+
 func TestRectangle_IntersectsCircle(t *testing.T) {
 	t.Run("mirrors Circle.IntersectsRectangle", func(t *testing.T) {
 		for _, r := range rectFixtures {

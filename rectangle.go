@@ -503,6 +503,75 @@ func (r Rectangle[T]) Nearest(point Point[T]) Point[T] {
 	return r.walk(point).nearest(point)
 }
 
+// EnclosesCircle reports whether the circle lies within the rectangle: its center is contained
+// and every edge is at least the radius away, within Epsilon of T, read off the walk
+// DistanceSquaredTo makes, so a circle touching an edge from inside is enclosed.
+func (r Rectangle[T]) EnclosesCircle(circle Circle[T]) bool {
+	return r.walk(circle.Center).clears(float64(circle.Radius))
+}
+
+// EnclosesSegment reports whether the segment lies within the rectangle: both endpoints are
+// contained, within Epsilon of T, and a convex shape holds every point between two it contains.
+func (r Rectangle[T]) EnclosesSegment(segment Segment[T]) bool {
+	a, b := r.MinMax()
+
+	return r.containsWithin(segment.Start, a, b) && r.containsWithin(segment.End, a, b)
+}
+
+// EnclosesPolygon reports whether the polygon lies within the rectangle: every vertex is
+// contained, within Epsilon of T, and a convex shape holds every point between points it
+// contains. An empty polygon is enclosed by nothing.
+func (r Rectangle[T]) EnclosesPolygon(polygon Polygon[T]) bool {
+	if polygon.IsEmpty() {
+		return false
+	}
+
+	a, b := r.MinMax()
+	for vertex := range polygon.Vertices() {
+		if !r.containsWithin(vertex, a, b) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// EnclosesRectangle reports whether the rectangle lies within the rectangle: every corner is
+// contained, within Epsilon of T, whatever the angles.
+func (r Rectangle[T]) EnclosesRectangle(rectangle Rectangle[T]) bool {
+	a, b := r.MinMax()
+	for vertex := range rectangle.Vertices() {
+		if !r.containsWithin(vertex, a, b) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// EnclosesRegularPolygon reports whether the regular polygon lies within the rectangle: every
+// vertex is contained, within Epsilon of T. An empty polygon is enclosed by nothing.
+func (r Rectangle[T]) EnclosesRegularPolygon(polygon RegularPolygon[T]) bool {
+	if polygon.IsEmpty() {
+		return false
+	}
+
+	a, b := r.MinMax()
+	for vertex := range polygon.Vertices() {
+		if !r.containsWithin(vertex, a, b) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// EnclosesBox reports whether the box lies within the rectangle, as EnclosesRectangle decides on
+// the box's Rectangle.
+func (r Rectangle[T]) EnclosesBox(box Box[T]) bool {
+	return r.EnclosesRectangle(box.Rectangle())
+}
+
 // IntersectsCircle reports whether the rectangle and the circle overlap, as
 // Circle.IntersectsRectangle does.
 func (r Rectangle[T]) IntersectsCircle(circle Circle[T]) bool {
@@ -648,13 +717,16 @@ func (r Rectangle[T]) IntersectsBox(box Box[T]) bool {
 	return r.IntersectsRectangle(box.Rectangle())
 }
 
-// walk folds every edge into the edgeWalk DistanceSquaredTo and Nearest both read, stopping
+// walk folds every edge into the edgeWalk DistanceSquaredTo, Nearest and EnclosesCircle read, stopping
 // at an edge the point lies on within Epsilon of T. A rectangle that is not rotated answers a
-// point within its extent, compared exactly, with a walk that is already over at zero.
+// point within its extent, compared exactly, with a walk that is already over: inside, at the
+// squared gap to the nearest side.
 func (r Rectangle[T]) walk(point Point[T]) edgeWalk[T] {
 	if r.IsAligned() {
 		if a, b := r.MinMax(); a.X <= point.X && point.X <= b.X && a.Y <= point.Y && point.Y <= b.Y {
-			return edgeWalk[T]{}
+			gap := float64(min(point.X-a.X, b.X-point.X, point.Y-a.Y, b.Y-point.Y))
+
+			return edgeWalk[T]{inside: true, distance: gap * gap}
 		}
 	}
 

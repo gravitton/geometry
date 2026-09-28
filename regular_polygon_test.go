@@ -726,6 +726,105 @@ func TestRegularPolygon_Nearest(t *testing.T) {
 	})
 }
 
+func TestRegularPolygon_EnclosesCircle(t *testing.T) {
+	square := RegPol(Pt(0.0, 0.0), Sz(2.0, 2.0), 4, Pi/4)
+
+	t.Run("the inscribed circle touches every side from inside", func(t *testing.T) {
+		assert.True(t, square.EnclosesCircle(Circ(Pt(0.0, 0.0), math.Sqrt2)))
+		assert.False(t, square.EnclosesCircle(Circ(Pt(0.0, 0.0), 1.5)))
+	})
+	t.Run("an empty polygon encloses nothing", func(t *testing.T) {
+		assert.False(t, RegPol(Pt(0, 0), Sz(2, 2), 0, 0).EnclosesCircle(Circ(Pt(0, 0), 0)))
+	})
+	t.Run("matches the polygon of the vertices", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for _, c := range circleFixtures {
+				assert.Equal(t, rp.EnclosesCircle(c), rp.Polygon().EnclosesCircle(c), fmt.Sprintf("%s → %s: ", rp, c))
+			}
+		}
+	})
+}
+
+func TestRegularPolygon_EnclosesSegment(t *testing.T) {
+	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0)
+
+	t.Run("a diagonal counts, a segment past a vertex not", func(t *testing.T) {
+		assert.True(t, diamond.EnclosesSegment(Seg(Pt(-2, 0), Pt(2, 0))))
+		assert.False(t, diamond.EnclosesSegment(Seg(Pt(-2, 0), Pt(3, 0))))
+	})
+	t.Run("matches the polygon of the vertices", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for _, s := range segmentFixtures {
+				assert.Equal(t, rp.EnclosesSegment(s), rp.Polygon().EnclosesSegment(s), fmt.Sprintf("%s → %s: ", rp, s))
+			}
+		}
+	})
+}
+
+func TestRegularPolygon_EnclosesPolygon(t *testing.T) {
+	t.Run("inside, inscribed and outside", func(t *testing.T) {
+		assert.True(t, RegPol(Pt(1, 1), Sz(2, 2), 4, Pi/4).EnclosesPolygon(Pol(squareVertices())))
+		assert.True(t, RegPol(Pt(1, 1), Sz(2, 2), 4, 0).EnclosesPolygon(Pol(squareVertices())))
+		assert.False(t, RegPol(Pt(1, 1), Sz(1, 1), 4, 0).EnclosesPolygon(Pol(squareVertices())))
+	})
+	t.Run("an empty polygon is enclosed by nothing", func(t *testing.T) {
+		assert.False(t, RegPol(Pt(0, 0), Sz(2, 2), 4, 0).EnclosesPolygon(Pol[int](nil)))
+	})
+	t.Run("matches the polygon of the vertices", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for _, p := range polygonFixtures() {
+				assert.Equal(t, rp.EnclosesPolygon(p), rp.Polygon().EnclosesPolygon(p), fmt.Sprintf("%s → %s: ", rp, p))
+			}
+		}
+	})
+}
+
+func TestRegularPolygon_EnclosesRectangle(t *testing.T) {
+	t.Run("a square rotated into a diamond", func(t *testing.T) {
+		diamond := RegPol(Pt(0.0, 0.0), Sz(2.0, 2.0), 4, 0)
+
+		assert.True(t, diamond.EnclosesRectangle(Rect(Pt(0.0, 0.0), Sz(2.0, 2.0))))
+		assert.False(t, diamond.EnclosesRectangle(Rect(Pt(0.0, 0.0), Sz(2.0, 2.2))))
+	})
+	t.Run("matches the polygon of the vertices", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for _, r := range rectFixtures {
+				assert.Equal(t, rp.EnclosesRectangle(r), rp.Polygon().EnclosesRectangle(r), fmt.Sprintf("%s → %s: ", rp, r))
+			}
+		}
+	})
+}
+
+func TestRegularPolygon_EnclosesRegularPolygon(t *testing.T) {
+	hexagon := Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationFlatTop)
+
+	t.Run("a smaller one and a turned one of the same size", func(t *testing.T) {
+		assert.True(t, hexagon.EnclosesRegularPolygon(hexagon.Unscale(2)))
+		assert.False(t, hexagon.EnclosesRegularPolygon(hexagon.Rotate(Pi/6)))
+	})
+	t.Run("an empty polygon on either side encloses nothing", func(t *testing.T) {
+		assert.False(t, hexagon.EnclosesRegularPolygon(RegPol(Pt(0.0, 0.0), Sz(1.0, 1.0), 0, 0)))
+		assert.False(t, RegPol(Pt(0.0, 0.0), Sz(1.0, 1.0), 0, 0).EnclosesRegularPolygon(hexagon))
+	})
+	t.Run("matches the polygon of the vertices", func(t *testing.T) {
+		for _, a := range regularPolygonFixtures {
+			for _, b := range regularPolygonFixtures {
+				assert.Equal(t, a.EnclosesRegularPolygon(b), a.Polygon().EnclosesRegularPolygon(b), fmt.Sprintf("%s → %s: ", a, b))
+			}
+		}
+	})
+}
+
+func TestRegularPolygon_EnclosesBox(t *testing.T) {
+	t.Run("matches the polygon of the vertices", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for _, b := range boxFixtures {
+				assert.Equal(t, rp.EnclosesBox(b), rp.Polygon().EnclosesBox(b), fmt.Sprintf("%s → %s: ", rp, b))
+			}
+		}
+	})
+}
+
 func TestRegularPolygon_IntersectsCircle(t *testing.T) {
 	t.Run("mirrors Circle.IntersectsRegularPolygon", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
