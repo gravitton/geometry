@@ -280,6 +280,66 @@ func TestBox_Nearest(t *testing.T) {
 	})
 }
 
+func TestBox_IntersectsCircle(t *testing.T) {
+	t.Run("mirrors Circle.IntersectsBox", func(t *testing.T) {
+		for _, b := range boxFixtures {
+			for _, c := range circleFixtures {
+				assert.Equal(t, b.IntersectsCircle(c), c.IntersectsBox(b), fmt.Sprintf("%s → %s: ", b, c))
+			}
+		}
+	})
+}
+
+func TestBox_IntersectsSegment(t *testing.T) {
+	t.Run("mirrors Segment.IntersectsBox", func(t *testing.T) {
+		for _, b := range boxFixtures {
+			for _, s := range segmentFixtures {
+				assert.Equal(t, b.IntersectsSegment(s), s.IntersectsBox(b), fmt.Sprintf("%s → %s: ", b, s))
+			}
+		}
+	})
+}
+
+func TestBox_IntersectionSegment(t *testing.T) {
+	t.Run("matches Segment.IntersectionBox", func(t *testing.T) {
+		for _, b := range boxFixtures {
+			for _, s := range segmentFixtures {
+				AssertVertices(t, b.IntersectionSegment(s), s.IntersectionBox(b), fmt.Sprintf("%s → %s: ", b, s))
+			}
+		}
+	})
+}
+
+func TestBox_IntersectsPolygon(t *testing.T) {
+	t.Run("mirrors Polygon.IntersectsBox", func(t *testing.T) {
+		for _, b := range boxFixtures {
+			for _, p := range polygonFixtures() {
+				assert.Equal(t, b.IntersectsPolygon(p), p.IntersectsBox(b), fmt.Sprintf("%s → %s: ", b, p))
+			}
+		}
+	})
+}
+
+func TestBox_IntersectsRectangle(t *testing.T) {
+	t.Run("mirrors Rectangle.IntersectsBox", func(t *testing.T) {
+		for _, b := range boxFixtures {
+			for _, r := range rectFixtures {
+				assert.Equal(t, b.IntersectsRectangle(r), r.IntersectsBox(b), fmt.Sprintf("%s → %s: ", b, r))
+			}
+		}
+	})
+}
+
+func TestBox_IntersectsRegularPolygon(t *testing.T) {
+	t.Run("mirrors RegularPolygon.IntersectsBox", func(t *testing.T) {
+		for _, b := range boxFixtures {
+			for _, rp := range regularPolygonFixtures {
+				assert.Equal(t, b.IntersectsRegularPolygon(rp), rp.IntersectsBox(b), fmt.Sprintf("%s → %s: ", b, rp))
+			}
+		}
+	})
+}
+
 func TestBox_IntersectsBox(t *testing.T) {
 	box := BoxFromMinMax(Pt(0, 0), Pt(4, 4))
 

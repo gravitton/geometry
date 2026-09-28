@@ -33,21 +33,21 @@ type Outline[T Number] interface {
 	Edges() iter.Seq[Segment[T]]
 }
 
-// Collider is a shape tested against every shape: Segment, Rectangle, Circle, Polygon and
-// RegularPolygon, each with the five Intersects methods, its own kind included. Every test is
-// symmetric and includes a touch within Epsilon of T, so a broad collision pass calls the
-// method for the other side's kind and gets the same answer from either.
+// Collider is a shape tested against every shape: Segment, Rectangle, Circle, Polygon,
+// RegularPolygon and Box, each with the six Intersects methods, its own kind included. Every
+// test is symmetric and includes a touch within Epsilon of T, so a broad collision pass calls
+// the method for the other side's kind and gets the same answer from either.
 //
 // Ellipse is deliberately not one: two ellipses meet at the roots of a quartic, which none of
 // the closed forms the circle pairs are built on reaches. Test an ellipse as its
-// RegularPolygon of the wanted resolution until the pairs land. Box is not one either: test it
-// as its Rectangle.
+// RegularPolygon of the wanted resolution until the pairs land.
 type Collider[T Number] interface {
 	IntersectsSegment(segment Segment[T]) bool
 	IntersectsRectangle(rectangle Rectangle[T]) bool
 	IntersectsCircle(circle Circle[T]) bool
 	IntersectsPolygon(polygon Polygon[T]) bool
 	IntersectsRegularPolygon(polygon RegularPolygon[T]) bool
+	IntersectsBox(box Box[T]) bool
 }
 
 // Body is a shape with an area, the mass properties a physics engine takes from it: Rectangle,
@@ -103,7 +103,7 @@ func Intersects[T Number](a, b Collider[T]) bool {
 }
 
 // intersectsKind tests a against b by the method of a that names the kind of b, and false where
-// b is none of the five shapes, which leaves the pair to the call with the arguments swapped.
+// b is none of the six shapes, which leaves the pair to the call with the arguments swapped.
 func intersectsKind[T Number](a, b Collider[T]) (bool, bool) {
 	switch shape := b.(type) {
 	case Circle[T]:
@@ -116,6 +116,8 @@ func intersectsKind[T Number](a, b Collider[T]) (bool, bool) {
 		return a.IntersectsRectangle(shape), true
 	case RegularPolygon[T]:
 		return a.IntersectsRegularPolygon(shape), true
+	case Box[T]:
+		return a.IntersectsBox(shape), true
 	}
 
 	return false, false

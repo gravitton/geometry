@@ -1242,6 +1242,31 @@ func TestRectangle_IntersectsRegularPolygon(t *testing.T) {
 	})
 }
 
+func TestRectangle_IntersectsBox(t *testing.T) {
+	t.Run("a shared edge counts as an intersection", func(t *testing.T) {
+		assert.True(t, Rect(Pt(0, 0), Sz(4, 4)).IntersectsBox(BoxFromMinMax(Pt(2, -1), Pt(5, 1))))
+		assert.False(t, Rect(Pt(0, 0), Sz(4, 4)).IntersectsBox(BoxFromMinMax(Pt(3, -1), Pt(5, 1))))
+	})
+	t.Run("rotated is tested on its turned edges", func(t *testing.T) {
+		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
+		corner := BoxFromMinMax(Pt(1.0, 1.0), Pt(3.0, 3.0))
+
+		assert.False(t, diamond.IntersectsBox(corner))
+		assert.True(t, diamond.Bounds().IntersectsBox(corner))
+	})
+	t.Run("not rotated agrees with its bounds", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			if !r.IsAligned() {
+				continue
+			}
+
+			for _, b := range boxFixtures {
+				assert.Equal(t, r.IntersectsBox(b), r.Bounds().IntersectsBox(b), fmt.Sprintf("%s → %s: ", r, b))
+			}
+		}
+	})
+}
+
 func TestRectangle_Equal(t *testing.T) {
 	t.Run("same rectangle", func(t *testing.T) {
 		assert.True(t, Rect(Pt(1, 2), Sz(2, 3)).Equal(Rect(Pt(1, 2), Sz(2, 3))))

@@ -757,6 +757,30 @@ func TestPolygon_IntersectsRegularPolygon(t *testing.T) {
 	})
 }
 
+func TestPolygon_IntersectsBox(t *testing.T) {
+	square := Pol(squareVertices())
+
+	t.Run("overlapping", func(t *testing.T) {
+		assert.True(t, square.IntersectsBox(BoxFromMinMax(Pt(1, 1), Pt(3, 3))))
+	})
+	t.Run("apart", func(t *testing.T) {
+		assert.False(t, square.IntersectsBox(BoxFromMinMax(Pt(3, 3), Pt(5, 5))))
+	})
+	t.Run("one contained in the other", func(t *testing.T) {
+		assert.True(t, square.IntersectsBox(BoxFromMinMax(Pt(-9, -9), Pt(11, 11))))
+	})
+	t.Run("an empty polygon intersects nothing", func(t *testing.T) {
+		assert.False(t, Pol[int](nil).IntersectsBox(BoxFromMinMax(Pt(0, 0), Pt(2, 2))))
+	})
+	t.Run("matches the box as a polygon", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			for _, b := range boxFixtures {
+				assert.Equal(t, p.IntersectsBox(b), p.IntersectsPolygon(b.Rectangle().Polygon()), fmt.Sprintf("%s → %s: ", p, b))
+			}
+		}
+	})
+}
+
 func TestPolygon_Equal(t *testing.T) {
 	square := Pol(squareVertices())
 

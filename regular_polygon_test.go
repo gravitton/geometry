@@ -816,6 +816,27 @@ func TestRegularPolygon_IntersectsRegularPolygon(t *testing.T) {
 	})
 }
 
+func TestRegularPolygon_IntersectsBox(t *testing.T) {
+	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0)
+
+	t.Run("overlapping", func(t *testing.T) {
+		assert.True(t, diamond.IntersectsBox(BoxFromMinMax(Pt(0, 0), Pt(2, 2))))
+	})
+	t.Run("apart within overlapping bounds", func(t *testing.T) {
+		assert.False(t, diamond.IntersectsBox(BoxFromMinMax(Pt(2, 2), Pt(3, 3))))
+	})
+	t.Run("an empty polygon intersects nothing", func(t *testing.T) {
+		assert.False(t, RegPol(Pt(0, 0), Sz(2, 2), 0, 0).IntersectsBox(BoxFromMinMax(Pt(-1, -1), Pt(1, 1))))
+	})
+	t.Run("matches the polygon of the vertices", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for _, b := range boxFixtures {
+				assert.Equal(t, rp.IntersectsBox(b), rp.Polygon().IntersectsBox(b), fmt.Sprintf("%s → %s: ", rp, b))
+			}
+		}
+	})
+}
+
 func TestRegularPolygon_Equal(t *testing.T) {
 	t.Run("same polygon", func(t *testing.T) {
 		assert.True(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Equal(RegPol(Pt(1, 2), Sz(2, 2), 4, 0)))

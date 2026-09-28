@@ -141,6 +141,41 @@ func (b Box[T]) Nearest(point Point[T]) Point[T] {
 	return Point[T]{Clamp(point.X, b.Min.X, b.Max.X), Clamp(point.Y, b.Min.Y, b.Max.Y)}
 }
 
+// IntersectsCircle reports whether the box and the circle overlap, as Circle.IntersectsBox does.
+func (b Box[T]) IntersectsCircle(circle Circle[T]) bool {
+	return circle.IntersectsBox(b)
+}
+
+// IntersectsSegment reports whether the box and the segment share a point, as
+// Segment.IntersectsBox does.
+func (b Box[T]) IntersectsSegment(segment Segment[T]) bool {
+	return segment.IntersectsBox(b)
+}
+
+// IntersectionSegment returns the points where the segment crosses the box boundary, as
+// Segment.IntersectionBox does.
+func (b Box[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
+	return segment.IntersectionBox(b)
+}
+
+// IntersectsPolygon reports whether the box and the polygon share a point, as
+// Polygon.IntersectsBox does.
+func (b Box[T]) IntersectsPolygon(polygon Polygon[T]) bool {
+	return polygon.IntersectsBox(b)
+}
+
+// IntersectsRectangle reports whether the box and the rectangle share a point, as
+// Rectangle.IntersectsBox does.
+func (b Box[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
+	return rectangle.IntersectsBox(b)
+}
+
+// IntersectsRegularPolygon reports whether the box and the regular polygon share a point, as
+// RegularPolygon.IntersectsBox does.
+func (b Box[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
+	return polygon.IntersectsBox(b)
+}
+
 // IntersectsBox reports whether the boxes share a point: the gap between them on the two axes
 // is zero within Epsilon of T, the one comparison DistanceSquaredTo makes, so boxes that touch
 // at an edge or a corner intersect, the same closed convention as Contains.
@@ -227,7 +262,7 @@ func (b Box[T]) IsZero() bool {
 }
 
 // Rectangle converts the box into the Rectangle with the same corners, not rotated: the shape
-// to test the box against the other shapes with, and the inverse of Rectangle.Bounds for a
+// the outline pairs of the box are decided on, and the inverse of Rectangle.Bounds for a
 // rectangle that is not rotated.
 func (b Box[T]) Rectangle() Rectangle[T] {
 	return Rectangle[T]{b.Center(), b.Size(), 0}

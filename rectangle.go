@@ -641,6 +641,13 @@ func (r Rectangle[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 	return false
 }
 
+// IntersectsBox reports whether the rectangle and the box share a point, as IntersectsRectangle
+// decides on the box's Rectangle, which is not rotated, so a rectangle that is not rotated
+// either is decided on the exact overlap of the two extents.
+func (r Rectangle[T]) IntersectsBox(box Box[T]) bool {
+	return r.IntersectsRectangle(box.Rectangle())
+}
+
 // walk folds every edge into the edgeWalk DistanceSquaredTo and Nearest both read, stopping
 // at an edge the point lies on within Epsilon of T. A rectangle that is not rotated answers a
 // point within its extent, compared exactly, with a walk that is already over at zero.

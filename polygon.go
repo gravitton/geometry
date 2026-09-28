@@ -549,6 +549,12 @@ func (p Polygon[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 	return false
 }
 
+// IntersectsBox reports whether the polygon and the box share a point, as IntersectsRectangle
+// decides on the box's Rectangle.
+func (p Polygon[T]) IntersectsBox(box Box[T]) bool {
+	return p.IntersectsRectangle(box.Rectangle())
+}
+
 // containsWithin is Contains for a caller that already holds the extent of the vertices, so the
 // intersection tests walk the vertices once for the box and reuse it for every point they test.
 func (p Polygon[T]) containsWithin(point, a, b Point[T]) bool {

@@ -774,6 +774,40 @@ func TestCircle_IntersectsRegularPolygon(t *testing.T) {
 	})
 }
 
+func TestCircle_IntersectsBox(t *testing.T) {
+	box := BoxFromMinMax(Pt(-100.0, -50.0), Pt(100.0, 50.0))
+
+	t.Run("overlapping", func(t *testing.T) {
+		assert.True(t, Circ(Pt(150.0, 0.0), 60.0).IntersectsBox(box))
+		assert.True(t, Circ(Pt(110.0, 80.0), 60.0).IntersectsBox(box))
+	})
+	t.Run("apart", func(t *testing.T) {
+		assert.False(t, Circ(Pt(150.0, 0.0), 40.0).IntersectsBox(box))
+	})
+	t.Run("touching the edge from outside counts", func(t *testing.T) {
+		assert.True(t, Circ(Pt(200.0, 0.0), 100.0).IntersectsBox(box))
+		assert.False(t, Circ(Pt(201.0, 0.0), 100.0).IntersectsBox(box))
+	})
+	t.Run("touching the corner from outside counts", func(t *testing.T) {
+		assert.True(t, Circ(Pt(103.0, 54.0), 5.0).IntersectsBox(box))
+		assert.False(t, Circ(Pt(104.0, 54.0), 5.0).IntersectsBox(box))
+	})
+	t.Run("int", func(t *testing.T) {
+		assert.True(t, Circ(Pt(4, 0), 1).IntersectsBox(BoxFromMinMax(Pt(0, 0), Pt(3, 3))))
+		assert.False(t, Circ(Pt(5, 0), 1).IntersectsBox(BoxFromMinMax(Pt(0, 0), Pt(3, 3))))
+	})
+	t.Run("circle fully inside the box", func(t *testing.T) {
+		assert.True(t, Circ(Pt(0.0, 0.0), 10.0).IntersectsBox(box))
+	})
+	t.Run("agrees with the rectangle of the box", func(t *testing.T) {
+		for _, b := range boxFixtures {
+			for _, c := range circleFixtures {
+				assert.Equal(t, c.IntersectsBox(b), c.IntersectsRectangle(b.Rectangle()), fmt.Sprintf("%s → %s: ", c, b))
+			}
+		}
+	})
+}
+
 func TestCircle_Equal(t *testing.T) {
 	t.Run("same circle", func(t *testing.T) {
 		assert.True(t, Circ(Pt(1, 2), 10).Equal(Circ(Pt(1, 2), 10)))

@@ -408,6 +408,18 @@ func (s Segment[T]) IntersectionRegularPolygon(polygon RegularPolygon[T]) []Poin
 	return e.sorted()
 }
 
+// IntersectsBox reports whether the segment and the box share a point, as IntersectsRectangle
+// decides on the box's Rectangle, whose corners are those of the box.
+func (s Segment[T]) IntersectsBox(box Box[T]) bool {
+	return s.IntersectsRectangle(box.Rectangle())
+}
+
+// IntersectionBox returns the points where the segment crosses the box boundary, from Start to
+// End, as IntersectionRectangle finds them on the box's Rectangle.
+func (s Segment[T]) IntersectionBox(box Box[T]) []Point[T] {
+	return s.IntersectionRectangle(box.Rectangle())
+}
+
 // distanceSquaredTo returns the squared distance to the point with no tolerance applied, which
 // DistanceSquaredTo snaps to zero within Epsilon of T.
 func (s Segment[T]) distanceSquaredTo(point Point[T]) float64 {

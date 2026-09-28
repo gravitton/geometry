@@ -118,8 +118,8 @@ tip := geom.BoxFromMin(geom.Pt(750, 20), geom.Sz(120, 40))
 tip.Clamp(view)           // (680,20)-(800,60), moved by the least that brings it inside
 view.IntersectionBox(tip) // (750,20)-(800,60), the part on screen
 
-r.Bounds().IntersectsBox(view)          // every shape's Bounds is a Box, for the broad pass
-view.Rectangle().IntersectsRectangle(r) // a Box is not a Collider yet: test it as its Rectangle
+r.Bounds().IntersectsBox(view) // every shape's Bounds is a Box, for the broad pass
+view.IntersectsRectangle(r)    // a Box is a Collider, tested against every shape
 ```
 
 `Rectangle` is the shape that turns; `Box` is the axis-aligned extent, for clipping, viewports, layout and culling.
@@ -342,7 +342,6 @@ JSON last.
 - **`Segment.Clip()`** – the part of a segment inside a shape.
 - **`Polygon.Simplify(tolerance)`** – drops every vertex within the tolerance of the edge between its neighbours.
 - **`Ray`** – a half-line with origin and direction, for casts against every shape.
-- **`Box` as a `Collider`** – the `Intersects` pairs with a box on every shape, which a box now reaches through its `Rectangle`.
 - **`Ellipse` as a `Collider`** – the `Intersects` pairs with an ellipse, which meet at the roots of a quartic that none of the circle pairs' closed forms reach.
 
 ## Credits

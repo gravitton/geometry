@@ -26,6 +26,7 @@ var (
 	_ Collider[int] = Circle[int]{}
 	_ Collider[int] = Polygon[int]{}
 	_ Collider[int] = RegularPolygon[int]{}
+	_ Collider[int] = Box[int]{}
 	_ Body[int]     = Rectangle[int]{}
 	_ Body[int]     = Circle[int]{}
 	_ Body[int]     = Ellipse[int]{}
@@ -139,6 +140,7 @@ func TestCollider(t *testing.T) {
 		Circ(Pt(1.0, 1.0), 2.0),
 		Pol(triangleVertices()),
 		Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationFlatTop),
+		BoxFromMinMax(Pt(-1.0, 0.5), Pt(2.0, 3.0)),
 	}
 	for _, s := range segmentFixtures {
 		colliders = append(colliders, s)
@@ -151,6 +153,9 @@ func TestCollider(t *testing.T) {
 	}
 	for _, p := range polygonFixtures() {
 		colliders = append(colliders, p)
+	}
+	for _, b := range boxFixtures {
+		colliders = append(colliders, b)
 	}
 
 	t.Run("either side gives the same answer", func(t *testing.T) {
@@ -196,6 +201,10 @@ func (s stubCollider) IntersectsRectangle(Rectangle[float64]) bool {
 }
 
 func (s stubCollider) IntersectsRegularPolygon(RegularPolygon[float64]) bool {
+	return s.result
+}
+
+func (s stubCollider) IntersectsBox(Box[float64]) bool {
 	return s.result
 }
 

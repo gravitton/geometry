@@ -312,6 +312,14 @@ func (c Circle[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 	return overlaps(a1, b1, a2, b2) && c.containsSquared(polygon.DistanceSquaredTo(c.Center))
 }
 
+// IntersectsBox reports whether the circle and the box overlap: the center lies within the box,
+// or an edge passes within the radius. Touching shapes intersect, within Epsilon of T, by the
+// same comparison Contains makes on the squared distance the box's DistanceSquaredTo measures,
+// the gap beyond it on the two axes with no edge to walk.
+func (c Circle[T]) IntersectsBox(box Box[T]) bool {
+	return c.containsSquared(box.DistanceSquaredTo(c.Center))
+}
+
 // centerDistanceSquared returns the squared distance from the center to the point, in
 // float64: the value every test of the circle compares against its radius, so Contains,
 // DistanceTo, IntersectsCircle, IntersectionCircle and IntersectionSegment agree to the last bit.

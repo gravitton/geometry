@@ -1027,6 +1027,67 @@ func TestSegment_IntersectionRegularPolygon(t *testing.T) {
 	})
 }
 
+func TestSegment_IntersectsBox(t *testing.T) {
+	box := BoxFromMinMax(Pt(-2, -2), Pt(2, 2))
+
+	t.Run("passing through", func(t *testing.T) {
+		assert.True(t, Seg(Pt(-5, 0), Pt(5, 0)).IntersectsBox(box))
+	})
+	t.Run("inside", func(t *testing.T) {
+		assert.True(t, Seg(Pt(-1, -1), Pt(1, 1)).IntersectsBox(box))
+	})
+	t.Run("apart", func(t *testing.T) {
+		assert.False(t, Seg(Pt(3, -5), Pt(3, 5)).IntersectsBox(box))
+		assert.False(t, Seg(Pt(3, 3), Pt(5, 5)).IntersectsBox(box))
+	})
+	t.Run("touching a corner counts", func(t *testing.T) {
+		assert.True(t, Seg(Pt(1, 3), Pt(3, 1)).IntersectsBox(box))
+		assert.False(t, Seg(Pt(2, 4), Pt(4, 2)).IntersectsBox(box))
+	})
+	t.Run("a segment with an endpoint in the box intersects it", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, b := range boxFixtures {
+				if b.Contains(s.Start) || b.Contains(s.End) {
+					assert.True(t, s.IntersectsBox(b), fmt.Sprintf("%s → %s: ", s, b))
+				}
+			}
+		}
+	})
+}
+
+func TestSegment_IntersectionBox(t *testing.T) {
+	box := BoxFromMinMax(Pt(-2, -2), Pt(2, 2))
+
+	t.Run("passing through gives both crossings from Start to End", func(t *testing.T) {
+		AssertVertices(t, Seg(Pt(-5, 0), Pt(5, 0)).IntersectionBox(box), []Point[int]{Pt(-2, 0), Pt(2, 0)})
+		AssertVertices(t, Seg(Pt(5, 0), Pt(-5, 0)).IntersectionBox(box), []Point[int]{Pt(2, 0), Pt(-2, 0)})
+	})
+	t.Run("through a corner counts it once", func(t *testing.T) {
+		AssertVertices(t, Seg(Pt(1, 3), Pt(3, 1)).IntersectionBox(box), []Point[int]{Pt(2, 2)})
+	})
+	t.Run("apart and inside give none", func(t *testing.T) {
+		assert.Nil(t, Seg(Pt(3, -5), Pt(3, 5)).IntersectionBox(box))
+		assert.Nil(t, Seg(Pt(-1, -1), Pt(1, 1)).IntersectionBox(box))
+	})
+	t.Run("every point lies on the segment and the boundary, and exists where IntersectsBox holds", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, b := range boxFixtures {
+				points := s.IntersectionBox(b)
+
+				for _, p := range points {
+					assert.True(t, s.Contains(p), fmt.Sprintf("%s → %s: %s on the segment: ", s, b, p))
+					assert.True(t, slices.ContainsFunc(slices.Collect(b.Rectangle().Edges()), func(edge Segment[float64]) bool {
+						return edge.Contains(p)
+					}), fmt.Sprintf("%s → %s: %s on the boundary: ", s, b, p))
+				}
+				if len(points) > 0 {
+					assert.True(t, s.IntersectsBox(b), fmt.Sprintf("%s → %s: ", s, b))
+				}
+			}
+		}
+	})
+}
+
 func TestSegment_Equal(t *testing.T) {
 	t.Run("same segment", func(t *testing.T) {
 		assert.True(t, Seg(Pt(1, 2), Pt(3, 5)).Equal(Seg(Pt(1, 2), Pt(3, 5))))
