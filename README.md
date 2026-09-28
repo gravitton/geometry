@@ -54,9 +54,10 @@ v.Length()          // 5
 v.Normal()          // Vector{-4, 3}, perpendicular
 p.Add(v.Resize(10)) // Point{7, 10}
 
-v.Reflect(geom.Vec(0, 1))                // Vector{3, -4}, bounced off a horizontal wall
-p.RotateAround(geom.Pt(0, 0), math.Pi/2) // Point{-2, 1}
-p.Lerp(geom.Pt(9, 10), 0.25)             // Point{3, 4}
+v.Reflect(geom.Vec(0, 1))                 // Vector{3, -4}, bounced off a horizontal wall
+p.RotateAround(geom.Pt(0, 0), math.Pi/2)  // Point{-2, 1}
+p.Lerp(geom.Pt(9, 10), 0.25)              // Point{3, 4}
+geom.Vec(8, 0).Slerp(geom.Vec(0, 8), 0.5) // Vector{6, 6}, turned along the arc, where Lerp gives Vector{4, 4}
 ```
 
 Vectors also have `Project`, `Reject`, `AngleBetween`, and `AtMost` and `AtLeast` to cap or floor a length.
@@ -322,10 +323,6 @@ JSON last.
 - **`Encloses`** – shape-in-shape containment for culling, distinct from `Contains`, which takes a point.
 - **`Segment.Clip()`** – the part of a segment inside a shape.
 - **`Polygon.Simplify(tolerance)`** – drops every vertex within the tolerance of the edge between its neighbours.
-- **`Vector.Slerp(vector, t)`** – interpolation of the direction along the shorter arc, on `LerpAngle`, with the
-  length interpolated linearly.
-- **`Polygon.Lerp(polygon, t)`** – vertex-by-vertex interpolation for shape morphing, left out of the `Lerp` pass because
-  two polygons with different vertex counts have no shape between them and the answer for that case is not settled.
 - **`Ray`** – a half-line with origin and direction, for casts against every shape.
 - **`Ellipse` as a `Collider`** – the `Intersects` pairs with an ellipse, which meet at the roots of a quartic that
   none of the circle pairs' closed forms reach; test its `RegularPolygon` of the wanted resolution until then.

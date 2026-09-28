@@ -344,6 +344,49 @@ func TestVector_Resize(t *testing.T) {
 	})
 }
 
+func TestVector_Slerp(t *testing.T) {
+	t.Run("turns the direction and keeps the length on the arc", func(t *testing.T) {
+		AssertVector(t, Vec(1.0, 0.0).Slerp(Vec(0.0, 1.0), 0.5), Vec(OneOverSqrt2, OneOverSqrt2))
+	})
+	t.Run("changes the length linearly", func(t *testing.T) {
+		AssertVector(t, Vec(2.0, 0.0).Slerp(Vec(0.0, 4.0), 0.5), Vec(3*OneOverSqrt2, 3*OneOverSqrt2))
+	})
+	t.Run("turns along the shorter arc across the seam", func(t *testing.T) {
+		from, to := VectorFromAngle(ToRadians(350), 2.0), VectorFromAngle(ToRadians(10), 2.0)
+
+		AssertVector(t, from.Slerp(to, 0.5), Vec(2.0, 0.0))
+		AssertVector(t, to.Slerp(from, 0.5), Vec(2.0, 0.0))
+	})
+	t.Run("opposite vectors turn in the sense of increasing angle", func(t *testing.T) {
+		AssertVector(t, Vec(1.0, 0.0).Slerp(Vec(-1.0, 0.0), 0.5), Vec(0.0, 1.0))
+	})
+	t.Run("the zero vector takes the other direction", func(t *testing.T) {
+		AssertVector(t, ZeroVector[float64]().Slerp(Vec(0.0, 4.0), 0.5), Vec(0.0, 2.0))
+		AssertVector(t, Vec(0.0, 4.0).Slerp(ZeroVector[float64](), 0.25), Vec(0.0, 3.0))
+		AssertVector(t, ZeroVector[float64]().Slerp(ZeroVector[float64](), 0.5), ZeroVector[float64]())
+	})
+	t.Run("the ends are the vectors themselves", func(t *testing.T) {
+		AssertVector(t, Vec(10.0, 16.0).Slerp(Vec(-3.0, 4.0), 0), Vec(10.0, 16.0))
+		AssertVector(t, Vec(10.0, 16.0).Slerp(Vec(-3.0, 4.0), 1), Vec(-3.0, 4.0))
+	})
+	t.Run("extrapolates outside the unit range", func(t *testing.T) {
+		AssertVector(t, Vec(1.0, 0.0).Slerp(Vec(0.0, 1.0), 2), Vec(-1.0, 0.0))
+		AssertVector(t, Vec(2.0, 0.0).Slerp(Vec(1.0, 0.0), 3), Vec(-1.0, 0.0))
+	})
+	t.Run("int rounds", func(t *testing.T) {
+		AssertVector(t, Vec(10, 0).Slerp(Vec(0, 10), 0.5), Vec(7, 7))
+	})
+	t.Run("the ends and the length hold over the fixtures", func(t *testing.T) {
+		for _, from := range vectorFixtures {
+			for _, to := range vectorFixtures {
+				assert.True(t, from.Slerp(to, 0).Equal(from), fmt.Sprintf("%s → %s: ", from, to))
+				assert.True(t, from.Slerp(to, 1).Equal(to), fmt.Sprintf("%s → %s: ", from, to))
+				AssertNumber(t, from.Slerp(to, 0.5).Length(), (from.Length()+to.Length())/2, fmt.Sprintf("%s → %s: ", from, to))
+			}
+		}
+	})
+}
+
 func TestVector_Normalize(t *testing.T) {
 	t.Run("float keeps the direction", func(t *testing.T) {
 		AssertVector(t, Vec(0.6, -0.25).Normalize(), Vec(0.923076, -0.384615))
@@ -903,6 +946,7 @@ func TestVector_Immutable(t *testing.T) {
 	v1.Negate()
 	v1.Rotate(Pi / 3)
 	v1.Resize(4)
+	v1.Slerp(v2, 0.1)
 	v1.Normalize()
 	v1.Abs()
 	v1.Round()

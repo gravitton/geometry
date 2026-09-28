@@ -208,6 +208,29 @@ func (v Vector[T]) Resize(length float64) Vector[T] {
 	return Vector[T]{Cast[T](float64(v.X) / current * length), Cast[T](float64(v.Y) / current * length)}
 }
 
+// Slerp creates a new Vector in interpolation towards the given vector along the arc between
+// them: the direction turns along the shorter arc with LerpAngle and the length changes
+// linearly, so a turning velocity keeps its speed where Lerp would cut the corner and slow it.
+// The zero vector has no direction and takes the other's, so a Slerp from or to it runs along
+// the straight line Lerp takes. Vectors pointing exactly opposite have no shorter arc and turn in
+// the sense of increasing angle, as LerpAngle does. It extrapolates outside [0, 1] like Lerp,
+// and a length taken past zero flips the direction, as Resize does for a negative length.
+// For integer T, sin/cos components are rounded as with Rotate.
+func (v Vector[T]) Slerp(vector Vector[T], t float64) Vector[T] {
+	from, to := v.Angle(), vector.Angle()
+	if !v.hasDirection() {
+		from = to
+	}
+	if !vector.hasDirection() {
+		to = from
+	}
+
+	sin, cos := math.Sincos(LerpAngle(from, to, t))
+	length := Lerp(v.Length(), vector.Length(), t)
+
+	return Vector[T]{Cast[T](length * cos), Cast[T](length * sin)}
+}
+
 // Normalize creates a new Vector resized to a length of 1.
 // For integer T, the only vectors of length 1 are the four axis-aligned unit vectors, so the
 // result snaps to the longer axis and keeps its sign, X winning a tie; the exact zero vector
