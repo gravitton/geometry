@@ -19,6 +19,9 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 ### Added
 - `Nearest(point)` on every shape, and in the `Shape` interface: the point itself exactly where `Contains` holds, and otherwise the nearest point of the boundary, read off the same walk `DistanceSquaredTo` makes
 - `Rectangle.Clamp(rectangle)` – moves a rectangle by the shortest distance that brings it within another, at any two angles, centered on an axis of the other where it is the larger
+- `Polygon.Winding`, with the `Winding` type and its `String`, `ParseWinding` and text encoding – the sense the vertices run around their area, from the sign of the shoelace sum
+- `Polygon.IsConvex` – convex and simple, decided on exact signs, so a star turning one way throughout is not convex
+- `Polygon.ConvexHull` – the hull by a monotone chain, clockwise from the least vertex, allocating its result once
 
 
 ## [v1.14.0 (2026-09-20)](https://github.com/gravitton/geometry/compare/v1.13.0...v1.14.0)

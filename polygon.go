@@ -88,18 +88,7 @@ func (p Polygon[T]) Centroid() Point[T] {
 // theirs, so the products stay small and a polygon far from the origin keeps its area rather
 // than losing it between two large coordinates; an empty polygon encloses nothing.
 func (p Polygon[T]) Area() float64 {
-	if p.IsEmpty() {
-		return 0
-	}
-
-	offset := p.Points[0].Vector().Float().Negate()
-
-	var twiceArea float64
-	for edge := range p.Edges() {
-		twiceArea += edge.Float().Translate(offset).cross()
-	}
-
-	return math.Abs(twiceArea) / 2
+	return math.Abs(p.twiceArea()) / 2
 }
 
 // Perimeter returns the total length of the edges.
@@ -148,6 +137,22 @@ func (p Polygon[T]) Inertia() float64 {
 	return math.Abs(moment)/12 - math.Abs(twiceArea)/2*centroid.LengthSquared()
 }
 
+// Winding returns the sense in which the vertices run around the area they enclose, from the
+// sign of the sum Area takes the absolute value of: WindingClockwise for the winding of
+// Rectangle.Vertices, WindingCounterClockwise for the reverse, and WindingNone for a polygon
+// that encloses no area. A self-intersecting polygon winds the way its larger lobes do, and
+// lobes of equal area either way give WindingNone.
+func (p Polygon[T]) Winding() Winding {
+	switch twiceArea := p.twiceArea(); {
+	case twiceArea > 0:
+		return WindingClockwise
+	case twiceArea < 0:
+		return WindingCounterClockwise
+	default:
+		return WindingNone
+	}
+}
+
 // Bounds returns the axis-aligned bounding rectangle of the vertices, or the zero rectangle
 // for a polygon without vertices.
 func (p Polygon[T]) Bounds() Rectangle[T] {
@@ -165,6 +170,24 @@ func (p Polygon[T]) mean() Point[T] {
 	n := float64(len(p.Points))
 
 	return Point[T]{Cast[T](x / n), Cast[T](y / n)}
+}
+
+// twiceArea returns the signed sum of the shoelace formula, twice the enclosed area, positive
+// for a clockwise winding: Area takes its absolute value and Winding its sign. The sum is
+// taken with the origin moved to the first vertex; an empty polygon sums to zero.
+func (p Polygon[T]) twiceArea() float64 {
+	if p.IsEmpty() {
+		return 0
+	}
+
+	offset := p.Points[0].Vector().Float().Negate()
+
+	var twiceArea float64
+	for edge := range p.Edges() {
+		twiceArea += edge.Float().Translate(offset).cross()
+	}
+
+	return twiceArea
 }
 
 // minMax returns the minimum and maximum corner of the vertices, the corners of Bounds, as
@@ -242,6 +265,80 @@ func (p Polygon[T]) Rotate(angle float64) Polygon[T] {
 	return Polygon[T]{xslices.Map(p.Points, func(point Point[T]) Point[T] {
 		return point.RotateAround(pivot, angle)
 	})}
+}
+
+// ConvexHull returns the smallest convex polygon containing every vertex, wound clockwise
+// like Rectangle.Vertices and starting at the least vertex by Point.Compare: the vertices it
+// keeps are vertices of the polygon, and one lying on an edge of the hull or repeating
+// another is dropped, so a polygon whose vertices are all collinear gives the two ends of
+// the line and a single point gives itself. The turns are decided on exact signs, as
+// IsConvex decides them, so the hull of a convex polygon is convex again and the hull of a
+// hull is itself. An empty polygon is returned as it is.
+//
+// It sorts a copy of the vertices along the boundary, the side of the line between the least
+// and the greatest vertex that the hull reaches first and then the other side back, and scans
+// that copy once, compacting the hull into its front, so the copy is the one allocation.
+func (p Polygon[T]) ConvexHull() Polygon[T] {
+	if p.IsEmpty() {
+		return p
+	}
+
+	chord := Segment[T]{slices.MinFunc(p.Points, Point[T].Compare), slices.MaxFunc(p.Points, Point[T].Compare)}
+	points := slices.Clone(p.Points)
+	slices.SortFunc(points, func(a, b Point[T]) int {
+		return p.compareAround(chord, a, b)
+	})
+
+	n := 0
+	for _, point := range points {
+		if n > 0 && point == points[n-1] {
+			continue
+		}
+
+		for n >= 2 && p.turn(points[n-2], points[n-1], point) <= 0 {
+			n--
+		}
+
+		points[n] = point
+		n++
+	}
+
+	for n >= 3 && p.turn(points[n-2], points[n-1], points[0]) <= 0 {
+		n--
+	}
+
+	return Polygon[T]{points[:n:n]}
+}
+
+// compareAround orders two points along the boundary of the hull whose least and greatest
+// vertex the chord joins: the points on the side of the chord a clockwise walk from Start
+// reaches first, or on the chord, by Point.Compare, then the points on the other side in the
+// reverse order. It reads no field of the polygon, only the chord and the points, so the
+// receiver is unnamed.
+func (Polygon[T]) compareAround(chord Segment[T], a, b Point[T]) int {
+	direction := chord.Vector().Float()
+	returning := func(point Point[T]) bool {
+		return direction.Cross(point.Subtract(chord.Start).Float()) > 0
+	}
+
+	switch ra, rb := returning(a), returning(b); {
+	case ra != rb && ra:
+		return 1
+	case ra != rb:
+		return -1
+	case ra:
+		return b.Compare(a)
+	default:
+		return a.Compare(b)
+	}
+}
+
+// turn returns the cross product of the edge from a to b and the edge from b to c, in
+// float64: positive where the outline turns clockwise at b, the winding of Rectangle.Vertices,
+// negative the other way and zero where the three are collinear. It reads no field of the
+// polygon, only the points, so the receiver is unnamed.
+func (Polygon[T]) turn(a, b, c Point[T]) float64 {
+	return b.Subtract(a).Float().Cross(c.Subtract(b).Float())
 }
 
 // Contains reports whether the given point lies within the polygon, boundary included within
@@ -455,6 +552,24 @@ func (p Polygon[T]) IsZero() bool {
 // IsEmpty checks if number of vertices is zero.
 func (p Polygon[T]) IsEmpty() bool {
 	return len(p.Points) == 0
+}
+
+// IsConvex reports whether the polygon is convex and simple: it encloses an area, turns the
+// same way at every vertex, in either winding, and goes around once, so a star that turns one
+// way throughout is not convex. A vertex repeating the one before it is skipped and a vertex
+// on the straight line between its neighbours is allowed, while an edge doubling back along
+// the one before it is not. The turns are decided on the exact signs of cross products, with
+// no tolerance, so a float vertex a rounding error inside the line of its neighbours makes the
+// polygon concave.
+func (p Polygon[T]) IsConvex() bool {
+	c := edgeConvexity{}
+	for edge := range p.Edges() {
+		if !c.step(edge.Vector().Float()) {
+			return false
+		}
+	}
+
+	return c.result()
 }
 
 // Cast converts the polygon to a Polygon of another number type, rounding as Cast does.

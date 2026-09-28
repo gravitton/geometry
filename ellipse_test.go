@@ -127,6 +127,22 @@ func TestEllipse_Area(t *testing.T) {
 	})
 }
 
+func TestEllipse_Perimeter(t *testing.T) {
+	t.Run("a circle is exact", func(t *testing.T) {
+		AssertNumber(t, Ell(Pt(1.0, 2.0), SzU(10.0), 0).Perimeter(), 2*Pi*10)
+	})
+	t.Run("float", func(t *testing.T) {
+		// Ramanujan's second approximation, within a part in 1e9 of the true 25.527
+		assert.EqualDelta(t, Ell(Pt(0.0, 0.0), Sz(5.0, 3.0), 0).Perimeter(), 25.526998, 1e-5)
+	})
+	t.Run("a degenerate ellipse is twice its segment", func(t *testing.T) {
+		assert.EqualDelta(t, Ell(Pt(0.0, 0.0), Sz(5.0, 0.0), 0).Perimeter(), 20.0, 1e-2)
+	})
+	t.Run("an ellipse of no extent has no boundary", func(t *testing.T) {
+		AssertNumber(t, Ell(Pt(1.0, 2.0), Sz(0.0, 0.0), 0).Perimeter(), 0.0)
+	})
+}
+
 func TestEllipse_Inertia(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		AssertNumber(t, Ell(Pt(1, 2), Sz(10, 4), 0).Inertia(), Pi*1160.0)
@@ -144,22 +160,6 @@ func TestEllipse_Inertia(t *testing.T) {
 		for _, e := range ellipseFixtures {
 			assert.EqualDelta(t, e.Inertia(), e.RegularPolygon(360).Inertia(), e.Inertia()*1e-3, e.String())
 		}
-	})
-}
-
-func TestEllipse_Perimeter(t *testing.T) {
-	t.Run("a circle is exact", func(t *testing.T) {
-		AssertNumber(t, Ell(Pt(1.0, 2.0), SzU(10.0), 0).Perimeter(), 2*Pi*10)
-	})
-	t.Run("float", func(t *testing.T) {
-		// Ramanujan's second approximation, within a part in 1e9 of the true 25.527
-		assert.EqualDelta(t, Ell(Pt(0.0, 0.0), Sz(5.0, 3.0), 0).Perimeter(), 25.526998, 1e-5)
-	})
-	t.Run("a degenerate ellipse is twice its segment", func(t *testing.T) {
-		assert.EqualDelta(t, Ell(Pt(0.0, 0.0), Sz(5.0, 0.0), 0).Perimeter(), 20.0, 1e-2)
-	})
-	t.Run("an ellipse of no extent has no boundary", func(t *testing.T) {
-		AssertNumber(t, Ell(Pt(1.0, 2.0), Sz(0.0, 0.0), 0).Perimeter(), 0.0)
 	})
 }
 

@@ -143,6 +143,9 @@ p := geom.Pol([]geom.Point[int]{{0, 0}, {4, 0}, {4, 4}, {2, 1}, {0, 4}})
 p.Area()                  // 10
 p.Contains(geom.Pt(2, 3)) // false, inside the notch
 p.Points[3]               // Point{2, 1}, the notch
+p.Winding()               // WindingClockwise, the winding of a Rectangle's corners
+p.IsConvex()              // false, the notch turns the other way
+p.ConvexHull()            // Pol((0,0);(4,0);(4,4);(0,4)), the notch dropped
 
 for vertex := range p.Vertices() { // the same loop draws a Segment, Rectangle or RegularPolygon
 	vertex.Float()
@@ -318,8 +321,6 @@ JSON last.
 
 - **`Encloses`** – shape-in-shape containment for culling, distinct from `Contains`, which takes a point.
 - **`Segment.Clip()`** – the part of a segment inside a shape.
-- **`Polygon.Winding`, `IsConvex` and `ConvexHull`** – convexity also unlocks a separating-axis `Intersects`, the slow
-  case in `BenchmarkPolygon_Intersects` today.
 - **`Polygon.Simplify(tolerance)`** – drops every vertex within the tolerance of the edge between its neighbours.
 - **`Vector.Slerp(vector, t)`** – interpolation of the direction along the shorter arc, on `LerpAngle`, with the
   length interpolated linearly.

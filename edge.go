@@ -141,3 +141,60 @@ func (p *edgeProbe[T]) meets(edge Segment[T]) bool {
 
 	return overlaps(p.c, p.d, e, f) && p.segment.IntersectsSegment(edge)
 }
+
+// edgeConvexity folds the edge directions of an outline one at a time into the test IsConvex
+// makes, as edgeWalk folds a walk: the first and the previous direction, the sense of the
+// turns so far, and how often the X component of the direction has changed sign. The turns of
+// an outline that goes around once in one sense change it exactly twice.
+type edgeConvexity struct {
+	first, previous Vector[float64]
+	turned          bool
+	clockwise       bool
+	x               float64
+	reversals       int
+}
+
+// step folds one edge direction in and reports whether the outline can still be convex: false
+// where it turns against the turns before it or doubles back. A zero direction, the edge of a
+// repeated vertex, is skipped. A NaN turn is neither sense, so it never settles one.
+func (c *edgeConvexity) step(direction Vector[float64]) bool {
+	if !direction.hasDirection() {
+		return true
+	}
+
+	if !c.first.hasDirection() {
+		c.first = direction
+	}
+
+	if c.previous.hasDirection() {
+		switch turn := c.previous.Cross(direction); {
+		case turn > 0 || turn < 0:
+			if c.turned && c.clockwise != (turn > 0) {
+				return false
+			}
+
+			c.turned, c.clockwise = true, turn > 0
+		case c.previous.Dot(direction) < 0:
+			return false
+		}
+	}
+
+	if direction.X != 0 {
+		if c.x != 0 && (c.x < 0) != (direction.X < 0) {
+			c.reversals++
+		}
+
+		c.x = direction.X
+	}
+
+	c.previous = direction
+
+	return true
+}
+
+// result closes the outline with the turn from the last direction back to the first and
+// reports whether it is convex: it turned at all, and the X component changed sign no more
+// than twice around it.
+func (c *edgeConvexity) result() bool {
+	return c.step(c.first) && c.turned && c.reversals <= 2
+}

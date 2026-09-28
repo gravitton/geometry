@@ -192,6 +192,29 @@ func TestPolygon_Inertia(t *testing.T) {
 	})
 }
 
+func TestPolygon_Winding(t *testing.T) {
+	square := Pol(squareVertices())
+
+	t.Run("the winding of a rectangle is clockwise", func(t *testing.T) {
+		assert.Equal(t, square.Winding(), WindingClockwise)
+	})
+	t.Run("the reverse is counterclockwise", func(t *testing.T) {
+		assert.Equal(t, Pol([]Point[int]{Pt(0, 2), Pt(2, 2), Pt(2, 0), Pt(0, 0)}).Winding(), WindingCounterClockwise)
+	})
+	t.Run("no area has no winding", func(t *testing.T) {
+		assert.Equal(t, Polygon[int]{}.Winding(), WindingNone)
+		assert.Equal(t, Pol([]Point[int]{Pt(0, 0), Pt(1, 1), Pt(2, 2)}).Winding(), WindingNone)
+	})
+	t.Run("lobes of equal area either way have no winding", func(t *testing.T) {
+		assert.Equal(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 2), Pt(2, 0), Pt(0, 2)}).Winding(), WindingNone)
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkBool = square.Winding().IsNone()
+		}), 0)
+	})
+}
+
 func TestPolygon_Bounds(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		AssertRectangle(t, Pol(squareVertices()).Bounds(), RectangleFromMinMax(Pt(0, 0), Pt(2, 2)))
@@ -337,6 +360,63 @@ func TestPolygon_Rotate(t *testing.T) {
 	t.Run("nil stays nil", func(t *testing.T) {
 		assert.True(t, Pol[int](nil).Rotate(1).IsZero())
 	})
+}
+
+func TestPolygon_ConvexHull(t *testing.T) {
+	dart := Pol([]Point[int]{Pt(0, 0), Pt(4, 2), Pt(0, 4), Pt(1, 2)})
+
+	t.Run("drops the vertices inside and on the edges", func(t *testing.T) {
+		scattered := Pol([]Point[int]{Pt(1, 1), Pt(0, 0), Pt(0, 1), Pt(2, 2), Pt(2, 0), Pt(0, 2), Pt(1, 0)})
+
+		AssertPolygon(t, scattered.ConvexHull(), Pol(squareVertices()))
+	})
+	t.Run("drops the vertices of a concavity", func(t *testing.T) {
+		AssertPolygon(t, dart.ConvexHull(), Pol([]Point[int]{Pt(0, 0), Pt(4, 2), Pt(0, 4)}))
+	})
+	t.Run("winds clockwise from the least vertex whatever the input winding", func(t *testing.T) {
+		AssertPolygon(t, Pol([]Point[int]{Pt(0, 2), Pt(2, 2), Pt(2, 0), Pt(0, 0)}).ConvexHull(), Pol(squareVertices()))
+	})
+	t.Run("collinear vertices give the two ends", func(t *testing.T) {
+		AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 2), Pt(1, 1), Pt(3, 3)}).ConvexHull(), Pol([]Point[int]{Pt(0, 0), Pt(3, 3)}))
+	})
+	t.Run("repeated vertices count once", func(t *testing.T) {
+		AssertPolygon(t, Pol([]Point[int]{Pt(1, 1), Pt(1, 1), Pt(1, 1)}).ConvexHull(), Pol([]Point[int]{Pt(1, 1)}))
+		AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(2, 0), Pt(0, 2), Pt(0, 0)}).ConvexHull(), Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(0, 2)}))
+	})
+	t.Run("an empty polygon is returned as it is", func(t *testing.T) {
+		assert.True(t, Polygon[int]{}.ConvexHull().IsZero())
+	})
+	t.Run("allocates once", func(t *testing.T) {
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = dart.ConvexHull().Points
+		}), 1)
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, p := range outlineFixtures() {
+			hull := p.ConvexHull()
+			message := fmt.Sprintf("%s → %s: ", p, hull)
+
+			for _, vertex := range p.Points {
+				assert.True(t, hull.Contains(vertex), message)
+			}
+			for _, vertex := range hull.Points {
+				assert.True(t, slices.Contains(p.Points, vertex), message)
+			}
+			assert.True(t, hull.ConvexHull().Equal(hull), message)
+			if len(hull.Points) >= 3 {
+				assert.True(t, hull.IsConvex(), message)
+				assert.Equal(t, hull.Winding(), WindingClockwise, message)
+			}
+		}
+	})
+}
+
+func BenchmarkPolygon_ConvexHull(b *testing.B) {
+	polygon := benchPolygon()
+
+	for b.Loop() {
+		sinkBool = polygon.ConvexHull().IsEmpty()
+	}
 }
 
 func TestPolygon_Contains(t *testing.T) {
@@ -696,6 +776,54 @@ func TestPolygon_IsEmpty(t *testing.T) {
 	})
 }
 
+func TestPolygon_IsConvex(t *testing.T) {
+	t.Run("a triangle and a square in either winding", func(t *testing.T) {
+		assert.True(t, Pol(triangleVertices()).IsConvex())
+		assert.True(t, Pol(squareVertices()).IsConvex())
+		assert.True(t, Pol([]Point[int]{Pt(0, 2), Pt(2, 2), Pt(2, 0), Pt(0, 0)}).IsConvex())
+	})
+	t.Run("a concavity", func(t *testing.T) {
+		assert.False(t, Pol([]Point[int]{Pt(0, 0), Pt(4, 2), Pt(0, 4), Pt(1, 2)}).IsConvex())
+	})
+	t.Run("a star turning one way throughout goes around twice", func(t *testing.T) {
+		pentagon := slices.Collect(RegPol(Pt(0.0, 0.0), SzU(10.0), 5, 0).Vertices())
+		star := []Point[float64]{pentagon[0], pentagon[2], pentagon[4], pentagon[1], pentagon[3]}
+
+		assert.False(t, Pol(star).IsConvex())
+	})
+	t.Run("a repeated vertex and a vertex on an edge are allowed", func(t *testing.T) {
+		assert.True(t, Pol([]Point[int]{Pt(0, 0), Pt(0, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2)}).IsConvex())
+		assert.True(t, Pol([]Point[int]{Pt(0, 0), Pt(1, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2)}).IsConvex())
+	})
+	t.Run("an edge doubling back is not", func(t *testing.T) {
+		assert.False(t, Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(4, 2), Pt(0, 2)}).IsConvex())
+	})
+	t.Run("no area is not convex", func(t *testing.T) {
+		assert.False(t, Polygon[int]{}.IsConvex())
+		assert.False(t, Pol([]Point[int]{Pt(1, 1)}).IsConvex())
+		assert.False(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 2)}).IsConvex())
+		assert.False(t, Pol([]Point[int]{Pt(0, 0), Pt(1, 1), Pt(2, 2)}).IsConvex())
+	})
+	t.Run("a NaN vertex is not convex", func(t *testing.T) {
+		assert.False(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(math.NaN(), 0.0), Pt(0.0, 2.0)}).IsConvex())
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		square := Pol(squareVertices())
+
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkBool = square.IsConvex()
+		}), 0)
+	})
+	t.Run("every rectangle and regular polygon with an area is convex", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			assert.Equal(t, r.Polygon().IsConvex(), r.Area() > 0, r.String()+": ")
+		}
+		for _, rp := range regularPolygonFixtures {
+			assert.True(t, rp.Polygon().IsConvex(), rp.String()+": ")
+		}
+	})
+}
+
 func TestPolygon_Cast(t *testing.T) {
 	p := Pol([]Point[float64]{Pt(1.5, -2.5), Pt(3.5, 4.5), Pt(-1.5, 2.5)})
 
@@ -849,6 +977,7 @@ func TestPolygon_Immutable(t *testing.T) {
 	p.MoveTo(Pt(10, 10))
 	p.Scale(2)
 	p.ScaleXY(2, 3)
+	p.ConvexHull()
 
 	AssertVertices(t, p.Points, []Point[int]{Pt(0, 0), Pt(2, 0)})
 }
@@ -857,6 +986,20 @@ func TestPolygon_Immutable(t *testing.T) {
 // cannot leak into the next.
 func squareVertices() []Point[int] {
 	return []Point[int]{Pt(0, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2)}
+}
+
+// outlineFixtures returns the polygon fixtures with the polygons of the rectangle and the
+// regular polygon fixtures, every outline the polygon methods are checked over.
+func outlineFixtures() []Polygon[float64] {
+	polygons := polygonFixtures()
+	for _, r := range rectFixtures {
+		polygons = append(polygons, r.Polygon())
+	}
+	for _, rp := range regularPolygonFixtures {
+		polygons = append(polygons, rp.Polygon())
+	}
+
+	return polygons
 }
 
 func triangleVertices() []Point[float64] {

@@ -55,29 +55,6 @@ func Hexagon[T Number](center Point[T], size Size[T], orientation Orientation) R
 	return RegularPolygonWithOrientation(center, size, 6, orientation)
 }
 
-// RegularPolygonOrientationAngle returns the initial vertex angle for a regular polygon with n sides
-// and the given orientation, normalized to [0, 2π) like Rotate. OrientationPointyTop puts the first vertex at
-// the top (-Y, 3π/2); OrientationFlatTop puts the midpoint of an edge there, so the first vertex sits half a
-// step before it at 3π/2 - π/n. A polygon with n < 1 has no edge to place, so both orientations
-// give the top angle rather than dividing by n. An orientation other than OrientationFlatTop and OrientationPointyTop
-// has no meaning and panics.
-func RegularPolygonOrientationAngle(n int, orientation Orientation) float64 {
-	top := 3 * Pi / 2
-
-	switch orientation {
-	case OrientationFlatTop:
-		if n < 1 {
-			return top
-		}
-
-		return NormalizeAngle(top - Pi/float64(n))
-	case OrientationPointyTop:
-		return top
-	default:
-		panic(fmt.Sprintf("geom: unknown orientation %d", orientation))
-	}
-}
-
 // Anchor returns the point of the boundary in the given direction from the center, or the
 // center itself for DirectionNone: the point where the ray from the center leaves the polygon,
 // as Rectangle.Anchor gives a corner or an edge midpoint and Ellipse.Anchor the point of its
@@ -637,4 +614,27 @@ func (rp RegularPolygon[T]) String() string {
 	}
 
 	return fmt.Sprintf("RegPol(%s;%s;%s;%s)", rp.Center.String(), rp.Size.String(), String(rp.N), String(rp.Angle))
+}
+
+// RegularPolygonOrientationAngle returns the initial vertex angle for a regular polygon with n sides
+// and the given orientation, normalized to [0, 2π) like Rotate. OrientationPointyTop puts the first vertex at
+// the top (-Y, 3π/2); OrientationFlatTop puts the midpoint of an edge there, so the first vertex sits half a
+// step before it at 3π/2 - π/n. A polygon with n < 1 has no edge to place, so both orientations
+// give the top angle rather than dividing by n. An orientation other than OrientationFlatTop and OrientationPointyTop
+// has no meaning and panics.
+func RegularPolygonOrientationAngle(n int, orientation Orientation) float64 {
+	top := 3 * Pi / 2
+
+	switch orientation {
+	case OrientationFlatTop:
+		if n < 1 {
+			return top
+		}
+
+		return NormalizeAngle(top - Pi/float64(n))
+	case OrientationPointyTop:
+		return top
+	default:
+		panic(fmt.Sprintf("geom: unknown orientation %d", orientation))
+	}
 }
