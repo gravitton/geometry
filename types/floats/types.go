@@ -26,6 +26,9 @@ type Segment = geom.Segment[float64]
 // Rectangle is geom.Rectangle[float64].
 type Rectangle = geom.Rectangle[float64]
 
+// Box is geom.Box[float64].
+type Box = geom.Box[float64]
+
 // Polygon is geom.Polygon[float64].
 type Polygon = geom.Polygon[float64]
 

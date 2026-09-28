@@ -151,10 +151,12 @@ func (p Polygon[T]) Winding() Winding {
 	}
 }
 
-// Bounds returns the axis-aligned bounding rectangle of the vertices, or the zero rectangle
-// for a polygon without vertices.
-func (p Polygon[T]) Bounds() Rectangle[T] {
-	return RectangleFromMinMax(p.minMax())
+// Bounds returns the axis-aligned bounding box of the vertices, or the zero box for a polygon
+// without vertices.
+func (p Polygon[T]) Bounds() Box[T] {
+	a, b := p.minMax()
+
+	return Box[T]{a, b}
 }
 
 // mean returns the average of the vertices, which Centroid falls back to when the

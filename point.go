@@ -234,9 +234,8 @@ func (p Point[T]) String() string {
 }
 
 // minMaxOf returns the minimum and maximum corner of the vertices, the corners of their
-// Bounds, exact for an integer T where Bounds places a center: the pair the intersection tests
-// reject shapes by before examining any edge, without placing a rectangle. No vertices have no
-// corners and return two zero points.
+// Bounds: the pair the intersection tests reject shapes by before examining any edge. No
+// vertices have no corners and return two zero points.
 func minMaxOf[T Number](vertices []Point[T]) (Point[T], Point[T]) {
 	if len(vertices) == 0 {
 		return Point[T]{}, Point[T]{}

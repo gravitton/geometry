@@ -321,28 +321,28 @@ func TestRegularPolygon_Inertia(t *testing.T) {
 
 func TestRegularPolygon_Bounds(t *testing.T) {
 	t.Run("vertices on the axes", func(t *testing.T) {
-		AssertRectangle(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Bounds(), Rect(Pt(1, 2), Sz(4, 4)))
+		AssertBox(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0).Bounds(), BoxFromMinMax(Pt(-1, 0), Pt(3, 4)))
 	})
 	t.Run("hexagon is tight around its vertices", func(t *testing.T) {
 		// width = 2r, height = √3 r
 		bounds := Hexagon(Pt(0.0, 0.0), Sz(2.0, 2.0), OrientationFlatTop).Bounds()
 
-		AssertNumber(t, bounds.Size.Width, 4.0)
-		AssertNumber(t, bounds.Size.Height, 2.0*Sqrt3)
+		AssertNumber(t, bounds.Width(), 4.0)
+		AssertNumber(t, bounds.Height(), 2.0*Sqrt3)
 	})
 	t.Run("one and two vertices reach only where they lie", func(t *testing.T) {
-		AssertRectangle(t, RegPol(Pt(0.0, 0.0), SzU(2.0), 1, Pi/2).Bounds(), RectangleFromMinMax(Pt(0.0, 2.0), Pt(0.0, 2.0)))
-		AssertRectangle(t, RegPol(Pt(0.0, 0.0), SzU(2.0), 2, Pi/4).Bounds(), RectangleFromMinMax(Pt(-Sqrt2, -Sqrt2), Pt(Sqrt2, Sqrt2)))
+		AssertBox(t, RegPol(Pt(0.0, 0.0), SzU(2.0), 1, Pi/2).Bounds(), BoxFromMinMax(Pt(0.0, 2.0), Pt(0.0, 2.0)))
+		AssertBox(t, RegPol(Pt(0.0, 0.0), SzU(2.0), 2, Pi/4).Bounds(), BoxFromMinMax(Pt(-Sqrt2, -Sqrt2), Pt(Sqrt2, Sqrt2)))
 	})
 	t.Run("no vertices is the zero rectangle", func(t *testing.T) {
-		AssertRectangle(t, RegPol(Pt(3, 4), Sz(10, 10), 0, 0).Bounds(), Rectangle[int]{})
+		AssertBox(t, RegPol(Pt(3, 4), Sz(10, 10), 0, 0).Bounds(), Box[int]{})
 	})
 	t.Run("is exactly the box around the vertices, rounded alike for int", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
 			for _, angle := range []float64{0, 0.3, Pi / 3, 2, -1} {
 				turned := rp.Rotate(angle)
 
-				AssertRectangle(t, turned.Bounds(), turned.Polygon().Bounds(), turned.String())
+				AssertBox(t, turned.Bounds(), turned.Polygon().Bounds(), turned.String())
 				assert.Equal(t, turned.Int().Bounds(), turned.Int().Polygon().Bounds(), turned.String())
 			}
 		}
@@ -1104,8 +1104,8 @@ func TestRegularPolygon_Properties(t *testing.T) {
 			bounds := rp.Bounds()
 
 			for vertex := range rp.Vertices() {
-				assert.True(t, vertex.X >= bounds.Min().X-Delta && vertex.X <= bounds.Max().X+Delta, fmt.Sprintf("%s: ", rp))
-				assert.True(t, vertex.Y >= bounds.Min().Y-Delta && vertex.Y <= bounds.Max().Y+Delta, fmt.Sprintf("%s: ", rp))
+				assert.True(t, vertex.X >= bounds.Min.X-Delta && vertex.X <= bounds.Max.X+Delta, fmt.Sprintf("%s: ", rp))
+				assert.True(t, vertex.Y >= bounds.Min.Y-Delta && vertex.Y <= bounds.Max.Y+Delta, fmt.Sprintf("%s: ", rp))
 			}
 		}
 	})

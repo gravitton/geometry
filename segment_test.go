@@ -125,31 +125,19 @@ func TestSegment_Bounds(t *testing.T) {
 	t.Run("spans the endpoints", func(t *testing.T) {
 		s := Seg(Pt(1, 2), Pt(3, 5))
 
-		AssertRectangle(t, s.Bounds(), Rect(Pt(2, 3), Sz(2, 3)))
-		AssertPoint(t, s.Bounds().Min(), s.Start)
-		AssertPoint(t, s.Bounds().Max(), s.End)
+		AssertBox(t, s.Bounds(), BoxFromMinMax(s.Start, s.End))
+		AssertPoint(t, s.Bounds().Center(), Pt(2, 3))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertRectangle(t, Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)).Bounds(), Rect(Pt(0.9, 1.575), Sz(0.6, 3.65)))
+		AssertBox(t, Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)).Bounds(), BoxFromMinMax(Pt(0.6, -0.25), Pt(1.2, 3.4)))
 	})
 }
 
 func TestSegment_minMax(t *testing.T) {
-	t.Run("orders the corners", func(t *testing.T) {
-		a, b := Seg(Pt(4, 1), Pt(0, 3)).minMax()
+	a, b := Seg(Pt(4, 1), Pt(0, 3)).minMax()
 
-		AssertPoint(t, a, Pt(0, 1))
-		AssertPoint(t, b, Pt(4, 3))
-	})
-	t.Run("matches the corners of Bounds", func(t *testing.T) {
-		for _, s := range segmentFixtures {
-			a, b := s.minMax()
-			c, d := s.Bounds().MinMax()
-
-			AssertPoint(t, a, c, s.String())
-			AssertPoint(t, b, d, s.String())
-		}
-	})
+	AssertPoint(t, a, Pt(0, 1))
+	AssertPoint(t, b, Pt(4, 3))
 }
 
 func TestSegment_Translate(t *testing.T) {
@@ -1211,8 +1199,8 @@ func TestSegment_Properties(t *testing.T) {
 			bounds := segment.Bounds()
 			start, end := segment.Start, segment.End
 
-			assert.True(t, bounds.Min().Equal(Pt(min(start.X, end.X), min(start.Y, end.Y))), fmt.Sprintf("%s: ", segment))
-			assert.True(t, bounds.Max().Equal(Pt(max(start.X, end.X), max(start.Y, end.Y))), fmt.Sprintf("%s: ", segment))
+			assert.True(t, bounds.Min.Equal(Pt(min(start.X, end.X), min(start.Y, end.Y))), fmt.Sprintf("%s: ", segment))
+			assert.True(t, bounds.Max.Equal(Pt(max(start.X, end.X), max(start.Y, end.Y))), fmt.Sprintf("%s: ", segment))
 		}
 	})
 	t.Run("vertices are the endpoints", func(t *testing.T) {

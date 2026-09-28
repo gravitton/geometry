@@ -97,7 +97,7 @@ slices.Collect(b.Vertices()) // the four corners as a slice, clockwise from the 
 
 d := geom.Rect(geom.Pt(0.0, 0.0), geom.Sz(2.0, 2.0)).Rotate(geom.Pi / 4) // a diamond
 d.Contains(geom.Pt(0.9, 0.9))                                            // false, outside the turned edges
-d.Bounds()                                                               // the axis-aligned box around it
+d.Bounds()                                                               // the Box around it
 d.TopLeft()                                                              // the corner that was top-left before the turn
 
 d.Transform(geom.RotationMatrix[float64](geom.Pi / 2)) // a turn is exact, and so is a move, a reflection or a scale
@@ -106,6 +106,23 @@ d.Transform(geom.ShearMatrix(1.0, 0.0))                // the nearest rectangle;
 
 A rectangle turned by `Rotate` keeps its center, size and corner names; `Min`, `Max` and `Bounds` become the box
 around its vertices. Two rectangles of the same angle intersect and unite in a rectangle of that angle.
+
+### Boxes
+
+```go
+view := geom.BoxFromSize(geom.Sz(800, 600)) // Min and Max, no angle: (0,0)-(800,600)
+view.Contains(geom.Pt(800, 600))            // true, closed like every shape
+view.Inset(geom.PadU(16))                   // (16,16)-(784,584)
+
+tip := geom.BoxFromMin(geom.Pt(750, 20), geom.Sz(120, 40))
+tip.Clamp(view)           // (680,20)-(800,60), moved by the least that brings it inside
+view.IntersectionBox(tip) // (750,20)-(800,60), the part on screen
+
+r.Bounds().IntersectsBox(view)          // every shape's Bounds is a Box, for the broad pass
+view.Rectangle().IntersectsRectangle(r) // a Box is not a Collider yet: test it as its Rectangle
+```
+
+`Rectangle` is the shape that turns; `Box` is the axis-aligned extent, for clipping, viewports, layout and culling.
 
 ### Circles and ellipses
 
@@ -157,7 +174,7 @@ hex.Ellipse()                        // the ellipse its vertices lie on, exactly
 hex.Grow(2).Resize(geom.SzU(20))     // the semi-axes grow, shrink and resize as an Ellipse's do
 hex.Anchor(geom.Top)                 // Point{0, -17}, the midpoint of the top edge; a pointy-top one gives its top vertex
 hex.AlignTo(geom.Top, geom.Pt(0, 0)) // the hexagon moved so that anchor is at the origin
-hex.Bounds()                         // Rectangle (-20,-17)-(20,17)
+hex.Bounds()                         // Box (-20,-17)-(20,17)
 hex.Area()                           // 1039, 3√3/2 · r²
 hex.Contains(geom.Pt(10, 5))         // true, walked on the edges without building the vertices
 hex.Rotate(geom.Pi / 6).IsAligned()  // false; exactly zero after a full turn, like Rectangle.IsAligned
@@ -204,7 +221,7 @@ r.IntersectsCircle(c)    // IntersectsPolygon and IntersectsRegularPolygon, on e
 geom.Intersects(a, c)    // the same answer without knowing either type
 
 point, ok := s.IntersectionSegment(m) // where two segments cross
-box, ok := a.IntersectionRectangle(b) // the overlap of two rectangles
+overlap, ok := a.IntersectionRectangle(b) // the overlap of two rectangles
 c.IntersectionCircle(d)               // zero, one or two points where two circles cross
 s.IntersectionCircle(c)               // where a segment crosses a boundary; also of a rectangle or a polygon
 ```
@@ -325,6 +342,7 @@ JSON last.
 - **`Segment.Clip()`** – the part of a segment inside a shape.
 - **`Polygon.Simplify(tolerance)`** – drops every vertex within the tolerance of the edge between its neighbours.
 - **`Ray`** – a half-line with origin and direction, for casts against every shape.
+- **`Box` as a `Collider`** – the `Intersects` pairs with a box on every shape, which a box now reaches through its `Rectangle`.
 - **`Ellipse` as a `Collider`** – the `Intersects` pairs with an ellipse, which meet at the roots of a quartic that none of the circle pairs' closed forms reach.
 
 ## Credits

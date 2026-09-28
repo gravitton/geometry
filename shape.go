@@ -3,13 +3,13 @@ package geom
 import "iter"
 
 // Shape is what every shape answers about a point: Segment, Rectangle, Circle, Ellipse,
-// Polygon and RegularPolygon. Bounds is the axis-aligned box around it, Contains includes the boundary
+// Polygon, RegularPolygon and Box. Bounds is the Box around it, Contains includes the boundary
 // within Epsilon of T, DistanceTo is zero exactly where Contains holds, DistanceSquaredTo is
 // the value it takes the root of, and Nearest is the point it is measured to, the point itself
 // exactly where Contains holds. A spatial index or a picking routine holds a Shape and never
 // needs to know which one.
 type Shape[T Number] interface {
-	Bounds() Rectangle[T]
+	Bounds() Box[T]
 	Contains(point Point[T]) bool
 	DistanceTo(point Point[T]) float64
 	DistanceSquaredTo(point Point[T]) float64
@@ -40,7 +40,8 @@ type Outline[T Number] interface {
 //
 // Ellipse is deliberately not one: two ellipses meet at the roots of a quartic, which none of
 // the closed forms the circle pairs are built on reaches. Test an ellipse as its
-// RegularPolygon of the wanted resolution until the pairs land.
+// RegularPolygon of the wanted resolution until the pairs land. Box is not one either: test it
+// as its Rectangle.
 type Collider[T Number] interface {
 	IntersectsSegment(segment Segment[T]) bool
 	IntersectsRectangle(rectangle Rectangle[T]) bool

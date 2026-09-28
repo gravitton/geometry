@@ -131,6 +131,20 @@ func TestAssertRectangle(t *testing.T) {
 	})
 }
 
+func TestAssertBox(t *testing.T) {
+	b := BoxFromMinMax(Pt(1, 2), Pt(3, 4))
+
+	t.Run("equal", func(t *testing.T) {
+		assertHelper(t, AssertBox, b, BoxFromMinMax(Pt(1, 2), Pt(3, 4)), true)
+	})
+	t.Run("min differs", func(t *testing.T) {
+		assertHelper(t, AssertBox, b, BoxFromMinMax(Pt(0, 2), Pt(3, 4)), false)
+	})
+	t.Run("max differs", func(t *testing.T) {
+		assertHelper(t, AssertBox, b, BoxFromMinMax(Pt(1, 2), Pt(3, 9)), false)
+	})
+}
+
 func TestAssertPolygon(t *testing.T) {
 	p := Pol([]Point[int]{Pt(1, 2), Pt(3, 4)})
 

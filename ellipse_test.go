@@ -165,36 +165,25 @@ func TestEllipse_Inertia(t *testing.T) {
 
 func TestEllipse_Bounds(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertRectangle(t, Ell(Pt(1, 2), Sz(10, 4), 0).Bounds(), Rect(Pt(1, 2), Sz(20, 8)))
+		AssertBox(t, Ell(Pt(1, 2), Sz(10, 4), 0).Bounds(), BoxFromMinMax(Pt(-9, -2), Pt(11, 6)))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertRectangle(t, Ell(Pt(0.6, -0.25), Sz(1.2, 0.5), 0).Bounds(), Rect(Pt(0.6, -0.25), Sz(2.4, 1.0)))
+		AssertBox(t, Ell(Pt(0.6, -0.25), Sz(1.2, 0.5), 0).Bounds(), BoxFromMinMax(Pt(-0.6, -0.75), Pt(1.8, 0.25)))
 	})
 	t.Run("a quarter turn transposes it", func(t *testing.T) {
-		AssertRectangle(t, Ell(Pt(1.0, 2.0), Sz(10.0, 4.0), Pi/2).Bounds(), Rect(Pt(1.0, 2.0), Sz(8.0, 20.0)))
+		AssertBox(t, Ell(Pt(1.0, 2.0), Sz(10.0, 4.0), Pi/2).Bounds(), BoxFromMinMax(Pt(-3.0, -8.0), Pt(5.0, 12.0)))
 	})
 	t.Run("a turned ellipse reaches where its tangent is axis-aligned", func(t *testing.T) {
 		// not the corner of the turned box: √(w²cos² + h²sin²) either side
-		AssertRectangle(t, Ell(Pt(0.0, 0.0), Sz(10.0, 4.0), Pi/6).Bounds(), Rect(Pt(0.0, 0.0), Sz(2*math.Hypot(10*math.Cos(Pi/6), 4*math.Sin(Pi/6)), 2*math.Hypot(10*math.Sin(Pi/6), 4*math.Cos(Pi/6)))))
+		AssertBox(t, Ell(Pt(0.0, 0.0), Sz(10.0, 4.0), Pi/6).Bounds(), Rect(Pt(0.0, 0.0), Sz(2*math.Hypot(10*math.Cos(Pi/6), 4*math.Sin(Pi/6)), 2*math.Hypot(10*math.Sin(Pi/6), 4*math.Cos(Pi/6)))).Bounds())
 	})
 }
 
 func TestEllipse_minMax(t *testing.T) {
-	t.Run("spans the extent", func(t *testing.T) {
-		a, b := Ell(Pt(1, 2), Sz(10, 4), 0).minMax()
+	a, b := Ell(Pt(1, 2), Sz(10, 4), 0).minMax()
 
-		AssertPoint(t, a, Pt(-9, -2))
-		AssertPoint(t, b, Pt(11, 6))
-	})
-	t.Run("matches the corners of Bounds", func(t *testing.T) {
-		for _, e := range ellipseFixtures {
-			a, b := e.minMax()
-			c, d := e.Bounds().MinMax()
-
-			AssertPoint(t, a, c, e.String())
-			AssertPoint(t, b, d, e.String())
-		}
-	})
+	AssertPoint(t, a, Pt(-9, -2))
+	AssertPoint(t, b, Pt(11, 6))
 }
 
 func TestEllipse_Translate(t *testing.T) {

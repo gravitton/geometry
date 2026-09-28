@@ -155,6 +155,22 @@ func AssertRectangle[T Number](t Testing, actual, expected Rectangle[T], message
 	return ok
 }
 
+// AssertBox asserts that actual equals expected (exactly for an integer T, within [EpsilonRelative] for a float T).
+func AssertBox[T Number](t Testing, actual, expected Box[T], messages ...string) bool {
+	t.Helper()
+
+	ok := true
+
+	if !AssertPoint(t, actual.Min, expected.Min, prefixed(messages, "Min.")...) {
+		ok = false
+	}
+	if !AssertPoint(t, actual.Max, expected.Max, prefixed(messages, "Max.")...) {
+		ok = false
+	}
+
+	return ok
+}
+
 // AssertPolygon asserts that actual equals expected (exactly for an integer T, within [EpsilonRelative] for a float T).
 func AssertPolygon[T Number](t Testing, actual, expected Polygon[T], messages ...string) bool {
 	t.Helper()

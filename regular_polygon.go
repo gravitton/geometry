@@ -190,11 +190,13 @@ func (rp RegularPolygon[T]) Inertia() float64 {
 	return n * math.Sin(central) * (2 + math.Cos(central)) / 24 * w * h * (w*w + h*h)
 }
 
-// Bounds returns the axis-aligned bounding rectangle of the vertices without building them, or
-// the zero rectangle for a polygon without vertices, like Polygon.Bounds: the rectangle on the
-// corners minMax finds.
-func (rp RegularPolygon[T]) Bounds() Rectangle[T] {
-	return RectangleFromMinMax(rp.minMax())
+// Bounds returns the axis-aligned bounding box of the vertices without building them, or the
+// zero box for a polygon without vertices, like Polygon.Bounds: the box on the corners minMax
+// finds.
+func (rp RegularPolygon[T]) Bounds() Box[T] {
+	a, b := rp.minMax()
+
+	return Box[T]{a, b}
 }
 
 // centralAngle returns the angle between consecutive vertices.
@@ -263,9 +265,8 @@ func (rp RegularPolygon[T]) nearestIndex(direction float64) int {
 	return Mod(int(math.Round(local/rp.centralAngle())), rp.N)
 }
 
-// minMax returns the minimum and maximum corner of the vertices, the corners of Bounds, exact
-// for an integer T where Bounds places a center: the pair the intersection tests reject shapes
-// by before examining any edge, without placing a rectangle. Each side is set by the vertex
+// minMax returns the minimum and maximum corner of the vertices, the corners of Bounds: the pair
+// the intersection tests reject shapes by before examining any edge. Each side is set by the vertex
 // nearest to that direction, at most half a step away, and reads that vertex as Vertices
 // places it, so the corners are exactly those of Polygon().Bounds(), rounded alike for an
 // integer T. An empty polygon returns two zero points.

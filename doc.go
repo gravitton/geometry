@@ -10,9 +10,9 @@
 //
 // A float result stored into an integer T goes through Cast, which rounds half away from
 // zero: Lerp, Midpoint, Multiply, Divide, Int and every method built on them follow it, so
-// the midpoint of an odd span rounds up. The exception is Rectangle, whose center is placed
-// by truncating half the size toward Min so that Max-Min stays exactly the size, and
-// Segment.Bounds().Center can therefore differ from Segment.Midpoint() by one unit on an odd span.
+// the midpoint of an odd span rounds up. The exception is Rectangle and Box, whose center is
+// placed by truncating half the size toward Min so that Max-Min stays exactly the size, and
+// Segment.Bounds().Center() can therefore differ from Segment.Midpoint() by one unit on an odd span.
 //
 // # Panics
 //
@@ -39,8 +39,8 @@
 //
 // # Boundaries
 //
-// Rectangle.Contains, Circle.Contains, Ellipse.Contains, Segment.Contains, Polygon.Contains,
-// RegularPolygon.Contains, Vector.LessOrEqual and the Intersects methods are closed and tolerant: a point within Epsilon of the boundary counts
+// Rectangle.Contains, Box.Contains, Circle.Contains, Ellipse.Contains, Segment.Contains,
+// Polygon.Contains, RegularPolygon.Contains, Vector.LessOrEqual and the Intersects methods are closed and tolerant: a point within Epsilon of the boundary counts
 // as on it, so a float rectangle contains the corners it was built from even where Min is
 // recomputed with a rounding error. Every such test is one comparison on a squared distance,
 // never on a coordinate, so containment, the distance methods and the intersection tests

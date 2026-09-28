@@ -217,16 +217,16 @@ func TestPolygon_Winding(t *testing.T) {
 
 func TestPolygon_Bounds(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertRectangle(t, Pol(squareVertices()).Bounds(), RectangleFromMinMax(Pt(0, 0), Pt(2, 2)))
+		AssertBox(t, Pol(squareVertices()).Bounds(), BoxFromMinMax(Pt(0, 0), Pt(2, 2)))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertRectangle(t, Pol(triangleVertices()).Bounds(), RectangleFromMinMax(Pt(0.0, 0.0), Pt(2.5, 1.0)))
+		AssertBox(t, Pol(triangleVertices()).Bounds(), BoxFromMinMax(Pt(0.0, 0.0), Pt(2.5, 1.0)))
 	})
 	t.Run("vertex order does not matter", func(t *testing.T) {
-		AssertRectangle(t, Pol([]Point[int]{Pt(3, -1), Pt(-2, 4), Pt(0, 0)}).Bounds(), RectangleFromMinMax(Pt(-2, -1), Pt(3, 4)))
+		AssertBox(t, Pol([]Point[int]{Pt(3, -1), Pt(-2, 4), Pt(0, 0)}).Bounds(), BoxFromMinMax(Pt(-2, -1), Pt(3, 4)))
 	})
 	t.Run("empty is the zero rectangle", func(t *testing.T) {
-		AssertRectangle(t, Polygon[int]{}.Bounds(), Rectangle[int]{})
+		AssertBox(t, Polygon[int]{}.Bounds(), Box[int]{})
 	})
 }
 
@@ -242,15 +242,6 @@ func TestPolygon_minMax(t *testing.T) {
 
 		AssertPoint(t, a, Pt(0, 0))
 		AssertPoint(t, b, Pt(0, 0))
-	})
-	t.Run("matches the corners of Bounds", func(t *testing.T) {
-		for _, p := range polygonFixtures() {
-			a, b := p.minMax()
-			c, d := p.Bounds().MinMax()
-
-			AssertPoint(t, a, c, p.String())
-			AssertPoint(t, b, d, p.String())
-		}
 	})
 }
 

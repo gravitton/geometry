@@ -140,10 +140,12 @@ func (e Ellipse[T]) Inertia() float64 {
 	return Pi * w * h * (w*w + h*h) / 4
 }
 
-// Bounds returns the axis-aligned bounding rectangle: the box on the corners minMax finds,
-// which touches the boundary at four points whatever the angle.
-func (e Ellipse[T]) Bounds() Rectangle[T] {
-	return RectangleFromMinMax(e.minMax())
+// Bounds returns the axis-aligned bounding box: the box on the corners minMax finds, which
+// touches the boundary at four points whatever the angle.
+func (e Ellipse[T]) Bounds() Box[T] {
+	a, b := e.minMax()
+
+	return Box[T]{a, b}
 }
 
 // worldPoint returns the point at the given offset from the center in the frame before the

@@ -14,9 +14,12 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 ## [Unreleased](https://github.com/gravitton/geometry/compare/v1.14.0...main)
 
 ### Breaking
+- **breaking** `Bounds` returns a `Box` on every shape and in the `Shape` interface rather than a `Rectangle`; `Box.Rectangle` converts it back
+- **breaking** `Rectangle.MinMaxString` is removed; `Bounds().String()` prints the same corners
 - **breaking** `Rectangle.Clamp(point)` is `Nearest`, which keeps a point within `Epsilon[T]()` of the boundary as it is, as `Contains` does, and on a rotated integer rectangle gives the foot on the edges of its rounded corners rather than a clamp in its own frame
 
 ### Added
+- `Box` – the axis-aligned box as `Min` and `Max` with no angle, closed within `Epsilon[T]()` like every shape: `BoxFromMin`, `BoxFromMinMax`, `BoxFromSize`, `Width`, `Height`, `Size`, `Center`, `Translate`, `Canonical`, `Inset`, `Outset`, `Clamp`, `Contains`, `DistanceTo`, `DistanceSquaredTo`, `Nearest`, `IntersectsBox`, `IntersectionBox`, `Union`, `Rectangle`, `Cast`, `Int`, `Float` and `String`, a `Shape` but not yet a `Collider`, aliased in `floats` and `ints`
 - `Nearest(point)` on every shape, and in the `Shape` interface: the point itself exactly where `Contains` holds, and otherwise the nearest point of the boundary, read off the same walk `DistanceSquaredTo` makes
 - `Rectangle.Clamp(rectangle)` – moves a rectangle by the shortest distance that brings it within another, at any two angles, centered on an axis of the other where it is the larger
 - `Polygon.Winding`, with the `Winding` type and its `String`, `ParseWinding` and text encoding – the sense the vertices run around their area, from the sign of the shoelace sum

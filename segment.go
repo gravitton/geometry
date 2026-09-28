@@ -62,14 +62,15 @@ func (s Segment[T]) Midpoint() Point[T] {
 	return s.Start.Midpoint(s.End)
 }
 
-// Bounds returns the axis-aligned bounding rectangle.
-func (s Segment[T]) Bounds() Rectangle[T] {
-	return RectangleFromMinMax(s.minMax())
+// Bounds returns the axis-aligned bounding box.
+func (s Segment[T]) Bounds() Box[T] {
+	a, b := s.minMax()
+
+	return Box[T]{a, b}
 }
 
-// minMax returns the minimum and maximum corner of the segment, the corners of Bounds, exact
-// for an integer T where Bounds places a center: the pair the intersection tests reject shapes
-// by before examining any edge, without placing a rectangle.
+// minMax returns the minimum and maximum corner of the segment, the corners of Bounds: the pair
+// the intersection tests reject shapes by before examining any edge.
 func (s Segment[T]) minMax() (Point[T], Point[T]) {
 	return Point[T]{min(s.Start.X, s.End.X), min(s.Start.Y, s.End.Y)}, Point[T]{max(s.Start.X, s.End.X), max(s.Start.Y, s.End.Y)}
 }

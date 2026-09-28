@@ -91,10 +91,10 @@ func TestCircle_Diameter(t *testing.T) {
 
 func TestCircle_Bounds(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertRectangle(t, Circ(Pt(1, 2), 10).Bounds(), Rect(Pt(1, 2), Sz(20, 20)))
+		AssertBox(t, Circ(Pt(1, 2), 10).Bounds(), BoxFromMinMax(Pt(-9, -8), Pt(11, 12)))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertRectangle(t, Circ(Pt(0.6, -0.25), 1.2).Bounds(), Rect(Pt(0.6, -0.25), Sz(2.4, 2.4)))
+		AssertBox(t, Circ(Pt(0.6, -0.25), 1.2).Bounds(), BoxFromMinMax(Pt(-0.6, -1.45), Pt(1.8, 0.95)))
 	})
 }
 
@@ -735,7 +735,7 @@ func TestCircle_IntersectsRectangle(t *testing.T) {
 		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
 
 		assert.False(t, Circ(Pt(1.5, 1.5), 0.5).IntersectsRectangle(diamond))
-		assert.True(t, Circ(Pt(1.5, 1.5), 0.5).IntersectsRectangle(diamond.Bounds()))
+		assert.True(t, Circ(Pt(1.5, 1.5), 0.5).IntersectsRectangle(diamond.Bounds().Rectangle()))
 		assert.True(t, Circ(Pt(1.0, 1.0), 0.5).IntersectsRectangle(diamond))
 	})
 	t.Run("a circle intersects its own bounds", func(t *testing.T) {
@@ -744,7 +744,7 @@ func TestCircle_IntersectsRectangle(t *testing.T) {
 				continue // a degenerate circle touches nothing
 			}
 
-			assert.True(t, c.IntersectsRectangle(c.Bounds()), fmt.Sprintf("%s: ", c))
+			assert.True(t, c.IntersectsRectangle(c.Bounds().Rectangle()), fmt.Sprintf("%s: ", c))
 		}
 	})
 }
@@ -953,8 +953,8 @@ func TestCircle_Properties(t *testing.T) {
 		for _, c := range circleFixtures {
 			bounds := c.Bounds()
 
-			assert.True(t, bounds.Center.Equal(c.Center), fmt.Sprintf("%s: ", c))
-			assert.True(t, bounds.Size.Equal(SzU(c.Diameter())), fmt.Sprintf("%s: ", c))
+			assert.True(t, bounds.Center().Equal(c.Center), fmt.Sprintf("%s: ", c))
+			assert.True(t, bounds.Size().Equal(SzU(c.Diameter())), fmt.Sprintf("%s: ", c))
 		}
 	})
 	t.Run("every anchor is on the boundary", func(t *testing.T) {

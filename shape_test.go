@@ -16,6 +16,7 @@ var (
 	_ Shape[int]    = Ellipse[int]{}
 	_ Shape[int]    = Polygon[int]{}
 	_ Shape[int]    = RegularPolygon[int]{}
+	_ Shape[int]    = Box[int]{}
 	_ Outline[int]  = Segment[int]{}
 	_ Outline[int]  = Rectangle[int]{}
 	_ Outline[int]  = Polygon[int]{}
@@ -46,6 +47,7 @@ func TestShape(t *testing.T) {
 		Ell(Pt(1.0, 2.0), Sz(4.0, 2.0), Pi/6),
 		Pol(triangleVertices()),
 		Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationFlatTop),
+		BoxFromMinMax(Pt(-1.0, 0.5), Pt(2.0, 3.0)),
 	}
 
 	t.Run("distance is zero exactly where contains holds", func(t *testing.T) {
@@ -229,8 +231,8 @@ func TestBody(t *testing.T) {
 	})
 	t.Run("the inertia is positive and below the area at the farthest corner", func(t *testing.T) {
 		for _, s := range solids {
-			a, b := s.Bounds().MinMax()
-			reach := max(a.DistanceSquaredTo(s.Centroid()), b.DistanceSquaredTo(s.Centroid()))
+			bounds := s.Bounds()
+			reach := max(bounds.Min.DistanceSquaredTo(s.Centroid()), bounds.Max.DistanceSquaredTo(s.Centroid()))
 
 			assert.True(t, s.Inertia() > 0, fmt.Sprintf("%v: ", s))
 			assert.True(t, s.Inertia() < s.Area()*reach, fmt.Sprintf("%v: ", s))

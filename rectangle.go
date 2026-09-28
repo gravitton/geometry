@@ -230,14 +230,12 @@ func (r Rectangle[T]) AspectRatio() float64 {
 	return r.Size.AspectRatio()
 }
 
-// Bounds returns the axis-aligned bounding rectangle: the rectangle itself while it is not
-// rotated, and the box from Min to Max once it is.
-func (r Rectangle[T]) Bounds() Rectangle[T] {
-	if r.IsAligned() {
-		return r
-	}
+// Bounds returns the axis-aligned bounding box, from Min to Max: the corners of the rectangle
+// while it is not rotated, and the extent of its vertices once it is.
+func (r Rectangle[T]) Bounds() Box[T] {
+	a, b := r.MinMax()
 
-	return RectangleFromMinMax(r.MinMax())
+	return Box[T]{a, b}
 }
 
 // localMinMax returns the offsets of the minimum and maximum corner from the center in the
@@ -378,8 +376,9 @@ func (r Rectangle[T]) ShrinkXY(amountX, amountY T) Rectangle[T] {
 }
 
 // Inset creates a new Rectangle inset by the given padding amounts, each edge moved in the
-// frame of the rectangle before its turn: Left moves the edge that was on the left, wherever
-// the turn has put it, and the center follows along the turned axes. An edge pushed past its
+// frame of the rectangle before its turn, as Box.Inset moves them on the box of that frame:
+// Left moves the edge that was on the left, wherever the turn has put it, and the center
+// follows along the turned axes. An edge pushed past its
 // opposite stops there, so a padding larger than the rectangle collapses it to a zero extent on
 // that axis, at the opposite edge rather than at the one that over-ran: too much Left collapses
 // it onto the right edge, too much Right onto the left one. Where both paddings on an axis
@@ -389,12 +388,9 @@ func (r Rectangle[T]) ShrinkXY(amountX, amountY T) Rectangle[T] {
 // For integer T the moved center of a rotated rectangle is rounded once, as worldRectangle places it.
 func (r Rectangle[T]) Inset(padding Padding[T]) Rectangle[T] {
 	a, b := r.localMinMax()
+	inset := Box[T]{a.Point(), b.Point()}.Inset(padding)
 
-	a = Vector[T]{min(a.X+padding.Left, b.X), min(a.Y+padding.Top, b.Y)}
-	b = Vector[T]{max(b.X-padding.Right, a.X), max(b.Y-padding.Bottom, a.Y)}
-	inset := RectangleFromMinMax(a.Point(), b.Point())
-
-	return r.worldRectangle(inset)
+	return r.worldRectangle(inset.Rectangle())
 }
 
 // Outset creates a new Rectangle expanded by the given padding amounts, the inverse of Inset.
@@ -446,19 +442,14 @@ func (r Rectangle[T]) AlignTo(direction Direction, point Point[T]) Rectangle[T] 
 // and angle: the rectangle itself where it already lies within, and otherwise moved by the
 // shortest distance that brings it in. On an axis of the other rectangle along which it is the
 // larger it is centered on the other instead. Two rectangles that are not rotated are clamped
-// exactly; otherwise the corners of this one are taken into the frame of the other, where it
-// is an aligned box and the extent of the corners lies within it exactly where the rectangle
-// does, and the move found there is turned back into the world. For integer T the move is
+// exactly, as Box.Clamp moves their Bounds; otherwise the corners of this one are taken into
+// the frame of the other, where it is an aligned box and the extent of the corners lies within
+// it exactly where the rectangle does, and the move Box.Clamp finds there is turned back into
+// the world. For integer T the move is
 // rounded once, so the corners can land a unit past the edges of a rotated rectangle.
 func (r Rectangle[T]) Clamp(rectangle Rectangle[T]) Rectangle[T] {
 	if r.IsAligned() && rectangle.IsAligned() {
-		a1, b1 := r.MinMax()
-		a2, b2 := rectangle.MinMax()
-
-		return r.Translate(Vector[T]{
-			r.clampAxis(a1.X, b1.X, r.Center.X, a2.X, b2.X, rectangle.Center.X),
-			r.clampAxis(a1.Y, b1.Y, r.Center.Y, a2.Y, b2.Y, rectangle.Center.Y),
-		})
+		return r.Translate(r.Bounds().clampOffset(rectangle.Bounds()))
 	}
 
 	var local [4]Point[float64]
@@ -466,9 +457,9 @@ func (r Rectangle[T]) Clamp(rectangle Rectangle[T]) Rectangle[T] {
 		local[i] = rectangle.localOffset(corner).Point()
 	}
 
-	extent := RectangleFromMinMax(minMaxOf(local[:]))
-	frame := Rectangle[float64]{Point[float64]{}, rectangle.Size.Float(), 0}
-	move := extent.Clamp(frame).Center.Subtract(extent.Center)
+	extent := BoxFromMinMax(minMaxOf(local[:]))
+	frame := Rectangle[float64]{Point[float64]{}, rectangle.Size.Float(), 0}.Bounds()
+	move := extent.clampOffset(frame)
 
 	return r.Translate(move.Rotate(rectangle.Angle).Cast[T]())
 }
@@ -599,26 +590,17 @@ func (r Rectangle[T]) IntersectionRectangle(rectangle Rectangle[T]) (Rectangle[T
 	}
 }
 
-// Union returns the smallest rectangle containing both: of their shared angle for two
-// rectangles of the same angle, found in their shared frame, and the axis-aligned box around
-// the Bounds of both for rectangles of different angles, which no rectangle of either angle
-// bounds tightly. For integer T the offset between the centers of two rotated rectangles is
+// Union returns the smallest rectangle containing both: the Box.Union of their Bounds for two
+// rectangles that are not rotated, of their shared angle for two rectangles of the same angle,
+// found in their shared frame, and the same Box.Union for rectangles of different angles,
+// which no rectangle of either angle bounds tightly. For integer T the offset between the centers of two rotated rectangles is
 // rounded into the shared frame and the result rounded back.
 func (r Rectangle[T]) Union(rectangle Rectangle[T]) Rectangle[T] {
-	switch {
-	case r.IsAligned() && rectangle.IsAligned():
-		a1, b1 := r.MinMax()
-		a2, b2 := rectangle.MinMax()
-
-		return RectangleFromMinMax(
-			Point[T]{min(a1.X, a2.X), min(a1.Y, a2.Y)},
-			Point[T]{max(b1.X, b2.X), max(b1.Y, b2.Y)},
-		)
-	case r.parallel(rectangle):
+	if !(r.IsAligned() && rectangle.IsAligned()) && r.parallel(rectangle) {
 		return r.worldRectangle(r.localRectangle(r).Union(r.localRectangle(rectangle)))
-	default:
-		return r.Bounds().Union(rectangle.Bounds())
 	}
+
+	return r.Bounds().Union(rectangle.Bounds()).Rectangle()
 }
 
 // IntersectsRegularPolygon reports whether the rectangle and the regular polygon share a
@@ -657,24 +639,6 @@ func (r Rectangle[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 	}
 
 	return false
-}
-
-// clampAxis returns the move along one axis that Clamp makes, from the extent a1 to b1 and the
-// center c1 of the rectangle being moved and those of the one it is clamped within: the
-// difference of the centers where the first is the larger, the least move that brings it
-// within otherwise, and zero where it already lies within. It reads no field of the
-// rectangle, only the extents it is given, so the receiver is unnamed.
-func (Rectangle[T]) clampAxis(a1, b1, c1, a2, b2, c2 T) T {
-	switch {
-	case b1-a1 > b2-a2:
-		return c2 - c1
-	case a1 < a2:
-		return a2 - a1
-	case b1 > b2:
-		return b2 - b1
-	default:
-		return 0
-	}
 }
 
 // walk folds every edge into the edgeWalk DistanceSquaredTo and Nearest both read, stopping
@@ -753,7 +717,7 @@ func (r Rectangle[T]) IsZero() bool {
 // IsAligned reports whether the rectangle is axis-aligned: its Angle is exactly zero, as Rect,
 // the corner constructors, Bounds and Rotate by a full turn leave it. No tolerance is applied,
 // since an angle a rounding error from zero still turns the corners off the lattice; Canonical
-// snaps such a residue to zero. An aligned rectangle has exact corners, coincides with its
+// snaps such a residue to zero. An aligned rectangle has exact corners, the corners of its
 // Bounds, and takes the fast path of every test.
 func (r Rectangle[T]) IsAligned() bool {
 	return r.Angle == 0
@@ -790,17 +754,11 @@ func (r Rectangle[T]) Float() Rectangle[float64] {
 
 // String returns the rectangle in the form of its constructor: Rect((x,y);WxH), center then
 // size, with the angle appended as Rect((x,y);WxH;a) for a rotated rectangle, as the JSON
-// carries it only then. See MinMaxString for the corners.
+// carries it only then. Bounds prints the corners.
 func (r Rectangle[T]) String() string {
 	if r.IsAligned() {
 		return fmt.Sprintf("Rect(%s;%s)", r.Center.String(), r.Size.String())
 	}
 
 	return fmt.Sprintf("Rect(%s;%s;%s)", r.Center.String(), r.Size.String(), String(r.Angle))
-}
-
-// MinMaxString returns the rectangle by its extent: (x,y)-(x,y), Min then Max. It is the form
-// to read positions from, where String mirrors how the rectangle was built.
-func (r Rectangle[T]) MinMaxString() string {
-	return fmt.Sprintf("%s-%s", r.Min().String(), r.Max().String())
 }

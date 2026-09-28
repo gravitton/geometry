@@ -63,17 +63,16 @@ func (c Circle[T]) Diameter() T {
 	return c.Radius * 2
 }
 
-// Bounds returns the axis-aligned bounding rectangle: the square of side Diameter
-// centered on the circle.
-func (c Circle[T]) Bounds() Rectangle[T] {
-	side := c.Diameter()
+// Bounds returns the axis-aligned bounding box: the square of side Diameter centered on the
+// circle.
+func (c Circle[T]) Bounds() Box[T] {
+	a, b := c.minMax()
 
-	return Rectangle[T]{c.Center, Size[T]{side, side}, 0}
+	return Box[T]{a, b}
 }
 
-// minMax returns the minimum and maximum corner of the circle, the corners of Bounds, exact
-// for an integer T: the pair the intersection tests reject shapes by before examining any
-// edge, without placing a rectangle.
+// minMax returns the minimum and maximum corner of the circle, the corners of Bounds: the pair
+// the intersection tests reject shapes by before examining any edge.
 func (c Circle[T]) minMax() (Point[T], Point[T]) {
 	return Point[T]{c.Center.X - c.Radius, c.Center.Y - c.Radius}, Point[T]{c.Center.X + c.Radius, c.Center.Y + c.Radius}
 }
