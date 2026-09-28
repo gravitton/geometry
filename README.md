@@ -266,6 +266,7 @@ json.Marshal(geom.Rect(geom.Pt(1, 2), geom.Sz(3, 4))) // {"x":1,"y":2,"w":3,"h":
 json.Marshal(geom.DirectionUp)                        // "Up"
 json.Marshal(geom.OrientationPointyTop)               // "PointyTop"
 geom.ParseSize[int]("4x2")                            // Size{4, 2}
+geom.ParsePoint[int]("(1,2)")                         // Point{1, 2}
 ```
 
 The flat JSON of `Rectangle`, `Circle` and `RegularPolygon` relies on the `embed` struct tag of the v2-backed
@@ -324,10 +325,7 @@ JSON last.
 - **`Segment.Clip()`** – the part of a segment inside a shape.
 - **`Polygon.Simplify(tolerance)`** – drops every vertex within the tolerance of the edge between its neighbours.
 - **`Ray`** – a half-line with origin and direction, for casts against every shape.
-- **`Ellipse` as a `Collider`** – the `Intersects` pairs with an ellipse, which meet at the roots of a quartic that
-  none of the circle pairs' closed forms reach; test its `RegularPolygon` of the wanted resolution until then.
-- **`Parse*` for every shape** – the inverse of `String`, which prints each shape in the form of its constructor;
-  `ParseSize` is the only one today, so no other shape reads back the string it printed.
+- **`Ellipse` as a `Collider`** – the `Intersects` pairs with an ellipse, which meet at the roots of a quartic that none of the circle pairs' closed forms reach.
 
 ## Credits
 

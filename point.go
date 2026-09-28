@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"fmt"
 	"math"
+	"strings"
 )
 
 // Point is a 2D point.
@@ -20,6 +21,29 @@ func Pt[T Number](x, y T) Point[T] {
 // ZeroPoint creates a new Point with zero values (0,0).
 func ZeroPoint[T Number]() Point[T] {
 	return Point[T]{}
+}
+
+// ParsePoint parses a point string in the form "(x,y)", the form String prints, each coordinate a
+// number Parse accepts. For integer T, only integer strings parse; a fractional value is an
+// error, not a rounded point.
+func ParsePoint[T Number](s string) (Point[T], error) {
+	coordinates, opened := strings.CutPrefix(s, "(")
+	coordinates, closed := strings.CutSuffix(coordinates, ")")
+	before, after, separated := strings.Cut(coordinates, ",")
+	if !opened || !closed || !separated {
+		return Point[T]{}, fmt.Errorf("invalid point format: %s", s)
+	}
+
+	x, err := Parse[T](before)
+	if err != nil {
+		return Point[T]{}, fmt.Errorf("invalid x value: %w", err)
+	}
+	y, err := Parse[T](after)
+	if err != nil {
+		return Point[T]{}, fmt.Errorf("invalid y value: %w", err)
+	}
+
+	return Point[T]{x, y}, nil
 }
 
 // XY returns the point X, Y values in standard order.

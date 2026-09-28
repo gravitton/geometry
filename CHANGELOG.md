@@ -24,6 +24,7 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 - `Polygon.ConvexHull` – the hull by a monotone chain, clockwise from the least vertex, allocating its result once
 - `Polygon.Lerp` – vertex-by-vertex interpolation paired by index, panicking for a different vertex count as `RegularPolygon.Lerp` does
 - `Vector.Slerp` – the direction turned along the shorter arc with `LerpAngle` and the length interpolated linearly, a zero vector taking the other's direction
+- `ParsePoint` – reads a point in the form `String` prints, `(x,y)`
 
 ### Removed
 - The `github.com/gravitton/x` dependency, whose one use in `Polygon` is now a private helper

@@ -2,9 +2,11 @@ package geom
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"slices"
+	"strconv"
 	"testing"
 
 	"github.com/gravitton/assert"
@@ -18,6 +20,47 @@ func TestPoint_Constructor(t *testing.T) {
 	t.Run("zero", func(t *testing.T) {
 		AssertPoint(t, ZeroPoint[int](), Point[int]{})
 		AssertPoint(t, ZeroPoint[float64](), Point[float64]{})
+	})
+}
+
+func TestParsePoint(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		point, err := ParsePoint[int]("(10,-16)")
+		assert.NoError(t, err)
+		AssertPoint(t, point, Pt(10, -16))
+	})
+	t.Run("float", func(t *testing.T) {
+		point, err := ParsePoint[float64]("(0.25,-1.50)")
+		assert.NoError(t, err)
+		AssertPoint(t, point, Pt(0.25, -1.5))
+	})
+	t.Run("int rejects fractional values", func(t *testing.T) {
+		_, err := ParsePoint[int]("(1.5,2)")
+		assert.Error(t, err)
+	})
+	t.Run("the parse error is wrapped", func(t *testing.T) {
+		_, err := ParsePoint[int8]("(300,1)")
+		assert.True(t, errors.Is(err, strconv.ErrRange))
+
+		_, err = ParsePoint[int]("(1,b)")
+		assert.True(t, errors.Is(err, strconv.ErrSyntax))
+	})
+	t.Run("malformed input", func(t *testing.T) {
+		for _, s := range []string{"", "()", "(1)", "(1,2,3)", "1,2", "(1,2", "1,2)", "((1,2))", "⟨1,2⟩", "( 1,2)", "(1, 2)"} {
+			_, err := ParsePoint[int](s)
+			assert.Error(t, err, s)
+		}
+	})
+	t.Run("reads back the string it printed", func(t *testing.T) {
+		for _, point := range pointFixtures {
+			parsed, err := ParsePoint[float64](point.String())
+			assert.NoError(t, err)
+			assert.Equal(t, parsed.String(), point.String())
+
+			rounded, err := ParsePoint[int](point.Int().String())
+			assert.NoError(t, err)
+			assert.Equal(t, rounded.String(), point.Int().String())
+		}
 	})
 }
 
