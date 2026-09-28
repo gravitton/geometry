@@ -25,8 +25,8 @@
 // through unchanged. A finite value outside the range of an integer T is not checked and
 // stores a platform-dependent value, as Cast documents. RegularPolygonOrientationAngle panics
 // for an Orientation that is neither OrientationFlatTop nor OrientationPointyTop, OrientationNone included: the
-// absence of an alignment has no angle to give. RegularPolygon.Lerp panics for a polygon with
-// a different vertex count, which has no shape between. Intersects panics for two Colliders
+// absence of an alignment has no angle to give. Polygon.Lerp and RegularPolygon.Lerp panic for
+// a polygon with a different vertex count, which has no shape between. Intersects panics for two Colliders
 // of another package, which have no method this package can reach.
 // These are the only panics: every other guard returns a value the type can express, such as
 // DirectionNone, an empty polygon, or the 0 that Size.AspectRatio gives for a zero height.

@@ -22,6 +22,11 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 - `Polygon.Winding`, with the `Winding` type and its `String`, `ParseWinding` and text encoding – the sense the vertices run around their area, from the sign of the shoelace sum
 - `Polygon.IsConvex` – convex and simple, decided on exact signs, so a star turning one way throughout is not convex
 - `Polygon.ConvexHull` – the hull by a monotone chain, clockwise from the least vertex, allocating its result once
+- `Polygon.Lerp` – vertex-by-vertex interpolation paired by index, panicking for a different vertex count as `RegularPolygon.Lerp` does
+- `Vector.Slerp` – the direction turned along the shorter arc with `LerpAngle` and the length interpolated linearly, a zero vector taking the other's direction
+
+### Removed
+- The `github.com/gravitton/x` dependency, whose one use in `Polygon` is now a private helper
 
 
 ## [v1.14.0 (2026-09-20)](https://github.com/gravitton/geometry/compare/v1.13.0...v1.14.0)

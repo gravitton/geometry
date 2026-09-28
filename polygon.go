@@ -7,8 +7,6 @@ import (
 	"math"
 	"slices"
 	"strings"
-
-	xslices "github.com/gravitton/x/slices"
 )
 
 // Polygon is a 2D polygon given by its vertices. The vertex count is not checked: a polygon with
@@ -198,7 +196,7 @@ func (p Polygon[T]) minMax() (Point[T], Point[T]) {
 
 // Translate creates a new Polygon translated by the given vector (applied to all vertices).
 func (p Polygon[T]) Translate(vector Vector[T]) Polygon[T] {
-	return Polygon[T]{xslices.Map(p.Points, func(point Point[T]) Point[T] {
+	return Polygon[T]{p.mapPoints(func(point Point[T]) Point[T] {
 		return point.Add(vector)
 	})}
 }
@@ -215,7 +213,7 @@ func (p Polygon[T]) MoveTo(point Point[T]) Polygon[T] {
 func (p Polygon[T]) Scale(factor float64) Polygon[T] {
 	center := p.Centroid()
 
-	return Polygon[T]{xslices.Map(p.Points, func(point Point[T]) Point[T] {
+	return Polygon[T]{p.mapPoints(func(point Point[T]) Point[T] {
 		return center.Add(point.Subtract(center).Multiply(factor))
 	})}
 }
@@ -224,7 +222,7 @@ func (p Polygon[T]) Scale(factor float64) Polygon[T] {
 func (p Polygon[T]) ScaleXY(factorX, factorY float64) Polygon[T] {
 	center := p.Centroid()
 
-	return Polygon[T]{xslices.Map(p.Points, func(point Point[T]) Point[T] {
+	return Polygon[T]{p.mapPoints(func(point Point[T]) Point[T] {
 		return center.Add(point.Subtract(center).MultiplyXY(factorX, factorY))
 	})}
 }
@@ -234,7 +232,7 @@ func (p Polygon[T]) ScaleXY(factorX, factorY float64) Polygon[T] {
 func (p Polygon[T]) Unscale(factor float64) Polygon[T] {
 	center := p.Centroid()
 
-	return Polygon[T]{xslices.Map(p.Points, func(point Point[T]) Point[T] {
+	return Polygon[T]{p.mapPoints(func(point Point[T]) Point[T] {
 		return center.Add(point.Subtract(center).Divide(factor))
 	})}
 }
@@ -244,14 +242,54 @@ func (p Polygon[T]) Unscale(factor float64) Polygon[T] {
 func (p Polygon[T]) UnscaleXY(factorX, factorY float64) Polygon[T] {
 	center := p.Centroid()
 
-	return Polygon[T]{xslices.Map(p.Points, func(point Point[T]) Point[T] {
+	return Polygon[T]{p.mapPoints(func(point Point[T]) Point[T] {
 		return center.Add(point.Subtract(center).DivideXY(factorX, factorY))
 	})}
 }
 
+// Lerp creates a new Polygon in linear interpolation towards the given polygon, each vertex
+// moving towards the vertex of the same index like Point.Lerp, extrapolating outside [0, 1]. The
+// vertices pair by index, so two outlines that start at different vertices or run in opposite
+// windings twist through each other on the way; align them first where that matters. Polygons
+// with a different vertex count have no shape between them, so Lerp panics for them, as
+// RegularPolygon.Lerp does for a different N.
+func (p Polygon[T]) Lerp(polygon Polygon[T], t float64) Polygon[T] {
+	if len(p.Points) != len(polygon.Points) {
+		panic(fmt.Sprintf("geom: lerp between polygons of %d and %d vertices", len(p.Points), len(polygon.Points)))
+	}
+
+	return Polygon[T]{p.mapPointsIndexed(func(i int, point Point[T]) Point[T] {
+		return point.Lerp(polygon.Points[i], t)
+	})}
+}
+
+// mapPoints applies fn to every vertex in order and returns the results in a new slice, as
+// mapPointsIndexed does for a mapping that needs the index of the vertex.
+func (p Polygon[T]) mapPoints[R any](fn func(Point[T]) R) []R {
+	return p.mapPointsIndexed(func(_ int, point Point[T]) R {
+		return fn(point)
+	})
+}
+
+// mapPointsIndexed applies fn to every vertex and its index in order and returns the results
+// in a new slice, the one allocation of every mapping of the polygon. A nil Points maps to nil,
+// so IsZero holds through every mapping.
+func (p Polygon[T]) mapPointsIndexed[R any](fn func(int, Point[T]) R) []R {
+	if p.Points == nil {
+		return nil
+	}
+
+	mapped := make([]R, len(p.Points))
+	for i, point := range p.Points {
+		mapped[i] = fn(i, point)
+	}
+
+	return mapped
+}
+
 // Transform creates a new Polygon by applying the given matrix to every vertex, like Point.Transform.
 func (p Polygon[T]) Transform[M Float](matrix Matrix[M]) Polygon[T] {
-	return Polygon[T]{xslices.Map(p.Points, func(point Point[T]) Point[T] {
+	return Polygon[T]{p.mapPoints(func(point Point[T]) Point[T] {
 		return point.Transform(matrix)
 	})}
 }
@@ -262,7 +300,7 @@ func (p Polygon[T]) Transform[M Float](matrix Matrix[M]) Polygon[T] {
 func (p Polygon[T]) Rotate(angle float64) Polygon[T] {
 	pivot := p.Centroid()
 
-	return Polygon[T]{xslices.Map(p.Points, func(point Point[T]) Point[T] {
+	return Polygon[T]{p.mapPoints(func(point Point[T]) Point[T] {
 		return point.RotateAround(pivot, angle)
 	})}
 }
@@ -574,23 +612,23 @@ func (p Polygon[T]) IsConvex() bool {
 
 // Cast converts the polygon to a Polygon of another number type, rounding as Cast does.
 func (p Polygon[T]) Cast[R Number]() Polygon[R] {
-	return Polygon[R]{xslices.Map(p.Points, Point[T].Cast[R])}
+	return Polygon[R]{p.mapPoints(Point[T].Cast[R])}
 }
 
 // Int converts the polygon to a Polygon[int].
 func (p Polygon[T]) Int() Polygon[int] {
-	return Polygon[int]{xslices.Map(p.Points, Point[T].Int)}
+	return Polygon[int]{p.mapPoints(Point[T].Int)}
 }
 
 // Float converts the polygon to a Polygon[float64].
 func (p Polygon[T]) Float() Polygon[float64] {
-	return Polygon[float64]{xslices.Map(p.Points, Point[T].Float)}
+	return Polygon[float64]{p.mapPoints(Point[T].Float)}
 }
 
 // String returns the polygon in the form of its constructor: Pol((x,y);(x,y);...), the
 // vertices separated as every other shape separates its fields.
 func (p Polygon[T]) String() string {
-	return fmt.Sprintf("Pol(%s)", strings.Join(xslices.Map(p.Points, Point[T].String), ";"))
+	return fmt.Sprintf("Pol(%s)", strings.Join(p.mapPoints(Point[T].String), ";"))
 }
 
 // MarshalJSON implements json.Marshaler.

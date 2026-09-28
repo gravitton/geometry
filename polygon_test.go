@@ -323,6 +323,44 @@ func TestPolygon_Unscale(t *testing.T) {
 	})
 }
 
+func TestPolygon_Lerp(t *testing.T) {
+	a := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(2.0, 0.0), Pt(2.0, 2.0), Pt(0.0, 2.0)})
+	b := Pol([]Point[float64]{Pt(10.0, 0.0), Pt(14.0, 0.0), Pt(14.0, 8.0), Pt(10.0, 8.0)})
+
+	t.Run("moves every vertex towards its pair", func(t *testing.T) {
+		AssertPolygon(t, a.Lerp(b, 0.5), Pol([]Point[float64]{Pt(5.0, 0.0), Pt(8.0, 0.0), Pt(8.0, 5.0), Pt(5.0, 5.0)}))
+	})
+	t.Run("the ends are the polygons themselves", func(t *testing.T) {
+		AssertPolygon(t, a.Lerp(b, 0), a)
+		AssertPolygon(t, a.Lerp(b, 1), b)
+	})
+	t.Run("extrapolates outside the unit range", func(t *testing.T) {
+		AssertPolygon(t, a.Lerp(b, 2), Pol([]Point[float64]{Pt(20.0, 0.0), Pt(26.0, 0.0), Pt(26.0, 14.0), Pt(20.0, 14.0)}))
+	})
+	t.Run("int rounds", func(t *testing.T) {
+		AssertPolygon(t, Pol(squareVertices()).Lerp(Pol([]Point[int]{Pt(5, 5), Pt(7, 5), Pt(7, 7), Pt(5, 7)}), 0.5), Pol([]Point[int]{Pt(3, 3), Pt(5, 3), Pt(5, 5), Pt(3, 5)}))
+	})
+	t.Run("nil stays nil", func(t *testing.T) {
+		assert.True(t, Pol[int](nil).Lerp(Pol[int](nil), 0.5).IsZero())
+	})
+	t.Run("a different vertex count panics", func(t *testing.T) {
+		assert.PanicsWith(t, func() {
+			a.Lerp(Pol(triangleVertices()), 0.5)
+		}, "geom: lerp between polygons of 4 and 3 vertices")
+	})
+	t.Run("towards a translation is a part of it over the fixtures", func(t *testing.T) {
+		for _, polygon := range polygonFixtures() {
+			for _, vector := range vectorFixtures {
+				moved := polygon.Translate(vector)
+
+				assert.True(t, polygon.Lerp(moved, 0).Equal(polygon), fmt.Sprintf("%s → %s: ", polygon, vector))
+				assert.True(t, polygon.Lerp(moved, 1).Equal(moved), fmt.Sprintf("%s → %s: ", polygon, vector))
+				assert.True(t, polygon.Lerp(moved, 0.25).Equal(polygon.Translate(vector.Multiply(0.25))), fmt.Sprintf("%s → %s: ", polygon, vector))
+			}
+		}
+	})
+}
+
 func TestPolygon_Transform(t *testing.T) {
 	t.Run("applies the matrix to every vertex", func(t *testing.T) {
 		matrix := Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)
@@ -977,6 +1015,7 @@ func TestPolygon_Immutable(t *testing.T) {
 	p.MoveTo(Pt(10, 10))
 	p.Scale(2)
 	p.ScaleXY(2, 3)
+	p.Lerp(Pol([]Point[int]{Pt(4, 4), Pt(6, 4)}), 0.5)
 	p.ConvexHull()
 
 	AssertVertices(t, p.Points, []Point[int]{Pt(0, 0), Pt(2, 0)})
