@@ -1088,6 +1088,222 @@ func TestSegment_IntersectionBox(t *testing.T) {
 	})
 }
 
+func TestSegment_ClipCircle(t *testing.T) {
+	circle := Circ(Pt(0.0, 0.0), 1.0)
+
+	t.Run("passing through gives the chord from Start to End", func(t *testing.T) {
+		assertSegments(t, partsOf(Seg(Pt(-2.0, 0.0), Pt(2.0, 0.0)).ClipCircle(circle)), []Segment[float64]{Seg(Pt(-1.0, 0.0), Pt(1.0, 0.0))})
+		assertSegments(t, partsOf(Seg(Pt(2.0, 0.0), Pt(-2.0, 0.0)).ClipCircle(circle)), []Segment[float64]{Seg(Pt(1.0, 0.0), Pt(-1.0, 0.0))})
+	})
+	t.Run("an endpoint inside is kept", func(t *testing.T) {
+		assertSegments(t, partsOf(Seg(Pt(0.5, 0.0), Pt(5.0, 0.0)).ClipCircle(circle)), []Segment[float64]{Seg(Pt(0.5, 0.0), Pt(1.0, 0.0))})
+		assertSegments(t, partsOf(Seg(Pt(-2.0, 0.0), Pt(0.0, 0.0)).ClipCircle(circle)), []Segment[float64]{Seg(Pt(-1.0, 0.0), Pt(0.0, 0.0))})
+	})
+	t.Run("inside is the segment itself", func(t *testing.T) {
+		assertSegments(t, partsOf(Seg(Pt(-0.5, 0.0), Pt(0.5, 0.5)).ClipCircle(circle)), []Segment[float64]{Seg(Pt(-0.5, 0.0), Pt(0.5, 0.5))})
+	})
+	t.Run("a tangent is the point of contact", func(t *testing.T) {
+		assertSegments(t, partsOf(Seg(Pt(-2.0, 1.0), Pt(2.0, 1.0)).ClipCircle(circle)), []Segment[float64]{Seg(Pt(0.0, 1.0), Pt(0.0, 1.0))})
+	})
+	t.Run("an endpoint touching from outside is that point", func(t *testing.T) {
+		assertSegments(t, partsOf(Seg(Pt(1.0, 0.0), Pt(2.0, 0.0)).ClipCircle(circle)), []Segment[float64]{Seg(Pt(1.0, 0.0), Pt(1.0, 0.0))})
+	})
+	t.Run("apart gives none", func(t *testing.T) {
+		assert.Nil(t, partsOf(Seg(Pt(-2.0, 2.0), Pt(2.0, 2.0)).ClipCircle(circle)))
+	})
+	t.Run("int rounds the crossings", func(t *testing.T) {
+		assertSegments(t, partsOf(Seg(Pt(-10, 1), Pt(10, 1)).ClipCircle(Circ(Pt(0, 0), 5))), []Segment[int]{Seg(Pt(-5, 1), Pt(5, 1))})
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		unit, through := Circ(Pt(0, 0), 5), Seg(Pt(-10, 0), Pt(10, 0))
+
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.ClipCircle(unit)
+		}), 0)
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, c := range circleFixtures {
+				assertClipped(t, s, partsOf(s.ClipCircle(c)), s.IntersectsCircle(c), c.EnclosesSegment, fmt.Sprintf("%s → %s: ", s, c))
+			}
+		}
+	})
+}
+
+func TestSegment_ClipPolygon(t *testing.T) {
+	square := Pol(squareVertices())
+	notched := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(2, 1), Pt(0, 4)})
+
+	t.Run("passing through gives the part between the crossings", func(t *testing.T) {
+		assertSegments(t, Seg(Pt(-1, 1), Pt(5, 1)).ClipPolygon(square), []Segment[int]{Seg(Pt(0, 1), Pt(2, 1))})
+		assertSegments(t, Seg(Pt(5, 1), Pt(-1, 1)).ClipPolygon(square), []Segment[int]{Seg(Pt(2, 1), Pt(0, 1))})
+	})
+	t.Run("an endpoint inside is kept", func(t *testing.T) {
+		assertSegments(t, Seg(Pt(1, 1), Pt(5, 1)).ClipPolygon(square), []Segment[int]{Seg(Pt(1, 1), Pt(2, 1))})
+	})
+	t.Run("inside is the segment itself", func(t *testing.T) {
+		assertSegments(t, Seg(Pt(1, 1), Pt(1, 2)).ClipPolygon(square), []Segment[int]{Seg(Pt(1, 1), Pt(1, 2))})
+		assertSegments(t, Seg(Pt(1, 1), Pt(1, 1)).ClipPolygon(square), []Segment[int]{Seg(Pt(1, 1), Pt(1, 1))})
+	})
+	t.Run("a concave polygon cuts the segment into parts from Start to End", func(t *testing.T) {
+		assertSegments(t, Seg(Pt(-1, 3), Pt(5, 3)).ClipPolygon(notched), []Segment[int]{Seg(Pt(0, 3), Pt(1, 3)), Seg(Pt(3, 3), Pt(4, 3))})
+		assertSegments(t, Seg(Pt(5, 3), Pt(-1, 3)).ClipPolygon(notched), []Segment[int]{Seg(Pt(4, 3), Pt(3, 3)), Seg(Pt(1, 3), Pt(0, 3))})
+	})
+	t.Run("a gap of one unit between two crossings is judged where it is", func(t *testing.T) {
+		u := Pol([]Point[int]{Pt(0, 0), Pt(5, 0), Pt(5, 4), Pt(3, 4), Pt(3, 1), Pt(2, 1), Pt(2, 4), Pt(0, 4)})
+
+		assertSegments(t, Seg(Pt(-1, 2), Pt(6, 2)).ClipPolygon(u), []Segment[int]{Seg(Pt(0, 2), Pt(2, 2)), Seg(Pt(3, 2), Pt(5, 2))})
+	})
+	t.Run("reflex vertices with the outside between them bound two parts", func(t *testing.T) {
+		assertSegments(t, Seg(Pt(-1, 4), Pt(9, 4)).ClipPolygon(Pol(notchedVertices())), []Segment[int]{Seg(Pt(0, 4), Pt(2, 4)), Seg(Pt(6, 4), Pt(8, 4))})
+	})
+	t.Run("a vertex touched from inside joins the parts either side", func(t *testing.T) {
+		assertSegments(t, Seg(Pt(-1, 1), Pt(5, 1)).ClipPolygon(notched), []Segment[int]{Seg(Pt(0, 1), Pt(4, 1))})
+	})
+	t.Run("a vertex touched from outside is a part of zero length", func(t *testing.T) {
+		assertSegments(t, Seg(Pt(1, 3), Pt(3, 1)).ClipPolygon(square), []Segment[int]{Seg(Pt(2, 2), Pt(2, 2))})
+	})
+	t.Run("along an edge gives the part of the edge it covers", func(t *testing.T) {
+		assertSegments(t, Seg(Pt(-1, 0), Pt(3, 0)).ClipPolygon(square), []Segment[int]{Seg(Pt(0, 0), Pt(2, 0))})
+	})
+	t.Run("apart and empty give none", func(t *testing.T) {
+		assert.Nil(t, Seg(Pt(3, -1), Pt(3, 3)).ClipPolygon(square))
+		assert.Nil(t, Seg(Pt(-1, 1), Pt(5, 1)).ClipPolygon(Pol[int](nil)))
+	})
+	t.Run("allocates the result alone", func(t *testing.T) {
+		through, apart := Seg(Pt(-1, 1), Pt(5, 1)), Seg(Pt(3, -1), Pt(3, 3))
+
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkSegments = through.ClipPolygon(square)
+		}), 1)
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkSegments = apart.ClipPolygon(square)
+		}), 0)
+	})
+	t.Run("matches ClipRectangle on the rectangle as a polygon", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, s := range segmentFixtures {
+				assertSegments(t, s.ClipPolygon(r.Polygon()), partsOf(s.ClipRectangle(r)), fmt.Sprintf("%s → %s: ", s, r))
+			}
+		}
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, p := range outlineFixtures() {
+			for _, s := range segmentFixtures {
+				assertClipped(t, s, s.ClipPolygon(p), s.IntersectsPolygon(p), p.EnclosesSegment, fmt.Sprintf("%s → %s: ", s, p))
+			}
+		}
+	})
+}
+
+func TestSegment_ClipRectangle(t *testing.T) {
+	rectangle := Rect(Pt(0, 0), Sz(4, 4))
+
+	t.Run("passing through gives the part between the crossings", func(t *testing.T) {
+		assertSegments(t, partsOf(Seg(Pt(-5, 0), Pt(5, 0)).ClipRectangle(rectangle)), []Segment[int]{Seg(Pt(-2, 0), Pt(2, 0))})
+		assertSegments(t, partsOf(Seg(Pt(5, 0), Pt(-5, 0)).ClipRectangle(rectangle)), []Segment[int]{Seg(Pt(2, 0), Pt(-2, 0))})
+	})
+	t.Run("an endpoint inside is kept", func(t *testing.T) {
+		assertSegments(t, partsOf(Seg(Pt(0, 0), Pt(5, 0)).ClipRectangle(rectangle)), []Segment[int]{Seg(Pt(0, 0), Pt(2, 0))})
+	})
+	t.Run("inside is the segment itself", func(t *testing.T) {
+		assertSegments(t, partsOf(Seg(Pt(-1, -1), Pt(1, 1)).ClipRectangle(rectangle)), []Segment[int]{Seg(Pt(-1, -1), Pt(1, 1))})
+	})
+	t.Run("a corner touched from outside is a part of zero length", func(t *testing.T) {
+		assertSegments(t, partsOf(Seg(Pt(1, 3), Pt(3, 1)).ClipRectangle(rectangle)), []Segment[int]{Seg(Pt(2, 2), Pt(2, 2))})
+	})
+	t.Run("along an edge gives the part of the edge it covers", func(t *testing.T) {
+		assertSegments(t, partsOf(Seg(Pt(-5, -2), Pt(5, -2)).ClipRectangle(rectangle)), []Segment[int]{Seg(Pt(-2, -2), Pt(2, -2))})
+		assertSegments(t, partsOf(Seg(Pt(0, -2), Pt(5, -2)).ClipRectangle(rectangle)), []Segment[int]{Seg(Pt(0, -2), Pt(2, -2))})
+	})
+	t.Run("apart gives none", func(t *testing.T) {
+		assert.Nil(t, partsOf(Seg(Pt(3, -5), Pt(3, 5)).ClipRectangle(rectangle)))
+		assert.Nil(t, partsOf(Seg(Pt(2, 4), Pt(4, 2)).ClipRectangle(rectangle)))
+	})
+	t.Run("a rotated rectangle clips on its turned edges", func(t *testing.T) {
+		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
+
+		assertSegments(t, partsOf(Seg(Pt(-3.0, 0.0), Pt(3.0, 0.0)).ClipRectangle(diamond)), []Segment[float64]{Seg(Pt(-Sqrt2, 0.0), Pt(Sqrt2, 0.0))})
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		through := Seg(Pt(-5, 1), Pt(5, 1))
+
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.ClipRectangle(rectangle)
+		}), 0)
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.ClipRectangle(rectangle.Rotate(Pi / 5))
+		}), 0)
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, s := range segmentFixtures {
+				assertClipped(t, s, partsOf(s.ClipRectangle(r)), s.IntersectsRectangle(r), r.EnclosesSegment, fmt.Sprintf("%s → %s: ", s, r))
+			}
+		}
+	})
+}
+
+func TestSegment_ClipRegularPolygon(t *testing.T) {
+	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0)
+
+	t.Run("passing through gives the part between the crossings", func(t *testing.T) {
+		assertSegments(t, partsOf(Seg(Pt(-3, 0), Pt(3, 0)).ClipRegularPolygon(diamond)), []Segment[int]{Seg(Pt(-2, 0), Pt(2, 0))})
+	})
+	t.Run("an endpoint inside is kept", func(t *testing.T) {
+		assertSegments(t, partsOf(Seg(Pt(0, 0), Pt(5, 0)).ClipRegularPolygon(diamond)), []Segment[int]{Seg(Pt(0, 0), Pt(2, 0))})
+	})
+	t.Run("inside is the segment itself", func(t *testing.T) {
+		assertSegments(t, partsOf(Seg(Pt(0, 0), Pt(1, 0)).ClipRegularPolygon(diamond)), []Segment[int]{Seg(Pt(0, 0), Pt(1, 0))})
+	})
+	t.Run("a vertex touched from outside is a part of zero length", func(t *testing.T) {
+		assertSegments(t, partsOf(Seg(Pt(2, -2), Pt(2, 2)).ClipRegularPolygon(diamond)), []Segment[int]{Seg(Pt(2, 0), Pt(2, 0))})
+	})
+	t.Run("apart and empty give none", func(t *testing.T) {
+		assert.Nil(t, partsOf(Seg(Pt(5, 0), Pt(6, 0)).ClipRegularPolygon(diamond)))
+		assert.Nil(t, partsOf(Seg(Pt(-3, 0), Pt(3, 0)).ClipRegularPolygon(RegPol(Pt(0, 0), Sz(2, 2), 0, 0))))
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		through := Seg(Pt(-3, 0), Pt(3, 0))
+
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.ClipRegularPolygon(diamond)
+		}), 0)
+	})
+	t.Run("matches the polygon of the vertices", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, rp := range regularPolygonFixtures {
+				assertSegments(t, partsOf(s.ClipRegularPolygon(rp)), s.ClipPolygon(rp.Polygon()), fmt.Sprintf("%s → %s: ", s, rp))
+			}
+		}
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for _, s := range segmentFixtures {
+				assertClipped(t, s, partsOf(s.ClipRegularPolygon(rp)), s.IntersectsRegularPolygon(rp), rp.EnclosesSegment, fmt.Sprintf("%s → %s: ", s, rp))
+			}
+		}
+	})
+}
+
+func TestSegment_ClipBox(t *testing.T) {
+	box := BoxFromMinMax(Pt(-2, -2), Pt(2, 2))
+
+	t.Run("passing through gives the part between the crossings", func(t *testing.T) {
+		assertSegments(t, partsOf(Seg(Pt(-5, 0), Pt(5, 0)).ClipBox(box)), []Segment[int]{Seg(Pt(-2, 0), Pt(2, 0))})
+	})
+	t.Run("apart gives none", func(t *testing.T) {
+		assert.Nil(t, partsOf(Seg(Pt(3, -5), Pt(3, 5)).ClipBox(box)))
+	})
+	t.Run("matches ClipRectangle on the box's Rectangle", func(t *testing.T) {
+		for _, b := range boxFixtures {
+			for _, s := range segmentFixtures {
+				assertSegments(t, partsOf(s.ClipBox(b)), partsOf(s.ClipRectangle(b.Rectangle())), fmt.Sprintf("%s → %s: ", s, b))
+			}
+		}
+	})
+}
+
 func TestSegment_Equal(t *testing.T) {
 	t.Run("same segment", func(t *testing.T) {
 		assert.True(t, Seg(Pt(1, 2), Pt(3, 5)).Equal(Seg(Pt(1, 2), Pt(3, 5))))
@@ -1279,6 +1495,49 @@ func TestSegment_Immutable(t *testing.T) {
 	s.Reverse()
 
 	AssertSegment(t, s, Seg(Pt(1, 2), Pt(3, 5)))
+}
+
+// partsOf gives the part a convex Clip method returns as the parts ClipPolygon would, so both
+// are checked alike: the part alone where it exists, and nil where it does not.
+func partsOf[T Number](part Segment[T], ok bool) []Segment[T] {
+	if !ok {
+		return nil
+	}
+
+	return []Segment[T]{part}
+}
+
+// assertSegments checks the parts a Clip method returns against the expected ones in order.
+func assertSegments[T Number](t *testing.T, actual, expected []Segment[T], messages ...string) {
+	t.Helper()
+
+	if !assert.Equal(t, len(actual), len(expected), prefixed(messages, "Length: ")...) {
+		return
+	}
+
+	for i := range actual {
+		AssertSegment(t, actual[i], expected[i], prefixed(messages, fmt.Sprintf("#%d.", i))...)
+	}
+}
+
+// assertClipped checks the parts a Clip method returns for a segment over the fixtures: they
+// exist exactly where the segment intersects the shape, each lies on the segment and within the
+// shape, and they follow one another from Start without overlapping.
+func assertClipped[T Number](t *testing.T, s Segment[T], parts []Segment[T], intersects bool, encloses func(Segment[T]) bool, message string) {
+	t.Helper()
+
+	assert.Equal(t, len(parts) > 0, intersects, message)
+
+	reached := 0.0
+	for _, part := range parts {
+		from, to := s.Start.DistanceTo(part.Start), s.Start.DistanceTo(part.End)
+
+		assert.True(t, s.Contains(part.Start) && s.Contains(part.End), message+part.String()+" on the segment: ")
+		assert.True(t, encloses(part), message+part.String()+" within the shape: ")
+		assert.True(t, LessOrEqual(reached, from) && LessOrEqual(from, to), message+part.String()+" in order: ")
+
+		reached = to
+	}
 }
 
 // segmentFixtures span axis-aligned, diagonal, degenerate, and backwards segments.

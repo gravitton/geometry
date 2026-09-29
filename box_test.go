@@ -454,33 +454,49 @@ func TestBox_IntersectionBox(t *testing.T) {
 	box := BoxFromMinMax(Pt(0, 0), Pt(4, 4))
 
 	t.Run("overlapping", func(t *testing.T) {
-		AssertBox(t, box.IntersectionBox(BoxFromMinMax(Pt(2, 1), Pt(6, 3))), BoxFromMinMax(Pt(2, 1), Pt(4, 3)))
+		overlap, ok := box.IntersectionBox(BoxFromMinMax(Pt(2, 1), Pt(6, 3)))
+
+		assert.True(t, ok)
+		AssertBox(t, overlap, BoxFromMinMax(Pt(2, 1), Pt(4, 3)))
 	})
-	t.Run("apart is the zero box", func(t *testing.T) {
-		AssertBox(t, box.IntersectionBox(BoxFromMinMax(Pt(5, 0), Pt(8, 4))), Box[int]{})
+	t.Run("apart is false", func(t *testing.T) {
+		_, ok := box.IntersectionBox(BoxFromMinMax(Pt(5, 0), Pt(8, 4)))
+
+		assert.False(t, ok)
 	})
 	t.Run("touching intersect in a zero extent", func(t *testing.T) {
-		AssertBox(t, box.IntersectionBox(BoxFromMinMax(Pt(4, 1), Pt(8, 3))), BoxFromMinMax(Pt(4, 1), Pt(4, 3)))
+		overlap, ok := box.IntersectionBox(BoxFromMinMax(Pt(4, 1), Pt(8, 3)))
+
+		assert.True(t, ok)
+		AssertBox(t, overlap, BoxFromMinMax(Pt(4, 1), Pt(4, 3)))
+	})
+	t.Run("meeting at the origin alone is the zero box, and true", func(t *testing.T) {
+		overlap, ok := BoxFromMinMax(Pt(-2, -2), Pt(0, 0)).IntersectionBox(box)
+
+		assert.True(t, ok)
+		assert.True(t, overlap.IsZero())
 	})
 	t.Run("a corner admitted by the tolerance is placed on the boundary", func(t *testing.T) {
-		overlap := BoxFromMinMax(Pt(0.0, 0.0), Pt(1.0, 1.0)).IntersectionBox(BoxFromMinMax(Pt(1+Delta/2, 0.0), Pt(2.0, 1.0)))
+		overlap, ok := BoxFromMinMax(Pt(0.0, 0.0), Pt(1.0, 1.0)).IntersectionBox(BoxFromMinMax(Pt(1+Delta/2, 0.0), Pt(2.0, 1.0)))
 
+		assert.True(t, ok)
 		AssertBox(t, overlap, BoxFromMinMax(Pt(1+Delta/2, 0.0), Pt(1+Delta/2, 1.0)))
 		assert.Equal(t, overlap.Width(), 0.0)
 	})
 	t.Run("over the fixtures", func(t *testing.T) {
 		for _, a := range boxFixtures {
 			for _, b := range boxFixtures {
-				overlap := a.IntersectionBox(b)
+				overlap, ok := a.IntersectionBox(b)
+				reversed, reversedOk := b.IntersectionBox(a)
 				message := fmt.Sprintf("%s → %s: ", a, b)
 
-				AssertBox(t, overlap, b.IntersectionBox(a), message)
-				if !a.IntersectsBox(b) {
-					assert.True(t, overlap.IsZero(), message)
-
+				assert.Equal(t, ok, a.IntersectsBox(b), message)
+				assert.Equal(t, reversedOk, ok, message)
+				if !ok {
 					continue
 				}
 
+				AssertBox(t, overlap, reversed, message)
 				for _, corner := range []Point[float64]{overlap.Min, overlap.Max} {
 					assert.True(t, a.Contains(corner) && b.Contains(corner), message)
 				}

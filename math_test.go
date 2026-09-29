@@ -14,6 +14,9 @@ var negativeZero = math.Copysign(0, -1)
 // sinkPoints is a shared slice variable used to store results in allocation tests, so the result escapes as it does for any caller.
 var sinkPoints []Point[int]
 
+// sinkSegments is the sinkPoints of the methods returning segments.
+var sinkSegments []Segment[int]
+
 // sinkBool is a shared boolean variable used to store results in benchmarking tests.
 var sinkBool bool
 

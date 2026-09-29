@@ -311,31 +311,7 @@ func (c Circle[T]) IntersectsSegment(segment Segment[T]) bool {
 // along the chord and the two agree to the last bit; where the chord is a tangent the endpoint
 // replaces it. For integer T the points are rounded like every other result stored into T.
 func (c Circle[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
-	entry, exit, ok := segment.chord(c)
-	start := c.touchesSquared(c.centerDistanceSquared(segment.Start))
-	end := c.touchesSquared(c.centerDistanceSquared(segment.End))
-
-	switch {
-	case ok && entry < exit:
-		if start {
-			entry, exit = segment.snapToEndpoint(entry, exit, 0)
-		}
-		if end {
-			entry, exit = segment.snapToEndpoint(entry, exit, 1)
-		}
-
-		return segment.pointsAt(entry, exit)
-	case start && end && segment.Vector().hasDirection():
-		return segment.pointsAt(0, 1)
-	case start:
-		return segment.pointsAt(0)
-	case end:
-		return segment.pointsAt(1)
-	case ok:
-		return segment.pointsAt(entry)
-	default:
-		return nil
-	}
+	return c.appendIntersectionSegment(nil, segment)
 }
 
 // IntersectsPolygon reports whether the circle and the polygon share a point: the center lies
@@ -384,6 +360,38 @@ func (c Circle[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 // the gap beyond it on the two axes with no edge to walk.
 func (c Circle[T]) IntersectsBox(box Box[T]) bool {
 	return c.containsSquared(box.DistanceSquaredTo(c.Center))
+}
+
+// appendIntersectionSegment appends the points IntersectionSegment returns to dst and returns
+// the extended slice, deduplicating and ordering only the points it appends: a nil dst
+// allocates them once, and a buffer with room for the two lets Segment.ClipCircle read them
+// without allocating.
+func (c Circle[T]) appendIntersectionSegment(dst []Point[T], segment Segment[T]) []Point[T] {
+	entry, exit, ok := segment.chord(c)
+	start := c.touchesSquared(c.centerDistanceSquared(segment.Start))
+	end := c.touchesSquared(c.centerDistanceSquared(segment.End))
+
+	switch {
+	case ok && entry < exit:
+		if start {
+			entry, exit = segment.snapToEndpoint(entry, exit, 0)
+		}
+		if end {
+			entry, exit = segment.snapToEndpoint(entry, exit, 1)
+		}
+
+		return segment.appendPointsAt(dst, entry, exit)
+	case start && end && segment.Vector().hasDirection():
+		return segment.appendPointsAt(dst, 0, 1)
+	case start:
+		return segment.appendPointsAt(dst, 0)
+	case end:
+		return segment.appendPointsAt(dst, 1)
+	case ok:
+		return segment.appendPointsAt(dst, entry)
+	default:
+		return dst
+	}
 }
 
 // centerDistanceSquared returns the squared distance from the center to the point, in

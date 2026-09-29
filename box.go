@@ -219,19 +219,19 @@ func (b Box[T]) IntersectsBox(box Box[T]) bool {
 	return b.distanceSquaredToBox(box) == 0
 }
 
-// IntersectionBox returns the box common to both, and the zero box when they do not intersect.
-// Touching boxes intersect in a box of zero width or height, exactly where IntersectsBox holds,
-// which is asked first: a corner admitted by the tolerance is placed on the boundary of the
-// other box, never beyond it. A closed box has no empty form, so the zero box is also the
-// answer for two boxes that meet at the origin alone; ask IntersectsBox where that matters.
-func (b Box[T]) IntersectionBox(box Box[T]) Box[T] {
+// IntersectionBox returns the box common to both, and false when they do not intersect.
+// Touching boxes intersect in a box of zero width or height, and boxes meeting at a corner in
+// the zero-sized box at that corner, exactly where IntersectsBox holds, which is asked first:
+// a corner admitted by the tolerance is placed on the boundary of the other box, never beyond
+// it.
+func (b Box[T]) IntersectionBox(box Box[T]) (Box[T], bool) {
 	if !b.IntersectsBox(box) {
-		return Box[T]{}
+		return Box[T]{}, false
 	}
 
 	a := Point[T]{max(b.Min.X, box.Min.X), max(b.Min.Y, box.Min.Y)}
 
-	return Box[T]{a, Point[T]{max(min(b.Max.X, box.Max.X), a.X), max(min(b.Max.Y, box.Max.Y), a.Y)}}
+	return Box[T]{a, Point[T]{max(min(b.Max.X, box.Max.X), a.X), max(min(b.Max.Y, box.Max.Y), a.Y)}}, true
 }
 
 // Union returns the smallest box containing both.

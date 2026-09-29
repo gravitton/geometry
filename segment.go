@@ -420,6 +420,103 @@ func (s Segment[T]) IntersectionBox(box Box[T]) []Point[T] {
 	return s.IntersectionRectangle(box.Rectangle())
 }
 
+// ClipCircle returns the part of the segment inside the circle, boundary included within
+// Epsilon of T, and false where they share no point: from Start where the circle contains it,
+// or else from the first point IntersectionCircle returns, to End where the circle contains it,
+// or else to the last. A segment tangent to the circle, or touching it with an endpoint from
+// outside, is clipped to that one point, so the part exists exactly where IntersectsCircle
+// holds. It allocates nothing.
+func (s Segment[T]) ClipCircle(circle Circle[T]) (Segment[T], bool) {
+	var buffer [2]Point[T]
+	crossings := circle.appendIntersectionSegment(buffer[:0], s)
+
+	return s.clipConvex(crossings, circle.Contains(s.Start), circle.Contains(s.End))
+}
+
+// ClipPolygon returns the parts of the segment inside the polygon, boundary included within
+// Epsilon of T, from Start to End. The points IntersectionPolygon returns cut the segment into
+// pieces, each wholly inside or outside, and each piece is judged at its midpoint by the walk
+// Contains makes, Start and End by Contains itself. Pieces inside run together across a point
+// where the segment touches the boundary from inside, such as a reflex vertex, and a point where
+// it touches the boundary from outside is a part of zero length, so there are parts exactly
+// where IntersectsPolygon holds. The midpoint is taken in float64, so for an integer T a gap
+// between two crossings is judged where it is rather than at a rounded point on either side;
+// the crossings themselves are rounded as IntersectionPolygon rounds them. The polygon follows
+// the even-odd rule of Contains, and an empty polygon clips everything away.
+//
+// The crossings are not gathered: the edges are swept once for each, finding the next beyond
+// the last, so the result is the one allocation, made on the first part with room for the one
+// a convex polygon gives; only a concave polygon grows it.
+func (s Segment[T]) ClipPolygon(polygon Polygon[T]) []Segment[T] {
+	var clipped []Segment[T]
+	var from Point[T]
+
+	point, contained, open := s.Start, polygon.Contains(s.Start), false
+	for {
+		sweep := edgeSweep[T]{segment: s, reached: point}
+		for edge := range polygon.Edges() {
+			sweep.add(edge)
+		}
+
+		next, ahead := sweep.point, sweep.found
+		if !ahead && !point.Equal(s.End) {
+			next, ahead = s.End, true
+		}
+
+		inside := ahead && polygon.containsMidpoint(point, next)
+		if !open && (contained || sweep.touched || inside) {
+			from, open = point, true
+		}
+
+		if open && !inside {
+			clipped, open = append(clipped, Segment[T]{from, point}), false
+		}
+
+		if !ahead {
+			return clipped
+		}
+
+		point, contained = next, sweep.found || polygon.Contains(next)
+	}
+}
+
+// ClipRectangle returns the part of the segment inside the rectangle, boundary included within
+// Epsilon of T, whatever its angle, and false where they share no point: from Start where the
+// rectangle contains it, or else from the first point IntersectionRectangle returns, to End
+// where the rectangle contains it, or else to the last. A segment along an edge is clipped to
+// the part of the edge it covers, and one touching a corner from outside to that corner, so
+// the part exists exactly where IntersectsRectangle holds. It allocates nothing.
+func (s Segment[T]) ClipRectangle(rectangle Rectangle[T]) (Segment[T], bool) {
+	span := edgeSpan[T]{segment: s}
+	for edge := range rectangle.Edges() {
+		span.add(edge)
+	}
+
+	return s.clipConvex(span.crossings(), rectangle.Contains(s.Start), rectangle.Contains(s.End))
+}
+
+// ClipRegularPolygon returns the part of the segment inside the regular polygon, boundary
+// included within Epsilon of T, and false where they share no point: from Start where the
+// polygon contains it, or else from the first point IntersectionRegularPolygon returns, to End
+// where the polygon contains it, or else to the last, the part ClipPolygon returns on the
+// polygon's Polygon form, without building it. A segment touching a vertex from outside is
+// clipped to that vertex, so the part exists exactly where IntersectsRegularPolygon holds, and
+// an empty polygon clips everything away. It allocates nothing.
+func (s Segment[T]) ClipRegularPolygon(polygon RegularPolygon[T]) (Segment[T], bool) {
+	span := edgeSpan[T]{segment: s}
+	for edge := range polygon.Edges() {
+		span.add(edge)
+	}
+
+	return s.clipConvex(span.crossings(), polygon.Contains(s.Start), polygon.Contains(s.End))
+}
+
+// ClipBox returns the part of the segment inside the box, as ClipRectangle clips it to the
+// box's Rectangle: the segment as a viewport shows it.
+func (s Segment[T]) ClipBox(box Box[T]) (Segment[T], bool) {
+	return s.ClipRectangle(box.Rectangle())
+}
+
 // distanceSquaredTo returns the squared distance to the point with no tolerance applied, which
 // DistanceSquaredTo snaps to zero within Epsilon of T.
 func (s Segment[T]) distanceSquaredTo(point Point[T]) float64 {
@@ -560,13 +657,14 @@ func (Segment[T]) snapToEndpoint(entry, exit, endpoint float64) (float64, float6
 	return entry, endpoint
 }
 
-// pointsAt returns the points at the given fractions along the segment that lie within it,
-// the endpoints included within Epsilon of T scaled to the length, so the tolerance is the same
-// distance the Intersects methods apply, with points that compare Equal counted once, as
-// crossings counts them, allocated once on the first point with room for the two a segment can
-// have. The fractions must be in increasing order.
-func (s Segment[T]) pointsAt(fractions ...float64) []Point[T] {
-	var points []Point[T]
+// appendPointsAt appends to dst the points at the given fractions along the segment that lie
+// within it, the endpoints included within Epsilon of T scaled to the length, so the tolerance
+// is the same distance the Intersects methods apply, with points that compare Equal counted
+// once, as edgeIntersections counts them. The fractions must be in increasing order. Only the
+// appended points are deduplicated, and a nil dst is allocated once on the first point with
+// room for the two a segment can have.
+func (s Segment[T]) appendPointsAt(dst []Point[T], fractions ...float64) []Point[T] {
+	n := len(dst)
 	for _, t := range fractions {
 		if !s.containsAt(t) {
 			continue
@@ -574,18 +672,18 @@ func (s Segment[T]) pointsAt(fractions ...float64) []Point[T] {
 
 		lerped := s.Float().PointAt(Clamp(t, 0, 1))
 		point := lerped.Cast[T]()
-		if slices.ContainsFunc(points, point.Equal) {
+		if slices.ContainsFunc(dst[n:], point.Equal) {
 			continue
 		}
 
-		if points == nil {
-			points = make([]Point[T], 0, 2)
+		if dst == nil {
+			dst = make([]Point[T], 0, 2)
 		}
 
-		points = append(points, point)
+		dst = append(dst, point)
 	}
 
-	return points
+	return dst
 }
 
 // containsAt reports whether the fraction t of the way along the segment lies within it, the
@@ -601,6 +699,32 @@ func (s Segment[T]) containsAt(t float64) bool {
 // method returns its points in.
 func (s Segment[T]) compareDistance(a, b Point[T]) int {
 	return cmp.Compare(s.Start.DistanceSquaredTo(a), s.Start.DistanceSquaredTo(b))
+}
+
+// clipConvex returns the part of the segment inside a convex shape, given the crossings of its
+// boundary in order from Start and whether the shape contains Start and End: the whole segment
+// where it contains both, since a convex shape holds every point between two of its own, and
+// otherwise the span from the first of its points on the segment to the last, a contained
+// endpoint standing in for the crossing beside it. It is false where the shape contains
+// neither endpoint and the segment crosses no boundary.
+func (s Segment[T]) clipConvex(crossings []Point[T], start, end bool) (Segment[T], bool) {
+	if start && end {
+		return s, true
+	}
+
+	if len(crossings) == 0 {
+		return Segment[T]{}, false
+	}
+
+	clipped := Segment[T]{crossings[0], crossings[len(crossings)-1]}
+	if start {
+		clipped.Start = s.Start
+	}
+	if end {
+		clipped.End = s.End
+	}
+
+	return clipped, true
 }
 
 // crossesRay reports whether a ray cast from the point along +X crosses the segment, counting

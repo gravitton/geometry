@@ -116,7 +116,7 @@ view.Inset(geom.PadU(16))                   // (16,16)-(784,584)
 
 tip := geom.BoxFromMin(geom.Pt(750, 20), geom.Sz(120, 40))
 tip.Clamp(view)           // (680,20)-(800,60), moved by the least that brings it inside
-view.IntersectionBox(tip) // (750,20)-(800,60), the part on screen
+view.IntersectionBox(tip) // (750,20)-(800,60), true: the part on screen
 
 r.Bounds().IntersectsBox(view) // every shape's Bounds is a Box, for the broad pass
 view.IntersectsRectangle(r)    // a Box is a Collider, tested against every shape
@@ -164,6 +164,9 @@ p.Points[3]               // Point{2, 1}, the notch
 p.Winding()               // WindingClockwise, the winding of a Rectangle's corners
 p.IsConvex()              // false, the notch turns the other way
 p.ConvexHull()            // Pol((0,0);(4,0);(4,4);(0,4)), the notch dropped
+
+edged := geom.Pol([]geom.Point[int]{{0, 0}, {2, 0}, {4, 0}, {4, 4}, {0, 4}})
+edged.Simplify(0) // Pol((0,0);(4,0);(4,4);(0,4)), the vertex on an edge dropped; a tolerance drops the ones near it
 
 for vertex := range p.Vertices() { // the same loop draws a Segment, Rectangle or RegularPolygon
 	vertex.Float()
@@ -224,6 +227,8 @@ point, ok := s.IntersectionSegment(m) // where two segments cross
 overlap, ok := a.IntersectionRectangle(b) // the overlap of two rectangles
 c.IntersectionCircle(d)               // zero, one or two points where two circles cross
 s.IntersectionCircle(c)               // where a segment crosses a boundary; also of a rectangle or a polygon
+s.ClipBox(view)                       // the part of s inside, and false where there is none
+s.ClipPolygon(p)                      // the parts inside a concave polygon, from Start to End
 ```
 
 The pair logic is written once, on the earlier shape of `Circle`, `Segment`, `Polygon`, `Rectangle`,
@@ -349,8 +354,6 @@ JSON last.
 
 ## Planned
 
-- **`Segment.Clip()`** – the part of a segment inside a shape.
-- **`Polygon.Simplify(tolerance)`** – drops every vertex within the tolerance of the edge between its neighbours.
 - **`Ray`** – a half-line with origin and direction, for casts against every shape.
 
 ## Credits

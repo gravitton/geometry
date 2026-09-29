@@ -1,6 +1,7 @@
 package geom
 
 import (
+	"cmp"
 	"iter"
 	"slices"
 )
@@ -120,6 +121,77 @@ func (e *edgeIntersections[T]) sorted() []Point[T] {
 	})
 
 	return e.points
+}
+
+// edgeSpan folds the points where a segment crosses the edges of a convex outline into the
+// first and the last from the segment's Start, as edgeIntersections collects them all: the ends
+// of the part inside, which is all Segment.clipConvex reads. It holds them in an array of its
+// own rather than a slice, so a shape that only clips allocates nothing.
+type edgeSpan[T Number] struct {
+	segment Segment[T]
+	ends    [2]Point[T]
+	crossed bool
+}
+
+// add folds one edge in, keeping its crossing with the segment where it comes before the first
+// or after the last so far.
+func (e *edgeSpan[T]) add(edge Segment[T]) {
+	point, ok := e.segment.IntersectionSegment(edge)
+
+	switch {
+	case !ok:
+	case !e.crossed:
+		e.ends, e.crossed = [2]Point[T]{point, point}, true
+	case e.segment.compareDistance(point, e.ends[0]) < 0:
+		e.ends[0] = point
+	case e.segment.compareDistance(point, e.ends[1]) > 0:
+		e.ends[1] = point
+	}
+}
+
+// crossings returns the first and the last crossing from Start, the same point twice where
+// there was one, and nil where there was none.
+func (e *edgeSpan[T]) crossings() []Point[T] {
+	if !e.crossed {
+		return nil
+	}
+
+	return e.ends[:]
+}
+
+// edgeSweep finds, among the points where a segment crosses the edges of an outline, the next
+// after a point already reached on the way from Start to End: the nearest beyond it, taken in
+// the order edgeIntersections sorts them with Point.Compare deciding a tie, so no two distinct
+// points share a place and none is skipped. A point that compares Equal to the reached one is
+// that point again, and the sweep notes that the reached point touches the boundary. A shape
+// sweeps its Edges once for each point it reaches, so the crossings are visited in order
+// without gathering them into a slice.
+type edgeSweep[T Number] struct {
+	segment Segment[T]
+	reached Point[T]
+	point   Point[T]
+	found   bool
+	touched bool
+}
+
+// add folds one edge in, keeping its crossing with the segment where it lies beyond the reached
+// point and before the nearest found so far.
+func (e *edgeSweep[T]) add(edge Segment[T]) {
+	point, ok := e.segment.IntersectionSegment(edge)
+
+	switch {
+	case !ok:
+	case point.Equal(e.reached):
+		e.touched = true
+	case e.precedes(e.reached, point) && (!e.found || e.precedes(point, e.point)):
+		e.point, e.found = point, true
+	}
+}
+
+// precedes reports whether a comes before b on the way from the segment's Start: nearer to
+// it, or as near and first by Point.Compare.
+func (e *edgeSweep[T]) precedes(a, b Point[T]) bool {
+	return cmp.Or(e.segment.compareDistance(a, b), a.Compare(b)) < 0
 }
 
 // edgeProbe tests the edges of two outlines against each other one pair at a time, the inner

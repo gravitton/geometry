@@ -28,6 +28,8 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 - `Polygon.Winding`, with the `Winding` type and its `String`, `ParseWinding` and text encoding – the sense the vertices run around their area, from the sign of the shoelace sum
 - `Polygon.IsConvex` – convex and simple, decided on exact signs, so a star turning one way throughout is not convex
 - `Polygon.ConvexHull` – the hull by a monotone chain, clockwise from the least vertex, allocating its result once
+- `Segment.ClipCircle`, `ClipPolygon`, `ClipRectangle`, `ClipRegularPolygon` and `ClipBox` – the part of a segment inside a shape, boundary included within `Epsilon[T]()`, existing exactly where `Intersects` holds: the convex shapes return one part and a flag, allocation-free, from the contained endpoints and the first and last crossing; `ClipPolygon` returns the parts from `Start` to `End`, judging each piece between crossings at its midpoint in `float64` and sweeping the edges once per crossing rather than gathering them, so only the result allocates
+- `Polygon.Simplify(tolerance)` – Douglas–Peucker from the least vertex around and back: every dropped vertex lies within the tolerance of the edge replacing it, at zero tolerance only repeated and collinear vertices go, the kept ones stay in the polygon's order, simplifying again changes nothing, and the result is the one allocation
 - `Polygon.Lerp` – vertex-by-vertex interpolation paired by index, panicking for a different vertex count as `RegularPolygon.Lerp` does
 - `Vector.Slerp` – the direction turned along the shorter arc with `LerpAngle` and the length interpolated linearly, a zero vector taking the other's direction
 - `ParsePoint` – reads a point in the form `String` prints, `(x,y)`
