@@ -360,6 +360,10 @@ rectangles of different angles, which have no single answer. `Vector.Less` is st
 turns. Anything else rounds into a different matrix; use a float `Matrix` there. `Transform` takes a float matrix, so
 convert an integer one with `Float()` at the call.
 
+**Reproducibility.** Every product is rounded before it is added, so the same inputs give the same bits on amd64 and
+arm64, where the compiler would otherwise fuse the two into one multiply-add. Only what `math` computes from an angle
+(`Sincos`, `Atan2`, `Hypot`) may differ in the last bit between architectures.
+
 **Methods.** Every type has `Equal`, `Int` and `String`; every shape adds `Bounds` and `Contains`, and every shape but
 `Ellipse` adds `Intersects`.
 Each file lists its methods in the same order, and the tests follow it: constructors, properties (`Width`, `Area`,

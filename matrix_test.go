@@ -153,6 +153,9 @@ func TestMatrix_Multiply(t *testing.T) {
 	t.Run("narrow integers do not overflow mid-computation", func(t *testing.T) {
 		AssertMatrix(t, Mat[int8](100, 50, 0, 0, 1, 0).Multiply(Mat[int8](2, 0, 0, -2, 1, 0)), Mat[int8](100, 50, 0, -2, 1, 0))
 	})
+	t.Run("rounds each product, the same bits on every architecture", func(t *testing.T) {
+		assert.Equal(t, Mat(tenth, 0.2, 0.0, 0.0, 1.0, 0.0).Multiply(Mat(1.1, 0.0, 0.0, 1.3, 1.0, 0.0)).A, 0.37)
+	})
 	t.Run("translations compose additively", func(t *testing.T) {
 		AssertMatrix(t, TranslationMatrix(5.0, 3.0).Multiply(TranslationMatrix(2.0, 1.0)), TranslationMatrix(7.0, 4.0))
 		AssertMatrix(t, TranslationMatrix[float32](5, 3).Multiply(TranslationMatrix[float32](2, 1)), TranslationMatrix[float32](7, 4))

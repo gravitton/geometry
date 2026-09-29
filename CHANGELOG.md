@@ -38,7 +38,11 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 - `Vector.Slerp` – the direction turned along the shorter arc with `LerpAngle` and the length interpolated linearly, a zero vector taking the other's direction
 - `ParsePoint` – reads a point in the form `String` prints, `(x,y)`
 
+### Changed
+- `Point.Transform` and `Vector.Transform` read the matrix fields directly rather than converting the whole matrix per point, about 7% faster over a loop of points
+
 ### Fixed
+- The same inputs give the same bits on every architecture: every product added to another value is rounded on its own first, so gc no longer fuses it into a multiply-add on arm64 and on amd64 v3, which rounded `Lerp`, `LerpAngle`, `Matrix.Multiply`, `Matrix.Inverse`, `Transform`, `Vector.Rotate`, `LengthSquared`, `OctileDistanceTo`, the polygon centroid and inertia sums, the regular polygon vertex angles, the circle crossings and the ellipse measures differently there; only what `math` computes from an angle may still differ in the last bit
 - `Segment.IntersectionSegment` on nearly collinear float segments: rounding could give their ends opposite sides of each other's line, and the crossing then landed off both; a crossing outside either segment is now no crossing, and the endpoint lying on the other is the answer, in `IntersectsSegment` and `DistanceToSegment` too
 
 ### Removed

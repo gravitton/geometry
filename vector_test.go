@@ -88,6 +88,9 @@ func TestVector_LengthSquared(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
 		AssertNumber(t, Vec(0.6, -0.25).LengthSquared(), 0.4225)
 	})
+	t.Run("rounds each product, the same bits on every architecture", func(t *testing.T) {
+		assert.Equal(t, Vec(tenth, 0.3).LengthSquared(), 0.10000000000000001)
+	})
 }
 
 func TestVector_Angle(t *testing.T) {
@@ -513,6 +516,9 @@ func TestVector_Dot(t *testing.T) {
 	t.Run("perpendicular vectors are zero", func(t *testing.T) {
 		AssertNumber(t, Vec(1, 0).Dot(Vec(0, 1)), 0)
 	})
+	t.Run("rounds each product, the same bits on every architecture", func(t *testing.T) {
+		assert.Equal(t, Vec(tenth, 0.3).Dot(Vec(tenth, 0.3)), 0.10000000000000001)
+	})
 	t.Run("a float vector and its normal are exactly zero", func(t *testing.T) {
 		for _, v := range []Vector[float64]{Vec(0.1, 0.3), Vec(1.1, 3.3), Vec(2.5, 1e5+0.1)} {
 			assert.Equal(t, v.Dot(v.Normal()), 0.0, v.String())
@@ -533,6 +539,9 @@ func TestVector_Cross(t *testing.T) {
 	})
 	t.Run("parallel vectors are zero", func(t *testing.T) {
 		AssertNumber(t, Vec(2, 4).Cross(Vec(1, 2)), 0)
+	})
+	t.Run("rounds each product, the same bits on every architecture", func(t *testing.T) {
+		assert.Equal(t, Vec(tenth, 0.3).Cross(Vec(-0.3, tenth)), 0.10000000000000001)
 	})
 	t.Run("a float vector with itself is exactly zero", func(t *testing.T) {
 		for _, v := range []Vector[float64]{Vec(0.1, 0.3), Vec(1.1, 3.3), Vec(2.5, 1e5+0.1)} {

@@ -287,9 +287,9 @@ func (c Circle[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
 		return []Point[T]{point.Cast[T]()}
 	}
 
-	along := (r1*r1 - r2*r2 + distanceSquared) / (2 * distance)
+	along := (float64(r1*r1) - float64(r2*r2) + distanceSquared) / (2 * distance)
 	middle := c.Center.Float().Add(direction.Resize(along))
-	normal := direction.Normal().Resize(math.Sqrt(max(r1*r1-along*along, 0)))
+	normal := direction.Normal().Resize(math.Sqrt(max(float64(r1*r1)-float64(along*along), 0)))
 	first, second := middle.Add(normal), middle.Add(normal.Negate())
 
 	return []Point[T]{first.Cast[T](), second.Cast[T]()}

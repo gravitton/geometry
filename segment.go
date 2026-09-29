@@ -664,7 +664,7 @@ func (s Segment[T]) chord(circle Circle[T]) (float64, float64, bool) {
 
 	along := offset.Dot(direction) / lengthSquared
 	radius := float64(circle.Radius)
-	halfChordSquared := max(radius*radius-gapSquared, 0)
+	halfChordSquared := max(float64(radius*radius)-gapSquared, 0)
 	if lessOrEqualSquared[T](4*halfChordSquared, 0) {
 		return along, along, true
 	}

@@ -11,6 +11,11 @@ import (
 // negativeZero is -0.0; writing it as a literal would fold to +0.0 at compile time.
 var negativeZero = math.Copysign(0, -1)
 
+// tenth is 0.1 read at run time: a test pinning exact bits takes an operand from it, since the
+// compiler folds arithmetic on literals into a constant, computed without the fused multiply-add
+// the test guards against.
+var tenth = 0.1
+
 // sinkPoints is a shared slice variable used to store results in allocation tests, so the result escapes as it does for any caller.
 var sinkPoints []Point[int]
 
@@ -178,6 +183,9 @@ func TestLerp(t *testing.T) {
 		AssertNumber(t, Lerp(1, 3, 0.25), 2)
 		AssertNumber(t, Lerp(1, 5, 0.25), 2)
 		AssertNumber(t, Lerp(1, 7, 0.25), 3)
+	})
+	t.Run("rounds each product, the same bits on every architecture", func(t *testing.T) {
+		assert.Equal(t, Lerp(tenth, 0.2, 0.1), 0.11000000000000001)
 	})
 	t.Run("narrow integers do not overflow", func(t *testing.T) {
 		AssertNumber(t, Lerp[int8](-100, 100, 0.5), 0)

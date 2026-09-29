@@ -121,9 +121,10 @@ func (p Point[T]) Midpoint(point Point[T]) Point[T] {
 // For integer T, the float64 result of each component is rounded; rotations and non-integer scales lose precision.
 func (p Point[T]) Transform[M Float](matrix Matrix[M]) Point[T] {
 	x, y := float64(p.X), float64(p.Y)
-	m := matrix.Float()
+	a, b, c := float64(matrix.A), float64(matrix.B), float64(matrix.C)
+	d, e, f := float64(matrix.D), float64(matrix.E), float64(matrix.F)
 
-	return Point[T]{Cast[T](m.A*x + m.B*y + m.C), Cast[T](m.D*x + m.E*y + m.F)}
+	return Point[T]{Cast[T](float64(a*x) + float64(b*y) + c), Cast[T](float64(d*x) + float64(e*y) + f)}
 }
 
 // RotateAround creates a new Point rotated by the given angle (in radians) about the pivot, in
@@ -177,7 +178,7 @@ func (p Point[T]) ChebyshevDistanceTo(point Point[T]) T {
 func (p Point[T]) OctileDistanceTo(point Point[T]) float64 {
 	dx, dy := p.deltas(point)
 
-	return max(dx, dy) + (Sqrt2-1)*min(dx, dy)
+	return max(dx, dy) + float64((Sqrt2-1)*min(dx, dy))
 }
 
 // deltas returns the absolute coordinate differences to the given point in float64.

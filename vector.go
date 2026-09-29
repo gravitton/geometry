@@ -56,7 +56,7 @@ func (v Vector[T]) Length() float64 {
 func (v Vector[T]) LengthSquared() T {
 	x, y := float64(v.X), float64(v.Y)
 
-	return Cast[T](x*x + y*y)
+	return Cast[T](float64(x*x) + float64(y*y))
 }
 
 // Angle returns the vector's angle in radians.
@@ -174,9 +174,10 @@ func (v Vector[T]) AtMost(length T) Vector[T] {
 // For integer T, the float64 result of each component is rounded; rotations and non-integer scales lose precision.
 func (v Vector[T]) Transform[M Float](matrix Matrix[M]) Vector[T] {
 	x, y := float64(v.X), float64(v.Y)
-	m := matrix.Float()
+	a, b := float64(matrix.A), float64(matrix.B)
+	d, e := float64(matrix.D), float64(matrix.E)
 
-	return Vector[T]{Cast[T](m.A*x + m.B*y), Cast[T](m.D*x + m.E*y)}
+	return Vector[T]{Cast[T](float64(a*x) + float64(b*y)), Cast[T](float64(d*x) + float64(e*y))}
 }
 
 // Rotate creates a new Vector rotated by the given angle (in radians), in the standard math
@@ -185,8 +186,9 @@ func (v Vector[T]) Transform[M Float](matrix Matrix[M]) Vector[T] {
 // For integer T, sin/cos components are rounded; only multiples of 90° give exact results.
 func (v Vector[T]) Rotate(angle float64) Vector[T] {
 	sin, cos := math.Sincos(angle)
+	x, y := float64(v.X), float64(v.Y)
 
-	return Vector[T]{Cast[T](float64(v.X)*cos - float64(v.Y)*sin), Cast[T](float64(v.X)*sin + float64(v.Y)*cos)}
+	return Vector[T]{Cast[T](float64(x*cos) - float64(y*sin)), Cast[T](float64(x*sin) + float64(y*cos))}
 }
 
 // Resize creates a new Vector resized to the given length. The zero vector has no direction

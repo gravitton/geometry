@@ -37,6 +37,25 @@
 // whatever T is, so a narrow integer T never overflows mid-computation and every integer result
 // follows the one rounding rule above. Sums and differences of two values stay in T.
 //
+// # Reproducibility
+//
+// Go lets the compiler fuse a product and a sum into one multiply-add, which rounds once where
+// the two steps round twice, and gc does so on arm64 and on amd64 built for GOAMD64=v3. Every
+// product the package adds to another value is rounded on its own first, so the same inputs give
+// the same bits on every architecture, and an integer T rounds the same way on all of them. The
+// exception is what the math package computes: Sincos, Atan2, Hypot and the rest promise no
+// identical bits across architectures, so a method placing a point from an angle, such as Rotate,
+// VectorFromAngle or the vertices of a RegularPolygon, can differ in the last bit from one
+// architecture to another, and for an integer T round the other way where the value lies that
+// close to a half.
+//
+// # Inlining
+//
+// The methods that store two coordinates through Cast, such as Vector.Multiply and
+// Point.Transform, cost more than the compiler's inlining budget, and on amd64 Cast itself does,
+// since math.Round is no intrinsic there. A profile-guided build (go build -pgo) inlines them at
+// the call sites the profile marks hot, which is where it matters.
+//
 // # Boundaries
 //
 // Rectangle.Contains, Box.Contains, Circle.Contains, Ellipse.Contains, Segment.Contains, Ray.Contains,

@@ -197,6 +197,9 @@ func TestPoint_Transform(t *testing.T) {
 		AssertPoint(t, Pt(1, 2).Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), Pt(9, 22))
 		AssertPoint(t, Pt(0.6, -0.25).Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), Pt(3.385, 7.865))
 	})
+	t.Run("rounds each product, the same bits on every architecture", func(t *testing.T) {
+		assert.Equal(t, Pt(5.1, 2.3).Transform(Mat(tenth, 0.7, 0.7, 0.0, 1.0, 0.0)).X, 2.8200000000000003)
+	})
 	t.Run("float32 matrix", func(t *testing.T) {
 		AssertPoint(t, Pt(1, 2).Transform(Mat[float32](1, 2, 3, 4, 5, 6)), Pt(8, 20))
 		AssertPoint(t, Pt(0.6, -0.25).Transform(Mat[float32](1, 2, 3, 4, 5, 6)), Pt(3.1, 7.15))

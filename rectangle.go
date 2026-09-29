@@ -222,7 +222,7 @@ func (r Rectangle[T]) Perimeter() T {
 func (r Rectangle[T]) Inertia() float64 {
 	w, h := r.Size.Float().XY()
 
-	return w * h * (w*w + h*h) / 12
+	return w * h * (float64(w*w) + float64(h*h)) / 12
 }
 
 // AspectRatio returns width/height.

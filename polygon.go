@@ -64,8 +64,8 @@ func (p Polygon[T]) Centroid() Point[T] {
 		shifted := edge.Float().Translate(offset)
 		cross := shifted.cross()
 
-		x += (shifted.Start.X + shifted.End.X) * cross
-		y += (shifted.Start.Y + shifted.End.Y) * cross
+		x += float64((shifted.Start.X + shifted.End.X) * cross)
+		y += float64((shifted.Start.Y + shifted.End.Y) * cross)
 		twiceArea += cross
 	}
 
@@ -120,10 +120,10 @@ func (p Polygon[T]) Inertia() float64 {
 		a, b := shifted.Start.Vector(), shifted.End.Vector()
 		cross := shifted.cross()
 
-		x += (a.X + b.X) * cross
-		y += (a.Y + b.Y) * cross
+		x += float64((a.X + b.X) * cross)
+		y += float64((a.Y + b.Y) * cross)
 		twiceArea += cross
-		moment += (a.Dot(a) + a.Dot(b) + b.Dot(b)) * cross
+		moment += float64((a.Dot(a) + a.Dot(b) + b.Dot(b)) * cross)
 	}
 
 	if twiceArea == 0 {
@@ -132,7 +132,7 @@ func (p Polygon[T]) Inertia() float64 {
 
 	centroid := Vector[float64]{x / (3 * twiceArea), y / (3 * twiceArea)}
 
-	return math.Abs(moment)/12 - math.Abs(twiceArea)/2*centroid.LengthSquared()
+	return math.Abs(moment)/12 - float64(math.Abs(twiceArea)/2*centroid.LengthSquared())
 }
 
 // Winding returns the sense in which the vertices run around the area they enclose, from the

@@ -158,12 +158,12 @@ func (m Matrix[T]) Multiply(matrix Matrix[T]) Matrix[T] {
 	l, r := m.Float(), matrix.Float()
 
 	return Matrix[T]{
-		Cast[T](l.A*r.A + l.B*r.D),
-		Cast[T](l.A*r.B + l.B*r.E),
-		Cast[T](l.A*r.C + l.B*r.F + l.C),
-		Cast[T](l.D*r.A + l.E*r.D),
-		Cast[T](l.D*r.B + l.E*r.E),
-		Cast[T](l.D*r.C + l.E*r.F + l.F),
+		Cast[T](float64(l.A*r.A) + float64(l.B*r.D)),
+		Cast[T](float64(l.A*r.B) + float64(l.B*r.E)),
+		Cast[T](float64(l.A*r.C) + float64(l.B*r.F) + l.C),
+		Cast[T](float64(l.D*r.A) + float64(l.E*r.D)),
+		Cast[T](float64(l.D*r.B) + float64(l.E*r.E)),
+		Cast[T](float64(l.D*r.C) + float64(l.E*r.F) + l.F),
 	}
 }
 
@@ -185,10 +185,10 @@ func (m Matrix[T]) Inverse() Matrix[T] {
 	return Matrix[T]{
 		Cast[T](f.E * invDet),
 		Cast[T](-f.B * invDet),
-		Cast[T]((f.B*f.F - f.C*f.E) * invDet),
+		Cast[T]((float64(f.B*f.F) - float64(f.C*f.E)) * invDet),
 		Cast[T](-f.D * invDet),
 		Cast[T](f.A * invDet),
-		Cast[T]((f.C*f.D - f.A*f.F) * invDet),
+		Cast[T]((float64(f.C*f.D) - float64(f.A*f.F)) * invDet),
 	}
 }
 

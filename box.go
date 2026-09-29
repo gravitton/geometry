@@ -297,7 +297,7 @@ func (b Box[T]) distanceSquaredToBox(box Box[T]) float64 {
 	dx := float64(max(box.Min.X-b.Max.X, b.Min.X-box.Max.X, 0))
 	dy := float64(max(box.Min.Y-b.Max.Y, b.Min.Y-box.Max.Y, 0))
 
-	distance := dx*dx + dy*dy
+	distance := float64(dx*dx) + float64(dy*dy)
 	if lessOrEqualSquared[T](distance, 0) {
 		return 0
 	}

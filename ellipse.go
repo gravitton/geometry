@@ -74,7 +74,7 @@ func (e Ellipse[T]) Eccentricity() float64 {
 func (e Ellipse[T]) Foci() (Point[T], Point[T]) {
 	a, b := float64(e.SemiMajor()), float64(e.SemiMinor())
 
-	focal := Vector[float64]{math.Sqrt(a*a - b*b), 0}
+	focal := Vector[float64]{math.Sqrt(float64(a*a) - float64(b*b)), 0}
 	if e.Size.Height > e.Size.Width {
 		focal = Vector[float64]{0, focal.X}
 	}
@@ -126,7 +126,7 @@ func (e Ellipse[T]) Perimeter() float64 {
 	}
 
 	r := (w - h) / sum
-	t := 3 * r * r
+	t := float64(3 * r * r)
 
 	return Pi * sum * (1 + t/(10+math.Sqrt(4-t)))
 }
@@ -137,7 +137,7 @@ func (e Ellipse[T]) Perimeter() float64 {
 func (e Ellipse[T]) Inertia() float64 {
 	w, h := e.Size.Float().XY()
 
-	return Pi * w * h * (w*w + h*h) / 4
+	return Pi * w * h * (float64(w*w) + float64(h*h)) / 4
 }
 
 // Bounds returns the axis-aligned bounding box: the box on the corners minMax finds, which
@@ -383,7 +383,7 @@ func (e Ellipse[T]) form(local Vector[float64]) float64 {
 	w, h := e.Size.Float().XY()
 	x, y := local.X/w, local.Y/h
 
-	return x*x + y*y
+	return float64(x*x) + float64(y*y)
 }
 
 // nearestOffset returns the offset of the point of the boundary nearest to the given offset,
@@ -421,10 +421,10 @@ func (e Ellipse[T]) nearestOffset(local Vector[float64]) Vector[float64] {
 // which no closed form gives.
 func (e Ellipse[T]) foot(a, b, x, y float64) (float64, float64) {
 	if y == 0 {
-		if evolute, center := a*x, a*a-b*b; evolute < center {
+		if evolute, center := a*x, float64(a*a)-float64(b*b); evolute < center {
 			cosine := evolute / center
 
-			return a * cosine, b * math.Sqrt(1-cosine*cosine)
+			return a * cosine, b * math.Sqrt(1-float64(cosine*cosine))
 		}
 
 		return a, 0
@@ -434,7 +434,7 @@ func (e Ellipse[T]) foot(a, b, x, y float64) (float64, float64) {
 		return 0, b
 	}
 
-	aspect := (a / b) * (a / b)
+	aspect := float64((a / b) * (a / b))
 	s := e.root(aspect, x/a, y/b)
 
 	return aspect * x / (s + aspect), y / (s + 1)
@@ -459,7 +459,7 @@ func (Ellipse[T]) root(aspect, x, y float64) float64 {
 	gradient := aspect * x
 
 	s0, s1 := y-1, math.Hypot(gradient, y)-1
-	if x*x+y*y < 1 {
+	if float64(x*x)+float64(y*y) < 1 {
 		s1 = 0
 	}
 
@@ -469,7 +469,7 @@ func (Ellipse[T]) root(aspect, x, y float64) float64 {
 			return s
 		}
 
-		if px, py := gradient/(s+aspect), y/(s+1); px*px+py*py > 1 {
+		if px, py := gradient/(s+aspect), y/(s+1); float64(px*px)+float64(py*py) > 1 {
 			s0 = s
 		} else {
 			s1 = s

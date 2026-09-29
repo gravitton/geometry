@@ -132,7 +132,7 @@ func Sum[T Number](values []T) T {
 // Lerp calculates the linear interpolation between a and b at a ratio t.
 // The difference is taken in float64, so it cannot overflow a narrow integer T.
 func Lerp[T Number](a, b T, t float64) T {
-	return Cast[T](float64(a) + (float64(b)-float64(a))*t)
+	return Cast[T](float64(a) + float64((float64(b)-float64(a))*t))
 }
 
 // Midpoint calculates the midpoint between two values. Equivalent to Lerp(a, b, 0.5).
@@ -294,7 +294,7 @@ func LerpAngle(a, b, t float64) float64 {
 		delta -= 2 * math.Pi
 	}
 
-	return a + delta*t
+	return a + float64(delta*t)
 }
 
 // EqualAngle reports whether a and b are the same angle within Delta, a full turn or the

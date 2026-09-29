@@ -187,7 +187,7 @@ func (rp RegularPolygon[T]) Inertia() float64 {
 	n, central := float64(rp.N), rp.centralAngle()
 	w, h := rp.Size.Float().XY()
 
-	return n * math.Sin(central) * (2 + math.Cos(central)) / 24 * w * h * (w*w + h*h)
+	return n * math.Sin(central) * (2 + math.Cos(central)) / 24 * w * h * (float64(w*w) + float64(h*h))
 }
 
 // Bounds returns the axis-aligned bounding box of the vertices without building them, or the
@@ -209,7 +209,7 @@ func (rp RegularPolygon[T]) centralAngle() float64 {
 // from, so a measure taken without building the vertices reads the same angles Vertices does,
 // and nearestIndex inverts it.
 func (rp RegularPolygon[T]) vertexAngle(i int) float64 {
-	return float64(i) * rp.centralAngle()
+	return float64(float64(i) * rp.centralAngle())
 }
 
 // worldPoint returns the point at the given offset from the center on the ellipse before the
