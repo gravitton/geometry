@@ -159,7 +159,7 @@ func (e Ellipse[T]) worldPoint(offset Vector[float64]) Point[T] {
 // before its turn, in float64, the inverse of worldPoint: the frame the boundary is a plain
 // ellipse of the semi-axes in, where every distance is measured.
 func (e Ellipse[T]) localOffset(point Point[T]) Vector[float64] {
-	return point.Subtract(e.Center).Float().Rotate(-e.Angle)
+	return point.Float().Subtract(e.Center.Float()).Rotate(-e.Angle)
 }
 
 // parametricAngle returns the parameter of the boundary point that lies in the given direction

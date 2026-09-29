@@ -535,7 +535,8 @@ func (s Segment[T]) ClipBox(box Box[T]) (Segment[T], bool) {
 // distanceSquaredTo returns the squared distance to the point with no tolerance applied, which
 // DistanceSquaredTo snaps to zero within Epsilon of T.
 func (s Segment[T]) distanceSquaredTo(point Point[T]) float64 {
-	direction, offset := s.Vector().Float(), point.Subtract(s.Start).Float()
+	start, end, p := s.Start.Float(), s.End.Float(), point.Float()
+	direction, offset := end.Subtract(start), p.Subtract(start)
 
 	along := offset.Dot(direction)
 	if along <= 0 {
@@ -544,7 +545,7 @@ func (s Segment[T]) distanceSquaredTo(point Point[T]) float64 {
 
 	lengthSquared := direction.LengthSquared()
 	if along >= lengthSquared {
-		return point.Subtract(s.End).Float().LengthSquared()
+		return p.Subtract(end).LengthSquared()
 	}
 
 	cross := offset.Cross(direction)
@@ -556,7 +557,8 @@ func (s Segment[T]) distanceSquaredTo(point Point[T]) float64 {
 // Start or End where the projection distanceSquaredTo makes falls beyond them, on the same
 // comparisons, and the point at that fraction along the segment otherwise.
 func (s Segment[T]) foot(point Point[T]) Point[T] {
-	direction, offset := s.Vector().Float(), point.Subtract(s.Start).Float()
+	start, end, p := s.Start.Float(), s.End.Float(), point.Float()
+	direction, offset := end.Subtract(start), p.Subtract(start)
 
 	along := offset.Dot(direction)
 	if along <= 0 {
@@ -584,9 +586,10 @@ func (s Segment[T]) crosses(segment Segment[T]) bool {
 // separates reports whether the endpoints of the given segment lie strictly on opposite sides
 // of the line through this one.
 func (s Segment[T]) separates(segment Segment[T]) bool {
-	direction := s.Vector().Float()
-	start := direction.Cross(segment.Start.Subtract(s.Start).Float())
-	end := direction.Cross(segment.End.Subtract(s.Start).Float())
+	a, b := s.Float(), segment.Float()
+	direction := a.Vector()
+	start := direction.Cross(b.Start.Subtract(a.Start))
+	end := direction.Cross(b.End.Subtract(a.Start))
 
 	return (start > 0 && end < 0) || (start < 0 && end > 0)
 }
@@ -616,9 +619,9 @@ func (s Segment[T]) crossing(segment Segment[T]) (Point[float64], bool) {
 // parallel reports whether the segments run along the same direction. A zero-length segment
 // has no direction and is parallel to nothing, so its point can still be found on the other.
 func (s Segment[T]) parallel(segment Segment[T]) bool {
-	a, b := s.Vector(), segment.Vector()
+	a, b := s.Float().Vector(), segment.Float().Vector()
 
-	return a.hasDirection() && b.hasDirection() && a.Float().Cross(b.Float()) == 0
+	return a.hasDirection() && b.hasDirection() && a.Cross(b) == 0
 }
 
 // touch returns the endpoint of either segment that lies on the other, within Epsilon of T
@@ -649,7 +652,8 @@ func (s Segment[T]) touch(segment Segment[T]) (Point[T], bool) {
 // root is taken: the tolerance collapses two crossings only where they would compare Equal,
 // never a chord that merely grazes the boundary within the tolerance.
 func (s Segment[T]) chord(circle Circle[T]) (float64, float64, bool) {
-	direction, offset := s.Vector().Float(), circle.Center.Subtract(s.Start).Float()
+	start, end, center := s.Start.Float(), s.End.Float(), circle.Center.Float()
+	direction, offset := end.Subtract(start), center.Subtract(start)
 	if !direction.hasDirection() {
 		return 0, 0, false
 	}

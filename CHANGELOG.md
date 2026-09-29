@@ -44,6 +44,7 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 ### Fixed
 - The same inputs give the same bits on every architecture: every product added to another value is rounded on its own first, so gc no longer fuses it into a multiply-add on arm64 and on amd64 v3, which rounded `Lerp`, `LerpAngle`, `Matrix.Multiply`, `Matrix.Inverse`, `Transform`, `Vector.Rotate`, `LengthSquared`, `OctileDistanceTo`, the polygon centroid and inertia sums, the regular polygon vertex angles, the circle crossings and the ellipse measures differently there; only what `math` computes from an angle may still differ in the last bit
 - `Segment.IntersectionSegment` on nearly collinear float segments: rounding could give their ends opposite sides of each other's line, and the crossing then landed off both; a crossing outside either segment is now no crossing, and the endpoint lying on the other is the answer, in `IntersectsSegment` and `DistanceToSegment` too
+- Float32 and narrow integer shapes decide on their exact coordinates: the distances, sides and frame offsets behind `Contains`, `Intersects`, `Intersection`, `Nearest`, `Encloses`, `ConvexHull` and `IsConvex` subtracted in `T` before converting to `float64`, so a float32 point on a segment far from the origin measured off it and an `int8` difference overflowed; the operands are now converted first
 
 ### Removed
 - The `github.com/gravitton/x` dependency, whose one use in `Polygon` is now a private helper

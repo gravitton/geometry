@@ -355,6 +355,16 @@ func TestSegment_Contains(t *testing.T) {
 		assert.True(t, s.Contains(Pt(0.5, 0.5+Delta/2)))
 		assert.False(t, s.Contains(Pt(0.5, 0.5+2*Delta)))
 	})
+	t.Run("float32 is exact on coordinates far from the origin", func(t *testing.T) {
+		s := Seg(Pt[float32](0.0625, 0.1875), Pt[float32](1<<21+1, 3*(1<<21+1)))
+
+		assert.True(t, s.Contains(Pt[float32](1<<20+1, 3*(1<<20+1))))
+	})
+	t.Run("a narrow integer does not overflow", func(t *testing.T) {
+		s := Seg(Pt[int8](-100, -100), Pt[int8](100, 100))
+
+		assert.True(t, s.Contains(Pt[int8](0, 0)))
+	})
 	t.Run("holds exactly where DistanceTo is zero", func(t *testing.T) {
 		for _, s := range segmentFixtures {
 			for _, p := range pointFixtures {

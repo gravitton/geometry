@@ -298,7 +298,7 @@ func (r Ray[T]) reach(a, b Point[T]) Segment[T] {
 		corner.Y = b.Y
 	}
 
-	t := max(corner.Subtract(r.Origin).Float().Dot(direction)/direction.LengthSquared(), 0)
+	t := max(corner.Float().Subtract(r.Origin.Float()).Dot(direction)/direction.LengthSquared(), 0)
 	if isInt[T]() {
 		t = math.Ceil(t)
 	}
@@ -310,7 +310,7 @@ func (r Ray[T]) reach(a, b Point[T]) Segment[T] {
 // DistanceSquaredTo snaps to zero within Epsilon of T: Segment.distanceSquaredTo with no end to
 // clamp to.
 func (r Ray[T]) distanceSquaredTo(point Point[T]) float64 {
-	direction, offset := r.Direction.Float(), point.Subtract(r.Origin).Float()
+	direction, offset := r.Direction.Float(), point.Float().Subtract(r.Origin.Float())
 
 	along := offset.Dot(direction)
 	if along <= 0 {
@@ -326,7 +326,7 @@ func (r Ray[T]) distanceSquaredTo(point Point[T]) float64 {
 // where the projection distanceSquaredTo makes falls behind it, on the same comparison, and the
 // point at that fraction along the ray otherwise.
 func (r Ray[T]) foot(point Point[T]) Point[T] {
-	direction, offset := r.Direction.Float(), point.Subtract(r.Origin).Float()
+	direction, offset := r.Direction.Float(), point.Float().Subtract(r.Origin.Float())
 
 	along := offset.Dot(direction)
 	if along <= 0 {

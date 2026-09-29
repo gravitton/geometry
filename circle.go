@@ -181,9 +181,10 @@ func (c Circle[T]) Nearest(point Point[T]) Point[T] {
 		return point
 	}
 
-	offset := point.Subtract(c.Center).Float().Multiply(float64(c.Radius) / math.Sqrt(distanceSquared))
+	center := c.Center.Float()
+	offset := point.Float().Subtract(center).Multiply(float64(c.Radius) / math.Sqrt(distanceSquared))
 
-	return c.Center.Float().Add(offset).Cast[T]()
+	return center.Add(offset).Cast[T]()
 }
 
 // EnclosesCircle reports whether the given circle lies within this one: its far point, the
@@ -270,7 +271,8 @@ func (c Circle[T]) IntersectsCircle(circle Circle[T]) bool {
 // boundaries where they meet, since the crossing formula amplifies the tolerance there. For
 // integer T the points are rounded like every other result stored into T.
 func (c Circle[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
-	direction := circle.Center.Subtract(c.Center).Float()
+	center := c.Center.Float()
+	direction := circle.Center.Float().Subtract(center)
 	distanceSquared := c.centerDistanceSquared(circle.Center)
 	r1, r2 := float64(c.Radius), float64(circle.Radius)
 	outer, inner := r1+r2, math.Abs(r1-r2)
@@ -282,13 +284,13 @@ func (c Circle[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
 	distance := math.Sqrt(distanceSquared)
 
 	if external, internal := equalSquared[T](distanceSquared, outer), equalSquared[T](distanceSquared, inner); external || internal {
-		point := c.Center.Float().Add(direction.Resize(c.tangent(circle, distance, external)))
+		point := center.Add(direction.Resize(c.tangent(circle, distance, external)))
 
 		return []Point[T]{point.Cast[T]()}
 	}
 
 	along := (float64(r1*r1) - float64(r2*r2) + distanceSquared) / (2 * distance)
-	middle := c.Center.Float().Add(direction.Resize(along))
+	middle := center.Add(direction.Resize(along))
 	normal := direction.Normal().Resize(math.Sqrt(max(float64(r1*r1)-float64(along*along), 0)))
 	first, second := middle.Add(normal), middle.Add(normal.Negate())
 

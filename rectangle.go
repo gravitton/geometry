@@ -261,9 +261,9 @@ func (r Rectangle[T]) worldPoint(offset Vector[T]) Point[T] {
 
 // localOffset returns the offset of the point from the center in the frame of the rectangle
 // before its turn, in float64, the inverse of worldPoint, so that Clamp can measure another
-// rectangle as an aligned box in this one.
+// rectangle as an aligned box in this one and localRectangle can place it there.
 func (r Rectangle[T]) localOffset(point Point[T]) Vector[float64] {
-	return point.Subtract(r.Center).Float().Rotate(-r.Angle)
+	return point.Float().Subtract(r.Center.Float()).Rotate(-r.Angle)
 }
 
 // localRectangle returns the given rectangle as it lies in the local frame of this one, the
@@ -273,7 +273,7 @@ func (r Rectangle[T]) localOffset(point Point[T]) Vector[float64] {
 // unite as aligned rectangles do; worldRectangle turns the result back. For integer T the
 // turned offset is rounded.
 func (r Rectangle[T]) localRectangle(rectangle Rectangle[T]) Rectangle[T] {
-	offset := rectangle.Center.Subtract(r.Center).Rotate(-r.Angle)
+	offset := r.localOffset(rectangle.Center).Cast[T]()
 
 	return Rectangle[T]{offset.Point(), rectangle.Size, 0}
 }

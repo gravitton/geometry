@@ -396,9 +396,10 @@ func (p Polygon[T]) Simplify(tolerance float64) Polygon[T] {
 // reverse order. It reads no field of the polygon, only the chord and the points, so the
 // receiver is unnamed.
 func (Polygon[T]) compareAround(chord Segment[T], a, b Point[T]) int {
-	direction := chord.Vector().Float()
+	start, end := chord.Start.Float(), chord.End.Float()
+	direction := end.Subtract(start)
 	returning := func(point Point[T]) bool {
-		return direction.Cross(point.Subtract(chord.Start).Float()) > 0
+		return direction.Cross(point.Float().Subtract(start)) > 0
 	}
 
 	switch ra, rb := returning(a), returning(b); {
@@ -418,7 +419,7 @@ func (Polygon[T]) compareAround(chord Segment[T], a, b Point[T]) int {
 // negative the other way and zero where the three are collinear. It reads no field of the
 // polygon, only the points, so the receiver is unnamed.
 func (Polygon[T]) turn(a, b, c Point[T]) float64 {
-	return b.Subtract(a).Float().Cross(c.Subtract(b).Float())
+	return b.Float().Subtract(a.Float()).Cross(c.Float().Subtract(b.Float()))
 }
 
 // appendKept appends to dst the vertices Simplify keeps strictly between the vertices at from
@@ -776,10 +777,10 @@ func (p Polygon[T]) keeps(segment Segment[T], twiceArea float64) bool {
 			}
 		}
 
-		along := edge.Vector().Float()
+		along := edge.Float().Vector()
 
 		if vertex := edge.Start; segment.Contains(vertex) {
-			if p.leavesThrough(vertex, previous.Subtract(vertex).Float(), along, segment, twiceArea) {
+			if p.leavesThrough(vertex, previous.Float().Subtract(vertex.Float()), along, segment, twiceArea) {
 				return false
 			}
 		}
@@ -809,8 +810,10 @@ func (p Polygon[T]) leavesThrough(point Point[T], toPrevious, toNext Vector[floa
 		toPrevious, toNext = toNext, toPrevious
 	}
 
-	return !p.admits(toPrevious, toNext, segment.Start.Subtract(point).Float()) ||
-		!p.admits(toPrevious, toNext, segment.End.Subtract(point).Float())
+	start, end, origin := segment.Start.Float(), segment.End.Float(), point.Float()
+
+	return !p.admits(toPrevious, toNext, start.Subtract(origin)) ||
+		!p.admits(toPrevious, toNext, end.Subtract(origin))
 }
 
 // admits reports whether the offset from a point of the boundary stays within the polygon,
@@ -873,7 +876,7 @@ func (p Polygon[T]) IsEmpty() bool {
 func (p Polygon[T]) IsConvex() bool {
 	c := edgeConvexity{}
 	for edge := range p.Edges() {
-		if !c.step(edge.Vector().Float()) {
+		if !c.step(edge.Float().Vector()) {
 			return false
 		}
 	}
