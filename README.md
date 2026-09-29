@@ -219,7 +219,7 @@ reads the same on all of them and an interface can list it. The test is symmetri
 `Epsilon[T]()`; where a derived result exists it is `Intersection<Kind>`, answering exactly where `Intersects` holds:
 
 ```go
-a.IntersectsRectangle(b) // IntersectsSegment, IntersectsRectangle, IntersectsCircle, IntersectsPolygon,
+a.IntersectsRectangle(b) // IntersectsSegment, IntersectsRay, IntersectsRectangle, IntersectsCircle, IntersectsPolygon,
 r.IntersectsCircle(c)    // IntersectsRegularPolygon and IntersectsBox, on every shape but Ellipse
 geom.Intersects(a, c)    // the same answer without knowing either type
 
@@ -231,7 +231,21 @@ s.ClipBox(view)                       // the part of s inside, and false where t
 s.ClipPolygon(p)                      // the parts inside a concave polygon, from Start to End
 ```
 
-The pair logic is written once, on the earlier shape of `Circle`, `Segment`, `Polygon`, `Rectangle`,
+A `Ray` is a half-line from `Origin` along `Direction`, a `Collider` like the shapes. Its `Clip<Kind>` is the cast:
+the `Start` of the part inside is the first point of the shape the ray reaches, its origin where the shape contains it:
+
+```go
+ray := geom.RayThrough(camera, cursor) // from the camera through the cursor
+ray.IntersectsRectangle(r)             // IntersectsRay on every Collider gives the same answer
+ray.ClipPolygon(p)                     // the parts inside a concave polygon, from Origin on
+ray.IntersectionBox(box)               // the boundary crossings, from Origin on
+
+if hit, ok := ray.ClipCircle(c); ok { // allocation-free on every convex shape
+	hit.Start // the first point of c on the ray, and hit.End where the ray leaves it
+}
+```
+
+The pair logic is written once, on the earlier shape of `Circle`, `Segment`, `Ray`, `Polygon`, `Rectangle`,
 `RegularPolygon`, `Box`, and the other side delegates to it, so both sides always answer the same.
 
 ### Containment
@@ -351,10 +365,6 @@ Each file lists its methods in the same order, and the tests follow it: construc
 `Bounds`), arithmetic (`Add`, `Scale`, `Inset`), geometry (`Transform`, `Rotate`, `Project`), relations (`Contains`,
 `DistanceTo`, `Intersects`), equality and state (`Equal`, `IsZero`), conversions (`Int`, `Float`), and `String` with
 JSON last.
-
-## Planned
-
-- **`Ray`** – a half-line with origin and direction, for casts against every shape.
 
 ## Credits
 

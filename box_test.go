@@ -388,6 +388,26 @@ func TestBox_IntersectionSegment(t *testing.T) {
 	})
 }
 
+func TestBox_IntersectsRay(t *testing.T) {
+	t.Run("mirrors Ray.IntersectsBox", func(t *testing.T) {
+		for _, b := range boxFixtures {
+			for _, r := range rayFixtures {
+				assert.Equal(t, b.IntersectsRay(r), r.IntersectsBox(b), fmt.Sprintf("%s → %s: ", b, r))
+			}
+		}
+	})
+}
+
+func TestBox_IntersectionRay(t *testing.T) {
+	t.Run("matches Ray.IntersectionBox", func(t *testing.T) {
+		for _, b := range boxFixtures {
+			for _, r := range rayFixtures {
+				AssertVertices(t, b.IntersectionRay(r), r.IntersectionBox(b), fmt.Sprintf("%s → %s: ", b, r))
+			}
+		}
+	})
+}
+
 func TestBox_IntersectsPolygon(t *testing.T) {
 	t.Run("mirrors Polygon.IntersectsBox", func(t *testing.T) {
 		for _, b := range boxFixtures {

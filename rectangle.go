@@ -590,6 +590,18 @@ func (r Rectangle[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
 	return segment.IntersectionRectangle(r)
 }
 
+// IntersectsRay reports whether the rectangle and the ray share a point, as
+// Ray.IntersectsRectangle does.
+func (r Rectangle[T]) IntersectsRay(ray Ray[T]) bool {
+	return ray.IntersectsRectangle(r)
+}
+
+// IntersectionRay returns the points where the ray crosses the rectangle boundary, as
+// Ray.IntersectionRectangle does.
+func (r Rectangle[T]) IntersectionRay(ray Ray[T]) []Point[T] {
+	return ray.IntersectionRectangle(r)
+}
+
 // IntersectsPolygon reports whether the rectangle and the polygon share a point, as
 // Polygon.IntersectsRectangle does.
 func (r Rectangle[T]) IntersectsPolygon(polygon Polygon[T]) bool {

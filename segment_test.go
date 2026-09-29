@@ -740,6 +740,97 @@ func FuzzSegment_IntersectionSegment(f *testing.F) {
 	})
 }
 
+func TestSegment_IntersectsRay(t *testing.T) {
+	diagonal := Seg(Pt(0, 0), Pt(4, 4))
+
+	t.Run("crossing", func(t *testing.T) {
+		assert.True(t, diagonal.IntersectsRay(Ray[int]{Pt(0, 4), Vec(1, -1)}))
+	})
+	t.Run("the lines cross behind the origin", func(t *testing.T) {
+		assert.False(t, diagonal.IntersectsRay(Ray[int]{Pt(3, 1), Vec(1, -1)}))
+	})
+	t.Run("the lines cross beyond the segment", func(t *testing.T) {
+		assert.False(t, diagonal.IntersectsRay(Ray[int]{Pt(10, 0), Vec(0, 1)}))
+	})
+	t.Run("the origin on the segment counts", func(t *testing.T) {
+		assert.True(t, diagonal.IntersectsRay(Ray[int]{Pt(2, 2), Vec(1, 0)}))
+	})
+	t.Run("an endpoint on the ray counts", func(t *testing.T) {
+		assert.True(t, diagonal.IntersectsRay(Ray[int]{Pt(0, 4), Vec(1, 0)}))
+	})
+	t.Run("collinear toward the segment counts, away from it does not", func(t *testing.T) {
+		assert.True(t, diagonal.IntersectsRay(Ray[int]{Pt(9, 9), Vec(-1, -1)}))
+		assert.False(t, diagonal.IntersectsRay(Ray[int]{Pt(5, 5), Vec(1, 1)}))
+	})
+	t.Run("a zero direction is its origin", func(t *testing.T) {
+		assert.True(t, diagonal.IntersectsRay(Ray[int]{Pt(1, 1), Vec(0, 0)}))
+		assert.False(t, diagonal.IntersectsRay(Ray[int]{Pt(1, 2), Vec(0, 0)}))
+	})
+	t.Run("float is tolerant", func(t *testing.T) {
+		s := Seg(Pt(0.0, 0.0), Pt(1.0, 0.0))
+
+		assert.True(t, s.IntersectsRay(Ray[float64]{Pt(0.5, Delta/2), Vec(0.0, 1.0)}))
+		assert.False(t, s.IntersectsRay(Ray[float64]{Pt(0.5, 2*Delta), Vec(0.0, 1.0)}))
+	})
+	t.Run("matches a segment reaching past the segment along the ray", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, r := range rayFixtures {
+				assert.Equal(t, s.IntersectsRay(r), s.IntersectsSegment(far(r)), fmt.Sprintf("%s → %s: ", s, r))
+			}
+		}
+	})
+}
+
+func TestSegment_IntersectionRay(t *testing.T) {
+	diagonal := Seg(Pt(0, 0), Pt(4, 4))
+
+	t.Run("crossing", func(t *testing.T) {
+		point, ok := diagonal.IntersectionRay(Ray[int]{Pt(0, 4), Vec(1, -1)})
+
+		assert.True(t, ok)
+		AssertPoint(t, point, Pt(2, 2))
+	})
+	t.Run("apart", func(t *testing.T) {
+		_, ok := diagonal.IntersectionRay(Ray[int]{Pt(3, 1), Vec(1, -1)})
+
+		assert.False(t, ok)
+	})
+	t.Run("the origin on the segment is the point", func(t *testing.T) {
+		point, ok := diagonal.IntersectionRay(Ray[int]{Pt(2, 2), Vec(1, 0)})
+
+		assert.True(t, ok)
+		AssertPoint(t, point, Pt(2, 2))
+	})
+	t.Run("collinear has no single point", func(t *testing.T) {
+		_, ok := diagonal.IntersectionRay(Ray[int]{Pt(9, 9), Vec(-1, -1)})
+
+		assert.False(t, ok)
+	})
+	t.Run("int rounds the crossing", func(t *testing.T) {
+		point, ok := Seg(Pt(0, 0), Pt(3, 0)).IntersectionRay(Ray[int]{Pt(1, -1), Vec(1, 2)})
+
+		assert.True(t, ok)
+		AssertPoint(t, point, Pt(2, 0))
+	})
+	t.Run("agrees with Intersects on non-parallel fixtures, on both", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, r := range rayFixtures {
+				if s.Vector().Float().Cross(r.Direction.Float()) == 0 && s.Vector().hasDirection() && r.Direction.hasDirection() {
+					continue
+				}
+
+				point, ok := s.IntersectionRay(r)
+				message := fmt.Sprintf("%s → %s: ", s, r)
+
+				assert.Equal(t, ok, s.IntersectsRay(r), message)
+				if ok {
+					assert.True(t, s.Contains(point) && r.Contains(point), message)
+				}
+			}
+		}
+	})
+}
+
 func TestSegment_IntersectsPolygon(t *testing.T) {
 	square := Pol(squareVertices())
 

@@ -22,6 +22,7 @@ var (
 	_ Outline[int]  = Polygon[int]{}
 	_ Outline[int]  = RegularPolygon[int]{}
 	_ Collider[int] = Segment[int]{}
+	_ Collider[int] = Ray[int]{}
 	_ Collider[int] = Rectangle[int]{}
 	_ Collider[int] = Circle[int]{}
 	_ Collider[int] = Polygon[int]{}
@@ -136,6 +137,7 @@ func TestOutline(t *testing.T) {
 func TestCollider(t *testing.T) {
 	colliders := []Collider[float64]{
 		Seg(Pt(0.0, 0.0), Pt(3.0, 4.0)),
+		RayThrough(Pt(-1.0, -1.0), Pt(3.0, 4.0)),
 		Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi / 6),
 		Circ(Pt(1.0, 1.0), 2.0),
 		Pol(triangleVertices()),
@@ -144,6 +146,9 @@ func TestCollider(t *testing.T) {
 	}
 	for _, s := range segmentFixtures {
 		colliders = append(colliders, s)
+	}
+	for _, r := range rayFixtures {
+		colliders = append(colliders, r)
 	}
 	for _, r := range rectFixtures {
 		colliders = append(colliders, r)
@@ -208,6 +213,10 @@ func (s stubCollider) IntersectsSegment(Segment[float64]) bool {
 	return s.result
 }
 
+func (s stubCollider) IntersectsRay(Ray[float64]) bool {
+	return s.result
+}
+
 func (s stubCollider) IntersectsPolygon(Polygon[float64]) bool {
 	return s.result
 }
@@ -235,13 +244,15 @@ type encloser[T Number] interface {
 }
 
 // encloses tests the shape against the container by the method naming its kind, as
-// Intersects dispatches.
+// Intersects dispatches. A ray runs without end, so no container encloses one.
 func encloses[T Number](container encloser[T], shape Collider[T]) bool {
 	switch shape := shape.(type) {
 	case Circle[T]:
 		return container.EnclosesCircle(shape)
 	case Segment[T]:
 		return container.EnclosesSegment(shape)
+	case Ray[T]:
+		return false
 	case Polygon[T]:
 		return container.EnclosesPolygon(shape)
 	case Rectangle[T]:

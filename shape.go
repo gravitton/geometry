@@ -33,16 +33,18 @@ type Outline[T Number] interface {
 	Edges() iter.Seq[Segment[T]]
 }
 
-// Collider is a shape tested against every shape: Segment, Rectangle, Circle, Polygon,
-// RegularPolygon and Box, each with the six Intersects methods, its own kind included. Every
+// Collider is a shape tested against every shape: Segment, Ray, Rectangle, Circle, Polygon,
+// RegularPolygon and Box, each with the seven Intersects methods, its own kind included. Every
 // test is symmetric and includes a touch within Epsilon of T, so a broad collision pass calls
-// the method for the other side's kind and gets the same answer from either.
+// the method for the other side's kind and gets the same answer from either. Ray is the one
+// Collider that is no Shape, since it has no Bounds.
 //
 // Ellipse is deliberately not one: two ellipses meet at the roots of a quartic, which none of
 // the closed forms the circle pairs are built on reaches. Test an ellipse as its
 // RegularPolygon of the wanted resolution.
 type Collider[T Number] interface {
 	IntersectsSegment(segment Segment[T]) bool
+	IntersectsRay(ray Ray[T]) bool
 	IntersectsRectangle(rectangle Rectangle[T]) bool
 	IntersectsCircle(circle Circle[T]) bool
 	IntersectsPolygon(polygon Polygon[T]) bool
@@ -103,13 +105,15 @@ func Intersects[T Number](a, b Collider[T]) bool {
 }
 
 // intersectsKind tests a against b by the method of a that names the kind of b, and false where
-// b is none of the six shapes, which leaves the pair to the call with the arguments swapped.
+// b is none of the seven shapes, which leaves the pair to the call with the arguments swapped.
 func intersectsKind[T Number](a, b Collider[T]) (bool, bool) {
 	switch shape := b.(type) {
 	case Circle[T]:
 		return a.IntersectsCircle(shape), true
 	case Segment[T]:
 		return a.IntersectsSegment(shape), true
+	case Ray[T]:
+		return a.IntersectsRay(shape), true
 	case Polygon[T]:
 		return a.IntersectsPolygon(shape), true
 	case Rectangle[T]:

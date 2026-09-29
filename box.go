@@ -194,6 +194,18 @@ func (b Box[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
 	return segment.IntersectionBox(b)
 }
 
+// IntersectsRay reports whether the box and the ray share a point, as
+// Ray.IntersectsBox does.
+func (b Box[T]) IntersectsRay(ray Ray[T]) bool {
+	return ray.IntersectsBox(b)
+}
+
+// IntersectionRay returns the points where the ray crosses the box boundary, as
+// Ray.IntersectionBox does.
+func (b Box[T]) IntersectionRay(ray Ray[T]) []Point[T] {
+	return ray.IntersectionBox(b)
+}
+
 // IntersectsPolygon reports whether the box and the polygon share a point, as
 // Polygon.IntersectsBox does.
 func (b Box[T]) IntersectsPolygon(polygon Polygon[T]) bool {

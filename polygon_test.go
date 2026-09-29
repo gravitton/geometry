@@ -854,6 +854,26 @@ func TestPolygon_IntersectionSegment(t *testing.T) {
 	})
 }
 
+func TestPolygon_IntersectsRay(t *testing.T) {
+	t.Run("mirrors Ray.IntersectsPolygon", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			for _, r := range rayFixtures {
+				assert.Equal(t, p.IntersectsRay(r), r.IntersectsPolygon(p), fmt.Sprintf("%s → %s: ", p, r))
+			}
+		}
+	})
+}
+
+func TestPolygon_IntersectionRay(t *testing.T) {
+	t.Run("matches Ray.IntersectionPolygon", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			for _, r := range rayFixtures {
+				AssertVertices(t, p.IntersectionRay(r), r.IntersectionPolygon(p), fmt.Sprintf("%s → %s: ", p, r))
+			}
+		}
+	})
+}
+
 func TestPolygon_IntersectsPolygon(t *testing.T) {
 	square := Pol(squareVertices())
 

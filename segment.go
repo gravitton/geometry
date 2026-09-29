@@ -281,6 +281,20 @@ func (s Segment[T]) IntersectionSegment(segment Segment[T]) (Point[T], bool) {
 	return s.touch(segment)
 }
 
+// IntersectsRay reports whether the segment and the ray share a point, as IntersectsSegment
+// decides it on the reach of the ray past the segment. Touching shapes intersect, within
+// Epsilon of T.
+func (s Segment[T]) IntersectsRay(ray Ray[T]) bool {
+	return s.IntersectsSegment(ray.reach(s.minMax()))
+}
+
+// IntersectionRay returns the point where the segment and the ray cross, and false when they do
+// not, as IntersectionSegment finds it on the reach of the ray past the segment: exactly where
+// IntersectsRay holds, less the parallel case.
+func (s Segment[T]) IntersectionRay(ray Ray[T]) (Point[T], bool) {
+	return s.IntersectionSegment(ray.reach(s.minMax()))
+}
+
 // IntersectsPolygon reports whether the segment and the polygon share a point: the start lies
 // within the polygon, or the segment crosses one of its edges. Touching shapes intersect,
 // within Epsilon of T. A segment whose extent lies outside the polygon is rejected before any

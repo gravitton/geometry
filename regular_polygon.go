@@ -533,6 +533,18 @@ func (rp RegularPolygon[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
 	return segment.IntersectionRegularPolygon(rp)
 }
 
+// IntersectsRay reports whether the regular polygon and the ray share a point, as
+// Ray.IntersectsRegularPolygon does.
+func (rp RegularPolygon[T]) IntersectsRay(ray Ray[T]) bool {
+	return ray.IntersectsRegularPolygon(rp)
+}
+
+// IntersectionRay returns the points where the ray crosses the regular polygon boundary, as
+// Ray.IntersectionRegularPolygon does.
+func (rp RegularPolygon[T]) IntersectionRay(ray Ray[T]) []Point[T] {
+	return ray.IntersectionRegularPolygon(rp)
+}
+
 // IntersectsPolygon reports whether the regular polygon and the polygon share a point, as
 // Polygon.IntersectsRegularPolygon does.
 func (rp RegularPolygon[T]) IntersectsPolygon(polygon Polygon[T]) bool {

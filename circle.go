@@ -314,6 +314,21 @@ func (c Circle[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
 	return c.appendIntersectionSegment(nil, segment)
 }
 
+// IntersectsRay reports whether the circle and the ray share a point, as IntersectsSegment
+// decides it on the reach of the ray past the circle: the point of the ray closest to the center
+// lies within the radius. Touching shapes intersect, within Epsilon of T.
+func (c Circle[T]) IntersectsRay(ray Ray[T]) bool {
+	return c.IntersectsSegment(ray.reach(c.minMax()))
+}
+
+// IntersectionRay returns the points where the ray crosses the circle boundary, from its Origin
+// on, as IntersectionSegment finds them on the reach of the ray past the circle, so the two
+// agree with IntersectsRay to the last bit: two where it passes through, one where it is tangent
+// or starts inside, and none where it misses.
+func (c Circle[T]) IntersectionRay(ray Ray[T]) []Point[T] {
+	return c.IntersectionSegment(ray.reach(c.minMax()))
+}
+
 // IntersectsPolygon reports whether the circle and the polygon share a point: the center lies
 // within the polygon, or an edge passes within the radius. Touching shapes intersect, within
 // Epsilon of T, by the same comparison Contains makes on the squared distance the polygon's

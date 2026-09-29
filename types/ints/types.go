@@ -23,6 +23,9 @@ type Ellipse = geom.Ellipse[int]
 // Segment is geom.Segment[int].
 type Segment = geom.Segment[int]
 
+// Ray is geom.Ray[int].
+type Ray = geom.Ray[int]
+
 // Rectangle is geom.Rectangle[int].
 type Rectangle = geom.Rectangle[int]
 

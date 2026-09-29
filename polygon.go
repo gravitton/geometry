@@ -591,6 +591,18 @@ func (p Polygon[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
 	return segment.IntersectionPolygon(p)
 }
 
+// IntersectsRay reports whether the polygon and the ray share a point, as
+// Ray.IntersectsPolygon does.
+func (p Polygon[T]) IntersectsRay(ray Ray[T]) bool {
+	return ray.IntersectsPolygon(p)
+}
+
+// IntersectionRay returns the points where the ray crosses the polygon boundary, as
+// Ray.IntersectionPolygon does.
+func (p Polygon[T]) IntersectionRay(ray Ray[T]) []Point[T] {
+	return ray.IntersectionPolygon(p)
+}
+
 // IntersectsPolygon reports whether the polygons share a point: a vertex of one lies within the other,
 // or an edge of one crosses an edge of the other. Touching polygons intersect, within Epsilon
 // of T, the same closed convention as Contains, and an empty polygon intersects nothing.

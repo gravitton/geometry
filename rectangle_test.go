@@ -1100,6 +1100,26 @@ func TestRectangle_IntersectionSegment(t *testing.T) {
 	})
 }
 
+func TestRectangle_IntersectsRay(t *testing.T) {
+	t.Run("mirrors Ray.IntersectsRectangle", func(t *testing.T) {
+		for _, rect := range rectFixtures {
+			for _, r := range rayFixtures {
+				assert.Equal(t, rect.IntersectsRay(r), r.IntersectsRectangle(rect), fmt.Sprintf("%s → %s: ", rect, r))
+			}
+		}
+	})
+}
+
+func TestRectangle_IntersectionRay(t *testing.T) {
+	t.Run("matches Ray.IntersectionRectangle", func(t *testing.T) {
+		for _, rect := range rectFixtures {
+			for _, r := range rayFixtures {
+				AssertVertices(t, rect.IntersectionRay(r), r.IntersectionRectangle(rect), fmt.Sprintf("%s → %s: ", rect, r))
+			}
+		}
+	})
+}
+
 func TestRectangle_IntersectsPolygon(t *testing.T) {
 	t.Run("rotated is tested on its turned edges", func(t *testing.T) {
 		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)

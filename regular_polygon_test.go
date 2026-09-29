@@ -855,6 +855,26 @@ func TestRegularPolygon_IntersectionSegment(t *testing.T) {
 	})
 }
 
+func TestRegularPolygon_IntersectsRay(t *testing.T) {
+	t.Run("mirrors Ray.IntersectsRegularPolygon", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for _, r := range rayFixtures {
+				assert.Equal(t, rp.IntersectsRay(r), r.IntersectsRegularPolygon(rp), fmt.Sprintf("%s → %s: ", rp, r))
+			}
+		}
+	})
+}
+
+func TestRegularPolygon_IntersectionRay(t *testing.T) {
+	t.Run("matches Ray.IntersectionRegularPolygon", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for _, r := range rayFixtures {
+				AssertVertices(t, rp.IntersectionRay(r), r.IntersectionRegularPolygon(rp), fmt.Sprintf("%s → %s: ", rp, r))
+			}
+		}
+	})
+}
+
 func TestRegularPolygon_IntersectsPolygon(t *testing.T) {
 	t.Run("mirrors Polygon.IntersectsRegularPolygon", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
