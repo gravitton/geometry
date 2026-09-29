@@ -350,6 +350,46 @@ func (p Polygon[T]) ConvexHull() Polygon[T] {
 	return Polygon[T]{points[:n:n]}
 }
 
+// Simplify returns the polygon without the vertices the outline does not need to stay within
+// the tolerance, by the Douglas–Peucker algorithm: every dropped vertex lies within the
+// tolerance of the edge that replaces it, by Segment.DistanceTo, boundary included within
+// Epsilon of T. At a tolerance of zero it drops a vertex repeating a neighbour or on the
+// straight line between the vertices kept either side, a fold running back along that line
+// included, and keeps a spike reaching beyond it.
+//
+// The outline is taken as a chain from its least vertex by Point.Compare around and back to
+// it, so the first split is at the vertex farthest from that one: both are extreme, so neither
+// is kept that the tolerance would drop. Each chain keeps the vertex farthest from the edge
+// joining its ends where it lies beyond the tolerance, and is split there; one lying within it
+// drops every vertex between the ends. An outline within the tolerance of its least vertex
+// keeps that vertex alone. The kept vertices are vertices of the polygon in its order, from
+// the first kept one, so a polygon with nothing to drop is returned equal to itself and
+// simplifying again changes nothing. A negative tolerance is taken absolute, and an empty
+// polygon is returned as it is.
+//
+// The kept vertices are appended to one slice with room for all of them, the one allocation,
+// and turned in place to start where the polygon does.
+func (p Polygon[T]) Simplify(tolerance float64) Polygon[T] {
+	if p.IsEmpty() {
+		return p
+	}
+
+	n, least := len(p.Points), 0
+	for i, vertex := range p.Points {
+		if vertex.Compare(p.Points[least]) < 0 {
+			least = i
+		}
+	}
+
+	kept, wrapped := p.appendKept(append(make([]Point[T], 0, n), p.Points[least]), least, least+n, math.Abs(tolerance))
+
+	slices.Reverse(kept)
+	slices.Reverse(kept[:wrapped])
+	slices.Reverse(kept[wrapped:])
+
+	return Polygon[T]{kept}
+}
+
 // compareAround orders two points along the boundary of the hull whose least and greatest
 // vertex the chord joins: the points on the side of the chord a clockwise walk from Start
 // reaches first, or on the chord, by Point.Compare, then the points on the other side in the
@@ -379,6 +419,33 @@ func (Polygon[T]) compareAround(chord Segment[T], a, b Point[T]) int {
 // polygon, only the points, so the receiver is unnamed.
 func (Polygon[T]) turn(a, b, c Point[T]) float64 {
 	return b.Subtract(a).Float().Cross(c.Subtract(b).Float())
+}
+
+// appendKept appends to dst the vertices Simplify keeps strictly between the vertices at from
+// and to, indices counted on around the outline past the last one: the vertex farthest from
+// the edge joining the two, the first of equals, where it lies beyond the tolerance, with the
+// vertices kept between it and either end. It returns the extended slice and how many of the
+// appended vertices lie past the last index, at the front of the polygon.
+func (p Polygon[T]) appendKept(dst []Point[T], from, to int, tolerance float64) ([]Point[T], int) {
+	n := len(p.Points)
+	edge := Segment[T]{p.Points[from%n], p.Points[to%n]}
+
+	farthest, distance := from, 0.0
+	for i := from + 1; i < to; i++ {
+		if d := edge.DistanceSquaredTo(p.Points[i%n]); d > distance {
+			farthest, distance = i, d
+		}
+	}
+
+	if lessOrEqualSquared[T](distance, tolerance) {
+		return dst, 0
+	}
+
+	dst, before := p.appendKept(dst, from, farthest, tolerance)
+	dst = append(dst, p.Points[farthest%n])
+	dst, after := p.appendKept(dst, farthest, to, tolerance)
+
+	return dst, before + farthest/n + after
 }
 
 // Contains reports whether the given point lies within the polygon, boundary included within
@@ -644,6 +711,27 @@ func (p Polygon[T]) IntersectsBox(box Box[T]) bool {
 // intersection tests walk the vertices once for the box and reuse it for every point they test.
 func (p Polygon[T]) containsWithin(point, a, b Point[T]) bool {
 	return point.Between(a, b) && p.DistanceSquaredTo(point) == 0
+}
+
+// containsMidpoint is Contains at the midpoint of a and b, a point T cannot always hold: the
+// step edgeWalk makes, the distance within Epsilon of T and the even-odd ray, taken on each
+// edge in float64, so for an integer T the midpoint is not rounded onto either point.
+// Segment.ClipPolygon judges each piece of a segment between two crossings by it.
+func (p Polygon[T]) containsMidpoint(a, b Point[T]) bool {
+	midpoint := a.Float().Midpoint(b.Float())
+
+	inside := false
+	for edge := range p.Edges() {
+		if lessOrEqualSquared[T](edge.Float().distanceSquaredTo(midpoint), 0) {
+			return true
+		}
+
+		if edge.Float().crossesRay(midpoint) {
+			inside = !inside
+		}
+	}
+
+	return inside
 }
 
 // walk folds every edge into the edgeWalk DistanceSquaredTo, Nearest and EnclosesCircle read, stopping

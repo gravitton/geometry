@@ -448,6 +448,106 @@ func BenchmarkPolygon_ConvexHull(b *testing.B) {
 	}
 }
 
+func TestPolygon_Simplify(t *testing.T) {
+	t.Run("drops a vertex on the line between its neighbours", func(t *testing.T) {
+		AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(1, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2)}).Simplify(0), Pol(squareVertices()))
+	})
+	t.Run("drops a repeated vertex", func(t *testing.T) {
+		AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2)}).Simplify(0), Pol(squareVertices()))
+	})
+	t.Run("keeps a spike reaching beyond the edge that would replace it", func(t *testing.T) {
+		spike := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(2, 0), Pt(2, 2)})
+
+		AssertPolygon(t, spike.Simplify(0), spike)
+	})
+	t.Run("drops a fold running back along the edge that replaces it", func(t *testing.T) {
+		folded := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(2, 0), Pt(6, 0), Pt(6, 6), Pt(0, 6)})
+
+		AssertPolygon(t, folded.Simplify(0), Pol([]Point[int]{Pt(0, 0), Pt(6, 0), Pt(6, 6), Pt(0, 6)}))
+	})
+	t.Run("drops a vertex within the tolerance", func(t *testing.T) {
+		bumped := Pol([]Point[int]{Pt(0, 0), Pt(5, 1), Pt(10, 0), Pt(10, 10), Pt(0, 10)})
+
+		AssertPolygon(t, bumped.Simplify(1), Pol([]Point[int]{Pt(0, 0), Pt(10, 0), Pt(10, 10), Pt(0, 10)}))
+		AssertPolygon(t, bumped.Simplify(0.5), bumped)
+	})
+	t.Run("drops a run of vertices within the tolerance of the edge replacing them", func(t *testing.T) {
+		wavy := Pol([]Point[int]{Pt(0, 0), Pt(10, 2), Pt(14, -1), Pt(20, 0), Pt(20, 20), Pt(0, 20)})
+
+		AssertPolygon(t, wavy.Simplify(2.2), Pol([]Point[int]{Pt(0, 0), Pt(20, 0), Pt(20, 20), Pt(0, 20)}))
+	})
+	t.Run("drops the vertices where the outline closes", func(t *testing.T) {
+		AssertPolygon(t, Pol([]Point[int]{Pt(1, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2), Pt(0, 0)}).Simplify(0), Pol([]Point[int]{Pt(2, 0), Pt(2, 2), Pt(0, 2), Pt(0, 0)}))
+		AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2), Pt(0, 1)}).Simplify(0), Pol(squareVertices()))
+	})
+	t.Run("collinear vertices give the two ends", func(t *testing.T) {
+		AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(1, 1), Pt(2, 2), Pt(3, 3)}).Simplify(0), Pol([]Point[int]{Pt(0, 0), Pt(3, 3)}))
+	})
+	t.Run("an outline within the tolerance of one vertex keeps it alone", func(t *testing.T) {
+		AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(1, 0), Pt(0, 1)}).Simplify(2), Pol([]Point[int]{Pt(0, 0)}))
+		AssertPolygon(t, Pol([]Point[int]{Pt(1, 1), Pt(1, 1), Pt(1, 1)}).Simplify(0), Pol([]Point[int]{Pt(1, 1)}))
+	})
+	t.Run("a negative tolerance is taken absolute", func(t *testing.T) {
+		bumped := Pol([]Point[int]{Pt(0, 0), Pt(5, 1), Pt(10, 0), Pt(10, 10), Pt(0, 10)})
+
+		AssertPolygon(t, bumped.Simplify(-1), bumped.Simplify(1))
+	})
+	t.Run("float drops within Epsilon at zero tolerance", func(t *testing.T) {
+		nearly := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(1.0, Delta/2), Pt(2.0, 0.0), Pt(2.0, 2.0), Pt(0.0, 2.0)})
+
+		AssertPolygon(t, nearly.Simplify(0), Pol([]Point[float64]{Pt(0.0, 0.0), Pt(2.0, 0.0), Pt(2.0, 2.0), Pt(0.0, 2.0)}))
+	})
+	t.Run("keeps the vertex a curve strays farthest by, and drops those within the edges to it", func(t *testing.T) {
+		arc := Pol([]Point[int]{Pt(0, 0), Pt(4, 1), Pt(8, 2), Pt(12, 2), Pt(16, 1), Pt(20, 0), Pt(20, 10), Pt(0, 10)})
+
+		AssertPolygon(t, arc.Simplify(1.5), Pol([]Point[int]{Pt(0, 0), Pt(8, 2), Pt(20, 0), Pt(20, 10), Pt(0, 10)}))
+		AssertPolygon(t, arc.Simplify(2), Pol([]Point[int]{Pt(0, 0), Pt(20, 0), Pt(20, 10), Pt(0, 10)}))
+	})
+	t.Run("keeps the polygon's order, from the first kept vertex", func(t *testing.T) {
+		turned := Pol([]Point[int]{Pt(2, 2), Pt(0, 2), Pt(0, 1), Pt(0, 0), Pt(2, 0)})
+
+		AssertPolygon(t, turned.Simplify(0), Pol([]Point[int]{Pt(2, 2), Pt(0, 2), Pt(0, 0), Pt(2, 0)}))
+	})
+	t.Run("an empty polygon is returned as it is", func(t *testing.T) {
+		assert.True(t, Polygon[int]{}.Simplify(1).IsZero())
+	})
+	t.Run("allocates once", func(t *testing.T) {
+		square := Pol([]Point[int]{Pt(0, 0), Pt(1, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2)})
+
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = square.Simplify(0).Points
+		}), 1)
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, p := range outlineFixtures() {
+			for _, tolerance := range []float64{0, 0.5, 2} {
+				simplified := p.Simplify(tolerance)
+				message := fmt.Sprintf("%s ~%v → %s: ", p, tolerance, simplified)
+
+				assert.True(t, simplified.Simplify(tolerance).Equal(simplified), message)
+				for _, vertex := range p.Points {
+					assert.True(t, slices.ContainsFunc(slices.Collect(simplified.Edges()), func(edge Segment[float64]) bool {
+						return lessOrEqualSquared[float64](edge.DistanceSquaredTo(vertex), tolerance)
+					}), message+vertex.String()+" within the tolerance: ")
+				}
+				assert.Equal(t, simplified.IsEmpty(), p.IsEmpty(), message)
+
+				i := 0
+				for _, vertex := range simplified.Points {
+					for i < len(p.Points) && p.Points[i] != vertex {
+						i++
+					}
+
+					assert.True(t, i < len(p.Points), message+vertex.String()+" in order: ")
+					i++
+				}
+			}
+
+			AssertNumber(t, p.Simplify(0).Area(), p.Area(), fmt.Sprintf("%s: ", p))
+		}
+	})
+}
+
 func TestPolygon_Contains(t *testing.T) {
 	square := Pol(squareVertices())
 
