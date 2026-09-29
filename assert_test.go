@@ -114,16 +114,16 @@ func TestAssertSegment(t *testing.T) {
 }
 
 func TestAssertRay(t *testing.T) {
-	r := Ray[int]{Pt(1, 2), Vec(3, 4)}
+	r := RayAlong(Pt(1, 2), Vec(3, 4))
 
 	t.Run("equal", func(t *testing.T) {
-		assertHelper(t, AssertRay, r, Ray[int]{Pt(1, 2), Vec(3, 4)}, true)
+		assertHelper(t, AssertRay, r, RayAlong(Pt(1, 2), Vec(3, 4)), true)
 	})
 	t.Run("origin differs", func(t *testing.T) {
-		assertHelper(t, AssertRay, r, Ray[int]{Pt(9, 2), Vec(3, 4)}, false)
+		assertHelper(t, AssertRay, r, RayAlong(Pt(9, 2), Vec(3, 4)), false)
 	})
 	t.Run("direction differs", func(t *testing.T) {
-		assertHelper(t, AssertRay, r, Ray[int]{Pt(1, 2), Vec(3, 9)}, false)
+		assertHelper(t, AssertRay, r, RayAlong(Pt(1, 2), Vec(3, 9)), false)
 	})
 }
 

@@ -40,16 +40,16 @@ func Rect[T Number](center Point[T], size Size[T]) Rectangle[T] {
 	return Rectangle[T]{center, size.Abs(), 0}
 }
 
-// RectangleFromMin creates a Rectangle from min point and size. A negative extent measures the
-// other way, so the given point is a corner but no longer the minimum one.
-func RectangleFromMin[T Number](min Point[T], size Size[T]) Rectangle[T] {
-	return RectangleFromMinMax(min, min.Add(size.Vector()))
+// RectangleFromMin creates a Rectangle from its min corner a and size. A negative extent measures
+// the other way, so the given point is a corner but no longer the minimum one.
+func RectangleFromMin[T Number](a Point[T], size Size[T]) Rectangle[T] {
+	return RectangleFromMinMax(a, a.Add(size.Vector()))
 }
 
-// RectangleFromMax creates a Rectangle from max point and size. A negative extent measures the
-// other way, so the given point is a corner but no longer the maximum one.
-func RectangleFromMax[T Number](max Point[T], size Size[T]) Rectangle[T] {
-	return RectangleFromMinMax(max.Add(size.Vector().Negate()), max)
+// RectangleFromMax creates a Rectangle from its max corner b and size. A negative extent measures
+// the other way, so the given point is a corner but no longer the maximum one.
+func RectangleFromMax[T Number](b Point[T], size Size[T]) Rectangle[T] {
+	return RectangleFromMinMax(b.Add(size.Vector().Negate()), b)
 }
 
 // RectangleFromMinMax creates a Rectangle from two opposite corners, given in either order.

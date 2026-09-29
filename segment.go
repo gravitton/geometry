@@ -265,13 +265,14 @@ func (s Segment[T]) IntersectsSegment(segment Segment[T]) bool {
 //
 // The segments cross where Intersects says they do: either they properly cross, decided on
 // cross products that are exact for an integer T, and the point is where the lines through
-// them meet; or an endpoint of one lies on the other within Epsilon of T, and that endpoint is
-// the point. The touch is judged on the endpoint's distance, like Contains, rather than on the
+// them meet, within both; or an endpoint of one lies on the other within Epsilon of T, and that
+// endpoint is the point, which is also the answer for nearly collinear float segments whose
+// crossing rounding would place off them. The touch is judged on the endpoint's distance, like Contains, rather than on the
 // fraction along the segment, which for a shallow crossing can put the same endpoint far
 // outside the other segment.
 func (s Segment[T]) IntersectionSegment(segment Segment[T]) (Point[T], bool) {
-	if s.crosses(segment) {
-		return s.crossing(segment), true
+	if point, ok := s.crossing(segment); ok {
+		return point.Cast[T](), true
 	}
 
 	if s.parallel(segment) {
@@ -570,11 +571,14 @@ func (s Segment[T]) foot(point Point[T]) Point[T] {
 	return s.PointAt(along / lengthSquared)
 }
 
-// crosses reports whether the segments properly cross: each has its endpoints on opposite sides
-// of the other. Touching and collinear segments do not cross and are left to the endpoint
-// distances, which cover them within the tolerance of the caller.
+// crosses reports whether the segments properly cross, as crossing decides it: each has its
+// endpoints on opposite sides of the other, and the lines through them meet within both.
+// Touching and collinear segments do not cross and are left to the endpoint distances, which
+// cover them within the tolerance of the caller.
 func (s Segment[T]) crosses(segment Segment[T]) bool {
-	return s.separates(segment) && segment.separates(s)
+	_, ok := s.crossing(segment)
+
+	return ok
 }
 
 // separates reports whether the endpoints of the given segment lie strictly on opposite sides
@@ -587,15 +591,26 @@ func (s Segment[T]) separates(segment Segment[T]) bool {
 	return (start > 0 && end < 0) || (start < 0 && end > 0)
 }
 
-// crossing returns the point where the lines through two properly crossing segments meet, the
-// fraction of the way along this segment from the same cross products crosses decided on.
-func (s Segment[T]) crossing(segment Segment[T]) Point[T] {
+// crossing returns the point where the lines through two properly crossing segments meet, in
+// float64, and false where they do not properly cross. The sides decide it on the exact signs of
+// cross products, but for nearly collinear float segments rounding can put the ends of each on
+// opposite sides of the line the other runs along, and the point, divided out of two cross
+// products near zero, lands anywhere on that line. A point whose fraction along this segment,
+// or whose projection onto the other, falls outside it is therefore no crossing, and the pair is
+// left to the endpoints, on the comparisons foot makes.
+func (s Segment[T]) crossing(segment Segment[T]) (Point[float64], bool) {
+	if !s.separates(segment) || !segment.separates(s) {
+		return Point[float64]{}, false
+	}
+
 	a, b := s.Float(), segment.Float()
+	direction := b.Vector()
 
-	t := b.Start.Subtract(a.Start).Cross(b.Vector()) / a.Vector().Cross(b.Vector())
+	t := b.Start.Subtract(a.Start).Cross(direction) / a.Vector().Cross(direction)
 	point := a.PointAt(t)
+	along := point.Subtract(b.Start).Dot(direction)
 
-	return point.Cast[T]()
+	return point, 0 <= t && t <= 1 && 0 <= along && along <= direction.LengthSquared()
 }
 
 // parallel reports whether the segments run along the same direction. A zero-length segment

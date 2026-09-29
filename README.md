@@ -115,6 +115,7 @@ view.Contains(geom.Pt(800, 600))            // true, closed like every shape
 view.Inset(geom.PadU(16))                   // (16,16)-(784,584)
 
 tip := geom.BoxFromMin(geom.Pt(750, 20), geom.Sz(120, 40))
+hud := geom.Bx(geom.Pt(0, 0), geom.Pt(200, 40)) // the corners in either order
 tip.Clamp(view)           // (680,20)-(800,60), moved by the least that brings it inside
 view.IntersectionBox(tip) // (750,20)-(800,60), true: the part on screen
 
@@ -235,7 +236,7 @@ A `Ray` is a half-line from `Origin` along `Direction`, a `Collider` like the sh
 the `Start` of the part inside is the first point of the shape the ray reaches, its origin where the shape contains it:
 
 ```go
-ray := geom.RayThrough(camera, cursor) // from the camera through the cursor
+ray := geom.RayThrough(camera, cursor) // from the camera through the cursor; RayAlong takes a direction
 ray.IntersectsRectangle(r)             // IntersectsRay on every Collider gives the same answer
 ray.ClipPolygon(p)                     // the parts inside a concave polygon, from Origin on
 ray.IntersectionBox(box)               // the boundary crossings, from Origin on

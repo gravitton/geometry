@@ -775,24 +775,24 @@ func TestCircle_IntersectsRay(t *testing.T) {
 	circle := Circ(Pt(0.0, 0.0), 1.0)
 
 	t.Run("passing through", func(t *testing.T) {
-		assert.True(t, circle.IntersectsRay(Ray[float64]{Pt(-2.0, 0.0), Vec(1.0, 0.0)}))
+		assert.True(t, circle.IntersectsRay(RayAlong(Pt(-2.0, 0.0), Vec(1.0, 0.0))))
 	})
 	t.Run("pointing away", func(t *testing.T) {
-		assert.False(t, circle.IntersectsRay(Ray[float64]{Pt(-2.0, 0.0), Vec(-1.0, 0.0)}))
+		assert.False(t, circle.IntersectsRay(RayAlong(Pt(-2.0, 0.0), Vec(-1.0, 0.0))))
 	})
 	t.Run("tangent counts", func(t *testing.T) {
-		assert.True(t, circle.IntersectsRay(Ray[float64]{Pt(-2.0, 1.0), Vec(1.0, 0.0)}))
-		assert.False(t, circle.IntersectsRay(Ray[float64]{Pt(-2.0, 1.0+2*Delta), Vec(1.0, 0.0)}))
+		assert.True(t, circle.IntersectsRay(RayAlong(Pt(-2.0, 1.0), Vec(1.0, 0.0))))
+		assert.False(t, circle.IntersectsRay(RayAlong(Pt(-2.0, 1.0+2*Delta), Vec(1.0, 0.0))))
 	})
 	t.Run("a tangent behind the origin is missed", func(t *testing.T) {
-		assert.False(t, circle.IntersectsRay(Ray[float64]{Pt(1.5, 1.0), Vec(1.0, 0.0)}))
+		assert.False(t, circle.IntersectsRay(RayAlong(Pt(1.5, 1.0), Vec(1.0, 0.0))))
 	})
 	t.Run("the origin inside counts", func(t *testing.T) {
-		assert.True(t, circle.IntersectsRay(Ray[float64]{Pt(0.5, 0.0), Vec(0.0, -3.0)}))
+		assert.True(t, circle.IntersectsRay(RayAlong(Pt(0.5, 0.0), Vec(0.0, -3.0))))
 	})
 	t.Run("a zero direction is its origin", func(t *testing.T) {
-		assert.True(t, circle.IntersectsRay(Ray[float64]{Pt(0.5, 0.0), Vec(0.0, 0.0)}))
-		assert.False(t, circle.IntersectsRay(Ray[float64]{Pt(2.0, 0.0), Vec(0.0, 0.0)}))
+		assert.True(t, circle.IntersectsRay(RayAlong(Pt(0.5, 0.0), Vec(0.0, 0.0))))
+		assert.False(t, circle.IntersectsRay(RayAlong(Pt(2.0, 0.0), Vec(0.0, 0.0))))
 	})
 	t.Run("matches a segment reaching past the circle along the ray", func(t *testing.T) {
 		for _, c := range circleFixtures {
@@ -807,20 +807,20 @@ func TestCircle_IntersectionRay(t *testing.T) {
 	circle := Circ(Pt(0, 0), 5)
 
 	t.Run("passing through gives both crossings from Origin on", func(t *testing.T) {
-		AssertVertices(t, circle.IntersectionRay(Ray[int]{Pt(-10, 0), Vec(1, 0)}), []Point[int]{Pt(-5, 0), Pt(5, 0)})
-		AssertVertices(t, circle.IntersectionRay(Ray[int]{Pt(10, 0), Vec(-2, 0)}), []Point[int]{Pt(5, 0), Pt(-5, 0)})
+		AssertVertices(t, circle.IntersectionRay(RayAlong(Pt(-10, 0), Vec(1, 0))), []Point[int]{Pt(-5, 0), Pt(5, 0)})
+		AssertVertices(t, circle.IntersectionRay(RayAlong(Pt(10, 0), Vec(-2, 0))), []Point[int]{Pt(5, 0), Pt(-5, 0)})
 	})
 	t.Run("starting inside gives the exit", func(t *testing.T) {
-		AssertVertices(t, circle.IntersectionRay(Ray[int]{Pt(0, 0), Vec(0, 1)}), []Point[int]{Pt(0, 5)})
+		AssertVertices(t, circle.IntersectionRay(RayAlong(Pt(0, 0), Vec(0, 1))), []Point[int]{Pt(0, 5)})
 	})
 	t.Run("tangent gives one point", func(t *testing.T) {
-		AssertVertices(t, circle.IntersectionRay(Ray[int]{Pt(-10, 5), Vec(1, 0)}), []Point[int]{Pt(0, 5)})
+		AssertVertices(t, circle.IntersectionRay(RayAlong(Pt(-10, 5), Vec(1, 0))), []Point[int]{Pt(0, 5)})
 	})
 	t.Run("pointing away gives none", func(t *testing.T) {
-		assert.Nil(t, circle.IntersectionRay(Ray[int]{Pt(-10, 0), Vec(-1, 0)}))
+		assert.Nil(t, circle.IntersectionRay(RayAlong(Pt(-10, 0), Vec(-1, 0))))
 	})
 	t.Run("allocates once for the result and not at all for none", func(t *testing.T) {
-		through, away := Ray[int]{Pt(-10, 0), Vec(1, 0)}, Ray[int]{Pt(-10, 0), Vec(-1, 0)}
+		through, away := RayAlong(Pt(-10, 0), Vec(1, 0)), RayAlong(Pt(-10, 0), Vec(-1, 0))
 
 		AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkPoints = circle.IntersectionRay(through)

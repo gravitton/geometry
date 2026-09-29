@@ -25,15 +25,21 @@ type Box[T Number] struct {
 	Max Point[T] `json:"b"`
 }
 
-// BoxFromMin creates a Box from its min point and size. A negative extent measures the other
-// way, so the given point is a corner but no longer the minimum one.
-func BoxFromMin[T Number](min Point[T], size Size[T]) Box[T] {
-	return BoxFromMinMax(min, min.Add(size.Vector()))
+// Bx is shorthand for Box{min, max} between two opposite corners, given in either order: each
+// axis is ordered, so Min is never past Max.
+func Bx[T Number](a, b Point[T]) Box[T] {
+	return Box[T]{Point[T]{min(a.X, b.X), min(a.Y, b.Y)}, Point[T]{max(a.X, b.X), max(a.Y, b.Y)}}
 }
 
-// BoxFromMinMax creates a Box from two opposite corners, given in either order.
+// BoxFromMin creates a Box from its min corner a and size. A negative extent measures the other
+// way, so the given point is a corner but no longer the minimum one.
+func BoxFromMin[T Number](a Point[T], size Size[T]) Box[T] {
+	return BoxFromMinMax(a, a.Add(size.Vector()))
+}
+
+// BoxFromMinMax creates a Box from two opposite corners, given in either order, as Bx does.
 func BoxFromMinMax[T Number](a, b Point[T]) Box[T] {
-	return Box[T]{Point[T]{min(a.X, b.X), min(a.Y, b.Y)}, Point[T]{max(a.X, b.X), max(a.Y, b.Y)}}
+	return Bx(a, b)
 }
 
 // BoxFromSize creates a Box from zero point and size. A negative extent measures the other

@@ -74,9 +74,19 @@ func Seg[T geom.Number](start, end geom.Point[T]) Segment {
 	return geom.Seg(start, end).Int()
 }
 
+// RayAlong is shorthand for geom.RayAlong(origin, direction).Int()
+func RayAlong[T geom.Number](origin geom.Point[T], direction geom.Vector[T]) Ray {
+	return geom.RayAlong(origin, direction).Int()
+}
+
 // Rect is shorthand for geom.Rect(center, size).Int()
 func Rect[T geom.Number](center geom.Point[T], size geom.Size[T]) Rectangle {
 	return geom.Rect(center, size).Int()
+}
+
+// Bx is shorthand for geom.Bx(a, b).Int()
+func Bx[T geom.Number](a, b geom.Point[T]) Box {
+	return geom.Bx(a, b).Int()
 }
 
 // Pol is shorthand for geom.Pol(vertices).Int()

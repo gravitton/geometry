@@ -308,6 +308,7 @@ func TestBody(t *testing.T) {
 func TestTransformable(t *testing.T) {
 	t.Run("every shape moves and scales in its own type", func(t *testing.T) {
 		AssertSegment(t, moved(Seg(Pt(0, 0), Pt(2, 2)), Vec(1, 1)), Seg(Pt(1, 1), Pt(3, 3)))
+		AssertRay(t, moved(RayAlong(Pt(0, 0), Vec(2, 2)), Vec(1, 1)), RayAlong(Pt(1, 1), Vec(2, 2)))
 		AssertRectangle(t, moved(Rect(Pt(0, 0), Sz(2, 2)), Vec(1, 1)), Rect(Pt(1, 1), Sz(2, 2)))
 		AssertCircle(t, moved(Circ(Pt(0, 0), 2), Vec(1, 1)), Circ(Pt(1, 1), 2))
 		AssertPolygon(t, moved(Pol(squareVertices()), Vec(1, 1)), Pol([]Point[int]{Pt(1, 1), Pt(3, 1), Pt(3, 3), Pt(1, 3)}))

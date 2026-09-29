@@ -10,6 +10,10 @@ import (
 )
 
 func TestBox_Constructor(t *testing.T) {
+	t.Run("shorthand", func(t *testing.T) {
+		AssertBox(t, Bx(Pt(0, 0), Pt(4, 2)), Box[int]{Pt(0, 0), Pt(4, 2)})
+		AssertBox(t, Bx(Pt(1.0, 3.0), Pt(0.0, 0.0)), Box[float64]{Pt(0.0, 0.0), Pt(1.0, 3.0)})
+	})
 	t.Run("from min", func(t *testing.T) {
 		AssertBox(t, BoxFromMin(Pt(1, 2), Sz(4, 3)), Box[int]{Pt(1, 2), Pt(5, 5)})
 		AssertBox(t, BoxFromMin(Pt(0.5, -1.0), Sz(1.5, 2.5)), Box[float64]{Pt(0.5, -1.0), Pt(2.0, 1.5)})
@@ -693,6 +697,11 @@ var boxFixtures = []Box[float64]{
 	BoxFromMin(Pt(0.0, 0.0), Sz(10.0, 20.0)),
 	BoxFromMinMax(Pt(-2.0, -4.0), Pt(6.0, 2.0)),
 	BoxFromMinMax(Pt(3.0, 3.0), Pt(3.0, 5.0)),
+}
+
+func ExampleBx() {
+	fmt.Println(Bx(Pt(0, 2), Pt(4, 0)))
+	// Output: (0,0)-(4,2)
 }
 
 func ExampleBoxFromMinMax() {

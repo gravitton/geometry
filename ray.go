@@ -19,6 +19,12 @@ type Ray[T Number] struct {
 	Direction Vector[T] `json:"d"`
 }
 
+// RayAlong creates a Ray starting at the origin and running along the direction, the ray its
+// fields name. A zero direction gives a ray that is its origin alone.
+func RayAlong[T Number](origin Point[T], direction Vector[T]) Ray[T] {
+	return Ray[T]{origin, direction}
+}
+
 // RayThrough creates a Ray starting at the origin and passing through the point, the ray a
 // picking routine casts from a camera toward a cursor. A point equal to the origin gives a zero
 // Direction, a ray that is its origin alone.
@@ -41,6 +47,32 @@ func (r Ray[T]) Translate(vector Vector[T]) Ray[T] {
 // point a ray is placed by, as the center is on a closed shape.
 func (r Ray[T]) MoveTo(point Point[T]) Ray[T] {
 	return Ray[T]{point, r.Direction}
+}
+
+// Scale creates a new Ray with its direction scaled by the factor about the origin: the points
+// of the ray stay, and PointAt steps the scaled length. A negative factor turns the ray to the
+// other side of its origin, as it flips the ends of a segment, and a zero factor collapses the
+// ray onto its origin. For integer T the direction is rounded.
+func (r Ray[T]) Scale(factor float64) Ray[T] {
+	return r.ScaleXY(factor, factor)
+}
+
+// ScaleXY creates a new Ray with its direction scaled by the factors along X and Y about the
+// origin, which changes the direction unless the factors are equal.
+func (r Ray[T]) ScaleXY(factorX, factorY float64) Ray[T] {
+	return Ray[T]{r.Origin, r.Direction.MultiplyXY(factorX, factorY)}
+}
+
+// Unscale creates a new Ray with its direction scaled by the inverse factor about the origin,
+// the inverse of Scale. Like Divide it panics for a zero factor.
+func (r Ray[T]) Unscale(factor float64) Ray[T] {
+	return r.UnscaleXY(factor, factor)
+}
+
+// UnscaleXY creates a new Ray with its direction scaled by the inverse of the given factors
+// about the origin, the inverse of ScaleXY. Like Divide it panics for a zero factor.
+func (r Ray[T]) UnscaleXY(factorX, factorY float64) Ray[T] {
+	return Ray[T]{r.Origin, r.Direction.DivideXY(factorX, factorY)}
 }
 
 // PointAt returns the point t times Direction away from Origin, behind the origin for a
@@ -141,8 +173,8 @@ func (r Ray[T]) IntersectsRay(ray Ray[T]) bool {
 // lies on the other ray. For integer T the crossing is rounded like every other result stored
 // into T.
 func (r Ray[T]) IntersectionRay(ray Ray[T]) (Point[T], bool) {
-	if r.crosses(ray) {
-		return r.crossing(ray), true
+	if point, ok := r.crossing(ray); ok {
+		return point.Cast[T](), true
 	}
 
 	if r.parallel(ray) {
@@ -304,32 +336,36 @@ func (r Ray[T]) foot(point Point[T]) Point[T] {
 	return r.PointAt(along / direction.LengthSquared())
 }
 
-// crosses reports whether the rays properly cross: the lines through them meet strictly ahead
-// of both origins, each fraction read from the sign of a cross product against the sign of the
-// cross of the directions, with no division. Touching and parallel rays do not cross and are
-// left to the origin distances, and a NaN, which has neither sign, crosses nothing.
+// crosses reports whether the rays properly cross, as crossing decides it: the lines through
+// them meet strictly ahead of both origins. Touching and parallel rays do not cross and are left
+// to the origin distances.
 func (r Ray[T]) crosses(ray Ray[T]) bool {
-	a, b := r.Direction.Float(), ray.Direction.Float()
-	offset := ray.Origin.Subtract(r.Origin).Float()
-	denominator, along, other := a.Cross(b), offset.Cross(b), offset.Cross(a)
+	_, ok := r.crossing(ray)
 
-	switch {
-	case denominator > 0:
-		return along > 0 && other > 0
-	case denominator < 0:
-		return along < 0 && other < 0
-	default:
-		return false
-	}
+	return ok
 }
 
-// crossing returns the point where the lines through two properly crossing rays meet, the
-// fraction along this ray from the same cross products crosses decided on.
-func (r Ray[T]) crossing(ray Ray[T]) Point[T] {
-	a, b := r.Direction.Float(), ray.Direction.Float()
-	offset := ray.Origin.Subtract(r.Origin).Float()
+// crossing returns the point where the lines through two properly crossing rays meet, in
+// float64, and false where they do not properly cross. Each fraction is read from the sign of a
+// cross product against the sign of the cross of the directions, with no division, so a NaN,
+// which has neither sign, crosses nothing. For nearly collinear float rays rounding can give
+// both fractions the sign of a crossing, and the point, divided out of cross products near zero,
+// lands anywhere along this ray; a point whose projection onto the other falls behind its
+// origin is therefore no crossing, and the pair is left to the origins, on the comparison foot
+// makes.
+func (r Ray[T]) crossing(ray Ray[T]) (Point[float64], bool) {
+	a, b := r.Float(), ray.Float()
+	offset := b.Origin.Subtract(a.Origin)
+	denominator, along, other := a.Direction.Cross(b.Direction), offset.Cross(b.Direction), offset.Cross(a.Direction)
 
-	return r.PointAt(offset.Cross(b) / a.Cross(b))
+	ahead := (denominator > 0 && along > 0 && other > 0) || (denominator < 0 && along < 0 && other < 0)
+	if !ahead {
+		return Point[float64]{}, false
+	}
+
+	point := a.PointAt(along / denominator)
+
+	return point, point.Subtract(b.Origin).Dot(b.Direction) >= 0
 }
 
 // parallel reports whether the rays run along the same line direction, either way. A ray with a

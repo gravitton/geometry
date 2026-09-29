@@ -33,7 +33,7 @@ type Outline[T Number] interface {
 	Edges() iter.Seq[Segment[T]]
 }
 
-// Collider is a shape tested against every shape: Segment, Ray, Rectangle, Circle, Polygon,
+// Collider is a shape tested against every shape: Circle, Segment, Ray, Polygon, Rectangle,
 // RegularPolygon and Box, each with the seven Intersects methods, its own kind included. Every
 // test is symmetric and includes a touch within Epsilon of T, so a broad collision pass calls
 // the method for the other side's kind and gets the same answer from either. Ray is the one
@@ -43,11 +43,11 @@ type Outline[T Number] interface {
 // the closed forms the circle pairs are built on reaches. Test an ellipse as its
 // RegularPolygon of the wanted resolution.
 type Collider[T Number] interface {
+	IntersectsCircle(circle Circle[T]) bool
 	IntersectsSegment(segment Segment[T]) bool
 	IntersectsRay(ray Ray[T]) bool
-	IntersectsRectangle(rectangle Rectangle[T]) bool
-	IntersectsCircle(circle Circle[T]) bool
 	IntersectsPolygon(polygon Polygon[T]) bool
+	IntersectsRectangle(rectangle Rectangle[T]) bool
 	IntersectsRegularPolygon(polygon RegularPolygon[T]) bool
 	IntersectsBox(box Box[T]) bool
 }
@@ -63,16 +63,16 @@ type Body[T Number] interface {
 	Inertia() float64
 }
 
-// Transformable is a shape that can be moved, turned and scaled, in its own type: Segment, Rectangle, Circle,
-// Ellipse, Polygon and RegularPolygon, each returning itself rather than a common type, so the parameter
+// Transformable is a shape that can be moved, turned and scaled, in its own type: Segment, Ray, Rectangle,
+// Circle, Ellipse, Polygon and RegularPolygon, each returning itself rather than a common type, so the parameter
 // S stands for the shape and every method returns it. It is a constraint, not a value type,
 // and is written self-referentially at the call site:
 //
 //	func Tween[T Number, S Transformable[T, S]](shape S, to Point[T], t float64) S
 //
-// Every shape turns about its own center, Circle.Rotate giving the circle back. Lerp is
-// deliberately absent: Segment.PointAt is the point a fraction along the segment rather than
-// a step toward another segment, and Polygon has none, so the six shapes do not share it.
+// Every shape turns about its own center, Circle.Rotate giving the circle back, and a Ray turns
+// and scales about its origin. Lerp is deliberately absent: Segment.PointAt is the point a fraction along the segment
+// rather than a step toward another segment, and Polygon has none, so the six shapes do not share it.
 // A call through a type parameter constrained by an interface allocates, so this is for the
 // code around a hot loop, never inside one.
 type Transformable[T Number, S any] interface {
