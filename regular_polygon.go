@@ -408,7 +408,7 @@ func (rp RegularPolygon[T]) AlignTo(direction Direction, point Point[T]) Regular
 }
 
 // Contains reports whether the given point lies within the polygon, boundary included within
-// Epsilon of T, the same closed convention as Polygon.Contains, and exactly what the Polygon
+// the tolerance, the same closed convention as Polygon.Contains, and exactly what the Polygon
 // of the vertices contains, for an integer T on the rounded vertices. A point outside Bounds
 // is rejected before any edge is examined; an empty polygon contains nothing.
 func (rp RegularPolygon[T]) Contains(point Point[T]) bool {
@@ -430,7 +430,7 @@ func (rp RegularPolygon[T]) DistanceTo(point Point[T]) float64 {
 
 // DistanceSquaredTo returns the squared distance DistanceTo takes the root of, faster for
 // comparisons, in one pass over the edges Edges iterates without building the vertices, the
-// edgeWalk every closed shape makes: zero for a point on an edge within Epsilon of T or
+// edgeWalk every closed shape makes: zero for a point on an edge within the tolerance or
 // inside by the even-odd rule, the squared distance to the nearest edge otherwise, and
 // infinity for an empty polygon. It is a float64 even for an integer T, like
 // Polygon.DistanceSquaredTo. Contains and IntersectsCircle are built on it.
@@ -447,14 +447,14 @@ func (rp RegularPolygon[T]) Nearest(point Point[T]) Point[T] {
 }
 
 // EnclosesCircle reports whether the circle lies within the regular polygon: its center is contained
-// and every edge is at least the radius away, within Epsilon of T, read off the walk
+// and every edge is at least the radius away, within the tolerance, read off the walk
 // DistanceSquaredTo makes, so a circle touching an edge from inside is enclosed.
 func (rp RegularPolygon[T]) EnclosesCircle(circle Circle[T]) bool {
-	return rp.walk(circle.Center).clears(float64(circle.Radius))
+	return rp.walk(circle.Center).clears(circle)
 }
 
 // EnclosesSegment reports whether the segment lies within the regular polygon: both endpoints are
-// contained, within Epsilon of T, and a convex shape holds every point between two it contains.
+// contained, within the tolerance, and a convex shape holds every point between two it contains.
 func (rp RegularPolygon[T]) EnclosesSegment(segment Segment[T]) bool {
 	a, b := rp.minMax()
 
@@ -462,7 +462,7 @@ func (rp RegularPolygon[T]) EnclosesSegment(segment Segment[T]) bool {
 }
 
 // EnclosesPolygon reports whether the polygon lies within the regular polygon: every vertex is
-// contained, within Epsilon of T, and a convex shape holds every point between points it
+// contained, within the tolerance, and a convex shape holds every point between points it
 // contains. An empty polygon is enclosed by nothing.
 func (rp RegularPolygon[T]) EnclosesPolygon(polygon Polygon[T]) bool {
 	if polygon.IsEmpty() {
@@ -480,7 +480,7 @@ func (rp RegularPolygon[T]) EnclosesPolygon(polygon Polygon[T]) bool {
 }
 
 // EnclosesRectangle reports whether the rectangle lies within the regular polygon: every corner is
-// contained, within Epsilon of T, whatever the angles.
+// contained, within the tolerance, whatever the angles.
 func (rp RegularPolygon[T]) EnclosesRectangle(rectangle Rectangle[T]) bool {
 	a, b := rp.minMax()
 	for vertex := range rectangle.Vertices() {
@@ -493,7 +493,7 @@ func (rp RegularPolygon[T]) EnclosesRectangle(rectangle Rectangle[T]) bool {
 }
 
 // EnclosesRegularPolygon reports whether the regular polygon lies within the regular polygon: every
-// vertex is contained, within Epsilon of T. An empty polygon is enclosed by nothing.
+// vertex is contained, within the tolerance. An empty polygon is enclosed by nothing.
 func (rp RegularPolygon[T]) EnclosesRegularPolygon(polygon RegularPolygon[T]) bool {
 	if polygon.IsEmpty() {
 		return false
@@ -559,8 +559,8 @@ func (rp RegularPolygon[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 
 // IntersectsRegularPolygon reports whether the polygons share a point: a vertex of one lies within the
 // other, or an edge of one crosses an edge of the other, as Polygon.IntersectsPolygon decides on
-// their Polygon forms, without building them. Touching polygons intersect, within Epsilon of
-// T, and an empty polygon intersects nothing. Polygons whose Bounds do not overlap are
+// their Polygon forms, without building them. Touching polygons intersect, within the
+// tolerance, and an empty polygon intersects nothing. Polygons whose Bounds do not overlap are
 // rejected before any edge pair is examined. The vertices of the given polygon are placed
 // again for every edge of this one, since no vertex slice is built: the cost is a sine and
 // cosine per edge pair, not an allocation.
@@ -609,7 +609,7 @@ func (rp RegularPolygon[T]) containsWithin(point, a, b Point[T]) bool {
 }
 
 // walk folds every edge into the edgeWalk DistanceSquaredTo, Nearest and EnclosesCircle read, stopping
-// at an edge the point lies on within Epsilon of T.
+// at an edge the point lies on within the tolerance.
 func (rp RegularPolygon[T]) walk(point Point[T]) edgeWalk[T] {
 	w := edgeWalk[T]{distance: math.Inf(1)}
 	for edge := range rp.Edges() {

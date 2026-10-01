@@ -59,9 +59,14 @@
 // # Boundaries
 //
 // Rectangle.Contains, Box.Contains, Circle.Contains, Ellipse.Contains, Segment.Contains, Ray.Contains,
-// Polygon.Contains, RegularPolygon.Contains, Vector.LessOrEqual and the Intersects methods are closed and tolerant: a point within Epsilon of the boundary counts
-// as on it, so a float rectangle contains the corners it was built from even where Min is
-// recomputed with a rounding error. Every such test is one comparison on a squared distance,
+// Polygon.Contains, RegularPolygon.Contains, Point.Between, Vector.LessOrEqual and the Intersects
+// methods are closed and tolerant: a point within the tolerance of the boundary counts as on it,
+// so a float rectangle contains the corners it was built from even where Min is recomputed
+// with a rounding error. The tolerance is Epsilon of T near the origin and widens to two ulps
+// of T at the largest coordinate a comparison reads, so a point rounded into T far from the
+// origin, a Nearest or an Intersection, still lies on the boundary it was computed on: for
+// float32 it widens beyond a few hundred units, for float64 beyond a few billion, and for an
+// integer T it is zero. Every such test is one comparison on a squared distance,
 // never on a coordinate, so containment, the distance methods and the intersection tests
 // round alike at the boundary. Vector.Less is the strict counterpart and applies no tolerance.
 // DistanceTo is zero exactly where Contains holds, and IntersectionSegment and

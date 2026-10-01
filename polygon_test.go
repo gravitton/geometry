@@ -527,7 +527,7 @@ func TestPolygon_Simplify(t *testing.T) {
 				assert.True(t, simplified.Simplify(tolerance).Equal(simplified), message)
 				for _, vertex := range p.Points {
 					assert.True(t, slices.ContainsFunc(slices.Collect(simplified.Edges()), func(edge Segment[float64]) bool {
-						return lessOrEqualSquared[float64](edge.DistanceSquaredTo(vertex), tolerance)
+						return lessOrEqualSquared(edge.DistanceSquaredTo(vertex), tolerance, Delta)
 					}), message+vertex.String()+" within the tolerance: ")
 				}
 				assert.Equal(t, simplified.IsEmpty(), p.IsEmpty(), message)

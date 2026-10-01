@@ -22,7 +22,7 @@ import (
 // the corners only while the rectangle is not rotated.
 //
 // The rectangle is closed: Contains and the Intersects methods include the boundary, within the
-// Epsilon that Equal applies, so a float rectangle contains the corners it was built from even
+// tolerance every boundary test applies, so a float rectangle contains the corners it was built from even
 // where Min is recomputed from Center with a rounding error.
 // For integer T the corners are lattice points on that boundary, so a rectangle of width w
 // spans w+1 lattice columns from Min to Max inclusive, and a rotated rectangle has each corner
@@ -465,14 +465,14 @@ func (r Rectangle[T]) Clamp(rectangle Rectangle[T]) Rectangle[T] {
 }
 
 // Contains reports whether the given point lies within the rectangle, boundary included within
-// Epsilon of T: strictly inside, or on an edge as Segment.Contains judges it, so the rectangle
+// the tolerance: strictly inside, or on an edge as Segment.Contains judges it, so the rectangle
 // contains exactly the points its edges contain and the points between them.
 func (r Rectangle[T]) Contains(point Point[T]) bool {
 	return r.DistanceSquaredTo(point) == 0
 }
 
 // DistanceTo returns the distance from the given point to the nearest point of the rectangle:
-// zero exactly where Contains holds, so a point within Epsilon of T of the boundary is at
+// zero exactly where Contains holds, so a point within the tolerance of the boundary is at
 // distance zero rather than at the rounding error that put it there, and otherwise the
 // distance to the nearest edge.
 func (r Rectangle[T]) DistanceTo(point Point[T]) float64 {
@@ -481,7 +481,7 @@ func (r Rectangle[T]) DistanceTo(point Point[T]) float64 {
 
 // DistanceSquaredTo returns the squared distance DistanceTo takes the root of, faster for
 // comparisons, in one pass over the edges, the edgeWalk every closed shape makes: zero for a
-// point inside by the even-odd rule, or on an edge within Epsilon of T as
+// point inside by the even-odd rule, or on an edge within the tolerance as
 // Segment.DistanceSquaredTo snaps it, and the squared distance to the nearest edge otherwise. A
 // rectangle that is not rotated answers a point within its extent before any edge is examined.
 // It is a float64 even for an integer T, since the nearest point of a rotated rectangle is a
@@ -504,14 +504,14 @@ func (r Rectangle[T]) Nearest(point Point[T]) Point[T] {
 }
 
 // EnclosesCircle reports whether the circle lies within the rectangle: its center is contained
-// and every edge is at least the radius away, within Epsilon of T, read off the walk
+// and every edge is at least the radius away, within the tolerance, read off the walk
 // DistanceSquaredTo makes, so a circle touching an edge from inside is enclosed.
 func (r Rectangle[T]) EnclosesCircle(circle Circle[T]) bool {
-	return r.walk(circle.Center).clears(float64(circle.Radius))
+	return r.walk(circle.Center).clears(circle)
 }
 
 // EnclosesSegment reports whether the segment lies within the rectangle: both endpoints are
-// contained, within Epsilon of T, and a convex shape holds every point between two it contains.
+// contained, within the tolerance, and a convex shape holds every point between two it contains.
 func (r Rectangle[T]) EnclosesSegment(segment Segment[T]) bool {
 	a, b := r.MinMax()
 
@@ -519,7 +519,7 @@ func (r Rectangle[T]) EnclosesSegment(segment Segment[T]) bool {
 }
 
 // EnclosesPolygon reports whether the polygon lies within the rectangle: every vertex is
-// contained, within Epsilon of T, and a convex shape holds every point between points it
+// contained, within the tolerance, and a convex shape holds every point between points it
 // contains. An empty polygon is enclosed by nothing.
 func (r Rectangle[T]) EnclosesPolygon(polygon Polygon[T]) bool {
 	if polygon.IsEmpty() {
@@ -537,7 +537,7 @@ func (r Rectangle[T]) EnclosesPolygon(polygon Polygon[T]) bool {
 }
 
 // EnclosesRectangle reports whether the rectangle lies within the rectangle: every corner is
-// contained, within Epsilon of T, whatever the angles.
+// contained, within the tolerance, whatever the angles.
 func (r Rectangle[T]) EnclosesRectangle(rectangle Rectangle[T]) bool {
 	a, b := r.MinMax()
 	for vertex := range rectangle.Vertices() {
@@ -550,7 +550,7 @@ func (r Rectangle[T]) EnclosesRectangle(rectangle Rectangle[T]) bool {
 }
 
 // EnclosesRegularPolygon reports whether the regular polygon lies within the rectangle: every
-// vertex is contained, within Epsilon of T. An empty polygon is enclosed by nothing.
+// vertex is contained, within the tolerance. An empty polygon is enclosed by nothing.
 func (r Rectangle[T]) EnclosesRegularPolygon(polygon RegularPolygon[T]) bool {
 	if polygon.IsEmpty() {
 		return false
@@ -610,7 +610,7 @@ func (r Rectangle[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 
 // IntersectsRectangle reports whether the rectangles share a point: a corner of one lies within the
 // other, or an edge of one meets an edge of the other, as Polygon.IntersectsPolygon decides and by
-// the same tolerance on the distance, so touching rectangles intersect within Epsilon of T,
+// the same tolerance on the distance, so touching rectangles intersect within the tolerance,
 // the same closed convention as Contains. Rectangles whose extents do not overlap are rejected
 // before any edge is examined, and two rectangles that are not rotated whose extents overlap
 // exactly are decided there, since an exact overlap of two aligned boxes always shares a
@@ -639,7 +639,7 @@ func (r Rectangle[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 }
 
 // IntersectionRectangle returns the rectangle common to both, and false when they do not intersect.
-// Touching rectangles intersect in a rectangle of zero width or height, within Epsilon of T,
+// Touching rectangles intersect in a rectangle of zero width or height, within the tolerance,
 // exactly where IntersectsRectangle holds, which is asked first: a corner admitted by the
 // tolerance is placed on the boundary of the other rectangle, never beyond it. Two rectangles
 // of the same angle overlap in a rectangle of that angle, found in their shared frame;
@@ -730,7 +730,7 @@ func (r Rectangle[T]) IntersectsBox(box Box[T]) bool {
 }
 
 // walk folds every edge into the edgeWalk DistanceSquaredTo, Nearest and EnclosesCircle read, stopping
-// at an edge the point lies on within Epsilon of T. A rectangle that is not rotated answers a
+// at an edge the point lies on within the tolerance. A rectangle that is not rotated answers a
 // point within its extent, compared exactly, with a walk that is already over: inside, at the
 // squared gap to the nearest side.
 func (r Rectangle[T]) walk(point Point[T]) edgeWalk[T] {

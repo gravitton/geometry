@@ -26,8 +26,8 @@ Generic, immutable 2D geometry library for game development
 - **Generic** over every integer and float type, named types included.
 - **Immutable** – every method returns a new value.
 - **Shapes** – point, vector, size, padding, rectangle, circle, ellipse, segment, (regular) polygon, affine matrix.
-- **Interfaces** – `Shape`, `Outline`, `Collider`, `Body` and `Transformable`, so a spatial index, a renderer, a
-  collision pass or a physics body holds a shape without knowing which one.
+- **Interfaces** – `Shape`, `Collider` and `Body`, so a spatial index, a collision pass or a physics body holds a
+  shape without knowing which one.
 - **Directions, axes and orientations** as enums, with compass and rectangle-anchor aliases.
 - **Screen space** – top-left origin, `+Y` down, one winding order everywhere.
 - **Extras** – `image` interop, JSON, string parsing, numeric helpers, test assertions.
@@ -140,7 +140,7 @@ e.Foci()                                               // the two focal points, 
 e.Circle()                                             // the circle around it, of the major semi-axis
 ```
 
-Neither has vertices, so neither is an `Outline`: the `RegularPolygon` of the wanted resolution is what draws or
+Neither has vertices: the `RegularPolygon` of the wanted resolution is what draws or
 walks one, and it converts back exactly.
 
 ```go
@@ -187,15 +187,12 @@ hex.Rotate(geom.Pi / 6).IsAligned()  // false; exactly zero after a full turn, l
 ### Interfaces
 
 Every shape has `Translate`, `MoveTo`, `Scale`, `Unscale`, `Rotate`, `Lerp`, `Bounds`, `Contains` and `DistanceTo`,
-and every one of them returns a new value. Five interfaces name what they share, so a spatial index, a renderer or a
-broad collision pass holds a shape without knowing which one:
+and every one of them returns a new value. Three interfaces name what they share, so a spatial index or a broad
+collision pass holds a shape without knowing which one:
 
 ```go
 var s geom.Shape[float64] = c // Bounds, Contains, DistanceTo, DistanceSquaredTo — every shape
 s.DistanceTo(geom.Pt(10.0, 5.0))
-
-var o geom.Outline[float64] = d // Vertices, Edges — Segment, Rectangle, Polygon, RegularPolygon
-slices.Collect(o.Vertices())    // a Circle and an Ellipse have none; take RegularPolygon(n) first
 
 geom.Intersects(d, c) // two shapes held as Collider, dispatched on the kind of the second
 
@@ -203,21 +200,14 @@ var b geom.Body[float64] = c // Area, Centroid, Inertia — the mass properties 
 b.Inertia()                  // for a physics body to scale by its density; every shape but Segment
 ```
 
-`Transformable[T, S]` is a constraint rather than a value type, returning the shape's own type so a generic tween keeps it:
-
-```go
-func Tween[T geom.Number, S geom.Transformable[T, S]](shape S, to geom.Point[T], t float64) S
-```
-
-The interfaces are for the code around a hot loop: a call through one, or through a type parameter constrained by
-one, allocates, where the same call on a concrete shape does not. `Ellipse` is the one shape that is not a
+The interfaces are for the code around a hot loop: a call through one allocates, where the same call on a concrete shape does not. `Ellipse` is the one shape that is not a
 `Collider`: test it as its `RegularPolygon(n)` of the wanted resolution.
 
 ### Intersections
 
 Every shape carries one test per shape kind, named for the kind it takes and its own kind included, so the family
 reads the same on all of them and an interface can list it. The test is symmetric and includes a touch within
-`Epsilon[T]()`; where a derived result exists it is `Intersection<Kind>`, answering exactly where `Intersects` holds:
+the boundary tolerance; where a derived result exists it is `Intersection<Kind>`, answering exactly where `Intersects` holds:
 
 ```go
 a.IntersectsRectangle(b) // IntersectsSegment, IntersectsRay, IntersectsRectangle, IntersectsCircle, IntersectsPolygon,
@@ -252,7 +242,7 @@ The pair logic is written once, on the earlier shape of `Circle`, `Segment`, `Ra
 ### Containment
 
 `Contains` takes a point; `Encloses<Kind>` takes a shape and reports whether every point of it lies within, the
-boundary included within `Epsilon[T]()`, on every shape with an area but `Ellipse`:
+boundary included within the tolerance, on every shape with an area but `Ellipse`:
 
 ```go
 view.EnclosesCircle(c)   // EnclosesCircle, EnclosesSegment, EnclosesPolygon, EnclosesRectangle,
@@ -349,12 +339,14 @@ rectangle corner (`BottomRight`).
 `float32` or `float64`. `EqualRelative` scales it for values far from zero, and `EqualAngle` compares modulo a full
 turn.
 
-**Boundaries.** `Contains`, `Intersects` and `Vector.LessOrEqual` are closed and tolerant: a point within
-`Epsilon[T]()` of the boundary counts as on it, so a float rectangle contains the corners it was built from and a
-polygon contains its vertices. Every boundary is judged on a distance, never on a coordinate, so two rectangles that
-meet corner to corner intersect exactly where their polygons do. `DistanceTo` is zero exactly where `Contains` holds,
-and `Intersection` answers exactly where `Intersects` holds, apart from parallel and coincident segments and
-rectangles of different angles, which have no single answer. `Vector.Less` is strict.
+**Boundaries.** `Contains`, `Intersects` and `Vector.LessOrEqual` are closed and tolerant: a point within the
+tolerance of the boundary counts as on it, so a float rectangle contains the corners it was built from and a polygon
+contains its vertices. The tolerance is `Epsilon[T]()` near the origin and widens to two ulps of `T` at the largest
+coordinate compared, so a `Nearest` point or an `Intersection` rounded into `T` far from the origin stays on the
+boundary; `float32` widens beyond a few hundred units. Every boundary is judged on a distance, never on a
+coordinate, so two rectangles that meet corner to corner intersect exactly where their polygons do. `DistanceTo` is
+zero exactly where `Contains` holds, and `Intersection` answers exactly where `Intersects` holds, apart from parallel
+and coincident segments and rectangles of different angles, which have no single answer. `Vector.Less` is strict.
 
 **Matrices.** An integer `Matrix` composes lattice transforms exactly: translation, integer scale, reflection, quarter
 turns. Anything else rounds into a different matrix; use a float `Matrix` there. `Transform` takes a float matrix, so

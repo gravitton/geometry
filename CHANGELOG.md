@@ -40,6 +40,7 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 
 ### Changed
 - `Point.Transform` and `Vector.Transform` read the matrix fields directly rather than converting the whole matrix per point, about 7% faster over a loop of points
+- The boundary tolerance of `Contains`, `Intersects`, `Intersection`, `Encloses`, `Clip`, `Point.Between` and `Vector.LessOrEqual` widens with the coordinates it compares: `Epsilon[T]()` near the origin and two ulps of `T` where they are wider, so a `Nearest` point or an `Intersection` rounded into a float32 shape beyond 2048 units from the origin stays on its boundary, where the absolute `Delta32` had fallen below one ulp; float64 widens only beyond a few billion units, integer shapes stay exact, and a float walk costs about 8% more
 
 ### Fixed
 - The same inputs give the same bits on every architecture: every product added to another value is rounded on its own first, so gc no longer fuses it into a multiply-add on arm64 and on amd64 v3, which rounded `Lerp`, `LerpAngle`, `Matrix.Multiply`, `Matrix.Inverse`, `Transform`, `Vector.Rotate`, `LengthSquared`, `OctileDistanceTo`, the polygon centroid and inertia sums, the regular polygon vertex angles, the circle crossings and the ellipse measures differently there; only what `math` computes from an angle may still differ in the last bit
@@ -50,7 +51,7 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 - The `github.com/gravitton/x` dependency, whose one use in `Polygon` is now a private helper
 
 
-## [v1.14.0 (2026-09-20)](https://github.com/gravitton/geometry/compare/v1.13.0...v1.14.0)
+## [v1.14.0](https://github.com/gravitton/geometry/compare/v1.13.0...v1.14.0) (2026-09-20)
 
 Oriented shapes and one normalized surface. `Rectangle` carries an `Angle` that turns it about its center, `RegularPolygon.Angle` turns the polygon rather than phasing its vertices, and `Ellipse` is the continuous shape an affine matrix makes of a circle.
 Every shape pair has one name and one holder, every closed shape walks the same edges, the outlines are `iter.Seq`, and five interfaces name what the shapes share.
@@ -91,7 +92,7 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.14.0.md](docs
 - A point with a NaN coordinate is inside no shape, where it was inside every rectangle and polygon
 
 
-## [v1.13.0 (2026-09-18)](https://github.com/gravitton/geometry/compare/v1.12.0...v1.13.0)
+## [v1.13.0](https://github.com/gravitton/geometry/compare/v1.12.0...v1.13.0) (2026-09-18)
 
 One rule for every boundary: closed within `Epsilon[T]()`, `DistanceTo` zero exactly where `Contains` holds, and collision as methods on the shapes rather than free functions.
 Arithmetic computes in `float64`, no shape stores a negative extent, and an input with no meaning panics.
@@ -124,12 +125,12 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.13.0.md](docs
 - `Circle.Bounds`, `Rectangle.Inset`, `Axis.Project`, `Vector.Normalize`, `NormalizeAngle`, `Matrix.Unscale`, `Polygon.UnmarshalJSON` and `Cast` on defined integer types
 
 
-## [v1.12.0 (2026-08-26)](https://github.com/gravitton/geometry/compare/v1.11.0...v1.12.0)
+## [v1.12.0](https://github.com/gravitton/geometry/compare/v1.11.0...v1.12.0) (2026-08-26)
 ### Added
 - `Point.Compare(point) int` – orders points by X and then by Y in the `cmp.Compare` convention, for `slices.SortFunc` and `slices.BinarySearchFunc`. The comparison is exact and does not apply the `Delta` tolerance `Point.Equal` uses, since a tolerant comparison is not transitive and would leave a sort no valid ordering
 
 
-## [v1.11.0 (2026-08-26)](https://github.com/gravitton/geometry/compare/v1.10.0...v1.11.0)
+## [v1.11.0](https://github.com/gravitton/geometry/compare/v1.10.0...v1.11.0) (2026-08-26)
 ### Breaking
 - `Direction` constants are renumbered to run by increasing angle — `Right`, `DownRight`, `Down`, `DownLeft`, `Left`, `UpLeft`, `Up`, `UpRight` — so a positive `Rotate` step turns the same way as a positive `Vector.Rotate` angle: counterclockwise in math coordinates, clockwise as drawn on a screen with Y pointing down. Previously the order ran the opposite way and `DirectionFromAngle` negated its input to compensate (**breaking**)
 - `Directions`, `CardinalDirections`, and `DiagonalDirections` follow the new order (**breaking**)
@@ -145,7 +146,7 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.13.0.md](docs
 - `Direction.Angle`, `Vector.Rotate`, `VectorFromAngle`, `Rectangle.Vertices`, and `Rectangle.Edges` now state which convention their angles and winding use
 
 
-## [v1.10.0 (2026-08-26)](https://github.com/gravitton/geometry/compare/v1.9.0...v1.10.0)
+## [v1.10.0](https://github.com/gravitton/geometry/compare/v1.9.0...v1.10.0) (2026-08-26)
 ### Breaking
 - `Direction[T](x T) T` renamed to `Sign[T](x T) T`, freeing the name for the new `Direction` type (**breaking**)
 - `Line.Direction() Vector[T]` renamed to `Line.Vector()`, since it returns the start-to-end vector rather than a `Direction` (**breaking**)
@@ -178,24 +179,24 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.13.0.md](docs
 - `RegularPolygon.Vertices` now rounds after scaling by the size instead of rounding a unit vector first, so integer vertices land within half a unit of the exact position (previously up to 1.5 units off at non-right angles)
 
 
-## [v1.9.0 (2026-05-29)](https://github.com/gravitton/geometry/compare/v1.8.1...v1.9.0)
+## [v1.9.0](https://github.com/gravitton/geometry/compare/v1.8.1...v1.9.0) (2026-05-29)
 ### Added
 - `Parse[T Number](s string) (T, error)` – parses a string into any `Number` type using `strconv.ParseInt` (with correct bit size) for integer types and `strconv.ParseFloat` for float types
 - `ParseSize[T Number](s string) (Size[T], error)` – parses a size string in `"WxH"` form into `Size[T]`
 
 
-## [v1.8.1 (2026-05-22)](https://github.com/gravitton/geometry/compare/v1.8.0...v1.8.1)
+## [v1.8.1](https://github.com/gravitton/geometry/compare/v1.8.0...v1.8.1) (2026-05-22)
 ### Fixed
 - `RegularPolygonOrientationAngle` with `PointyTop` now returns `-π/2` instead of `π/2`, correctly placing the first vertex at the visual top in the library's +Y-down coordinate system
 
 
-## [v1.8.0 (2026-05-12)](https://github.com/gravitton/geometry/compare/v1.7.0...v1.8.0)
+## [v1.8.0](https://github.com/gravitton/geometry/compare/v1.7.0...v1.8.0) (2026-05-12)
 ### Added
 - `DirectionFromAxes(up, down, left, right bool) Vector[float64]` – returns the unit direction vector for the given axis inputs; cancels opposite directions, normalizes diagonals
 - `Line.Vertices() []Point[T]` – returns `[Start, End]` as a slice
 
 
-## [v1.7.0 (2026-05-09)](https://github.com/gravitton/geometry/compare/v1.6.0...v1.7.0)
+## [v1.7.0](https://github.com/gravitton/geometry/compare/v1.6.0...v1.7.0) (2026-05-09)
 ### Added
 - `RectFromMax` – constructor for `Rectangle` from max (bottom-right) point and size
 - `Direction[T](x T) T` – returns the sign of a number: `1`, `-1`, or `0`
@@ -204,7 +205,7 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.13.0.md](docs
 - `Vector.Ceil() Vector[T]` – returns a new vector with each component rounded up
 
 
-## [v1.6.0 (2026-05-03)](https://github.com/gravitton/geometry/compare/v1.5.0...v1.6.0)
+## [v1.6.0](https://github.com/gravitton/geometry/compare/v1.5.0...v1.6.0) (2026-05-03)
 ### Breaking
 - `Matrix[T Number]` — `Matrix` is now generic over the full `Number` constraint (was restricted to `float64`), so every use of the bare type name takes a type argument (**breaking**)
 
@@ -212,7 +213,7 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.13.0.md](docs
 - `RegPolWithOrientation` – constructor for `RegularPolygon` with orientation
 
 
-## [v1.5.0 (2026-04-25)](https://github.com/gravitton/geometry/compare/v1.4.0...v1.5.0)
+## [v1.5.0](https://github.com/gravitton/geometry/compare/v1.4.0...v1.5.0) (2026-04-25)
 ### Added
 - `Point.ChebyshevDistanceTo(point Point[T]) T` — returns the Chebyshev (chessboard) distance: `max(|dx|, |dy|)`
 - `Point.OctileDistanceTo(point Point[T]) float64` — returns the Octile distance for grid pathfinding where diagonals cost √2: `max(dx, dy) + (√2-1) * min(dx, dy)`
@@ -222,12 +223,12 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.13.0.md](docs
 - `Point.Round`, `Point.Floor`, `Point.Ceil` now delegate to the new `Round`, `Floor`, `Ceil` free functions
 
 
-## [v1.4.0 (2026-04-25)](https://github.com/gravitton/geometry/compare/v1.3.0...v1.4.0)
+## [v1.4.0](https://github.com/gravitton/geometry/compare/v1.3.0...v1.4.0) (2026-04-25)
 ### Added
 - `Point.ManhattanDistanceTo(point Point[T]) T` — returns the Manhattan (taxicab) distance between two points
 
 
-## [v1.3.0 (2026-04-25)](https://github.com/gravitton/geometry/compare/v1.2.1...v1.3.0)
+## [v1.3.0](https://github.com/gravitton/geometry/compare/v1.2.0...v1.3.0) (2026-04-25)
 ### Added
 - `NormalizeAngle(angle float64) float64` utility function — normalizes any angle to `[0, 2π)`
 - `GOEXPERIMENT=jsonv2` requirement documented in `README.md`; `json:",inline"` struct tags are intentional and valid under jsonv2
@@ -242,7 +243,7 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.13.0.md](docs
 - `Rectangle.Max` comment clarifies the `w-w/2` formula used for correct pixel span with odd integer sizes
 
 
-## [v1.2.0 (2026-04-19)](https://github.com/gravitton/geometry/compare/v1.1.1...v1.2.0)
+## [v1.2.0](https://github.com/gravitton/geometry/compare/v1.1.1...v1.2.0) (2026-04-19)
 ### Breaking
 - Renamed `PointTop` → `PointyTop` in `RegularPolygon` orientation constants (**breaking**)
 - `Shrink` and `ShrinkXY` now clamp to `0` — negative dimensions are no longer possible (**breaking**)
@@ -263,12 +264,12 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.13.0.md](docs
 - Logic errors and typos in comments across multiple files
 
 
-## [v1.1.1 (2025-10-27)](https://github.com/gravitton/geometry/compare/v1.1.0...v1.1.1)
+## [v1.1.1](https://github.com/gravitton/geometry/compare/v1.1.0...v1.1.1) (2025-10-27)
 ### Fixed
 - Move Assert helper methods to `geom` package
 
 
-## [v1.1.0 (2025-10-27)](https://github.com/gravitton/geometry/compare/v1.0.0...v1.1.0)
+## [v1.1.0](https://github.com/gravitton/geometry/compare/v1.0.0...v1.1.0) (2025-10-27)
 ### Updated
 - Make Assert helper methods public
 

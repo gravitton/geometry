@@ -392,6 +392,31 @@ func TestEpsilonRelative(t *testing.T) {
 	})
 }
 
+func TestEpsilonAt(t *testing.T) {
+	t.Run("is Epsilon near the origin", func(t *testing.T) {
+		assert.Equal(t, epsilonAt[float32](100), Delta32)
+		assert.Equal(t, epsilonAt[float64](1e9), Delta)
+	})
+	t.Run("widens to two ulps far from it", func(t *testing.T) {
+		assert.Equal(t, epsilonAt[float32](1<<20), 0.25)
+		assert.Equal(t, epsilonAt[float64](1<<40), 0x1p-11)
+	})
+	t.Run("covers a float32 coordinate rounded past 2048", func(t *testing.T) {
+		value := 4096 + tenth/400
+		off := math.Abs(float64(float32(value)) - value)
+
+		assert.True(t, off > Delta32)
+		assert.True(t, off <= epsilonAt[float32](4096))
+	})
+	t.Run("int stays exact at any magnitude", func(t *testing.T) {
+		assert.Equal(t, epsilonAt[int](1e12), 0.0)
+	})
+	t.Run("NaN admits nothing", func(t *testing.T) {
+		assert.True(t, math.IsNaN(epsilonAt[float32](math.NaN())))
+		assert.True(t, math.IsNaN(Pt(math.Inf(1), 0.0).magnitude()))
+	})
+}
+
 func TestToRadians(t *testing.T) {
 	AssertNumber(t, ToRadians(0), 0.0)
 	AssertNumber(t, ToRadians(90), Pi/2)

@@ -189,32 +189,31 @@ func LessOrEqualDelta[T Number](a, b T, delta float64) bool {
 	return float64(a) <= float64(b)+delta
 }
 
-// lessOrEqualSquared reports whether a distance is at most b within Epsilon of T, given the
-// square of a: the squared form of LessOrEqual, for a distance that is only ever measured
-// squared. It is the one comparison against a radius or a segment in the package: every
-// Contains, DistanceTo and Intersects makes it, and a b of zero is the tolerance alone, the snap
+// lessOrEqualSquared reports whether a distance is at most b within the given epsilon, given
+// the square of a: the squared form of LessOrEqualDelta, for a distance that is only ever
+// measured squared. It is the one comparison against a radius or a segment in the package:
+// every Contains, DistanceTo and Intersects makes it, with the epsilon epsilonAt gives at the
+// magnitude of what it compares, and a b of zero is the tolerance alone, the snap
 // Segment.DistanceSquaredTo applies to a point on a segment. Made on the square, no test pays a
 // square root and all of them round alike at the boundary.
-func lessOrEqualSquared[T Number](a2, b float64) bool {
-	reach := b + Epsilon[T]()
+func lessOrEqualSquared(a2, b, epsilon float64) bool {
+	reach := b + epsilon
 
 	return a2 <= reach*reach
 }
 
-// greaterOrEqualSquared reports whether a distance is at least b within Epsilon of T, given
-// the square of a: no nearer than the tolerance allows.
-func greaterOrEqualSquared[T Number](a2, b float64) bool {
-	reach := max(b-Epsilon[T](), 0)
+// greaterOrEqualSquared reports whether a distance is at least b within the given epsilon,
+// given the square of a: no nearer than the tolerance allows.
+func greaterOrEqualSquared(a2, b, epsilon float64) bool {
+	reach := max(b-epsilon, 0)
 
 	return a2 >= reach*reach
 }
 
-// equalSquared reports whether a distance equals b within Epsilon of T, given the square of a:
-// at most and at least it at once, the squared form of Equal. Only lessOrEqualSquared fits the
-// inlining budget, which Epsilon alone takes most of; the two comparisons of the boundary band
-// are made at endpoints and tangents, never on a hot path.
-func equalSquared[T Number](a2, b float64) bool {
-	return lessOrEqualSquared[T](a2, b) && greaterOrEqualSquared[T](a2, b)
+// equalSquared reports whether a distance equals b within the given epsilon, given the square
+// of a: at most and at least it at once, the squared form of EqualDelta.
+func equalSquared(a2, b, epsilon float64) bool {
+	return lessOrEqualSquared(a2, b, epsilon) && greaterOrEqualSquared(a2, b, epsilon)
 }
 
 // Epsilon returns the equality tolerance for T: zero for an integer T, which is
@@ -236,6 +235,25 @@ func Epsilon[T Number]() float64 {
 // scaled by the larger magnitude, and never less than Epsilon of T itself.
 func EpsilonRelative[T Number](a, b T) float64 {
 	return Epsilon[T]() * max(1, math.Abs(float64(a)), math.Abs(float64(b)))
+}
+
+// epsilonAt returns the boundary tolerance for coordinates of T up to the given magnitude, the
+// largest absolute coordinate a comparison reads: Epsilon of T, or two ulps of T at that
+// magnitude where they are wider, so a point rounded into T far from the origin, a Nearest or
+// an Intersection, is still on the boundary it was computed on. It is zero for an integer T,
+// and Epsilon of T within a few hundred units of the origin for float32 and a few billion for
+// float64. A NaN magnitude, which Point.magnitude gives an infinite coordinate, gives a NaN,
+// which admits nothing.
+func epsilonAt[T Number](magnitude float64) float64 {
+	if isInt[T]() {
+		return 0
+	}
+
+	if isFloat32[T]() {
+		return max(Delta32, magnitude*0x1p-22)
+	}
+
+	return max(Delta, magnitude*0x1p-51)
 }
 
 // ToRadians converts degrees to radians.

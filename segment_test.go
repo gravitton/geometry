@@ -933,16 +933,17 @@ func TestSegment_IntersectionPolygon(t *testing.T) {
 	t.Run("every point lies on the segment and an edge, and exists where IntersectsPolygon holds", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
 			for _, s := range segmentFixtures {
-				points := s.IntersectionPolygon(p)
+				assertCrossings(t, s, p, s.IntersectionPolygon(p), s.IntersectsPolygon(p))
+			}
+		}
+	})
+	t.Run("far from the origin every float32 point lies on the segment and an edge", func(t *testing.T) {
+		for _, offset := range farOffsets {
+			for _, p := range polygonFixtures() {
+				for _, s := range segmentFixtures {
+					p, s := p.Cast[float32]().Translate(offset), s.Cast[float32]().Translate(offset)
 
-				for _, point := range points {
-					assert.True(t, s.Contains(point), fmt.Sprintf("%s → %s: %s on the segment: ", p, s, point))
-					assert.True(t, slices.ContainsFunc(slices.Collect(p.Edges()), func(edge Segment[float64]) bool {
-						return edge.Contains(point)
-					}), fmt.Sprintf("%s → %s: %s on the boundary: ", p, s, point))
-				}
-				if len(points) > 0 {
-					assert.True(t, s.IntersectsPolygon(p), fmt.Sprintf("%s → %s: ", s, p))
+					assertCrossings(t, s, p, s.IntersectionPolygon(p), s.IntersectsPolygon(p))
 				}
 			}
 		}
@@ -1033,16 +1034,17 @@ func TestSegment_IntersectionRectangle(t *testing.T) {
 	t.Run("every point lies on the segment and the boundary, and exists where IntersectsRectangle holds", func(t *testing.T) {
 		for _, s := range segmentFixtures {
 			for _, r := range rectFixtures {
-				points := s.IntersectionRectangle(r)
+				assertCrossings(t, s, r, s.IntersectionRectangle(r), s.IntersectsRectangle(r))
+			}
+		}
+	})
+	t.Run("far from the origin every float32 point lies on the segment and the boundary", func(t *testing.T) {
+		for _, offset := range farOffsets {
+			for _, s := range segmentFixtures {
+				for _, r := range rectFixtures {
+					s, r := s.Cast[float32]().Translate(offset), r.Cast[float32]().Translate(offset)
 
-				for _, p := range points {
-					assert.True(t, s.Contains(p), fmt.Sprintf("%s → %s: %s on the segment: ", s, r, p))
-					assert.True(t, slices.ContainsFunc(slices.Collect(r.Edges()), func(edge Segment[float64]) bool {
-						return edge.Contains(p)
-					}), fmt.Sprintf("%s → %s: %s on the boundary: ", s, r, p))
-				}
-				if len(points) > 0 {
-					assert.True(t, s.IntersectsRectangle(r), fmt.Sprintf("%s → %s: ", s, r))
+					assertCrossings(t, s, r, s.IntersectionRectangle(r), s.IntersectsRectangle(r))
 				}
 			}
 		}
@@ -1188,16 +1190,17 @@ func TestSegment_IntersectionBox(t *testing.T) {
 	t.Run("every point lies on the segment and the boundary, and exists where IntersectsBox holds", func(t *testing.T) {
 		for _, s := range segmentFixtures {
 			for _, b := range boxFixtures {
-				points := s.IntersectionBox(b)
+				assertCrossings(t, s, b.Rectangle(), s.IntersectionBox(b), s.IntersectsBox(b))
+			}
+		}
+	})
+	t.Run("far from the origin every float32 point lies on the segment and the boundary", func(t *testing.T) {
+		for _, offset := range farOffsets {
+			for _, s := range segmentFixtures {
+				for _, b := range boxFixtures {
+					s, b := s.Cast[float32]().Translate(offset), b.Cast[float32]().Translate(offset)
 
-				for _, p := range points {
-					assert.True(t, s.Contains(p), fmt.Sprintf("%s → %s: %s on the segment: ", s, b, p))
-					assert.True(t, slices.ContainsFunc(slices.Collect(b.Rectangle().Edges()), func(edge Segment[float64]) bool {
-						return edge.Contains(p)
-					}), fmt.Sprintf("%s → %s: %s on the boundary: ", s, b, p))
-				}
-				if len(points) > 0 {
-					assert.True(t, s.IntersectsBox(b), fmt.Sprintf("%s → %s: ", s, b))
+					assertCrossings(t, s, b.Rectangle(), s.IntersectionBox(b), s.IntersectsBox(b))
 				}
 			}
 		}

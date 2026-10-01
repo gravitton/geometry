@@ -97,7 +97,7 @@ func (r Ray[T]) Rotate(angle float64) Ray[T] {
 	return Ray[T]{r.Origin, r.Direction.Rotate(angle)}
 }
 
-// Contains reports whether the given point lies on the ray, within Epsilon of T, the same closed
+// Contains reports whether the given point lies on the ray, within the tolerance, the same closed
 // convention as Segment.Contains: it holds exactly where DistanceTo is zero.
 func (r Ray[T]) Contains(point Point[T]) bool {
 	return r.DistanceSquaredTo(point) == 0
@@ -111,11 +111,11 @@ func (r Ray[T]) DistanceTo(point Point[T]) float64 {
 }
 
 // DistanceSquaredTo returns the squared distance DistanceTo takes the root of, faster for
-// comparisons, a float64 even for an integer T as on Segment. A distance within Epsilon of T is
+// comparisons, a float64 even for an integer T as on Segment. A distance within the tolerance is
 // snapped to zero, which is where Contains reads it.
 func (r Ray[T]) DistanceSquaredTo(point Point[T]) float64 {
 	distance := r.distanceSquaredTo(point)
-	if lessOrEqualSquared[T](distance, 0) {
+	if lessOrEqualSquared(distance, 0, epsilonAt[T](max(r.Origin.magnitude(), point.magnitude()))) {
 		return 0
 	}
 
@@ -158,7 +158,7 @@ func (r Ray[T]) IntersectionSegment(segment Segment[T]) (Point[T], bool) {
 	return segment.IntersectionRay(r)
 }
 
-// IntersectsRay reports whether the rays share a point, within Epsilon of T, the same closed
+// IntersectsRay reports whether the rays share a point, within the tolerance, the same closed
 // convention as Contains: the lines through them meet ahead of both origins, decided on the
 // exact signs of cross products, or the origin of one lies on the other, which covers rays
 // running along each other and rays meeting at an origin.
@@ -187,7 +187,7 @@ func (r Ray[T]) IntersectionRay(ray Ray[T]) (Point[T], bool) {
 // IntersectsPolygon reports whether the ray and the polygon share a point, as
 // Segment.IntersectsPolygon decides it on the reach of the ray past the polygon: the origin
 // lies within the polygon, or the ray crosses one of its edges. Touching shapes intersect,
-// within Epsilon of T, and an empty polygon intersects nothing.
+// within the tolerance, and an empty polygon intersects nothing.
 func (r Ray[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 	return r.reach(polygon.minMax()).IntersectsPolygon(polygon)
 }
@@ -201,7 +201,7 @@ func (r Ray[T]) IntersectionPolygon(polygon Polygon[T]) []Point[T] {
 // IntersectsRectangle reports whether the ray and the rectangle share a point, as
 // Segment.IntersectsRectangle decides it on the reach of the ray past the rectangle: the origin
 // lies within the rectangle, or the ray crosses one of its edges. Touching shapes intersect,
-// within Epsilon of T.
+// within the tolerance.
 func (r Ray[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 	return r.reach(rectangle.MinMax()).IntersectsRectangle(rectangle)
 }
@@ -216,7 +216,7 @@ func (r Ray[T]) IntersectionRectangle(rectangle Rectangle[T]) []Point[T] {
 // IntersectsRegularPolygon reports whether the ray and the regular polygon share a point, as
 // Segment.IntersectsRegularPolygon decides it on the reach of the ray past the polygon: the
 // origin lies within the polygon, or the ray crosses one of its edges. Touching shapes
-// intersect, within Epsilon of T, and an empty polygon intersects nothing.
+// intersect, within the tolerance, and an empty polygon intersects nothing.
 func (r Ray[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 	return r.reach(polygon.minMax()).IntersectsRegularPolygon(polygon)
 }
@@ -240,8 +240,8 @@ func (r Ray[T]) IntersectionBox(box Box[T]) []Point[T] {
 	return r.IntersectionRectangle(box.Rectangle())
 }
 
-// ClipCircle returns the part of the ray inside the circle, boundary included within Epsilon of
-// T, and false where they share no point, as Segment.ClipCircle clips the reach of the ray past
+// ClipCircle returns the part of the ray inside the circle, boundary included within the
+// tolerance, and false where they share no point, as Segment.ClipCircle clips the reach of the ray past
 // the circle: from Origin where the circle contains it, or else from the first point where the
 // ray meets the circle, to the point where it leaves. Its Start is the cast of the ray, the first
 // point of the circle it reaches. It allocates nothing.
@@ -249,8 +249,8 @@ func (r Ray[T]) ClipCircle(circle Circle[T]) (Segment[T], bool) {
 	return r.reach(circle.minMax()).ClipCircle(circle)
 }
 
-// ClipPolygon returns the parts of the ray inside the polygon, boundary included within Epsilon
-// of T, from Origin on, as Segment.ClipPolygon clips the reach of the ray past the polygon. The
+// ClipPolygon returns the parts of the ray inside the polygon, boundary included within the
+// tolerance, from Origin on, as Segment.ClipPolygon clips the reach of the ray past the polygon. The
 // Start of the first part is the cast of the ray, the first point of the polygon it reaches. The
 // result is the one allocation, made on the first part.
 func (r Ray[T]) ClipPolygon(polygon Polygon[T]) []Segment[T] {
@@ -258,7 +258,7 @@ func (r Ray[T]) ClipPolygon(polygon Polygon[T]) []Segment[T] {
 }
 
 // ClipRectangle returns the part of the ray inside the rectangle, boundary included within
-// Epsilon of T, whatever its angle, and false where they share no point, as
+// the tolerance, whatever its angle, and false where they share no point, as
 // Segment.ClipRectangle clips the reach of the ray past the rectangle. Its Start is the cast of
 // the ray, the first point of the rectangle it reaches. It allocates nothing.
 func (r Ray[T]) ClipRectangle(rectangle Rectangle[T]) (Segment[T], bool) {
@@ -266,7 +266,7 @@ func (r Ray[T]) ClipRectangle(rectangle Rectangle[T]) (Segment[T], bool) {
 }
 
 // ClipRegularPolygon returns the part of the ray inside the regular polygon, boundary included
-// within Epsilon of T, and false where they share no point, as Segment.ClipRegularPolygon clips
+// within the tolerance, and false where they share no point, as Segment.ClipRegularPolygon clips
 // the reach of the ray past the polygon. Its Start is the cast of the ray, the first point of the
 // polygon it reaches, and an empty polygon clips everything away. It allocates nothing.
 func (r Ray[T]) ClipRegularPolygon(polygon RegularPolygon[T]) (Segment[T], bool) {
@@ -307,7 +307,7 @@ func (r Ray[T]) reach(a, b Point[T]) Segment[T] {
 }
 
 // distanceSquaredTo returns the squared distance to the point with no tolerance applied, which
-// DistanceSquaredTo snaps to zero within Epsilon of T: Segment.distanceSquaredTo with no end to
+// DistanceSquaredTo snaps to zero within the tolerance: Segment.distanceSquaredTo with no end to
 // clamp to.
 func (r Ray[T]) distanceSquaredTo(point Point[T]) float64 {
 	direction, offset := r.Direction.Float(), point.Float().Subtract(r.Origin.Float())
@@ -377,7 +377,7 @@ func (r Ray[T]) parallel(ray Ray[T]) bool {
 	return a.hasDirection() && b.hasDirection() && a.Float().Cross(b.Float()) == 0
 }
 
-// touch returns the origin of either ray that lies on the other, within Epsilon of T as Contains
+// touch returns the origin of either ray that lies on the other, within the tolerance as Contains
 // judges it, and false when there is none. Non-parallel rays that do not properly cross can
 // share a point only this way.
 func (r Ray[T]) touch(ray Ray[T]) (Point[T], bool) {

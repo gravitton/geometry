@@ -51,6 +51,16 @@ func (p Point[T]) XY() (T, T) {
 	return p.X, p.Y
 }
 
+// magnitude returns the larger absolute coordinate of the point, in float64: the size epsilonAt
+// widens the tolerance by for a comparison that reads it. An infinite coordinate has no ulp to
+// widen it by, and gives a NaN, as a NaN coordinate does, so a point at infinity lies on no
+// boundary rather than within an infinite tolerance of every one.
+func (p Point[T]) magnitude() float64 {
+	magnitude := max(math.Abs(float64(p.X)), math.Abs(float64(p.Y)))
+
+	return magnitude + (magnitude - magnitude)
+}
+
 // Add creates a new Point by adding the given vector to the current point.
 func (p Point[T]) Add(vector Vector[T]) Point[T] {
 	return Point[T]{p.X + vector.X, p.Y + vector.Y}
@@ -140,11 +150,14 @@ func (p Point[T]) AngleTo(point Point[T]) float64 {
 }
 
 // Between reports whether the point lies within the box from corner a to corner b, boundary
-// included within Epsilon of T. It is the extent check Polygon.Contains makes before walking
+// included within the tolerance. It is the extent check Polygon.Contains makes before walking
 // the edges, and a must be the lesser corner on each axis: a box given the other way round
 // contains nothing, since the corners are not reordered.
 func (p Point[T]) Between(a, b Point[T]) bool {
-	return LessOrEqual(a.X, p.X) && LessOrEqual(p.X, b.X) && LessOrEqual(a.Y, p.Y) && LessOrEqual(p.Y, b.Y)
+	epsilon := epsilonAt[T](max(p.magnitude(), a.magnitude(), b.magnitude()))
+
+	return LessOrEqualDelta(a.X, p.X, epsilon) && LessOrEqualDelta(p.X, b.X, epsilon) &&
+		LessOrEqualDelta(a.Y, p.Y, epsilon) && LessOrEqualDelta(p.Y, b.Y, epsilon)
 }
 
 // DistanceTo returns the Euclidean distance from the current point to the given point.
@@ -186,10 +199,10 @@ func (p Point[T]) deltas(point Point[T]) (float64, float64) {
 	return math.Abs(float64(point.X) - float64(p.X)), math.Abs(float64(point.Y) - float64(p.Y))
 }
 
-// coincides reports whether the points lie within Epsilon of T of each other, judged on the
+// coincides reports whether the points lie within the tolerance of each other, judged on the
 // squared distance as a point on a boundary is, where Equal compares each coordinate on its own.
 func (p Point[T]) coincides(point Point[T]) bool {
-	return lessOrEqualSquared[T](p.Float().DistanceSquaredTo(point.Float()), 0)
+	return lessOrEqualSquared(p.Float().DistanceSquaredTo(point.Float()), 0, epsilonAt[T](max(p.magnitude(), point.magnitude())))
 }
 
 // Equal checks for equal X and Y values with given point.
@@ -258,9 +271,12 @@ func minMaxOf[T Number](vertices []Point[T]) (Point[T], Point[T]) {
 }
 
 // overlaps reports whether the box from a1 to b1 and the box from a2 to b2 share a point,
-// boundary included within Epsilon of T. It is the check Rectangle.IntersectsRectangle makes on its
+// boundary included within the tolerance. It is the check Rectangle.IntersectsRectangle makes on its
 // corners and the rejection every other intersection test makes before examining edges, and
 // like Between it expects each a to be the lesser corner on each axis.
 func overlaps[T Number](a1, b1, a2, b2 Point[T]) bool {
-	return LessOrEqual(a1.X, b2.X) && LessOrEqual(a2.X, b1.X) && LessOrEqual(a1.Y, b2.Y) && LessOrEqual(a2.Y, b1.Y)
+	epsilon := epsilonAt[T](max(a1.magnitude(), b1.magnitude(), a2.magnitude(), b2.magnitude()))
+
+	return LessOrEqualDelta(a1.X, b2.X, epsilon) && LessOrEqualDelta(a2.X, b1.X, epsilon) &&
+		LessOrEqualDelta(a1.Y, b2.Y, epsilon) && LessOrEqualDelta(a2.Y, b1.Y, epsilon)
 }

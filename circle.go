@@ -77,6 +77,13 @@ func (c Circle[T]) minMax() (Point[T], Point[T]) {
 	return Point[T]{c.Center.X - c.Radius, c.Center.Y - c.Radius}, Point[T]{c.Center.X + c.Radius, c.Center.Y + c.Radius}
 }
 
+// magnitude returns the largest absolute coordinate of the circle, that of a corner of its
+// Bounds, summed in float64 so a narrow integer T cannot overflow: the size epsilonAt widens
+// the tolerance by for a comparison that reads the circle.
+func (c Circle[T]) magnitude() float64 {
+	return c.Center.magnitude() + float64(c.Radius)
+}
+
 // Translate creates a new Circle translated by the given vector.
 func (c Circle[T]) Translate(vector Vector[T]) Circle[T] {
 	return Circle[T]{c.Center.Add(vector), c.Radius}
@@ -130,8 +137,7 @@ func (c Circle[T]) Lerp(circle Circle[T], t float64) Circle[T] {
 
 // Rotate creates a new Circle turned by the given angle (in radians) about its center, in the
 // same sense as Vector.Rotate, which is the circle itself: a circle is symmetric about its
-// center, so no angle moves it. It is here so every shape turns the same way and Transformable can
-// name it.
+// center, so no angle moves it. It is here so every shape turns the same way.
 func (c Circle[T]) Rotate(_ float64) Circle[T] {
 	return c
 }
@@ -143,19 +149,19 @@ func (c Circle[T]) AlignTo(direction Direction, point Point[T]) Circle[T] {
 }
 
 // Contains reports whether the given point lies within the circle, boundary included within
-// Epsilon of T, the same closed convention as Rectangle.Contains: a float point a rounding
+// the tolerance, the same closed convention as Rectangle.Contains: a float point a rounding
 // error outside the radius, such as an Anchor, is still contained.
 func (c Circle[T]) Contains(point Point[T]) bool {
-	return c.containsSquared(c.centerDistanceSquared(point))
+	return c.containsSquared(c.centerDistanceSquared(point), point.magnitude())
 }
 
 // DistanceTo returns the distance from the given point to the nearest point of the circle:
-// zero exactly where Contains holds, so a point within Epsilon of T of the boundary is at
+// zero exactly where Contains holds, so a point within the tolerance of the boundary is at
 // distance zero rather than at the rounding error that put it there, and otherwise the
 // distance to the center less the radius.
 func (c Circle[T]) DistanceTo(point Point[T]) float64 {
 	distanceSquared := c.centerDistanceSquared(point)
-	if c.containsSquared(distanceSquared) {
+	if c.containsSquared(distanceSquared, point.magnitude()) {
 		return 0
 	}
 
@@ -177,7 +183,7 @@ func (c Circle[T]) DistanceSquaredTo(point Point[T]) float64 {
 // land off the boundary, where Contains rejects it.
 func (c Circle[T]) Nearest(point Point[T]) Point[T] {
 	distanceSquared := c.centerDistanceSquared(point)
-	if c.containsSquared(distanceSquared) {
+	if c.containsSquared(distanceSquared, point.magnitude()) {
 		return point
 	}
 
@@ -188,22 +194,22 @@ func (c Circle[T]) Nearest(point Point[T]) Point[T] {
 }
 
 // EnclosesCircle reports whether the given circle lies within this one: its far point, the
-// point of it farthest from this center, is contained within Epsilon of T by the comparison
+// point of it farthest from this center, is contained within the tolerance by the comparison
 // Contains makes, so a circle touching the boundary from inside is enclosed.
 func (c Circle[T]) EnclosesCircle(circle Circle[T]) bool {
 	far := math.Sqrt(c.centerDistanceSquared(circle.Center)) + float64(circle.Radius)
 
-	return c.containsSquared(far * far)
+	return c.containsSquared(far*far, circle.magnitude())
 }
 
 // EnclosesSegment reports whether the segment lies within the circle: both endpoints are
-// contained, within Epsilon of T, and a circle holds every point between two it contains.
+// contained, within the tolerance, and a circle holds every point between two it contains.
 func (c Circle[T]) EnclosesSegment(segment Segment[T]) bool {
 	return c.Contains(segment.Start) && c.Contains(segment.End)
 }
 
 // EnclosesPolygon reports whether the polygon lies within the circle: every vertex is
-// contained, within Epsilon of T, and a circle holds every point between points it contains.
+// contained, within the tolerance, and a circle holds every point between points it contains.
 // An empty polygon is enclosed by nothing.
 func (c Circle[T]) EnclosesPolygon(polygon Polygon[T]) bool {
 	if polygon.IsEmpty() {
@@ -220,7 +226,7 @@ func (c Circle[T]) EnclosesPolygon(polygon Polygon[T]) bool {
 }
 
 // EnclosesRectangle reports whether the rectangle lies within the circle: every corner is
-// contained, within Epsilon of T, whatever the rectangle's angle.
+// contained, within the tolerance, whatever the rectangle's angle.
 func (c Circle[T]) EnclosesRectangle(rectangle Rectangle[T]) bool {
 	for vertex := range rectangle.Vertices() {
 		if !c.Contains(vertex) {
@@ -232,7 +238,7 @@ func (c Circle[T]) EnclosesRectangle(rectangle Rectangle[T]) bool {
 }
 
 // EnclosesRegularPolygon reports whether the regular polygon lies within the circle: every
-// vertex is contained, within Epsilon of T. An empty polygon is enclosed by nothing.
+// vertex is contained, within the tolerance. An empty polygon is enclosed by nothing.
 func (c Circle[T]) EnclosesRegularPolygon(polygon RegularPolygon[T]) bool {
 	if polygon.IsEmpty() {
 		return false
@@ -254,17 +260,17 @@ func (c Circle[T]) EnclosesBox(box Box[T]) bool {
 }
 
 // IntersectsCircle reports whether the circles overlap: the center of one lies within the sum of the
-// radii of the other. Touching circles intersect, within Epsilon of T, by the same comparison
+// radii of the other. Touching circles intersect, within the tolerance, by the same comparison
 // Contains makes, on the squared distance. The radii are summed in float64, so a narrow integer
 // T cannot overflow the threshold.
 func (c Circle[T]) IntersectsCircle(circle Circle[T]) bool {
-	return lessOrEqualSquared[T](c.centerDistanceSquared(circle.Center), float64(c.Radius)+float64(circle.Radius))
+	return lessOrEqualSquared(c.centerDistanceSquared(circle.Center), float64(c.Radius)+float64(circle.Radius), c.epsilonWith(circle.magnitude()))
 }
 
 // IntersectionCircle returns the points where the circles cross: two for overlapping circles, one
-// for tangent ones, within Epsilon of T like Intersects, and none for circles apart or nested.
+// for tangent ones, within the tolerance like Intersects, and none for circles apart or nested.
 // Coincident circles share every point and also return none, and circles with centers within
-// Epsilon of T of each other count as coincident. The second point is the mirror of the first
+// the tolerance of each other count as coincident. The second point is the mirror of the first
 // across the line of centers. Tangency is judged on the sum and the difference of the radii by
 // the same comparison Intersects makes, so a tangent a rounding error outside its reach gives
 // one point rather than the same point twice; that point is placed halfway between the two
@@ -276,14 +282,15 @@ func (c Circle[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
 	distanceSquared := c.centerDistanceSquared(circle.Center)
 	r1, r2 := float64(c.Radius), float64(circle.Radius)
 	outer, inner := r1+r2, math.Abs(r1-r2)
+	epsilon := c.epsilonWith(circle.magnitude())
 
-	if lessOrEqualSquared[T](distanceSquared, 0) || !lessOrEqualSquared[T](distanceSquared, outer) || !greaterOrEqualSquared[T](distanceSquared, inner) {
+	if lessOrEqualSquared(distanceSquared, 0, epsilon) || !lessOrEqualSquared(distanceSquared, outer, epsilon) || !greaterOrEqualSquared(distanceSquared, inner, epsilon) {
 		return nil
 	}
 
 	distance := math.Sqrt(distanceSquared)
 
-	if external, internal := equalSquared[T](distanceSquared, outer), equalSquared[T](distanceSquared, inner); external || internal {
+	if external, internal := equalSquared(distanceSquared, outer, epsilon), equalSquared(distanceSquared, inner, epsilon); external || internal {
 		point := center.Add(direction.Resize(c.tangent(circle, distance, external)))
 
 		return []Point[T]{point.Cast[T]()}
@@ -299,16 +306,16 @@ func (c Circle[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
 
 // IntersectsSegment reports whether the circle and the segment share a point: the point of the
 // segment closest to the center lies within the radius. Touching shapes intersect, within
-// Epsilon of T, by the same comparison Contains makes, on the squared distance.
+// the tolerance, by the same comparison Contains makes, on the squared distance.
 func (c Circle[T]) IntersectsSegment(segment Segment[T]) bool {
-	return c.containsSquared(segment.DistanceSquaredTo(c.Center))
+	return c.containsSquared(segment.DistanceSquaredTo(c.Center), segment.magnitude())
 }
 
 // IntersectionSegment returns the points where the segment crosses the circle boundary, from the
 // segment's Start to its End: two where it passes through, one where it is tangent or ends
-// inside, within Epsilon of T like IntersectsSegment, and none where it misses or lies entirely
+// inside, within the tolerance like IntersectsSegment, and none where it misses or lies entirely
 // inside. A segment inside crosses no boundary, so it returns none while IntersectsSegment still
-// reports it. An endpoint within Epsilon of the boundary is the crossing nearest to it, judged
+// reports it. An endpoint within the tolerance of the boundary is the crossing nearest to it, judged
 // by the same comparison IntersectsSegment makes, so a shallow touch is not lost to the fraction
 // along the chord and the two agree to the last bit; where the chord is a tangent the endpoint
 // replaces it. For integer T the points are rounded like every other result stored into T.
@@ -318,7 +325,7 @@ func (c Circle[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
 
 // IntersectsRay reports whether the circle and the ray share a point, as IntersectsSegment
 // decides it on the reach of the ray past the circle: the point of the ray closest to the center
-// lies within the radius. Touching shapes intersect, within Epsilon of T.
+// lies within the radius. Touching shapes intersect, within the tolerance.
 func (c Circle[T]) IntersectsRay(ray Ray[T]) bool {
 	return c.IntersectsSegment(ray.reach(c.minMax()))
 }
@@ -333,7 +340,7 @@ func (c Circle[T]) IntersectionRay(ray Ray[T]) []Point[T] {
 
 // IntersectsPolygon reports whether the circle and the polygon share a point: the center lies
 // within the polygon, or an edge passes within the radius. Touching shapes intersect, within
-// Epsilon of T, by the same comparison Contains makes on the squared distance the polygon's
+// the tolerance, by the same comparison Contains makes on the squared distance the polygon's
 // DistanceSquaredTo measures. A circle whose Bounds lie outside the polygon is rejected before
 // any edge is examined, and an empty polygon intersects nothing.
 func (c Circle[T]) IntersectsPolygon(polygon Polygon[T]) bool {
@@ -344,15 +351,15 @@ func (c Circle[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 	a1, b1 := c.minMax()
 	a2, b2 := polygon.minMax()
 
-	return overlaps(a1, b1, a2, b2) && c.containsSquared(polygon.DistanceSquaredTo(c.Center))
+	return overlaps(a1, b1, a2, b2) && polygon.walk(c.Center).reaches(c)
 }
 
 // IntersectsRectangle reports whether the circle and the rectangle overlap: the center lies
 // within the rectangle, or an edge passes within the radius. Touching shapes intersect, within
-// Epsilon of T, by the same comparison Contains makes on the squared distance the rectangle's
+// the tolerance, by the same comparison Contains makes on the squared distance the rectangle's
 // DistanceSquaredTo measures.
 func (c Circle[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
-	return c.containsSquared(rectangle.DistanceSquaredTo(c.Center))
+	return rectangle.walk(c.Center).reaches(c)
 }
 
 // IntersectsRegularPolygon reports whether the circle and the regular polygon share a point:
@@ -368,15 +375,15 @@ func (c Circle[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 	a1, b1 := c.minMax()
 	a2, b2 := polygon.minMax()
 
-	return overlaps(a1, b1, a2, b2) && c.containsSquared(polygon.DistanceSquaredTo(c.Center))
+	return overlaps(a1, b1, a2, b2) && polygon.walk(c.Center).reaches(c)
 }
 
 // IntersectsBox reports whether the circle and the box overlap: the center lies within the box,
-// or an edge passes within the radius. Touching shapes intersect, within Epsilon of T, by the
+// or an edge passes within the radius. Touching shapes intersect, within the tolerance, by the
 // same comparison Contains makes on the squared distance the box's DistanceSquaredTo measures,
 // the gap beyond it on the two axes with no edge to walk.
 func (c Circle[T]) IntersectsBox(box Box[T]) bool {
-	return c.containsSquared(box.DistanceSquaredTo(c.Center))
+	return c.containsSquared(box.DistanceSquaredTo(c.Center), box.magnitude())
 }
 
 // appendIntersectionSegment appends the points IntersectionSegment returns to dst and returns
@@ -385,8 +392,8 @@ func (c Circle[T]) IntersectsBox(box Box[T]) bool {
 // without allocating.
 func (c Circle[T]) appendIntersectionSegment(dst []Point[T], segment Segment[T]) []Point[T] {
 	entry, exit, ok := segment.chord(c)
-	start := c.touchesSquared(c.centerDistanceSquared(segment.Start))
-	end := c.touchesSquared(c.centerDistanceSquared(segment.End))
+	start := c.touchesSquared(c.centerDistanceSquared(segment.Start), segment.magnitude())
+	end := c.touchesSquared(c.centerDistanceSquared(segment.End), segment.magnitude())
 
 	switch {
 	case ok && entry < exit:
@@ -419,17 +426,24 @@ func (c Circle[T]) centerDistanceSquared(point Point[T]) float64 {
 }
 
 // containsSquared reports whether a point at the given squared distance from the center lies within
-// the circle, boundary included within Epsilon of T: lessOrEqualSquared on the radius, the
+// the circle, boundary included within the tolerance: lessOrEqualSquared on the radius, the
 // comparison Contains, DistanceTo and every Intersects method of the circle make.
-func (c Circle[T]) containsSquared(distanceSquared float64) bool {
-	return lessOrEqualSquared[T](distanceSquared, float64(c.Radius))
+func (c Circle[T]) containsSquared(distanceSquared, magnitude float64) bool {
+	return lessOrEqualSquared(distanceSquared, float64(c.Radius), c.epsilonWith(magnitude))
 }
 
 // touchesSquared reports whether a point at the given squared distance from the center lies on the
-// boundary within Epsilon of T: equalSquared on the radius, the endpoint test of
+// boundary within the tolerance: equalSquared on the radius, the endpoint test of
 // IntersectionSegment.
-func (c Circle[T]) touchesSquared(distanceSquared float64) bool {
-	return equalSquared[T](distanceSquared, float64(c.Radius))
+func (c Circle[T]) touchesSquared(distanceSquared, magnitude float64) bool {
+	return equalSquared(distanceSquared, float64(c.Radius), c.epsilonWith(magnitude))
+}
+
+// epsilonWith returns the tolerance of a comparison between the circle and geometry whose
+// largest absolute coordinate is the given magnitude, as epsilonAt gives it for the larger of
+// the two, so every test of a pair reads the same one.
+func (c Circle[T]) epsilonWith(magnitude float64) float64 {
+	return epsilonAt[T](max(c.magnitude(), magnitude))
 }
 
 // tangent returns how far along the line of centers, from this center toward the other at the

@@ -353,7 +353,7 @@ func (p Polygon[T]) ConvexHull() Polygon[T] {
 // Simplify returns the polygon without the vertices the outline does not need to stay within
 // the tolerance, by the Douglas–Peucker algorithm: every dropped vertex lies within the
 // tolerance of the edge that replaces it, by Segment.DistanceTo, boundary included within
-// Epsilon of T. At a tolerance of zero it drops a vertex repeating a neighbour or on the
+// the tolerance. At a tolerance of zero it drops a vertex repeating a neighbour or on the
 // straight line between the vertices kept either side, a fold running back along that line
 // included, and keeps a spike reaching beyond it.
 //
@@ -438,7 +438,7 @@ func (p Polygon[T]) appendKept(dst []Point[T], from, to int, tolerance float64) 
 		}
 	}
 
-	if lessOrEqualSquared[T](distance, tolerance) {
+	if lessOrEqualSquared(distance, tolerance, epsilonAt[T](max(edge.magnitude(), p.Points[farthest%n].magnitude()))) {
 		return dst, 0
 	}
 
@@ -450,7 +450,7 @@ func (p Polygon[T]) appendKept(dst []Point[T], from, to int, tolerance float64) 
 }
 
 // Contains reports whether the given point lies within the polygon, boundary included within
-// Epsilon of T, the same closed convention as Rectangle.Contains. The interior follows the
+// the tolerance, the same closed convention as Rectangle.Contains. The interior follows the
 // even-odd rule, so a self-intersecting polygon excludes the regions it winds around twice.
 // A point outside the extent of the vertices is rejected before any edge is examined.
 func (p Polygon[T]) Contains(point Point[T]) bool {
@@ -472,7 +472,7 @@ func (p Polygon[T]) DistanceTo(point Point[T]) float64 {
 
 // DistanceSquaredTo returns the squared distance DistanceTo takes the root of, faster for
 // comparisons, in one pass over the edges, the edgeWalk every closed shape makes: zero for a
-// point on an edge within Epsilon of T, snapped the way Segment.DistanceSquaredTo snaps it, or
+// point on an edge within the tolerance, snapped the way Segment.DistanceSquaredTo snaps it, or
 // inside by the even-odd rule, the squared distance to the nearest edge otherwise, and
 // infinity for an empty polygon. It is a float64 even for an integer T, since the nearest
 // point of an edge is not a lattice point in general. Contains and IntersectsCircle are built
@@ -490,20 +490,20 @@ func (p Polygon[T]) Nearest(point Point[T]) Point[T] {
 }
 
 // EnclosesCircle reports whether the circle lies within the polygon: its center is contained
-// and every edge is at least the radius away, within Epsilon of T, read off the walk
+// and every edge is at least the radius away, within the tolerance, read off the walk
 // DistanceSquaredTo makes, so a circle touching an edge from inside is enclosed. A circle clear
 // of every edge cannot reach outside, concave polygon or not. An empty polygon encloses nothing.
 func (p Polygon[T]) EnclosesCircle(circle Circle[T]) bool {
-	return p.walk(circle.Center).clears(float64(circle.Radius))
+	return p.walk(circle.Center).clears(circle)
 }
 
 // EnclosesSegment reports whether the segment lies within the polygon: both endpoints are
-// contained, within Epsilon of T, and it leaves the polygon nowhere between them, which a
+// contained, within the tolerance, and it leaves the polygon nowhere between them, which a
 // concave polygon can let it do. It leaves by properly crossing an edge, decided on exact
 // signs as Segment.IntersectsSegment decides a crossing, by passing a vertex into the outside,
 // or by running from an endpoint on an edge toward the outer side of it, the side read from
 // the Winding of the polygon. A crossing where an endpoint of either lies on the other within
-// Epsilon of T is a touch, and a segment that runs beyond the line of an edge by no more than
+// the tolerance is a touch, and a segment that runs beyond the line of an edge by no more than
 // the tolerance runs along it. The polygon is taken to be simple: an edge crossing another edge
 // of a self-intersecting polygon counts as leaving it, so such a polygon does not enclose
 // itself. An empty polygon encloses nothing.
@@ -605,8 +605,8 @@ func (p Polygon[T]) IntersectionRay(ray Ray[T]) []Point[T] {
 }
 
 // IntersectsPolygon reports whether the polygons share a point: a vertex of one lies within the other,
-// or an edge of one crosses an edge of the other. Touching polygons intersect, within Epsilon
-// of T, the same closed convention as Contains, and an empty polygon intersects nothing.
+// or an edge of one crosses an edge of the other. Touching polygons intersect, within the
+// tolerance, the same closed convention as Contains, and an empty polygon intersects nothing.
 // Polygons whose extents do not overlap are rejected before any edge pair is examined, and so
 // is every edge whose extent lies outside the other polygon.
 func (p Polygon[T]) IntersectsPolygon(polygon Polygon[T]) bool {
@@ -727,7 +727,7 @@ func (p Polygon[T]) containsWithin(point, a, b Point[T]) bool {
 }
 
 // containsMidpoint is Contains at the midpoint of a and b, a point T cannot always hold: the
-// step edgeWalk makes, the distance within Epsilon of T and the even-odd ray, taken on each
+// step edgeWalk makes, the distance within the tolerance and the even-odd ray, taken on each
 // edge in float64, so for an integer T the midpoint is not rounded onto either point.
 // Segment.ClipPolygon judges each piece of a segment between two crossings by it.
 func (p Polygon[T]) containsMidpoint(a, b Point[T]) bool {
@@ -735,7 +735,7 @@ func (p Polygon[T]) containsMidpoint(a, b Point[T]) bool {
 
 	inside := false
 	for edge := range p.Edges() {
-		if lessOrEqualSquared[T](edge.Float().distanceSquaredTo(midpoint), 0) {
+		if lessOrEqualSquared(edge.Float().distanceSquaredTo(midpoint), 0, epsilonAt[T](max(edge.magnitude(), midpoint.magnitude()))) {
 			return true
 		}
 
@@ -748,7 +748,7 @@ func (p Polygon[T]) containsMidpoint(a, b Point[T]) bool {
 }
 
 // walk folds every edge into the edgeWalk DistanceSquaredTo, Nearest and EnclosesCircle read, stopping
-// at an edge the point lies on within Epsilon of T.
+// at an edge the point lies on within the tolerance.
 func (p Polygon[T]) walk(point Point[T]) edgeWalk[T] {
 	w := edgeWalk[T]{distance: math.Inf(1)}
 	for edge := range p.Edges() {
@@ -766,7 +766,7 @@ func (p Polygon[T]) walk(point Point[T]) edgeWalk[T] {
 // touch; it runs through a vertex into the outside; or it runs from an endpoint inside an edge
 // toward the outer side of that edge, a boundary point where the outline runs straight. The
 // last two are asked of leavesThrough, a vertex or an endpoint is found on the boundary within
-// Epsilon of T, and an endpoint at a vertex is left to the vertex, which judges both its edges.
+// the tolerance, and an endpoint at a vertex is left to the vertex, which judges both its edges.
 func (p Polygon[T]) keeps(segment Segment[T], twiceArea float64) bool {
 	previous := p.Points[len(p.Points)-1]
 
@@ -811,9 +811,10 @@ func (p Polygon[T]) leavesThrough(point Point[T], toPrevious, toNext Vector[floa
 	}
 
 	start, end, origin := segment.Start.Float(), segment.End.Float(), point.Float()
+	epsilon := epsilonAt[T](max(point.magnitude(), segment.magnitude()))
 
-	return !p.admits(toPrevious, toNext, start.Subtract(origin)) ||
-		!p.admits(toPrevious, toNext, end.Subtract(origin))
+	return !p.admits(toPrevious, toNext, start.Subtract(origin), epsilon) ||
+		!p.admits(toPrevious, toNext, end.Subtract(origin), epsilon)
 }
 
 // admits reports whether the offset from a point of the boundary stays within the polygon,
@@ -821,8 +822,8 @@ func (p Polygon[T]) leavesThrough(point Point[T], toPrevious, toNext Vector[floa
 // toward the next with the area between them: on the inner side of both edges where the turn
 // is convex, straight or a spike, and of either where it is reflex, as stays judges each
 // side. The turn is decided on the exact sign of the cross product, as crosses decides.
-func (p Polygon[T]) admits(toPrevious, toNext, offset Vector[float64]) bool {
-	insideNext, insidePrevious := p.stays(toNext.Cross(offset), toNext), p.stays(offset.Cross(toPrevious), toPrevious)
+func (p Polygon[T]) admits(toPrevious, toNext, offset Vector[float64], epsilon float64) bool {
+	insideNext, insidePrevious := p.stays(toNext.Cross(offset), toNext, epsilon), p.stays(offset.Cross(toPrevious), toPrevious, epsilon)
 	if toNext.Cross(toPrevious) >= 0 {
 		return insideNext && insidePrevious
 	}
@@ -832,12 +833,12 @@ func (p Polygon[T]) admits(toPrevious, toNext, offset Vector[float64]) bool {
 
 // stays reports whether an offset lies on the inner side of an edge, given their cross
 // product, positive on that side, and the direction of the edge: on it, or beyond the line of
-// the edge by no more than Epsilon of T, on the squared gap Segment.distanceSquaredTo measures
+// the edge by no more than the tolerance, on the squared gap Segment.distanceSquaredTo measures
 // beside a segment. An offset within the tolerance of the point stays on every side, so a
 // segment ending there is not judged by a direction it has not got. It reads no field of the
 // polygon, so the receiver is unnamed.
-func (Polygon[T]) stays(cross float64, edge Vector[float64]) bool {
-	return cross >= 0 || lessOrEqualSquared[T](cross*cross/edge.LengthSquared(), 0)
+func (Polygon[T]) stays(cross float64, edge Vector[float64], epsilon float64) bool {
+	return cross >= 0 || lessOrEqualSquared(cross*cross/edge.LengthSquared(), 0, epsilon)
 }
 
 // Equal checks if two polygons have the same vertices. A nil and an empty Points are equal,

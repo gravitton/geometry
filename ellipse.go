@@ -28,9 +28,9 @@ import (
 // A zero semi-axis is not repaired: it is the degenerate ellipse, the segment the other axis
 // spans, and Contains, DistanceTo and Bounds answer for it as for that segment.
 //
-// The ellipse is a Shape and a Transformable, and deliberately not an Outline or a
-// Collider: it has no vertices, and two ellipses meet at the roots of a quartic rather than at
-// anything the circle pairs are built on. Both are left to RegularPolygon, which holds the
+// The ellipse is a Shape, and deliberately not a Collider: it has no
+// vertices, and two ellipses meet at the roots of a quartic rather than at anything the circle
+// pairs are built on. Both are left to RegularPolygon, which holds the
 // same center, semi-axes and angle: RegularPolygon(n) is the polygon of the wanted resolution
 // inscribed in the ellipse, and RegularPolygon.Ellipse converts back.
 type Ellipse[T Number] struct {
@@ -312,7 +312,7 @@ func (e Ellipse[T]) AlignTo(direction Direction, point Point[T]) Ellipse[T] {
 }
 
 // Contains reports whether the given point lies within the ellipse, boundary included within
-// Epsilon of T, the same closed convention as Circle.Contains: it holds exactly where
+// the tolerance, the same closed convention as Circle.Contains: it holds exactly where
 // DistanceTo is zero. A degenerate ellipse has no interior and contains the points of the
 // segment it is.
 func (e Ellipse[T]) Contains(point Point[T]) bool {
@@ -320,7 +320,7 @@ func (e Ellipse[T]) Contains(point Point[T]) bool {
 }
 
 // DistanceTo returns the distance from the given point to the nearest point of the ellipse:
-// zero exactly where Contains holds, so a point within Epsilon of T of the boundary is at
+// zero exactly where Contains holds, so a point within the tolerance of the boundary is at
 // distance zero rather than at the rounding error that put it there, and otherwise the
 // distance to the nearest point of the boundary.
 func (e Ellipse[T]) DistanceTo(point Point[T]) float64 {
@@ -328,7 +328,7 @@ func (e Ellipse[T]) DistanceTo(point Point[T]) float64 {
 }
 
 // DistanceSquaredTo returns the squared distance DistanceTo takes the root of, faster for
-// comparisons: zero for a point within the boundary, or within Epsilon of T of it, and the
+// comparisons: zero for a point within the boundary, or within the tolerance of it, and the
 // squared distance to the foot of the perpendicular otherwise. It is a float64 even for an
 // integer T, since that foot is not a lattice point in general, like every shape with an edge.
 // Contains is built on it.
@@ -356,7 +356,7 @@ func (e Ellipse[T]) Nearest(point Point[T]) Point[T] {
 
 // nearestLocal returns the offset of the point of the ellipse nearest to the given point, in
 // the local frame, with the squared distance to it: the offset of the point itself at zero
-// within the boundary or within Epsilon of T of it, and the foot nearestOffset finds
+// within the boundary or within the tolerance of it, and the foot nearestOffset finds
 // otherwise. DistanceSquaredTo and Nearest both read it, so the one decides zero exactly where
 // the other returns the point.
 func (e Ellipse[T]) nearestLocal(point Point[T]) (Vector[float64], float64) {
@@ -367,7 +367,7 @@ func (e Ellipse[T]) nearestLocal(point Point[T]) (Vector[float64], float64) {
 
 	foot := e.nearestOffset(local)
 	distanceSquared := local.Subtract(foot).LengthSquared()
-	if lessOrEqualSquared[T](distanceSquared, 0) {
+	if lessOrEqualSquared(distanceSquared, 0, epsilonAt[T](max(e.Center.magnitude(), point.magnitude()))) {
 		return local, 0
 	}
 
@@ -498,7 +498,7 @@ func (e Ellipse[T]) IsAligned() bool {
 	return e.Angle == 0
 }
 
-// IsCircle reports whether the two semi-axes are equal, within Epsilon of T, so that the
+// IsCircle reports whether the two semi-axes are equal, within the tolerance, so that the
 // ellipse is a circle and no angle moves it, which is where Circle gives the same shape back
 // rather than the circle around it.
 func (e Ellipse[T]) IsCircle() bool {

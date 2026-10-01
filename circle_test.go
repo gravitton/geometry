@@ -541,8 +541,8 @@ func TestCircle_IntersectionCircle(t *testing.T) {
 
 		assert.Equal(t, len(points), 1)
 		for _, p := range points {
-			assert.True(t, a.touchesSquared(a.Center.DistanceSquaredTo(p)), "on a")
-			assert.True(t, b.touchesSquared(b.Center.DistanceSquaredTo(p)), "on b")
+			assert.True(t, a.touchesSquared(a.Center.DistanceSquaredTo(p), b.magnitude()), "on a")
+			assert.True(t, b.touchesSquared(b.Center.DistanceSquaredTo(p), a.magnitude()), "on b")
 		}
 	})
 	t.Run("int rounds the points", func(t *testing.T) {
@@ -559,8 +559,22 @@ func TestCircle_IntersectionCircle(t *testing.T) {
 					assert.True(t, a.IntersectsCircle(b), fmt.Sprintf("%s → %s: ", a, b))
 				}
 				for _, p := range points {
-					assert.True(t, a.touchesSquared(a.Center.DistanceSquaredTo(p)), fmt.Sprintf("%s → %s: %s on a: ", a, b, p))
-					assert.True(t, b.touchesSquared(b.Center.DistanceSquaredTo(p)), fmt.Sprintf("%s → %s: %s on b: ", a, b, p))
+					assert.True(t, a.touchesSquared(a.Center.DistanceSquaredTo(p), b.magnitude()), fmt.Sprintf("%s → %s: %s on a: ", a, b, p))
+					assert.True(t, b.touchesSquared(b.Center.DistanceSquaredTo(p), a.magnitude()), fmt.Sprintf("%s → %s: %s on b: ", a, b, p))
+				}
+			}
+		}
+	})
+	t.Run("far from the origin float32 points lie on both circles", func(t *testing.T) {
+		for _, offset := range farOffsets {
+			for _, a := range circleFixtures {
+				for _, b := range circleFixtures {
+					a, b := a.Cast[float32]().Translate(offset), b.Cast[float32]().Translate(offset)
+
+					for _, p := range a.IntersectionCircle(b) {
+						assert.True(t, a.touchesSquared(a.centerDistanceSquared(p), b.magnitude()), fmt.Sprintf("%s → %s: %s on a: ", a, b, p))
+						assert.True(t, b.touchesSquared(b.centerDistanceSquared(p), a.magnitude()), fmt.Sprintf("%s → %s: %s on b: ", a, b, p))
+					}
 				}
 			}
 		}
@@ -594,8 +608,8 @@ func FuzzCircle_IntersectionCircle(f *testing.F) {
 		assert.True(t, len(points) <= 2, fmt.Sprintf("%s → %s: at most two crossings, got %d: ", a, b, len(points)))
 
 		for _, p := range points {
-			assert.True(t, a.touchesSquared(a.Center.Float().DistanceSquaredTo(p.Float())), fmt.Sprintf("%s → %s: %s on the first: ", a, b, p))
-			assert.True(t, b.touchesSquared(b.Center.Float().DistanceSquaredTo(p.Float())), fmt.Sprintf("%s → %s: %s on the second: ", a, b, p))
+			assert.True(t, a.touchesSquared(a.Center.Float().DistanceSquaredTo(p.Float()), b.magnitude()), fmt.Sprintf("%s → %s: %s on the first: ", a, b, p))
+			assert.True(t, b.touchesSquared(b.Center.Float().DistanceSquaredTo(p.Float()), a.magnitude()), fmt.Sprintf("%s → %s: %s on the second: ", a, b, p))
 		}
 
 		if len(points) == 2 {
@@ -732,10 +746,27 @@ func TestCircle_IntersectionSegment(t *testing.T) {
 				assert.True(t, len(points) <= 2, fmt.Sprintf("%s → %s: at most two crossings: ", s, c))
 				for _, p := range points {
 					assert.True(t, s.Contains(p), fmt.Sprintf("%s → %s: %s on the segment: ", s, c, p))
-					assert.True(t, c.touchesSquared(c.Center.DistanceSquaredTo(p)), fmt.Sprintf("%s → %s: %s on the boundary: ", s, c, p))
+					assert.True(t, c.touchesSquared(c.Center.DistanceSquaredTo(p), s.magnitude()), fmt.Sprintf("%s → %s: %s on the boundary: ", s, c, p))
 				}
 				if len(points) > 0 {
 					assert.True(t, c.IntersectsSegment(s), fmt.Sprintf("%s → %s: ", s, c))
+				}
+			}
+		}
+	})
+	t.Run("far from the origin every float32 point lies on the segment and the boundary", func(t *testing.T) {
+		for _, offset := range farOffsets {
+			for _, s := range segmentFixtures {
+				for _, c := range circleFixtures {
+					s, c := s.Cast[float32]().Translate(offset), c.Cast[float32]().Translate(offset)
+					points := c.IntersectionSegment(s)
+
+					assert.True(t, len(points) <= 2, fmt.Sprintf("%s → %s: at most two crossings: ", s, c))
+					for _, p := range points {
+						assert.True(t, s.Contains(p), fmt.Sprintf("%s → %s: %s on the segment: ", s, c, p))
+						assert.True(t, c.touchesSquared(c.centerDistanceSquared(p), s.magnitude()), fmt.Sprintf("%s → %s: %s on the boundary: ", s, c, p))
+					}
+					assert.True(t, len(points) == 0 || c.IntersectsSegment(s), fmt.Sprintf("%s → %s: ", s, c))
 				}
 			}
 		}
@@ -762,7 +793,7 @@ func FuzzCircle_IntersectionSegment(f *testing.F) {
 
 		for _, p := range points {
 			assert.True(t, s.Contains(p), fmt.Sprintf("%s → %s: %s on the segment: ", s, c, p))
-			assert.True(t, c.touchesSquared(c.Center.Float().DistanceSquaredTo(p.Float())), fmt.Sprintf("%s → %s: %s on the boundary: ", s, c, p))
+			assert.True(t, c.touchesSquared(c.Center.Float().DistanceSquaredTo(p.Float()), s.magnitude()), fmt.Sprintf("%s → %s: %s on the boundary: ", s, c, p))
 		}
 
 		if inside := c.Contains(s.Start) && c.Contains(s.End); !inside {
@@ -837,7 +868,7 @@ func TestCircle_IntersectionRay(t *testing.T) {
 
 				for _, point := range points {
 					assert.True(t, r.Contains(point), message+point.String()+" on the ray: ")
-					assert.True(t, c.touchesSquared(c.centerDistanceSquared(point)), message+point.String()+" on the boundary: ")
+					assert.True(t, c.touchesSquared(c.centerDistanceSquared(point), point.magnitude()), message+point.String()+" on the boundary: ")
 				}
 				assert.True(t, len(points) <= 2, message)
 				if r.Direction.hasDirection() {

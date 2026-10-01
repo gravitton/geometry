@@ -360,7 +360,7 @@ func (v Vector[T]) IsRight() bool {
 // IsNormalized checks if Vector is normalized: its length is 1 within Epsilon of T, judged on
 // the squared length by the same comparison every boundary test in the package makes.
 func (v Vector[T]) IsNormalized() bool {
-	return equalSquared[T](v.Float().LengthSquared(), 1)
+	return equalSquared(v.Float().LengthSquared(), 1, Epsilon[T]())
 }
 
 // Less reports whether the vector is strictly shorter than the given length, judged on the
@@ -372,13 +372,13 @@ func (v Vector[T]) Less(length T) bool {
 	return reach > 0 && v.Float().LengthSquared() < reach*reach
 }
 
-// LessOrEqual reports whether the vector is at most the given length, within Epsilon of T,
+// LessOrEqual reports whether the vector is at most the given length, within the tolerance,
 // so a vector a rounding error longer than length still counts: its end lies within that
 // radius of the origin, judged on the squared length by the same comparison every boundary
 // test in the package makes. No vector is at most a negative length, however small: the
 // tolerance widens the boundary, never the sign.
 func (v Vector[T]) LessOrEqual(length T) bool {
-	return length >= 0 && lessOrEqualSquared[T](v.Float().LengthSquared(), float64(length))
+	return length >= 0 && lessOrEqualSquared(v.Float().LengthSquared(), float64(length), epsilonAt[T](float64(length)))
 }
 
 // hasDirection reports whether the vector points somewhere: only the exact zero vector does not.

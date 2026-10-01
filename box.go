@@ -15,7 +15,7 @@ import (
 // box with Min past Max can only be written as a struct literal or decoded from JSON, and
 // Contains, Nearest and IntersectsBox give no meaningful answer for it; Canonical repairs it.
 //
-// The box is closed: Contains and IntersectsBox include the boundary within Epsilon of T, one
+// The box is closed: Contains and IntersectsBox include the boundary within the tolerance, one
 // comparison on the squared distance, so a box contains every point of the shape it bounds. For
 // integer T a box of width w spans w+1 lattice columns from Min to Max inclusive; the
 // image.Rectangle of its Rectangle is half-open as the image package requires, and therefore
@@ -79,6 +79,12 @@ func (b Box[T]) Bounds() Box[T] {
 	return b
 }
 
+// magnitude returns the largest absolute coordinate of the box, that of a corner: the size
+// epsilonAt widens the tolerance by for a comparison that reads the box.
+func (b Box[T]) magnitude() float64 {
+	return max(b.Min.magnitude(), b.Max.magnitude())
+}
+
 // Translate creates a new Box translated by the given vector.
 func (b Box[T]) Translate(vector Vector[T]) Box[T] {
 	return Box[T]{b.Min.Add(vector), b.Max.Add(vector)}
@@ -116,20 +122,20 @@ func (b Box[T]) Clamp(box Box[T]) Box[T] {
 }
 
 // Contains reports whether the given point lies within the box, boundary included within
-// Epsilon of T: DistanceSquaredTo is zero there.
+// the tolerance: DistanceSquaredTo is zero there.
 func (b Box[T]) Contains(point Point[T]) bool {
 	return b.DistanceSquaredTo(point) == 0
 }
 
 // DistanceTo returns the distance from the given point to the nearest point of the box: zero
-// exactly where Contains holds, so a point within Epsilon of T of the boundary is at distance
+// exactly where Contains holds, so a point within the tolerance of the boundary is at distance
 // zero rather than at the rounding error that put it there.
 func (b Box[T]) DistanceTo(point Point[T]) float64 {
 	return math.Sqrt(b.DistanceSquaredTo(point))
 }
 
 // DistanceSquaredTo returns the squared distance DistanceTo takes the root of, faster for
-// comparisons: zero for a point inside, or within Epsilon of T of the boundary, and otherwise
+// comparisons: zero for a point inside, or within the tolerance of the boundary, and otherwise
 // the sum of the squared gaps beyond the box on the two axes, with no edge to walk. It is a
 // float64 even for an integer T, so the box answers as every Shape does.
 func (b Box[T]) DistanceSquaredTo(point Point[T]) float64 {
@@ -231,7 +237,7 @@ func (b Box[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 }
 
 // IntersectsBox reports whether the boxes share a point: the gap between them on the two axes
-// is zero within Epsilon of T, the one comparison DistanceSquaredTo makes, so boxes that touch
+// is zero within the tolerance, the one comparison DistanceSquaredTo makes, so boxes that touch
 // at an edge or a corner intersect, the same closed convention as Contains.
 func (b Box[T]) IntersectsBox(box Box[T]) bool {
 	return b.distanceSquaredToBox(box) == 0
@@ -291,14 +297,14 @@ func (Box[T]) clampAxis(a1, b1, c1, a2, b2, c2 T) T {
 
 // distanceSquaredToBox returns the squared distance between the nearest points of the two
 // boxes, from the gap between them on each axis: zero where they overlap or the gap is within
-// Epsilon of T, the one comparison Contains and IntersectsBox both read. A NaN coordinate leaves
+// the tolerance, the one comparison Contains and IntersectsBox both read. A NaN coordinate leaves
 // a NaN gap, which the comparison never admits.
 func (b Box[T]) distanceSquaredToBox(box Box[T]) float64 {
 	dx := float64(max(box.Min.X-b.Max.X, b.Min.X-box.Max.X, 0))
 	dy := float64(max(box.Min.Y-b.Max.Y, b.Min.Y-box.Max.Y, 0))
 
 	distance := float64(dx*dx) + float64(dy*dy)
-	if lessOrEqualSquared[T](distance, 0) {
+	if lessOrEqualSquared(distance, 0, epsilonAt[T](max(b.magnitude(), box.magnitude()))) {
 		return 0
 	}
 

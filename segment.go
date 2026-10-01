@@ -75,6 +75,12 @@ func (s Segment[T]) minMax() (Point[T], Point[T]) {
 	return Point[T]{min(s.Start.X, s.End.X), min(s.Start.Y, s.End.Y)}, Point[T]{max(s.Start.X, s.End.X), max(s.Start.Y, s.End.Y)}
 }
 
+// magnitude returns the largest absolute coordinate of the segment, that of an endpoint: the
+// size epsilonAt widens the tolerance by for a comparison that reads the segment.
+func (s Segment[T]) magnitude() float64 {
+	return max(s.Start.magnitude(), s.End.magnitude())
+}
+
 // cross returns Start × End in float64, the term the shoelace formula sums per edge. Cross is
 // exact for parallel vectors, so a degenerate edge contributes exactly zero.
 func (s Segment[T]) cross() float64 {
@@ -175,14 +181,14 @@ func (s Segment[T]) Normal() Vector[T] {
 	return s.Vector().Normal()
 }
 
-// Contains reports whether the given point lies on the segment, within Epsilon of T, the same
+// Contains reports whether the given point lies on the segment, within the tolerance, the same
 // closed convention as Rectangle.Contains: it holds exactly where DistanceTo is zero.
 func (s Segment[T]) Contains(point Point[T]) bool {
 	return s.DistanceSquaredTo(point) == 0
 }
 
 // DistanceTo returns the distance from the given point to the nearest point of the segment:
-// zero exactly where Contains holds, so a point within Epsilon of T of the segment is at
+// zero exactly where Contains holds, so a point within the tolerance of the segment is at
 // distance zero rather than at the rounding error that put it there. A lattice point on a
 // lattice segment is at zero without any tolerance, since the perpendicular distance comes
 // from a cross product that is exact in float64 rather than from a projection.
@@ -192,12 +198,12 @@ func (s Segment[T]) DistanceTo(point Point[T]) float64 {
 
 // DistanceSquaredTo returns the squared distance DistanceTo takes the root of, faster for
 // comparisons. It is a float64 even for an integer T, unlike Point.DistanceSquaredTo, since the
-// nearest point of a segment is not a lattice point in general. A distance within Epsilon of T
+// nearest point of a segment is not a lattice point in general. A distance within the tolerance
 // is snapped to zero, which is where Contains reads it, so a polygon boundary is walked without
 // a square root per edge.
 func (s Segment[T]) DistanceSquaredTo(point Point[T]) float64 {
 	distance := s.distanceSquaredTo(point)
-	if lessOrEqualSquared[T](distance, 0) {
+	if lessOrEqualSquared(distance, 0, epsilonAt[T](max(s.magnitude(), point.magnitude()))) {
 		return 0
 	}
 
@@ -225,7 +231,7 @@ func (s Segment[T]) DistanceToSegment(segment Segment[T]) float64 {
 
 // DistanceSquaredToSegment returns the squared distance DistanceToSegment takes the root of, faster
 // for comparisons: zero where the segments properly cross or an endpoint of one lies on the
-// other within Epsilon of T, as DistanceSquaredTo snaps it.
+// other within the tolerance, as DistanceSquaredTo snaps it.
 func (s Segment[T]) DistanceSquaredToSegment(segment Segment[T]) float64 {
 	if s.crosses(segment) {
 		return 0
@@ -249,7 +255,7 @@ func (s Segment[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
 	return circle.IntersectionSegment(s)
 }
 
-// IntersectsSegment reports whether the segments share a point, within Epsilon of T, the same closed
+// IntersectsSegment reports whether the segments share a point, within the tolerance, the same closed
 // convention as Contains: segments that touch at an endpoint or overlap collinearly intersect.
 // It holds exactly where DistanceToSegment is zero.
 func (s Segment[T]) IntersectsSegment(segment Segment[T]) bool {
@@ -265,7 +271,7 @@ func (s Segment[T]) IntersectsSegment(segment Segment[T]) bool {
 //
 // The segments cross where Intersects says they do: either they properly cross, decided on
 // cross products that are exact for an integer T, and the point is where the lines through
-// them meet, within both; or an endpoint of one lies on the other within Epsilon of T, and that
+// them meet, within both; or an endpoint of one lies on the other within the tolerance, and that
 // endpoint is the point, which is also the answer for nearly collinear float segments whose
 // crossing rounding would place off them. The touch is judged on the endpoint's distance, like Contains, rather than on the
 // fraction along the segment, which for a shallow crossing can put the same endpoint far
@@ -284,7 +290,7 @@ func (s Segment[T]) IntersectionSegment(segment Segment[T]) (Point[T], bool) {
 
 // IntersectsRay reports whether the segment and the ray share a point, as IntersectsSegment
 // decides it on the reach of the ray past the segment. Touching shapes intersect, within
-// Epsilon of T.
+// the tolerance.
 func (s Segment[T]) IntersectsRay(ray Ray[T]) bool {
 	return s.IntersectsSegment(ray.reach(s.minMax()))
 }
@@ -298,7 +304,7 @@ func (s Segment[T]) IntersectionRay(ray Ray[T]) (Point[T], bool) {
 
 // IntersectsPolygon reports whether the segment and the polygon share a point: the start lies
 // within the polygon, or the segment crosses one of its edges. Touching shapes intersect,
-// within Epsilon of T. A segment whose extent lies outside the polygon is rejected before any
+// within the tolerance. A segment whose extent lies outside the polygon is rejected before any
 // edge is examined, and an empty polygon intersects nothing.
 func (s Segment[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 	if polygon.IsEmpty() {
@@ -341,7 +347,7 @@ func (s Segment[T]) IntersectionPolygon(polygon Polygon[T]) []Point[T] {
 
 // IntersectsRectangle reports whether the segment and the rectangle share a point: the start
 // lies within the rectangle, or the segment crosses one of its edges. Touching shapes intersect,
-// within Epsilon of T. A segment whose extent lies outside the rectangle is rejected before any
+// within the tolerance. A segment whose extent lies outside the rectangle is rejected before any
 // edge is examined.
 func (s Segment[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 	a, b := rectangle.MinMax()
@@ -381,7 +387,7 @@ func (s Segment[T]) IntersectionRectangle(rectangle Rectangle[T]) []Point[T] {
 // IntersectsRegularPolygon reports whether the segment and the regular polygon share a point:
 // the start lies within the polygon, or the segment crosses one of its edges, the answer
 // IntersectsPolygon gives on the polygon's Polygon form, without building it. Touching shapes
-// intersect, within Epsilon of T. A segment whose extent lies outside the polygon's Bounds is
+// intersect, within the tolerance. A segment whose extent lies outside the polygon's Bounds is
 // rejected before any edge is examined, and an empty polygon intersects nothing.
 func (s Segment[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 	if polygon.IsEmpty() {
@@ -436,7 +442,7 @@ func (s Segment[T]) IntersectionBox(box Box[T]) []Point[T] {
 }
 
 // ClipCircle returns the part of the segment inside the circle, boundary included within
-// Epsilon of T, and false where they share no point: from Start where the circle contains it,
+// the tolerance, and false where they share no point: from Start where the circle contains it,
 // or else from the first point IntersectionCircle returns, to End where the circle contains it,
 // or else to the last. A segment tangent to the circle, or touching it with an endpoint from
 // outside, is clipped to that one point, so the part exists exactly where IntersectsCircle
@@ -449,7 +455,7 @@ func (s Segment[T]) ClipCircle(circle Circle[T]) (Segment[T], bool) {
 }
 
 // ClipPolygon returns the parts of the segment inside the polygon, boundary included within
-// Epsilon of T, from Start to End. The points IntersectionPolygon returns cut the segment into
+// the tolerance, from Start to End. The points IntersectionPolygon returns cut the segment into
 // pieces, each wholly inside or outside, and each piece is judged at its midpoint by the walk
 // Contains makes, Start and End by Contains itself. Pieces inside run together across a point
 // where the segment touches the boundary from inside, such as a reflex vertex, and a point where
@@ -496,7 +502,7 @@ func (s Segment[T]) ClipPolygon(polygon Polygon[T]) []Segment[T] {
 }
 
 // ClipRectangle returns the part of the segment inside the rectangle, boundary included within
-// Epsilon of T, whatever its angle, and false where they share no point: from Start where the
+// the tolerance, whatever its angle, and false where they share no point: from Start where the
 // rectangle contains it, or else from the first point IntersectionRectangle returns, to End
 // where the rectangle contains it, or else to the last. A segment along an edge is clipped to
 // the part of the edge it covers, and one touching a corner from outside to that corner, so
@@ -511,7 +517,7 @@ func (s Segment[T]) ClipRectangle(rectangle Rectangle[T]) (Segment[T], bool) {
 }
 
 // ClipRegularPolygon returns the part of the segment inside the regular polygon, boundary
-// included within Epsilon of T, and false where they share no point: from Start where the
+// included within the tolerance, and false where they share no point: from Start where the
 // polygon contains it, or else from the first point IntersectionRegularPolygon returns, to End
 // where the polygon contains it, or else to the last, the part ClipPolygon returns on the
 // polygon's Polygon form, without building it. A segment touching a vertex from outside is
@@ -533,7 +539,7 @@ func (s Segment[T]) ClipBox(box Box[T]) (Segment[T], bool) {
 }
 
 // distanceSquaredTo returns the squared distance to the point with no tolerance applied, which
-// DistanceSquaredTo snaps to zero within Epsilon of T.
+// DistanceSquaredTo snaps to zero within the tolerance.
 func (s Segment[T]) distanceSquaredTo(point Point[T]) float64 {
 	start, end, p := s.Start.Float(), s.End.Float(), point.Float()
 	direction, offset := end.Subtract(start), p.Subtract(start)
@@ -624,7 +630,7 @@ func (s Segment[T]) parallel(segment Segment[T]) bool {
 	return a.hasDirection() && b.hasDirection() && a.Cross(b) == 0
 }
 
-// touch returns the endpoint of either segment that lies on the other, within Epsilon of T
+// touch returns the endpoint of either segment that lies on the other, within the tolerance
 // as Contains judges it, and false when there is none. Non-parallel segments that do not
 // properly cross can share a point only this way.
 func (s Segment[T]) touch(segment Segment[T]) (Point[T], bool) {
@@ -647,7 +653,7 @@ func (s Segment[T]) touch(segment Segment[T]) (Point[T], bool) {
 // or the segment has no direction. Whether the line reaches the circle is decided on the
 // squared distance of the line, the expression DistanceSquaredTo evaluates for a point beside
 // the segment, by the same comparison IntersectsCircle makes, so the two agree to the last
-// bit. A chord whose ends lie within Epsilon of T of each other is a tangent and both
+// bit. A chord whose ends lie within the tolerance of each other is a tangent and both
 // fractions are its midpoint, judged on the squared chord by the same comparison, before any
 // root is taken: the tolerance collapses two crossings only where they would compare Equal,
 // never a chord that merely grazes the boundary within the tolerance.
@@ -662,14 +668,14 @@ func (s Segment[T]) chord(circle Circle[T]) (float64, float64, bool) {
 	cross := offset.Cross(direction)
 	gapSquared := cross * cross / lengthSquared
 
-	if !circle.containsSquared(gapSquared) {
+	if !circle.containsSquared(gapSquared, s.magnitude()) {
 		return 0, 0, false
 	}
 
 	along := offset.Dot(direction) / lengthSquared
 	radius := float64(circle.Radius)
 	halfChordSquared := max(float64(radius*radius)-gapSquared, 0)
-	if lessOrEqualSquared[T](4*halfChordSquared, 0) {
+	if lessOrEqualSquared(4*halfChordSquared, 0, circle.epsilonWith(s.magnitude())) {
 		return along, along, true
 	}
 
@@ -691,7 +697,7 @@ func (Segment[T]) snapToEndpoint(entry, exit, endpoint float64) (float64, float6
 }
 
 // appendPointsAt appends to dst the points at the given fractions along the segment that lie
-// within it, the endpoints included within Epsilon of T scaled to the length, so the tolerance
+// within it, the endpoints included within the tolerance scaled to the length, so the tolerance
 // is the same distance the Intersects methods apply, with points that compare Equal counted
 // once, as edgeIntersections counts them. The fractions must be in increasing order. Only the
 // appended points are deduplicated, and a nil dst is allocated once on the first point with
@@ -720,10 +726,10 @@ func (s Segment[T]) appendPointsAt(dst []Point[T], fractions ...float64) []Point
 }
 
 // containsAt reports whether the fraction t of the way along the segment lies within it, the
-// endpoints included within Epsilon of T scaled to the length, so that the tolerance is the
+// endpoints included within the tolerance scaled to the length, so that the tolerance is the
 // same distance Contains and Intersects apply.
 func (s Segment[T]) containsAt(t float64) bool {
-	epsilon := ratio(Epsilon[T](), s.Length())
+	epsilon := ratio(epsilonAt[T](s.magnitude()), s.Length())
 
 	return LessOrEqualDelta(0, t, epsilon) && LessOrEqualDelta(t, 1, epsilon)
 }

@@ -27,7 +27,7 @@ func edgesOf[T Number](vertices []Point[T]) iter.Seq[Segment[T]] {
 // of edges. A shape starts it as a literal, ranges its own Edges and calls step on each, so the
 // walk shares its rule without an iterator crossing a function boundary, which would allocate
 // it. The distance and the nearest point are both read off the one walk, so Nearest returns
-// the point itself exactly where DistanceSquaredTo is zero. The three readers take the walk by
+// the point itself exactly where DistanceSquaredTo is zero. The readers take the walk by
 // value, so a shape reads them straight off the walk it returns.
 type edgeWalk[T Number] struct {
 	inside   bool
@@ -35,12 +35,12 @@ type edgeWalk[T Number] struct {
 	edge     Segment[T]
 }
 
-// step folds one edge in and reports whether the point lies on it within Epsilon of T, as
+// step folds one edge in and reports whether the point lies on it within the tolerance, as
 // Segment.DistanceSquaredTo snaps it, where the walk is over: the point is on the boundary at
 // distance zero whatever the remaining edges say.
 func (w *edgeWalk[T]) step(edge Segment[T], point Point[T]) bool {
 	distance := edge.distanceSquaredTo(point)
-	if lessOrEqualSquared[T](distance, 0) {
+	if lessOrEqualSquared(distance, 0, epsilonAt[T](max(edge.magnitude(), point.magnitude()))) {
 		w.distance = 0
 
 		return true
@@ -83,11 +83,19 @@ func (w edgeWalk[T]) nearest(point Point[T]) Point[T] {
 
 // clears reports whether a circle of the given radius about the point lies within the outline
 // after every edge: the point inside or on it, where result is zero, and the nearest edge no
-// nearer than the radius within Epsilon of T, so a circle touching an edge from inside is
+// nearer than the radius within the tolerance, so a circle touching an edge from inside is
 // enclosed. A point on the boundary is at distance zero and clears only a radius within the
 // tolerance.
-func (w edgeWalk[T]) clears(radius float64) bool {
-	return w.result() == 0 && greaterOrEqualSquared[T](w.distance, radius)
+func (w edgeWalk[T]) clears(circle Circle[T]) bool {
+	return w.result() == 0 && greaterOrEqualSquared(w.distance, float64(circle.Radius), circle.epsilonWith(w.edge.magnitude()))
+}
+
+// reaches reports whether a circle about the point shares a point with the outline after every
+// edge: the point inside or on it, where result is zero, or the nearest edge within the radius,
+// by the comparison Circle.Contains makes, at the tolerance of the circle and that edge, the
+// one Circle.IntersectsSegment applies to it.
+func (w edgeWalk[T]) reaches(circle Circle[T]) bool {
+	return circle.containsSquared(w.result(), w.edge.magnitude())
 }
 
 // edgeIntersections collects the points where a segment crosses the edges of an outline, fed
