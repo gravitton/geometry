@@ -2,6 +2,7 @@ package geom
 
 import (
 	"fmt"
+	"iter"
 	"math"
 	"slices"
 	"testing"
@@ -17,10 +18,6 @@ var (
 	_ Shape[int]    = Polygon[int]{}
 	_ Shape[int]    = RegularPolygon[int]{}
 	_ Shape[int]    = Box[int]{}
-	_ Outline[int]  = Segment[int]{}
-	_ Outline[int]  = Rectangle[int]{}
-	_ Outline[int]  = Polygon[int]{}
-	_ Outline[int]  = RegularPolygon[int]{}
 	_ Collider[int] = Segment[int]{}
 	_ Collider[int] = Ray[int]{}
 	_ Collider[int] = Rectangle[int]{}
@@ -35,10 +32,59 @@ var (
 	_ Body[int]     = RegularPolygon[int]{}
 )
 
+// polyline is a shape whose boundary is a chain of straight edges, each starting where the
+// previous one ends, the last closing back to the first on a closed shape.
+type polyline[T Number] interface {
+	Vertices() iter.Seq[Point[T]]
+	Edges() iter.Seq[Segment[T]]
+}
+
+// encloser is a shape other shapes lie within, with the six Encloses methods: Circle, Polygon,
+// Rectangle, RegularPolygon and Box.
+type encloser[T Number] interface {
+	EnclosesCircle(circle Circle[T]) bool
+	EnclosesSegment(segment Segment[T]) bool
+	EnclosesPolygon(polygon Polygon[T]) bool
+	EnclosesRectangle(rectangle Rectangle[T]) bool
+	EnclosesRegularPolygon(polygon RegularPolygon[T]) bool
+	EnclosesBox(box Box[T]) bool
+}
+
+// transformable is a shape that moves, turns and scales in its own type, the constraint a
+// generic tween would take.
+type transformable[T Number, S any] interface {
+	Translate(vector Vector[T]) S
+	MoveTo(point Point[T]) S
+	Rotate(angle float64) S
+	Scale(factor float64) S
+	Unscale(factor float64) S
+}
+
 // solid is a shape with mass properties, the pair the Body properties are checked through.
 type solid[T Number] interface {
 	Shape[T]
 	Body[T]
+}
+
+// encloses tests the shape against the container by the method naming its kind, as
+// Intersects dispatches. A ray runs without end, so no container encloses one.
+func encloses[T Number](container encloser[T], shape Collider[T]) bool {
+	switch shape := shape.(type) {
+	case Circle[T]:
+		return container.EnclosesCircle(shape)
+	case Segment[T]:
+		return container.EnclosesSegment(shape)
+	case Ray[T]:
+		return false
+	case Polygon[T]:
+		return container.EnclosesPolygon(shape)
+	case Rectangle[T]:
+		return container.EnclosesRectangle(shape)
+	case RegularPolygon[T]:
+		return container.EnclosesRegularPolygon(shape)
+	default:
+		return container.EnclosesBox(shape.(Box[T]))
+	}
 }
 
 func TestShape(t *testing.T) {
@@ -91,6 +137,17 @@ func TestShape(t *testing.T) {
 			}
 		}
 	})
+	t.Run("far from the origin the float32 nearest point is contained", func(t *testing.T) {
+		for _, offset := range farOffsets {
+			for _, shape := range farShapes(offset) {
+				for _, p := range pointFixtures {
+					point := p.Cast[float32]().Add(offset)
+
+					assert.True(t, shape.Contains(shape.Nearest(point)), fmt.Sprintf("%s → %s: ", shape, point))
+				}
+			}
+		}
+	})
 }
 
 // assertNearest asserts the properties Nearest has on every shape: the point itself exactly
@@ -108,8 +165,25 @@ func assertNearest[T Number](t *testing.T, shape Shape[T], point Point[T]) {
 	AssertNumber(t, float64(point.DistanceSquaredTo(nearest)), shape.DistanceSquaredTo(point), message)
 }
 
-func TestOutline(t *testing.T) {
-	outlines := []Outline[float64]{
+// assertCrossings asserts the properties the boundary crossings of a segment have on every
+// outline: each point lies on the segment and on an edge by Contains, and there is one only
+// where the pair intersects.
+func assertCrossings[T Number](t *testing.T, segment Segment[T], shape polyline[T], points []Point[T], intersects bool) {
+	t.Helper()
+
+	message := fmt.Sprintf("%v → %v: ", segment, shape)
+
+	for _, p := range points {
+		assert.True(t, segment.Contains(p), message+p.String()+" on the segment: ")
+		assert.True(t, slices.ContainsFunc(slices.Collect(shape.Edges()), func(edge Segment[T]) bool {
+			return edge.Contains(p)
+		}), message+p.String()+" on the boundary: ")
+	}
+	assert.True(t, len(points) == 0 || intersects, message)
+}
+
+func TestPolyline(t *testing.T) {
+	polylines := []polyline[float64]{
 		Seg(Pt(0.0, 0.0), Pt(3.0, 4.0)),
 		Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi / 6),
 		Pol(triangleVertices()),
@@ -117,12 +191,12 @@ func TestOutline(t *testing.T) {
 	}
 
 	t.Run("every edge starts at a vertex and ends at the next", func(t *testing.T) {
-		for _, outline := range outlines {
-			vertices, edges := slices.Collect(outline.Vertices()), slices.Collect(outline.Edges())
+		for _, shape := range polylines {
+			vertices, edges := slices.Collect(shape.Vertices()), slices.Collect(shape.Edges())
 
 			for i, edge := range edges {
-				assert.True(t, edge.Start.Equal(vertices[i]), fmt.Sprintf("%s #%d: ", outline, i))
-				assert.True(t, edge.End.Equal(vertices[(i+1)%len(vertices)]), fmt.Sprintf("%s #%d: ", outline, i))
+				assert.True(t, edge.Start.Equal(vertices[i]), fmt.Sprintf("%s #%d: ", shape, i))
+				assert.True(t, edge.End.Equal(vertices[(i+1)%len(vertices)]), fmt.Sprintf("%s #%d: ", shape, i))
 			}
 		}
 	})
@@ -186,6 +260,23 @@ func TestCollider(t *testing.T) {
 			}
 		}
 	})
+	t.Run("far from the origin float32 colliders answer alike from either side and enclose themselves", func(t *testing.T) {
+		for _, offset := range farOffsets {
+			far := farColliders(offset)
+
+			for _, a := range far {
+				for _, b := range far {
+					assert.Equal(t, Intersects(a, b), Intersects(b, a), fmt.Sprintf("%s → %s: ", a, b))
+				}
+				if container, ok := a.(encloser[float32]); ok {
+					assert.True(t, encloses(container, a), fmt.Sprintf("%s: ", a))
+					for _, b := range far {
+						assert.True(t, !encloses(container, b) || Intersects(a, b), fmt.Sprintf("%s → %s: ", a, b))
+					}
+				}
+			}
+		}
+	})
 	t.Run("a collider of another kind is tested from the side that has one", func(t *testing.T) {
 		rectangle := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0))
 
@@ -233,47 +324,65 @@ func (s stubCollider) IntersectsBox(Box[float64]) bool {
 	return s.result
 }
 
-// encloser is a shape with the six Encloses methods, every Collider but Segment.
-type encloser[T Number] interface {
-	EnclosesCircle(circle Circle[T]) bool
-	EnclosesSegment(segment Segment[T]) bool
-	EnclosesPolygon(polygon Polygon[T]) bool
-	EnclosesRectangle(rectangle Rectangle[T]) bool
-	EnclosesRegularPolygon(polygon RegularPolygon[T]) bool
-	EnclosesBox(box Box[T]) bool
+// farOffsets move the float32 fixtures to where an ulp of float32 exceeds Delta32, so a point
+// rounded into T stays on the boundary it was computed on only by the tolerance epsilonAt
+// widens with the coordinates.
+var farOffsets = []Vector[float32]{Vec[float32](1e4, -5e3), Vec[float32](1e5, -5e4)}
+
+// farShapes returns the shape fixtures of every kind cast to float32 and moved by the offset.
+func farShapes(offset Vector[float32]) []Shape[float32] {
+	var shapes []Shape[float32]
+	for _, s := range segmentFixtures {
+		shapes = append(shapes, s.Cast[float32]().Translate(offset))
+	}
+	for _, r := range rectFixtures {
+		shapes = append(shapes, r.Cast[float32]().Translate(offset))
+	}
+	for _, c := range circleFixtures {
+		shapes = append(shapes, c.Cast[float32]().Translate(offset))
+	}
+	for _, e := range ellipseFixtures {
+		shapes = append(shapes, e.Cast[float32]().Translate(offset))
+	}
+	for _, p := range polygonFixtures() {
+		shapes = append(shapes, p.Cast[float32]().Translate(offset))
+	}
+	for _, rp := range regularPolygonFixtures {
+		shapes = append(shapes, rp.Cast[float32]().Translate(offset))
+	}
+	for _, b := range boxFixtures {
+		shapes = append(shapes, b.Cast[float32]().Translate(offset))
+	}
+
+	return shapes
 }
 
-// encloses tests the shape against the container by the method naming its kind, as
-// Intersects dispatches. A ray runs without end, so no container encloses one.
-func encloses[T Number](container encloser[T], shape Collider[T]) bool {
-	switch shape := shape.(type) {
-	case Circle[T]:
-		return container.EnclosesCircle(shape)
-	case Segment[T]:
-		return container.EnclosesSegment(shape)
-	case Ray[T]:
-		return false
-	case Polygon[T]:
-		return container.EnclosesPolygon(shape)
-	case Rectangle[T]:
-		return container.EnclosesRectangle(shape)
-	case RegularPolygon[T]:
-		return container.EnclosesRegularPolygon(shape)
-	default:
-		return container.EnclosesBox(shape.(Box[T]))
+// farColliders returns the collider fixtures of every kind cast to float32 and moved by the
+// offset: the far shapes but the ellipse, and the rays.
+func farColliders(offset Vector[float32]) []Collider[float32] {
+	var colliders []Collider[float32]
+	for _, shape := range farShapes(offset) {
+		if collider, ok := shape.(Collider[float32]); ok {
+			colliders = append(colliders, collider)
+		}
 	}
+	for _, r := range rayFixtures {
+		colliders = append(colliders, r.Cast[float32]().Translate(offset))
+	}
+
+	return colliders
 }
 
 // closed reports whether the last edge returns to the first vertex, through the interface as
 // a caller would.
-func closed[T Number](outline Outline[T]) bool {
+func closed[T Number](shape polyline[T]) bool {
 	var first, last Point[T]
-	for vertex := range outline.Vertices() {
+	for vertex := range shape.Vertices() {
 		first = vertex
 
 		break
 	}
-	for edge := range outline.Edges() {
+	for edge := range shape.Edges() {
 		last = edge.End
 	}
 
@@ -318,6 +427,6 @@ func TestTransformable(t *testing.T) {
 
 // moved translates a shape and turns and scales it back and forth through the constraint, the
 // call a generic tween makes.
-func moved[T Number, S Transformable[T, S]](shape S, vector Vector[T]) S {
+func moved[T Number, S transformable[T, S]](shape S, vector Vector[T]) S {
 	return shape.Translate(vector).Rotate(2 * Pi).Scale(2).Unscale(2)
 }

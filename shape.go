@@ -1,10 +1,8 @@
 package geom
 
-import "iter"
-
 // Shape is what every shape answers about a point: Segment, Rectangle, Circle, Ellipse,
 // Polygon, RegularPolygon and Box. Bounds is the Box around it, Contains includes the boundary
-// within Epsilon of T, DistanceTo is zero exactly where Contains holds, DistanceSquaredTo is
+// within the tolerance, DistanceTo is zero exactly where Contains holds, DistanceSquaredTo is
 // the value it takes the root of, and Nearest is the point it is measured to, the point itself
 // exactly where Contains holds. A spatial index or a picking routine holds a Shape and never
 // needs to know which one.
@@ -16,26 +14,9 @@ type Shape[T Number] interface {
 	Nearest(point Point[T]) Point[T]
 }
 
-// Outline is a shape whose boundary is a chain of straight edges: Segment, Rectangle, Polygon and
-// RegularPolygon. Vertices iterates the corners in order and Edges the segments joining them,
-// each edge starting where the previous one ends, the last one closing back to the first on a
-// closed shape. Both iterate without allocating, so one loop draws or measures any of the four.
-// A Circle and an Ellipse have no vertices: take the RegularPolygon of the wanted resolution
-// with Circle.RegularPolygon or Ellipse.RegularPolygon, whose vertices lie on the boundary,
-// and walk that.
-//
-// The iterators are free only on a concrete shape, where the compiler inlines them into the
-// loop. Called through an Outline value, or through a type parameter constrained by it, the
-// iterator and the loop body are heap allocated, since neither call is inlined. A hot loop
-// keeps the concrete type and switches on it; Outline is for the code around it.
-type Outline[T Number] interface {
-	Vertices() iter.Seq[Point[T]]
-	Edges() iter.Seq[Segment[T]]
-}
-
 // Collider is a shape tested against every shape: Circle, Segment, Ray, Polygon, Rectangle,
 // RegularPolygon and Box, each with the seven Intersects methods, its own kind included. Every
-// test is symmetric and includes a touch within Epsilon of T, so a broad collision pass calls
+// test is symmetric and includes a touch within the tolerance, so a broad collision pass calls
 // the method for the other side's kind and gets the same answer from either. Ray is the one
 // Collider that is no Shape, since it has no Bounds.
 //
@@ -63,30 +44,10 @@ type Body[T Number] interface {
 	Inertia() float64
 }
 
-// Transformable is a shape that can be moved, turned and scaled, in its own type: Segment, Ray, Rectangle,
-// Circle, Ellipse, Polygon and RegularPolygon, each returning itself rather than a common type, so the parameter
-// S stands for the shape and every method returns it. It is a constraint, not a value type,
-// and is written self-referentially at the call site:
-//
-//	func Tween[T Number, S Transformable[T, S]](shape S, to Point[T], t float64) S
-//
-// Every shape turns about its own center, Circle.Rotate giving the circle back, and a Ray turns
-// and scales about its origin. Lerp is deliberately absent: Segment.PointAt is the point a fraction along the segment
-// rather than a step toward another segment, and Polygon has none, so the six shapes do not share it.
-// A call through a type parameter constrained by an interface allocates, so this is for the
-// code around a hot loop, never inside one.
-type Transformable[T Number, S any] interface {
-	Translate(vector Vector[T]) S
-	MoveTo(point Point[T]) S
-	Rotate(angle float64) S
-	Scale(factor float64) S
-	Unscale(factor float64) S
-}
-
 // Intersects reports whether two shapes held as Collider share a point, by the method of the
 // first naming the kind of the second: the one call a broad collision pass makes over a mixed
 // list, where the concrete types are not known until it runs. It is symmetric and includes a
-// touch within Epsilon of T, like every method it dispatches to.
+// touch within the tolerance, like every method it dispatches to.
 //
 // Both arguments escape to the heap, so a loop that knows its types calls the named method
 // directly and allocates nothing. A shape of another package satisfying Collider works on
