@@ -392,6 +392,16 @@ func TestBox_IntersectionSegment(t *testing.T) {
 	})
 }
 
+func TestBox_AppendIntersectionSegment(t *testing.T) {
+	t.Run("matches Segment.AppendIntersectionBox", func(t *testing.T) {
+		for _, b := range boxFixtures {
+			for _, s := range segmentFixtures {
+				AssertVertices(t, b.AppendIntersectionSegment(bufferWith(prefixPoint), s), s.AppendIntersectionBox(bufferWith(prefixPoint), b), fmt.Sprintf("%s → %s: ", b, s))
+			}
+		}
+	})
+}
+
 func TestBox_IntersectsRay(t *testing.T) {
 	t.Run("mirrors Ray.IntersectsBox", func(t *testing.T) {
 		for _, b := range boxFixtures {
@@ -407,6 +417,16 @@ func TestBox_IntersectionRay(t *testing.T) {
 		for _, b := range boxFixtures {
 			for _, r := range rayFixtures {
 				AssertVertices(t, b.IntersectionRay(r), r.IntersectionBox(b), fmt.Sprintf("%s → %s: ", b, r))
+			}
+		}
+	})
+}
+
+func TestBox_AppendIntersectionRay(t *testing.T) {
+	t.Run("matches Ray.AppendIntersectionBox", func(t *testing.T) {
+		for _, b := range boxFixtures {
+			for _, r := range rayFixtures {
+				AssertVertices(t, b.AppendIntersectionRay(bufferWith(prefixPoint), r), r.AppendIntersectionBox(bufferWith(prefixPoint), b), fmt.Sprintf("%s → %s: ", b, r))
 			}
 		}
 	})
@@ -498,7 +518,7 @@ func TestBox_IntersectionBox(t *testing.T) {
 		overlap, ok := BoxFromMinMax(Pt(-2, -2), Pt(0, 0)).IntersectionBox(box)
 
 		assert.True(t, ok)
-		assert.True(t, overlap.IsZero())
+		assert.Zero(t, overlap)
 	})
 	t.Run("a corner admitted by the tolerance is placed on the boundary", func(t *testing.T) {
 		overlap, ok := BoxFromMinMax(Pt(0.0, 0.0), Pt(1.0, 1.0)).IntersectionBox(BoxFromMinMax(Pt(1+Delta/2, 0.0), Pt(2.0, 1.0)))

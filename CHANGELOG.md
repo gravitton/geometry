@@ -35,12 +35,15 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 - `Polygon.ConvexHull` – the hull by a monotone chain, clockwise from the least vertex, allocating its result once
 - `Segment.ClipCircle`, `ClipPolygon`, `ClipRectangle`, `ClipRegularPolygon` and `ClipBox` – the part of a segment inside a shape, boundary included within `Epsilon[T]()`, existing exactly where `Intersects` holds: the convex shapes return one part and a flag, allocation-free, from the contained endpoints and the first and last crossing; `ClipPolygon` returns the parts from `Start` to `End`, judging each piece between crossings at its midpoint in `float64` and sweeping the edges once per crossing rather than gathering them, so only the result allocates
 - `Polygon.Simplify(tolerance)` – Douglas–Peucker from the least vertex around and back: every dropped vertex lies within the tolerance of the edge replacing it, at zero tolerance only repeated and collinear vertices go, the kept ones stay in the polygon's order, simplifying again changes nothing, and the result is the one allocation
+- `Append` forms of every slice result – `AppendIntersection<Kind>(dst, other)` beside each `Intersection<Kind>` returning points, `Polygon.AppendConvexHull`, `Polygon.AppendSimplify`, and `AppendClipPolygon` on `Segment` and `Ray`, appending to a buffer the caller reuses, as `strconv.AppendInt` does, so a loop allocates nothing once the buffer has room; only the appended points are deduplicated and ordered, and the slice-returning methods are the `Append` form with a nil `dst`
 - `Polygon.Lerp` – vertex-by-vertex interpolation paired by index, panicking for a different vertex count as `RegularPolygon.Lerp` does
 - `Vector.Slerp` – the direction turned along the shorter arc with `LerpAngle` and the length interpolated linearly, a zero vector taking the other's direction
-- `ParsePoint` – reads a point in the form `String` prints, `(x,y)`
+- `ParsePoint` – reads a point in the form `String` prints, `(x,y)`, its errors prefixed `geom:` like the other parse functions
 
 ### Changed
 - `Point.Transform` and `Vector.Transform` read the matrix fields directly rather than converting the whole matrix per point, about 7% faster over a loop of points
+- `ParseSize` errors start with `geom:` like the other parse functions, and the malformed input is quoted
+- `github.com/gravitton/assert`, the test dependency, updated to v1.6.0
 - The boundary tolerance of `Contains`, `Intersects`, `Intersection`, `Encloses`, `Clip`, `Point.Between` and `Vector.LessOrEqual` widens with the coordinates it compares: `Epsilon[T]()` near the origin and two ulps of `T` where they are wider, so a `Nearest` point or an `Intersection` rounded into a float32 shape beyond 2048 units from the origin stays on its boundary, where the absolute `Delta32` had fallen below one ulp; float64 widens only beyond a few billion units, integer shapes stay exact, and a float walk costs about 8% more
 
 ### Fixed

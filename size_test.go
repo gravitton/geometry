@@ -2,7 +2,6 @@ package geom
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strconv"
 	"testing"
@@ -38,24 +37,26 @@ func TestParseSize(t *testing.T) {
 	})
 	t.Run("int rejects fractional values", func(t *testing.T) {
 		_, err := ParseSize[int]("23.5x12.4")
-		assert.Error(t, err)
+		assert.ErrorContains(t, err, "invalid width value")
 	})
 	t.Run("the parse error is wrapped", func(t *testing.T) {
 		_, err := ParseSize[int8]("300x1")
-		assert.True(t, errors.Is(err, strconv.ErrRange))
+		assert.ErrorContains(t, err, "invalid width value")
+		assert.ErrorIs(t, err, strconv.ErrRange)
 
 		_, err = ParseSize[int]("1xb")
-		assert.True(t, errors.Is(err, strconv.ErrSyntax))
+		assert.ErrorContains(t, err, "invalid height value")
+		assert.ErrorIs(t, err, strconv.ErrSyntax)
 	})
 	t.Run("malformed input", func(t *testing.T) {
 		_, err := ParseSize[int]("16")
-		assert.Error(t, err, "missing separator: ")
+		assert.ErrorContains(t, err, "invalid size format")
 
 		_, err = ParseSize[int]("axb")
-		assert.Error(t, err, "invalid width: ")
+		assert.ErrorContains(t, err, "invalid width value")
 
 		_, err = ParseSize[float64]("1.0xb")
-		assert.Error(t, err, "invalid height: ")
+		assert.ErrorContains(t, err, "invalid height value")
 	})
 }
 

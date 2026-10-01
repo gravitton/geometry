@@ -32,16 +32,16 @@ func SzU[T Number](size T) Size[T] {
 func ParseSize[T Number](s string) (Size[T], error) {
 	width, height, ok := strings.Cut(s, "x")
 	if !ok {
-		return Size[T]{}, fmt.Errorf("invalid size format: %s", s)
+		return Size[T]{}, fmt.Errorf("geom: invalid size format %q", s)
 	}
 
 	x, err := Parse[T](width)
 	if err != nil {
-		return Size[T]{}, fmt.Errorf("invalid width value: %w", err)
+		return Size[T]{}, fmt.Errorf("geom: invalid width value: %w", err)
 	}
 	y, err := Parse[T](height)
 	if err != nil {
-		return Size[T]{}, fmt.Errorf("invalid height value: %w", err)
+		return Size[T]{}, fmt.Errorf("geom: invalid height value: %w", err)
 	}
 
 	return Size[T]{x, y}, nil

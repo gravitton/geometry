@@ -146,6 +146,12 @@ func (r Ray[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
 	return circle.IntersectionRay(r)
 }
 
+// AppendIntersectionCircle appends the points IntersectionCircle returns to dst and returns the
+// extended slice, as Circle.AppendIntersectionRay does.
+func (r Ray[T]) AppendIntersectionCircle(dst []Point[T], circle Circle[T]) []Point[T] {
+	return circle.AppendIntersectionRay(dst, r)
+}
+
 // IntersectsSegment reports whether the ray and the segment share a point, as
 // Segment.IntersectsRay does.
 func (r Ray[T]) IntersectsSegment(segment Segment[T]) bool {
@@ -195,7 +201,14 @@ func (r Ray[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 // IntersectionPolygon returns the points where the ray crosses the polygon boundary, from Origin
 // on, as Segment.IntersectionPolygon finds them on the reach of the ray past the polygon.
 func (r Ray[T]) IntersectionPolygon(polygon Polygon[T]) []Point[T] {
-	return r.reach(polygon.minMax()).IntersectionPolygon(polygon)
+	return r.AppendIntersectionPolygon(nil, polygon)
+}
+
+// AppendIntersectionPolygon appends the points IntersectionPolygon returns to dst and returns the
+// extended slice, as Segment.AppendIntersectionPolygon does on the reach of the ray past the
+// polygon, so a caller reusing dst allocates nothing once it has room.
+func (r Ray[T]) AppendIntersectionPolygon(dst []Point[T], polygon Polygon[T]) []Point[T] {
+	return r.reach(polygon.minMax()).AppendIntersectionPolygon(dst, polygon)
 }
 
 // IntersectsRectangle reports whether the ray and the rectangle share a point, as
@@ -210,7 +223,14 @@ func (r Ray[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 // Origin on, as Segment.IntersectionRectangle finds them on the reach of the ray past the
 // rectangle.
 func (r Ray[T]) IntersectionRectangle(rectangle Rectangle[T]) []Point[T] {
-	return r.reach(rectangle.MinMax()).IntersectionRectangle(rectangle)
+	return r.AppendIntersectionRectangle(nil, rectangle)
+}
+
+// AppendIntersectionRectangle appends the points IntersectionRectangle returns to dst and returns
+// the extended slice, as Segment.AppendIntersectionRectangle does on the reach of the ray past the
+// rectangle, so a caller reusing dst allocates nothing once it has room.
+func (r Ray[T]) AppendIntersectionRectangle(dst []Point[T], rectangle Rectangle[T]) []Point[T] {
+	return r.reach(rectangle.MinMax()).AppendIntersectionRectangle(dst, rectangle)
 }
 
 // IntersectsRegularPolygon reports whether the ray and the regular polygon share a point, as
@@ -225,7 +245,14 @@ func (r Ray[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 // boundary, from Origin on, as Segment.IntersectionRegularPolygon finds them on the reach of the
 // ray past the polygon.
 func (r Ray[T]) IntersectionRegularPolygon(polygon RegularPolygon[T]) []Point[T] {
-	return r.reach(polygon.minMax()).IntersectionRegularPolygon(polygon)
+	return r.AppendIntersectionRegularPolygon(nil, polygon)
+}
+
+// AppendIntersectionRegularPolygon appends the points IntersectionRegularPolygon returns to dst
+// and returns the extended slice, as Segment.AppendIntersectionRegularPolygon does on the reach of
+// the ray past the regular polygon, so a caller reusing dst allocates nothing once it has room.
+func (r Ray[T]) AppendIntersectionRegularPolygon(dst []Point[T], polygon RegularPolygon[T]) []Point[T] {
+	return r.reach(polygon.minMax()).AppendIntersectionRegularPolygon(dst, polygon)
 }
 
 // IntersectsBox reports whether the ray and the box share a point, as IntersectsRectangle
@@ -238,6 +265,12 @@ func (r Ray[T]) IntersectsBox(box Box[T]) bool {
 // IntersectionRectangle finds them on the box's Rectangle.
 func (r Ray[T]) IntersectionBox(box Box[T]) []Point[T] {
 	return r.IntersectionRectangle(box.Rectangle())
+}
+
+// AppendIntersectionBox appends the points IntersectionBox returns to dst and returns the
+// extended slice, as AppendIntersectionRectangle does on the box's Rectangle.
+func (r Ray[T]) AppendIntersectionBox(dst []Point[T], box Box[T]) []Point[T] {
+	return r.AppendIntersectionRectangle(dst, box.Rectangle())
 }
 
 // ClipCircle returns the part of the ray inside the circle, boundary included within the
@@ -254,7 +287,14 @@ func (r Ray[T]) ClipCircle(circle Circle[T]) (Segment[T], bool) {
 // Start of the first part is the cast of the ray, the first point of the polygon it reaches. The
 // result is the one allocation, made on the first part.
 func (r Ray[T]) ClipPolygon(polygon Polygon[T]) []Segment[T] {
-	return r.reach(polygon.minMax()).ClipPolygon(polygon)
+	return r.AppendClipPolygon(nil, polygon)
+}
+
+// AppendClipPolygon appends the parts ClipPolygon returns to dst and returns the extended slice,
+// as Segment.AppendClipPolygon does on the reach of the ray past the polygon, so a caller
+// reusing dst allocates nothing once it has room.
+func (r Ray[T]) AppendClipPolygon(dst []Segment[T], polygon Polygon[T]) []Segment[T] {
+	return r.reach(polygon.minMax()).AppendClipPolygon(dst, polygon)
 }
 
 // ClipRectangle returns the part of the ray inside the rectangle, boundary included within

@@ -188,14 +188,14 @@ func TestRegularPolygon_Edges(t *testing.T) {
 	t.Run("closes back to the first vertex", func(t *testing.T) {
 		edges := slices.Collect(RegPol(Pt(0, 0), Sz(1, 1), 4, 0).Edges())
 
-		assert.Equal(t, len(edges), 4)
+		assert.Length(t, edges, 4)
 		AssertSegment(t, edges[0], Seg(Pt(1, 0), Pt(0, 1)))
 		AssertSegment(t, edges[3], Seg(Pt(0, -1), Pt(1, 0)))
 	})
 	t.Run("single vertex is one zero-length edge", func(t *testing.T) {
 		edges := slices.Collect(RegPol(Pt(0.0, 0.0), Sz(1.0, 1.0), 1, 0).Edges())
 
-		assert.Equal(t, len(edges), 1)
+		assert.Length(t, edges, 1)
 		AssertSegment(t, edges[0], Seg(Pt(1.0, 0.0), Pt(1.0, 0.0)))
 	})
 	t.Run("fewer than one side yields nothing", func(t *testing.T) {
@@ -213,7 +213,7 @@ func TestRegularPolygon_Edges(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
 			edges, expected := slices.Collect(rp.Edges()), slices.Collect(rp.Polygon().Edges())
 
-			assert.Equal(t, len(edges), len(expected), fmt.Sprintf("%s: ", rp))
+			assert.Length(t, edges, len(expected), fmt.Sprintf("%s: ", rp))
 			for i := range edges {
 				AssertSegment(t, edges[i], expected[i], fmt.Sprintf("%s #%d: ", rp, i))
 			}
@@ -855,6 +855,16 @@ func TestRegularPolygon_IntersectionSegment(t *testing.T) {
 	})
 }
 
+func TestRegularPolygon_AppendIntersectionSegment(t *testing.T) {
+	t.Run("matches Segment.AppendIntersectionRegularPolygon", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for _, s := range segmentFixtures {
+				AssertVertices(t, rp.AppendIntersectionSegment(bufferWith(prefixPoint), s), s.AppendIntersectionRegularPolygon(bufferWith(prefixPoint), rp), fmt.Sprintf("%s → %s: ", rp, s))
+			}
+		}
+	})
+}
+
 func TestRegularPolygon_IntersectsRay(t *testing.T) {
 	t.Run("mirrors Ray.IntersectsRegularPolygon", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
@@ -870,6 +880,16 @@ func TestRegularPolygon_IntersectionRay(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
 			for _, r := range rayFixtures {
 				AssertVertices(t, rp.IntersectionRay(r), r.IntersectionRegularPolygon(rp), fmt.Sprintf("%s → %s: ", rp, r))
+			}
+		}
+	})
+}
+
+func TestRegularPolygon_AppendIntersectionRay(t *testing.T) {
+	t.Run("matches Ray.AppendIntersectionRegularPolygon", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for _, r := range rayFixtures {
+				AssertVertices(t, rp.AppendIntersectionRay(bufferWith(prefixPoint), r), r.AppendIntersectionRegularPolygon(bufferWith(prefixPoint), rp), fmt.Sprintf("%s → %s: ", rp, r))
 			}
 		}
 	})
@@ -1043,8 +1063,8 @@ func TestRegularPolygon_Polygon(t *testing.T) {
 		assert.NotSame(t, p.Points, rp.Polygon().Points)
 	})
 	t.Run("fewer than one side is the zero polygon", func(t *testing.T) {
-		assert.True(t, RegPol(Pt(0, 0), Sz(1, 1), 0, 0).Polygon().IsZero())
-		assert.True(t, RegPol(Pt(0.0, 0.0), Sz(1.0, 1.0), -3, 0).Polygon().IsZero())
+		assert.Zero(t, RegPol(Pt(0, 0), Sz(1, 1), 0, 0).Polygon())
+		assert.Zero(t, RegPol(Pt(0.0, 0.0), Sz(1.0, 1.0), -3, 0).Polygon())
 	})
 }
 
@@ -1185,7 +1205,7 @@ func TestRegularPolygonOrientationAngle(t *testing.T) {
 func TestRegularPolygon_Properties(t *testing.T) {
 	t.Run("vertex count matches the side count", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
-			assert.Equal(t, len(slices.Collect(rp.Vertices())), rp.N, fmt.Sprintf("%s: ", rp))
+			assert.Length(t, slices.Collect(rp.Vertices()), rp.N, fmt.Sprintf("%s: ", rp))
 		}
 	})
 	t.Run("vertices lie on the ellipse of the size, in the frame before the turn", func(t *testing.T) {

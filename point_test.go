@@ -2,7 +2,6 @@ package geom
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math"
 	"slices"
@@ -36,14 +35,16 @@ func TestParsePoint(t *testing.T) {
 	})
 	t.Run("int rejects fractional values", func(t *testing.T) {
 		_, err := ParsePoint[int]("(1.5,2)")
-		assert.Error(t, err)
+		assert.ErrorContains(t, err, "invalid x value")
 	})
 	t.Run("the parse error is wrapped", func(t *testing.T) {
 		_, err := ParsePoint[int8]("(300,1)")
-		assert.True(t, errors.Is(err, strconv.ErrRange))
+		assert.ErrorContains(t, err, "invalid x value")
+		assert.ErrorIs(t, err, strconv.ErrRange)
 
 		_, err = ParsePoint[int]("(1,b)")
-		assert.True(t, errors.Is(err, strconv.ErrSyntax))
+		assert.ErrorContains(t, err, "invalid y value")
+		assert.ErrorIs(t, err, strconv.ErrSyntax)
 	})
 	t.Run("malformed input", func(t *testing.T) {
 		for _, s := range []string{"", "()", "(1)", "(1,2,3)", "1,2", "(1,2", "1,2)", "((1,2))", "⟨1,2⟩", "( 1,2)", "(1, 2)"} {

@@ -533,6 +533,12 @@ func (rp RegularPolygon[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
 	return segment.IntersectionRegularPolygon(rp)
 }
 
+// AppendIntersectionSegment appends the points IntersectionSegment returns to dst and returns the
+// extended slice, as Segment.AppendIntersectionRegularPolygon does.
+func (rp RegularPolygon[T]) AppendIntersectionSegment(dst []Point[T], segment Segment[T]) []Point[T] {
+	return segment.AppendIntersectionRegularPolygon(dst, rp)
+}
+
 // IntersectsRay reports whether the regular polygon and the ray share a point, as
 // Ray.IntersectsRegularPolygon does.
 func (rp RegularPolygon[T]) IntersectsRay(ray Ray[T]) bool {
@@ -543,6 +549,12 @@ func (rp RegularPolygon[T]) IntersectsRay(ray Ray[T]) bool {
 // Ray.IntersectionRegularPolygon does.
 func (rp RegularPolygon[T]) IntersectionRay(ray Ray[T]) []Point[T] {
 	return ray.IntersectionRegularPolygon(rp)
+}
+
+// AppendIntersectionRay appends the points IntersectionRay returns to dst and returns the
+// extended slice, as Ray.AppendIntersectionRegularPolygon does.
+func (rp RegularPolygon[T]) AppendIntersectionRay(dst []Point[T], ray Ray[T]) []Point[T] {
+	return ray.AppendIntersectionRegularPolygon(dst, rp)
 }
 
 // IntersectsPolygon reports whether the regular polygon and the polygon share a point, as
@@ -648,7 +660,7 @@ func (rp RegularPolygon[T]) IsAligned() bool {
 
 // Polygon converts the regular polygon into a generic Polygon with the vertices Vertices
 // iterates, in one allocation. A polygon with N < 1 has nil vertices, so its Polygon is zero
-// like Pol(nil).
+// like Pol(nil). A caller reusing a buffer appends them to it with slices.AppendSeq.
 func (rp RegularPolygon[T]) Polygon() Polygon[T] {
 	if rp.IsEmpty() {
 		return Polygon[T]{}

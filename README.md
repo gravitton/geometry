@@ -220,6 +220,9 @@ c.IntersectionCircle(d)               // zero, one or two points where two circl
 s.IntersectionCircle(c)               // where a segment crosses a boundary; also of a rectangle or a polygon
 s.ClipBox(view)                       // the part of s inside, and false where there is none
 s.ClipPolygon(p)                      // the parts inside a concave polygon, from Start to End
+
+buffer = s.AppendIntersectionPolygon(buffer[:0], p) // every slice result has an Append form, as strconv does,
+hull = p.AppendConvexHull(hull[:0])                 // so a loop reusing its buffer allocates nothing
 ```
 
 A `Ray` is a half-line from `Origin` along `Direction`, a `Collider` like the shapes. Its `Clip<Kind>` is the cast:

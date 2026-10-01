@@ -313,18 +313,28 @@ func (p Polygon[T]) Rotate(angle float64) Polygon[T] {
 // another is dropped, so a polygon whose vertices are all collinear gives the two ends of
 // the line and a single point gives itself. The turns are decided on exact signs, as
 // IsConvex decides them, so the hull of a convex polygon is convex again and the hull of a
-// hull is itself. An empty polygon is returned as it is.
+// hull is itself. An empty polygon gives an empty one.
 //
 // It sorts a copy of the vertices along the boundary, the side of the line between the least
 // and the greatest vertex that the hull reaches first and then the other side back, and scans
 // that copy once, compacting the hull into its front, so the copy is the one allocation.
 func (p Polygon[T]) ConvexHull() Polygon[T] {
+	return Polygon[T]{p.AppendConvexHull(nil)}
+}
+
+// AppendConvexHull appends the vertices of the polygon ConvexHull returns to dst and returns the
+// extended slice, so a caller reusing dst allocates nothing once it has room for every vertex
+// of the polygon: the copy is sorted and compacted within the appended tail, and the points
+// already in dst are left as they are. An empty polygon appends nothing.
+func (p Polygon[T]) AppendConvexHull(dst []Point[T]) []Point[T] {
 	if p.IsEmpty() {
-		return p
+		return dst
 	}
 
 	chord := Segment[T]{slices.MinFunc(p.Points, Point[T].Compare), slices.MaxFunc(p.Points, Point[T].Compare)}
-	points := slices.Clone(p.Points)
+	from := len(dst)
+	dst = append(dst, p.Points...)
+	points := dst[from:]
 	slices.SortFunc(points, func(a, b Point[T]) int {
 		return p.compareAround(chord, a, b)
 	})
@@ -347,7 +357,7 @@ func (p Polygon[T]) ConvexHull() Polygon[T] {
 		n--
 	}
 
-	return Polygon[T]{points[:n:n]}
+	return dst[:from+n]
 }
 
 // Simplify returns the polygon without the vertices the outline does not need to stay within
@@ -365,13 +375,22 @@ func (p Polygon[T]) ConvexHull() Polygon[T] {
 // keeps that vertex alone. The kept vertices are vertices of the polygon in its order, from
 // the first kept one, so a polygon with nothing to drop is returned equal to itself and
 // simplifying again changes nothing. A negative tolerance is taken absolute, and an empty
-// polygon is returned as it is.
+// polygon gives an empty one.
 //
 // The kept vertices are appended to one slice with room for all of them, the one allocation,
 // and turned in place to start where the polygon does.
 func (p Polygon[T]) Simplify(tolerance float64) Polygon[T] {
+	return Polygon[T]{p.AppendSimplify(nil, tolerance)}
+}
+
+// AppendSimplify appends the vertices of the polygon Simplify returns to dst and returns the
+// extended slice, so a caller reusing dst allocates nothing once it has room for every vertex
+// of the polygon: the kept vertices are turned within the appended tail, and the points already
+// in dst are left as they are. An empty polygon appends nothing. The vertices are read while the
+// tail is written, so dst must not share memory with Points.
+func (p Polygon[T]) AppendSimplify(dst []Point[T], tolerance float64) []Point[T] {
 	if p.IsEmpty() {
-		return p
+		return dst
 	}
 
 	n, least := len(p.Points), 0
@@ -381,13 +400,15 @@ func (p Polygon[T]) Simplify(tolerance float64) Polygon[T] {
 		}
 	}
 
-	kept, wrapped := p.appendKept(append(make([]Point[T], 0, n), p.Points[least]), least, least+n, math.Abs(tolerance))
+	from := len(dst)
+	dst, wrapped := p.appendKept(append(slices.Grow(dst, n), p.Points[least]), least, least+n, math.Abs(tolerance))
 
+	kept := dst[from:]
 	slices.Reverse(kept)
 	slices.Reverse(kept[:wrapped])
 	slices.Reverse(kept[wrapped:])
 
-	return Polygon[T]{kept}
+	return dst
 }
 
 // compareAround orders two points along the boundary of the hull whose least and greatest
@@ -592,6 +613,12 @@ func (p Polygon[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
 	return segment.IntersectionPolygon(p)
 }
 
+// AppendIntersectionSegment appends the points IntersectionSegment returns to dst and returns the
+// extended slice, as Segment.AppendIntersectionPolygon does.
+func (p Polygon[T]) AppendIntersectionSegment(dst []Point[T], segment Segment[T]) []Point[T] {
+	return segment.AppendIntersectionPolygon(dst, p)
+}
+
 // IntersectsRay reports whether the polygon and the ray share a point, as
 // Ray.IntersectsPolygon does.
 func (p Polygon[T]) IntersectsRay(ray Ray[T]) bool {
@@ -602,6 +629,12 @@ func (p Polygon[T]) IntersectsRay(ray Ray[T]) bool {
 // Ray.IntersectionPolygon does.
 func (p Polygon[T]) IntersectionRay(ray Ray[T]) []Point[T] {
 	return ray.IntersectionPolygon(p)
+}
+
+// AppendIntersectionRay appends the points IntersectionRay returns to dst and returns the
+// extended slice, as Ray.AppendIntersectionPolygon does.
+func (p Polygon[T]) AppendIntersectionRay(dst []Point[T], ray Ray[T]) []Point[T] {
+	return ray.AppendIntersectionPolygon(dst, p)
 }
 
 // IntersectsPolygon reports whether the polygons share a point: a vertex of one lies within the other,

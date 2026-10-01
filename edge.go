@@ -99,19 +99,22 @@ func (w edgeWalk[T]) reaches(circle Circle[T]) bool {
 }
 
 // edgeIntersections collects the points where a segment crosses the edges of an outline, fed
-// one at a time by the shape ranging its own Edges, as edgeWalk folds a walk: each crossing by Segment.IntersectionSegment, a vertex hit
-// by two edges counted once, allocated on the first crossing with room for the two a convex
-// outline can have. Only a concave outline grows it.
+// one at a time by the shape ranging its own Edges, as edgeWalk folds a walk: each crossing by
+// Segment.IntersectionSegment, a vertex hit by two edges counted once. It is started with the
+// slice the crossings are appended to and the length it had, so the points already there are
+// neither compared nor sorted; a nil slice is allocated on the first crossing with room for the
+// two a convex outline can have. Only a concave outline grows it.
 type edgeIntersections[T Number] struct {
 	segment Segment[T]
 	points  []Point[T]
+	from    int
 }
 
 // add folds one edge in, keeping its crossing with the segment unless a previous edge gave
 // a point that compares Equal to it.
 func (e *edgeIntersections[T]) add(edge Segment[T]) {
 	point, ok := e.segment.IntersectionSegment(edge)
-	if !ok || slices.ContainsFunc(e.points, point.Equal) {
+	if !ok || slices.ContainsFunc(e.points[e.from:], point.Equal) {
 		return
 	}
 
@@ -122,9 +125,10 @@ func (e *edgeIntersections[T]) add(edge Segment[T]) {
 	e.points = append(e.points, point)
 }
 
-// sorted returns the crossings from the segment's Start, and nil where there was none.
+// sorted returns the slice with the crossings ordered from the segment's Start after the points
+// it was started with, and the slice as it was where there was none.
 func (e *edgeIntersections[T]) sorted() []Point[T] {
-	slices.SortFunc(e.points, func(a, b Point[T]) int {
+	slices.SortFunc(e.points[e.from:], func(a, b Point[T]) int {
 		return e.segment.compareDistance(a, b)
 	})
 

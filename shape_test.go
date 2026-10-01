@@ -373,6 +373,16 @@ func farColliders(offset Vector[float32]) []Collider[float32] {
 	return colliders
 }
 
+// prefixPoint is the point the Append methods find in dst over the fixtures, so every result is
+// checked to follow it.
+var prefixPoint = Pt(-7.5, 3.25)
+
+// bufferWith returns a slice holding the element with room for more, the dst the Append methods
+// are checked with over the fixtures, so their results are appended in place after it.
+func bufferWith[E any](element E) []E {
+	return append(make([]E, 0, 8), element)
+}
+
 // closed reports whether the last edge returns to the first vertex, through the interface as
 // a caller would.
 func closed[T Number](shape polyline[T]) bool {

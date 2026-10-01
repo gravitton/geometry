@@ -255,6 +255,12 @@ func (s Segment[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
 	return circle.IntersectionSegment(s)
 }
 
+// AppendIntersectionCircle appends the points IntersectionCircle returns to dst and returns the
+// extended slice, as Circle.AppendIntersectionSegment does.
+func (s Segment[T]) AppendIntersectionCircle(dst []Point[T], circle Circle[T]) []Point[T] {
+	return circle.AppendIntersectionSegment(dst, s)
+}
+
 // IntersectsSegment reports whether the segments share a point, within the tolerance, the same closed
 // convention as Contains: segments that touch at an endpoint or overlap collinearly intersect.
 // It holds exactly where DistanceToSegment is zero.
@@ -337,7 +343,15 @@ func (s Segment[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 // IntersectsPolygon still reports it, a segment along an edge is parallel to it and crosses
 // only the edges at its ends, and an empty polygon has no boundary to cross.
 func (s Segment[T]) IntersectionPolygon(polygon Polygon[T]) []Point[T] {
-	e := edgeIntersections[T]{segment: s}
+	return s.AppendIntersectionPolygon(nil, polygon)
+}
+
+// AppendIntersectionPolygon appends the points IntersectionPolygon returns to dst and returns the
+// extended slice, so a caller reusing dst allocates nothing once it has room. The points already
+// in dst are kept as they are: a crossing equal to one of them is still appended, and only the
+// appended ones are ordered from Start.
+func (s Segment[T]) AppendIntersectionPolygon(dst []Point[T], polygon Polygon[T]) []Point[T] {
+	e := edgeIntersections[T]{segment: s, points: dst, from: len(dst)}
 	for edge := range polygon.Edges() {
 		e.add(edge)
 	}
@@ -376,7 +390,15 @@ func (s Segment[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 // IntersectsRectangle still reports it, and a segment along an edge is parallel to it and
 // crosses only the edges at its ends, if it reaches them.
 func (s Segment[T]) IntersectionRectangle(rectangle Rectangle[T]) []Point[T] {
-	e := edgeIntersections[T]{segment: s}
+	return s.AppendIntersectionRectangle(nil, rectangle)
+}
+
+// AppendIntersectionRectangle appends the points IntersectionRectangle returns to dst and returns
+// the extended slice, so a caller reusing dst allocates nothing once it has room. The points
+// already in dst are kept as they are: a crossing equal to one of them is still appended, and only
+// the appended ones are ordered from Start.
+func (s Segment[T]) AppendIntersectionRectangle(dst []Point[T], rectangle Rectangle[T]) []Point[T] {
+	e := edgeIntersections[T]{segment: s, points: dst, from: len(dst)}
 	for edge := range rectangle.Edges() {
 		e.add(edge)
 	}
@@ -421,7 +443,15 @@ func (s Segment[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 // no boundary and returns none while IntersectsRegularPolygon still reports it, and an empty
 // polygon has no boundary to cross.
 func (s Segment[T]) IntersectionRegularPolygon(polygon RegularPolygon[T]) []Point[T] {
-	e := edgeIntersections[T]{segment: s}
+	return s.AppendIntersectionRegularPolygon(nil, polygon)
+}
+
+// AppendIntersectionRegularPolygon appends the points IntersectionRegularPolygon returns to dst
+// and returns the extended slice, so a caller reusing dst allocates nothing once it has room. The
+// points already in dst are kept as they are: a crossing equal to one of them is still appended,
+// and only the appended ones are ordered from Start.
+func (s Segment[T]) AppendIntersectionRegularPolygon(dst []Point[T], polygon RegularPolygon[T]) []Point[T] {
+	e := edgeIntersections[T]{segment: s, points: dst, from: len(dst)}
 	for edge := range polygon.Edges() {
 		e.add(edge)
 	}
@@ -441,6 +471,12 @@ func (s Segment[T]) IntersectionBox(box Box[T]) []Point[T] {
 	return s.IntersectionRectangle(box.Rectangle())
 }
 
+// AppendIntersectionBox appends the points IntersectionBox returns to dst and returns the
+// extended slice, as AppendIntersectionRectangle does on the box's Rectangle.
+func (s Segment[T]) AppendIntersectionBox(dst []Point[T], box Box[T]) []Point[T] {
+	return s.AppendIntersectionRectangle(dst, box.Rectangle())
+}
+
 // ClipCircle returns the part of the segment inside the circle, boundary included within
 // the tolerance, and false where they share no point: from Start where the circle contains it,
 // or else from the first point IntersectionCircle returns, to End where the circle contains it,
@@ -449,7 +485,7 @@ func (s Segment[T]) IntersectionBox(box Box[T]) []Point[T] {
 // holds. It allocates nothing.
 func (s Segment[T]) ClipCircle(circle Circle[T]) (Segment[T], bool) {
 	var buffer [2]Point[T]
-	crossings := circle.appendIntersectionSegment(buffer[:0], s)
+	crossings := circle.AppendIntersectionSegment(buffer[:0], s)
 
 	return s.clipConvex(crossings, circle.Contains(s.Start), circle.Contains(s.End))
 }
@@ -469,7 +505,12 @@ func (s Segment[T]) ClipCircle(circle Circle[T]) (Segment[T], bool) {
 // the last, so the result is the one allocation, made on the first part with room for the one
 // a convex polygon gives; only a concave polygon grows it.
 func (s Segment[T]) ClipPolygon(polygon Polygon[T]) []Segment[T] {
-	var clipped []Segment[T]
+	return s.AppendClipPolygon(nil, polygon)
+}
+
+// AppendClipPolygon appends the parts ClipPolygon returns to dst and returns the extended slice,
+// so a caller reusing dst allocates nothing once it has room.
+func (s Segment[T]) AppendClipPolygon(dst []Segment[T], polygon Polygon[T]) []Segment[T] {
 	var from Point[T]
 
 	point, contained, open := s.Start, polygon.Contains(s.Start), false
@@ -490,11 +531,11 @@ func (s Segment[T]) ClipPolygon(polygon Polygon[T]) []Segment[T] {
 		}
 
 		if open && !inside {
-			clipped, open = append(clipped, Segment[T]{from, point}), false
+			dst, open = append(dst, Segment[T]{from, point}), false
 		}
 
 		if !ahead {
-			return clipped
+			return dst
 		}
 
 		point, contained = next, sweep.found || polygon.Contains(next)

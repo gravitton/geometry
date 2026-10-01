@@ -590,6 +590,12 @@ func (r Rectangle[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
 	return segment.IntersectionRectangle(r)
 }
 
+// AppendIntersectionSegment appends the points IntersectionSegment returns to dst and returns the
+// extended slice, as Segment.AppendIntersectionRectangle does.
+func (r Rectangle[T]) AppendIntersectionSegment(dst []Point[T], segment Segment[T]) []Point[T] {
+	return segment.AppendIntersectionRectangle(dst, r)
+}
+
 // IntersectsRay reports whether the rectangle and the ray share a point, as
 // Ray.IntersectsRectangle does.
 func (r Rectangle[T]) IntersectsRay(ray Ray[T]) bool {
@@ -600,6 +606,12 @@ func (r Rectangle[T]) IntersectsRay(ray Ray[T]) bool {
 // Ray.IntersectionRectangle does.
 func (r Rectangle[T]) IntersectionRay(ray Ray[T]) []Point[T] {
 	return ray.IntersectionRectangle(r)
+}
+
+// AppendIntersectionRay appends the points IntersectionRay returns to dst and returns the
+// extended slice, as Ray.AppendIntersectionRectangle does.
+func (r Rectangle[T]) AppendIntersectionRay(dst []Point[T], ray Ray[T]) []Point[T] {
+	return ray.AppendIntersectionRectangle(dst, r)
 }
 
 // IntersectsPolygon reports whether the rectangle and the polygon share a point, as
@@ -815,7 +827,7 @@ func (r Rectangle[T]) IsAligned() bool {
 }
 
 // Polygon converts the rectangle into a generic Polygon with the vertices Vertices iterates,
-// in one allocation.
+// in one allocation. A caller reusing a buffer appends them to it with slices.AppendSeq.
 func (r Rectangle[T]) Polygon() Polygon[T] {
 	corners := r.corners()
 

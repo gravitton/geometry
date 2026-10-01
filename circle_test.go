@@ -526,7 +526,7 @@ func TestCircle_IntersectionCircle(t *testing.T) {
 		assert.Nil(t, circle.IntersectionCircle(Circ(Pt(0.0, -1e-7), 3.0)))
 	})
 	t.Run("float is tolerant at a tangent", func(t *testing.T) {
-		assert.Equal(t, len(circle.IntersectionCircle(Circ(Pt(8.0+Delta/2, 0.0), 3.0))), 1)
+		assert.Length(t, circle.IntersectionCircle(Circ(Pt(8.0+Delta/2, 0.0), 3.0)), 1)
 		assert.Nil(t, circle.IntersectionCircle(Circ(Pt(8.0+2*Delta, 0.0), 3.0)))
 	})
 	t.Run("a tangent exactly Delta outside is judged like Intersects, on both sides", func(t *testing.T) {
@@ -539,7 +539,7 @@ func TestCircle_IntersectionCircle(t *testing.T) {
 		a, b := Circ(Pt(0.0, 0.0), 6.0), Circ(Pt(2.0000005, 0.0), 4.0)
 		points := a.IntersectionCircle(b)
 
-		assert.Equal(t, len(points), 1)
+		assert.Length(t, points, 1)
 		for _, p := range points {
 			assert.True(t, a.touchesSquared(a.Center.DistanceSquaredTo(p), b.magnitude()), "on a")
 			assert.True(t, b.touchesSquared(b.Center.DistanceSquaredTo(p), a.magnitude()), "on b")
@@ -587,6 +587,32 @@ func BenchmarkCircle_IntersectionCircle(b *testing.B) {
 	for b.Loop() {
 		_ = circle.IntersectionCircle(other)
 	}
+}
+
+func TestCircle_AppendIntersectionCircle(t *testing.T) {
+	circle := Circ(Pt(0, 0), 5)
+
+	t.Run("appends after the points in dst, comparing and ordering only its own", func(t *testing.T) {
+		AssertVertices(t, circle.AppendIntersectionCircle([]Point[int]{Pt(3, 4)}, Circ(Pt(6, 0), 5)), []Point[int]{Pt(3, 4), Pt(3, 4), Pt(3, -4)})
+	})
+	t.Run("none leaves dst as it is", func(t *testing.T) {
+		AssertVertices(t, circle.AppendIntersectionCircle([]Point[int]{Pt(9, 9)}, Circ(Pt(20, 0), 5)), []Point[int]{Pt(9, 9)})
+		assert.Nil(t, circle.AppendIntersectionCircle(nil, Circ(Pt(20, 0), 5)))
+	})
+	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
+		buffer := make([]Point[int], 0, 2)
+
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = circle.AppendIntersectionCircle(buffer[:0], Circ(Pt(6, 0), 5))
+		}), 0)
+	})
+	t.Run("matches IntersectionCircle after the points in dst", func(t *testing.T) {
+		for _, c := range circleFixtures {
+			for _, other := range circleFixtures {
+				AssertVertices(t, c.AppendIntersectionCircle(bufferWith(prefixPoint), other), append([]Point[float64]{prefixPoint}, c.IntersectionCircle(other)...), fmt.Sprintf("%s → %s: ", c, other))
+			}
+		}
+	})
 }
 
 func FuzzCircle_IntersectionCircle(f *testing.F) {
@@ -718,7 +744,7 @@ func TestCircle_IntersectionSegment(t *testing.T) {
 		s, c := Seg(Pt(-1.0, 2.000001), Pt(-877.0315, 0.11111116666666668)), Circ(Pt(-1.0, 0.0), 2.0)
 		points := c.IntersectionSegment(s)
 
-		assert.Equal(t, len(points), 2)
+		assert.Length(t, points, 2)
 		AssertPoint(t, points[0], s.Start)
 	})
 	t.Run("a tangent segment with both ends on the boundary gives its ends", func(t *testing.T) {
@@ -768,6 +794,33 @@ func TestCircle_IntersectionSegment(t *testing.T) {
 					}
 					assert.True(t, len(points) == 0 || c.IntersectsSegment(s), fmt.Sprintf("%s → %s: ", s, c))
 				}
+			}
+		}
+	})
+}
+
+func TestCircle_AppendIntersectionSegment(t *testing.T) {
+	circle := Circ(Pt(0, 0), 5)
+	through := Seg(Pt(-10, 0), Pt(10, 0))
+
+	t.Run("appends after the points in dst, comparing and ordering only its own", func(t *testing.T) {
+		AssertVertices(t, circle.AppendIntersectionSegment([]Point[int]{Pt(5, 0)}, through), []Point[int]{Pt(5, 0), Pt(-5, 0), Pt(5, 0)})
+	})
+	t.Run("none leaves dst as it is", func(t *testing.T) {
+		AssertVertices(t, circle.AppendIntersectionSegment([]Point[int]{Pt(9, 9)}, Seg(Pt(-10, 9), Pt(10, 9))), []Point[int]{Pt(9, 9)})
+		assert.Nil(t, circle.AppendIntersectionSegment(nil, Seg(Pt(-10, 9), Pt(10, 9))))
+	})
+	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
+		buffer := make([]Point[int], 0, 2)
+
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = circle.AppendIntersectionSegment(buffer[:0], through)
+		}), 0)
+	})
+	t.Run("matches IntersectionSegment after the points in dst", func(t *testing.T) {
+		for _, c := range circleFixtures {
+			for _, s := range segmentFixtures {
+				AssertVertices(t, c.AppendIntersectionSegment(bufferWith(prefixPoint), s), append([]Point[float64]{prefixPoint}, c.IntersectionSegment(s)...), fmt.Sprintf("%s → %s: ", c, s))
 			}
 		}
 	})
@@ -874,6 +927,33 @@ func TestCircle_IntersectionRay(t *testing.T) {
 				if r.Direction.hasDirection() {
 					assert.Equal(t, len(points) > 0, c.IntersectsRay(r), message)
 				}
+			}
+		}
+	})
+}
+
+func TestCircle_AppendIntersectionRay(t *testing.T) {
+	circle := Circ(Pt(0, 0), 5)
+	through := RayAlong(Pt(-10, 0), Vec(1, 0))
+
+	t.Run("appends after the points in dst, comparing and ordering only its own", func(t *testing.T) {
+		AssertVertices(t, circle.AppendIntersectionRay([]Point[int]{Pt(5, 0)}, through), []Point[int]{Pt(5, 0), Pt(-5, 0), Pt(5, 0)})
+	})
+	t.Run("none leaves dst as it is", func(t *testing.T) {
+		AssertVertices(t, circle.AppendIntersectionRay([]Point[int]{Pt(9, 9)}, RayAlong(Pt(-10, 0), Vec(-1, 0))), []Point[int]{Pt(9, 9)})
+		assert.Nil(t, circle.AppendIntersectionRay(nil, RayAlong(Pt(-10, 0), Vec(-1, 0))))
+	})
+	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
+		buffer := make([]Point[int], 0, 2)
+
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = circle.AppendIntersectionRay(buffer[:0], through)
+		}), 0)
+	})
+	t.Run("matches IntersectionRay after the points in dst", func(t *testing.T) {
+		for _, c := range circleFixtures {
+			for _, r := range rayFixtures {
+				AssertVertices(t, c.AppendIntersectionRay(bufferWith(prefixPoint), r), append([]Point[float64]{prefixPoint}, c.IntersectionRay(r)...), fmt.Sprintf("%s → %s: ", c, r))
 			}
 		}
 	})

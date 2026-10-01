@@ -276,7 +276,7 @@ func TestRectangle_Edges(t *testing.T) {
 	edges := slices.Collect(r.Edges())
 
 	t.Run("clockwise from the top", func(t *testing.T) {
-		assert.Equal(t, len(edges), 4)
+		assert.Length(t, edges, 4)
 		AssertSegment(t, edges[0], Seg(Pt(-1, -1), Pt(1, -1)))
 		AssertSegment(t, edges[1], Seg(Pt(1, -1), Pt(1, 1)))
 		AssertSegment(t, edges[2], Seg(Pt(1, 1), Pt(-1, 1)))
@@ -1100,6 +1100,16 @@ func TestRectangle_IntersectionSegment(t *testing.T) {
 	})
 }
 
+func TestRectangle_AppendIntersectionSegment(t *testing.T) {
+	t.Run("matches Segment.AppendIntersectionRectangle", func(t *testing.T) {
+		for _, rect := range rectFixtures {
+			for _, s := range segmentFixtures {
+				AssertVertices(t, rect.AppendIntersectionSegment(bufferWith(prefixPoint), s), s.AppendIntersectionRectangle(bufferWith(prefixPoint), rect), fmt.Sprintf("%s → %s: ", rect, s))
+			}
+		}
+	})
+}
+
 func TestRectangle_IntersectsRay(t *testing.T) {
 	t.Run("mirrors Ray.IntersectsRectangle", func(t *testing.T) {
 		for _, rect := range rectFixtures {
@@ -1115,6 +1125,16 @@ func TestRectangle_IntersectionRay(t *testing.T) {
 		for _, rect := range rectFixtures {
 			for _, r := range rayFixtures {
 				AssertVertices(t, rect.IntersectionRay(r), r.IntersectionRectangle(rect), fmt.Sprintf("%s → %s: ", rect, r))
+			}
+		}
+	})
+}
+
+func TestRectangle_AppendIntersectionRay(t *testing.T) {
+	t.Run("matches Ray.AppendIntersectionRectangle", func(t *testing.T) {
+		for _, rect := range rectFixtures {
+			for _, r := range rayFixtures {
+				AssertVertices(t, rect.AppendIntersectionRay(bufferWith(prefixPoint), r), r.AppendIntersectionRectangle(bufferWith(prefixPoint), rect), fmt.Sprintf("%s → %s: ", rect, r))
 			}
 		}
 	})
@@ -1665,8 +1685,8 @@ func TestRectangle_Properties(t *testing.T) {
 		for _, r := range rectFixtures {
 			vertices, edges := slices.Collect(r.Vertices()), slices.Collect(r.Edges())
 
-			assert.Equal(t, len(vertices), 4, fmt.Sprintf("%s: ", r))
-			assert.Equal(t, len(edges), 4, fmt.Sprintf("%s: ", r))
+			assert.Length(t, vertices, 4, fmt.Sprintf("%s: ", r))
+			assert.Length(t, edges, 4, fmt.Sprintf("%s: ", r))
 
 			for i, edge := range edges {
 				assert.True(t, edge.Start.Equal(vertices[i]), fmt.Sprintf("%s: ", r))

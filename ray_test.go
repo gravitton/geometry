@@ -296,6 +296,16 @@ func TestRay_IntersectionCircle(t *testing.T) {
 	})
 }
 
+func TestRay_AppendIntersectionCircle(t *testing.T) {
+	t.Run("matches Circle.AppendIntersectionRay", func(t *testing.T) {
+		for _, r := range rayFixtures {
+			for _, c := range circleFixtures {
+				AssertVertices(t, r.AppendIntersectionCircle(bufferWith(prefixPoint), c), c.AppendIntersectionRay(bufferWith(prefixPoint), r), fmt.Sprintf("%s → %s: ", r, c))
+			}
+		}
+	})
+}
+
 func TestRay_IntersectsSegment(t *testing.T) {
 	t.Run("mirrors Segment.IntersectsRay", func(t *testing.T) {
 		for _, r := range rayFixtures {
@@ -522,6 +532,33 @@ func TestRay_IntersectionPolygon(t *testing.T) {
 	})
 }
 
+func TestRay_AppendIntersectionPolygon(t *testing.T) {
+	square := Pol(squareVertices())
+	through := RayAlong(Pt(-1, 1), Vec(1, 0))
+
+	t.Run("appends after the points in dst, comparing and ordering only its own", func(t *testing.T) {
+		AssertVertices(t, through.AppendIntersectionPolygon([]Point[int]{Pt(2, 1), Pt(9, 9)}, square), []Point[int]{Pt(2, 1), Pt(9, 9), Pt(0, 1), Pt(2, 1)})
+	})
+	t.Run("none leaves dst as it is", func(t *testing.T) {
+		AssertVertices(t, RayAlong(Pt(-1, 1), Vec(-1, 0)).AppendIntersectionPolygon([]Point[int]{Pt(9, 9)}, square), []Point[int]{Pt(9, 9)})
+		assert.Nil(t, RayAlong(Pt(-1, 1), Vec(-1, 0)).AppendIntersectionPolygon(nil, square))
+	})
+	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
+		buffer := make([]Point[int], 0, 2)
+
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = through.AppendIntersectionPolygon(buffer[:0], square)
+		}), 0)
+	})
+	t.Run("matches IntersectionPolygon after the points in dst", func(t *testing.T) {
+		for _, r := range rayFixtures {
+			for _, p := range polygonFixtures() {
+				AssertVertices(t, r.AppendIntersectionPolygon(bufferWith(prefixPoint), p), append([]Point[float64]{prefixPoint}, r.IntersectionPolygon(p)...), fmt.Sprintf("%s → %s: ", r, p))
+			}
+		}
+	})
+}
+
 func TestRay_IntersectsRectangle(t *testing.T) {
 	rectangle := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0))
 
@@ -571,6 +608,33 @@ func TestRay_IntersectionRectangle(t *testing.T) {
 	})
 }
 
+func TestRay_AppendIntersectionRectangle(t *testing.T) {
+	rectangle := Rect(Pt(0, 0), Sz(4, 2))
+	through := RayAlong(Pt(-5, 0), Vec(1, 0))
+
+	t.Run("appends after the points in dst, comparing and ordering only its own", func(t *testing.T) {
+		AssertVertices(t, through.AppendIntersectionRectangle([]Point[int]{Pt(2, 0), Pt(9, 9)}, rectangle), []Point[int]{Pt(2, 0), Pt(9, 9), Pt(-2, 0), Pt(2, 0)})
+	})
+	t.Run("none leaves dst as it is", func(t *testing.T) {
+		AssertVertices(t, RayAlong(Pt(-5, 0), Vec(-1, 0)).AppendIntersectionRectangle([]Point[int]{Pt(9, 9)}, rectangle), []Point[int]{Pt(9, 9)})
+		assert.Nil(t, RayAlong(Pt(-5, 0), Vec(-1, 0)).AppendIntersectionRectangle(nil, rectangle))
+	})
+	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
+		buffer := make([]Point[int], 0, 2)
+
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = through.AppendIntersectionRectangle(buffer[:0], rectangle)
+		}), 0)
+	})
+	t.Run("matches IntersectionRectangle after the points in dst", func(t *testing.T) {
+		for _, r := range rayFixtures {
+			for _, rect := range rectFixtures {
+				AssertVertices(t, r.AppendIntersectionRectangle(bufferWith(prefixPoint), rect), append([]Point[float64]{prefixPoint}, r.IntersectionRectangle(rect)...), fmt.Sprintf("%s → %s: ", r, rect))
+			}
+		}
+	})
+}
+
 func TestRay_IntersectsRegularPolygon(t *testing.T) {
 	hexagon := Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationFlatTop)
 
@@ -611,6 +675,33 @@ func TestRay_IntersectionRegularPolygon(t *testing.T) {
 	})
 }
 
+func TestRay_AppendIntersectionRegularPolygon(t *testing.T) {
+	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0)
+	through := RayAlong(Pt(-3, 0), Vec(1, 0))
+
+	t.Run("appends after the points in dst, comparing and ordering only its own", func(t *testing.T) {
+		AssertVertices(t, through.AppendIntersectionRegularPolygon([]Point[int]{Pt(2, 0), Pt(9, 9)}, diamond), []Point[int]{Pt(2, 0), Pt(9, 9), Pt(-2, 0), Pt(2, 0)})
+	})
+	t.Run("none leaves dst as it is", func(t *testing.T) {
+		AssertVertices(t, RayAlong(Pt(-3, 0), Vec(-1, 0)).AppendIntersectionRegularPolygon([]Point[int]{Pt(9, 9)}, diamond), []Point[int]{Pt(9, 9)})
+		assert.Nil(t, RayAlong(Pt(-3, 0), Vec(-1, 0)).AppendIntersectionRegularPolygon(nil, diamond))
+	})
+	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
+		buffer := make([]Point[int], 0, 2)
+
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = through.AppendIntersectionRegularPolygon(buffer[:0], diamond)
+		}), 0)
+	})
+	t.Run("matches IntersectionRegularPolygon after the points in dst", func(t *testing.T) {
+		for _, r := range rayFixtures {
+			for _, rp := range regularPolygonFixtures {
+				AssertVertices(t, r.AppendIntersectionRegularPolygon(bufferWith(prefixPoint), rp), append([]Point[float64]{prefixPoint}, r.IntersectionRegularPolygon(rp)...), fmt.Sprintf("%s → %s: ", r, rp))
+			}
+		}
+	})
+}
+
 func TestRay_IntersectsBox(t *testing.T) {
 	box := BoxFromMinMax(Pt(0, 0), Pt(4, 2))
 
@@ -639,6 +730,16 @@ func TestRay_IntersectionBox(t *testing.T) {
 		for _, b := range boxFixtures {
 			for _, r := range rayFixtures {
 				assertRayCrossings(t, r, r.IntersectionBox(b), r.IntersectsBox(b), b.Rectangle().Edges, fmt.Sprintf("%s → %s: ", r, b))
+			}
+		}
+	})
+}
+
+func TestRay_AppendIntersectionBox(t *testing.T) {
+	t.Run("matches AppendIntersectionRectangle on the box Rectangle", func(t *testing.T) {
+		for _, r := range rayFixtures {
+			for _, b := range boxFixtures {
+				AssertVertices(t, r.AppendIntersectionBox(bufferWith(prefixPoint), b), r.AppendIntersectionRectangle(bufferWith(prefixPoint), b.Rectangle()), fmt.Sprintf("%s → %s: ", r, b))
 			}
 		}
 	})
@@ -695,6 +796,30 @@ func TestRay_ClipPolygon(t *testing.T) {
 		for _, r := range rayFixtures {
 			for _, p := range outlineFixtures() {
 				assertRayClipped(t, r, r.ClipPolygon(p), r.IntersectsPolygon(p), p.EnclosesSegment, fmt.Sprintf("%s → %s: ", r, p))
+			}
+		}
+	})
+}
+
+func TestRay_AppendClipPolygon(t *testing.T) {
+	square := Pol(squareVertices())
+	through := RayAlong(Pt(-1, 1), Vec(1, 0))
+	prefix := Seg(Pt(-7.5, 3.25), Pt(1.0, 1.0))
+
+	t.Run("appends the parts after the segments in dst", func(t *testing.T) {
+		assertSegments(t, through.AppendClipPolygon([]Segment[int]{Seg(Pt(9, 9), Pt(9, 9))}, square), []Segment[int]{Seg(Pt(9, 9), Pt(9, 9)), Seg(Pt(0, 1), Pt(2, 1))})
+	})
+	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
+		buffer := make([]Segment[int], 0, 1)
+
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkSegments = through.AppendClipPolygon(buffer[:0], square)
+		}), 0)
+	})
+	t.Run("matches ClipPolygon after the segments in dst", func(t *testing.T) {
+		for _, r := range rayFixtures {
+			for _, p := range outlineFixtures() {
+				assertSegments(t, r.AppendClipPolygon(bufferWith(prefix), p), append([]Segment[float64]{prefix}, r.ClipPolygon(p)...), fmt.Sprintf("%s → %s: ", r, p))
 			}
 		}
 	})

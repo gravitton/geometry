@@ -100,7 +100,7 @@ func TestSegment_Edges(t *testing.T) {
 	t.Run("is the segment itself", func(t *testing.T) {
 		edges := slices.Collect(s.Edges())
 
-		assert.Equal(t, len(edges), 1)
+		assert.Length(t, edges, 1)
 		AssertSegment(t, edges[0], s)
 	})
 	t.Run("ranging allocates nothing", func(t *testing.T) {
@@ -517,6 +517,16 @@ func TestSegment_IntersectionCircle(t *testing.T) {
 		for _, s := range segmentFixtures {
 			for _, c := range circleFixtures {
 				AssertVertices(t, s.IntersectionCircle(c), c.IntersectionSegment(s), fmt.Sprintf("%s → %s: ", s, c))
+			}
+		}
+	})
+}
+
+func TestSegment_AppendIntersectionCircle(t *testing.T) {
+	t.Run("matches Circle.AppendIntersectionSegment", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, c := range circleFixtures {
+				AssertVertices(t, s.AppendIntersectionCircle(bufferWith(prefixPoint), c), c.AppendIntersectionSegment(bufferWith(prefixPoint), s), fmt.Sprintf("%s → %s: ", s, c))
 			}
 		}
 	})
@@ -950,6 +960,33 @@ func TestSegment_IntersectionPolygon(t *testing.T) {
 	})
 }
 
+func TestSegment_AppendIntersectionPolygon(t *testing.T) {
+	square := Pol(squareVertices())
+	through := Seg(Pt(-1, 1), Pt(5, 1))
+
+	t.Run("appends after the points in dst, comparing and ordering only its own", func(t *testing.T) {
+		AssertVertices(t, through.AppendIntersectionPolygon([]Point[int]{Pt(2, 1), Pt(9, 9)}, square), []Point[int]{Pt(2, 1), Pt(9, 9), Pt(0, 1), Pt(2, 1)})
+	})
+	t.Run("none leaves dst as it is", func(t *testing.T) {
+		AssertVertices(t, Seg(Pt(3, -1), Pt(3, 3)).AppendIntersectionPolygon([]Point[int]{Pt(9, 9)}, square), []Point[int]{Pt(9, 9)})
+		assert.Nil(t, Seg(Pt(3, -1), Pt(3, 3)).AppendIntersectionPolygon(nil, square))
+	})
+	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
+		buffer := make([]Point[int], 0, 2)
+
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = through.AppendIntersectionPolygon(buffer[:0], square)
+		}), 0)
+	})
+	t.Run("matches IntersectionPolygon after the points in dst", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, p := range polygonFixtures() {
+				AssertVertices(t, s.AppendIntersectionPolygon(bufferWith(prefixPoint), p), append([]Point[float64]{prefixPoint}, s.IntersectionPolygon(p)...), fmt.Sprintf("%s → %s: ", s, p))
+			}
+		}
+	})
+}
+
 func TestSegment_IntersectsRectangle(t *testing.T) {
 	rectangle := Rect(Pt(0, 0), Sz(4, 4))
 
@@ -1051,6 +1088,33 @@ func TestSegment_IntersectionRectangle(t *testing.T) {
 	})
 }
 
+func TestSegment_AppendIntersectionRectangle(t *testing.T) {
+	rectangle := Rect(Pt(0, 0), Sz(4, 4))
+	through := Seg(Pt(-5, 0), Pt(5, 0))
+
+	t.Run("appends after the points in dst, comparing and ordering only its own", func(t *testing.T) {
+		AssertVertices(t, through.AppendIntersectionRectangle([]Point[int]{Pt(2, 0), Pt(9, 9)}, rectangle), []Point[int]{Pt(2, 0), Pt(9, 9), Pt(-2, 0), Pt(2, 0)})
+	})
+	t.Run("none leaves dst as it is", func(t *testing.T) {
+		AssertVertices(t, Seg(Pt(5, -5), Pt(5, 5)).AppendIntersectionRectangle([]Point[int]{Pt(9, 9)}, rectangle), []Point[int]{Pt(9, 9)})
+		assert.Nil(t, Seg(Pt(5, -5), Pt(5, 5)).AppendIntersectionRectangle(nil, rectangle))
+	})
+	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
+		buffer := make([]Point[int], 0, 2)
+
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = through.AppendIntersectionRectangle(buffer[:0], rectangle)
+		}), 0)
+	})
+	t.Run("matches IntersectionRectangle after the points in dst", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, rect := range rectFixtures {
+				AssertVertices(t, s.AppendIntersectionRectangle(bufferWith(prefixPoint), rect), append([]Point[float64]{prefixPoint}, s.IntersectionRectangle(rect)...), fmt.Sprintf("%s → %s: ", s, rect))
+			}
+		}
+	})
+}
+
 func FuzzSegment_IntersectionRectangle(f *testing.F) {
 	f.Add(-5.0, 0.0, 5.0, 0.0, 0.0, 0.0, 4.0, 4.0)
 	f.Add(-5.0, -2.0, 5.0, -2.0, 0.0, 0.0, 4.0, 4.0)
@@ -1145,6 +1209,33 @@ func TestSegment_IntersectionRegularPolygon(t *testing.T) {
 	})
 }
 
+func TestSegment_AppendIntersectionRegularPolygon(t *testing.T) {
+	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0)
+	through := Seg(Pt(-3, 0), Pt(3, 0))
+
+	t.Run("appends after the points in dst, comparing and ordering only its own", func(t *testing.T) {
+		AssertVertices(t, through.AppendIntersectionRegularPolygon([]Point[int]{Pt(2, 0), Pt(9, 9)}, diamond), []Point[int]{Pt(2, 0), Pt(9, 9), Pt(-2, 0), Pt(2, 0)})
+	})
+	t.Run("none leaves dst as it is", func(t *testing.T) {
+		AssertVertices(t, Seg(Pt(5, 0), Pt(6, 0)).AppendIntersectionRegularPolygon([]Point[int]{Pt(9, 9)}, diamond), []Point[int]{Pt(9, 9)})
+		assert.Nil(t, Seg(Pt(5, 0), Pt(6, 0)).AppendIntersectionRegularPolygon(nil, diamond))
+	})
+	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
+		buffer := make([]Point[int], 0, 2)
+
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = through.AppendIntersectionRegularPolygon(buffer[:0], diamond)
+		}), 0)
+	})
+	t.Run("matches IntersectionRegularPolygon after the points in dst", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, rp := range regularPolygonFixtures {
+				AssertVertices(t, s.AppendIntersectionRegularPolygon(bufferWith(prefixPoint), rp), append([]Point[float64]{prefixPoint}, s.IntersectionRegularPolygon(rp)...), fmt.Sprintf("%s → %s: ", s, rp))
+			}
+		}
+	})
+}
+
 func TestSegment_IntersectsBox(t *testing.T) {
 	box := BoxFromMinMax(Pt(-2, -2), Pt(2, 2))
 
@@ -1202,6 +1293,16 @@ func TestSegment_IntersectionBox(t *testing.T) {
 
 					assertCrossings(t, s, b.Rectangle(), s.IntersectionBox(b), s.IntersectsBox(b))
 				}
+			}
+		}
+	})
+}
+
+func TestSegment_AppendIntersectionBox(t *testing.T) {
+	t.Run("matches AppendIntersectionRectangle on the box Rectangle", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, b := range boxFixtures {
+				AssertVertices(t, s.AppendIntersectionBox(bufferWith(prefixPoint), b), s.AppendIntersectionRectangle(bufferWith(prefixPoint), b.Rectangle()), fmt.Sprintf("%s → %s: ", s, b))
 			}
 		}
 	})
@@ -1310,6 +1411,36 @@ func TestSegment_ClipPolygon(t *testing.T) {
 		for _, p := range outlineFixtures() {
 			for _, s := range segmentFixtures {
 				assertClipped(t, s, s.ClipPolygon(p), s.IntersectsPolygon(p), p.EnclosesSegment, fmt.Sprintf("%s → %s: ", s, p))
+			}
+		}
+	})
+}
+
+func TestSegment_AppendClipPolygon(t *testing.T) {
+	square := Pol(squareVertices())
+	through := Seg(Pt(-1, 1), Pt(5, 1))
+	prefix := Seg(Pt(-7.5, 3.25), Pt(1.0, 1.0))
+
+	t.Run("appends the parts after the segments in dst", func(t *testing.T) {
+		assertSegments(t, through.AppendClipPolygon([]Segment[int]{Seg(Pt(9, 9), Pt(9, 9))}, square), []Segment[int]{Seg(Pt(9, 9), Pt(9, 9)), Seg(Pt(0, 1), Pt(2, 1))})
+	})
+	t.Run("none leaves dst as it is", func(t *testing.T) {
+		apart := Seg(Pt(3, -1), Pt(3, 3))
+
+		assertSegments(t, apart.AppendClipPolygon([]Segment[int]{Seg(Pt(9, 9), Pt(9, 9))}, square), []Segment[int]{Seg(Pt(9, 9), Pt(9, 9))})
+		assert.Nil(t, apart.AppendClipPolygon(nil, square))
+	})
+	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
+		buffer := make([]Segment[int], 0, 1)
+
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkSegments = through.AppendClipPolygon(buffer[:0], square)
+		}), 0)
+	})
+	t.Run("matches ClipPolygon after the segments in dst", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, p := range outlineFixtures() {
+				assertSegments(t, s.AppendClipPolygon(bufferWith(prefix), p), append([]Segment[float64]{prefix}, s.ClipPolygon(p)...), fmt.Sprintf("%s → %s: ", s, p))
 			}
 		}
 	})

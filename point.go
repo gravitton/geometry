@@ -31,16 +31,16 @@ func ParsePoint[T Number](s string) (Point[T], error) {
 	coordinates, closed := strings.CutSuffix(coordinates, ")")
 	before, after, separated := strings.Cut(coordinates, ",")
 	if !opened || !closed || !separated {
-		return Point[T]{}, fmt.Errorf("invalid point format: %s", s)
+		return Point[T]{}, fmt.Errorf("geom: invalid point format %q", s)
 	}
 
 	x, err := Parse[T](before)
 	if err != nil {
-		return Point[T]{}, fmt.Errorf("invalid x value: %w", err)
+		return Point[T]{}, fmt.Errorf("geom: invalid x value: %w", err)
 	}
 	y, err := Parse[T](after)
 	if err != nil {
-		return Point[T]{}, fmt.Errorf("invalid y value: %w", err)
+		return Point[T]{}, fmt.Errorf("geom: invalid y value: %w", err)
 	}
 
 	return Point[T]{x, y}, nil

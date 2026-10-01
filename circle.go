@@ -277,6 +277,12 @@ func (c Circle[T]) IntersectsCircle(circle Circle[T]) bool {
 // boundaries where they meet, since the crossing formula amplifies the tolerance there. For
 // integer T the points are rounded like every other result stored into T.
 func (c Circle[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
+	return c.AppendIntersectionCircle(nil, circle)
+}
+
+// AppendIntersectionCircle appends the points IntersectionCircle returns to dst and returns the
+// extended slice, so a caller reusing dst allocates nothing once it has room.
+func (c Circle[T]) AppendIntersectionCircle(dst []Point[T], circle Circle[T]) []Point[T] {
 	center := c.Center.Float()
 	direction := circle.Center.Float().Subtract(center)
 	distanceSquared := c.centerDistanceSquared(circle.Center)
@@ -285,7 +291,7 @@ func (c Circle[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
 	epsilon := c.epsilonWith(circle.magnitude())
 
 	if lessOrEqualSquared(distanceSquared, 0, epsilon) || !lessOrEqualSquared(distanceSquared, outer, epsilon) || !greaterOrEqualSquared(distanceSquared, inner, epsilon) {
-		return nil
+		return dst
 	}
 
 	distance := math.Sqrt(distanceSquared)
@@ -293,7 +299,7 @@ func (c Circle[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
 	if external, internal := equalSquared(distanceSquared, outer, epsilon), equalSquared(distanceSquared, inner, epsilon); external || internal {
 		point := center.Add(direction.Resize(c.tangent(circle, distance, external)))
 
-		return []Point[T]{point.Cast[T]()}
+		return append(dst, point.Cast[T]())
 	}
 
 	along := (float64(r1*r1) - float64(r2*r2) + distanceSquared) / (2 * distance)
@@ -301,7 +307,7 @@ func (c Circle[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
 	normal := direction.Normal().Resize(math.Sqrt(max(float64(r1*r1)-float64(along*along), 0)))
 	first, second := middle.Add(normal), middle.Add(normal.Negate())
 
-	return []Point[T]{first.Cast[T](), second.Cast[T]()}
+	return append(dst, first.Cast[T](), second.Cast[T]())
 }
 
 // IntersectsSegment reports whether the circle and the segment share a point: the point of the
@@ -320,7 +326,40 @@ func (c Circle[T]) IntersectsSegment(segment Segment[T]) bool {
 // along the chord and the two agree to the last bit; where the chord is a tangent the endpoint
 // replaces it. For integer T the points are rounded like every other result stored into T.
 func (c Circle[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
-	return c.appendIntersectionSegment(nil, segment)
+	return c.AppendIntersectionSegment(nil, segment)
+}
+
+// AppendIntersectionSegment appends the points IntersectionSegment returns to dst and returns the
+// extended slice, so a caller reusing dst allocates nothing once it has room. The points already
+// in dst are kept as they are: a crossing equal to one of them is still appended, and only the
+// appended ones are ordered from Start. A nil dst is allocated on the first point with room for
+// two, and Segment.ClipCircle passes a buffer of its own.
+func (c Circle[T]) AppendIntersectionSegment(dst []Point[T], segment Segment[T]) []Point[T] {
+	entry, exit, ok := segment.chord(c)
+	start := c.touchesSquared(c.centerDistanceSquared(segment.Start), segment.magnitude())
+	end := c.touchesSquared(c.centerDistanceSquared(segment.End), segment.magnitude())
+
+	switch {
+	case ok && entry < exit:
+		if start {
+			entry, exit = segment.snapToEndpoint(entry, exit, 0)
+		}
+		if end {
+			entry, exit = segment.snapToEndpoint(entry, exit, 1)
+		}
+
+		return segment.appendPointsAt(dst, entry, exit)
+	case start && end && segment.Vector().hasDirection():
+		return segment.appendPointsAt(dst, 0, 1)
+	case start:
+		return segment.appendPointsAt(dst, 0)
+	case end:
+		return segment.appendPointsAt(dst, 1)
+	case ok:
+		return segment.appendPointsAt(dst, entry)
+	default:
+		return dst
+	}
 }
 
 // IntersectsRay reports whether the circle and the ray share a point, as IntersectsSegment
@@ -335,7 +374,13 @@ func (c Circle[T]) IntersectsRay(ray Ray[T]) bool {
 // agree with IntersectsRay to the last bit: two where it passes through, one where it is tangent
 // or starts inside, and none where it misses.
 func (c Circle[T]) IntersectionRay(ray Ray[T]) []Point[T] {
-	return c.IntersectionSegment(ray.reach(c.minMax()))
+	return c.AppendIntersectionRay(nil, ray)
+}
+
+// AppendIntersectionRay appends the points IntersectionRay returns to dst and returns the
+// extended slice, as AppendIntersectionSegment does on the reach of the ray past the circle.
+func (c Circle[T]) AppendIntersectionRay(dst []Point[T], ray Ray[T]) []Point[T] {
+	return c.AppendIntersectionSegment(dst, ray.reach(c.minMax()))
 }
 
 // IntersectsPolygon reports whether the circle and the polygon share a point: the center lies
@@ -384,38 +429,6 @@ func (c Circle[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 // the gap beyond it on the two axes with no edge to walk.
 func (c Circle[T]) IntersectsBox(box Box[T]) bool {
 	return c.containsSquared(box.DistanceSquaredTo(c.Center), box.magnitude())
-}
-
-// appendIntersectionSegment appends the points IntersectionSegment returns to dst and returns
-// the extended slice, deduplicating and ordering only the points it appends: a nil dst
-// allocates them once, and a buffer with room for the two lets Segment.ClipCircle read them
-// without allocating.
-func (c Circle[T]) appendIntersectionSegment(dst []Point[T], segment Segment[T]) []Point[T] {
-	entry, exit, ok := segment.chord(c)
-	start := c.touchesSquared(c.centerDistanceSquared(segment.Start), segment.magnitude())
-	end := c.touchesSquared(c.centerDistanceSquared(segment.End), segment.magnitude())
-
-	switch {
-	case ok && entry < exit:
-		if start {
-			entry, exit = segment.snapToEndpoint(entry, exit, 0)
-		}
-		if end {
-			entry, exit = segment.snapToEndpoint(entry, exit, 1)
-		}
-
-		return segment.appendPointsAt(dst, entry, exit)
-	case start && end && segment.Vector().hasDirection():
-		return segment.appendPointsAt(dst, 0, 1)
-	case start:
-		return segment.appendPointsAt(dst, 0)
-	case end:
-		return segment.appendPointsAt(dst, 1)
-	case ok:
-		return segment.appendPointsAt(dst, entry)
-	default:
-		return dst
-	}
 }
 
 // centerDistanceSquared returns the squared distance from the center to the point, in

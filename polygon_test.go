@@ -42,14 +42,14 @@ func TestPolygon_Edges(t *testing.T) {
 	t.Run("closes back to the first vertex", func(t *testing.T) {
 		edges := slices.Collect(Pol(squareVertices()).Edges())
 
-		assert.Equal(t, len(edges), 4)
+		assert.Length(t, edges, 4)
 		AssertSegment(t, edges[0], Seg(Pt(0, 0), Pt(2, 0)))
 		AssertSegment(t, edges[3], Seg(Pt(0, 2), Pt(0, 0)))
 	})
 	t.Run("single vertex is one zero-length edge", func(t *testing.T) {
 		edges := slices.Collect(Pol([]Point[int]{Pt(1, 1)}).Edges())
 
-		assert.Equal(t, len(edges), 1)
+		assert.Length(t, edges, 1)
 		AssertSegment(t, edges[0], Seg(Pt(1, 1), Pt(1, 1)))
 	})
 	t.Run("nil and empty yield nothing", func(t *testing.T) {
@@ -301,8 +301,8 @@ func TestPolygon_Unscale(t *testing.T) {
 		AssertPolygon(t, Pol(triangleVertices()).ScaleXY(0.5, 2.5).UnscaleXY(0.5, 2.5), Pol(triangleVertices()))
 	})
 	t.Run("nil stays nil", func(t *testing.T) {
-		assert.True(t, Pol[int](nil).Unscale(2).IsZero())
-		assert.True(t, Pol[int](nil).UnscaleXY(2, 3).IsZero())
+		assert.Zero(t, Pol[int](nil).Unscale(2))
+		assert.Zero(t, Pol[int](nil).UnscaleXY(2, 3))
 	})
 	t.Run("zero factor panics", func(t *testing.T) {
 		assert.Panics(t, func() {
@@ -332,7 +332,7 @@ func TestPolygon_Lerp(t *testing.T) {
 		AssertPolygon(t, Pol(squareVertices()).Lerp(Pol([]Point[int]{Pt(5, 5), Pt(7, 5), Pt(7, 7), Pt(5, 7)}), 0.5), Pol([]Point[int]{Pt(3, 3), Pt(5, 3), Pt(5, 5), Pt(3, 5)}))
 	})
 	t.Run("nil stays nil", func(t *testing.T) {
-		assert.True(t, Pol[int](nil).Lerp(Pol[int](nil), 0.5).IsZero())
+		assert.Zero(t, Pol[int](nil).Lerp(Pol[int](nil), 0.5))
 	})
 	t.Run("a different vertex count panics", func(t *testing.T) {
 		assert.PanicsWith(t, func() {
@@ -360,7 +360,7 @@ func TestPolygon_Transform(t *testing.T) {
 		AssertPolygon(t, square.Transform(matrix), Pol([]Point[int]{Pt(3, 7), Pt(6, 15), Pt(10, 26), Pt(8, 18)}))
 	})
 	t.Run("nil stays nil", func(t *testing.T) {
-		assert.True(t, Pol[int](nil).Transform(IdentityMatrix[float64]()).IsZero())
+		assert.Zero(t, Pol[int](nil).Transform(IdentityMatrix[float64]()))
 	})
 }
 
@@ -387,7 +387,7 @@ func TestPolygon_Rotate(t *testing.T) {
 		}
 	})
 	t.Run("nil stays nil", func(t *testing.T) {
-		assert.True(t, Pol[int](nil).Rotate(1).IsZero())
+		assert.Zero(t, Pol[int](nil).Rotate(1))
 	})
 }
 
@@ -412,8 +412,8 @@ func TestPolygon_ConvexHull(t *testing.T) {
 		AssertPolygon(t, Pol([]Point[int]{Pt(1, 1), Pt(1, 1), Pt(1, 1)}).ConvexHull(), Pol([]Point[int]{Pt(1, 1)}))
 		AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(2, 0), Pt(0, 2), Pt(0, 0)}).ConvexHull(), Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(0, 2)}))
 	})
-	t.Run("an empty polygon is returned as it is", func(t *testing.T) {
-		assert.True(t, Polygon[int]{}.ConvexHull().IsZero())
+	t.Run("an empty polygon gives an empty one", func(t *testing.T) {
+		assert.Zero(t, Polygon[int]{}.ConvexHull())
 	})
 	t.Run("allocates once", func(t *testing.T) {
 		AssertNumber(t, testing.AllocsPerRun(100, func() {
@@ -429,7 +429,7 @@ func TestPolygon_ConvexHull(t *testing.T) {
 				assert.True(t, hull.Contains(vertex), message)
 			}
 			for _, vertex := range hull.Points {
-				assert.True(t, slices.Contains(p.Points, vertex), message)
+				assert.Contains(t, p.Points, vertex, message)
 			}
 			assert.True(t, hull.ConvexHull().Equal(hull), message)
 			if len(hull.Points) >= 3 {
@@ -446,6 +446,30 @@ func BenchmarkPolygon_ConvexHull(b *testing.B) {
 	for b.Loop() {
 		sinkBool = polygon.ConvexHull().IsEmpty()
 	}
+}
+
+func TestPolygon_AppendConvexHull(t *testing.T) {
+	dart := Pol([]Point[int]{Pt(0, 0), Pt(4, 2), Pt(0, 4), Pt(1, 2)})
+
+	t.Run("appends the hull after the points in dst", func(t *testing.T) {
+		AssertVertices(t, dart.AppendConvexHull([]Point[int]{Pt(9, 9)}), []Point[int]{Pt(9, 9), Pt(0, 0), Pt(4, 2), Pt(0, 4)})
+	})
+	t.Run("an empty polygon leaves dst as it is", func(t *testing.T) {
+		AssertVertices(t, Polygon[int]{}.AppendConvexHull([]Point[int]{Pt(9, 9)}), []Point[int]{Pt(9, 9)})
+		assert.Nil(t, Polygon[int]{}.AppendConvexHull(nil))
+	})
+	t.Run("a buffer with room for every vertex allocates nothing", func(t *testing.T) {
+		buffer := make([]Point[int], 0, len(dart.Points))
+
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = dart.AppendConvexHull(buffer[:0])
+		}), 0)
+	})
+	t.Run("matches ConvexHull after the points in dst", func(t *testing.T) {
+		for _, p := range outlineFixtures() {
+			AssertVertices(t, p.AppendConvexHull(bufferWith(prefixPoint)), append([]Point[float64]{prefixPoint}, p.ConvexHull().Points...), fmt.Sprintf("%s: ", p))
+		}
+	})
 }
 
 func TestPolygon_Simplify(t *testing.T) {
@@ -508,8 +532,8 @@ func TestPolygon_Simplify(t *testing.T) {
 
 		AssertPolygon(t, turned.Simplify(0), Pol([]Point[int]{Pt(2, 2), Pt(0, 2), Pt(0, 0), Pt(2, 0)}))
 	})
-	t.Run("an empty polygon is returned as it is", func(t *testing.T) {
-		assert.True(t, Polygon[int]{}.Simplify(1).IsZero())
+	t.Run("an empty polygon gives an empty one", func(t *testing.T) {
+		assert.Zero(t, Polygon[int]{}.Simplify(1))
 	})
 	t.Run("allocates once", func(t *testing.T) {
 		square := Pol([]Point[int]{Pt(0, 0), Pt(1, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2)})
@@ -544,6 +568,32 @@ func TestPolygon_Simplify(t *testing.T) {
 			}
 
 			AssertNumber(t, p.Simplify(0).Area(), p.Area(), fmt.Sprintf("%s: ", p))
+		}
+	})
+}
+
+func TestPolygon_AppendSimplify(t *testing.T) {
+	turned := Pol([]Point[int]{Pt(2, 2), Pt(0, 2), Pt(0, 1), Pt(0, 0), Pt(2, 0)})
+
+	t.Run("appends the kept vertices in the polygon's order after the points in dst", func(t *testing.T) {
+		AssertVertices(t, turned.AppendSimplify([]Point[int]{Pt(9, 9)}, 0), []Point[int]{Pt(9, 9), Pt(2, 2), Pt(0, 2), Pt(0, 0), Pt(2, 0)})
+	})
+	t.Run("an empty polygon leaves dst as it is", func(t *testing.T) {
+		AssertVertices(t, Polygon[int]{}.AppendSimplify([]Point[int]{Pt(9, 9)}, 1), []Point[int]{Pt(9, 9)})
+		assert.Nil(t, Polygon[int]{}.AppendSimplify(nil, 1))
+	})
+	t.Run("a buffer with room for every vertex allocates nothing", func(t *testing.T) {
+		buffer := make([]Point[int], 0, len(turned.Points))
+
+		AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = turned.AppendSimplify(buffer[:0], 0)
+		}), 0)
+	})
+	t.Run("matches Simplify after the points in dst", func(t *testing.T) {
+		for _, p := range outlineFixtures() {
+			for _, tolerance := range []float64{0, 0.5, 2} {
+				AssertVertices(t, p.AppendSimplify(bufferWith(prefixPoint), tolerance), append([]Point[float64]{prefixPoint}, p.Simplify(tolerance).Points...), fmt.Sprintf("%s ~%v: ", p, tolerance))
+			}
 		}
 	})
 }
@@ -854,6 +904,16 @@ func TestPolygon_IntersectionSegment(t *testing.T) {
 	})
 }
 
+func TestPolygon_AppendIntersectionSegment(t *testing.T) {
+	t.Run("matches Segment.AppendIntersectionPolygon", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			for _, s := range segmentFixtures {
+				AssertVertices(t, p.AppendIntersectionSegment(bufferWith(prefixPoint), s), s.AppendIntersectionPolygon(bufferWith(prefixPoint), p), fmt.Sprintf("%s → %s: ", p, s))
+			}
+		}
+	})
+}
+
 func TestPolygon_IntersectsRay(t *testing.T) {
 	t.Run("mirrors Ray.IntersectsPolygon", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
@@ -869,6 +929,16 @@ func TestPolygon_IntersectionRay(t *testing.T) {
 		for _, p := range polygonFixtures() {
 			for _, r := range rayFixtures {
 				AssertVertices(t, p.IntersectionRay(r), r.IntersectionPolygon(p), fmt.Sprintf("%s → %s: ", p, r))
+			}
+		}
+	})
+}
+
+func TestPolygon_AppendIntersectionRay(t *testing.T) {
+	t.Run("matches Ray.AppendIntersectionPolygon", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			for _, r := range rayFixtures {
+				AssertVertices(t, p.AppendIntersectionRay(bufferWith(prefixPoint), r), r.AppendIntersectionPolygon(bufferWith(prefixPoint), p), fmt.Sprintf("%s → %s: ", p, r))
 			}
 		}
 	})
