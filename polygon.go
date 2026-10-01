@@ -401,7 +401,11 @@ func (p Polygon[T]) AppendSimplify(dst []Point[T], tolerance float64) []Point[T]
 	}
 
 	from := len(dst)
-	dst, wrapped := p.appendKept(append(slices.Grow(dst, n), p.Points[least]), least, least+n, math.Abs(tolerance))
+	if cap(dst)-from < n {
+		dst = append(make([]Point[T], 0, from+n), dst...)
+	}
+
+	dst, wrapped := p.appendKept(append(dst, p.Points[least]), least, least+n, math.Abs(tolerance))
 
 	kept := dst[from:]
 	slices.Reverse(kept)
