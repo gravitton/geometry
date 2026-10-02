@@ -17,40 +17,72 @@
 // [Direction], [Axis], [Orientation] and [Winding] are enums. Package geomtest holds test
 // assertions, and packages ints and floats alias the int and float64 instantiations.
 //
-// # Integer rounding
+// Every value type has Equal, Cast, Int, Float and String; every shape adds Bounds and Contains,
+// and every shape but Ellipse adds the Intersects methods. The enums are compared with == and
+// marshal as their names.
 //
-// A float result stored into an integer T goes through [Cast], which rounds half away from
-// zero: Lerp, Midpoint, Multiply, Divide, Int and every method built on them follow it, so
-// the midpoint of an odd span rounds up. The exception is [Rectangle] and [Box], whose center is
-// placed by truncating half the size toward Min so that Max-Min stays exactly the size, and
+// # Coordinates
+//
+// The origin is top-left and +Y points down. Angles follow the mathematical convention, so a
+// positive angle is counterclockwise in math coordinates and appears clockwise on screen.
+// Direction order and polygon winding follow the same rule: [Directions], [Rectangle.Vertices]
+// and [RegularPolygon.Vertices] all wind by increasing angle, clockwise as drawn. Each Direction
+// has three names: canonical ([DirectionDownRight]), compass ([SouthEast]) and rectangle corner
+// ([BottomRight]).
+//
+// # Numbers
+//
+// Products, distances and interpolations are computed in float64 and stored back through [Cast],
+// whatever T is, so a narrow integer T never overflows mid-computation. Cast rounds half away from
+// zero: Lerp, Midpoint, Multiply, Divide, Int and every method built on them follow it, so the
+// midpoint of an odd span rounds up. The exception is [Rectangle] and [Box], whose center is placed
+// by truncating half the size toward Min so that Max-Min stays exactly the size, and
 // Segment.Bounds().Center() can therefore differ from [Segment.Midpoint] by one unit on an odd
-// span.
+// span. Sums and differences of two values stay in T. The signs that decide a crossing, a turn or
+// a winding are cross products of coordinate differences in float64, exact for an integer T while
+// the differences stay within 2^26, the square root of the integers float64 holds exactly; beyond
+// it a sign can round to zero.
+//
+// # Equality
+//
+// Equal compares an integer T exactly and a float T within [Epsilon] of T, a tolerance matched to
+// float32 or float64. [EqualRelative] scales it for values far from zero, and [EqualAngle]
+// compares modulo a full turn.
+//
+// # Boundaries
+//
+// The Contains method of every shape, [Point.Between], [Vector.LessOrEqual] and the Intersects
+// methods are closed and tolerant: a point within the tolerance of the boundary counts as on it,
+// so a float rectangle contains the corners it was built from. The tolerance is [Epsilon] of T
+// near the origin, widens to two ulps of T far from it, and is zero for an integer T. Every such
+// test is one comparison on a squared distance, so DistanceTo is zero exactly where Contains
+// holds, and each Intersection method answers exactly where its Intersects holds, apart from
+// parallel and coincident segments, rectangles of different angles, and a segment entirely
+// inside a shape, which crosses no boundary. The logic of each pair is written once and the other
+// side delegates to it, so both sides give the same answer. [Vector.Less] is strict.
+//
+// # Matrices
+//
+// An integer [Matrix] composes lattice transforms exactly: translation, integer scale,
+// reflection and quarter turns. Anything else rounds into a different matrix; use a float Matrix
+// there. Transform takes a float matrix, so convert an integer one with Float at the call.
 //
 // # Panics
 //
 // [Divide], and every method built on it ([Point.Divide], [Padding.Unscale], and the Unscale of
-// every shape but [Box], which has none, and of [Matrix]), panics for a zero factor, and [Matrix.Inverse] panics for a
-// singular matrix, the same way the integer / operator and [Mod] do. Check
-// [Matrix.IsInvertible] before inverting a matrix that may be singular. [Cast] panics when a NaN
-// or ±Inf would be stored into an integer T: Multiply, Lerp, Rotate, Transform and Int on an
+// every shape but [Box], which has none, and of [Matrix]), panics for a zero factor, and
+// [Matrix.Inverse] panics for a singular matrix, the same way the integer / operator and [Mod] do.
+// Check [Matrix.IsInvertible] before inverting a matrix that may be singular. [Cast] panics when a
+// NaN or ±Inf would be stored into an integer T: Multiply, Lerp, Rotate, Transform and Int on an
 // integer shape all go through it. A float T carries NaN and ±Inf through unchanged. A finite
-// value outside the range of an integer T is not checked and stores a platform-dependent value,
-// as Cast documents. [RegularPolygonOrientationPhase] panics for an [Orientation] that is neither
+// value outside the range of an integer T is not checked and stores a platform-dependent value, as
+// Cast documents. [RegularPolygonOrientationPhase] panics for an [Orientation] that is neither
 // [OrientationFlatTop] nor [OrientationPointyTop], [OrientationNone] included: the absence of an
 // alignment has no phase to give. [Polygon.Lerp] and [RegularPolygon.Lerp] panic for a polygon
-// with a different vertex count, which has no shape between. [Intersects] panics for two
-// colliders of another package, which have no method this package can reach. These are the only
-// panics: every other guard returns a value the type can express, such as [DirectionNone], an
-// empty polygon, or the 0 that [Size.AspectRatio] gives for a zero height.
-//
-// # Arithmetic
-//
-// Products, distances and interpolations are computed in float64 and stored back through Cast,
-// whatever T is, so a narrow integer T never overflows mid-computation and every integer result
-// follows the one rounding rule above. Sums and differences of two values stay in T. The signs
-// that decide a crossing, a turn or a winding are cross products of coordinate differences in
-// float64, exact for an integer T while the differences stay within 2^26, the square root of the
-// integers float64 holds exactly; beyond it a sign can round to zero.
+// with a different vertex count, which has no shape between. [Intersects] panics for two colliders
+// of another package, which have no method this package can reach. These are the only panics:
+// every other guard returns a value the type can express, such as [DirectionNone], an empty
+// polygon, or the 0 that [Size.AspectRatio] gives for a zero height.
 //
 // # Reproducibility
 //
@@ -71,23 +103,9 @@
 // since math.Round is no intrinsic there. A profile-guided build (go build -pgo) inlines them at
 // the call sites the profile marks hot, which is where it matters.
 //
-// # Boundaries
+// # JSON
 //
-// The Contains method of every shape, [Point.Between], [Vector.LessOrEqual] and the Intersects
-// methods are closed and tolerant: a point within the tolerance of the boundary counts as on it,
-// so a float rectangle contains the corners it was built from even where Min is recomputed
-// with a rounding error. The tolerance is Epsilon of T near the origin and widens to two ulps
-// of T at the largest coordinate a comparison reads, so a point rounded into T far from the
-// origin, a Nearest or an Intersection, still lies on the boundary it was computed on: for
-// float32 it widens beyond a few hundred units, for float64 beyond a few billion, and for an
-// integer T it is zero. Every such test is one comparison on a squared distance,
-// never on a coordinate, so containment, the distance methods and the intersection tests
-// round alike at the boundary. Vector.Less is the strict counterpart and applies no tolerance.
-// DistanceTo is zero exactly where Contains holds, and [Segment.IntersectionSegment] and
-// [Rectangle.IntersectionRectangle] return a point or a rectangle exactly where the Intersects
-// methods hold, less the parallel and coincident segments and the rectangles of different angles
-// that have no single answer. The boundary crossings of a segment, [Segment.IntersectionCircle],
-// [Segment.IntersectionRectangle] and [Segment.IntersectionPolygon], follow the same rule with one
-// more exception: a segment entirely inside a shape crosses no boundary and returns none while
-// Intersects reports it.
+// The flat JSON of [Rectangle], [Circle] and [RegularPolygon] relies on the embed struct tag of
+// the v2-backed encoding/json, the default since Go 1.27; under GOEXPERIMENT=nojsonv2 the nested
+// fields are emitted as objects.
 package geom

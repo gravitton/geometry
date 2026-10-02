@@ -33,7 +33,7 @@ Generic, immutable 2D geometry library for game development
 - **Reproducible** – the same bits on amd64 and arm64.
 - **Extras** – direction enums, `image` interop, JSON, parsing and `geomtest` assertions.
 
-The rules behind them are in [docs/conventions.md](docs/conventions.md).
+The rules behind them are in the [package documentation][link-go-dev-reference].
 
 ## Installation
 
