@@ -25,7 +25,8 @@ Generic, immutable 2D geometry library for game development
 
 - **Generic** over every integer and float type, named types included.
 - **Immutable** – every method returns a new value.
-- **Shapes** – point, vector, size, padding, rectangle, circle, ellipse, segment, (regular) polygon, affine matrix.
+- **Shapes** – rectangle, box, circle, ellipse, segment, ray, polygon and regular polygon, on top of point, vector,
+  size, padding and an affine matrix.
 - **Interfaces** – `Shape`, `Collider` and `Body`, so a spatial index, a collision pass or a physics body holds a
   shape without knowing which one.
 - **Directions, axes and orientations** as enums, with compass and rectangle-anchor aliases.
@@ -42,6 +43,19 @@ go get github.com/gravitton/geometry
 
 ```go
 import geom "github.com/gravitton/geometry"
+```
+
+A taste, before the tour:
+
+```go
+ship := geom.Circ(geom.Pt(0.0, 0.0), 10.0)
+rock := geom.Hexagon(geom.Pt(50.0, 0.0), geom.SzU(20.0), geom.OrientationFlatTop).Rotate(0.3)
+
+ship.IntersectsRegularPolygon(rock)                                // false, for now
+ship.Translate(geom.Vec(25.0, 0.0)).IntersectsRegularPolygon(rock) // true: boom
+
+laser := geom.RayAlong(ship.Center, geom.Vec(1.0, 0.0))
+hit, ok := laser.ClipRegularPolygon(rock) // Seg((32.24,0.00);(67.76,0.00)), true: hit.Start is where it lands
 ```
 
 ### Points and vectors
@@ -115,7 +129,8 @@ view.Contains(geom.Pt(800, 600))            // true, closed like every shape
 view.Inset(geom.PadU(16))                   // (16,16)-(784,584)
 
 tip := geom.BoxFromMin(geom.Pt(750, 20), geom.Sz(120, 40))
-hud := geom.Bx(geom.Pt(0, 0), geom.Pt(200, 40)) // the corners in either order
+hud := geom.Bx(geom.Pt(200, 40), geom.Pt(0, 0)) // (0,0)-(200,40), the corners in either order
+
 tip.Clamp(view)           // (680,20)-(800,60), moved by the least that brings it inside
 view.IntersectionBox(tip) // (750,20)-(800,60), true: the part on screen
 
@@ -132,8 +147,7 @@ c := geom.Circ(geom.Pt(0.0, 0.0), 5.0)
 c.Anchor(geom.Bottom) // Point{0, 5}
 
 // a circle has no Transform of its own: an affine matrix takes it to an ellipse
-e := c.Ellipse().Transform(geom.ScaleMatrix(2.0, 1.0)) // Ellipse, semi-axes 10x5
-e.Transform(geom.ShearMatrix(1.0, 0.0))                // exact for every matrix: the turned ellipse the shear makes
+e := c.Ellipse().Transform(geom.ScaleMatrix(2.0, 1.0)) // Ellipse, semi-axes 10x5, exact for every matrix
 e.Contains(geom.Pt(9.0, 0.0))                          // true
 e.DistanceTo(geom.Pt(0.0, 9.0))                        // 4, to the nearest point of the boundary
 e.Rotate(geom.Pi / 2).Bounds()                         // the box around the turned ellipse, 10x20
@@ -173,26 +187,29 @@ edged.Simplify(0) // Pol((0,0);(4,0);(4,4);(0,4)), the vertex on an edge dropped
 for vertex := range p.Vertices() { // the same loop draws a Segment, Rectangle or RegularPolygon
 	vertex.Float()
 }
+```
 
+### Regular polygons
+
+```go
 hex := geom.Hexagon(geom.Pt(0, 0), geom.SzU(20), geom.OrientationFlatTop)
-geom.Square(geom.Pt(0, 0), geom.Sz(20, 10), geom.OrientationFlatTop) // stretched across its edges: the 28x14 rectangle
-geom.RegPol(geom.Pt(0, 0), geom.Sz(20, 10), 8, 0, geom.Pi/8)         // the Phase places the vertices before the stretch, Angle turns after
-hex.Ellipse()                        // the ellipse its vertices lie on, exactly; Circle() is the one around
-hex.Grow(2).Resize(geom.SzU(20))     // the semi-axes grow, shrink and resize as an Ellipse's do
 hex.Anchor(geom.Top)                 // Point{0, -17}, the midpoint of the top edge; a pointy-top one gives its top vertex
 hex.AlignTo(geom.Top, geom.Pt(0, 0)) // the hexagon moved so that anchor is at the origin
 hex.Bounds()                         // Box (-20,-17)-(20,17)
 hex.Area()                           // 1039, 3√3/2 · r²
 hex.Contains(geom.Pt(10, 5))         // true, walked on the edges without building the vertices
-hex.Rotate(geom.Pi / 6).IsAligned()  // false; exactly zero after a full turn, like Rectangle.IsAligned
-hex.Transform(geom.ShearMatrix(1.0, 0.0)) // exact for every matrix: the turn, semi-axes and phase the vertices land on
+hex.Ellipse()                        // the ellipse its vertices lie on, exactly
+
+geom.Square(geom.Pt(0, 0), geom.Sz(20, 10), geom.OrientationFlatTop) // stretched across its edges: a 28x14 rectangle
+geom.RegPol(geom.Pt(0, 0), geom.Sz(20, 10), 8, 0, geom.Pi/8)         // n, angle and phase: the phase places the vertices, the angle turns the shape
+hex.Transform(geom.ShearMatrix(1.0, 0.0))                            // exact for every matrix, shears included
 ```
 
 ### Interfaces
 
-Every shape has `Translate`, `MoveTo`, `Scale`, `Unscale`, `Rotate`, `Lerp`, `Bounds`, `Contains` and `DistanceTo`,
-and every one of them returns a new value. Three interfaces name what they share, so a spatial index or a broad
-collision pass holds a shape without knowing which one:
+Every shape has `Translate`, `Bounds`, `Contains`, `DistanceTo` and `Nearest`, and all but `Box` also `MoveTo`,
+`Scale`, `Unscale` and `Rotate`. Three interfaces name what they share, so a spatial index or a broad collision pass
+holds a shape without knowing which one:
 
 ```go
 var s geom.Shape[float64] = c // Bounds, Contains, DistanceTo, DistanceSquaredTo — every shape
@@ -204,8 +221,9 @@ var b geom.Body[float64] = c // Area, Centroid, Inertia — the mass properties 
 b.Inertia()                  // for a physics body to scale by its density; every shape but Segment
 ```
 
-The interfaces are for the code around a hot loop: a call through one allocates, where the same call on a concrete shape does not. `Ellipse` is the one shape that is not a
-`Collider`: test it as its `RegularPolygon(n)` of the wanted resolution.
+The interfaces are for the code around a hot loop: a call through one allocates, where the same call on a concrete
+shape does not. `Ellipse` is the one shape that is not a `Collider`: test it as its `RegularPolygon(n)` of the wanted
+resolution.
 
 ### Intersections
 
@@ -218,12 +236,12 @@ a.IntersectsRectangle(b) // IntersectsSegment, IntersectsRay, IntersectsRectangl
 r.IntersectsCircle(c)    // IntersectsRegularPolygon and IntersectsBox, on every shape but Ellipse
 geom.Intersects(a, c)    // the same answer without knowing either type
 
-point, ok := s.IntersectionSegment(m) // where two segments cross
+point, ok := s.IntersectionSegment(other) // where two segments cross
 overlap, ok := a.IntersectionRectangle(b) // the overlap of two rectangles
-c.IntersectionCircle(d)               // zero, one or two points where two circles cross
-s.IntersectionCircle(c)               // where a segment crosses a boundary; also of a rectangle or a polygon
-s.ClipBox(view)                       // the part of s inside, and false where there is none
-s.ClipPolygon(p)                      // the parts inside a concave polygon, from Start to End
+c.IntersectionCircle(other)               // zero, one or two points where two circles cross
+s.IntersectionCircle(c)                   // where a segment crosses a boundary; also of a rectangle or a polygon
+s.ClipBox(view)                           // the part of s inside, and false where there is none
+s.ClipPolygon(p)                          // the parts inside a concave polygon, from Start to End
 
 buffer = s.AppendIntersectionPolygon(buffer[:0], p) // every slice result has an Append form, as strconv does,
 hull = p.AppendConvexHull(hull[:0])                 // so a loop reusing its buffer allocates nothing
@@ -252,9 +270,9 @@ The pair logic is written once, on the earlier shape of `Circle`, `Segment`, `Ra
 boundary included within the tolerance, on every shape with an area but `Ellipse`:
 
 ```go
-view.EnclosesCircle(c)   // EnclosesCircle, EnclosesSegment, EnclosesPolygon, EnclosesRectangle,
-r.EnclosesPolygon(p)     // EnclosesRegularPolygon and EnclosesBox
-p.EnclosesSegment(s)     // a concave polygon also checks that s does not leave it between its ends
+view.EnclosesCircle(c) // EnclosesCircle, EnclosesSegment, EnclosesPolygon, EnclosesRectangle,
+r.EnclosesPolygon(p)   // EnclosesRegularPolygon and EnclosesBox
+p.EnclosesSegment(s)   // a concave polygon also checks that s does not leave it between its ends
 ```
 
 ### Directions, axes and orientations
@@ -278,7 +296,7 @@ geom.ParseOrientation("FlatTop")                      // the name back to the co
 ### Matrices
 
 ```go
-m := geom.IdentityMatrix[float64]().Rotate(math.Pi / 4).Scale(2, 2)
+m := geom.IdentityMatrix[float64]().Rotate(math.Pi/4).Scale(2, 2)
 
 geom.Pt(1.0, 0.0).Transform(m) // Point{1.41, 1.41}
 m.Angle()                      // π/4, read back from the matrix
@@ -339,7 +357,8 @@ rectangle corner (`BottomRight`).
 
 **Numbers.** Products, distances and interpolations are computed in `float64` and rounded back into `T`, so a narrow
 `int8` never overflows mid-computation. A float result stored into an integer `T` rounds half away from zero;
-`Rectangle` is the exception, truncating half its size toward `Min` so that `Max - Min` stays exactly the size.
+`Rectangle` and `Box` are the exception, truncating half the size toward `Min` so that `Max - Min` stays exactly the
+size.
 `Divide`, `Unscale` and `Matrix.Inverse` on a singular matrix panic, like the integer `/` operator; check
 `IsInvertible` first when a matrix may be singular. Every other degenerate input returns a value the type can express.
 
@@ -364,12 +383,9 @@ convert an integer one with `Float()` at the call.
 arm64, where the compiler would otherwise fuse the two into one multiply-add. Only what `math` computes from an angle
 (`Sincos`, `Atan2`, `Hypot`) may differ in the last bit between architectures.
 
-**Methods.** Every type has `Equal`, `Int` and `String`; every shape adds `Bounds` and `Contains`, and every shape but
-`Ellipse` adds `Intersects`.
-Each file lists its methods in the same order, and the tests follow it: constructors, properties (`Width`, `Area`,
-`Bounds`), arithmetic (`Add`, `Scale`, `Inset`), geometry (`Transform`, `Rotate`, `Project`), relations (`Contains`,
-`DistanceTo`, `Intersects`), equality and state (`Equal`, `IsZero`), conversions (`Int`, `Float`), and `String` with
-JSON last.
+**Methods.** Every value type has `Equal`, `Cast`, `Int`, `Float` and `String`; every shape adds `Bounds` and
+`Contains`, and every shape but `Ellipse` adds `Intersects`. The enums (`Direction`, `Axis`, `Orientation`, `Winding`)
+are compared with `==` and marshal as their names.
 
 ## Credits
 
