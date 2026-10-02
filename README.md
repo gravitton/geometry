@@ -133,6 +133,7 @@ c.Anchor(geom.Bottom) // Point{0, 5}
 
 // a circle has no Transform of its own: an affine matrix takes it to an ellipse
 e := c.Ellipse().Transform(geom.ScaleMatrix(2.0, 1.0)) // Ellipse, semi-axes 10x5
+e.Transform(geom.ShearMatrix(1.0, 0.0))                // exact for every matrix: the turned ellipse the shear makes
 e.Contains(geom.Pt(9.0, 0.0))                          // true
 e.DistanceTo(geom.Pt(0.0, 9.0))                        // 4, to the nearest point of the boundary
 e.Rotate(geom.Pi / 2).Bounds()                         // the box around the turned ellipse, 10x20
@@ -145,7 +146,7 @@ walks one, and it converts back exactly.
 
 ```go
 e.RegularPolygon(64)                           // every vertex on the boundary, and Ellipse() converts back
-c.RegularPolygon(6, geom.OrientationPointyTop) // only a circle also places the first vertex
+c.RegularPolygon(6, geom.OrientationPointyTop) // only a circle also takes an orientation
 
 slices.Collect(c.RegularPolygon(64, geom.OrientationFlatTop).Vertices()) // the points that draw the circle
 ```
@@ -174,6 +175,8 @@ for vertex := range p.Vertices() { // the same loop draws a Segment, Rectangle o
 }
 
 hex := geom.Hexagon(geom.Pt(0, 0), geom.SzU(20), geom.OrientationFlatTop)
+geom.Square(geom.Pt(0, 0), geom.Sz(20, 10), geom.OrientationFlatTop) // stretched across its edges: the 28x14 rectangle
+geom.RegPol(geom.Pt(0, 0), geom.Sz(20, 10), 8, 0, geom.Pi/8)         // the Phase places the vertices before the stretch, Angle turns after
 hex.Ellipse()                        // the ellipse its vertices lie on, exactly; Circle() is the one around
 hex.Grow(2).Resize(geom.SzU(20))     // the semi-axes grow, shrink and resize as an Ellipse's do
 hex.Anchor(geom.Top)                 // Point{0, -17}, the midpoint of the top edge; a pointy-top one gives its top vertex
@@ -182,6 +185,7 @@ hex.Bounds()                         // Box (-20,-17)-(20,17)
 hex.Area()                           // 1039, 3√3/2 · r²
 hex.Contains(geom.Pt(10, 5))         // true, walked on the edges without building the vertices
 hex.Rotate(geom.Pi / 6).IsAligned()  // false; exactly zero after a full turn, like Rectangle.IsAligned
+hex.Transform(geom.ShearMatrix(1.0, 0.0)) // exact for every matrix: the turn, semi-axes and phase the vertices land on
 ```
 
 ### Interfaces

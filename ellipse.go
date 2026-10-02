@@ -281,20 +281,19 @@ func (e Ellipse[T]) Lerp(ellipse Ellipse[T], t float64) Ellipse[T] {
 	return Ellipse[T]{e.Center.Lerp(ellipse.Center, t), e.Size.Lerp(ellipse.Size, t).Abs(), NormalizeAngle(LerpAngle(e.Angle, ellipse.Angle, t))}
 }
 
-// Transform creates a new Ellipse by applying the given matrix: the center moves, the
-// semi-axes scale by the factors the matrix applies along its axes, and the angle turns by the
-// angle of the matrix or is mirrored about it for a reflection, exactly as Rectangle.Transform
-// and RegularPolygon.Transform place theirs. A move, a turn, a reflection and a uniform scale
-// are exact, and so is a scale of the axes while the ellipse is not turned. A shear, or a scale
-// of the axes of a turned ellipse, maps it onto an ellipse of another angle, which this
-// method gives as the nearest ellipse of the angle the matrix names rather than the exact one,
-// on the factors Matrix.Scaling reports. For integer T the center and the semi-axes are each
-// rounded once.
+// Transform creates a new Ellipse by applying the given matrix, exactly for every matrix: an
+// affine map takes an ellipse onto an ellipse, the center moves, and the angle and the
+// semi-axes are those of the matrix applied to the stretched circle, taken apart again by its
+// singular value decomposition, as RegularPolygon.Transform takes its own. The turn before the
+// stretch spins the circle onto itself, so unlike the polygon the ellipse has no phase to keep,
+// and a reflection mirrors the angle. A move, a turn and a scale along the axes of an unturned
+// ellipse keep the semi-axes as they are; the decomposition is not unique, and where it reads
+// them the other way round, the angle takes the quarter turn. For integer T the center and the
+// semi-axes are each rounded once.
 func (e Ellipse[T]) Transform[M Float](matrix Matrix[M]) Ellipse[T] {
-	m := matrix.Float()
-	scaling := m.Scaling()
+	after, stretch, _, _ := matrix.mapping(e.Angle, e.Size.Float()).decomposition()
 
-	return Ellipse[T]{e.Center.Transform(matrix), e.Size.ScaleXY(scaling.X, scaling.Y).Abs(), m.turnedAngle(e.Angle, scaling)}
+	return Ellipse[T]{e.Center.Transform(matrix), stretch.Size().Cast[T](), NormalizeAngle(after)}
 }
 
 // Rotate creates a new Ellipse turned by the given angle (in radians) about its center, in the
@@ -530,7 +529,7 @@ func (e Ellipse[T]) Circle() Circle[T] {
 // the ratio of the circumradius of a regular polygon to its apothem first:
 // e.Scale(1 / math.Cos(Pi / float64(n))).RegularPolygon(n).
 func (e Ellipse[T]) RegularPolygon(n int) RegularPolygon[T] {
-	return RegularPolygon[T]{e.Center, e.Size, n, e.Angle}
+	return RegularPolygon[T]{e.Center, e.Size, n, e.Angle, 0}
 }
 
 // Cast converts the ellipse to an Ellipse of another number type, rounding as Cast does and

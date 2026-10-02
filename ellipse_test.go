@@ -339,10 +339,51 @@ func TestEllipse_Transform(t *testing.T) {
 	t.Run("a reflection mirrors the angle", func(t *testing.T) {
 		AssertEllipse(t, e.Rotate(Pi/6).Transform(ReflectionMatrix[float64](AxisHorizontal)), Ell(Pt(2.0, -3.0), Sz(4.0, 2.0), -Pi/6))
 	})
-	t.Run("a shear gives the nearest ellipse", func(t *testing.T) {
-		// the true image is a turned ellipse; Scaling and Angle name the nearest one
-		AssertEllipse(t, e.Transform(ShearMatrix(1.0, 0.0)), Ell(Pt(5.0, 3.0), Sz(4.0, 2.0), 0))
+	t.Run("a shear is exact", func(t *testing.T) {
+		assertTransformed(t, e, ShearMatrix(1.0, 0.0), "")
 	})
+	t.Run("a scale of the axes of a turned ellipse is exact", func(t *testing.T) {
+		assertTransformed(t, e.Rotate(Pi/5), ScaleMatrix(2.0, 3.0), "")
+	})
+	t.Run("is the image of the ellipse under every matrix", func(t *testing.T) {
+		matrices := []Matrix[float64]{
+			RotationMatrix[float64](Pi / 3).Multiply(ScaleMatrix(2.0, 0.5)),
+			ShearMatrix(0.5, -0.25),
+			ReflectionMatrix[float64](AxisVertical),
+			Mat(1.5, 0.5, 3.0, -0.25, 0.75, -2.0),
+			Mat(-1.0, 2.0, 0.0, 0.5, 1.0, 1.0),
+		}
+
+		for _, ellipse := range ellipseFixtures {
+			for _, m := range matrices {
+				assertTransformed(t, ellipse, m, fmt.Sprintf("%s → %s: ", ellipse, m))
+			}
+		}
+	})
+}
+
+// assertTransformed checks that the Transform of the ellipse is its image under the matrix: the
+// matrix takes points around the boundary into it, and its inverse takes points around the
+// boundary of the Transform back into the ellipse, so each holds the other, and the center
+// lands on the center.
+func assertTransformed(t *testing.T, e Ellipse[float64], m Matrix[float64], message string) {
+	t.Helper()
+
+	transformed, inverse := e.Transform(m), m.Inverse()
+
+	AssertPoint(t, transformed.Center, e.Center.Transform(m), message)
+	for i := range 16 {
+		forward := boundaryAt(e, float64(i)*Pi/8).Transform(m)
+		back := boundaryAt(transformed, float64(i)*Pi/8).Transform(inverse)
+
+		assert.True(t, transformed.Contains(forward), message+forward.String()+" into the transform: ")
+		assert.True(t, e.Contains(back), message+back.String()+" back into the ellipse: ")
+	}
+}
+
+// boundaryAt returns the point of the ellipse boundary at the parameter.
+func boundaryAt(e Ellipse[float64], parameter float64) Point[float64] {
+	return e.Center.Add(VectorFromAngleSize(parameter, e.Size).Rotate(e.Angle))
 }
 
 func TestEllipse_Rotate(t *testing.T) {
@@ -582,7 +623,7 @@ func TestEllipse_RegularPolygon(t *testing.T) {
 	e := Ell(Pt(1.0, 2.0), Sz(10.0, 4.0), Pi/6)
 
 	t.Run("the same center, semi-axes and angle", func(t *testing.T) {
-		AssertRegularPolygon(t, e.RegularPolygon(6), RegPol(Pt(1.0, 2.0), Sz(10.0, 4.0), 6, Pi/6))
+		AssertRegularPolygon(t, e.RegularPolygon(6), RegPol(Pt(1.0, 2.0), Sz(10.0, 4.0), 6, Pi/6, 0))
 	})
 	t.Run("every vertex lies on the boundary", func(t *testing.T) {
 		for vertex := range e.RegularPolygon(7).Vertices() {
