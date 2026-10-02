@@ -11,48 +11,46 @@ more expensive of the two. A breaking change is marked **breaking** in its entry
 lists them under **Breaking** at the top of its section. Renames land as a rename; no deprecated alias is kept.
 
 
-## [Unreleased](https://github.com/gravitton/geometry/compare/v1.14.0...main)
+## [Unreleased](https://github.com/gravitton/geometry/compare/v1.15.0...main)
+
+
+## [v1.15.0](https://github.com/gravitton/geometry/compare/v1.14.0...v1.15.0) (2026-10-02)
+
+Two new kinds and the queries between shapes. `Box` is the axis-aligned box every `Bounds` now returns, and `Ray` the half-line cast through every collider; shapes enclose, clip and find their nearest point, and every slice result has an `Append` form.
+The boundary tolerance widens with the coordinates, the same inputs give the same bits on every architecture, and a regular polygon takes a phase that keeps its orientation and every transform exact.
+
+Every entry, with breaking changes marked, is in [docs/releases/v1.15.0.md](docs/releases/v1.15.0.md).
 
 ### Breaking
-- **breaking** `Bounds` returns a `Box` on every shape and in the `Shape` interface rather than a `Rectangle`; `Box.Rectangle` converts it back
-- **breaking** `Outline` and `Transformable` are removed: nothing in the package takes them, and a caller who wants either declares it, since every shape still has `Vertices` and `Edges` or the transform methods in its own type
-- **breaking** `Rectangle.MinMaxString` is removed; `Bounds().String()` prints the same corners
-- **breaking** `Collider` requires `IntersectsBox`, so a shape of another package satisfying it needs the method; `Intersects` dispatches on a `Box` like any other kind
-- **breaking** `Collider` requires `IntersectsRay`, so a shape of another package satisfying it needs the method; `Intersects` dispatches on a `Ray` like any other kind
-- **breaking** `Rectangle.Clamp(point)` is `Nearest`, which keeps a point within `Epsilon[T]()` of the boundary as it is, as `Contains` does, and on a rotated integer rectangle gives the foot on the edges of its rounded corners rather than a clamp in its own frame
+- `Bounds` returns a `Box` on every shape and in `Shape`; `Box.Rectangle` converts it back
+- `Collider` requires `IntersectsBox` and `IntersectsRay`
+- `Outline`, `Transformable` and `Rectangle.MinMaxString` are removed
+- `Rectangle.Clamp(point)` is `Nearest`, read off the edge walk
+- `RegPol` takes a phase, and the orientation constructors set it rather than the angle; `RegularPolygonOrientationAngle` is `RegularPolygonOrientationPhase`
 
 ### Added
-- `Box` – the axis-aligned box as `Min` and `Max` with no angle, closed within `Epsilon[T]()` like every shape: `Bx`, `BoxFromMin`, `BoxFromMinMax`, `BoxFromSize`, `Width`, `Height`, `Size`, `Center`, `Translate`, `Canonical`, `Inset`, `Outset`, `Clamp`, `Contains`, `DistanceTo`, `DistanceSquaredTo`, `Nearest`, `IntersectsBox`, `IntersectionBox`, `Union`, `Rectangle`, `Cast`, `Int`, `Float` and `String`, a `Shape` and a `Collider`, aliased in `floats` and `ints` with `Bx`
-- `Ray` – a half-line from `Origin` along `Direction`, a `Collider` but no `Shape` since it has no `Bounds`: `RayAlong`, `RayThrough`, `Angle`, `Translate`, `MoveTo`, `Scale`, `ScaleXY`, `Unscale`, `UnscaleXY`, `PointAt`, `Transform`, `Rotate`, `Contains`, `DistanceTo`, `DistanceSquaredTo`, `Nearest`, the seven `Intersects` methods with `IntersectionCircle`, `IntersectionSegment`, `IntersectionRay`, `IntersectionPolygon`, `IntersectionRectangle`, `IntersectionRegularPolygon` and `IntersectionBox`, `Equal`, `IsZero`, `Cast`, `Int`, `Float` and `String`, aliased in `floats` and `ints` with `RayAlong`, turning and scaling about its origin; every pair with a bounded shape is decided on the segment from `Origin` to where the ray passes the shape's extent, a lattice point on the ray for an integer `T`, so it reads the `Segment` tests and agrees with them
-- `Ray.ClipCircle`, `ClipPolygon`, `ClipRectangle`, `ClipRegularPolygon` and `ClipBox` – the cast of a ray: the part inside the shape, whose `Start` is the first point the ray reaches, its origin where the shape contains it; allocation-free on every convex shape
-- `IntersectsRay` and `IntersectionRay` on every `Collider`: after `Segment` in the holder order, `Circle` and `Segment` hold their pairs, `Ray` holds the rest, and two rays meet on the exact signs of cross products or at an origin on the other
-- `IntersectsBox` on every `Collider`, and the five other `Intersects` methods with `IntersectionSegment` on `Box`: last in the holder order, holding only the box pair; the circle tests its radius on `Box.DistanceSquaredTo`, and the outlines decide on the box's `Rectangle`, with `Segment.IntersectionBox` beside `IntersectsBox`
-- `Encloses` on `Circle`, `Polygon`, `Rectangle`, `RegularPolygon` and `Box` for `Circle`, `Segment`, `Polygon`, `Rectangle`, `RegularPolygon` and `Box` – whether every point of the shape lies within, boundary included within `Epsilon[T]()`: a convex container by every vertex, a circle by the walk from its center clearing its radius, and a concave polygon also by no edge leaving it between contained ends, through a crossing, a vertex or an edge it starts on; allocation-free
-- `Nearest(point)` on every shape, and in the `Shape` interface: the point itself exactly where `Contains` holds, and otherwise the nearest point of the boundary, read off the same walk `DistanceSquaredTo` makes
-- `Rectangle.Clamp(rectangle)` – moves a rectangle by the shortest distance that brings it within another, at any two angles, centered on an axis of the other where it is the larger
-- `Polygon.Winding`, with the `Winding` type and its `String`, `ParseWinding` and text encoding – the sense the vertices run around their area, from the sign of the shoelace sum
-- `Polygon.IsConvex` – convex and simple, decided on exact signs, so a star turning one way throughout is not convex
-- `Polygon.ConvexHull` – the hull by a monotone chain, clockwise from the least vertex, allocating its result once
-- `Segment.ClipCircle`, `ClipPolygon`, `ClipRectangle`, `ClipRegularPolygon` and `ClipBox` – the part of a segment inside a shape, boundary included within `Epsilon[T]()`, existing exactly where `Intersects` holds: the convex shapes return one part and a flag, allocation-free, from the contained endpoints and the first and last crossing; `ClipPolygon` returns the parts from `Start` to `End`, judging each piece between crossings at its midpoint in `float64` and sweeping the edges once per crossing rather than gathering them, so only the result allocates
-- `Polygon.Simplify(tolerance)` – Douglas–Peucker from the least vertex around and back: every dropped vertex lies within the tolerance of the edge replacing it, at zero tolerance only repeated and collinear vertices go, the kept ones stay in the polygon's order, simplifying again changes nothing, and the result is the one allocation
-- `Append` forms of every slice result – `AppendIntersection<Kind>(dst, other)` beside each `Intersection<Kind>` returning points, `Polygon.AppendConvexHull`, `Polygon.AppendSimplify`, and `AppendClipPolygon` on `Segment` and `Ray`, appending to a buffer the caller reuses, as `strconv.AppendInt` does, so a loop allocates nothing once the buffer has room; only the appended points are deduplicated and ordered, and the slice-returning methods are the `Append` form with a nil `dst`
-- `Polygon.Lerp` – vertex-by-vertex interpolation paired by index, panicking for a different vertex count as `RegularPolygon.Lerp` does
-- `Vector.Slerp` – the direction turned along the shorter arc with `LerpAngle` and the length interpolated linearly, a zero vector taking the other's direction
-- `ParsePoint` – reads a point in the form `String` prints, `(x,y)`, its errors prefixed `geom:` like the other parse functions
+- `Box` – the axis-aligned box as `Min` and `Max`, a `Shape` and a `Collider`, with `Bx`
+- `Ray` – a half-line from `Origin` along `Direction`, a `Collider` deciding every pair on the `Segment` tests
+- `Clip` on `Segment` and `Ray` against every bounded collider, allocation-free on the convex shapes
+- `Encloses` on every container for every bounded kind but `Ellipse`
+- `Nearest(point)` on every shape, and `Rectangle.Clamp(rectangle)` at any two angles
+- `Polygon.Winding`, `IsConvex`, `ConvexHull`, `Simplify` and `Lerp`
+- `Append` forms of every slice result, so a loop reusing its buffer allocates nothing
+- `Vector.Slerp` and `ParsePoint`
+- `RegularPolygon.Phase`, placing the vertices before the stretch, so a flat-top polygon of unequal semi-axes is stretched across its edges
 
 ### Changed
-- `Point.Transform` and `Vector.Transform` read the matrix fields directly rather than converting the whole matrix per point, about 7% faster over a loop of points
-- `ParseSize` errors start with `geom:` like the other parse functions, and the malformed input is quoted
-- `github.com/gravitton/assert`, the test dependency, updated to v1.6.0
-- The boundary tolerance of `Contains`, `Intersects`, `Intersection`, `Encloses`, `Clip`, `Point.Between` and `Vector.LessOrEqual` widens with the coordinates it compares: `Epsilon[T]()` near the origin and two ulps of `T` where they are wider, so a `Nearest` point or an `Intersection` rounded into a float32 shape beyond 2048 units from the origin stays on its boundary, where the absolute `Delta32` had fallen below one ulp; float64 widens only beyond a few billion units, integer shapes stay exact, and a float walk costs about 8% more
+- The boundary tolerance widens to two ulps of `T` far from the origin, so a rounded float32 point stays on its boundary
+- `Point.Transform` and `Vector.Transform` are about 7% faster, and parse errors start with `geom:`
+- `github.com/gravitton/x` is dropped; `github.com/gravitton/assert` is the only dependency, at v1.6.0
+- `RegularPolygon.Transform` and `Ellipse.Transform` are exact for every matrix, shears included
 
 ### Fixed
-- The same inputs give the same bits on every architecture: every product added to another value is rounded on its own first, so gc no longer fuses it into a multiply-add on arm64 and on amd64 v3, which rounded `Lerp`, `LerpAngle`, `Matrix.Multiply`, `Matrix.Inverse`, `Transform`, `Vector.Rotate`, `LengthSquared`, `OctileDistanceTo`, the polygon centroid and inertia sums, the regular polygon vertex angles, the circle crossings and the ellipse measures differently there; only what `math` computes from an angle may still differ in the last bit
-- `Segment.IntersectionSegment` on nearly collinear float segments: rounding could give their ends opposite sides of each other's line, and the crossing then landed off both; a crossing outside either segment is now no crossing, and the endpoint lying on the other is the answer, in `IntersectsSegment` and `DistanceToSegment` too
-- Float32 and narrow integer shapes decide on their exact coordinates: the distances, sides and frame offsets behind `Contains`, `Intersects`, `Intersection`, `Nearest`, `Encloses`, `ConvexHull` and `IsConvex` subtracted in `T` before converting to `float64`, so a float32 point on a segment far from the origin measured off it and an `int8` difference overflowed; the operands are now converted first
-
-### Removed
-- The `github.com/gravitton/x` dependency, whose one use in `Polygon` is now a private helper
+- Every product is rounded before it is added, so arm64 and amd64 v3 no longer fuse it into a multiply-add
+- Nearly collinear float segments no longer cross off both of them
+- Float32 and narrow integer shapes convert before subtracting, so far coordinates measure true and `int8` does not overflow
+- Narrow integer crossings are ordered from `Start`, and `Mod` no longer overflows near the end of the range
+- Long rectangles turned a hair apart are no longer tested as parallel
 
 
 ## [v1.14.0](https://github.com/gravitton/geometry/compare/v1.13.0...v1.14.0) (2026-09-20)
