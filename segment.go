@@ -26,19 +26,19 @@ func (s Segment[T]) Vector() Vector[T] {
 
 // Length returns the length of the segment.
 func (s Segment[T]) Length() float64 {
-	return s.Vector().Length()
+	return s.Float().Vector().Length()
 }
 
 // Angle returns the angle of the segment in radians, the angle of the vector from Start to End.
 // A zero-length segment has no direction and gives 0, the angle Vector.Angle gives it.
 func (s Segment[T]) Angle() float64 {
-	return s.Vector().Angle()
+	return s.Float().Vector().Angle()
 }
 
 // Direction returns the direction nearest to the segment, from Start to End, or DirectionNone
 // for a zero-length segment, as Vector.Direction judges it.
 func (s Segment[T]) Direction() Direction {
-	return s.Vector().Direction()
+	return s.Float().Vector().Direction()
 }
 
 // Vertices iterates the start and end points, in that order, without allocating; collect
@@ -140,7 +140,7 @@ func (s Segment[T]) UnscaleXY(factorX, factorY float64) Segment[T] {
 // actual length may differ from the requested value.
 func (s Segment[T]) Resize(length float64) Segment[T] {
 	pivot := s.Midpoint().Float()
-	half := s.Vector().Float().Resize(length / 2)
+	half := s.Float().Vector().Resize(length / 2)
 
 	start, end := pivot.Add(half.Negate()), pivot.Add(half)
 
@@ -776,9 +776,12 @@ func (s Segment[T]) containsAt(t float64) bool {
 }
 
 // compareDistance orders two points by their distance from Start, the order every boundary crossing
-// method returns its points in.
+// method returns its points in. The distances are measured in float64, where Point.DistanceSquaredTo
+// would overflow a narrow integer T and reorder the points.
 func (s Segment[T]) compareDistance(a, b Point[T]) int {
-	return cmp.Compare(s.Start.DistanceSquaredTo(a), s.Start.DistanceSquaredTo(b))
+	start := s.Start.Float()
+
+	return cmp.Compare(start.DistanceSquaredTo(a.Float()), start.DistanceSquaredTo(b.Float()))
 }
 
 // clipConvex returns the part of the segment inside a convex shape, given the crossings of its

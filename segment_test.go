@@ -35,6 +35,9 @@ func TestSegment_Length(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
 		AssertNumber(t, Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)).Length(), math.Sqrt(13.6825))
 	})
+	t.Run("a narrow integer span wider than its range", func(t *testing.T) {
+		AssertNumber(t, Seg(Pt[int8](-100, 0), Pt[int8](100, 0)).Length(), 200.0)
+	})
 }
 
 func TestSegment_Angle(t *testing.T) {
@@ -51,6 +54,9 @@ func TestSegment_Angle(t *testing.T) {
 	t.Run("a zero-length segment has no direction", func(t *testing.T) {
 		AssertNumber(t, Seg(Pt(3, 4), Pt(3, 4)).Angle(), 0.0)
 	})
+	t.Run("a narrow integer span wider than its range", func(t *testing.T) {
+		AssertNumber(t, Seg(Pt[int8](-100, 0), Pt[int8](100, 0)).Angle(), 0.0)
+	})
 }
 
 func TestSegment_Direction(t *testing.T) {
@@ -66,6 +72,9 @@ func TestSegment_Direction(t *testing.T) {
 	})
 	t.Run("a zero-length segment has no direction", func(t *testing.T) {
 		assert.Equal(t, Seg(Pt(3, 4), Pt(3, 4)).Direction(), DirectionNone)
+	})
+	t.Run("a narrow integer span wider than its range", func(t *testing.T) {
+		assert.Equal(t, Seg(Pt[int8](-100, 0), Pt[int8](100, 0)).Direction(), DirectionRight)
 	})
 }
 
@@ -240,6 +249,9 @@ func TestSegment_Resize(t *testing.T) {
 		resized := Seg(Pt(0, 0), Pt(6, 8)).Resize(5)
 
 		AssertSegment(t, resized, Seg(Pt(2, 2), Pt(5, 6)))
+	})
+	t.Run("a narrow integer span wider than its range keeps its direction", func(t *testing.T) {
+		AssertSegment(t, Seg(Pt[int8](-100, 0), Pt[int8](100, 0)).Resize(100), Seg(Pt[int8](-50, 0), Pt[int8](50, 0)))
 	})
 }
 
@@ -958,6 +970,23 @@ func TestSegment_IntersectionPolygon(t *testing.T) {
 			}
 		}
 	})
+	t.Run("int16 spans whose square leaves its range are ordered from Start", func(t *testing.T) {
+		s := Seg(Pt[int16](0, 0), Pt[int16](400, 0))
+		square := Pol([]Point[int16]{Pt[int16](150, -10), Pt[int16](200, -10), Pt[int16](200, 10), Pt[int16](150, 10)})
+
+		AssertVertices(t, s.IntersectionPolygon(square), []Point[int16]{Pt[int16](150, 0), Pt[int16](200, 0)})
+	})
+	t.Run("over the int16 fixtures, spanning past the square root of its range, the points follow from Start", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			for _, s := range segmentFixtures {
+				p, s := p.Transform(narrowMatrix).Cast[int16](), s.Transform(narrowMatrix).Cast[int16]()
+				points := s.IntersectionPolygon(p)
+
+				assert.True(t, len(points) == 0 || s.IntersectsPolygon(p), fmt.Sprintf("%s → %s: ", s, p))
+				assertOrdered(t, s, points, fmt.Sprintf("%s → %s: ", s, p))
+			}
+		}
+	})
 }
 
 func TestSegment_AppendIntersectionPolygon(t *testing.T) {
@@ -1086,6 +1115,17 @@ func TestSegment_IntersectionRectangle(t *testing.T) {
 			}
 		}
 	})
+	t.Run("over the int16 fixtures, spanning past the square root of its range, the points follow from Start", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, s := range segmentFixtures {
+				r, s := r.Transform(narrowMatrix).Cast[int16](), s.Transform(narrowMatrix).Cast[int16]()
+				points := s.IntersectionRectangle(r)
+
+				assert.True(t, len(points) == 0 || s.IntersectsRectangle(r), fmt.Sprintf("%s → %s: ", s, r))
+				assertOrdered(t, s, points, fmt.Sprintf("%s → %s: ", s, r))
+			}
+		}
+	})
 }
 
 func TestSegment_AppendIntersectionRectangle(t *testing.T) {
@@ -1204,6 +1244,17 @@ func TestSegment_IntersectionRegularPolygon(t *testing.T) {
 		for _, s := range segmentFixtures {
 			for _, rp := range regularPolygonFixtures {
 				AssertVertices(t, s.IntersectionRegularPolygon(rp), s.IntersectionPolygon(rp.Polygon()), fmt.Sprintf("%s → %s: ", s, rp))
+			}
+		}
+	})
+	t.Run("over the int16 fixtures, spanning past the square root of its range, the points follow from Start", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for _, s := range segmentFixtures {
+				rp, s := rp.Transform(narrowMatrix).Cast[int16](), s.Transform(narrowMatrix).Cast[int16]()
+				points := s.IntersectionRegularPolygon(rp)
+
+				assert.True(t, len(points) == 0 || s.IntersectsRegularPolygon(rp), fmt.Sprintf("%s → %s: ", s, rp))
+				assertOrdered(t, s, points, fmt.Sprintf("%s → %s: ", s, rp))
 			}
 		}
 	})
@@ -1414,6 +1465,23 @@ func TestSegment_ClipPolygon(t *testing.T) {
 			}
 		}
 	})
+	t.Run("int16 spans whose square leaves its range are clipped from Start", func(t *testing.T) {
+		s := Seg(Pt[int16](0, 0), Pt[int16](400, 0))
+		square := Pol([]Point[int16]{Pt[int16](150, -10), Pt[int16](200, -10), Pt[int16](200, 10), Pt[int16](150, 10)})
+
+		assertSegments(t, s.ClipPolygon(square), []Segment[int16]{Seg(Pt[int16](150, 0), Pt[int16](200, 0))})
+	})
+	t.Run("over the int16 fixtures, spanning past the square root of its range, the parts follow from Start", func(t *testing.T) {
+		for _, p := range outlineFixtures() {
+			for _, s := range segmentFixtures {
+				p, s := p.Transform(narrowMatrix).Cast[int16](), s.Transform(narrowMatrix).Cast[int16]()
+				parts := s.ClipPolygon(p)
+
+				assert.Equal(t, len(parts) > 0, s.IntersectsPolygon(p), fmt.Sprintf("%s → %s: ", s, p))
+				assertOrdered(t, s, endsOf(parts), fmt.Sprintf("%s → %s: ", s, p))
+			}
+		}
+	})
 }
 
 func TestSegment_AppendClipPolygon(t *testing.T) {
@@ -1492,6 +1560,23 @@ func TestSegment_ClipRectangle(t *testing.T) {
 			}
 		}
 	})
+	t.Run("int16 spans whose square leaves its range are clipped from Start", func(t *testing.T) {
+		s := Seg(Pt[int16](0, 0), Pt[int16](400, 0))
+		rectangle := RectangleFromMinMax(Pt[int16](150, -10), Pt[int16](200, 10))
+
+		assertSegments(t, partsOf(s.ClipRectangle(rectangle)), []Segment[int16]{Seg(Pt[int16](150, 0), Pt[int16](200, 0))})
+	})
+	t.Run("over the int16 fixtures, spanning past the square root of its range, the parts follow from Start", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, s := range segmentFixtures {
+				r, s := r.Transform(narrowMatrix).Cast[int16](), s.Transform(narrowMatrix).Cast[int16]()
+				parts := partsOf(s.ClipRectangle(r))
+
+				assert.Equal(t, len(parts) > 0, s.IntersectsRectangle(r), fmt.Sprintf("%s → %s: ", s, r))
+				assertOrdered(t, s, endsOf(parts), fmt.Sprintf("%s → %s: ", s, r))
+			}
+		}
+	})
 }
 
 func TestSegment_ClipRegularPolygon(t *testing.T) {
@@ -1531,6 +1616,17 @@ func TestSegment_ClipRegularPolygon(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
 			for _, s := range segmentFixtures {
 				assertClipped(t, s, partsOf(s.ClipRegularPolygon(rp)), s.IntersectsRegularPolygon(rp), rp.EnclosesSegment, fmt.Sprintf("%s → %s: ", s, rp))
+			}
+		}
+	})
+	t.Run("over the int16 fixtures, spanning past the square root of its range, the parts follow from Start", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for _, s := range segmentFixtures {
+				rp, s := rp.Transform(narrowMatrix).Cast[int16](), s.Transform(narrowMatrix).Cast[int16]()
+				parts := partsOf(s.ClipRegularPolygon(rp))
+
+				assert.Equal(t, len(parts) > 0, s.IntersectsRegularPolygon(rp), fmt.Sprintf("%s → %s: ", s, rp))
+				assertOrdered(t, s, endsOf(parts), fmt.Sprintf("%s → %s: ", s, rp))
 			}
 		}
 	})
@@ -1768,6 +1864,32 @@ func assertSegments[T Number](t *testing.T, actual, expected []Segment[T], messa
 	for i := range actual {
 		AssertSegment(t, actual[i], expected[i], prefixed(messages, fmt.Sprintf("#%d.", i))...)
 	}
+}
+
+// assertOrdered checks that the points follow one another from the segment's Start, the order
+// every crossing and every clipped part is returned in, measured in float64. An integer T
+// rounds them onto the lattice and off the segment, so their order is all that is asserted.
+func assertOrdered[T Number](t *testing.T, s Segment[T], points []Point[T], message string) {
+	t.Helper()
+
+	reached := 0.0
+	for _, p := range points {
+		distance := s.Start.DistanceTo(p)
+
+		assert.True(t, reached <= distance, message+p.String()+" in order: ")
+
+		reached = distance
+	}
+}
+
+// endsOf returns the ends of the parts in order, the points a clip visits from Start.
+func endsOf[T Number](parts []Segment[T]) []Point[T] {
+	var ends []Point[T]
+	for _, part := range parts {
+		ends = append(ends, part.Start, part.End)
+	}
+
+	return ends
 }
 
 // assertClipped checks the parts a Clip method returns for a segment over the fixtures: they

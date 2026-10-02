@@ -146,7 +146,7 @@ func (p Point[T]) RotateAround(pivot Point[T], angle float64) Point[T] {
 
 // AngleTo returns the angle in radians from the current point to the given point.
 func (p Point[T]) AngleTo(point Point[T]) float64 {
-	return point.Subtract(p).Angle()
+	return point.Float().Subtract(p.Float()).Angle()
 }
 
 // Between reports whether the point lies within the box from corner a to corner b, boundary
@@ -162,7 +162,7 @@ func (p Point[T]) Between(a, b Point[T]) bool {
 
 // DistanceTo returns the Euclidean distance from the current point to the given point.
 func (p Point[T]) DistanceTo(point Point[T]) float64 {
-	return point.Subtract(p).Length()
+	return point.Float().Subtract(p.Float()).Length()
 }
 
 // DistanceSquaredTo returns the squared Euclidean distance to the given point (faster than DistanceTo for comparisons).

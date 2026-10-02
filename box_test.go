@@ -213,6 +213,9 @@ func TestBox_Contains(t *testing.T) {
 			}
 		}
 	})
+	t.Run("a narrow integer box does not contain a point a wrapped gap away", func(t *testing.T) {
+		assert.False(t, Bx(Pt[int8](-100, 0), Pt[int8](-100, 0)).Contains(Pt[int8](28, 0)))
+	})
 }
 
 func TestBox_DistanceTo(t *testing.T) {
@@ -241,6 +244,9 @@ func TestBox_DistanceTo(t *testing.T) {
 				AssertNumber(t, b.DistanceTo(p), b.Rectangle().DistanceTo(p), fmt.Sprintf("%s → %s: ", b, p))
 			}
 		}
+	})
+	t.Run("a narrow integer box measures a gap wider than its range", func(t *testing.T) {
+		AssertNumber(t, Bx(Pt[int8](-100, -100), Pt[int8](-90, -90)).DistanceTo(Pt[int8](100, -95)), 190.0)
 	})
 }
 

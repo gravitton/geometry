@@ -1203,6 +1203,23 @@ func TestRectangle_IntersectsRectangle(t *testing.T) {
 			}
 		}
 	})
+	t.Run("a turn too small to judge on the angle still moves a far corner of a long rectangle", func(t *testing.T) {
+		a := Rect(Pt(0.0, 0.0), Sz(1e7, 10.0)).Rotate(0.1)
+		b := Rect(Pt(0.0, 0.0).Add(Vec(0.0, 13.0).Rotate(0.1)), Sz(1e7, 10.0)).Rotate(0.1 + 9e-7)
+
+		assert.True(t, a.IntersectsRectangle(b))
+		assert.True(t, b.IntersectsRectangle(a))
+	})
+	t.Run("long rectangles turned a hair apart answer as their polygons do", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			a := r.Scale(1e6)
+			for _, gap := range []float64{0.1, 1.0, 10.0} {
+				b := a.Translate(Vec(0.0, a.Height()+gap).Rotate(a.Angle)).Rotate(9e-7)
+
+				assert.Equal(t, a.IntersectsRectangle(b), a.Polygon().IntersectsPolygon(b.Polygon()), fmt.Sprintf("%s → %s: ", a, b))
+			}
+		}
+	})
 }
 
 func BenchmarkRectangle_IntersectsRectangle(b *testing.B) {
@@ -1320,6 +1337,12 @@ func TestRectangle_IntersectionRectangle(t *testing.T) {
 			}
 		}
 	})
+	t.Run("long rectangles turned a hair apart share no frame", func(t *testing.T) {
+		a := Rect(Pt(0.0, 0.0), Sz(1e7, 10.0)).Rotate(0.1)
+
+		_, ok := a.IntersectionRectangle(a.Rotate(9e-7))
+		assert.False(t, ok)
+	})
 }
 
 func TestRectangle_Union(t *testing.T) {
@@ -1360,6 +1383,12 @@ func TestRectangle_Union(t *testing.T) {
 				}
 			}
 		}
+	})
+	t.Run("long rectangles turned a hair apart unite in their bounds", func(t *testing.T) {
+		a := Rect(Pt(0.0, 0.0), Sz(1e7, 10.0)).Rotate(0.1)
+		b := a.Rotate(9e-7)
+
+		AssertRectangle(t, a.Union(b), a.Bounds().Union(b.Bounds()).Rectangle())
 	})
 }
 

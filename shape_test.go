@@ -166,18 +166,24 @@ func assertNearest[T Number](t *testing.T, shape Shape[T], point Point[T]) {
 }
 
 // assertCrossings asserts the properties the boundary crossings of a segment have on every
-// outline: each point lies on the segment and on an edge by Contains, and there is one only
-// where the pair intersects.
+// outline: each point lies on the segment and on an edge by Contains, they follow one another
+// from Start, and there is one only where the pair intersects.
 func assertCrossings[T Number](t *testing.T, segment Segment[T], shape polyline[T], points []Point[T], intersects bool) {
 	t.Helper()
 
 	message := fmt.Sprintf("%v → %v: ", segment, shape)
 
+	reached := 0.0
 	for _, p := range points {
+		distance := segment.Start.DistanceTo(p)
+
 		assert.True(t, segment.Contains(p), message+p.String()+" on the segment: ")
 		assert.True(t, slices.ContainsFunc(slices.Collect(shape.Edges()), func(edge Segment[T]) bool {
 			return edge.Contains(p)
 		}), message+p.String()+" on the boundary: ")
+		assert.True(t, LessOrEqual(reached, distance), message+p.String()+" in order: ")
+
+		reached = distance
 	}
 	assert.True(t, len(points) == 0 || intersects, message)
 }
@@ -372,6 +378,11 @@ func farColliders(offset Vector[float32]) []Collider[float32] {
 
 	return colliders
 }
+
+// narrowMatrix stretches the fixtures before they are cast to int16, past the square root of its
+// range, so a squared distance or a difference taken in T rather than float64 overflows where
+// every coordinate still fits.
+var narrowMatrix = ScaleMatrix(40.0, 40.0)
 
 // prefixPoint is the point the Append methods find in dst over the fixtures, so every result is
 // checked to follow it.

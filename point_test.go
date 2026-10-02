@@ -252,6 +252,9 @@ func TestPoint_AngleTo(t *testing.T) {
 		AssertNumber(t, Pt(2, 2).AngleTo(Pt(3, 2)), ToRadians(0))
 		AssertNumber(t, Pt(0.6, -0.25).AngleTo(Pt(0.7, -0.35)), ToRadians(-45))
 	})
+	t.Run("a narrow integer difference wider than its range", func(t *testing.T) {
+		AssertNumber(t, Pt[int8](-100, 0).AngleTo(Pt[int8](100, 0)), 0.0)
+	})
 }
 
 func TestPoint_Between(t *testing.T) {
@@ -294,6 +297,9 @@ func TestPoint_DistanceTo(t *testing.T) {
 	})
 	t.Run("int", func(t *testing.T) {
 		AssertNumber(t, Pt(1, 2).DistanceTo(Pt(2, 3)), Sqrt2)
+	})
+	t.Run("a narrow integer difference wider than its range", func(t *testing.T) {
+		AssertNumber(t, Pt[int8](-100, 0).DistanceTo(Pt[int8](100, 0)), 200.0)
 	})
 }
 

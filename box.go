@@ -310,10 +310,12 @@ func (Box[T]) clampAxis(a1, b1, c1, a2, b2, c2 T) T {
 // distanceSquaredToBox returns the squared distance between the nearest points of the two
 // boxes, from the gap between them on each axis: zero where they overlap or the gap is within
 // the tolerance, the one comparison Contains and IntersectsBox both read. A NaN coordinate leaves
-// a NaN gap, which the comparison never admits.
+// a NaN gap, which the comparison never admits. The gaps are taken in float64, so a narrow
+// integer T cannot overflow them.
 func (b Box[T]) distanceSquaredToBox(box Box[T]) float64 {
-	dx := float64(max(box.Min.X-b.Max.X, b.Min.X-box.Max.X, 0))
-	dy := float64(max(box.Min.Y-b.Max.Y, b.Min.Y-box.Max.Y, 0))
+	a1, b1, a2, b2 := b.Min.Float(), b.Max.Float(), box.Min.Float(), box.Max.Float()
+	dx := max(a2.X-b1.X, a1.X-b2.X, 0)
+	dy := max(a2.Y-b1.Y, a1.Y-b2.Y, 0)
 
 	distance := float64(dx*dx) + float64(dy*dy)
 	if lessOrEqualSquared(distance, 0, epsilonAt[T](max(b.magnitude(), box.magnitude()))) {

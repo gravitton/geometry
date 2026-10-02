@@ -140,6 +140,12 @@ func TestMod(t *testing.T) {
 	t.Run("defined integer types", func(t *testing.T) {
 		AssertNumber(t, Mod(namedInt(12), 8), namedInt(4))
 	})
+	t.Run("a narrow T near the end of its range does not overflow", func(t *testing.T) {
+		AssertNumber(t, Mod[int8](99, 100), 99)
+		AssertNumber(t, Mod[int8](-1, 100), 99)
+		AssertNumber(t, Mod[int8](-128, 127), 126)
+		AssertNumber(t, Mod[int8](100, -128), -28)
+	})
 }
 
 func TestClamp(t *testing.T) {

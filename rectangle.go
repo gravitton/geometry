@@ -799,10 +799,18 @@ func (r Rectangle[T]) meetsWithin(rectangle Rectangle[T], a1, b1, a2, b2 Point[T
 	return false
 }
 
-// parallel reports whether the given rectangle is turned by the same angle as this one, up to
-// a full turn as EqualAngle judges it, so the two share a frame.
+// parallel reports whether the given rectangle is turned by the same angle as this one, up to a
+// full turn, so the two share a frame: a corner of either, turned by the other's angle about its
+// center, moves no farther than the tolerance at the coordinates it reaches. The tolerance is on
+// that distance, never on the angle, since a difference below any fixed angle still moves the
+// far corner of a long rectangle off its edge; for an integer T only an equal angle is parallel.
 func (r Rectangle[T]) parallel(rectangle Rectangle[T]) bool {
-	return EqualAngle(r.Angle, rectangle.Angle)
+	w1, h1 := r.Size.Float().XY()
+	w2, h2 := rectangle.Size.Float().XY()
+	reach := float64(max(math.Hypot(w1, h1), math.Hypot(w2, h2)) / 2)
+	magnitude := max(r.Center.magnitude(), rectangle.Center.magnitude()) + reach
+
+	return AngleDistance(r.Angle, rectangle.Angle)*reach <= epsilonAt[T](magnitude)
 }
 
 // Equal checks for equal center, size and angle values using tolerant numeric comparison.

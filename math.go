@@ -100,9 +100,15 @@ func Ceil[T Number](x T) T {
 }
 
 // Mod wraps n into [0, m), correctly for negative n, taking the sign of m like a floored
-// division: a negative m wraps into (m, 0]. Like the % operator it panics for m == 0.
+// division: a negative m wraps into (m, 0]. Like the % operator it panics for m == 0. The
+// remainder is moved by m only where its sign differs, so no intermediate leaves the range of T.
 func Mod[T Integer](n, m T) T {
-	return ((n % m) + m) % m
+	remainder := n % m
+	if remainder != 0 && (remainder < 0) != (m < 0) {
+		remainder += m
+	}
+
+	return remainder
 }
 
 // Clamp adjusts the given value to be between the given minimum and maximum value.
