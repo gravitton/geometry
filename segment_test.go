@@ -1,4 +1,4 @@
-package geom
+package geom_test
 
 import (
 	"encoding/json"
@@ -8,43 +8,45 @@ import (
 	"testing"
 
 	"github.com/gravitton/assert"
+	. "github.com/gravitton/geometry"
+	"github.com/gravitton/geometry/geomtest"
 )
 
 func TestSegment_Constructor(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertSegment(t, Seg(Pt(1, -1), Pt(2, 0)), Segment[int]{Start: Pt(1, -1), End: Pt(2, 0)})
+		geomtest.AssertSegment(t, Seg(Pt(1, -1), Pt(2, 0)), Segment[int]{Start: Pt(1, -1), End: Pt(2, 0)})
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertSegment(t, Seg(Pt(0.5, -1.25), Pt(2.5, 3.75)), Segment[float64]{Start: Pt(0.5, -1.25), End: Pt(2.5, 3.75)})
+		geomtest.AssertSegment(t, Seg(Pt(0.5, -1.25), Pt(2.5, 3.75)), Segment[float64]{Start: Pt(0.5, -1.25), End: Pt(2.5, 3.75)})
 	})
 }
 
 func TestSegment_Vector(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertVector(t, Seg(Pt(1, 2), Pt(3, 5)).Vector(), Vec(2, 3))
+		geomtest.AssertVector(t, Seg(Pt(1, 2), Pt(3, 5)).Vector(), Vec(2, 3))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertVector(t, Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)).Vector(), Vec(0.6, 3.65))
+		geomtest.AssertVector(t, Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)).Vector(), Vec(0.6, 3.65))
 	})
 }
 
 func TestSegment_Length(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertNumber(t, Seg(Pt(1, 2), Pt(3, 5)).Length(), math.Sqrt(13))
+		geomtest.AssertNumber(t, Seg(Pt(1, 2), Pt(3, 5)).Length(), math.Sqrt(13))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertNumber(t, Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)).Length(), math.Sqrt(13.6825))
+		geomtest.AssertNumber(t, Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)).Length(), math.Sqrt(13.6825))
 	})
 	t.Run("a narrow integer span wider than its range", func(t *testing.T) {
-		AssertNumber(t, Seg(Pt[int8](-100, 0), Pt[int8](100, 0)).Length(), 200.0)
+		geomtest.AssertNumber(t, Seg(Pt[int8](-100, 0), Pt[int8](100, 0)).Length(), 200.0)
 	})
 }
 
 func TestSegment_Angle(t *testing.T) {
 	t.Run("measures from start to end", func(t *testing.T) {
-		AssertNumber(t, Seg(Pt(0, 0), Pt(1, 0)).Angle(), 0.0)
-		AssertNumber(t, Seg(Pt(0, 0), Pt(0, 1)).Angle(), Pi/2)
-		AssertNumber(t, Seg(Pt(0.0, 0.0), Pt(-1.0, -1.0)).Angle(), -3*Pi/4)
+		geomtest.AssertNumber(t, Seg(Pt(0, 0), Pt(1, 0)).Angle(), 0.0)
+		geomtest.AssertNumber(t, Seg(Pt(0, 0), Pt(0, 1)).Angle(), Pi/2)
+		geomtest.AssertNumber(t, Seg(Pt(0.0, 0.0), Pt(-1.0, -1.0)).Angle(), -3*Pi/4)
 	})
 	t.Run("reverse turns it half a turn", func(t *testing.T) {
 		s := Seg(Pt(1.0, 2.0), Pt(4.0, 6.0))
@@ -52,10 +54,10 @@ func TestSegment_Angle(t *testing.T) {
 		assert.True(t, EqualAngle(s.Reverse().Angle(), s.Angle()+Pi), s.String()+": ")
 	})
 	t.Run("a zero-length segment has no direction", func(t *testing.T) {
-		AssertNumber(t, Seg(Pt(3, 4), Pt(3, 4)).Angle(), 0.0)
+		geomtest.AssertNumber(t, Seg(Pt(3, 4), Pt(3, 4)).Angle(), 0.0)
 	})
 	t.Run("a narrow integer span wider than its range", func(t *testing.T) {
-		AssertNumber(t, Seg(Pt[int8](-100, 0), Pt[int8](100, 0)).Angle(), 0.0)
+		geomtest.AssertNumber(t, Seg(Pt[int8](-100, 0), Pt[int8](100, 0)).Angle(), 0.0)
 	})
 }
 
@@ -80,14 +82,14 @@ func TestSegment_Direction(t *testing.T) {
 
 func TestSegment_Vertices(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertVertices(t, slices.Collect(Seg(Pt(1, 2), Pt(3, 5)).Vertices()), []Point[int]{{1, 2}, {3, 5}})
+		geomtest.AssertVertices(t, slices.Collect(Seg(Pt(1, 2), Pt(3, 5)).Vertices()), []Point[int]{{1, 2}, {3, 5}})
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertVertices(t, slices.Collect(Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)).Vertices()), []Point[float64]{{0.6, -0.25}, {1.2, 3.4}})
+		geomtest.AssertVertices(t, slices.Collect(Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)).Vertices()), []Point[float64]{{0.6, -0.25}, {1.2, 3.4}})
 	})
 	t.Run("stops where the caller breaks", func(t *testing.T) {
 		for vertex := range Seg(Pt(1, 2), Pt(3, 5)).Vertices() {
-			AssertPoint(t, vertex, Pt(1, 2))
+			geomtest.AssertPoint(t, vertex, Pt(1, 2))
 
 			break
 		}
@@ -95,7 +97,7 @@ func TestSegment_Vertices(t *testing.T) {
 	t.Run("ranging allocates nothing", func(t *testing.T) {
 		s := Seg(Pt(1, 2), Pt(3, 5))
 
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			for vertex := range s.Vertices() {
 				sinkBool = vertex.IsZero()
 			}
@@ -110,10 +112,10 @@ func TestSegment_Edges(t *testing.T) {
 		edges := slices.Collect(s.Edges())
 
 		assert.Length(t, edges, 1)
-		AssertSegment(t, edges[0], s)
+		geomtest.AssertSegment(t, edges[0], s)
 	})
 	t.Run("ranging allocates nothing", func(t *testing.T) {
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			for edge := range s.Edges() {
 				sinkBool = edge.IsZero()
 			}
@@ -123,10 +125,10 @@ func TestSegment_Edges(t *testing.T) {
 
 func TestSegment_Midpoint(t *testing.T) {
 	t.Run("int rounds the half away from zero", func(t *testing.T) {
-		AssertPoint(t, Seg(Pt(1, 2), Pt(3, 5)).Midpoint(), Pt(2, 4))
+		geomtest.AssertPoint(t, Seg(Pt(1, 2), Pt(3, 5)).Midpoint(), Pt(2, 4))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertPoint(t, Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)).Midpoint(), Pt(0.9, 1.575))
+		geomtest.AssertPoint(t, Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)).Midpoint(), Pt(0.9, 1.575))
 	})
 }
 
@@ -134,79 +136,72 @@ func TestSegment_Bounds(t *testing.T) {
 	t.Run("spans the endpoints", func(t *testing.T) {
 		s := Seg(Pt(1, 2), Pt(3, 5))
 
-		AssertBox(t, s.Bounds(), BoxFromMinMax(s.Start, s.End))
-		AssertPoint(t, s.Bounds().Center(), Pt(2, 3))
+		geomtest.AssertBox(t, s.Bounds(), BoxFromMinMax(s.Start, s.End))
+		geomtest.AssertPoint(t, s.Bounds().Center(), Pt(2, 3))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertBox(t, Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)).Bounds(), BoxFromMinMax(Pt(0.6, -0.25), Pt(1.2, 3.4)))
+		geomtest.AssertBox(t, Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)).Bounds(), BoxFromMinMax(Pt(0.6, -0.25), Pt(1.2, 3.4)))
 	})
-}
-
-func TestSegment_minMax(t *testing.T) {
-	a, b := Seg(Pt(4, 1), Pt(0, 3)).minMax()
-
-	AssertPoint(t, a, Pt(0, 1))
-	AssertPoint(t, b, Pt(4, 3))
 }
 
 func TestSegment_Translate(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertSegment(t, Seg(Pt(1, 2), Pt(3, 5)).Translate(Vec(3, -2)), Seg(Pt(4, 0), Pt(6, 3)))
+		geomtest.AssertSegment(t, Seg(Pt(1, 2), Pt(3, 5)).Translate(Vec(3, -2)), Seg(Pt(4, 0), Pt(6, 3)))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertSegment(t, Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)).Translate(Vec(100.1, -0.1)), Seg(Pt(100.7, -0.35), Pt(101.3, 3.3)))
+		geomtest.AssertSegment(t, Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)).Translate(Vec(100.1, -0.1)), Seg(Pt(100.7, -0.35), Pt(101.3, 3.3)))
 	})
 }
 
 func TestSegment_MoveTo(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertSegment(t, Seg(Pt(1, 2), Pt(3, 6)).MoveTo(Pt(3, -2)), Seg(Pt(2, -4), Pt(4, 0)))
+		geomtest.AssertSegment(t, Seg(Pt(1, 2), Pt(3, 6)).MoveTo(Pt(3, -2)), Seg(Pt(2, -4), Pt(4, 0)))
 	})
 	t.Run("int odd span rounds the midpoint", func(t *testing.T) {
-		AssertSegment(t, Seg(Pt(1, 2), Pt(3, 5)).MoveTo(Pt(3, -2)), Seg(Pt(2, -4), Pt(4, -1)))
+		geomtest.AssertSegment(t, Seg(Pt(1, 2), Pt(3, 5)).MoveTo(Pt(3, -2)), Seg(Pt(2, -4), Pt(4, -1)))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertSegment(t, Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)).MoveTo(Pt(100.1, -0.1)), Seg(Pt(99.8, -1.925), Pt(100.4, 1.725)))
+		geomtest.AssertSegment(t, Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)).MoveTo(Pt(100.1, -0.1)), Seg(Pt(99.8, -1.925), Pt(100.4, 1.725)))
 	})
 }
 
 func TestSegment_Scale(t *testing.T) {
 	t.Run("uniform factor about the midpoint", func(t *testing.T) {
-		AssertSegment(t, Seg(Pt(0, 0), Pt(4, 2)).Scale(2), Seg(Pt(-2, -1), Pt(6, 3)))
-		AssertSegment(t, Seg(Pt(0.0, 0.0), Pt(4.0, 2.0)).Scale(0.5), Seg(Pt(1.0, 0.5), Pt(3.0, 1.5)))
+		geomtest.AssertSegment(t, Seg(Pt(0, 0), Pt(4, 2)).Scale(2), Seg(Pt(-2, -1), Pt(6, 3)))
+		geomtest.AssertSegment(t, Seg(Pt(0.0, 0.0), Pt(4.0, 2.0)).Scale(0.5), Seg(Pt(1.0, 0.5), Pt(3.0, 1.5)))
 	})
 	t.Run("per-axis factor changes the direction", func(t *testing.T) {
-		AssertSegment(t, Seg(Pt(0.0, 0.0), Pt(4.0, 2.0)).ScaleXY(1, 3), Seg(Pt(0.0, -2.0), Pt(4.0, 4.0)))
+		geomtest.AssertSegment(t, Seg(Pt(0.0, 0.0), Pt(4.0, 2.0)).ScaleXY(1, 3), Seg(Pt(0.0, -2.0), Pt(4.0, 4.0)))
 	})
 	t.Run("zero collapses onto the midpoint", func(t *testing.T) {
-		AssertSegment(t, Seg(Pt(0.0, 0.0), Pt(4.0, 2.0)).Scale(0), Seg(Pt(2.0, 1.0), Pt(2.0, 1.0)))
+		geomtest.AssertSegment(t, Seg(Pt(0.0, 0.0), Pt(4.0, 2.0)).Scale(0), Seg(Pt(2.0, 1.0), Pt(2.0, 1.0)))
 	})
 	t.Run("int rounds the midpoint, so an odd span drifts by one", func(t *testing.T) {
-		AssertSegment(t, Seg(Pt(0, 0), Pt(3, 0)).Scale(1), Seg(Pt(0, 0), Pt(3, 0)))
-		AssertSegment(t, Seg(Pt(0, 0), Pt(3, 0)).Scale(2), Seg(Pt(-2, 0), Pt(4, 0)))
+		geomtest.AssertSegment(t, Seg(Pt(0, 0), Pt(3, 0)).Scale(1), Seg(Pt(0, 0), Pt(3, 0)))
+		geomtest.AssertSegment(t, Seg(Pt(0, 0), Pt(3, 0)).Scale(2), Seg(Pt(-2, 0), Pt(4, 0)))
 	})
 	t.Run("keeps the midpoint and scales the length", func(t *testing.T) {
 		for _, s := range segmentFixtures {
 			scaled := s.Scale(2.5)
 
-			AssertPoint(t, scaled.Midpoint(), s.Midpoint(), fmt.Sprintf("%s: ", s))
-			AssertNumber(t, scaled.Length(), s.Length()*2.5, fmt.Sprintf("%s: ", s))
+			geomtest.AssertPoint(t, scaled.Midpoint(), s.Midpoint(), fmt.Sprintf("%s: ", s))
+			geomtest.AssertNumber(t, scaled.Length(), s.Length()*2.5, fmt.Sprintf("%s: ", s))
 		}
 	})
 }
 
 func TestSegment_Unscale(t *testing.T) {
 	t.Run("uniform factor", func(t *testing.T) {
-		AssertSegment(t, Seg(Pt(0.0, 0.0), Pt(8.0, 4.0)).Unscale(2), Seg(Pt(2.0, 1.0), Pt(6.0, 3.0)))
+		geomtest.AssertSegment(t, Seg(Pt(0.0, 0.0), Pt(8.0, 4.0)).Unscale(2), Seg(Pt(2.0, 1.0), Pt(6.0, 3.0)))
 	})
 	t.Run("per-axis factor", func(t *testing.T) {
-		AssertSegment(t, Seg(Pt(0.0, 0.0), Pt(8.0, 4.0)).UnscaleXY(2, 4), Seg(Pt(2.0, 1.5), Pt(6.0, 2.5)))
+		geomtest.AssertSegment(t, Seg(Pt(0.0, 0.0), Pt(8.0, 4.0)).UnscaleXY(2, 4), Seg(Pt(2.0, 1.5), Pt(6.0, 2.5)))
 	})
 	t.Run("undoes scale", func(t *testing.T) {
 		s := Seg(Pt(1.0, 2.0), Pt(9.0, 6.0))
 
-		AssertSegment(t, s.Scale(2.5).Unscale(2.5), s)
-		AssertSegment(t, s.ScaleXY(2.0, 4.0).UnscaleXY(2.0, 4.0), s)
+		geomtest.AssertSegment(t, s.Scale(2.5).Unscale(2.5), s)
+		geomtest.AssertSegment(t, s.ScaleXY(2.0, 4.0).UnscaleXY(2.0, 4.0), s)
 	})
 	t.Run("zero factor panics", func(t *testing.T) {
 		assert.Panics(t, func() {
@@ -223,44 +218,44 @@ func TestSegment_Resize(t *testing.T) {
 		s := Seg(Pt(0.0, 0.0), Pt(6.0, 8.0)) // length 10, midpoint (3,4)
 		resized := s.Resize(20)
 
-		AssertSegment(t, resized, Seg(Pt(-3.0, -4.0), Pt(9.0, 12.0)))
-		AssertNumber(t, resized.Length(), 20.0)
-		AssertPoint(t, resized.Midpoint(), s.Midpoint())
+		geomtest.AssertSegment(t, resized, Seg(Pt(-3.0, -4.0), Pt(9.0, 12.0)))
+		geomtest.AssertNumber(t, resized.Length(), 20.0)
+		geomtest.AssertPoint(t, resized.Midpoint(), s.Midpoint())
 	})
 	t.Run("shortens as readily as it lengthens", func(t *testing.T) {
 		resized := Seg(Pt(0.0, 0.0), Pt(6.0, 8.0)).Resize(5)
 
-		AssertSegment(t, resized, Seg(Pt(1.5, 2.0), Pt(4.5, 6.0)))
-		AssertNumber(t, resized.Length(), 5.0)
+		geomtest.AssertSegment(t, resized, Seg(Pt(1.5, 2.0), Pt(4.5, 6.0)))
+		geomtest.AssertNumber(t, resized.Length(), 5.0)
 	})
 	t.Run("a zero length collapses onto the midpoint", func(t *testing.T) {
-		AssertSegment(t, Seg(Pt(0.0, 0.0), Pt(6.0, 8.0)).Resize(0), Seg(Pt(3.0, 4.0), Pt(3.0, 4.0)))
+		geomtest.AssertSegment(t, Seg(Pt(0.0, 0.0), Pt(6.0, 8.0)).Resize(0), Seg(Pt(3.0, 4.0), Pt(3.0, 4.0)))
 	})
 	t.Run("a negative length flips the ends", func(t *testing.T) {
 		s := Seg(Pt(0.0, 0.0), Pt(6.0, 8.0))
 
-		AssertSegment(t, s.Resize(-10), s.Reverse())
-		AssertNumber(t, s.Resize(-10).Length(), 10.0)
+		geomtest.AssertSegment(t, s.Resize(-10), s.Reverse())
+		geomtest.AssertNumber(t, s.Resize(-10).Length(), 10.0)
 	})
 	t.Run("a zero-length segment resizes along +X", func(t *testing.T) {
-		AssertSegment(t, Seg(Pt(3.0, 4.0), Pt(3.0, 4.0)).Resize(10), Seg(Pt(-2.0, 4.0), Pt(8.0, 4.0)))
+		geomtest.AssertSegment(t, Seg(Pt(3.0, 4.0), Pt(3.0, 4.0)).Resize(10), Seg(Pt(-2.0, 4.0), Pt(8.0, 4.0)))
 	})
 	t.Run("int rounds both ends", func(t *testing.T) {
 		resized := Seg(Pt(0, 0), Pt(6, 8)).Resize(5)
 
-		AssertSegment(t, resized, Seg(Pt(2, 2), Pt(5, 6)))
+		geomtest.AssertSegment(t, resized, Seg(Pt(2, 2), Pt(5, 6)))
 	})
 	t.Run("a narrow integer span wider than its range keeps its direction", func(t *testing.T) {
-		AssertSegment(t, Seg(Pt[int8](-100, 0), Pt[int8](100, 0)).Resize(100), Seg(Pt[int8](-50, 0), Pt[int8](50, 0)))
+		geomtest.AssertSegment(t, Seg(Pt[int8](-100, 0), Pt[int8](100, 0)).Resize(100), Seg(Pt[int8](-50, 0), Pt[int8](50, 0)))
 	})
 }
 
 func TestSegment_Reverse(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertSegment(t, Seg(Pt(1, 2), Pt(3, 5)).Reverse(), Seg(Pt(3, 5), Pt(1, 2)))
+		geomtest.AssertSegment(t, Seg(Pt(1, 2), Pt(3, 5)).Reverse(), Seg(Pt(3, 5), Pt(1, 2)))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertSegment(t, Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)).Reverse(), Seg(Pt(1.2, 3.4), Pt(0.6, -0.25)))
+		geomtest.AssertSegment(t, Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)).Reverse(), Seg(Pt(1.2, 3.4), Pt(0.6, -0.25)))
 	})
 }
 
@@ -268,20 +263,20 @@ func TestSegment_PointAt(t *testing.T) {
 	segment := Seg(Pt(0.0, 0.0), Pt(4.0, 2.0))
 
 	t.Run("endpoints at 0 and 1", func(t *testing.T) {
-		AssertPoint(t, segment.PointAt(0), segment.Start)
-		AssertPoint(t, segment.PointAt(1), segment.End)
+		geomtest.AssertPoint(t, segment.PointAt(0), segment.Start)
+		geomtest.AssertPoint(t, segment.PointAt(1), segment.End)
 	})
 	t.Run("along the segment", func(t *testing.T) {
-		AssertPoint(t, segment.PointAt(0.25), Pt(1.0, 0.5))
-		AssertPoint(t, segment.PointAt(0.5), segment.Midpoint())
+		geomtest.AssertPoint(t, segment.PointAt(0.25), Pt(1.0, 0.5))
+		geomtest.AssertPoint(t, segment.PointAt(0.5), segment.Midpoint())
 	})
 	t.Run("extrapolates beyond the segment", func(t *testing.T) {
-		AssertPoint(t, segment.PointAt(-0.5), Pt(-2.0, -1.0))
-		AssertPoint(t, segment.PointAt(1.5), Pt(6.0, 3.0))
+		geomtest.AssertPoint(t, segment.PointAt(-0.5), Pt(-2.0, -1.0))
+		geomtest.AssertPoint(t, segment.PointAt(1.5), Pt(6.0, 3.0))
 	})
 	t.Run("int rounds the half away from zero", func(t *testing.T) {
-		AssertPoint(t, Seg(Pt(0, 0), Pt(3, 3)).PointAt(0.5), Pt(2, 2))
-		AssertPoint(t, Seg(Pt(0, 0), Pt(-3, -3)).PointAt(0.5), Pt(-2, -2))
+		geomtest.AssertPoint(t, Seg(Pt(0, 0), Pt(3, 3)).PointAt(0.5), Pt(2, 2))
+		geomtest.AssertPoint(t, Seg(Pt(0, 0), Pt(-3, -3)).PointAt(0.5), Pt(-2, -2))
 	})
 	t.Run("lands on the segment", func(t *testing.T) {
 		for _, s := range segmentFixtures {
@@ -296,42 +291,42 @@ func TestSegment_Transform(t *testing.T) {
 	t.Run("applies the matrix to both points", func(t *testing.T) {
 		matrix := Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)
 
-		AssertSegment(t, Seg(Pt(1, 2), Pt(3, 4)).Transform(matrix), Seg(Pt(1, 2).Transform(matrix), Pt(3, 4).Transform(matrix)))
+		geomtest.AssertSegment(t, Seg(Pt(1, 2), Pt(3, 4)).Transform(matrix), Seg(Pt(1, 2).Transform(matrix), Pt(3, 4).Transform(matrix)))
 	})
 	t.Run("float32 matrix", func(t *testing.T) {
-		AssertSegment(t, Seg(Pt(1.0, 2.0), Pt(0.0, 0.0)).Transform(Mat[float32](1, 0, 1, 0, 1, 1)), Seg(Pt(2.0, 3.0), Pt(1.0, 1.0)))
+		geomtest.AssertSegment(t, Seg(Pt(1.0, 2.0), Pt(0.0, 0.0)).Transform(Mat[float32](1, 0, 1, 0, 1, 1)), Seg(Pt(2.0, 3.0), Pt(1.0, 1.0)))
 	})
 }
 
 func TestSegment_Rotate(t *testing.T) {
 	t.Run("quarter turn about the midpoint", func(t *testing.T) {
-		AssertSegment(t, Seg(Pt(0, 0), Pt(4, 0)).Rotate(Pi/2), Seg(Pt(2, -2), Pt(2, 2)))
+		geomtest.AssertSegment(t, Seg(Pt(0, 0), Pt(4, 0)).Rotate(Pi/2), Seg(Pt(2, -2), Pt(2, 2)))
 	})
 	t.Run("half turn reverses the segment", func(t *testing.T) {
-		AssertSegment(t, Seg(Pt(1, 2), Pt(3, 6)).Rotate(Pi), Seg(Pt(3, 6), Pt(1, 2)))
+		geomtest.AssertSegment(t, Seg(Pt(1, 2), Pt(3, 6)).Rotate(Pi), Seg(Pt(3, 6), Pt(1, 2)))
 	})
 	t.Run("int rounds the midpoint, so an odd span drifts by one", func(t *testing.T) {
-		AssertSegment(t, Seg(Pt(1, 2), Pt(3, 5)).Rotate(Pi), Seg(Pt(3, 6), Pt(1, 3)))
+		geomtest.AssertSegment(t, Seg(Pt(1, 2), Pt(3, 5)).Rotate(Pi), Seg(Pt(3, 6), Pt(1, 3)))
 	})
 	t.Run("float keeps the midpoint and length", func(t *testing.T) {
 		s := Seg(Pt(0.6, -0.25), Pt(1.2, 3.4))
 		rotated := s.Rotate(0.7)
 
-		AssertPoint(t, rotated.Midpoint(), s.Midpoint())
-		AssertNumber(t, rotated.Length(), s.Length())
-		AssertNumber(t, rotated.Vector().AngleBetween(s.Vector()), 0.7)
+		geomtest.AssertPoint(t, rotated.Midpoint(), s.Midpoint())
+		geomtest.AssertNumber(t, rotated.Length(), s.Length())
+		geomtest.AssertNumber(t, rotated.Vector().AngleBetween(s.Vector()), 0.7)
 	})
 	t.Run("a full turn is identity", func(t *testing.T) {
 		for _, s := range segmentFixtures {
-			AssertSegment(t, s.Rotate(2*Pi), s, fmt.Sprintf("%s: ", s))
+			geomtest.AssertSegment(t, s.Rotate(2*Pi), s, fmt.Sprintf("%s: ", s))
 		}
 	})
 }
 
 func TestSegment_Normal(t *testing.T) {
 	t.Run("a quarter turn of the vector, with its length", func(t *testing.T) {
-		AssertVector(t, Seg(Pt(1, 1), Pt(4, 1)).Normal(), Vec(0, 3))
-		AssertVector(t, Seg(Pt(0.0, 0.0), Pt(0.0, 2.5)).Normal(), Vec(-2.5, 0.0))
+		geomtest.AssertVector(t, Seg(Pt(1, 1), Pt(4, 1)).Normal(), Vec(0, 3))
+		geomtest.AssertVector(t, Seg(Pt(0.0, 0.0), Pt(0.0, 2.5)).Normal(), Vec(-2.5, 0.0))
 	})
 	t.Run("points inward on a rectangle edge", func(t *testing.T) {
 		r := Rect(Pt(0, 0), Sz(4, 4))
@@ -341,12 +336,12 @@ func TestSegment_Normal(t *testing.T) {
 		}
 	})
 	t.Run("a zero-length segment has none", func(t *testing.T) {
-		AssertVector(t, Seg(Pt(3, 4), Pt(3, 4)).Normal(), ZeroVector[int]())
+		geomtest.AssertVector(t, Seg(Pt(3, 4), Pt(3, 4)).Normal(), ZeroVector[int]())
 	})
 	t.Run("is perpendicular to the segment", func(t *testing.T) {
 		for _, s := range segmentFixtures {
-			AssertNumber(t, s.Normal().Dot(s.Vector()), 0.0, s.String())
-			AssertNumber(t, s.Normal().Length(), s.Length(), s.String())
+			geomtest.AssertNumber(t, s.Normal().Dot(s.Vector()), 0.0, s.String())
+			geomtest.AssertNumber(t, s.Normal().Length(), s.Length(), s.String())
 		}
 	})
 }
@@ -390,30 +385,30 @@ func TestSegment_DistanceTo(t *testing.T) {
 	s := Seg(Pt(0, 0), Pt(4, 0))
 
 	t.Run("perpendicular to the segment", func(t *testing.T) {
-		AssertNumber(t, s.DistanceTo(Pt(2, 3)), 3.0)
-		AssertNumber(t, s.DistanceTo(Pt(1, -2)), 2.0)
+		geomtest.AssertNumber(t, s.DistanceTo(Pt(2, 3)), 3.0)
+		geomtest.AssertNumber(t, s.DistanceTo(Pt(1, -2)), 2.0)
 	})
 	t.Run("beyond the start measures to the start", func(t *testing.T) {
-		AssertNumber(t, s.DistanceTo(Pt(-3, 4)), 5.0)
+		geomtest.AssertNumber(t, s.DistanceTo(Pt(-3, 4)), 5.0)
 	})
 	t.Run("beyond the end measures to the end", func(t *testing.T) {
-		AssertNumber(t, s.DistanceTo(Pt(7, 4)), 5.0)
+		geomtest.AssertNumber(t, s.DistanceTo(Pt(7, 4)), 5.0)
 	})
 	t.Run("on the segment is exactly zero", func(t *testing.T) {
 		assert.Equal(t, Seg(Pt(0, 0), Pt(3, 3)).DistanceTo(Pt(1, 1)), 0.0)
 		assert.Equal(t, s.DistanceTo(Pt(4, 0)), 0.0)
 	})
 	t.Run("degenerate segment measures to the point", func(t *testing.T) {
-		AssertNumber(t, Seg(Pt(1, 1), Pt(1, 1)).DistanceTo(Pt(4, 5)), 5.0)
+		geomtest.AssertNumber(t, Seg(Pt(1, 1), Pt(1, 1)).DistanceTo(Pt(4, 5)), 5.0)
 	})
 	t.Run("float within the tolerance is zero, beyond it is measured", func(t *testing.T) {
 		s := Seg(Pt(0.0, 0.0), Pt(1.0, 0.0))
 
 		assert.Equal(t, s.DistanceTo(Pt(0.5, Delta/2)), 0.0)
-		AssertNumber(t, s.DistanceTo(Pt(0.5, 2*Delta)), 2*Delta)
+		geomtest.AssertNumber(t, s.DistanceTo(Pt(0.5, 2*Delta)), 2*Delta)
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertNumber(t, Seg(Pt(0.0, 0.0), Pt(1.0, 1.0)).DistanceTo(Pt(1.0, 0.0)), OneOverSqrt2)
+		geomtest.AssertNumber(t, Seg(Pt(0.0, 0.0), Pt(1.0, 1.0)).DistanceTo(Pt(1.0, 0.0)), OneOverSqrt2)
 	})
 }
 
@@ -421,17 +416,17 @@ func TestSegment_DistanceSquaredTo(t *testing.T) {
 	s := Seg(Pt(0, 0), Pt(4, 0))
 
 	t.Run("is the square of DistanceTo", func(t *testing.T) {
-		AssertNumber(t, s.DistanceSquaredTo(Pt(2, 3)), 9.0)
-		AssertNumber(t, s.DistanceSquaredTo(Pt(-3, 4)), 25.0)
-		AssertNumber(t, s.DistanceSquaredTo(Pt(7, 4)), 25.0)
+		geomtest.AssertNumber(t, s.DistanceSquaredTo(Pt(2, 3)), 9.0)
+		geomtest.AssertNumber(t, s.DistanceSquaredTo(Pt(-3, 4)), 25.0)
+		geomtest.AssertNumber(t, s.DistanceSquaredTo(Pt(7, 4)), 25.0)
 	})
 	t.Run("stays fractional for an integer T", func(t *testing.T) {
-		AssertNumber(t, Seg(Pt(0, 0), Pt(2, 1)).DistanceSquaredTo(Pt(0, 1)), 0.8)
+		geomtest.AssertNumber(t, Seg(Pt(0, 0), Pt(2, 1)).DistanceSquaredTo(Pt(0, 1)), 0.8)
 	})
 	t.Run("agrees with DistanceTo", func(t *testing.T) {
 		for _, s := range segmentFixtures {
 			for _, p := range pointFixtures {
-				AssertNumber(t, s.DistanceSquaredTo(p), s.DistanceTo(p)*s.DistanceTo(p), fmt.Sprintf("%s → %s: ", s, p))
+				geomtest.AssertNumber(t, s.DistanceSquaredTo(p), s.DistanceTo(p)*s.DistanceTo(p), fmt.Sprintf("%s → %s: ", s, p))
 			}
 		}
 	})
@@ -441,14 +436,14 @@ func TestSegment_Nearest(t *testing.T) {
 	s := Seg(Pt(0, 0), Pt(4, 0))
 
 	t.Run("the foot of the perpendicular", func(t *testing.T) {
-		AssertPoint(t, s.Nearest(Pt(2, 3)), Pt(2, 0))
+		geomtest.AssertPoint(t, s.Nearest(Pt(2, 3)), Pt(2, 0))
 	})
 	t.Run("the endpoint where the foot falls beyond it", func(t *testing.T) {
-		AssertPoint(t, s.Nearest(Pt(-3, 4)), Pt(0, 0))
-		AssertPoint(t, s.Nearest(Pt(7, 4)), Pt(4, 0))
+		geomtest.AssertPoint(t, s.Nearest(Pt(-3, 4)), Pt(0, 0))
+		geomtest.AssertPoint(t, s.Nearest(Pt(7, 4)), Pt(4, 0))
 	})
 	t.Run("a point on the segment is its own nearest point", func(t *testing.T) {
-		AssertPoint(t, s.Nearest(Pt(1, 0)), Pt(1, 0))
+		geomtest.AssertPoint(t, s.Nearest(Pt(1, 0)), Pt(1, 0))
 	})
 	t.Run("a point within the tolerance is kept as it is", func(t *testing.T) {
 		assert.Equal(t, Seg(Pt(0.0, 0.0), Pt(4.0, 0.0)).Nearest(Pt(2.0, Delta/2)), Pt(2.0, Delta/2))
@@ -456,11 +451,11 @@ func TestSegment_Nearest(t *testing.T) {
 	t.Run("int rounds once and can land off the segment", func(t *testing.T) {
 		skewed := Seg(Pt(0, 0), Pt(4, 2))
 
-		AssertPoint(t, skewed.Nearest(Pt(0, 3)), Pt(1, 1))
+		geomtest.AssertPoint(t, skewed.Nearest(Pt(0, 3)), Pt(1, 1))
 		assert.False(t, skewed.Contains(Pt(1, 1)))
 	})
 	t.Run("a zero-length segment is its point", func(t *testing.T) {
-		AssertPoint(t, Seg(Pt(1, 1), Pt(1, 1)).Nearest(Pt(5, 4)), Pt(1, 1))
+		geomtest.AssertPoint(t, Seg(Pt(1, 1), Pt(1, 1)).Nearest(Pt(5, 4)), Pt(1, 1))
 	})
 	t.Run("over the fixtures", func(t *testing.T) {
 		for _, s := range segmentFixtures {
@@ -481,18 +476,18 @@ func TestSegment_DistanceToSegment(t *testing.T) {
 		assert.Equal(t, diagonal.DistanceToSegment(Seg(Pt(4, 4), Pt(8, 0))), 0.0)
 	})
 	t.Run("parallel segments measure the gap", func(t *testing.T) {
-		AssertNumber(t, Seg(Pt(0, 0), Pt(4, 0)).DistanceToSegment(Seg(Pt(1, 3), Pt(3, 3))), 3.0)
+		geomtest.AssertNumber(t, Seg(Pt(0, 0), Pt(4, 0)).DistanceToSegment(Seg(Pt(1, 3), Pt(3, 3))), 3.0)
 	})
 	t.Run("apart measures between the nearest endpoints", func(t *testing.T) {
-		AssertNumber(t, Seg(Pt(0, 0), Pt(4, 0)).DistanceToSegment(Seg(Pt(7, 4), Pt(9, 4))), 5.0)
+		geomtest.AssertNumber(t, Seg(Pt(0, 0), Pt(4, 0)).DistanceToSegment(Seg(Pt(7, 4), Pt(9, 4))), 5.0)
 	})
 	t.Run("an endpoint nearest an interior point", func(t *testing.T) {
-		AssertNumber(t, Seg(Pt(0, 0), Pt(4, 0)).DistanceToSegment(Seg(Pt(2, 2), Pt(2, 5))), 2.0)
+		geomtest.AssertNumber(t, Seg(Pt(0, 0), Pt(4, 0)).DistanceToSegment(Seg(Pt(2, 2), Pt(2, 5))), 2.0)
 	})
 	t.Run("symmetric and zero exactly where Intersects holds", func(t *testing.T) {
 		for _, a := range segmentFixtures {
 			for _, b := range segmentFixtures {
-				AssertNumber(t, a.DistanceToSegment(b), b.DistanceToSegment(a), fmt.Sprintf("%s → %s: ", a, b))
+				geomtest.AssertNumber(t, a.DistanceToSegment(b), b.DistanceToSegment(a), fmt.Sprintf("%s → %s: ", a, b))
 				assert.Equal(t, a.DistanceToSegment(b) <= Delta, a.IntersectsSegment(b), fmt.Sprintf("%s → %s: ", a, b))
 			}
 		}
@@ -501,14 +496,14 @@ func TestSegment_DistanceToSegment(t *testing.T) {
 
 func TestSegment_DistanceSquaredToSegment(t *testing.T) {
 	t.Run("is the square of DistanceToSegment", func(t *testing.T) {
-		AssertNumber(t, Seg(Pt(0, 0), Pt(4, 0)).DistanceSquaredToSegment(Seg(Pt(7, 4), Pt(9, 4))), 25.0)
-		AssertNumber(t, Seg(Pt(0, 0), Pt(4, 0)).DistanceSquaredToSegment(Seg(Pt(1, 3), Pt(3, 3))), 9.0)
+		geomtest.AssertNumber(t, Seg(Pt(0, 0), Pt(4, 0)).DistanceSquaredToSegment(Seg(Pt(7, 4), Pt(9, 4))), 25.0)
+		geomtest.AssertNumber(t, Seg(Pt(0, 0), Pt(4, 0)).DistanceSquaredToSegment(Seg(Pt(1, 3), Pt(3, 3))), 9.0)
 		assert.Equal(t, Seg(Pt(0, 0), Pt(4, 4)).DistanceSquaredToSegment(Seg(Pt(0, 4), Pt(4, 0))), 0.0)
 	})
 	t.Run("agrees with DistanceToSegment", func(t *testing.T) {
 		for _, a := range segmentFixtures {
 			for _, b := range segmentFixtures {
-				AssertNumber(t, a.DistanceSquaredToSegment(b), a.DistanceToSegment(b)*a.DistanceToSegment(b), fmt.Sprintf("%s → %s: ", a, b))
+				geomtest.AssertNumber(t, a.DistanceSquaredToSegment(b), a.DistanceToSegment(b)*a.DistanceToSegment(b), fmt.Sprintf("%s → %s: ", a, b))
 			}
 		}
 	})
@@ -528,7 +523,7 @@ func TestSegment_IntersectionCircle(t *testing.T) {
 	t.Run("matches Circle.IntersectionSegment", func(t *testing.T) {
 		for _, s := range segmentFixtures {
 			for _, c := range circleFixtures {
-				AssertVertices(t, s.IntersectionCircle(c), c.IntersectionSegment(s), fmt.Sprintf("%s → %s: ", s, c))
+				geomtest.AssertVertices(t, s.IntersectionCircle(c), c.IntersectionSegment(s), fmt.Sprintf("%s → %s: ", s, c))
 			}
 		}
 	})
@@ -538,7 +533,7 @@ func TestSegment_AppendIntersectionCircle(t *testing.T) {
 	t.Run("matches Circle.AppendIntersectionSegment", func(t *testing.T) {
 		for _, s := range segmentFixtures {
 			for _, c := range circleFixtures {
-				AssertVertices(t, s.AppendIntersectionCircle(bufferWith(prefixPoint), c), c.AppendIntersectionSegment(bufferWith(prefixPoint), s), fmt.Sprintf("%s → %s: ", s, c))
+				geomtest.AssertVertices(t, s.AppendIntersectionCircle(bufferWith(prefixPoint), c), c.AppendIntersectionSegment(bufferWith(prefixPoint), s), fmt.Sprintf("%s → %s: ", s, c))
 			}
 		}
 	})
@@ -607,7 +602,7 @@ func TestSegment_IntersectionSegment(t *testing.T) {
 		point, ok := diagonal.IntersectionSegment(Seg(Pt(0, 4), Pt(4, 0)))
 
 		assert.True(t, ok)
-		AssertPoint(t, point, Pt(2, 2))
+		geomtest.AssertPoint(t, point, Pt(2, 2))
 	})
 	t.Run("apart", func(t *testing.T) {
 		_, ok := diagonal.IntersectionSegment(Seg(Pt(5, 0), Pt(5, 4)))
@@ -618,30 +613,30 @@ func TestSegment_IntersectionSegment(t *testing.T) {
 		point, ok := diagonal.IntersectionSegment(Seg(Pt(4, 4), Pt(8, 0)))
 
 		assert.True(t, ok)
-		AssertPoint(t, point, Pt(4, 4))
+		geomtest.AssertPoint(t, point, Pt(4, 4))
 
 		point, ok = Seg(Pt(2, 2), Pt(2, 8)).IntersectionSegment(diagonal)
 
 		assert.True(t, ok)
-		AssertPoint(t, point, Pt(2, 2))
+		geomtest.AssertPoint(t, point, Pt(2, 2))
 	})
 	t.Run("every endpoint can be the touching one", func(t *testing.T) {
 		for _, segment := range []Segment[int]{Seg(Pt(4, 4), Pt(8, 0)), Seg(Pt(8, 0), Pt(4, 4))} {
 			point, ok := diagonal.IntersectionSegment(segment)
 
 			assert.True(t, ok, segment.String())
-			AssertPoint(t, point, Pt(4, 4), segment.String())
+			geomtest.AssertPoint(t, point, Pt(4, 4), segment.String())
 		}
 
 		point, ok := diagonal.IntersectionSegment(Seg(Pt(2, 6), Pt(6, 2)))
 
 		assert.True(t, ok)
-		AssertPoint(t, point, Pt(4, 4))
+		geomtest.AssertPoint(t, point, Pt(4, 4))
 
 		point, ok = Seg(Pt(4, 4), Pt(0, 0)).IntersectionSegment(Seg(Pt(2, 6), Pt(6, 2)))
 
 		assert.True(t, ok)
-		AssertPoint(t, point, Pt(4, 4))
+		geomtest.AssertPoint(t, point, Pt(4, 4))
 	})
 	t.Run("parallel and collinear segments have no single point", func(t *testing.T) {
 		_, ok := diagonal.IntersectionSegment(Seg(Pt(0, 1), Pt(4, 5)))
@@ -659,12 +654,12 @@ func TestSegment_IntersectionSegment(t *testing.T) {
 		point, ok := diagonal.IntersectionSegment(Seg(Pt(1, 1), Pt(1, 1)))
 
 		assert.True(t, ok)
-		AssertPoint(t, point, Pt(1, 1))
+		geomtest.AssertPoint(t, point, Pt(1, 1))
 
 		point, ok = Seg(Pt(1, 1), Pt(1, 1)).IntersectionSegment(diagonal)
 
 		assert.True(t, ok)
-		AssertPoint(t, point, Pt(1, 1))
+		geomtest.AssertPoint(t, point, Pt(1, 1))
 
 		_, ok = diagonal.IntersectionSegment(Seg(Pt(1, 2), Pt(1, 2)))
 		assert.False(t, ok)
@@ -677,7 +672,7 @@ func TestSegment_IntersectionSegment(t *testing.T) {
 		point, ok := s.IntersectionSegment(other)
 
 		assert.True(t, ok)
-		AssertPoint(t, point, s.Start)
+		geomtest.AssertPoint(t, point, s.Start)
 		assert.True(t, s.IntersectsSegment(other))
 	})
 	t.Run("a shallow touch is decided on the endpoint distance, like Intersects", func(t *testing.T) {
@@ -688,19 +683,19 @@ func TestSegment_IntersectionSegment(t *testing.T) {
 
 		assert.True(t, s.IntersectsSegment(shallow))
 		assert.True(t, ok)
-		AssertPoint(t, point, shallow.Start)
+		geomtest.AssertPoint(t, point, shallow.Start)
 	})
 	t.Run("int rounds the crossing", func(t *testing.T) {
 		point, ok := Seg(Pt(0, 0), Pt(3, 3)).IntersectionSegment(Seg(Pt(0, 3), Pt(3, 0)))
 
 		assert.True(t, ok)
-		AssertPoint(t, point, Pt(2, 2))
+		geomtest.AssertPoint(t, point, Pt(2, 2))
 	})
 	t.Run("float keeps the crossing", func(t *testing.T) {
 		point, ok := Seg(Pt(0.0, 0.0), Pt(3.0, 3.0)).IntersectionSegment(Seg(Pt(0.0, 3.0), Pt(3.0, 0.0)))
 
 		assert.True(t, ok)
-		AssertPoint(t, point, Pt(1.5, 1.5))
+		geomtest.AssertPoint(t, point, Pt(1.5, 1.5))
 	})
 	t.Run("float is tolerant", func(t *testing.T) {
 		s := Seg(Pt(0.0, 0.0), Pt(1.0, 0.0))
@@ -716,11 +711,11 @@ func TestSegment_IntersectionSegment(t *testing.T) {
 
 		point, ok := a.IntersectionSegment(b)
 		assert.True(t, ok)
-		AssertPoint(t, point, Pt(-5, -5))
+		geomtest.AssertPoint(t, point, Pt(-5, -5))
 
 		point, ok = b.IntersectionSegment(a)
 		assert.True(t, ok)
-		AssertPoint(t, point, Pt(-5, -5))
+		geomtest.AssertPoint(t, point, Pt(-5, -5))
 	})
 	t.Run("agrees with Intersects on non-parallel fixtures", func(t *testing.T) {
 		for _, a := range segmentFixtures {
@@ -828,7 +823,7 @@ func TestSegment_IntersectionRay(t *testing.T) {
 		point, ok := diagonal.IntersectionRay(RayAlong(Pt(0, 4), Vec(1, -1)))
 
 		assert.True(t, ok)
-		AssertPoint(t, point, Pt(2, 2))
+		geomtest.AssertPoint(t, point, Pt(2, 2))
 	})
 	t.Run("apart", func(t *testing.T) {
 		_, ok := diagonal.IntersectionRay(RayAlong(Pt(3, 1), Vec(1, -1)))
@@ -839,7 +834,7 @@ func TestSegment_IntersectionRay(t *testing.T) {
 		point, ok := diagonal.IntersectionRay(RayAlong(Pt(2, 2), Vec(1, 0)))
 
 		assert.True(t, ok)
-		AssertPoint(t, point, Pt(2, 2))
+		geomtest.AssertPoint(t, point, Pt(2, 2))
 	})
 	t.Run("collinear has no single point", func(t *testing.T) {
 		_, ok := diagonal.IntersectionRay(RayAlong(Pt(9, 9), Vec(-1, -1)))
@@ -851,18 +846,18 @@ func TestSegment_IntersectionRay(t *testing.T) {
 		point, ok := s.IntersectionRay(r)
 
 		assert.True(t, ok)
-		AssertPoint(t, point, s.End)
+		geomtest.AssertPoint(t, point, s.End)
 	})
 	t.Run("int rounds the crossing", func(t *testing.T) {
 		point, ok := Seg(Pt(0, 0), Pt(3, 0)).IntersectionRay(RayAlong(Pt(1, -1), Vec(1, 2)))
 
 		assert.True(t, ok)
-		AssertPoint(t, point, Pt(2, 0))
+		geomtest.AssertPoint(t, point, Pt(2, 0))
 	})
 	t.Run("agrees with Intersects on non-parallel fixtures, on both", func(t *testing.T) {
 		for _, s := range segmentFixtures {
 			for _, r := range rayFixtures {
-				if s.Vector().Float().Cross(r.Direction.Float()) == 0 && s.Vector().hasDirection() && r.Direction.hasDirection() {
+				if s.Vector().Float().Cross(r.Direction.Float()) == 0 && s.Vector() != (Vector[float64]{}) && r.Direction != (Vector[float64]{}) {
 					continue
 				}
 
@@ -916,19 +911,19 @@ func TestSegment_IntersectionPolygon(t *testing.T) {
 	square := Pol(squareVertices())
 
 	t.Run("passing through gives both crossings from Start to End", func(t *testing.T) {
-		AssertVertices(t, Seg(Pt(-1, 1), Pt(5, 1)).IntersectionPolygon(square), []Point[int]{Pt(0, 1), Pt(2, 1)})
-		AssertVertices(t, Seg(Pt(5, 1), Pt(-1, 1)).IntersectionPolygon(square), []Point[int]{Pt(2, 1), Pt(0, 1)})
+		geomtest.AssertVertices(t, Seg(Pt(-1, 1), Pt(5, 1)).IntersectionPolygon(square), []Point[int]{Pt(0, 1), Pt(2, 1)})
+		geomtest.AssertVertices(t, Seg(Pt(5, 1), Pt(-1, 1)).IntersectionPolygon(square), []Point[int]{Pt(2, 1), Pt(0, 1)})
 	})
 	t.Run("ending inside gives one crossing", func(t *testing.T) {
-		AssertVertices(t, Seg(Pt(1, 1), Pt(5, 1)).IntersectionPolygon(square), []Point[int]{Pt(2, 1)})
+		geomtest.AssertVertices(t, Seg(Pt(1, 1), Pt(5, 1)).IntersectionPolygon(square), []Point[int]{Pt(2, 1)})
 	})
 	t.Run("through a vertex counts it once", func(t *testing.T) {
-		AssertVertices(t, Seg(Pt(1, 3), Pt(3, 1)).IntersectionPolygon(square), []Point[int]{Pt(2, 2)})
+		geomtest.AssertVertices(t, Seg(Pt(1, 3), Pt(3, 1)).IntersectionPolygon(square), []Point[int]{Pt(2, 2)})
 	})
 	t.Run("a concave polygon is crossed more than twice", func(t *testing.T) {
 		notched := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(2, 1), Pt(0, 4)})
 
-		AssertVertices(t, Seg(Pt(-1, 3), Pt(5, 3)).IntersectionPolygon(notched), []Point[int]{Pt(0, 3), Pt(1, 3), Pt(3, 3), Pt(4, 3)})
+		geomtest.AssertVertices(t, Seg(Pt(-1, 3), Pt(5, 3)).IntersectionPolygon(notched), []Point[int]{Pt(0, 3), Pt(1, 3), Pt(3, 3), Pt(4, 3)})
 	})
 	t.Run("inside, apart and empty give none", func(t *testing.T) {
 		assert.Nil(t, Seg(Pt(1, 1), Pt(1, 1)).IntersectionPolygon(square))
@@ -938,17 +933,17 @@ func TestSegment_IntersectionPolygon(t *testing.T) {
 	t.Run("allocates the result alone", func(t *testing.T) {
 		through, apart := Seg(Pt(-1, 1), Pt(5, 1)), Seg(Pt(3, -1), Pt(3, 3))
 
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkPoints = through.IntersectionPolygon(square)
 		}), 1)
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkPoints = apart.IntersectionPolygon(square)
 		}), 0)
 	})
 	t.Run("matches the rectangle crossings on the rectangle as a polygon", func(t *testing.T) {
 		for _, r := range rectFixtures {
 			for _, s := range segmentFixtures {
-				AssertVertices(t, s.IntersectionPolygon(r.Polygon()), s.IntersectionRectangle(r), fmt.Sprintf("%s → %s: ", r, s))
+				geomtest.AssertVertices(t, s.IntersectionPolygon(r.Polygon()), s.IntersectionRectangle(r), fmt.Sprintf("%s → %s: ", r, s))
 			}
 		}
 	})
@@ -974,7 +969,7 @@ func TestSegment_IntersectionPolygon(t *testing.T) {
 		s := Seg(Pt[int16](0, 0), Pt[int16](400, 0))
 		square := Pol([]Point[int16]{Pt[int16](150, -10), Pt[int16](200, -10), Pt[int16](200, 10), Pt[int16](150, 10)})
 
-		AssertVertices(t, s.IntersectionPolygon(square), []Point[int16]{Pt[int16](150, 0), Pt[int16](200, 0)})
+		geomtest.AssertVertices(t, s.IntersectionPolygon(square), []Point[int16]{Pt[int16](150, 0), Pt[int16](200, 0)})
 	})
 	t.Run("over the int16 fixtures, spanning past the square root of its range, the points follow from Start", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
@@ -994,23 +989,23 @@ func TestSegment_AppendIntersectionPolygon(t *testing.T) {
 	through := Seg(Pt(-1, 1), Pt(5, 1))
 
 	t.Run("appends after the points in dst, comparing and ordering only its own", func(t *testing.T) {
-		AssertVertices(t, through.AppendIntersectionPolygon([]Point[int]{Pt(2, 1), Pt(9, 9)}, square), []Point[int]{Pt(2, 1), Pt(9, 9), Pt(0, 1), Pt(2, 1)})
+		geomtest.AssertVertices(t, through.AppendIntersectionPolygon([]Point[int]{Pt(2, 1), Pt(9, 9)}, square), []Point[int]{Pt(2, 1), Pt(9, 9), Pt(0, 1), Pt(2, 1)})
 	})
 	t.Run("none leaves dst as it is", func(t *testing.T) {
-		AssertVertices(t, Seg(Pt(3, -1), Pt(3, 3)).AppendIntersectionPolygon([]Point[int]{Pt(9, 9)}, square), []Point[int]{Pt(9, 9)})
+		geomtest.AssertVertices(t, Seg(Pt(3, -1), Pt(3, 3)).AppendIntersectionPolygon([]Point[int]{Pt(9, 9)}, square), []Point[int]{Pt(9, 9)})
 		assert.Nil(t, Seg(Pt(3, -1), Pt(3, 3)).AppendIntersectionPolygon(nil, square))
 	})
 	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
 		buffer := make([]Point[int], 0, 2)
 
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkPoints = through.AppendIntersectionPolygon(buffer[:0], square)
 		}), 0)
 	})
 	t.Run("matches IntersectionPolygon after the points in dst", func(t *testing.T) {
 		for _, s := range segmentFixtures {
 			for _, p := range polygonFixtures() {
-				AssertVertices(t, s.AppendIntersectionPolygon(bufferWith(prefixPoint), p), append([]Point[float64]{prefixPoint}, s.IntersectionPolygon(p)...), fmt.Sprintf("%s → %s: ", s, p))
+				geomtest.AssertVertices(t, s.AppendIntersectionPolygon(bufferWith(prefixPoint), p), append([]Point[float64]{prefixPoint}, s.IntersectionPolygon(p)...), fmt.Sprintf("%s → %s: ", s, p))
 			}
 		}
 	})
@@ -1058,15 +1053,15 @@ func TestSegment_IntersectionRectangle(t *testing.T) {
 	rectangle := Rect(Pt(0, 0), Sz(4, 4))
 
 	t.Run("passing through gives both crossings from Start to End", func(t *testing.T) {
-		AssertVertices(t, Seg(Pt(-5, 0), Pt(5, 0)).IntersectionRectangle(rectangle), []Point[int]{Pt(-2, 0), Pt(2, 0)})
-		AssertVertices(t, Seg(Pt(5, 0), Pt(-5, 0)).IntersectionRectangle(rectangle), []Point[int]{Pt(2, 0), Pt(-2, 0)})
+		geomtest.AssertVertices(t, Seg(Pt(-5, 0), Pt(5, 0)).IntersectionRectangle(rectangle), []Point[int]{Pt(-2, 0), Pt(2, 0)})
+		geomtest.AssertVertices(t, Seg(Pt(5, 0), Pt(-5, 0)).IntersectionRectangle(rectangle), []Point[int]{Pt(2, 0), Pt(-2, 0)})
 	})
 	t.Run("ending inside gives one crossing", func(t *testing.T) {
-		AssertVertices(t, Seg(Pt(0, 0), Pt(5, 0)).IntersectionRectangle(rectangle), []Point[int]{Pt(2, 0)})
+		geomtest.AssertVertices(t, Seg(Pt(0, 0), Pt(5, 0)).IntersectionRectangle(rectangle), []Point[int]{Pt(2, 0)})
 	})
 	t.Run("through a corner counts it once", func(t *testing.T) {
-		AssertVertices(t, Seg(Pt(1, 3), Pt(3, 1)).IntersectionRectangle(rectangle), []Point[int]{Pt(2, 2)})
-		AssertVertices(t, Seg(Pt(-4, -4), Pt(4, 4)).IntersectionRectangle(rectangle), []Point[int]{Pt(-2, -2), Pt(2, 2)})
+		geomtest.AssertVertices(t, Seg(Pt(1, 3), Pt(3, 1)).IntersectionRectangle(rectangle), []Point[int]{Pt(2, 2)})
+		geomtest.AssertVertices(t, Seg(Pt(-4, -4), Pt(4, 4)).IntersectionRectangle(rectangle), []Point[int]{Pt(-2, -2), Pt(2, 2)})
 	})
 	t.Run("an endpoint exactly Delta outside is judged like IntersectsRectangle", func(t *testing.T) {
 		s, r := Seg(Pt(-2.0, 2.000001), Pt(2.0, 68.0000005)), Rect(Pt(0.0, 0.0), Sz(26.0, 4.0))
@@ -1074,8 +1069,8 @@ func TestSegment_IntersectionRectangle(t *testing.T) {
 		assert.Equal(t, len(s.IntersectionRectangle(r)) > 0, s.IntersectsRectangle(r))
 	})
 	t.Run("along an edge crosses the edges at its ends", func(t *testing.T) {
-		AssertVertices(t, Seg(Pt(-5, -2), Pt(5, -2)).IntersectionRectangle(rectangle), []Point[int]{Pt(-2, -2), Pt(2, -2)})
-		AssertVertices(t, Seg(Pt(-1, 2), Pt(1, 2)).IntersectionRectangle(rectangle), nil)
+		geomtest.AssertVertices(t, Seg(Pt(-5, -2), Pt(5, -2)).IntersectionRectangle(rectangle), []Point[int]{Pt(-2, -2), Pt(2, -2)})
+		geomtest.AssertVertices(t, Seg(Pt(-1, 2), Pt(1, 2)).IntersectionRectangle(rectangle), nil)
 	})
 	t.Run("apart and inside give none", func(t *testing.T) {
 		assert.Nil(t, Seg(Pt(3, -5), Pt(3, 5)).IntersectionRectangle(rectangle))
@@ -1084,18 +1079,18 @@ func TestSegment_IntersectionRectangle(t *testing.T) {
 	t.Run("allocates the result alone", func(t *testing.T) {
 		through, apart := Seg(Pt(-5, 1), Pt(5, 1)), Seg(Pt(3, -5), Pt(3, 5))
 
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkPoints = through.IntersectionRectangle(rectangle)
 		}), 1)
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkPoints = through.IntersectionRectangle(rectangle.Rotate(Pi / 5))
 		}), 1)
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkPoints = apart.IntersectionRectangle(rectangle)
 		}), 0)
 	})
 	t.Run("float keeps the crossings", func(t *testing.T) {
-		AssertVertices(t, Seg(Pt(-5.0, 1.0), Pt(5.0, 1.0)).IntersectionRectangle(Rect(Pt(0.0, 0.0), Sz(3.0, 3.0))), []Point[float64]{Pt(-1.5, 1.0), Pt(1.5, 1.0)})
+		geomtest.AssertVertices(t, Seg(Pt(-5.0, 1.0), Pt(5.0, 1.0)).IntersectionRectangle(Rect(Pt(0.0, 0.0), Sz(3.0, 3.0))), []Point[float64]{Pt(-1.5, 1.0), Pt(1.5, 1.0)})
 	})
 	t.Run("every point lies on the segment and the boundary, and exists where IntersectsRectangle holds", func(t *testing.T) {
 		for _, s := range segmentFixtures {
@@ -1133,23 +1128,23 @@ func TestSegment_AppendIntersectionRectangle(t *testing.T) {
 	through := Seg(Pt(-5, 0), Pt(5, 0))
 
 	t.Run("appends after the points in dst, comparing and ordering only its own", func(t *testing.T) {
-		AssertVertices(t, through.AppendIntersectionRectangle([]Point[int]{Pt(2, 0), Pt(9, 9)}, rectangle), []Point[int]{Pt(2, 0), Pt(9, 9), Pt(-2, 0), Pt(2, 0)})
+		geomtest.AssertVertices(t, through.AppendIntersectionRectangle([]Point[int]{Pt(2, 0), Pt(9, 9)}, rectangle), []Point[int]{Pt(2, 0), Pt(9, 9), Pt(-2, 0), Pt(2, 0)})
 	})
 	t.Run("none leaves dst as it is", func(t *testing.T) {
-		AssertVertices(t, Seg(Pt(5, -5), Pt(5, 5)).AppendIntersectionRectangle([]Point[int]{Pt(9, 9)}, rectangle), []Point[int]{Pt(9, 9)})
+		geomtest.AssertVertices(t, Seg(Pt(5, -5), Pt(5, 5)).AppendIntersectionRectangle([]Point[int]{Pt(9, 9)}, rectangle), []Point[int]{Pt(9, 9)})
 		assert.Nil(t, Seg(Pt(5, -5), Pt(5, 5)).AppendIntersectionRectangle(nil, rectangle))
 	})
 	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
 		buffer := make([]Point[int], 0, 2)
 
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkPoints = through.AppendIntersectionRectangle(buffer[:0], rectangle)
 		}), 0)
 	})
 	t.Run("matches IntersectionRectangle after the points in dst", func(t *testing.T) {
 		for _, s := range segmentFixtures {
 			for _, rect := range rectFixtures {
-				AssertVertices(t, s.AppendIntersectionRectangle(bufferWith(prefixPoint), rect), append([]Point[float64]{prefixPoint}, s.IntersectionRectangle(rect)...), fmt.Sprintf("%s → %s: ", s, rect))
+				geomtest.AssertVertices(t, s.AppendIntersectionRectangle(bufferWith(prefixPoint), rect), append([]Point[float64]{prefixPoint}, s.IntersectionRectangle(rect)...), fmt.Sprintf("%s → %s: ", s, rect))
 			}
 		}
 	})
@@ -1219,11 +1214,11 @@ func TestSegment_IntersectionRegularPolygon(t *testing.T) {
 	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0, 0)
 
 	t.Run("passing through gives both crossings from Start to End", func(t *testing.T) {
-		AssertVertices(t, Seg(Pt(-3, 0), Pt(3, 0)).IntersectionRegularPolygon(diamond), []Point[int]{Pt(-2, 0), Pt(2, 0)})
-		AssertVertices(t, Seg(Pt(3, 0), Pt(-3, 0)).IntersectionRegularPolygon(diamond), []Point[int]{Pt(2, 0), Pt(-2, 0)})
+		geomtest.AssertVertices(t, Seg(Pt(-3, 0), Pt(3, 0)).IntersectionRegularPolygon(diamond), []Point[int]{Pt(-2, 0), Pt(2, 0)})
+		geomtest.AssertVertices(t, Seg(Pt(3, 0), Pt(-3, 0)).IntersectionRegularPolygon(diamond), []Point[int]{Pt(2, 0), Pt(-2, 0)})
 	})
 	t.Run("a vertex hit by two edges is counted once", func(t *testing.T) {
-		AssertVertices(t, Seg(Pt(2, -2), Pt(2, 2)).IntersectionRegularPolygon(diamond), []Point[int]{Pt(2, 0)})
+		geomtest.AssertVertices(t, Seg(Pt(2, -2), Pt(2, 2)).IntersectionRegularPolygon(diamond), []Point[int]{Pt(2, 0)})
 	})
 	t.Run("inside, apart and empty give none", func(t *testing.T) {
 		assert.Nil(t, Seg(Pt(0, 0), Pt(1, 0)).IntersectionRegularPolygon(diamond))
@@ -1233,17 +1228,17 @@ func TestSegment_IntersectionRegularPolygon(t *testing.T) {
 	t.Run("allocates the result alone", func(t *testing.T) {
 		through, apart := Seg(Pt(-3, 0), Pt(3, 0)), Seg(Pt(5, 0), Pt(6, 0))
 
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkPoints = through.IntersectionRegularPolygon(diamond)
 		}), 1)
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkPoints = apart.IntersectionRegularPolygon(diamond)
 		}), 0)
 	})
 	t.Run("matches the polygon of the vertices", func(t *testing.T) {
 		for _, s := range segmentFixtures {
 			for _, rp := range regularPolygonFixtures {
-				AssertVertices(t, s.IntersectionRegularPolygon(rp), s.IntersectionPolygon(rp.Polygon()), fmt.Sprintf("%s → %s: ", s, rp))
+				geomtest.AssertVertices(t, s.IntersectionRegularPolygon(rp), s.IntersectionPolygon(rp.Polygon()), fmt.Sprintf("%s → %s: ", s, rp))
 			}
 		}
 	})
@@ -1265,23 +1260,23 @@ func TestSegment_AppendIntersectionRegularPolygon(t *testing.T) {
 	through := Seg(Pt(-3, 0), Pt(3, 0))
 
 	t.Run("appends after the points in dst, comparing and ordering only its own", func(t *testing.T) {
-		AssertVertices(t, through.AppendIntersectionRegularPolygon([]Point[int]{Pt(2, 0), Pt(9, 9)}, diamond), []Point[int]{Pt(2, 0), Pt(9, 9), Pt(-2, 0), Pt(2, 0)})
+		geomtest.AssertVertices(t, through.AppendIntersectionRegularPolygon([]Point[int]{Pt(2, 0), Pt(9, 9)}, diamond), []Point[int]{Pt(2, 0), Pt(9, 9), Pt(-2, 0), Pt(2, 0)})
 	})
 	t.Run("none leaves dst as it is", func(t *testing.T) {
-		AssertVertices(t, Seg(Pt(5, 0), Pt(6, 0)).AppendIntersectionRegularPolygon([]Point[int]{Pt(9, 9)}, diamond), []Point[int]{Pt(9, 9)})
+		geomtest.AssertVertices(t, Seg(Pt(5, 0), Pt(6, 0)).AppendIntersectionRegularPolygon([]Point[int]{Pt(9, 9)}, diamond), []Point[int]{Pt(9, 9)})
 		assert.Nil(t, Seg(Pt(5, 0), Pt(6, 0)).AppendIntersectionRegularPolygon(nil, diamond))
 	})
 	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
 		buffer := make([]Point[int], 0, 2)
 
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkPoints = through.AppendIntersectionRegularPolygon(buffer[:0], diamond)
 		}), 0)
 	})
 	t.Run("matches IntersectionRegularPolygon after the points in dst", func(t *testing.T) {
 		for _, s := range segmentFixtures {
 			for _, rp := range regularPolygonFixtures {
-				AssertVertices(t, s.AppendIntersectionRegularPolygon(bufferWith(prefixPoint), rp), append([]Point[float64]{prefixPoint}, s.IntersectionRegularPolygon(rp)...), fmt.Sprintf("%s → %s: ", s, rp))
+				geomtest.AssertVertices(t, s.AppendIntersectionRegularPolygon(bufferWith(prefixPoint), rp), append([]Point[float64]{prefixPoint}, s.IntersectionRegularPolygon(rp)...), fmt.Sprintf("%s → %s: ", s, rp))
 			}
 		}
 	})
@@ -1319,11 +1314,11 @@ func TestSegment_IntersectionBox(t *testing.T) {
 	box := BoxFromMinMax(Pt(-2, -2), Pt(2, 2))
 
 	t.Run("passing through gives both crossings from Start to End", func(t *testing.T) {
-		AssertVertices(t, Seg(Pt(-5, 0), Pt(5, 0)).IntersectionBox(box), []Point[int]{Pt(-2, 0), Pt(2, 0)})
-		AssertVertices(t, Seg(Pt(5, 0), Pt(-5, 0)).IntersectionBox(box), []Point[int]{Pt(2, 0), Pt(-2, 0)})
+		geomtest.AssertVertices(t, Seg(Pt(-5, 0), Pt(5, 0)).IntersectionBox(box), []Point[int]{Pt(-2, 0), Pt(2, 0)})
+		geomtest.AssertVertices(t, Seg(Pt(5, 0), Pt(-5, 0)).IntersectionBox(box), []Point[int]{Pt(2, 0), Pt(-2, 0)})
 	})
 	t.Run("through a corner counts it once", func(t *testing.T) {
-		AssertVertices(t, Seg(Pt(1, 3), Pt(3, 1)).IntersectionBox(box), []Point[int]{Pt(2, 2)})
+		geomtest.AssertVertices(t, Seg(Pt(1, 3), Pt(3, 1)).IntersectionBox(box), []Point[int]{Pt(2, 2)})
 	})
 	t.Run("apart and inside give none", func(t *testing.T) {
 		assert.Nil(t, Seg(Pt(3, -5), Pt(3, 5)).IntersectionBox(box))
@@ -1353,7 +1348,7 @@ func TestSegment_AppendIntersectionBox(t *testing.T) {
 	t.Run("matches AppendIntersectionRectangle on the box Rectangle", func(t *testing.T) {
 		for _, s := range segmentFixtures {
 			for _, b := range boxFixtures {
-				AssertVertices(t, s.AppendIntersectionBox(bufferWith(prefixPoint), b), s.AppendIntersectionRectangle(bufferWith(prefixPoint), b.Rectangle()), fmt.Sprintf("%s → %s: ", s, b))
+				geomtest.AssertVertices(t, s.AppendIntersectionBox(bufferWith(prefixPoint), b), s.AppendIntersectionRectangle(bufferWith(prefixPoint), b.Rectangle()), fmt.Sprintf("%s → %s: ", s, b))
 			}
 		}
 	})
@@ -1363,32 +1358,32 @@ func TestSegment_ClipCircle(t *testing.T) {
 	circle := Circ(Pt(0.0, 0.0), 1.0)
 
 	t.Run("passing through gives the chord from Start to End", func(t *testing.T) {
-		assertSegments(t, partsOf(Seg(Pt(-2.0, 0.0), Pt(2.0, 0.0)).ClipCircle(circle)), []Segment[float64]{Seg(Pt(-1.0, 0.0), Pt(1.0, 0.0))})
-		assertSegments(t, partsOf(Seg(Pt(2.0, 0.0), Pt(-2.0, 0.0)).ClipCircle(circle)), []Segment[float64]{Seg(Pt(1.0, 0.0), Pt(-1.0, 0.0))})
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(-2.0, 0.0), Pt(2.0, 0.0)).ClipCircle(circle)), []Segment[float64]{Seg(Pt(-1.0, 0.0), Pt(1.0, 0.0))})
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(2.0, 0.0), Pt(-2.0, 0.0)).ClipCircle(circle)), []Segment[float64]{Seg(Pt(1.0, 0.0), Pt(-1.0, 0.0))})
 	})
 	t.Run("an endpoint inside is kept", func(t *testing.T) {
-		assertSegments(t, partsOf(Seg(Pt(0.5, 0.0), Pt(5.0, 0.0)).ClipCircle(circle)), []Segment[float64]{Seg(Pt(0.5, 0.0), Pt(1.0, 0.0))})
-		assertSegments(t, partsOf(Seg(Pt(-2.0, 0.0), Pt(0.0, 0.0)).ClipCircle(circle)), []Segment[float64]{Seg(Pt(-1.0, 0.0), Pt(0.0, 0.0))})
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(0.5, 0.0), Pt(5.0, 0.0)).ClipCircle(circle)), []Segment[float64]{Seg(Pt(0.5, 0.0), Pt(1.0, 0.0))})
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(-2.0, 0.0), Pt(0.0, 0.0)).ClipCircle(circle)), []Segment[float64]{Seg(Pt(-1.0, 0.0), Pt(0.0, 0.0))})
 	})
 	t.Run("inside is the segment itself", func(t *testing.T) {
-		assertSegments(t, partsOf(Seg(Pt(-0.5, 0.0), Pt(0.5, 0.5)).ClipCircle(circle)), []Segment[float64]{Seg(Pt(-0.5, 0.0), Pt(0.5, 0.5))})
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(-0.5, 0.0), Pt(0.5, 0.5)).ClipCircle(circle)), []Segment[float64]{Seg(Pt(-0.5, 0.0), Pt(0.5, 0.5))})
 	})
 	t.Run("a tangent is the point of contact", func(t *testing.T) {
-		assertSegments(t, partsOf(Seg(Pt(-2.0, 1.0), Pt(2.0, 1.0)).ClipCircle(circle)), []Segment[float64]{Seg(Pt(0.0, 1.0), Pt(0.0, 1.0))})
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(-2.0, 1.0), Pt(2.0, 1.0)).ClipCircle(circle)), []Segment[float64]{Seg(Pt(0.0, 1.0), Pt(0.0, 1.0))})
 	})
 	t.Run("an endpoint touching from outside is that point", func(t *testing.T) {
-		assertSegments(t, partsOf(Seg(Pt(1.0, 0.0), Pt(2.0, 0.0)).ClipCircle(circle)), []Segment[float64]{Seg(Pt(1.0, 0.0), Pt(1.0, 0.0))})
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(1.0, 0.0), Pt(2.0, 0.0)).ClipCircle(circle)), []Segment[float64]{Seg(Pt(1.0, 0.0), Pt(1.0, 0.0))})
 	})
 	t.Run("apart gives none", func(t *testing.T) {
 		assert.Nil(t, partsOf(Seg(Pt(-2.0, 2.0), Pt(2.0, 2.0)).ClipCircle(circle)))
 	})
 	t.Run("int rounds the crossings", func(t *testing.T) {
-		assertSegments(t, partsOf(Seg(Pt(-10, 1), Pt(10, 1)).ClipCircle(Circ(Pt(0, 0), 5))), []Segment[int]{Seg(Pt(-5, 1), Pt(5, 1))})
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(-10, 1), Pt(10, 1)).ClipCircle(Circ(Pt(0, 0), 5))), []Segment[int]{Seg(Pt(-5, 1), Pt(5, 1))})
 	})
 	t.Run("allocates nothing", func(t *testing.T) {
 		unit, through := Circ(Pt(0, 0), 5), Seg(Pt(-10, 0), Pt(10, 0))
 
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			_, sinkBool = through.ClipCircle(unit)
 		}), 0)
 	})
@@ -1406,36 +1401,36 @@ func TestSegment_ClipPolygon(t *testing.T) {
 	notched := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(2, 1), Pt(0, 4)})
 
 	t.Run("passing through gives the part between the crossings", func(t *testing.T) {
-		assertSegments(t, Seg(Pt(-1, 1), Pt(5, 1)).ClipPolygon(square), []Segment[int]{Seg(Pt(0, 1), Pt(2, 1))})
-		assertSegments(t, Seg(Pt(5, 1), Pt(-1, 1)).ClipPolygon(square), []Segment[int]{Seg(Pt(2, 1), Pt(0, 1))})
+		geomtest.AssertSegments(t, Seg(Pt(-1, 1), Pt(5, 1)).ClipPolygon(square), []Segment[int]{Seg(Pt(0, 1), Pt(2, 1))})
+		geomtest.AssertSegments(t, Seg(Pt(5, 1), Pt(-1, 1)).ClipPolygon(square), []Segment[int]{Seg(Pt(2, 1), Pt(0, 1))})
 	})
 	t.Run("an endpoint inside is kept", func(t *testing.T) {
-		assertSegments(t, Seg(Pt(1, 1), Pt(5, 1)).ClipPolygon(square), []Segment[int]{Seg(Pt(1, 1), Pt(2, 1))})
+		geomtest.AssertSegments(t, Seg(Pt(1, 1), Pt(5, 1)).ClipPolygon(square), []Segment[int]{Seg(Pt(1, 1), Pt(2, 1))})
 	})
 	t.Run("inside is the segment itself", func(t *testing.T) {
-		assertSegments(t, Seg(Pt(1, 1), Pt(1, 2)).ClipPolygon(square), []Segment[int]{Seg(Pt(1, 1), Pt(1, 2))})
-		assertSegments(t, Seg(Pt(1, 1), Pt(1, 1)).ClipPolygon(square), []Segment[int]{Seg(Pt(1, 1), Pt(1, 1))})
+		geomtest.AssertSegments(t, Seg(Pt(1, 1), Pt(1, 2)).ClipPolygon(square), []Segment[int]{Seg(Pt(1, 1), Pt(1, 2))})
+		geomtest.AssertSegments(t, Seg(Pt(1, 1), Pt(1, 1)).ClipPolygon(square), []Segment[int]{Seg(Pt(1, 1), Pt(1, 1))})
 	})
 	t.Run("a concave polygon cuts the segment into parts from Start to End", func(t *testing.T) {
-		assertSegments(t, Seg(Pt(-1, 3), Pt(5, 3)).ClipPolygon(notched), []Segment[int]{Seg(Pt(0, 3), Pt(1, 3)), Seg(Pt(3, 3), Pt(4, 3))})
-		assertSegments(t, Seg(Pt(5, 3), Pt(-1, 3)).ClipPolygon(notched), []Segment[int]{Seg(Pt(4, 3), Pt(3, 3)), Seg(Pt(1, 3), Pt(0, 3))})
+		geomtest.AssertSegments(t, Seg(Pt(-1, 3), Pt(5, 3)).ClipPolygon(notched), []Segment[int]{Seg(Pt(0, 3), Pt(1, 3)), Seg(Pt(3, 3), Pt(4, 3))})
+		geomtest.AssertSegments(t, Seg(Pt(5, 3), Pt(-1, 3)).ClipPolygon(notched), []Segment[int]{Seg(Pt(4, 3), Pt(3, 3)), Seg(Pt(1, 3), Pt(0, 3))})
 	})
 	t.Run("a gap of one unit between two crossings is judged where it is", func(t *testing.T) {
 		u := Pol([]Point[int]{Pt(0, 0), Pt(5, 0), Pt(5, 4), Pt(3, 4), Pt(3, 1), Pt(2, 1), Pt(2, 4), Pt(0, 4)})
 
-		assertSegments(t, Seg(Pt(-1, 2), Pt(6, 2)).ClipPolygon(u), []Segment[int]{Seg(Pt(0, 2), Pt(2, 2)), Seg(Pt(3, 2), Pt(5, 2))})
+		geomtest.AssertSegments(t, Seg(Pt(-1, 2), Pt(6, 2)).ClipPolygon(u), []Segment[int]{Seg(Pt(0, 2), Pt(2, 2)), Seg(Pt(3, 2), Pt(5, 2))})
 	})
 	t.Run("reflex vertices with the outside between them bound two parts", func(t *testing.T) {
-		assertSegments(t, Seg(Pt(-1, 4), Pt(9, 4)).ClipPolygon(Pol(notchedVertices())), []Segment[int]{Seg(Pt(0, 4), Pt(2, 4)), Seg(Pt(6, 4), Pt(8, 4))})
+		geomtest.AssertSegments(t, Seg(Pt(-1, 4), Pt(9, 4)).ClipPolygon(Pol(notchedVertices())), []Segment[int]{Seg(Pt(0, 4), Pt(2, 4)), Seg(Pt(6, 4), Pt(8, 4))})
 	})
 	t.Run("a vertex touched from inside joins the parts either side", func(t *testing.T) {
-		assertSegments(t, Seg(Pt(-1, 1), Pt(5, 1)).ClipPolygon(notched), []Segment[int]{Seg(Pt(0, 1), Pt(4, 1))})
+		geomtest.AssertSegments(t, Seg(Pt(-1, 1), Pt(5, 1)).ClipPolygon(notched), []Segment[int]{Seg(Pt(0, 1), Pt(4, 1))})
 	})
 	t.Run("a vertex touched from outside is a part of zero length", func(t *testing.T) {
-		assertSegments(t, Seg(Pt(1, 3), Pt(3, 1)).ClipPolygon(square), []Segment[int]{Seg(Pt(2, 2), Pt(2, 2))})
+		geomtest.AssertSegments(t, Seg(Pt(1, 3), Pt(3, 1)).ClipPolygon(square), []Segment[int]{Seg(Pt(2, 2), Pt(2, 2))})
 	})
 	t.Run("along an edge gives the part of the edge it covers", func(t *testing.T) {
-		assertSegments(t, Seg(Pt(-1, 0), Pt(3, 0)).ClipPolygon(square), []Segment[int]{Seg(Pt(0, 0), Pt(2, 0))})
+		geomtest.AssertSegments(t, Seg(Pt(-1, 0), Pt(3, 0)).ClipPolygon(square), []Segment[int]{Seg(Pt(0, 0), Pt(2, 0))})
 	})
 	t.Run("apart and empty give none", func(t *testing.T) {
 		assert.Nil(t, Seg(Pt(3, -1), Pt(3, 3)).ClipPolygon(square))
@@ -1444,17 +1439,17 @@ func TestSegment_ClipPolygon(t *testing.T) {
 	t.Run("allocates the result alone", func(t *testing.T) {
 		through, apart := Seg(Pt(-1, 1), Pt(5, 1)), Seg(Pt(3, -1), Pt(3, 3))
 
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkSegments = through.ClipPolygon(square)
 		}), 1)
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkSegments = apart.ClipPolygon(square)
 		}), 0)
 	})
 	t.Run("matches ClipRectangle on the rectangle as a polygon", func(t *testing.T) {
 		for _, r := range rectFixtures {
 			for _, s := range segmentFixtures {
-				assertSegments(t, s.ClipPolygon(r.Polygon()), partsOf(s.ClipRectangle(r)), fmt.Sprintf("%s → %s: ", s, r))
+				geomtest.AssertSegments(t, s.ClipPolygon(r.Polygon()), partsOf(s.ClipRectangle(r)), fmt.Sprintf("%s → %s: ", s, r))
 			}
 		}
 	})
@@ -1469,7 +1464,7 @@ func TestSegment_ClipPolygon(t *testing.T) {
 		s := Seg(Pt[int16](0, 0), Pt[int16](400, 0))
 		square := Pol([]Point[int16]{Pt[int16](150, -10), Pt[int16](200, -10), Pt[int16](200, 10), Pt[int16](150, 10)})
 
-		assertSegments(t, s.ClipPolygon(square), []Segment[int16]{Seg(Pt[int16](150, 0), Pt[int16](200, 0))})
+		geomtest.AssertSegments(t, s.ClipPolygon(square), []Segment[int16]{Seg(Pt[int16](150, 0), Pt[int16](200, 0))})
 	})
 	t.Run("over the int16 fixtures, spanning past the square root of its range, the parts follow from Start", func(t *testing.T) {
 		for _, p := range outlineFixtures() {
@@ -1490,25 +1485,25 @@ func TestSegment_AppendClipPolygon(t *testing.T) {
 	prefix := Seg(Pt(-7.5, 3.25), Pt(1.0, 1.0))
 
 	t.Run("appends the parts after the segments in dst", func(t *testing.T) {
-		assertSegments(t, through.AppendClipPolygon([]Segment[int]{Seg(Pt(9, 9), Pt(9, 9))}, square), []Segment[int]{Seg(Pt(9, 9), Pt(9, 9)), Seg(Pt(0, 1), Pt(2, 1))})
+		geomtest.AssertSegments(t, through.AppendClipPolygon([]Segment[int]{Seg(Pt(9, 9), Pt(9, 9))}, square), []Segment[int]{Seg(Pt(9, 9), Pt(9, 9)), Seg(Pt(0, 1), Pt(2, 1))})
 	})
 	t.Run("none leaves dst as it is", func(t *testing.T) {
 		apart := Seg(Pt(3, -1), Pt(3, 3))
 
-		assertSegments(t, apart.AppendClipPolygon([]Segment[int]{Seg(Pt(9, 9), Pt(9, 9))}, square), []Segment[int]{Seg(Pt(9, 9), Pt(9, 9))})
+		geomtest.AssertSegments(t, apart.AppendClipPolygon([]Segment[int]{Seg(Pt(9, 9), Pt(9, 9))}, square), []Segment[int]{Seg(Pt(9, 9), Pt(9, 9))})
 		assert.Nil(t, apart.AppendClipPolygon(nil, square))
 	})
 	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
 		buffer := make([]Segment[int], 0, 1)
 
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkSegments = through.AppendClipPolygon(buffer[:0], square)
 		}), 0)
 	})
 	t.Run("matches ClipPolygon after the segments in dst", func(t *testing.T) {
 		for _, s := range segmentFixtures {
 			for _, p := range outlineFixtures() {
-				assertSegments(t, s.AppendClipPolygon(bufferWith(prefix), p), append([]Segment[float64]{prefix}, s.ClipPolygon(p)...), fmt.Sprintf("%s → %s: ", s, p))
+				geomtest.AssertSegments(t, s.AppendClipPolygon(bufferWith(prefix), p), append([]Segment[float64]{prefix}, s.ClipPolygon(p)...), fmt.Sprintf("%s → %s: ", s, p))
 			}
 		}
 	})
@@ -1518,21 +1513,21 @@ func TestSegment_ClipRectangle(t *testing.T) {
 	rectangle := Rect(Pt(0, 0), Sz(4, 4))
 
 	t.Run("passing through gives the part between the crossings", func(t *testing.T) {
-		assertSegments(t, partsOf(Seg(Pt(-5, 0), Pt(5, 0)).ClipRectangle(rectangle)), []Segment[int]{Seg(Pt(-2, 0), Pt(2, 0))})
-		assertSegments(t, partsOf(Seg(Pt(5, 0), Pt(-5, 0)).ClipRectangle(rectangle)), []Segment[int]{Seg(Pt(2, 0), Pt(-2, 0))})
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(-5, 0), Pt(5, 0)).ClipRectangle(rectangle)), []Segment[int]{Seg(Pt(-2, 0), Pt(2, 0))})
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(5, 0), Pt(-5, 0)).ClipRectangle(rectangle)), []Segment[int]{Seg(Pt(2, 0), Pt(-2, 0))})
 	})
 	t.Run("an endpoint inside is kept", func(t *testing.T) {
-		assertSegments(t, partsOf(Seg(Pt(0, 0), Pt(5, 0)).ClipRectangle(rectangle)), []Segment[int]{Seg(Pt(0, 0), Pt(2, 0))})
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(0, 0), Pt(5, 0)).ClipRectangle(rectangle)), []Segment[int]{Seg(Pt(0, 0), Pt(2, 0))})
 	})
 	t.Run("inside is the segment itself", func(t *testing.T) {
-		assertSegments(t, partsOf(Seg(Pt(-1, -1), Pt(1, 1)).ClipRectangle(rectangle)), []Segment[int]{Seg(Pt(-1, -1), Pt(1, 1))})
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(-1, -1), Pt(1, 1)).ClipRectangle(rectangle)), []Segment[int]{Seg(Pt(-1, -1), Pt(1, 1))})
 	})
 	t.Run("a corner touched from outside is a part of zero length", func(t *testing.T) {
-		assertSegments(t, partsOf(Seg(Pt(1, 3), Pt(3, 1)).ClipRectangle(rectangle)), []Segment[int]{Seg(Pt(2, 2), Pt(2, 2))})
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(1, 3), Pt(3, 1)).ClipRectangle(rectangle)), []Segment[int]{Seg(Pt(2, 2), Pt(2, 2))})
 	})
 	t.Run("along an edge gives the part of the edge it covers", func(t *testing.T) {
-		assertSegments(t, partsOf(Seg(Pt(-5, -2), Pt(5, -2)).ClipRectangle(rectangle)), []Segment[int]{Seg(Pt(-2, -2), Pt(2, -2))})
-		assertSegments(t, partsOf(Seg(Pt(0, -2), Pt(5, -2)).ClipRectangle(rectangle)), []Segment[int]{Seg(Pt(0, -2), Pt(2, -2))})
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(-5, -2), Pt(5, -2)).ClipRectangle(rectangle)), []Segment[int]{Seg(Pt(-2, -2), Pt(2, -2))})
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(0, -2), Pt(5, -2)).ClipRectangle(rectangle)), []Segment[int]{Seg(Pt(0, -2), Pt(2, -2))})
 	})
 	t.Run("apart gives none", func(t *testing.T) {
 		assert.Nil(t, partsOf(Seg(Pt(3, -5), Pt(3, 5)).ClipRectangle(rectangle)))
@@ -1541,15 +1536,15 @@ func TestSegment_ClipRectangle(t *testing.T) {
 	t.Run("a rotated rectangle clips on its turned edges", func(t *testing.T) {
 		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
 
-		assertSegments(t, partsOf(Seg(Pt(-3.0, 0.0), Pt(3.0, 0.0)).ClipRectangle(diamond)), []Segment[float64]{Seg(Pt(-Sqrt2, 0.0), Pt(Sqrt2, 0.0))})
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(-3.0, 0.0), Pt(3.0, 0.0)).ClipRectangle(diamond)), []Segment[float64]{Seg(Pt(-Sqrt2, 0.0), Pt(Sqrt2, 0.0))})
 	})
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(-5, 1), Pt(5, 1))
 
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			_, sinkBool = through.ClipRectangle(rectangle)
 		}), 0)
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			_, sinkBool = through.ClipRectangle(rectangle.Rotate(Pi / 5))
 		}), 0)
 	})
@@ -1564,7 +1559,7 @@ func TestSegment_ClipRectangle(t *testing.T) {
 		s := Seg(Pt[int16](0, 0), Pt[int16](400, 0))
 		rectangle := RectangleFromMinMax(Pt[int16](150, -10), Pt[int16](200, 10))
 
-		assertSegments(t, partsOf(s.ClipRectangle(rectangle)), []Segment[int16]{Seg(Pt[int16](150, 0), Pt[int16](200, 0))})
+		geomtest.AssertSegments(t, partsOf(s.ClipRectangle(rectangle)), []Segment[int16]{Seg(Pt[int16](150, 0), Pt[int16](200, 0))})
 	})
 	t.Run("over the int16 fixtures, spanning past the square root of its range, the parts follow from Start", func(t *testing.T) {
 		for _, r := range rectFixtures {
@@ -1583,16 +1578,16 @@ func TestSegment_ClipRegularPolygon(t *testing.T) {
 	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0, 0)
 
 	t.Run("passing through gives the part between the crossings", func(t *testing.T) {
-		assertSegments(t, partsOf(Seg(Pt(-3, 0), Pt(3, 0)).ClipRegularPolygon(diamond)), []Segment[int]{Seg(Pt(-2, 0), Pt(2, 0))})
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(-3, 0), Pt(3, 0)).ClipRegularPolygon(diamond)), []Segment[int]{Seg(Pt(-2, 0), Pt(2, 0))})
 	})
 	t.Run("an endpoint inside is kept", func(t *testing.T) {
-		assertSegments(t, partsOf(Seg(Pt(0, 0), Pt(5, 0)).ClipRegularPolygon(diamond)), []Segment[int]{Seg(Pt(0, 0), Pt(2, 0))})
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(0, 0), Pt(5, 0)).ClipRegularPolygon(diamond)), []Segment[int]{Seg(Pt(0, 0), Pt(2, 0))})
 	})
 	t.Run("inside is the segment itself", func(t *testing.T) {
-		assertSegments(t, partsOf(Seg(Pt(0, 0), Pt(1, 0)).ClipRegularPolygon(diamond)), []Segment[int]{Seg(Pt(0, 0), Pt(1, 0))})
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(0, 0), Pt(1, 0)).ClipRegularPolygon(diamond)), []Segment[int]{Seg(Pt(0, 0), Pt(1, 0))})
 	})
 	t.Run("a vertex touched from outside is a part of zero length", func(t *testing.T) {
-		assertSegments(t, partsOf(Seg(Pt(2, -2), Pt(2, 2)).ClipRegularPolygon(diamond)), []Segment[int]{Seg(Pt(2, 0), Pt(2, 0))})
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(2, -2), Pt(2, 2)).ClipRegularPolygon(diamond)), []Segment[int]{Seg(Pt(2, 0), Pt(2, 0))})
 	})
 	t.Run("apart and empty give none", func(t *testing.T) {
 		assert.Nil(t, partsOf(Seg(Pt(5, 0), Pt(6, 0)).ClipRegularPolygon(diamond)))
@@ -1601,14 +1596,14 @@ func TestSegment_ClipRegularPolygon(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(-3, 0), Pt(3, 0))
 
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			_, sinkBool = through.ClipRegularPolygon(diamond)
 		}), 0)
 	})
 	t.Run("matches the polygon of the vertices", func(t *testing.T) {
 		for _, s := range segmentFixtures {
 			for _, rp := range regularPolygonFixtures {
-				assertSegments(t, partsOf(s.ClipRegularPolygon(rp)), s.ClipPolygon(rp.Polygon()), fmt.Sprintf("%s → %s: ", s, rp))
+				geomtest.AssertSegments(t, partsOf(s.ClipRegularPolygon(rp)), s.ClipPolygon(rp.Polygon()), fmt.Sprintf("%s → %s: ", s, rp))
 			}
 		}
 	})
@@ -1636,7 +1631,7 @@ func TestSegment_ClipBox(t *testing.T) {
 	box := BoxFromMinMax(Pt(-2, -2), Pt(2, 2))
 
 	t.Run("passing through gives the part between the crossings", func(t *testing.T) {
-		assertSegments(t, partsOf(Seg(Pt(-5, 0), Pt(5, 0)).ClipBox(box)), []Segment[int]{Seg(Pt(-2, 0), Pt(2, 0))})
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(-5, 0), Pt(5, 0)).ClipBox(box)), []Segment[int]{Seg(Pt(-2, 0), Pt(2, 0))})
 	})
 	t.Run("apart gives none", func(t *testing.T) {
 		assert.Nil(t, partsOf(Seg(Pt(3, -5), Pt(3, 5)).ClipBox(box)))
@@ -1644,7 +1639,7 @@ func TestSegment_ClipBox(t *testing.T) {
 	t.Run("matches ClipRectangle on the box's Rectangle", func(t *testing.T) {
 		for _, b := range boxFixtures {
 			for _, s := range segmentFixtures {
-				assertSegments(t, partsOf(s.ClipBox(b)), partsOf(s.ClipRectangle(b.Rectangle())), fmt.Sprintf("%s → %s: ", s, b))
+				geomtest.AssertSegments(t, partsOf(s.ClipBox(b)), partsOf(s.ClipRectangle(b.Rectangle())), fmt.Sprintf("%s → %s: ", s, b))
 			}
 		}
 	})
@@ -1690,29 +1685,29 @@ func TestSegment_Cast(t *testing.T) {
 	s := Seg(Pt(1.5, -2.5), Pt(3.5, 4.5))
 
 	t.Run("matches Int and Float", func(t *testing.T) {
-		AssertSegment(t, s.Cast[int](), s.Int())
-		AssertSegment(t, s.Cast[float64](), s.Float())
+		geomtest.AssertSegment(t, s.Cast[int](), s.Int())
+		geomtest.AssertSegment(t, s.Cast[float64](), s.Float())
 	})
 	t.Run("a type the other conversions cannot name", func(t *testing.T) {
-		AssertSegment(t, s.Cast[int8](), Seg(Pt[int8](2, -3), Pt[int8](4, 5)))
+		geomtest.AssertSegment(t, s.Cast[int8](), Seg(Pt[int8](2, -3), Pt[int8](4, 5)))
 	})
 }
 
 func TestSegment_Int(t *testing.T) {
 	t.Run("int is a no-op", func(t *testing.T) {
-		AssertSegment(t, Seg(Pt(1, 2), Pt(3, 5)).Int(), Seg(Pt(1, 2), Pt(3, 5)))
+		geomtest.AssertSegment(t, Seg(Pt(1, 2), Pt(3, 5)).Int(), Seg(Pt(1, 2), Pt(3, 5)))
 	})
 	t.Run("float rounds", func(t *testing.T) {
-		AssertSegment(t, Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)).Int(), Seg(Pt(1, 0), Pt(1, 3)))
+		geomtest.AssertSegment(t, Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)).Int(), Seg(Pt(1, 0), Pt(1, 3)))
 	})
 }
 
 func TestSegment_Float(t *testing.T) {
 	t.Run("int widens", func(t *testing.T) {
-		AssertSegment(t, Seg(Pt(1, 2), Pt(3, 5)).Float(), Seg(Pt(1.0, 2.0), Pt(3.0, 5.0)))
+		geomtest.AssertSegment(t, Seg(Pt(1, 2), Pt(3, 5)).Float(), Seg(Pt(1.0, 2.0), Pt(3.0, 5.0)))
 	})
 	t.Run("float is a no-op", func(t *testing.T) {
-		AssertSegment(t, Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)).Float(), Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)))
+		geomtest.AssertSegment(t, Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)).Float(), Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)))
 	})
 }
 
@@ -1731,14 +1726,14 @@ func TestSegment_JSON(t *testing.T) {
 
 		var s Segment[int]
 		assert.NoError(t, json.Unmarshal([]byte(`{"s":{"x":10,"y":16},"e":{"x":1,"y":2}}`), &s))
-		AssertSegment(t, s, Seg(Pt(10, 16), Pt(1, 2)))
+		geomtest.AssertSegment(t, s, Seg(Pt(10, 16), Pt(1, 2)))
 	})
 	t.Run("float wire format", func(t *testing.T) {
 		assert.JSON(t, Seg(Pt(100, -34.0000115), Pt(0.2, 0.4)), `{"s":{"x":100.0,"y":-34.0000115},"e":{"x":0.2,"y":0.4}}`)
 
 		var s Segment[float64]
 		assert.NoError(t, json.Unmarshal([]byte(`{"s":{"x":10.1,"y":-34.0000115},"e":{"x":0.2,"y":0.4}}`), &s))
-		AssertSegment(t, s, Seg(Pt(10.1, -34.0000115), Pt(0.2, 0.4)))
+		geomtest.AssertSegment(t, s, Seg(Pt(10.1, -34.0000115), Pt(0.2, 0.4)))
 	})
 	t.Run("round-trip", func(t *testing.T) {
 		for _, segment := range segmentFixtures {
@@ -1765,14 +1760,14 @@ func TestSegment_Properties(t *testing.T) {
 			for _, length := range []float64{0, 1, 12.5} {
 				resized := s.Resize(length)
 
-				AssertPoint(t, resized.Midpoint(), s.Midpoint(), fmt.Sprintf("%s ->%v: ", s, length))
-				AssertNumber(t, resized.Length(), length, fmt.Sprintf("%s ->%v: ", s, length))
+				geomtest.AssertPoint(t, resized.Midpoint(), s.Midpoint(), fmt.Sprintf("%s ->%v: ", s, length))
+				geomtest.AssertNumber(t, resized.Length(), length, fmt.Sprintf("%s ->%v: ", s, length))
 			}
 		}
 	})
 	t.Run("angle and direction follow the vector", func(t *testing.T) {
 		for _, s := range segmentFixtures {
-			AssertNumber(t, s.Angle(), s.Vector().Angle(), s.String()+": ")
+			geomtest.AssertNumber(t, s.Angle(), s.Vector().Angle(), s.String()+": ")
 			assert.Equal(t, s.Direction(), s.Vector().Direction(), s.String()+": ")
 		}
 	})
@@ -1783,21 +1778,21 @@ func TestSegment_Properties(t *testing.T) {
 	})
 	t.Run("reverse keeps the length and midpoint", func(t *testing.T) {
 		for _, segment := range segmentFixtures {
-			AssertNumber(t, segment.Reverse().Length(), segment.Length(), fmt.Sprintf("%s: ", segment))
+			geomtest.AssertNumber(t, segment.Reverse().Length(), segment.Length(), fmt.Sprintf("%s: ", segment))
 			assert.True(t, segment.Reverse().Midpoint().Equal(segment.Midpoint()), fmt.Sprintf("%s: ", segment))
 		}
 	})
 	t.Run("length is the vector length", func(t *testing.T) {
 		for _, segment := range segmentFixtures {
-			AssertNumber(t, segment.Length(), segment.Vector().Length(), fmt.Sprintf("%s: ", segment))
-			AssertNumber(t, segment.Length(), segment.Start.DistanceTo(segment.End), fmt.Sprintf("%s: ", segment))
+			geomtest.AssertNumber(t, segment.Length(), segment.Vector().Length(), fmt.Sprintf("%s: ", segment))
+			geomtest.AssertNumber(t, segment.Length(), segment.Start.DistanceTo(segment.End), fmt.Sprintf("%s: ", segment))
 		}
 	})
 	t.Run("midpoint is equidistant from both ends", func(t *testing.T) {
 		for _, segment := range segmentFixtures {
 			midpoint := segment.Midpoint()
 
-			AssertNumber(t, midpoint.DistanceTo(segment.Start), midpoint.DistanceTo(segment.End), fmt.Sprintf("%s: ", segment))
+			geomtest.AssertNumber(t, midpoint.DistanceTo(segment.Start), midpoint.DistanceTo(segment.End), fmt.Sprintf("%s: ", segment))
 		}
 	})
 	t.Run("translate keeps the vector", func(t *testing.T) {
@@ -1828,7 +1823,7 @@ func TestSegment_Properties(t *testing.T) {
 	})
 	t.Run("vertices are the endpoints", func(t *testing.T) {
 		for _, segment := range segmentFixtures {
-			AssertVertices(t, slices.Collect(segment.Vertices()), []Point[float64]{segment.Start, segment.End})
+			geomtest.AssertVertices(t, slices.Collect(segment.Vertices()), []Point[float64]{segment.Start, segment.End})
 		}
 	})
 }
@@ -1840,7 +1835,7 @@ func TestSegment_Immutable(t *testing.T) {
 	s.MoveTo(Pt(4, 3))
 	s.Reverse()
 
-	AssertSegment(t, s, Seg(Pt(1, 2), Pt(3, 5)))
+	geomtest.AssertSegment(t, s, Seg(Pt(1, 2), Pt(3, 5)))
 }
 
 // partsOf gives the part a convex Clip method returns as the parts ClipPolygon would, so both
@@ -1851,19 +1846,6 @@ func partsOf[T Number](part Segment[T], ok bool) []Segment[T] {
 	}
 
 	return []Segment[T]{part}
-}
-
-// assertSegments checks the parts a Clip method returns against the expected ones in order.
-func assertSegments[T Number](t *testing.T, actual, expected []Segment[T], messages ...string) {
-	t.Helper()
-
-	if !assert.Equal(t, len(actual), len(expected), prefixed(messages, "Length: ")...) {
-		return
-	}
-
-	for i := range actual {
-		AssertSegment(t, actual[i], expected[i], prefixed(messages, fmt.Sprintf("#%d.", i))...)
-	}
 }
 
 // assertOrdered checks that the points follow one another from the segment's Start, the order

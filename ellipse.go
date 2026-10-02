@@ -385,9 +385,9 @@ func (e Ellipse[T]) form(local Vector[float64]) float64 {
 	return float64(x*x) + float64(y*y)
 }
 
-// nearestOffset returns the offset of the point of the boundary nearest to the given offset,
-// both in the local frame of the ellipse: the foot of the perpendicular from it, which is the
-// nearest point inside the boundary as well as outside. A degenerate ellipse is the segment
+// nearestOffset returns the offset of the point of the boundary nearest to the given offset
+// outside it, both in the local frame of the ellipse: the foot of the perpendicular from it,
+// asked by nearestLocal only after the quadratic form puts the offset outside. A degenerate ellipse is the segment
 // its other axis spans, and the foot is the offset clamped to it on each axis, the zero
 // semi-axis clamping its own to zero.
 func (e Ellipse[T]) nearestOffset(local Vector[float64]) Vector[float64] {
@@ -408,24 +408,17 @@ func (e Ellipse[T]) nearestOffset(local Vector[float64]) Vector[float64] {
 	return Vector[float64]{math.Copysign(px, local.X), math.Copysign(py, local.Y)}
 }
 
-// foot returns the foot of the perpendicular from (x, y) to the ellipse of semi-axes a and b,
-// in the quarter the symmetry of the ellipse leaves: both semi-axes positive with the longer
-// first, and both coordinates non-negative. Every other point is one of the four reflections
-// of a point of that quarter, which nearestOffset takes it back to.
+// foot returns the foot of the perpendicular from (x, y), a point outside the ellipse of
+// semi-axes a and b, in the quarter the symmetry of the ellipse leaves: both semi-axes positive
+// with the longer first, and both coordinates non-negative. Every other point is one of the
+// four reflections of a point of that quarter, which nearestOffset takes it back to.
 //
-// A point on an axis is answered directly, since the perpendicular from it either runs along
-// that axis or meets the boundary where the evolute, the curve of the centers of curvature,
-// still reaches: within the evolute the foot leaves the axis, and the two cases meet where the
-// evolute crosses it. Anywhere else the foot is placed from the parameter root bisects for,
-// which no closed form gives.
+// A point outside on an axis is answered directly, since the perpendicular from it runs along
+// that axis: on the major one it lies beyond the evolute, the curve of the centers of
+// curvature, which ends inside the boundary. Anywhere else the foot is placed from the
+// parameter root bisects for, which no closed form gives.
 func (e Ellipse[T]) foot(a, b, x, y float64) (float64, float64) {
 	if y == 0 {
-		if evolute, center := a*x, float64(a*a)-float64(b*b); evolute < center {
-			cosine := evolute / center
-
-			return a * cosine, b * math.Sqrt(1-float64(cosine*cosine))
-		}
-
 		return a, 0
 	}
 
@@ -441,12 +434,11 @@ func (e Ellipse[T]) foot(a, b, x, y float64) (float64, float64) {
 
 // root returns the parameter of the pencil of ellipses at which the boundary meets the
 // perpendicular from the point (x, y), which foot reads the foot off: the point is given in
-// units of the semi-axes, off both axes, and aspect is the squared ratio of the longer
-// semi-axis to the shorter. The parameter is the sole root of a function falling through zero
-// over the bracket the point itself gives, negative from inside the boundary and positive from
-// outside. Only a point outside reaches it through DistanceSquaredTo, which decides the
-// interior on the quadratic form first; the inside bracket keeps nearestOffset right on both
-// sides, as the nearest point of the boundary is asked from either.
+// units of the semi-axes, outside the boundary and off both axes, and aspect is the squared
+// ratio of the longer semi-axis to the shorter. The parameter is the sole root of a function
+// falling through zero over the bracket the point itself gives, positive for a point outside;
+// nearestLocal decides the interior on the quadratic form first, on the same coordinates, so
+// no point inside reaches it.
 //
 // It is found by bisection, which halves that bracket until the midpoint is one of its ends
 // and no float lies between them, so it ends in the precision of a float64 and no iteration
@@ -458,9 +450,6 @@ func (Ellipse[T]) root(aspect, x, y float64) float64 {
 	gradient := aspect * x
 
 	s0, s1 := y-1, math.Hypot(gradient, y)-1
-	if float64(x*x)+float64(y*y) < 1 {
-		s1 = 0
-	}
 
 	for {
 		s := (s0 + s1) / 2

@@ -1,4 +1,4 @@
-package geom
+package geom_test
 
 import (
 	"encoding/json"
@@ -7,44 +7,46 @@ import (
 	"testing"
 
 	"github.com/gravitton/assert"
+	. "github.com/gravitton/geometry"
+	"github.com/gravitton/geometry/geomtest"
 )
 
 func TestVector_Constructor(t *testing.T) {
 	t.Run("from components", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16), Vector[int]{X: 10, Y: 16})
-		AssertVector(t, Vec[float64](0.16, 204), Vector[float64]{X: 0.16, Y: 204})
+		geomtest.AssertVector(t, Vec(10, 16), Vector[int]{X: 10, Y: 16})
+		geomtest.AssertVector(t, Vec[float64](0.16, 204), Vector[float64]{X: 0.16, Y: 204})
 	})
 	t.Run("zero", func(t *testing.T) {
-		AssertVector(t, ZeroVector[int](), Vector[int]{})
-		AssertVector(t, ZeroVector[float64](), Vector[float64]{})
+		geomtest.AssertVector(t, ZeroVector[int](), Vector[int]{})
+		geomtest.AssertVector(t, ZeroVector[float64](), Vector[float64]{})
 	})
 	t.Run("one", func(t *testing.T) {
-		AssertVector(t, OneVector[int](), Vec(1, 1))
-		AssertVector(t, OneVector[float64](), Vec(1.0, 1.0))
+		geomtest.AssertVector(t, OneVector[int](), Vec(1, 1))
+		geomtest.AssertVector(t, OneVector[float64](), Vec(1.0, 1.0))
 	})
 }
 
 func TestVectorFromAngle(t *testing.T) {
 	t.Run("cardinal angles", func(t *testing.T) {
-		AssertVector(t, VectorFromAngle(0, 5.0), Vec(5.0, 0.0))
-		AssertVector(t, VectorFromAngle(Pi/2, 1.0), Vec(0.0, 1.0))
-		AssertVector(t, VectorFromAngle(Pi, 1.0), Vec(-1.0, 0.0))
-		AssertVector(t, VectorFromAngle(-Pi/2, 1.0), Vec(0.0, -1.0))
+		geomtest.AssertVector(t, VectorFromAngle(0, 5.0), Vec(5.0, 0.0))
+		geomtest.AssertVector(t, VectorFromAngle(Pi/2, 1.0), Vec(0.0, 1.0))
+		geomtest.AssertVector(t, VectorFromAngle(Pi, 1.0), Vec(-1.0, 0.0))
+		geomtest.AssertVector(t, VectorFromAngle(-Pi/2, 1.0), Vec(0.0, -1.0))
 	})
 	t.Run("diagonal angle", func(t *testing.T) {
-		AssertVector(t, VectorFromAngle(Pi/4, 1.0), Vec(OneOverSqrt2, OneOverSqrt2))
+		geomtest.AssertVector(t, VectorFromAngle(Pi/4, 1.0), Vec(OneOverSqrt2, OneOverSqrt2))
 	})
 	t.Run("integer rounds the components", func(t *testing.T) {
 		// cos(π/2) ≈ 6e-17 rounds to 0, sin(π/2) = 1
-		AssertVector(t, VectorFromAngle(Pi/2, 4), Vec(0, 4))
+		geomtest.AssertVector(t, VectorFromAngle(Pi/2, 4), Vec(0, 4))
 	})
 }
 
 func TestVectorFromAngleSize(t *testing.T) {
 	t.Run("traces the ellipse", func(t *testing.T) {
-		AssertVector(t, VectorFromAngleSize(0, Sz(3.0, 5.0)), Vec(3.0, 0.0))
-		AssertVector(t, VectorFromAngleSize(Pi/2, Sz(3.0, 5.0)), Vec(0.0, 5.0))
-		AssertVector(t, VectorFromAngleSize(Pi, Sz(3.0, 5.0)), Vec(-3.0, 0.0))
+		geomtest.AssertVector(t, VectorFromAngleSize(0, Sz(3.0, 5.0)), Vec(3.0, 0.0))
+		geomtest.AssertVector(t, VectorFromAngleSize(Pi/2, Sz(3.0, 5.0)), Vec(0.0, 5.0))
+		geomtest.AssertVector(t, VectorFromAngleSize(Pi, Sz(3.0, 5.0)), Vec(-3.0, 0.0))
 	})
 	t.Run("square size matches the angle constructor", func(t *testing.T) {
 		for _, angle := range []float64{0, Pi / 6, Pi / 4, 2, -1.5} {
@@ -55,38 +57,38 @@ func TestVectorFromAngleSize(t *testing.T) {
 	t.Run("integer rounds after scaling", func(t *testing.T) {
 		// (3*cos(π/6), 3*sin(π/6)) = (2.598, 1.5) → (3, 2).
 		// Rounding the unit vector first would have given (1, 1) scaled to (3, 3).
-		AssertVector(t, VectorFromAngleSize(Pi/6, Sz(3, 3)), Vec(3, 2))
+		geomtest.AssertVector(t, VectorFromAngleSize(Pi/6, Sz(3, 3)), Vec(3, 2))
 	})
 }
 
 func TestVector_XY(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		x, y := Vec(10, 16).XY()
-		AssertNumber(t, x, 10)
-		AssertNumber(t, y, 16)
+		geomtest.AssertNumber(t, x, 10)
+		geomtest.AssertNumber(t, y, 16)
 	})
 	t.Run("float", func(t *testing.T) {
 		x, y := Vec(0.6, -0.25).XY()
-		AssertNumber(t, x, 0.6)
-		AssertNumber(t, y, -0.25)
+		geomtest.AssertNumber(t, x, 0.6)
+		geomtest.AssertNumber(t, y, -0.25)
 	})
 }
 
 func TestVector_Length(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertNumber(t, Vec(10, 16).Length(), math.Sqrt(356))
+		geomtest.AssertNumber(t, Vec(10, 16).Length(), math.Sqrt(356))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertNumber(t, Vec(0.6, -0.25).Length(), 0.65)
+		geomtest.AssertNumber(t, Vec(0.6, -0.25).Length(), 0.65)
 	})
 }
 
 func TestVector_LengthSquared(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertNumber(t, Vec(10, 16).LengthSquared(), 356)
+		geomtest.AssertNumber(t, Vec(10, 16).LengthSquared(), 356)
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertNumber(t, Vec(0.6, -0.25).LengthSquared(), 0.4225)
+		geomtest.AssertNumber(t, Vec(0.6, -0.25).LengthSquared(), 0.4225)
 	})
 	t.Run("rounds each product, the same bits on every architecture", func(t *testing.T) {
 		assert.Equal(t, Vec(tenth, 0.3).LengthSquared(), 0.10000000000000001)
@@ -95,11 +97,11 @@ func TestVector_LengthSquared(t *testing.T) {
 
 func TestVector_Angle(t *testing.T) {
 	t.Run("diagonal", func(t *testing.T) {
-		AssertNumber(t, Vec(2, 2).Angle(), ToRadians(45))
-		AssertNumber(t, Vec(0.6, -0.25).Angle(), -0.39479111)
+		geomtest.AssertNumber(t, Vec(2, 2).Angle(), ToRadians(45))
+		geomtest.AssertNumber(t, Vec(0.6, -0.25).Angle(), -0.39479111)
 	})
 	t.Run("zero vector", func(t *testing.T) {
-		AssertNumber(t, Vec(0, 0).Angle(), 0)
+		geomtest.AssertNumber(t, Vec(0, 0).Angle(), 0)
 	})
 }
 
@@ -122,45 +124,45 @@ func TestVector_Direction(t *testing.T) {
 
 func TestVector_Add(t *testing.T) {
 	t.Run("vector", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).Add(Vec(3, -2)), Vec(13, 14))
-		AssertVector(t, Vec(0.6, -0.25).Add(Vec(100.1, -0.1)), Vec(100.7, -0.35))
+		geomtest.AssertVector(t, Vec(10, 16).Add(Vec(3, -2)), Vec(13, 14))
+		geomtest.AssertVector(t, Vec(0.6, -0.25).Add(Vec(100.1, -0.1)), Vec(100.7, -0.35))
 	})
 	t.Run("components", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).AddXY(3, -2), Vec(13, 14))
-		AssertVector(t, Vec(0.6, -0.25).AddXY(100.1, -0.1), Vec(100.7, -0.35))
+		geomtest.AssertVector(t, Vec(10, 16).AddXY(3, -2), Vec(13, 14))
+		geomtest.AssertVector(t, Vec(0.6, -0.25).AddXY(100.1, -0.1), Vec(100.7, -0.35))
 	})
 }
 
 func TestVector_Subtract(t *testing.T) {
 	t.Run("vector", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).Subtract(Vec(3, -3)), Vec(7, 19))
-		AssertVector(t, Vec(0.6, -0.25).Subtract(Vec(100.1, -0.1)), Vec(-99.5, -0.15))
+		geomtest.AssertVector(t, Vec(10, 16).Subtract(Vec(3, -3)), Vec(7, 19))
+		geomtest.AssertVector(t, Vec(0.6, -0.25).Subtract(Vec(100.1, -0.1)), Vec(-99.5, -0.15))
 	})
 	t.Run("components", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).SubtractXY(3, -3), Vec(7, 19))
-		AssertVector(t, Vec(0.6, -0.25).SubtractXY(100.1, -0.1), Vec(-99.5, -0.15))
+		geomtest.AssertVector(t, Vec(10, 16).SubtractXY(3, -3), Vec(7, 19))
+		geomtest.AssertVector(t, Vec(0.6, -0.25).SubtractXY(100.1, -0.1), Vec(-99.5, -0.15))
 	})
 }
 
 func TestVector_Multiply(t *testing.T) {
 	t.Run("uniform factor", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).Multiply(3), Vec(30, 48))
-		AssertVector(t, Vec(0.6, -0.25).Multiply(-1.5), Vec(-0.9, 0.375))
+		geomtest.AssertVector(t, Vec(10, 16).Multiply(3), Vec(30, 48))
+		geomtest.AssertVector(t, Vec(0.6, -0.25).Multiply(-1.5), Vec(-0.9, 0.375))
 	})
 	t.Run("per-axis factor", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).MultiplyXY(3, 2), Vec(30, 32))
-		AssertVector(t, Vec(0.6, -0.25).MultiplyXY(-1.5, 2), Vec(-0.9, -0.5))
+		geomtest.AssertVector(t, Vec(10, 16).MultiplyXY(3, 2), Vec(30, 32))
+		geomtest.AssertVector(t, Vec(0.6, -0.25).MultiplyXY(-1.5, 2), Vec(-0.9, -0.5))
 	})
 }
 
 func TestVector_Divide(t *testing.T) {
 	t.Run("uniform factor", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).Divide(2), Vec(5, 8))
-		AssertVector(t, Vec(0.6, -0.25).Divide(-2), Vec(-0.3, 0.125))
+		geomtest.AssertVector(t, Vec(10, 16).Divide(2), Vec(5, 8))
+		geomtest.AssertVector(t, Vec(0.6, -0.25).Divide(-2), Vec(-0.3, 0.125))
 	})
 	t.Run("per-axis factor", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).DivideXY(3, 2), Vec(3, 8)) // int: 3.33 rounds to 3
-		AssertVector(t, Vec(0.6, -0.25).DivideXY(-4, 0.5), Vec(-0.15, -0.5))
+		geomtest.AssertVector(t, Vec(10, 16).DivideXY(3, 2), Vec(3, 8)) // int: 3.33 rounds to 3
+		geomtest.AssertVector(t, Vec(0.6, -0.25).DivideXY(-4, 0.5), Vec(-0.15, -0.5))
 	})
 	t.Run("zero factor panics", func(t *testing.T) {
 		assert.Panics(t, func() {
@@ -174,81 +176,81 @@ func TestVector_Divide(t *testing.T) {
 
 func TestVector_Negate(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).Negate(), Vec(-10, -16))
+		geomtest.AssertVector(t, Vec(10, 16).Negate(), Vec(-10, -16))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertVector(t, Vec(0.6, -0.25).Negate(), Vec(-0.6, 0.25))
+		geomtest.AssertVector(t, Vec(0.6, -0.25).Negate(), Vec(-0.6, 0.25))
 	})
 }
 
 func TestVector_Abs(t *testing.T) {
 	t.Run("negative components", func(t *testing.T) {
-		AssertVector(t, Vec(-1, -3).Abs(), Vec(1, 3))
-		AssertVector(t, Vec(0.6, -0.25).Abs(), Vec(0.6, 0.25))
+		geomtest.AssertVector(t, Vec(-1, -3).Abs(), Vec(1, 3))
+		geomtest.AssertVector(t, Vec(0.6, -0.25).Abs(), Vec(0.6, 0.25))
 	})
 	t.Run("non-negative components unchanged", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).Abs(), Vec(10, 16))
-		AssertVector(t, Vec(0.0, 0.0).Abs(), Vec(0.0, 0.0))
+		geomtest.AssertVector(t, Vec(10, 16).Abs(), Vec(10, 16))
+		geomtest.AssertVector(t, Vec(0.0, 0.0).Abs(), Vec(0.0, 0.0))
 	})
 }
 
 func TestVector_Round(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
-		AssertVector(t, Vec(1.4, -1.5).Round(), Vec(1.0, -2.0))
+		geomtest.AssertVector(t, Vec(1.4, -1.5).Round(), Vec(1.0, -2.0))
 	})
 	t.Run("int is a no-op", func(t *testing.T) {
-		AssertVector(t, Vec(3, -2).Round(), Vec(3, -2))
+		geomtest.AssertVector(t, Vec(3, -2).Round(), Vec(3, -2))
 	})
 }
 
 func TestVector_Floor(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
-		AssertVector(t, Vec(1.9, -1.1).Floor(), Vec(1.0, -2.0))
+		geomtest.AssertVector(t, Vec(1.9, -1.1).Floor(), Vec(1.0, -2.0))
 	})
 	t.Run("int is a no-op", func(t *testing.T) {
-		AssertVector(t, Vec(3, -2).Floor(), Vec(3, -2))
+		geomtest.AssertVector(t, Vec(3, -2).Floor(), Vec(3, -2))
 	})
 }
 
 func TestVector_Ceil(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
-		AssertVector(t, Vec(1.1, -1.9).Ceil(), Vec(2.0, -1.0))
+		geomtest.AssertVector(t, Vec(1.1, -1.9).Ceil(), Vec(2.0, -1.0))
 	})
 	t.Run("int is a no-op", func(t *testing.T) {
-		AssertVector(t, Vec(3, -2).Ceil(), Vec(3, -2))
+		geomtest.AssertVector(t, Vec(3, -2).Ceil(), Vec(3, -2))
 	})
 }
 
 func TestVector_Lerp(t *testing.T) {
 	t.Run("between vectors", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).Lerp(Vec(20, 20), 0.25), Vec(13, 17))
-		AssertVector(t, Vec(0.6, -0.25).Lerp(Vec(-10.0, 10.0), 0.25), Vec(-2.05, 2.3125))
+		geomtest.AssertVector(t, Vec(10, 16).Lerp(Vec(20, 20), 0.25), Vec(13, 17))
+		geomtest.AssertVector(t, Vec(0.6, -0.25).Lerp(Vec(-10.0, 10.0), 0.25), Vec(-2.05, 2.3125))
 	})
 	t.Run("endpoints", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).Lerp(Vec(20, 20), 0), Vec(10, 16))
-		AssertVector(t, Vec(10, 16).Lerp(Vec(20, 20), 1), Vec(20, 20))
+		geomtest.AssertVector(t, Vec(10, 16).Lerp(Vec(20, 20), 0), Vec(10, 16))
+		geomtest.AssertVector(t, Vec(10, 16).Lerp(Vec(20, 20), 1), Vec(20, 20))
 	})
 	t.Run("extrapolates outside the unit range", func(t *testing.T) {
-		AssertVector(t, Vec(0.0, 0.0).Lerp(Vec(2.0, 2.0), 2), Vec(4.0, 4.0))
-		AssertVector(t, Vec(0.0, 0.0).Lerp(Vec(2.0, 2.0), -1), Vec(-2.0, -2.0))
+		geomtest.AssertVector(t, Vec(0.0, 0.0).Lerp(Vec(2.0, 2.0), 2), Vec(4.0, 4.0))
+		geomtest.AssertVector(t, Vec(0.0, 0.0).Lerp(Vec(2.0, 2.0), -1), Vec(-2.0, -2.0))
 	})
 }
 
 func TestVector_AtLeast(t *testing.T) {
 	t.Run("a shorter vector is resized along its direction", func(t *testing.T) {
-		AssertVector(t, Vec(3.0, 4.0).AtLeast(10), Vec(6.0, 8.0))
-		AssertVector(t, Vec(3, 4).AtLeast(10), Vec(6, 8))
+		geomtest.AssertVector(t, Vec(3.0, 4.0).AtLeast(10), Vec(6.0, 8.0))
+		geomtest.AssertVector(t, Vec(3, 4).AtLeast(10), Vec(6, 8))
 	})
 	t.Run("a longer vector is unchanged", func(t *testing.T) {
-		AssertVector(t, Vec(3.0, 4.0).AtLeast(2), Vec(3.0, 4.0))
-		AssertVector(t, Vec(3.0, 4.0).AtLeast(5), Vec(3.0, 4.0))
+		geomtest.AssertVector(t, Vec(3.0, 4.0).AtLeast(2), Vec(3.0, 4.0))
+		geomtest.AssertVector(t, Vec(3.0, 4.0).AtLeast(5), Vec(3.0, 4.0))
 	})
 	t.Run("the zero vector grows along +X", func(t *testing.T) {
-		AssertVector(t, ZeroVector[int]().AtLeast(3), Vec(3, 0))
+		geomtest.AssertVector(t, ZeroVector[int]().AtLeast(3), Vec(3, 0))
 	})
 	t.Run("a non-positive length changes nothing", func(t *testing.T) {
-		AssertVector(t, Vec(3.0, 4.0).AtLeast(-10), Vec(3.0, 4.0))
-		AssertVector(t, ZeroVector[float64]().AtLeast(0), ZeroVector[float64]())
+		geomtest.AssertVector(t, Vec(3.0, 4.0).AtLeast(-10), Vec(3.0, 4.0))
+		geomtest.AssertVector(t, ZeroVector[float64]().AtLeast(0), ZeroVector[float64]())
 	})
 	t.Run("the result is at least the length", func(t *testing.T) {
 		for _, v := range vectorFixtures {
@@ -260,22 +262,22 @@ func TestVector_AtLeast(t *testing.T) {
 
 func TestVector_AtMost(t *testing.T) {
 	t.Run("a longer vector is capped along its direction", func(t *testing.T) {
-		AssertVector(t, Vec(6.0, 8.0).AtMost(5), Vec(3.0, 4.0))
-		AssertVector(t, Vec(6, 8).AtMost(5), Vec(3, 4))
+		geomtest.AssertVector(t, Vec(6.0, 8.0).AtMost(5), Vec(3.0, 4.0))
+		geomtest.AssertVector(t, Vec(6, 8).AtMost(5), Vec(3, 4))
 	})
 	t.Run("a shorter vector is unchanged", func(t *testing.T) {
-		AssertVector(t, Vec(3.0, 4.0).AtMost(10), Vec(3.0, 4.0))
-		AssertVector(t, Vec(3.0, 4.0).AtMost(5), Vec(3.0, 4.0))
+		geomtest.AssertVector(t, Vec(3.0, 4.0).AtMost(10), Vec(3.0, 4.0))
+		geomtest.AssertVector(t, Vec(3.0, 4.0).AtMost(5), Vec(3.0, 4.0))
 	})
 	t.Run("float keeps a vector a rounding error past the length", func(t *testing.T) {
 		v := Vec(3.0, 4.0+Delta/2)
 
-		AssertVector(t, v.AtMost(5), v)
+		geomtest.AssertVector(t, v.AtMost(5), v)
 	})
 	t.Run("a non-positive length gives the zero vector", func(t *testing.T) {
-		AssertVector(t, Vec(3.0, 4.0).AtMost(0), ZeroVector[float64]())
-		AssertVector(t, Vec(3, 4).AtMost(-1), ZeroVector[int]())
-		AssertVector(t, ZeroVector[int]().AtMost(-1), ZeroVector[int]())
+		geomtest.AssertVector(t, Vec(3.0, 4.0).AtMost(0), ZeroVector[float64]())
+		geomtest.AssertVector(t, Vec(3, 4).AtMost(-1), ZeroVector[int]())
+		geomtest.AssertVector(t, ZeroVector[int]().AtMost(-1), ZeroVector[int]())
 	})
 	t.Run("the result is at most the length", func(t *testing.T) {
 		for _, v := range vectorFixtures {
@@ -287,33 +289,33 @@ func TestVector_AtMost(t *testing.T) {
 
 func TestVector_Transform(t *testing.T) {
 	t.Run("float64 matrix", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), Vec(48, 132))
-		AssertVector(t, Vec(0.6, -0.25).Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), Vec(0.085, 1.265))
+		geomtest.AssertVector(t, Vec(10, 16).Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), Vec(48, 132))
+		geomtest.AssertVector(t, Vec(0.6, -0.25).Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), Vec(0.085, 1.265))
 	})
 	t.Run("float32 matrix", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).Transform(Mat[float32](1, 2, 3, 4, 5, 6)), Vec(42, 120))
-		AssertVector(t, Vec(0.6, -0.25).Transform(Mat[float32](1, 2, 3, 4, 5, 6)), Vec(0.1, 1.15))
+		geomtest.AssertVector(t, Vec(10, 16).Transform(Mat[float32](1, 2, 3, 4, 5, 6)), Vec(42, 120))
+		geomtest.AssertVector(t, Vec(0.6, -0.25).Transform(Mat[float32](1, 2, 3, 4, 5, 6)), Vec(0.1, 1.15))
 	})
 	t.Run("integer matrix converted to float", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).Transform(Mat(1, 2, 3, 4, 5, 6).Float()), Vec(42, 120))
-		AssertVector(t, Vec(0.6, -0.25).Transform(Mat(1, 2, 3, 4, 5, 6).Float()), Vec(0.1, 1.15))
+		geomtest.AssertVector(t, Vec(10, 16).Transform(Mat(1, 2, 3, 4, 5, 6).Float()), Vec(42, 120))
+		geomtest.AssertVector(t, Vec(0.6, -0.25).Transform(Mat(1, 2, 3, 4, 5, 6).Float()), Vec(0.1, 1.15))
 	})
 	t.Run("translation is ignored", func(t *testing.T) {
 		// a vector is a displacement, so only the linear part applies
-		AssertVector(t, Vec(1.0, 2.0).Transform(TranslationMatrix(5.0, 7.0)), Vec(1.0, 2.0))
+		geomtest.AssertVector(t, Vec(1.0, 2.0).Transform(TranslationMatrix(5.0, 7.0)), Vec(1.0, 2.0))
 	})
 }
 
 func TestVector_Rotate(t *testing.T) {
 	t.Run("quarter turn", func(t *testing.T) {
-		AssertVector(t, Vec(1, 0).Rotate(ToRadians(90)), Vec(0, 1))
-		AssertVector(t, Vec(1.0, 0.0).Rotate(ToRadians(-90)), Vec(0.0, -1.0))
+		geomtest.AssertVector(t, Vec(1, 0).Rotate(ToRadians(90)), Vec(0, 1))
+		geomtest.AssertVector(t, Vec(1.0, 0.0).Rotate(ToRadians(-90)), Vec(0.0, -1.0))
 	})
 	t.Run("half turn negates", func(t *testing.T) {
-		AssertVector(t, Vec(0.6, -0.25).Rotate(Pi), Vec(-0.6, 0.25))
+		geomtest.AssertVector(t, Vec(0.6, -0.25).Rotate(Pi), Vec(-0.6, 0.25))
 	})
 	t.Run("full turn is identity", func(t *testing.T) {
-		AssertVector(t, Vec(0.6, -0.25).Rotate(2*Pi), Vec(0.6, -0.25))
+		geomtest.AssertVector(t, Vec(0.6, -0.25).Rotate(2*Pi), Vec(0.6, -0.25))
 	})
 }
 
@@ -327,64 +329,64 @@ func BenchmarkVector_Rotate(b *testing.B) {
 
 func TestVector_Resize(t *testing.T) {
 	t.Run("int rounds", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).Resize(5), Vec(3, 4))
-		AssertVector(t, Vec(3, 4).Resize(Sqrt2), Vec(1, 1))
+		geomtest.AssertVector(t, Vec(10, 16).Resize(5), Vec(3, 4))
+		geomtest.AssertVector(t, Vec(3, 4).Resize(Sqrt2), Vec(1, 1))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertVector(t, Vec(0.6, -0.25).Resize(5), Vec(4.615384, -1.923076))
+		geomtest.AssertVector(t, Vec(0.6, -0.25).Resize(5), Vec(4.615384, -1.923076))
 	})
 	t.Run("the zero vector resizes along +X", func(t *testing.T) {
-		AssertVector(t, ZeroVector[float64]().Resize(5), Vec(5.0, 0.0))
-		AssertVector(t, ZeroVector[int]().Resize(2.4), Vec(2, 0))
+		geomtest.AssertVector(t, ZeroVector[float64]().Resize(5), Vec(5.0, 0.0))
+		geomtest.AssertVector(t, ZeroVector[int]().Resize(2.4), Vec(2, 0))
 	})
 	t.Run("a vector shorter than Epsilon keeps its direction", func(t *testing.T) {
-		AssertVector(t, Vec(1e-7, 1e-7).Resize(5), Vec(5*OneOverSqrt2, 5*OneOverSqrt2))
-		AssertVector(t, Vec[float32](0, -1e-5).Resize(2), Vec[float32](0, -2))
+		geomtest.AssertVector(t, Vec(1e-7, 1e-7).Resize(5), Vec(5*OneOverSqrt2, 5*OneOverSqrt2))
+		geomtest.AssertVector(t, Vec[float32](0, -1e-5).Resize(2), Vec[float32](0, -2))
 	})
 	t.Run("a subnormal vector does not overflow", func(t *testing.T) {
-		AssertVector(t, Vec(5e-324, 0).Resize(3), Vec(3.0, 0.0))
-		AssertVector(t, Vec(0, -5e-324).Normalize(), Vec(0.0, -1.0))
+		geomtest.AssertVector(t, Vec(5e-324, 0).Resize(3), Vec(3.0, 0.0))
+		geomtest.AssertVector(t, Vec(0, -5e-324).Normalize(), Vec(0.0, -1.0))
 	})
 }
 
 func TestVector_Slerp(t *testing.T) {
 	t.Run("turns the direction and keeps the length on the arc", func(t *testing.T) {
-		AssertVector(t, Vec(1.0, 0.0).Slerp(Vec(0.0, 1.0), 0.5), Vec(OneOverSqrt2, OneOverSqrt2))
+		geomtest.AssertVector(t, Vec(1.0, 0.0).Slerp(Vec(0.0, 1.0), 0.5), Vec(OneOverSqrt2, OneOverSqrt2))
 	})
 	t.Run("changes the length linearly", func(t *testing.T) {
-		AssertVector(t, Vec(2.0, 0.0).Slerp(Vec(0.0, 4.0), 0.5), Vec(3*OneOverSqrt2, 3*OneOverSqrt2))
+		geomtest.AssertVector(t, Vec(2.0, 0.0).Slerp(Vec(0.0, 4.0), 0.5), Vec(3*OneOverSqrt2, 3*OneOverSqrt2))
 	})
 	t.Run("turns along the shorter arc across the seam", func(t *testing.T) {
 		from, to := VectorFromAngle(ToRadians(350), 2.0), VectorFromAngle(ToRadians(10), 2.0)
 
-		AssertVector(t, from.Slerp(to, 0.5), Vec(2.0, 0.0))
-		AssertVector(t, to.Slerp(from, 0.5), Vec(2.0, 0.0))
+		geomtest.AssertVector(t, from.Slerp(to, 0.5), Vec(2.0, 0.0))
+		geomtest.AssertVector(t, to.Slerp(from, 0.5), Vec(2.0, 0.0))
 	})
 	t.Run("opposite vectors turn in the sense of increasing angle", func(t *testing.T) {
-		AssertVector(t, Vec(1.0, 0.0).Slerp(Vec(-1.0, 0.0), 0.5), Vec(0.0, 1.0))
+		geomtest.AssertVector(t, Vec(1.0, 0.0).Slerp(Vec(-1.0, 0.0), 0.5), Vec(0.0, 1.0))
 	})
 	t.Run("the zero vector takes the other direction", func(t *testing.T) {
-		AssertVector(t, ZeroVector[float64]().Slerp(Vec(0.0, 4.0), 0.5), Vec(0.0, 2.0))
-		AssertVector(t, Vec(0.0, 4.0).Slerp(ZeroVector[float64](), 0.25), Vec(0.0, 3.0))
-		AssertVector(t, ZeroVector[float64]().Slerp(ZeroVector[float64](), 0.5), ZeroVector[float64]())
+		geomtest.AssertVector(t, ZeroVector[float64]().Slerp(Vec(0.0, 4.0), 0.5), Vec(0.0, 2.0))
+		geomtest.AssertVector(t, Vec(0.0, 4.0).Slerp(ZeroVector[float64](), 0.25), Vec(0.0, 3.0))
+		geomtest.AssertVector(t, ZeroVector[float64]().Slerp(ZeroVector[float64](), 0.5), ZeroVector[float64]())
 	})
 	t.Run("the ends are the vectors themselves", func(t *testing.T) {
-		AssertVector(t, Vec(10.0, 16.0).Slerp(Vec(-3.0, 4.0), 0), Vec(10.0, 16.0))
-		AssertVector(t, Vec(10.0, 16.0).Slerp(Vec(-3.0, 4.0), 1), Vec(-3.0, 4.0))
+		geomtest.AssertVector(t, Vec(10.0, 16.0).Slerp(Vec(-3.0, 4.0), 0), Vec(10.0, 16.0))
+		geomtest.AssertVector(t, Vec(10.0, 16.0).Slerp(Vec(-3.0, 4.0), 1), Vec(-3.0, 4.0))
 	})
 	t.Run("extrapolates outside the unit range", func(t *testing.T) {
-		AssertVector(t, Vec(1.0, 0.0).Slerp(Vec(0.0, 1.0), 2), Vec(-1.0, 0.0))
-		AssertVector(t, Vec(2.0, 0.0).Slerp(Vec(1.0, 0.0), 3), Vec(-1.0, 0.0))
+		geomtest.AssertVector(t, Vec(1.0, 0.0).Slerp(Vec(0.0, 1.0), 2), Vec(-1.0, 0.0))
+		geomtest.AssertVector(t, Vec(2.0, 0.0).Slerp(Vec(1.0, 0.0), 3), Vec(-1.0, 0.0))
 	})
 	t.Run("int rounds", func(t *testing.T) {
-		AssertVector(t, Vec(10, 0).Slerp(Vec(0, 10), 0.5), Vec(7, 7))
+		geomtest.AssertVector(t, Vec(10, 0).Slerp(Vec(0, 10), 0.5), Vec(7, 7))
 	})
 	t.Run("the ends and the length hold over the fixtures", func(t *testing.T) {
 		for _, from := range vectorFixtures {
 			for _, to := range vectorFixtures {
 				assert.True(t, from.Slerp(to, 0).Equal(from), fmt.Sprintf("%s → %s: ", from, to))
 				assert.True(t, from.Slerp(to, 1).Equal(to), fmt.Sprintf("%s → %s: ", from, to))
-				AssertNumber(t, from.Slerp(to, 0.5).Length(), (from.Length()+to.Length())/2, fmt.Sprintf("%s → %s: ", from, to))
+				geomtest.AssertNumber(t, from.Slerp(to, 0.5).Length(), (from.Length()+to.Length())/2, fmt.Sprintf("%s → %s: ", from, to))
 			}
 		}
 	})
@@ -392,60 +394,60 @@ func TestVector_Slerp(t *testing.T) {
 
 func TestVector_Normalize(t *testing.T) {
 	t.Run("float keeps the direction", func(t *testing.T) {
-		AssertVector(t, Vec(0.6, -0.25).Normalize(), Vec(0.923076, -0.384615))
-		AssertNumber(t, Vec(0.6, -0.25).Normalize().Length(), 1.0)
-		AssertVector(t, Vec(1e-7, 1e-7).Normalize(), Vec(OneOverSqrt2, OneOverSqrt2))
+		geomtest.AssertVector(t, Vec(0.6, -0.25).Normalize(), Vec(0.923076, -0.384615))
+		geomtest.AssertNumber(t, Vec(0.6, -0.25).Normalize().Length(), 1.0)
+		geomtest.AssertVector(t, Vec(1e-7, 1e-7).Normalize(), Vec(OneOverSqrt2, OneOverSqrt2))
 	})
 	t.Run("int snaps to the longer axis", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).Normalize(), Vec(0, 1))
-		AssertVector(t, Vec(-10, 16).Normalize(), Vec(0, 1))
-		AssertVector(t, Vec(10, -16).Normalize(), Vec(0, -1))
-		AssertVector(t, Vec(-10, -16).Normalize(), Vec(0, -1))
+		geomtest.AssertVector(t, Vec(10, 16).Normalize(), Vec(0, 1))
+		geomtest.AssertVector(t, Vec(-10, 16).Normalize(), Vec(0, 1))
+		geomtest.AssertVector(t, Vec(10, -16).Normalize(), Vec(0, -1))
+		geomtest.AssertVector(t, Vec(-10, -16).Normalize(), Vec(0, -1))
 
-		AssertVector(t, Vec(16, 10).Normalize(), Vec(1, 0))
-		AssertVector(t, Vec(-16, 10).Normalize(), Vec(-1, 0))
-		AssertVector(t, Vec(16, -10).Normalize(), Vec(1, 0))
-		AssertVector(t, Vec(-16, -10).Normalize(), Vec(-1, 0))
+		geomtest.AssertVector(t, Vec(16, 10).Normalize(), Vec(1, 0))
+		geomtest.AssertVector(t, Vec(-16, 10).Normalize(), Vec(-1, 0))
+		geomtest.AssertVector(t, Vec(16, -10).Normalize(), Vec(1, 0))
+		geomtest.AssertVector(t, Vec(-16, -10).Normalize(), Vec(-1, 0))
 	})
 	t.Run("int is already normalized on an axis", func(t *testing.T) {
-		AssertVector(t, Vec(3, 0).Normalize(), Vec(1, 0))
-		AssertVector(t, Vec(0, -5).Normalize(), Vec(0, -1))
+		geomtest.AssertVector(t, Vec(3, 0).Normalize(), Vec(1, 0))
+		geomtest.AssertVector(t, Vec(0, -5).Normalize(), Vec(0, -1))
 	})
 	t.Run("int breaks a diagonal tie towards X", func(t *testing.T) {
-		AssertVector(t, Vec(1, 1).Normalize(), Vec(1, 0))
-		AssertVector(t, Vec(-4, 4).Normalize(), Vec(-1, 0))
+		geomtest.AssertVector(t, Vec(1, 1).Normalize(), Vec(1, 0))
+		geomtest.AssertVector(t, Vec(-4, 4).Normalize(), Vec(-1, 0))
 	})
 	t.Run("zero vector is right by convention", func(t *testing.T) {
-		AssertVector(t, Vec(0, 0).Normalize(), Vec(1, 0))
-		AssertVector(t, ZeroVector[float64]().Normalize(), Vec(1.0, 0.0))
+		geomtest.AssertVector(t, Vec(0, 0).Normalize(), Vec(1, 0))
+		geomtest.AssertVector(t, ZeroVector[float64]().Normalize(), Vec(1.0, 0.0))
 	})
 }
 
 func TestVector_Normal(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).Normal(), Vec(-16, 10))
+		geomtest.AssertVector(t, Vec(10, 16).Normal(), Vec(-16, 10))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertVector(t, Vec(0.6, -0.25).Normal(), Vec(0.25, 0.6))
+		geomtest.AssertVector(t, Vec(0.6, -0.25).Normal(), Vec(0.25, 0.6))
 	})
 }
 
 func TestVector_Project(t *testing.T) {
 	t.Run("onto an axis keeps that component", func(t *testing.T) {
-		AssertVector(t, Vec(3, 4).Project(Vec(10, 0)), Vec(3, 0))
-		AssertVector(t, Vec(3, 4).Project(Vec(0, -2)), Vec(0, 4))
+		geomtest.AssertVector(t, Vec(3, 4).Project(Vec(10, 0)), Vec(3, 0))
+		geomtest.AssertVector(t, Vec(3, 4).Project(Vec(0, -2)), Vec(0, 4))
 	})
 	t.Run("onto a diagonal", func(t *testing.T) {
-		AssertVector(t, Vec(3.0, 1.0).Project(Vec(1.0, 1.0)), Vec(2.0, 2.0))
+		geomtest.AssertVector(t, Vec(3.0, 1.0).Project(Vec(1.0, 1.0)), Vec(2.0, 2.0))
 	})
 	t.Run("opposite direction flips the projection", func(t *testing.T) {
-		AssertVector(t, Vec(-3.0, 1.0).Project(Vec(1.0, 0.0)), Vec(-3.0, 0.0))
+		geomtest.AssertVector(t, Vec(-3.0, 1.0).Project(Vec(1.0, 0.0)), Vec(-3.0, 0.0))
 	})
 	t.Run("onto the zero vector is zero", func(t *testing.T) {
-		AssertVector(t, Vec(3, 4).Project(Vec(0, 0)), Vec(0, 0))
+		geomtest.AssertVector(t, Vec(3, 4).Project(Vec(0, 0)), Vec(0, 0))
 	})
 	t.Run("int rounds", func(t *testing.T) {
-		AssertVector(t, Vec(3, 1).Project(Vec(1, 1)), Vec(2, 2))
+		geomtest.AssertVector(t, Vec(3, 1).Project(Vec(1, 1)), Vec(2, 2))
 	})
 	t.Run("parallel to the target and independent of its length", func(t *testing.T) {
 		for _, a := range vectorFixtures {
@@ -454,8 +456,8 @@ func TestVector_Project(t *testing.T) {
 					continue
 				}
 
-				AssertVector(t, a.Project(b), a.Project(b.Multiply(3)), fmt.Sprintf("%s onto %s: ", a, b))
-				AssertNumber(t, a.Project(b).Cross(b), 0.0, fmt.Sprintf("%s onto %s: ", a, b))
+				geomtest.AssertVector(t, a.Project(b), a.Project(b.Multiply(3)), fmt.Sprintf("%s onto %s: ", a, b))
+				geomtest.AssertNumber(t, a.Project(b).Cross(b), 0.0, fmt.Sprintf("%s onto %s: ", a, b))
 			}
 		}
 	})
@@ -463,18 +465,18 @@ func TestVector_Project(t *testing.T) {
 
 func TestVector_Reject(t *testing.T) {
 	t.Run("from an axis keeps the other component", func(t *testing.T) {
-		AssertVector(t, Vec(3, 4).Reject(Vec(10, 0)), Vec(0, 4))
+		geomtest.AssertVector(t, Vec(3, 4).Reject(Vec(10, 0)), Vec(0, 4))
 	})
 	t.Run("from a diagonal", func(t *testing.T) {
-		AssertVector(t, Vec(3.0, 1.0).Reject(Vec(1.0, 1.0)), Vec(1.0, -1.0))
+		geomtest.AssertVector(t, Vec(3.0, 1.0).Reject(Vec(1.0, 1.0)), Vec(1.0, -1.0))
 	})
 	t.Run("from the zero vector is the vector itself", func(t *testing.T) {
-		AssertVector(t, Vec(3, 4).Reject(Vec(0, 0)), Vec(3, 4))
+		geomtest.AssertVector(t, Vec(3, 4).Reject(Vec(0, 0)), Vec(3, 4))
 	})
 	t.Run("sums with the projection to the vector", func(t *testing.T) {
 		for _, a := range vectorFixtures {
 			for _, b := range vectorFixtures {
-				AssertVector(t, a.Project(b).Add(a.Reject(b)), a, fmt.Sprintf("%s from %s: ", a, b))
+				geomtest.AssertVector(t, a.Project(b).Add(a.Reject(b)), a, fmt.Sprintf("%s from %s: ", a, b))
 			}
 		}
 	})
@@ -482,27 +484,27 @@ func TestVector_Reject(t *testing.T) {
 
 func TestVector_Reflect(t *testing.T) {
 	t.Run("off a wall flips the normal component", func(t *testing.T) {
-		AssertVector(t, Vec(3, -4).Reflect(Vec(0, 1)), Vec(3, 4))
-		AssertVector(t, Vec(3, -4).Reflect(Vec(-5, 0)), Vec(-3, -4))
+		geomtest.AssertVector(t, Vec(3, -4).Reflect(Vec(0, 1)), Vec(3, 4))
+		geomtest.AssertVector(t, Vec(3, -4).Reflect(Vec(-5, 0)), Vec(-3, -4))
 	})
 	t.Run("off a diagonal", func(t *testing.T) {
-		AssertVector(t, Vec(1.0, 0.0).Reflect(Vec(1.0, 1.0)), Vec(0.0, -1.0))
+		geomtest.AssertVector(t, Vec(1.0, 0.0).Reflect(Vec(1.0, 1.0)), Vec(0.0, -1.0))
 	})
 	t.Run("the normal length does not matter", func(t *testing.T) {
-		AssertVector(t, Vec(3.0, -4.0).Reflect(Vec(0.0, 7.0)), Vec(3.0, 4.0))
+		geomtest.AssertVector(t, Vec(3.0, -4.0).Reflect(Vec(0.0, 7.0)), Vec(3.0, 4.0))
 	})
 	t.Run("a zero normal reflects nothing", func(t *testing.T) {
-		AssertVector(t, Vec(3, 4).Reflect(Vec(0, 0)), Vec(3, 4))
+		geomtest.AssertVector(t, Vec(3, 4).Reflect(Vec(0, 0)), Vec(3, 4))
 	})
 	t.Run("int rounds the result once", func(t *testing.T) {
-		AssertVector(t, Vec(1, 1).Reflect(Vec(1, 2)), Vec(0, -1))
-		AssertVector(t, Vec(7, 3).Reflect(Vec(2, 5)), Vec(3, -7))
+		geomtest.AssertVector(t, Vec(1, 1).Reflect(Vec(1, 2)), Vec(0, -1))
+		geomtest.AssertVector(t, Vec(7, 3).Reflect(Vec(2, 5)), Vec(3, -7))
 	})
 	t.Run("keeps the length and reflects back", func(t *testing.T) {
 		for _, a := range vectorFixtures {
 			for _, n := range vectorFixtures {
-				AssertNumber(t, a.Reflect(n).Length(), a.Length(), fmt.Sprintf("%s off %s: ", a, n))
-				AssertVector(t, a.Reflect(n).Reflect(n), a, fmt.Sprintf("%s off %s: ", a, n))
+				geomtest.AssertNumber(t, a.Reflect(n).Length(), a.Length(), fmt.Sprintf("%s off %s: ", a, n))
+				geomtest.AssertVector(t, a.Reflect(n).Reflect(n), a, fmt.Sprintf("%s off %s: ", a, n))
 			}
 		}
 	})
@@ -510,11 +512,11 @@ func TestVector_Reflect(t *testing.T) {
 
 func TestVector_Dot(t *testing.T) {
 	t.Run("general vectors", func(t *testing.T) {
-		AssertNumber(t, Vec(10, 16).Dot(Vec(3, -3)), -18)
-		AssertNumber(t, Vec(0.6, -0.25).Dot(Vec(100.1, -0.1)), 60.085)
+		geomtest.AssertNumber(t, Vec(10, 16).Dot(Vec(3, -3)), -18)
+		geomtest.AssertNumber(t, Vec(0.6, -0.25).Dot(Vec(100.1, -0.1)), 60.085)
 	})
 	t.Run("perpendicular vectors are zero", func(t *testing.T) {
-		AssertNumber(t, Vec(1, 0).Dot(Vec(0, 1)), 0)
+		geomtest.AssertNumber(t, Vec(1, 0).Dot(Vec(0, 1)), 0)
 	})
 	t.Run("rounds each product, the same bits on every architecture", func(t *testing.T) {
 		assert.Equal(t, Vec(tenth, 0.3).Dot(Vec(tenth, 0.3)), 0.10000000000000001)
@@ -528,17 +530,17 @@ func TestVector_Dot(t *testing.T) {
 		}
 	})
 	t.Run("narrow integers do not overflow mid-computation", func(t *testing.T) {
-		AssertNumber(t, Vec[int8](100, 50).Dot(Vec[int8](2, -2)), 100)
+		geomtest.AssertNumber(t, Vec[int8](100, 50).Dot(Vec[int8](2, -2)), 100)
 	})
 }
 
 func TestVector_Cross(t *testing.T) {
 	t.Run("general vectors", func(t *testing.T) {
-		AssertNumber(t, Vec(10, 16).Cross(Vec(3, -3)), -78)
-		AssertNumber(t, Vec(0.6, -0.25).Cross(Vec(100.1, -0.1)), 24.965)
+		geomtest.AssertNumber(t, Vec(10, 16).Cross(Vec(3, -3)), -78)
+		geomtest.AssertNumber(t, Vec(0.6, -0.25).Cross(Vec(100.1, -0.1)), 24.965)
 	})
 	t.Run("parallel vectors are zero", func(t *testing.T) {
-		AssertNumber(t, Vec(2, 4).Cross(Vec(1, 2)), 0)
+		geomtest.AssertNumber(t, Vec(2, 4).Cross(Vec(1, 2)), 0)
 	})
 	t.Run("rounds each product, the same bits on every architecture", func(t *testing.T) {
 		assert.Equal(t, Vec(tenth, 0.3).Cross(Vec(-0.3, tenth)), 0.10000000000000001)
@@ -555,19 +557,19 @@ func TestVector_Cross(t *testing.T) {
 
 func TestVector_AngleBetween(t *testing.T) {
 	t.Run("right angle", func(t *testing.T) {
-		AssertNumber(t, Vec(1, 0).AngleBetween(Vec(0, 1)), Pi/2)
+		geomtest.AssertNumber(t, Vec(1, 0).AngleBetween(Vec(0, 1)), Pi/2)
 	})
 	t.Run("unsigned, so the order does not matter", func(t *testing.T) {
-		AssertNumber(t, Vec(1.0, 0.0).AngleBetween(Vec(1.0, 1.0)), Pi/4)
-		AssertNumber(t, Vec(1.0, 1.0).AngleBetween(Vec(1.0, 0.0)), Pi/4)
-		AssertNumber(t, Vec(1.0, 0.0).AngleBetween(Vec(1.0, -1.0)), Pi/4)
+		geomtest.AssertNumber(t, Vec(1.0, 0.0).AngleBetween(Vec(1.0, 1.0)), Pi/4)
+		geomtest.AssertNumber(t, Vec(1.0, 1.0).AngleBetween(Vec(1.0, 0.0)), Pi/4)
+		geomtest.AssertNumber(t, Vec(1.0, 0.0).AngleBetween(Vec(1.0, -1.0)), Pi/4)
 	})
 	t.Run("parallel and opposite", func(t *testing.T) {
-		AssertNumber(t, Vec(2, 3).AngleBetween(Vec(4, 6)), 0.0)
-		AssertNumber(t, Vec(2, 3).AngleBetween(Vec(-2, -3)), Pi)
+		geomtest.AssertNumber(t, Vec(2, 3).AngleBetween(Vec(4, 6)), 0.0)
+		geomtest.AssertNumber(t, Vec(2, 3).AngleBetween(Vec(-2, -3)), Pi)
 	})
 	t.Run("the zero vector is at angle zero", func(t *testing.T) {
-		AssertNumber(t, Vec(0, 0).AngleBetween(Vec(1, 1)), 0.0)
+		geomtest.AssertNumber(t, Vec(0, 0).AngleBetween(Vec(1, 1)), 0.0)
 	})
 	t.Run("within a half turn", func(t *testing.T) {
 		for _, a := range vectorFixtures {
@@ -575,7 +577,7 @@ func TestVector_AngleBetween(t *testing.T) {
 				angle := a.AngleBetween(b)
 
 				assert.True(t, angle >= 0 && angle <= Pi, fmt.Sprintf("%s to %s: %v", a, b, angle))
-				AssertNumber(t, angle, b.AngleBetween(a), fmt.Sprintf("%s to %s: ", a, b))
+				geomtest.AssertNumber(t, angle, b.AngleBetween(a), fmt.Sprintf("%s to %s: ", a, b))
 			}
 		}
 	})
@@ -766,24 +768,24 @@ func TestVector_LessOrEqual(t *testing.T) {
 
 func TestVector_Point(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertPoint(t, Vec(10, 16).Point(), Pt(10, 16))
+		geomtest.AssertPoint(t, Vec(10, 16).Point(), Pt(10, 16))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertPoint(t, Vec(0.6, -0.25).Point(), Pt(0.6, -0.25))
+		geomtest.AssertPoint(t, Vec(0.6, -0.25).Point(), Pt(0.6, -0.25))
 	})
 }
 
 func TestVector_Size(t *testing.T) {
 	t.Run("positive components", func(t *testing.T) {
-		AssertSize(t, Vec(10, 16).Size(), Sz(10, 16))
+		geomtest.AssertSize(t, Vec(10, 16).Size(), Sz(10, 16))
 	})
 	t.Run("negative components keep their sign", func(t *testing.T) {
-		AssertSize(t, Vec(0.6, -0.25).Size(), Sz(0.6, -0.25))
+		geomtest.AssertSize(t, Vec(0.6, -0.25).Size(), Sz(0.6, -0.25))
 	})
 	t.Run("round-trips with Size.Vector", func(t *testing.T) {
 		size := Sz(-3.5, 2.0)
 
-		AssertSize(t, size.Vector().Size(), size)
+		geomtest.AssertSize(t, size.Vector().Size(), size)
 	})
 }
 
@@ -791,30 +793,30 @@ func TestVector_Cast(t *testing.T) {
 	v := Vec(1.5, -2.5)
 
 	t.Run("matches Int and Float", func(t *testing.T) {
-		AssertVector(t, v.Cast[int](), v.Int())
-		AssertVector(t, v.Cast[float64](), v.Float())
+		geomtest.AssertVector(t, v.Cast[int](), v.Int())
+		geomtest.AssertVector(t, v.Cast[float64](), v.Float())
 	})
 	t.Run("a type the other conversions cannot name", func(t *testing.T) {
-		AssertVector(t, v.Cast[int8](), Vec[int8](2, -3))
+		geomtest.AssertVector(t, v.Cast[int8](), Vec[int8](2, -3))
 	})
 }
 
 func TestVector_Int(t *testing.T) {
 	t.Run("int is a no-op", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).Int(), Vec(10, 16))
+		geomtest.AssertVector(t, Vec(10, 16).Int(), Vec(10, 16))
 	})
 	t.Run("float rounds", func(t *testing.T) {
-		AssertVector(t, Vec(0.6, -0.25).Int(), Vec(1, 0))
-		AssertVector(t, Vec(-1.5, 2.5).Int(), Vec(-2, 3))
+		geomtest.AssertVector(t, Vec(0.6, -0.25).Int(), Vec(1, 0))
+		geomtest.AssertVector(t, Vec(-1.5, 2.5).Int(), Vec(-2, 3))
 	})
 }
 
 func TestVector_Float(t *testing.T) {
 	t.Run("int widens", func(t *testing.T) {
-		AssertVector(t, Vec(10, 16).Float(), Vec(10.0, 16.0))
+		geomtest.AssertVector(t, Vec(10, 16).Float(), Vec(10.0, 16.0))
 	})
 	t.Run("float is a no-op", func(t *testing.T) {
-		AssertVector(t, Vec(0.6, -0.25).Float(), Vec(0.6, -0.25))
+		geomtest.AssertVector(t, Vec(0.6, -0.25).Float(), Vec(0.6, -0.25))
 	})
 }
 
@@ -839,14 +841,14 @@ func TestVector_JSON(t *testing.T) {
 
 		var v Vector[int]
 		assert.NoError(t, json.Unmarshal([]byte(`{"x":10,"y":16}`), &v))
-		AssertVector(t, v, Vec(10, 16))
+		geomtest.AssertVector(t, v, Vec(10, 16))
 	})
 	t.Run("float wire format", func(t *testing.T) {
 		assert.JSON(t, Vec(100, -34.0000115), `{"x":100.0,"y":-34.0000115}`)
 
 		var v Vector[float64]
 		assert.NoError(t, json.Unmarshal([]byte(`{"x":10.1,"y":-34.0000115}`), &v))
-		AssertVector(t, v, Vec(10.1, -34.0000115))
+		geomtest.AssertVector(t, v, Vec(10.1, -34.0000115))
 	})
 	t.Run("round-trip", func(t *testing.T) {
 		for _, vector := range vectorFixtures {
@@ -875,23 +877,23 @@ func TestVector_Properties(t *testing.T) {
 	})
 	t.Run("dot with itself is the squared length", func(t *testing.T) {
 		for _, vector := range vectorFixtures {
-			AssertNumber(t, vector.Dot(vector), vector.LengthSquared(), fmt.Sprintf("%s: ", vector))
-			AssertNumber(t, vector.Length()*vector.Length(), vector.LengthSquared(), fmt.Sprintf("%s: ", vector))
+			geomtest.AssertNumber(t, vector.Dot(vector), vector.LengthSquared(), fmt.Sprintf("%s: ", vector))
+			geomtest.AssertNumber(t, vector.Length()*vector.Length(), vector.LengthSquared(), fmt.Sprintf("%s: ", vector))
 		}
 	})
 	t.Run("normal is perpendicular and keeps the length", func(t *testing.T) {
 		for _, vector := range vectorFixtures {
 			normal := vector.Normal()
 
-			AssertNumber(t, vector.Dot(normal), 0, fmt.Sprintf("%s: ", vector))
-			AssertNumber(t, normal.Length(), vector.Length(), fmt.Sprintf("%s: ", vector))
+			geomtest.AssertNumber(t, vector.Dot(normal), 0, fmt.Sprintf("%s: ", vector))
+			geomtest.AssertNumber(t, normal.Length(), vector.Length(), fmt.Sprintf("%s: ", vector))
 			assert.True(t, normal.Equal(vector.Rotate(Pi/2)), fmt.Sprintf("%s: ", vector))
 		}
 	})
 	t.Run("rotate preserves the length", func(t *testing.T) {
 		for _, vector := range vectorFixtures {
 			for _, angle := range []float64{0, Pi / 6, Pi / 2, 2, -1.5} {
-				AssertNumber(t, vector.Rotate(angle).Length(), vector.Length(), fmt.Sprintf("%s ∠%v: ", vector, angle))
+				geomtest.AssertNumber(t, vector.Rotate(angle).Length(), vector.Length(), fmt.Sprintf("%s ∠%v: ", vector, angle))
 			}
 		}
 	})
@@ -915,7 +917,7 @@ func TestVector_Properties(t *testing.T) {
 			}
 
 			assert.True(t, vector.Normalize().IsNormalized(), fmt.Sprintf("%s: ", vector))
-			AssertNumber(t, vector.Normalize().Angle(), vector.Angle(), fmt.Sprintf("%s: ", vector))
+			geomtest.AssertNumber(t, vector.Normalize().Angle(), vector.Angle(), fmt.Sprintf("%s: ", vector))
 		}
 	})
 	t.Run("angle and length reconstruct the vector", func(t *testing.T) {
@@ -927,8 +929,8 @@ func TestVector_Properties(t *testing.T) {
 	t.Run("cross is antisymmetric", func(t *testing.T) {
 		for _, a := range vectorFixtures {
 			for _, b := range vectorFixtures {
-				AssertNumber(t, a.Cross(b), -b.Cross(a), fmt.Sprintf("%s → %s: ", a, b))
-				AssertNumber(t, a.Dot(b), b.Dot(a), fmt.Sprintf("%s → %s: ", a, b))
+				geomtest.AssertNumber(t, a.Cross(b), -b.Cross(a), fmt.Sprintf("%s → %s: ", a, b))
+				geomtest.AssertNumber(t, a.Dot(b), b.Dot(a), fmt.Sprintf("%s → %s: ", a, b))
 			}
 		}
 	})
@@ -964,8 +966,8 @@ func TestVector_Immutable(t *testing.T) {
 	v1.Normal()
 	v1.Lerp(v2, 0.1)
 
-	AssertVector(t, v1, Vec(10, 16))
-	AssertVector(t, v2, Vec(3, -3))
+	geomtest.AssertVector(t, v1, Vec(10, 16))
+	geomtest.AssertVector(t, v2, Vec(3, -3))
 }
 
 // vectorFixtures span the quadrants, the axes, and the diagonal.

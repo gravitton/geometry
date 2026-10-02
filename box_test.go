@@ -1,4 +1,4 @@
-package geom
+package geom_test
 
 import (
 	"encoding/json"
@@ -7,94 +7,96 @@ import (
 	"testing"
 
 	"github.com/gravitton/assert"
+	. "github.com/gravitton/geometry"
+	"github.com/gravitton/geometry/geomtest"
 )
 
 func TestBox_Constructor(t *testing.T) {
 	t.Run("shorthand", func(t *testing.T) {
-		AssertBox(t, Bx(Pt(0, 0), Pt(4, 2)), Box[int]{Pt(0, 0), Pt(4, 2)})
-		AssertBox(t, Bx(Pt(1.0, 3.0), Pt(0.0, 0.0)), Box[float64]{Pt(0.0, 0.0), Pt(1.0, 3.0)})
+		geomtest.AssertBox(t, Bx(Pt(0, 0), Pt(4, 2)), Box[int]{Pt(0, 0), Pt(4, 2)})
+		geomtest.AssertBox(t, Bx(Pt(1.0, 3.0), Pt(0.0, 0.0)), Box[float64]{Pt(0.0, 0.0), Pt(1.0, 3.0)})
 	})
 	t.Run("from min", func(t *testing.T) {
-		AssertBox(t, BoxFromMin(Pt(1, 2), Sz(4, 3)), Box[int]{Pt(1, 2), Pt(5, 5)})
-		AssertBox(t, BoxFromMin(Pt(0.5, -1.0), Sz(1.5, 2.5)), Box[float64]{Pt(0.5, -1.0), Pt(2.0, 1.5)})
+		geomtest.AssertBox(t, BoxFromMin(Pt(1, 2), Sz(4, 3)), Box[int]{Pt(1, 2), Pt(5, 5)})
+		geomtest.AssertBox(t, BoxFromMin(Pt(0.5, -1.0), Sz(1.5, 2.5)), Box[float64]{Pt(0.5, -1.0), Pt(2.0, 1.5)})
 	})
 	t.Run("from min and max", func(t *testing.T) {
-		AssertBox(t, BoxFromMinMax(Pt(0, 0), Pt(4, 2)), Box[int]{Pt(0, 0), Pt(4, 2)})
-		AssertBox(t, BoxFromMinMax(Pt(0.0, 0.0), Pt(1.0, 3.0)), Box[float64]{Pt(0.0, 0.0), Pt(1.0, 3.0)})
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0, 0), Pt(4, 2)), Box[int]{Pt(0, 0), Pt(4, 2)})
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0.0, 0.0), Pt(1.0, 3.0)), Box[float64]{Pt(0.0, 0.0), Pt(1.0, 3.0)})
 	})
 	t.Run("from size at the origin", func(t *testing.T) {
-		AssertBox(t, BoxFromSize(Sz(4, 2)), Box[int]{Pt(0, 0), Pt(4, 2)})
+		geomtest.AssertBox(t, BoxFromSize(Sz(4, 2)), Box[int]{Pt(0, 0), Pt(4, 2)})
 	})
 	t.Run("corners in either order", func(t *testing.T) {
-		AssertBox(t, BoxFromMinMax(Pt(4, 2), Pt(0, 0)), Box[int]{Pt(0, 0), Pt(4, 2)})
-		AssertBox(t, BoxFromMinMax(Pt(4, 0), Pt(0, 2)), Box[int]{Pt(0, 0), Pt(4, 2)})
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(4, 2), Pt(0, 0)), Box[int]{Pt(0, 0), Pt(4, 2)})
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(4, 0), Pt(0, 2)), Box[int]{Pt(0, 0), Pt(4, 2)})
 	})
 	t.Run("a negative extent measures the other way from the corner", func(t *testing.T) {
-		AssertBox(t, BoxFromMin(Pt(4, 2), Sz(-4, -2)), Box[int]{Pt(0, 0), Pt(4, 2)})
-		AssertBox(t, BoxFromSize(Sz(-4, 2)), Box[int]{Pt(-4, 0), Pt(0, 2)})
+		geomtest.AssertBox(t, BoxFromMin(Pt(4, 2), Sz(-4, -2)), Box[int]{Pt(0, 0), Pt(4, 2)})
+		geomtest.AssertBox(t, BoxFromSize(Sz(-4, 2)), Box[int]{Pt(-4, 0), Pt(0, 2)})
 	})
 }
 
 func TestBox_Width(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertNumber(t, BoxFromMinMax(Pt(1, 2), Pt(4, 7)).Width(), 3)
+		geomtest.AssertNumber(t, BoxFromMinMax(Pt(1, 2), Pt(4, 7)).Width(), 3)
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertNumber(t, BoxFromMinMax(Pt(0.6, -0.25), Pt(1.8, 3.35)).Width(), 1.2)
+		geomtest.AssertNumber(t, BoxFromMinMax(Pt(0.6, -0.25), Pt(1.8, 3.35)).Width(), 1.2)
 	})
 }
 
 func TestBox_Height(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertNumber(t, BoxFromMinMax(Pt(1, 2), Pt(4, 7)).Height(), 5)
+		geomtest.AssertNumber(t, BoxFromMinMax(Pt(1, 2), Pt(4, 7)).Height(), 5)
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertNumber(t, BoxFromMinMax(Pt(0.6, -0.25), Pt(1.8, 3.35)).Height(), 3.6)
+		geomtest.AssertNumber(t, BoxFromMinMax(Pt(0.6, -0.25), Pt(1.8, 3.35)).Height(), 3.6)
 	})
 }
 
 func TestBox_Size(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertSize(t, BoxFromMinMax(Pt(1, 2), Pt(4, 7)).Size(), Sz(3, 5))
+		geomtest.AssertSize(t, BoxFromMinMax(Pt(1, 2), Pt(4, 7)).Size(), Sz(3, 5))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertSize(t, BoxFromMinMax(Pt(0.6, -0.25), Pt(1.8, 3.35)).Size(), Sz(1.2, 3.6))
+		geomtest.AssertSize(t, BoxFromMinMax(Pt(0.6, -0.25), Pt(1.8, 3.35)).Size(), Sz(1.2, 3.6))
 	})
 }
 
 func TestBox_Center(t *testing.T) {
 	t.Run("int truncates toward min", func(t *testing.T) {
-		AssertPoint(t, BoxFromMinMax(Pt(1, 2), Pt(4, 7)).Center(), Pt(2, 4))
-		AssertPoint(t, BoxFromMinMax(Pt(-4, -7), Pt(-1, -2)).Center(), Pt(-3, -5))
+		geomtest.AssertPoint(t, BoxFromMinMax(Pt(1, 2), Pt(4, 7)).Center(), Pt(2, 4))
+		geomtest.AssertPoint(t, BoxFromMinMax(Pt(-4, -7), Pt(-1, -2)).Center(), Pt(-3, -5))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertPoint(t, BoxFromMinMax(Pt(0.6, -0.25), Pt(1.8, 3.35)).Center(), Pt(1.2, 1.55))
+		geomtest.AssertPoint(t, BoxFromMinMax(Pt(0.6, -0.25), Pt(1.8, 3.35)).Center(), Pt(1.2, 1.55))
 	})
 }
 
 func TestBox_Bounds(t *testing.T) {
 	box := BoxFromMinMax(Pt(1, 2), Pt(4, 7))
 
-	AssertBox(t, box.Bounds(), box)
+	geomtest.AssertBox(t, box.Bounds(), box)
 }
 
 func TestBox_Translate(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertBox(t, BoxFromMinMax(Pt(1, 2), Pt(4, 7)).Translate(Vec(3, -2)), BoxFromMinMax(Pt(4, 0), Pt(7, 5)))
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(1, 2), Pt(4, 7)).Translate(Vec(3, -2)), BoxFromMinMax(Pt(4, 0), Pt(7, 5)))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertBox(t, BoxFromMinMax(Pt(0.6, -0.25), Pt(1.8, 3.35)).Translate(Vec(100.1, -0.1)), BoxFromMinMax(Pt(100.7, -0.35), Pt(101.9, 3.25)))
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0.6, -0.25), Pt(1.8, 3.35)).Translate(Vec(100.1, -0.1)), BoxFromMinMax(Pt(100.7, -0.35), Pt(101.9, 3.25)))
 	})
 }
 
 func TestBox_Canonical(t *testing.T) {
 	t.Run("orders the corners", func(t *testing.T) {
-		AssertBox(t, Box[int]{Pt(4, 0), Pt(0, 2)}.Canonical(), Box[int]{Pt(0, 0), Pt(4, 2)})
-		AssertBox(t, Box[float64]{Pt(4.5, 2.5), Pt(0.5, 0.5)}.Canonical(), Box[float64]{Pt(0.5, 0.5), Pt(4.5, 2.5)})
+		geomtest.AssertBox(t, Box[int]{Pt(4, 0), Pt(0, 2)}.Canonical(), Box[int]{Pt(0, 0), Pt(4, 2)})
+		geomtest.AssertBox(t, Box[float64]{Pt(4.5, 2.5), Pt(0.5, 0.5)}.Canonical(), Box[float64]{Pt(0.5, 0.5), Pt(4.5, 2.5)})
 	})
 	t.Run("a well-formed box is kept", func(t *testing.T) {
 		for _, box := range boxFixtures {
-			AssertBox(t, box.Canonical(), box, box.String())
+			geomtest.AssertBox(t, box.Canonical(), box, box.String())
 		}
 	})
 	t.Run("repairs a decoded box before Contains reads it", func(t *testing.T) {
@@ -110,32 +112,32 @@ func TestBox_Inset(t *testing.T) {
 	box := BoxFromMinMax(Pt(0, 0), Pt(10, 10))
 
 	t.Run("each edge moves in by its own padding", func(t *testing.T) {
-		AssertBox(t, box.Inset(PadU(1)), BoxFromMinMax(Pt(1, 1), Pt(9, 9)))
-		AssertBox(t, box.Inset(Pad(3, 1, 2, 5)), BoxFromMinMax(Pt(5, 3), Pt(9, 8)))
+		geomtest.AssertBox(t, box.Inset(PadU(1)), BoxFromMinMax(Pt(1, 1), Pt(9, 9)))
+		geomtest.AssertBox(t, box.Inset(Pad(3, 1, 2, 5)), BoxFromMinMax(Pt(5, 3), Pt(9, 8)))
 	})
 	t.Run("padding beyond the size collapses at the opposite edge", func(t *testing.T) {
-		AssertBox(t, box.Inset(Pad(0, 0, 0, 20)), BoxFromMinMax(Pt(10, 0), Pt(10, 10)))
-		AssertBox(t, box.Inset(Pad(0, 20, 0, 0)), BoxFromMinMax(Pt(0, 0), Pt(0, 10)))
-		AssertBox(t, box.Inset(Pad(20, 0, 0, 0)), BoxFromMinMax(Pt(0, 10), Pt(10, 10)))
+		geomtest.AssertBox(t, box.Inset(Pad(0, 0, 0, 20)), BoxFromMinMax(Pt(10, 0), Pt(10, 10)))
+		geomtest.AssertBox(t, box.Inset(Pad(0, 20, 0, 0)), BoxFromMinMax(Pt(0, 0), Pt(0, 10)))
+		geomtest.AssertBox(t, box.Inset(Pad(20, 0, 0, 0)), BoxFromMinMax(Pt(0, 10), Pt(10, 10)))
 	})
 	t.Run("both paddings over-running leaves the collapse at left and top", func(t *testing.T) {
-		AssertBox(t, box.Inset(PadU(20)), BoxFromMinMax(Pt(10, 10), Pt(10, 10)))
+		geomtest.AssertBox(t, box.Inset(PadU(20)), BoxFromMinMax(Pt(10, 10), Pt(10, 10)))
 	})
 	t.Run("negative padding grows the edge", func(t *testing.T) {
-		AssertBox(t, BoxFromMinMax(Pt(0.0, 0.0), Pt(10.0, 10.0)).Inset(Pad(1.5, -2.0, 0.0, 1.0)), BoxFromMinMax(Pt(1.0, 1.5), Pt(12.0, 10.0)))
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0.0, 0.0), Pt(10.0, 10.0)).Inset(Pad(1.5, -2.0, 0.0, 1.0)), BoxFromMinMax(Pt(1.0, 1.5), Pt(12.0, 10.0)))
 	})
 }
 
 func TestBox_Outset(t *testing.T) {
 	t.Run("each edge moves out by its own padding", func(t *testing.T) {
-		AssertBox(t, BoxFromMinMax(Pt(0, 0), Pt(10, 10)).Outset(Pad(3, 1, 2, 5)), BoxFromMinMax(Pt(-5, -3), Pt(11, 12)))
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0, 0), Pt(10, 10)).Outset(Pad(3, 1, 2, 5)), BoxFromMinMax(Pt(-5, -3), Pt(11, 12)))
 	})
 	t.Run("undoes an inset", func(t *testing.T) {
 		box := BoxFromMinMax(Pt(0.0, 0.0), Pt(10.0, 10.0))
 		padding := Pad(1.0, 2.0, 3.0, 4.0)
 
-		AssertBox(t, box.Inset(padding).Outset(padding), box)
-		AssertBox(t, box.Outset(padding).Inset(padding), box)
+		geomtest.AssertBox(t, box.Inset(padding).Outset(padding), box)
+		geomtest.AssertBox(t, box.Outset(padding).Inset(padding), box)
 	})
 }
 
@@ -143,17 +145,17 @@ func TestBox_Clamp(t *testing.T) {
 	container := BoxFromMinMax(Pt(0, 0), Pt(10, 10))
 
 	t.Run("a box within is unchanged", func(t *testing.T) {
-		AssertBox(t, BoxFromMinMax(Pt(4, 4), Pt(6, 6)).Clamp(container), BoxFromMinMax(Pt(4, 4), Pt(6, 6)))
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(4, 4), Pt(6, 6)).Clamp(container), BoxFromMinMax(Pt(4, 4), Pt(6, 6)))
 	})
 	t.Run("a box outside moves in by the least", func(t *testing.T) {
-		AssertBox(t, BoxFromMinMax(Pt(10, 4), Pt(14, 6)).Clamp(container), BoxFromMinMax(Pt(6, 4), Pt(10, 6)))
-		AssertBox(t, BoxFromMinMax(Pt(-4, -4), Pt(-2, -2)).Clamp(container), BoxFromMinMax(Pt(0, 0), Pt(2, 2)))
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(10, 4), Pt(14, 6)).Clamp(container), BoxFromMinMax(Pt(6, 4), Pt(10, 6)))
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(-4, -4), Pt(-2, -2)).Clamp(container), BoxFromMinMax(Pt(0, 0), Pt(2, 2)))
 	})
 	t.Run("an axis larger than the other is centered", func(t *testing.T) {
-		AssertBox(t, BoxFromMinMax(Pt(13, 2), Pt(27, 4)).Clamp(container), BoxFromMinMax(Pt(-2, 2), Pt(12, 4)))
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(13, 2), Pt(27, 4)).Clamp(container), BoxFromMinMax(Pt(-2, 2), Pt(12, 4)))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertBox(t, BoxFromMinMax(Pt(9.5, 0.25), Pt(10.5, 1.25)).Clamp(container.Float()), BoxFromMinMax(Pt(9.0, 0.25), Pt(10.0, 1.25)))
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(9.5, 0.25), Pt(10.5, 1.25)).Clamp(container.Float()), BoxFromMinMax(Pt(9.0, 0.25), Pt(10.0, 1.25)))
 	})
 	t.Run("over the fixtures", func(t *testing.T) {
 		for _, box := range boxFixtures {
@@ -161,10 +163,10 @@ func TestBox_Clamp(t *testing.T) {
 				clamped := box.Clamp(other)
 				message := fmt.Sprintf("%s → %s: ", box, other)
 
-				AssertSize(t, clamped.Size(), box.Size(), message)
-				AssertBox(t, clamped.Clamp(other), clamped, message)
+				geomtest.AssertSize(t, clamped.Size(), box.Size(), message)
+				geomtest.AssertBox(t, clamped.Clamp(other), clamped, message)
 				if other.Contains(box.Min) && other.Contains(box.Max) {
-					AssertBox(t, clamped, box, message)
+					geomtest.AssertBox(t, clamped, box, message)
 				}
 				if box.Width() <= other.Width() && box.Height() <= other.Height() {
 					assert.True(t, other.Contains(clamped.Min) && other.Contains(clamped.Max), message)
@@ -222,11 +224,11 @@ func TestBox_DistanceTo(t *testing.T) {
 	box := BoxFromMinMax(Pt(-2, -2), Pt(2, 2))
 
 	t.Run("beside an edge measures to the edge", func(t *testing.T) {
-		AssertNumber(t, box.DistanceTo(Pt(5, 0)), 3.0)
-		AssertNumber(t, box.DistanceTo(Pt(0, -6)), 4.0)
+		geomtest.AssertNumber(t, box.DistanceTo(Pt(5, 0)), 3.0)
+		geomtest.AssertNumber(t, box.DistanceTo(Pt(0, -6)), 4.0)
 	})
 	t.Run("beyond a corner measures to the corner", func(t *testing.T) {
-		AssertNumber(t, box.DistanceTo(Pt(5, 6)), 5.0)
+		geomtest.AssertNumber(t, box.DistanceTo(Pt(5, 6)), 5.0)
 	})
 	t.Run("inside and on the boundary are zero", func(t *testing.T) {
 		assert.Equal(t, box.DistanceTo(Pt(1, -1)), 0.0)
@@ -236,17 +238,17 @@ func TestBox_DistanceTo(t *testing.T) {
 		unit := BoxFromMinMax(Pt(-1.0, -1.0), Pt(1.0, 1.0))
 
 		assert.Equal(t, unit.DistanceTo(Pt(1.0+Delta/2, 0.0)), 0.0)
-		AssertNumber(t, unit.DistanceTo(Pt(1.0+2*Delta, 0.0)), 2*Delta)
+		geomtest.AssertNumber(t, unit.DistanceTo(Pt(1.0+2*Delta, 0.0)), 2*Delta)
 	})
 	t.Run("agrees with the rectangle of the box", func(t *testing.T) {
 		for _, b := range boxFixtures {
 			for _, p := range pointFixtures {
-				AssertNumber(t, b.DistanceTo(p), b.Rectangle().DistanceTo(p), fmt.Sprintf("%s → %s: ", b, p))
+				geomtest.AssertNumber(t, b.DistanceTo(p), b.Rectangle().DistanceTo(p), fmt.Sprintf("%s → %s: ", b, p))
 			}
 		}
 	})
 	t.Run("a narrow integer box measures a gap wider than its range", func(t *testing.T) {
-		AssertNumber(t, Bx(Pt[int8](-100, -100), Pt[int8](-90, -90)).DistanceTo(Pt[int8](100, -95)), 190.0)
+		geomtest.AssertNumber(t, Bx(Pt[int8](-100, -100), Pt[int8](-90, -90)).DistanceTo(Pt[int8](100, -95)), 190.0)
 	})
 }
 
@@ -261,7 +263,7 @@ func TestBox_DistanceSquaredTo(t *testing.T) {
 	t.Run("agrees with DistanceTo", func(t *testing.T) {
 		for _, b := range boxFixtures {
 			for _, p := range pointFixtures {
-				AssertNumber(t, b.DistanceSquaredTo(p), b.DistanceTo(p)*b.DistanceTo(p), fmt.Sprintf("%s → %s: ", b, p))
+				geomtest.AssertNumber(t, b.DistanceSquaredTo(p), b.DistanceTo(p)*b.DistanceTo(p), fmt.Sprintf("%s → %s: ", b, p))
 			}
 		}
 	})
@@ -271,12 +273,12 @@ func TestBox_Nearest(t *testing.T) {
 	box := BoxFromMinMax(Pt(0, 1), Pt(2, 4))
 
 	t.Run("a point inside is its own nearest point", func(t *testing.T) {
-		AssertPoint(t, box.Nearest(Pt(1, 2)), Pt(1, 2))
+		geomtest.AssertPoint(t, box.Nearest(Pt(1, 2)), Pt(1, 2))
 	})
 	t.Run("the point clamped onto the box", func(t *testing.T) {
-		AssertPoint(t, box.Nearest(Pt(10, 10)), Pt(2, 4))
-		AssertPoint(t, box.Nearest(Pt(-3, 2)), Pt(0, 2))
-		AssertPoint(t, BoxFromMinMax(Pt(0.0, -2.05), Pt(1.2, 1.55)).Nearest(Pt(-1.0, 1.2)), Pt(0.0, 1.2))
+		geomtest.AssertPoint(t, box.Nearest(Pt(10, 10)), Pt(2, 4))
+		geomtest.AssertPoint(t, box.Nearest(Pt(-3, 2)), Pt(0, 2))
+		geomtest.AssertPoint(t, BoxFromMinMax(Pt(0.0, -2.05), Pt(1.2, 1.55)).Nearest(Pt(-1.0, 1.2)), Pt(0.0, 1.2))
 	})
 	t.Run("a point within the tolerance is kept as it is", func(t *testing.T) {
 		assert.Equal(t, BoxFromMinMax(Pt(0.0, 0.0), Pt(1.0, 1.0)).Nearest(Pt(1.0+Delta/2, 0.5)), Pt(1.0+Delta/2, 0.5))
@@ -392,7 +394,7 @@ func TestBox_IntersectionSegment(t *testing.T) {
 	t.Run("matches Segment.IntersectionBox", func(t *testing.T) {
 		for _, b := range boxFixtures {
 			for _, s := range segmentFixtures {
-				AssertVertices(t, b.IntersectionSegment(s), s.IntersectionBox(b), fmt.Sprintf("%s → %s: ", b, s))
+				geomtest.AssertVertices(t, b.IntersectionSegment(s), s.IntersectionBox(b), fmt.Sprintf("%s → %s: ", b, s))
 			}
 		}
 	})
@@ -402,7 +404,7 @@ func TestBox_AppendIntersectionSegment(t *testing.T) {
 	t.Run("matches Segment.AppendIntersectionBox", func(t *testing.T) {
 		for _, b := range boxFixtures {
 			for _, s := range segmentFixtures {
-				AssertVertices(t, b.AppendIntersectionSegment(bufferWith(prefixPoint), s), s.AppendIntersectionBox(bufferWith(prefixPoint), b), fmt.Sprintf("%s → %s: ", b, s))
+				geomtest.AssertVertices(t, b.AppendIntersectionSegment(bufferWith(prefixPoint), s), s.AppendIntersectionBox(bufferWith(prefixPoint), b), fmt.Sprintf("%s → %s: ", b, s))
 			}
 		}
 	})
@@ -422,7 +424,7 @@ func TestBox_IntersectionRay(t *testing.T) {
 	t.Run("matches Ray.IntersectionBox", func(t *testing.T) {
 		for _, b := range boxFixtures {
 			for _, r := range rayFixtures {
-				AssertVertices(t, b.IntersectionRay(r), r.IntersectionBox(b), fmt.Sprintf("%s → %s: ", b, r))
+				geomtest.AssertVertices(t, b.IntersectionRay(r), r.IntersectionBox(b), fmt.Sprintf("%s → %s: ", b, r))
 			}
 		}
 	})
@@ -432,7 +434,7 @@ func TestBox_AppendIntersectionRay(t *testing.T) {
 	t.Run("matches Ray.AppendIntersectionBox", func(t *testing.T) {
 		for _, b := range boxFixtures {
 			for _, r := range rayFixtures {
-				AssertVertices(t, b.AppendIntersectionRay(bufferWith(prefixPoint), r), r.AppendIntersectionBox(bufferWith(prefixPoint), b), fmt.Sprintf("%s → %s: ", b, r))
+				geomtest.AssertVertices(t, b.AppendIntersectionRay(bufferWith(prefixPoint), r), r.AppendIntersectionBox(bufferWith(prefixPoint), b), fmt.Sprintf("%s → %s: ", b, r))
 			}
 		}
 	})
@@ -507,7 +509,7 @@ func TestBox_IntersectionBox(t *testing.T) {
 		overlap, ok := box.IntersectionBox(BoxFromMinMax(Pt(2, 1), Pt(6, 3)))
 
 		assert.True(t, ok)
-		AssertBox(t, overlap, BoxFromMinMax(Pt(2, 1), Pt(4, 3)))
+		geomtest.AssertBox(t, overlap, BoxFromMinMax(Pt(2, 1), Pt(4, 3)))
 	})
 	t.Run("apart is false", func(t *testing.T) {
 		_, ok := box.IntersectionBox(BoxFromMinMax(Pt(5, 0), Pt(8, 4)))
@@ -518,7 +520,7 @@ func TestBox_IntersectionBox(t *testing.T) {
 		overlap, ok := box.IntersectionBox(BoxFromMinMax(Pt(4, 1), Pt(8, 3)))
 
 		assert.True(t, ok)
-		AssertBox(t, overlap, BoxFromMinMax(Pt(4, 1), Pt(4, 3)))
+		geomtest.AssertBox(t, overlap, BoxFromMinMax(Pt(4, 1), Pt(4, 3)))
 	})
 	t.Run("meeting at the origin alone is the zero box, and true", func(t *testing.T) {
 		overlap, ok := BoxFromMinMax(Pt(-2, -2), Pt(0, 0)).IntersectionBox(box)
@@ -530,7 +532,7 @@ func TestBox_IntersectionBox(t *testing.T) {
 		overlap, ok := BoxFromMinMax(Pt(0.0, 0.0), Pt(1.0, 1.0)).IntersectionBox(BoxFromMinMax(Pt(1+Delta/2, 0.0), Pt(2.0, 1.0)))
 
 		assert.True(t, ok)
-		AssertBox(t, overlap, BoxFromMinMax(Pt(1+Delta/2, 0.0), Pt(1+Delta/2, 1.0)))
+		geomtest.AssertBox(t, overlap, BoxFromMinMax(Pt(1+Delta/2, 0.0), Pt(1+Delta/2, 1.0)))
 		assert.Equal(t, overlap.Width(), 0.0)
 	})
 	t.Run("over the fixtures", func(t *testing.T) {
@@ -546,7 +548,7 @@ func TestBox_IntersectionBox(t *testing.T) {
 					continue
 				}
 
-				AssertBox(t, overlap, reversed, message)
+				geomtest.AssertBox(t, overlap, reversed, message)
 				for _, corner := range []Point[float64]{overlap.Min, overlap.Max} {
 					assert.True(t, a.Contains(corner) && b.Contains(corner), message)
 				}
@@ -559,13 +561,13 @@ func TestBox_Union(t *testing.T) {
 	box := BoxFromMinMax(Pt(0, 0), Pt(4, 4))
 
 	t.Run("overlapping", func(t *testing.T) {
-		AssertBox(t, box.Union(BoxFromMinMax(Pt(2, 2), Pt(6, 6))), BoxFromMinMax(Pt(0, 0), Pt(6, 6)))
+		geomtest.AssertBox(t, box.Union(BoxFromMinMax(Pt(2, 2), Pt(6, 6))), BoxFromMinMax(Pt(0, 0), Pt(6, 6)))
 	})
 	t.Run("apart spans the gap", func(t *testing.T) {
-		AssertBox(t, box.Union(BoxFromMinMax(Pt(8, -2), Pt(10, 2))), BoxFromMinMax(Pt(0, -2), Pt(10, 4)))
+		geomtest.AssertBox(t, box.Union(BoxFromMinMax(Pt(8, -2), Pt(10, 2))), BoxFromMinMax(Pt(0, -2), Pt(10, 4)))
 	})
 	t.Run("one contained in the other", func(t *testing.T) {
-		AssertBox(t, box.Union(BoxFromMinMax(Pt(1, 1), Pt(2, 2))), box)
+		geomtest.AssertBox(t, box.Union(BoxFromMinMax(Pt(1, 1), Pt(2, 2))), box)
 	})
 	t.Run("symmetric and contains both", func(t *testing.T) {
 		for _, a := range boxFixtures {
@@ -573,7 +575,7 @@ func TestBox_Union(t *testing.T) {
 				union := a.Union(b)
 				message := fmt.Sprintf("%s → %s: ", a, b)
 
-				AssertBox(t, union, b.Union(a), message)
+				geomtest.AssertBox(t, union, b.Union(a), message)
 				for _, corner := range []Point[float64]{a.Min, a.Max, b.Min, b.Max} {
 					assert.True(t, union.Contains(corner), message)
 				}
@@ -609,34 +611,34 @@ func TestBox_Rectangle(t *testing.T) {
 	t.Run("int keeps the corners", func(t *testing.T) {
 		r := BoxFromMinMax(Pt(1, 2), Pt(4, 7)).Rectangle()
 
-		AssertRectangle(t, r, Rect(Pt(2, 4), Sz(3, 5)))
-		AssertPoint(t, r.Min(), Pt(1, 2))
-		AssertPoint(t, r.Max(), Pt(4, 7))
+		geomtest.AssertRectangle(t, r, Rect(Pt(2, 4), Sz(3, 5)))
+		geomtest.AssertPoint(t, r.Min(), Pt(1, 2))
+		geomtest.AssertPoint(t, r.Max(), Pt(4, 7))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertRectangle(t, BoxFromMinMax(Pt(0.6, -0.25), Pt(1.8, 3.35)).Rectangle(), Rect(Pt(1.2, 1.55), Sz(1.2, 3.6)))
+		geomtest.AssertRectangle(t, BoxFromMinMax(Pt(0.6, -0.25), Pt(1.8, 3.35)).Rectangle(), Rect(Pt(1.2, 1.55), Sz(1.2, 3.6)))
 	})
 	t.Run("is the inverse of Rectangle.Bounds", func(t *testing.T) {
 		for _, box := range boxFixtures {
-			AssertBox(t, box.Rectangle().Bounds(), box, box.String())
+			geomtest.AssertBox(t, box.Rectangle().Bounds(), box, box.String())
 		}
 	})
 	t.Run("an int box maps to the image rectangle of the same corners", func(t *testing.T) {
 		box := BoxFromMinMax(Pt(1, 2), Pt(4, 7))
 		r := box.Rectangle().Rectangle()
 
-		AssertPoint(t, PointFromImage[int](r.Min), box.Min)
-		AssertPoint(t, PointFromImage[int](r.Max), box.Max)
+		geomtest.AssertPoint(t, PointFromImage[int](r.Min), box.Min)
+		geomtest.AssertPoint(t, PointFromImage[int](r.Max), box.Max)
 	})
 }
 
 func TestBox_Cast(t *testing.T) {
-	AssertBox(t, BoxFromMinMax(Pt(0.4, -1.5), Pt(2.5, 3.6)).Cast[int](), BoxFromMinMax(Pt(0, -2), Pt(3, 4)))
+	geomtest.AssertBox(t, BoxFromMinMax(Pt(0.4, -1.5), Pt(2.5, 3.6)).Cast[int](), BoxFromMinMax(Pt(0, -2), Pt(3, 4)))
 }
 
 func TestBox_Int(t *testing.T) {
 	t.Run("rounds each corner", func(t *testing.T) {
-		AssertBox(t, BoxFromMinMax(Pt(0.4, -1.5), Pt(2.5, 3.6)).Int(), BoxFromMinMax(Pt(0, -2), Pt(3, 4)))
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0.4, -1.5), Pt(2.5, 3.6)).Int(), BoxFromMinMax(Pt(0, -2), Pt(3, 4)))
 	})
 	t.Run("the size can change as the box moves", func(t *testing.T) {
 		box := BoxFromMin(Pt(0.3, 0.0), Sz(2.5, 1.0))
@@ -647,7 +649,7 @@ func TestBox_Int(t *testing.T) {
 }
 
 func TestBox_Float(t *testing.T) {
-	AssertBox(t, BoxFromMinMax(Pt(1, 2), Pt(4, 7)).Float(), BoxFromMinMax(Pt(1.0, 2.0), Pt(4.0, 7.0)))
+	geomtest.AssertBox(t, BoxFromMinMax(Pt(1, 2), Pt(4, 7)).Float(), BoxFromMinMax(Pt(1.0, 2.0), Pt(4.0, 7.0)))
 }
 
 func TestBox_String(t *testing.T) {
@@ -668,7 +670,7 @@ func TestBox_JSON(t *testing.T) {
 
 		var box Box[int]
 		assert.NoError(t, json.Unmarshal([]byte(`{"a":{"x":0,"y":1},"b":{"x":2,"y":4}}`), &box))
-		AssertBox(t, box, BoxFromMinMax(Pt(0, 1), Pt(2, 4)))
+		geomtest.AssertBox(t, box, BoxFromMinMax(Pt(0, 1), Pt(2, 4)))
 	})
 	t.Run("round-trip", func(t *testing.T) {
 		for _, box := range boxFixtures {
@@ -685,7 +687,7 @@ func TestBox_JSON(t *testing.T) {
 func TestBox_Properties(t *testing.T) {
 	t.Run("the size spans the corners and the center lies between them", func(t *testing.T) {
 		for _, box := range boxFixtures {
-			AssertPoint(t, box.Min.Add(box.Size().Vector()), box.Max, box.String())
+			geomtest.AssertPoint(t, box.Min.Add(box.Size().Vector()), box.Max, box.String())
 			assert.True(t, box.Contains(box.Center()), box.String())
 		}
 	})
@@ -694,8 +696,8 @@ func TestBox_Properties(t *testing.T) {
 			for _, vector := range vectorFixtures {
 				moved := box.Translate(vector)
 
-				AssertSize(t, moved.Size(), box.Size(), fmt.Sprintf("%s → %s: ", box, vector))
-				AssertPoint(t, moved.Min, box.Min.Add(vector), fmt.Sprintf("%s → %s: ", box, vector))
+				geomtest.AssertSize(t, moved.Size(), box.Size(), fmt.Sprintf("%s → %s: ", box, vector))
+				geomtest.AssertPoint(t, moved.Min, box.Min.Add(vector), fmt.Sprintf("%s → %s: ", box, vector))
 			}
 		}
 	})
@@ -710,7 +712,7 @@ func TestBox_Immutable(t *testing.T) {
 	box.Outset(PadU(1))
 	box.Clamp(BoxFromSize(Sz(2, 2)))
 
-	AssertBox(t, box, BoxFromMinMax(Pt(1, 2), Pt(4, 7)))
+	geomtest.AssertBox(t, box, BoxFromMinMax(Pt(1, 2), Pt(4, 7)))
 }
 
 // boxFixtures span square, portrait, landscape, degenerate, and off-origin boxes.

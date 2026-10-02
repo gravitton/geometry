@@ -1,4 +1,4 @@
-package geom
+package geom_test
 
 import (
 	"encoding/json"
@@ -9,63 +9,65 @@ import (
 	"testing"
 
 	"github.com/gravitton/assert"
+	. "github.com/gravitton/geometry"
+	"github.com/gravitton/geometry/geomtest"
 )
 
 func TestRay_Constructor(t *testing.T) {
 	t.Run("along a direction", func(t *testing.T) {
-		AssertRay(t, RayAlong(Pt(1, -1), Vec(3, 4)), Ray[int]{Origin: Pt(1, -1), Direction: Vec(3, 4)})
-		AssertRay(t, RayAlong(Pt(0.5, -1.25), Vec(2.0, 5.0)), Ray[float64]{Origin: Pt(0.5, -1.25), Direction: Vec(2.0, 5.0)})
+		geomtest.AssertRay(t, RayAlong(Pt(1, -1), Vec(3, 4)), Ray[int]{Origin: Pt(1, -1), Direction: Vec(3, 4)})
+		geomtest.AssertRay(t, RayAlong(Pt(0.5, -1.25), Vec(2.0, 5.0)), Ray[float64]{Origin: Pt(0.5, -1.25), Direction: Vec(2.0, 5.0)})
 	})
 	t.Run("through a point", func(t *testing.T) {
-		AssertRay(t, RayThrough(Pt(1, -1), Pt(4, 3)), RayAlong(Pt(1, -1), Vec(3, 4)))
-		AssertRay(t, RayThrough(Pt(0.5, -1.25), Pt(2.5, 3.75)), RayAlong(Pt(0.5, -1.25), Vec(2.0, 5.0)))
+		geomtest.AssertRay(t, RayThrough(Pt(1, -1), Pt(4, 3)), RayAlong(Pt(1, -1), Vec(3, 4)))
+		geomtest.AssertRay(t, RayThrough(Pt(0.5, -1.25), Pt(2.5, 3.75)), RayAlong(Pt(0.5, -1.25), Vec(2.0, 5.0)))
 	})
 	t.Run("through the origin itself runs nowhere", func(t *testing.T) {
-		AssertRay(t, RayThrough(Pt(2, 3), Pt(2, 3)), Ray[int]{Origin: Pt(2, 3)})
+		geomtest.AssertRay(t, RayThrough(Pt(2, 3), Pt(2, 3)), Ray[int]{Origin: Pt(2, 3)})
 	})
 }
 
 func TestRay_Angle(t *testing.T) {
 	t.Run("the angle of the direction", func(t *testing.T) {
-		AssertNumber(t, RayAlong(Pt(1, 1), Vec(0, 2)).Angle(), Pi/2)
-		AssertNumber(t, RayAlong(Pt(1.0, 1.0), Vec(-3.0, 0.0)).Angle(), Pi)
+		geomtest.AssertNumber(t, RayAlong(Pt(1, 1), Vec(0, 2)).Angle(), Pi/2)
+		geomtest.AssertNumber(t, RayAlong(Pt(1.0, 1.0), Vec(-3.0, 0.0)).Angle(), Pi)
 	})
 	t.Run("a zero direction gives zero", func(t *testing.T) {
-		AssertNumber(t, RayAlong(Pt(1, 1), Vec(0, 0)).Angle(), 0)
+		geomtest.AssertNumber(t, RayAlong(Pt(1, 1), Vec(0, 0)).Angle(), 0)
 	})
 }
 
 func TestRay_Translate(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertRay(t, RayAlong(Pt(1, 2), Vec(3, 4)).Translate(Vec(-2, 5)), RayAlong(Pt(-1, 7), Vec(3, 4)))
+		geomtest.AssertRay(t, RayAlong(Pt(1, 2), Vec(3, 4)).Translate(Vec(-2, 5)), RayAlong(Pt(-1, 7), Vec(3, 4)))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertRay(t, RayAlong(Pt(0.5, 2.0), Vec(3.0, 4.0)).Translate(Vec(0.25, -1.5)), RayAlong(Pt(0.75, 0.5), Vec(3.0, 4.0)))
+		geomtest.AssertRay(t, RayAlong(Pt(0.5, 2.0), Vec(3.0, 4.0)).Translate(Vec(0.25, -1.5)), RayAlong(Pt(0.75, 0.5), Vec(3.0, 4.0)))
 	})
 }
 
 func TestRay_MoveTo(t *testing.T) {
 	t.Run("starts at the point with the same direction", func(t *testing.T) {
-		AssertRay(t, RayAlong(Pt(1, 2), Vec(3, 4)).MoveTo(Pt(-5, 0)), RayAlong(Pt(-5, 0), Vec(3, 4)))
+		geomtest.AssertRay(t, RayAlong(Pt(1, 2), Vec(3, 4)).MoveTo(Pt(-5, 0)), RayAlong(Pt(-5, 0), Vec(3, 4)))
 	})
 }
 
 func TestRay_Scale(t *testing.T) {
 	t.Run("scales the direction about the origin", func(t *testing.T) {
-		AssertRay(t, RayAlong(Pt(1, 2), Vec(3, 4)).Scale(2), RayAlong(Pt(1, 2), Vec(6, 8)))
-		AssertRay(t, RayAlong(Pt(1.0, 2.0), Vec(3.0, 4.0)).Scale(0.5), RayAlong(Pt(1.0, 2.0), Vec(1.5, 2.0)))
+		geomtest.AssertRay(t, RayAlong(Pt(1, 2), Vec(3, 4)).Scale(2), RayAlong(Pt(1, 2), Vec(6, 8)))
+		geomtest.AssertRay(t, RayAlong(Pt(1.0, 2.0), Vec(3.0, 4.0)).Scale(0.5), RayAlong(Pt(1.0, 2.0), Vec(1.5, 2.0)))
 	})
 	t.Run("per-axis factor changes the direction", func(t *testing.T) {
-		AssertRay(t, RayAlong(Pt(1, 2), Vec(3, 4)).ScaleXY(2, -1), RayAlong(Pt(1, 2), Vec(6, -4)))
+		geomtest.AssertRay(t, RayAlong(Pt(1, 2), Vec(3, 4)).ScaleXY(2, -1), RayAlong(Pt(1, 2), Vec(6, -4)))
 	})
 	t.Run("a negative factor turns it to the other side of its origin", func(t *testing.T) {
-		AssertRay(t, RayAlong(Pt(1, 2), Vec(3, 4)).Scale(-1), RayAlong(Pt(1, 2), Vec(-3, -4)))
+		geomtest.AssertRay(t, RayAlong(Pt(1, 2), Vec(3, 4)).Scale(-1), RayAlong(Pt(1, 2), Vec(-3, -4)))
 	})
 	t.Run("zero collapses onto the origin", func(t *testing.T) {
-		AssertRay(t, RayAlong(Pt(1, 2), Vec(3, 4)).Scale(0), RayAlong(Pt(1, 2), Vec(0, 0)))
+		geomtest.AssertRay(t, RayAlong(Pt(1, 2), Vec(3, 4)).Scale(0), RayAlong(Pt(1, 2), Vec(0, 0)))
 	})
 	t.Run("int rounds the direction", func(t *testing.T) {
-		AssertRay(t, RayAlong(Pt(1, 2), Vec(3, 4)).Scale(0.5), RayAlong(Pt(1, 2), Vec(2, 2)))
+		geomtest.AssertRay(t, RayAlong(Pt(1, 2), Vec(3, 4)).Scale(0.5), RayAlong(Pt(1, 2), Vec(2, 2)))
 	})
 	t.Run("keeps the points and steps the scaled length", func(t *testing.T) {
 		for _, r := range rayFixtures {
@@ -73,7 +75,7 @@ func TestRay_Scale(t *testing.T) {
 				scaled := r.Scale(factor)
 
 				assert.True(t, r.Contains(scaled.PointAt(3)), fmt.Sprintf("%s x%v: ", r, factor))
-				AssertNumber(t, scaled.Direction.Length(), r.Direction.Length()*factor, fmt.Sprintf("%s x%v: ", r, factor))
+				geomtest.AssertNumber(t, scaled.Direction.Length(), r.Direction.Length()*factor, fmt.Sprintf("%s x%v: ", r, factor))
 			}
 		}
 	})
@@ -81,15 +83,15 @@ func TestRay_Scale(t *testing.T) {
 
 func TestRay_Unscale(t *testing.T) {
 	t.Run("uniform factor", func(t *testing.T) {
-		AssertRay(t, RayAlong(Pt(1, 2), Vec(6, 8)).Unscale(2), RayAlong(Pt(1, 2), Vec(3, 4)))
+		geomtest.AssertRay(t, RayAlong(Pt(1, 2), Vec(6, 8)).Unscale(2), RayAlong(Pt(1, 2), Vec(3, 4)))
 	})
 	t.Run("per-axis factor", func(t *testing.T) {
-		AssertRay(t, RayAlong(Pt(1, 2), Vec(6, -4)).UnscaleXY(2, -1), RayAlong(Pt(1, 2), Vec(3, 4)))
+		geomtest.AssertRay(t, RayAlong(Pt(1, 2), Vec(6, -4)).UnscaleXY(2, -1), RayAlong(Pt(1, 2), Vec(3, 4)))
 	})
 	t.Run("undoes scale", func(t *testing.T) {
 		for _, r := range rayFixtures {
 			for _, factor := range []float64{0.5, 1, 2.5, -3} {
-				AssertRay(t, r.Scale(factor).Unscale(factor), r, fmt.Sprintf("%s x%v: ", r, factor))
+				geomtest.AssertRay(t, r.Scale(factor).Unscale(factor), r, fmt.Sprintf("%s x%v: ", r, factor))
 			}
 		}
 	})
@@ -107,27 +109,27 @@ func TestRay_PointAt(t *testing.T) {
 	ray := RayAlong(Pt(1.0, 2.0), Vec(2.0, -1.0))
 
 	t.Run("the origin at 0 and one direction away at 1", func(t *testing.T) {
-		AssertPoint(t, ray.PointAt(0), Pt(1.0, 2.0))
-		AssertPoint(t, ray.PointAt(1), Pt(3.0, 1.0))
+		geomtest.AssertPoint(t, ray.PointAt(0), Pt(1.0, 2.0))
+		geomtest.AssertPoint(t, ray.PointAt(1), Pt(3.0, 1.0))
 	})
 	t.Run("along the ray", func(t *testing.T) {
-		AssertPoint(t, ray.PointAt(2.5), Pt(6.0, -0.5))
+		geomtest.AssertPoint(t, ray.PointAt(2.5), Pt(6.0, -0.5))
 	})
 	t.Run("behind the origin for a negative fraction", func(t *testing.T) {
-		AssertPoint(t, ray.PointAt(-1), Pt(-1.0, 3.0))
+		geomtest.AssertPoint(t, ray.PointAt(-1), Pt(-1.0, 3.0))
 	})
 	t.Run("int rounds once, on the sum", func(t *testing.T) {
-		AssertPoint(t, RayAlong(Pt(1, 0), Vec(-1, 0)).PointAt(0.5), Pt(1, 0))
-		AssertPoint(t, RayAlong(Pt(1, 1), Vec(1, 1)).PointAt(0.5), Pt(2, 2))
+		geomtest.AssertPoint(t, RayAlong(Pt(1, 0), Vec(-1, 0)).PointAt(0.5), Pt(1, 0))
+		geomtest.AssertPoint(t, RayAlong(Pt(1, 1), Vec(1, 1)).PointAt(0.5), Pt(2, 2))
 	})
 }
 
 func TestRay_Transform(t *testing.T) {
 	t.Run("a translation moves the origin alone", func(t *testing.T) {
-		AssertRay(t, RayAlong(Pt(1, 2), Vec(3, 4)).Transform(Mat(1.0, 0.0, 5.0, 0.0, 1.0, -1.0)), RayAlong(Pt(6, 1), Vec(3, 4)))
+		geomtest.AssertRay(t, RayAlong(Pt(1, 2), Vec(3, 4)).Transform(Mat(1.0, 0.0, 5.0, 0.0, 1.0, -1.0)), RayAlong(Pt(6, 1), Vec(3, 4)))
 	})
 	t.Run("a scale applies to both", func(t *testing.T) {
-		AssertRay(t, RayAlong(Pt(1, 2), Vec(3, 4)).Transform(Mat(2.0, 0.0, 0.0, 0.0, -1.0, 0.0)), RayAlong(Pt(2, -2), Vec(6, -4)))
+		geomtest.AssertRay(t, RayAlong(Pt(1, 2), Vec(3, 4)).Transform(Mat(2.0, 0.0, 0.0, 0.0, -1.0, 0.0)), RayAlong(Pt(2, -2), Vec(6, -4)))
 	})
 	t.Run("keeps every point on the transformed ray", func(t *testing.T) {
 		matrix := IdentityMatrix[float64]().Rotate(Pi/5).Translate(3, -2)
@@ -143,11 +145,11 @@ func TestRay_Transform(t *testing.T) {
 
 func TestRay_Rotate(t *testing.T) {
 	t.Run("quarter turn about the origin", func(t *testing.T) {
-		AssertRay(t, RayAlong(Pt(1, 1), Vec(2, 0)).Rotate(Pi/2), RayAlong(Pt(1, 1), Vec(0, 2)))
+		geomtest.AssertRay(t, RayAlong(Pt(1, 1), Vec(2, 0)).Rotate(Pi/2), RayAlong(Pt(1, 1), Vec(0, 2)))
 	})
 	t.Run("a full turn is identity", func(t *testing.T) {
 		for _, r := range rayFixtures {
-			AssertRay(t, r.Rotate(2*Pi), r, r.String()+": ")
+			geomtest.AssertRay(t, r.Rotate(2*Pi), r, r.String()+": ")
 		}
 	})
 }
@@ -197,23 +199,23 @@ func TestRay_DistanceTo(t *testing.T) {
 	ray := RayAlong(Pt(0, 0), Vec(1, 0))
 
 	t.Run("ahead of the origin measures to the line", func(t *testing.T) {
-		AssertNumber(t, ray.DistanceTo(Pt(100, 3)), 3)
-		AssertNumber(t, ray.DistanceTo(Pt(1, -4)), 4)
+		geomtest.AssertNumber(t, ray.DistanceTo(Pt(100, 3)), 3)
+		geomtest.AssertNumber(t, ray.DistanceTo(Pt(1, -4)), 4)
 	})
 	t.Run("behind the origin measures to the origin", func(t *testing.T) {
-		AssertNumber(t, ray.DistanceTo(Pt(-3, 4)), 5)
+		geomtest.AssertNumber(t, ray.DistanceTo(Pt(-3, 4)), 5)
 	})
 	t.Run("on the ray is exactly zero", func(t *testing.T) {
 		assert.Equal(t, RayAlong(Pt(1, 1), Vec(3, 7)).DistanceTo(Pt(7, 15)), 0.0)
 	})
 	t.Run("a zero direction measures to the origin", func(t *testing.T) {
-		AssertNumber(t, RayAlong(Pt(1, 1), Vec(0, 0)).DistanceTo(Pt(4, 5)), 5)
+		geomtest.AssertNumber(t, RayAlong(Pt(1, 1), Vec(0, 0)).DistanceTo(Pt(4, 5)), 5)
 	})
 	t.Run("float within the tolerance is zero, beyond it is measured", func(t *testing.T) {
 		r := RayAlong(Pt(0.0, 0.0), Vec(1.0, 0.0))
 
 		assert.Equal(t, r.DistanceTo(Pt(3.0, Delta/2)), 0.0)
-		AssertNumber(t, r.DistanceTo(Pt(3.0, 2*Delta)), 2*Delta)
+		geomtest.AssertNumber(t, r.DistanceTo(Pt(3.0, 2*Delta)), 2*Delta)
 	})
 }
 
@@ -221,12 +223,12 @@ func TestRay_DistanceSquaredTo(t *testing.T) {
 	ray := RayAlong(Pt(0, 0), Vec(2, 1))
 
 	t.Run("stays fractional for an integer T", func(t *testing.T) {
-		AssertNumber(t, ray.DistanceSquaredTo(Pt(0, 1)), 0.8)
+		geomtest.AssertNumber(t, ray.DistanceSquaredTo(Pt(0, 1)), 0.8)
 	})
 	t.Run("agrees with DistanceTo", func(t *testing.T) {
 		for _, r := range rayFixtures {
 			for _, p := range pointFixtures {
-				AssertNumber(t, r.DistanceSquaredTo(p), r.DistanceTo(p)*r.DistanceTo(p), fmt.Sprintf("%s → %s: ", r, p))
+				geomtest.AssertNumber(t, r.DistanceSquaredTo(p), r.DistanceTo(p)*r.DistanceTo(p), fmt.Sprintf("%s → %s: ", r, p))
 			}
 		}
 	})
@@ -236,25 +238,25 @@ func TestRay_Nearest(t *testing.T) {
 	ray := RayAlong(Pt(0.0, 0.0), Vec(2.0, 0.0))
 
 	t.Run("the foot of the perpendicular", func(t *testing.T) {
-		AssertPoint(t, ray.Nearest(Pt(7.0, 3.0)), Pt(7.0, 0.0))
+		geomtest.AssertPoint(t, ray.Nearest(Pt(7.0, 3.0)), Pt(7.0, 0.0))
 	})
 	t.Run("the origin where the foot falls behind it", func(t *testing.T) {
-		AssertPoint(t, ray.Nearest(Pt(-2.0, 3.0)), Pt(0.0, 0.0))
+		geomtest.AssertPoint(t, ray.Nearest(Pt(-2.0, 3.0)), Pt(0.0, 0.0))
 	})
 	t.Run("a point within the tolerance is kept as it is", func(t *testing.T) {
-		AssertPoint(t, ray.Nearest(Pt(3.0, Delta/2)), Pt(3.0, Delta/2))
+		geomtest.AssertPoint(t, ray.Nearest(Pt(3.0, Delta/2)), Pt(3.0, Delta/2))
 	})
 	t.Run("int rounds once and can land off the ray", func(t *testing.T) {
 		r := RayAlong(Pt(0, 0), Vec(2, 1))
 		nearest := r.Nearest(Pt(0, 1))
 
-		AssertPoint(t, nearest, Pt(0, 0))
-		AssertPoint(t, r.Nearest(Pt(3, 3)), Pt(4, 2))
-		AssertPoint(t, r.Nearest(Pt(0, 2)), Pt(1, 0))
+		geomtest.AssertPoint(t, nearest, Pt(0, 0))
+		geomtest.AssertPoint(t, r.Nearest(Pt(3, 3)), Pt(4, 2))
+		geomtest.AssertPoint(t, r.Nearest(Pt(0, 2)), Pt(1, 0))
 		assert.False(t, r.Contains(Pt(1, 0)))
 	})
 	t.Run("a zero direction is its origin", func(t *testing.T) {
-		AssertPoint(t, RayAlong(Pt(1, 1), Vec(0, 0)).Nearest(Pt(4, 5)), Pt(1, 1))
+		geomtest.AssertPoint(t, RayAlong(Pt(1, 1), Vec(0, 0)).Nearest(Pt(4, 5)), Pt(1, 1))
 	})
 	t.Run("over the fixtures", func(t *testing.T) {
 		for _, r := range rayFixtures {
@@ -265,7 +267,7 @@ func TestRay_Nearest(t *testing.T) {
 				assert.Equal(t, nearest.Equal(p), r.Contains(p), message)
 				assert.True(t, r.Contains(nearest), message)
 				assert.True(t, r.Nearest(nearest).Equal(nearest), message)
-				AssertNumber(t, p.DistanceSquaredTo(nearest), r.DistanceSquaredTo(p), message)
+				geomtest.AssertNumber(t, p.DistanceSquaredTo(nearest), r.DistanceSquaredTo(p), message)
 			}
 		}
 	})
@@ -290,7 +292,7 @@ func TestRay_IntersectionCircle(t *testing.T) {
 	t.Run("matches Circle.IntersectionRay", func(t *testing.T) {
 		for _, r := range rayFixtures {
 			for _, c := range circleFixtures {
-				AssertVertices(t, r.IntersectionCircle(c), c.IntersectionRay(r), fmt.Sprintf("%s → %s: ", r, c))
+				geomtest.AssertVertices(t, r.IntersectionCircle(c), c.IntersectionRay(r), fmt.Sprintf("%s → %s: ", r, c))
 			}
 		}
 	})
@@ -300,7 +302,7 @@ func TestRay_AppendIntersectionCircle(t *testing.T) {
 	t.Run("matches Circle.AppendIntersectionRay", func(t *testing.T) {
 		for _, r := range rayFixtures {
 			for _, c := range circleFixtures {
-				AssertVertices(t, r.AppendIntersectionCircle(bufferWith(prefixPoint), c), c.AppendIntersectionRay(bufferWith(prefixPoint), r), fmt.Sprintf("%s → %s: ", r, c))
+				geomtest.AssertVertices(t, r.AppendIntersectionCircle(bufferWith(prefixPoint), c), c.AppendIntersectionRay(bufferWith(prefixPoint), r), fmt.Sprintf("%s → %s: ", r, c))
 			}
 		}
 	})
@@ -324,7 +326,7 @@ func TestRay_IntersectionSegment(t *testing.T) {
 				expected, expectedOk := s.IntersectionRay(r)
 
 				assert.Equal(t, ok, expectedOk, fmt.Sprintf("%s → %s: ", r, s))
-				AssertPoint(t, actual, expected, fmt.Sprintf("%s → %s: ", r, s))
+				geomtest.AssertPoint(t, actual, expected, fmt.Sprintf("%s → %s: ", r, s))
 			}
 		}
 	})
@@ -379,7 +381,7 @@ func TestRay_IntersectionRay(t *testing.T) {
 		point, ok := diagonal.IntersectionRay(RayAlong(Pt(4, 0), Vec(-1, 1)))
 
 		assert.True(t, ok)
-		AssertPoint(t, point, Pt(2, 2))
+		geomtest.AssertPoint(t, point, Pt(2, 2))
 	})
 	t.Run("the lines cross behind an origin", func(t *testing.T) {
 		_, ok := diagonal.IntersectionRay(RayAlong(Pt(4, 0), Vec(1, -1)))
@@ -390,12 +392,12 @@ func TestRay_IntersectionRay(t *testing.T) {
 		point, ok := diagonal.IntersectionRay(RayAlong(Pt(3, 3), Vec(1, 0)))
 
 		assert.True(t, ok)
-		AssertPoint(t, point, Pt(3, 3))
+		geomtest.AssertPoint(t, point, Pt(3, 3))
 
 		point, ok = RayAlong(Pt(3, 3), Vec(1, 0)).IntersectionRay(diagonal)
 
 		assert.True(t, ok)
-		AssertPoint(t, point, Pt(3, 3))
+		geomtest.AssertPoint(t, point, Pt(3, 3))
 	})
 	t.Run("parallel and collinear rays have no single point", func(t *testing.T) {
 		_, ok := diagonal.IntersectionRay(RayAlong(Pt(0, 1), Vec(1, 1)))
@@ -408,7 +410,7 @@ func TestRay_IntersectionRay(t *testing.T) {
 		point, ok := diagonal.IntersectionRay(RayAlong(Pt(2, 2), Vec(0, 0)))
 
 		assert.True(t, ok)
-		AssertPoint(t, point, Pt(2, 2))
+		geomtest.AssertPoint(t, point, Pt(2, 2))
 
 		_, ok = diagonal.IntersectionRay(RayAlong(Pt(2, 3), Vec(0, 0)))
 		assert.False(t, ok)
@@ -417,13 +419,13 @@ func TestRay_IntersectionRay(t *testing.T) {
 		point, ok := RayAlong(Pt(0, 0), Vec(1, 0)).IntersectionRay(RayAlong(Pt(1, -1), Vec(1, 2)))
 
 		assert.True(t, ok)
-		AssertPoint(t, point, Pt(2, 0))
+		geomtest.AssertPoint(t, point, Pt(2, 0))
 	})
 	t.Run("float keeps the crossing", func(t *testing.T) {
 		point, ok := RayAlong(Pt(0.0, 0.0), Vec(1.0, 0.0)).IntersectionRay(RayAlong(Pt(1.0, -1.0), Vec(1.0, 2.0)))
 
 		assert.True(t, ok)
-		AssertPoint(t, point, Pt(1.5, 0.0))
+		geomtest.AssertPoint(t, point, Pt(1.5, 0.0))
 	})
 	t.Run("nearly collinear float rays fall back to the origin on the other", func(t *testing.T) {
 		a := RayAlong(Pt(1.6, 2.0), Vec(0.8059999999999999, 23.009999999999998))
@@ -431,13 +433,13 @@ func TestRay_IntersectionRay(t *testing.T) {
 		point, ok := a.IntersectionRay(b)
 
 		assert.True(t, ok)
-		AssertPoint(t, point, b.Origin)
+		geomtest.AssertPoint(t, point, b.Origin)
 		assert.True(t, a.IntersectsRay(b))
 	})
 	t.Run("agrees with Intersects on non-parallel fixtures, on both rays", func(t *testing.T) {
 		for _, a := range rayFixtures {
 			for _, b := range rayFixtures {
-				if a.parallel(b) {
+				if a.Direction.Float().Cross(b.Direction.Float()) == 0 && a.Direction != (Vector[float64]{}) && b.Direction != (Vector[float64]{}) {
 					continue
 				}
 
@@ -485,7 +487,7 @@ func TestRay_IntersectsPolygon(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := RayAlong(Pt(-2, 2), Vec(1, 0))
 
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkBool = through.IntersectsPolygon(square)
 		}), 0)
 	})
@@ -496,18 +498,18 @@ func TestRay_IntersectionPolygon(t *testing.T) {
 	notched := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(4.0, 4.0), Pt(2.0, 1.0), Pt(0.0, 4.0)})
 
 	t.Run("passing through gives both crossings from Origin on", func(t *testing.T) {
-		AssertVertices(t, RayAlong(Pt(-2, 2), Vec(1, 0)).IntersectionPolygon(square), []Point[int]{Pt(0, 2), Pt(4, 2)})
-		AssertVertices(t, RayAlong(Pt(6, 2), Vec(-3, 0)).IntersectionPolygon(square), []Point[int]{Pt(4, 2), Pt(0, 2)})
+		geomtest.AssertVertices(t, RayAlong(Pt(-2, 2), Vec(1, 0)).IntersectionPolygon(square), []Point[int]{Pt(0, 2), Pt(4, 2)})
+		geomtest.AssertVertices(t, RayAlong(Pt(6, 2), Vec(-3, 0)).IntersectionPolygon(square), []Point[int]{Pt(4, 2), Pt(0, 2)})
 	})
 	t.Run("starting inside gives the exit", func(t *testing.T) {
-		AssertVertices(t, RayAlong(Pt(2, 2), Vec(0, 1)).IntersectionPolygon(square), []Point[int]{Pt(2, 4)})
+		geomtest.AssertVertices(t, RayAlong(Pt(2, 2), Vec(0, 1)).IntersectionPolygon(square), []Point[int]{Pt(2, 4)})
 	})
 	t.Run("through a vertex counts it once", func(t *testing.T) {
-		AssertVertices(t, RayAlong(Pt(-2, -2), Vec(1, 1)).IntersectionPolygon(square), []Point[int]{Pt(0, 0), Pt(4, 4)})
-		AssertVertices(t, RayAlong(Pt(2, 6), Vec(1, -1)).IntersectionPolygon(square), []Point[int]{Pt(4, 4)})
+		geomtest.AssertVertices(t, RayAlong(Pt(-2, -2), Vec(1, 1)).IntersectionPolygon(square), []Point[int]{Pt(0, 0), Pt(4, 4)})
+		geomtest.AssertVertices(t, RayAlong(Pt(2, 6), Vec(1, -1)).IntersectionPolygon(square), []Point[int]{Pt(4, 4)})
 	})
 	t.Run("a concave polygon is crossed more than twice", func(t *testing.T) {
-		AssertVertices(t, RayAlong(Pt(-1.0, 3.0), Vec(1.0, 0.0)).IntersectionPolygon(notched), []Point[float64]{Pt(0.0, 3.0), Pt(2.0/3, 3.0), Pt(10.0/3, 3.0), Pt(4.0, 3.0)})
+		geomtest.AssertVertices(t, RayAlong(Pt(-1.0, 3.0), Vec(1.0, 0.0)).IntersectionPolygon(notched), []Point[float64]{Pt(0.0, 3.0), Pt(2.0/3, 3.0), Pt(10.0/3, 3.0), Pt(4.0, 3.0)})
 	})
 	t.Run("pointing away and empty give none", func(t *testing.T) {
 		assert.Nil(t, RayAlong(Pt(-2, 2), Vec(-1, 0)).IntersectionPolygon(square))
@@ -516,10 +518,10 @@ func TestRay_IntersectionPolygon(t *testing.T) {
 	t.Run("allocates the result alone", func(t *testing.T) {
 		through, away := RayAlong(Pt(-2, 2), Vec(1, 0)), RayAlong(Pt(-2, 2), Vec(-1, 0))
 
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkPoints = through.IntersectionPolygon(square)
 		}), 1)
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkPoints = away.IntersectionPolygon(square)
 		}), 0)
 	})
@@ -537,23 +539,23 @@ func TestRay_AppendIntersectionPolygon(t *testing.T) {
 	through := RayAlong(Pt(-1, 1), Vec(1, 0))
 
 	t.Run("appends after the points in dst, comparing and ordering only its own", func(t *testing.T) {
-		AssertVertices(t, through.AppendIntersectionPolygon([]Point[int]{Pt(2, 1), Pt(9, 9)}, square), []Point[int]{Pt(2, 1), Pt(9, 9), Pt(0, 1), Pt(2, 1)})
+		geomtest.AssertVertices(t, through.AppendIntersectionPolygon([]Point[int]{Pt(2, 1), Pt(9, 9)}, square), []Point[int]{Pt(2, 1), Pt(9, 9), Pt(0, 1), Pt(2, 1)})
 	})
 	t.Run("none leaves dst as it is", func(t *testing.T) {
-		AssertVertices(t, RayAlong(Pt(-1, 1), Vec(-1, 0)).AppendIntersectionPolygon([]Point[int]{Pt(9, 9)}, square), []Point[int]{Pt(9, 9)})
+		geomtest.AssertVertices(t, RayAlong(Pt(-1, 1), Vec(-1, 0)).AppendIntersectionPolygon([]Point[int]{Pt(9, 9)}, square), []Point[int]{Pt(9, 9)})
 		assert.Nil(t, RayAlong(Pt(-1, 1), Vec(-1, 0)).AppendIntersectionPolygon(nil, square))
 	})
 	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
 		buffer := make([]Point[int], 0, 2)
 
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkPoints = through.AppendIntersectionPolygon(buffer[:0], square)
 		}), 0)
 	})
 	t.Run("matches IntersectionPolygon after the points in dst", func(t *testing.T) {
 		for _, r := range rayFixtures {
 			for _, p := range polygonFixtures() {
-				AssertVertices(t, r.AppendIntersectionPolygon(bufferWith(prefixPoint), p), append([]Point[float64]{prefixPoint}, r.IntersectionPolygon(p)...), fmt.Sprintf("%s → %s: ", r, p))
+				geomtest.AssertVertices(t, r.AppendIntersectionPolygon(bufferWith(prefixPoint), p), append([]Point[float64]{prefixPoint}, r.IntersectionPolygon(p)...), fmt.Sprintf("%s → %s: ", r, p))
 			}
 		}
 	})
@@ -590,14 +592,14 @@ func TestRay_IntersectionRectangle(t *testing.T) {
 	rectangle := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0))
 
 	t.Run("passing through gives both crossings from Origin on", func(t *testing.T) {
-		AssertVertices(t, RayAlong(Pt(-5.0, 0.0), Vec(1.0, 0.0)).IntersectionRectangle(rectangle), []Point[float64]{Pt(-2.0, 0.0), Pt(2.0, 0.0)})
-		AssertVertices(t, RayAlong(Pt(-5.0, 0.0), Vec(1.0, 0.0)).IntersectionRectangle(rectangle.Rotate(Pi/2)), []Point[float64]{Pt(-1.0, 0.0), Pt(1.0, 0.0)})
+		geomtest.AssertVertices(t, RayAlong(Pt(-5.0, 0.0), Vec(1.0, 0.0)).IntersectionRectangle(rectangle), []Point[float64]{Pt(-2.0, 0.0), Pt(2.0, 0.0)})
+		geomtest.AssertVertices(t, RayAlong(Pt(-5.0, 0.0), Vec(1.0, 0.0)).IntersectionRectangle(rectangle.Rotate(Pi/2)), []Point[float64]{Pt(-1.0, 0.0), Pt(1.0, 0.0)})
 	})
 	t.Run("pointing away gives none", func(t *testing.T) {
 		assert.Nil(t, RayAlong(Pt(-5.0, 0.0), Vec(-1.0, 0.0)).IntersectionRectangle(rectangle))
 	})
 	t.Run("int is exact", func(t *testing.T) {
-		AssertVertices(t, RayAlong(Pt(-7, -3), Vec(3, 1)).IntersectionRectangle(Rect(Pt(0, 0), Sz(4, 2))), []Point[int]{Pt(-1, -1), Pt(2, 0)})
+		geomtest.AssertVertices(t, RayAlong(Pt(-7, -3), Vec(3, 1)).IntersectionRectangle(Rect(Pt(0, 0), Sz(4, 2))), []Point[int]{Pt(-1, -1), Pt(2, 0)})
 	})
 	t.Run("every point lies on the ray and the boundary, and exists where IntersectsRectangle holds", func(t *testing.T) {
 		for _, rect := range rectFixtures {
@@ -613,23 +615,23 @@ func TestRay_AppendIntersectionRectangle(t *testing.T) {
 	through := RayAlong(Pt(-5, 0), Vec(1, 0))
 
 	t.Run("appends after the points in dst, comparing and ordering only its own", func(t *testing.T) {
-		AssertVertices(t, through.AppendIntersectionRectangle([]Point[int]{Pt(2, 0), Pt(9, 9)}, rectangle), []Point[int]{Pt(2, 0), Pt(9, 9), Pt(-2, 0), Pt(2, 0)})
+		geomtest.AssertVertices(t, through.AppendIntersectionRectangle([]Point[int]{Pt(2, 0), Pt(9, 9)}, rectangle), []Point[int]{Pt(2, 0), Pt(9, 9), Pt(-2, 0), Pt(2, 0)})
 	})
 	t.Run("none leaves dst as it is", func(t *testing.T) {
-		AssertVertices(t, RayAlong(Pt(-5, 0), Vec(-1, 0)).AppendIntersectionRectangle([]Point[int]{Pt(9, 9)}, rectangle), []Point[int]{Pt(9, 9)})
+		geomtest.AssertVertices(t, RayAlong(Pt(-5, 0), Vec(-1, 0)).AppendIntersectionRectangle([]Point[int]{Pt(9, 9)}, rectangle), []Point[int]{Pt(9, 9)})
 		assert.Nil(t, RayAlong(Pt(-5, 0), Vec(-1, 0)).AppendIntersectionRectangle(nil, rectangle))
 	})
 	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
 		buffer := make([]Point[int], 0, 2)
 
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkPoints = through.AppendIntersectionRectangle(buffer[:0], rectangle)
 		}), 0)
 	})
 	t.Run("matches IntersectionRectangle after the points in dst", func(t *testing.T) {
 		for _, r := range rayFixtures {
 			for _, rect := range rectFixtures {
-				AssertVertices(t, r.AppendIntersectionRectangle(bufferWith(prefixPoint), rect), append([]Point[float64]{prefixPoint}, r.IntersectionRectangle(rect)...), fmt.Sprintf("%s → %s: ", r, rect))
+				geomtest.AssertVertices(t, r.AppendIntersectionRectangle(bufferWith(prefixPoint), rect), append([]Point[float64]{prefixPoint}, r.IntersectionRectangle(rect)...), fmt.Sprintf("%s → %s: ", r, rect))
 			}
 		}
 	})
@@ -660,7 +662,7 @@ func TestRay_IntersectionRegularPolygon(t *testing.T) {
 	hexagon := Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationFlatTop)
 
 	t.Run("passing through gives both crossings from Origin on", func(t *testing.T) {
-		AssertVertices(t, RayAlong(Pt(-20.0, 0.0), Vec(1.0, 0.0)).IntersectionRegularPolygon(hexagon), []Point[float64]{Pt(-10.0, 0.0), Pt(10.0, 0.0)})
+		geomtest.AssertVertices(t, RayAlong(Pt(-20.0, 0.0), Vec(1.0, 0.0)).IntersectionRegularPolygon(hexagon), []Point[float64]{Pt(-10.0, 0.0), Pt(10.0, 0.0)})
 	})
 	t.Run("pointing away and empty give none", func(t *testing.T) {
 		assert.Nil(t, RayAlong(Pt(-20.0, 0.0), Vec(-1.0, 0.0)).IntersectionRegularPolygon(hexagon))
@@ -669,7 +671,7 @@ func TestRay_IntersectionRegularPolygon(t *testing.T) {
 	t.Run("matches the polygon of the vertices", func(t *testing.T) {
 		for _, r := range rayFixtures {
 			for _, rp := range regularPolygonFixtures {
-				AssertVertices(t, r.IntersectionRegularPolygon(rp), r.IntersectionPolygon(rp.Polygon()), fmt.Sprintf("%s → %s: ", r, rp))
+				geomtest.AssertVertices(t, r.IntersectionRegularPolygon(rp), r.IntersectionPolygon(rp.Polygon()), fmt.Sprintf("%s → %s: ", r, rp))
 			}
 		}
 	})
@@ -680,23 +682,23 @@ func TestRay_AppendIntersectionRegularPolygon(t *testing.T) {
 	through := RayAlong(Pt(-3, 0), Vec(1, 0))
 
 	t.Run("appends after the points in dst, comparing and ordering only its own", func(t *testing.T) {
-		AssertVertices(t, through.AppendIntersectionRegularPolygon([]Point[int]{Pt(2, 0), Pt(9, 9)}, diamond), []Point[int]{Pt(2, 0), Pt(9, 9), Pt(-2, 0), Pt(2, 0)})
+		geomtest.AssertVertices(t, through.AppendIntersectionRegularPolygon([]Point[int]{Pt(2, 0), Pt(9, 9)}, diamond), []Point[int]{Pt(2, 0), Pt(9, 9), Pt(-2, 0), Pt(2, 0)})
 	})
 	t.Run("none leaves dst as it is", func(t *testing.T) {
-		AssertVertices(t, RayAlong(Pt(-3, 0), Vec(-1, 0)).AppendIntersectionRegularPolygon([]Point[int]{Pt(9, 9)}, diamond), []Point[int]{Pt(9, 9)})
+		geomtest.AssertVertices(t, RayAlong(Pt(-3, 0), Vec(-1, 0)).AppendIntersectionRegularPolygon([]Point[int]{Pt(9, 9)}, diamond), []Point[int]{Pt(9, 9)})
 		assert.Nil(t, RayAlong(Pt(-3, 0), Vec(-1, 0)).AppendIntersectionRegularPolygon(nil, diamond))
 	})
 	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
 		buffer := make([]Point[int], 0, 2)
 
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkPoints = through.AppendIntersectionRegularPolygon(buffer[:0], diamond)
 		}), 0)
 	})
 	t.Run("matches IntersectionRegularPolygon after the points in dst", func(t *testing.T) {
 		for _, r := range rayFixtures {
 			for _, rp := range regularPolygonFixtures {
-				AssertVertices(t, r.AppendIntersectionRegularPolygon(bufferWith(prefixPoint), rp), append([]Point[float64]{prefixPoint}, r.IntersectionRegularPolygon(rp)...), fmt.Sprintf("%s → %s: ", r, rp))
+				geomtest.AssertVertices(t, r.AppendIntersectionRegularPolygon(bufferWith(prefixPoint), rp), append([]Point[float64]{prefixPoint}, r.IntersectionRegularPolygon(rp)...), fmt.Sprintf("%s → %s: ", r, rp))
 			}
 		}
 	})
@@ -724,7 +726,7 @@ func TestRay_IntersectionBox(t *testing.T) {
 	box := BoxFromMinMax(Pt(0, 0), Pt(4, 2))
 
 	t.Run("passing through gives both crossings from Origin on", func(t *testing.T) {
-		AssertVertices(t, RayAlong(Pt(-1, 1), Vec(1, 0)).IntersectionBox(box), []Point[int]{Pt(0, 1), Pt(4, 1)})
+		geomtest.AssertVertices(t, RayAlong(Pt(-1, 1), Vec(1, 0)).IntersectionBox(box), []Point[int]{Pt(0, 1), Pt(4, 1)})
 	})
 	t.Run("every point lies on the ray and the boundary, and exists where IntersectsBox holds", func(t *testing.T) {
 		for _, b := range boxFixtures {
@@ -739,7 +741,7 @@ func TestRay_AppendIntersectionBox(t *testing.T) {
 	t.Run("matches AppendIntersectionRectangle on the box Rectangle", func(t *testing.T) {
 		for _, r := range rayFixtures {
 			for _, b := range boxFixtures {
-				AssertVertices(t, r.AppendIntersectionBox(bufferWith(prefixPoint), b), r.AppendIntersectionRectangle(bufferWith(prefixPoint), b.Rectangle()), fmt.Sprintf("%s → %s: ", r, b))
+				geomtest.AssertVertices(t, r.AppendIntersectionBox(bufferWith(prefixPoint), b), r.AppendIntersectionRectangle(bufferWith(prefixPoint), b.Rectangle()), fmt.Sprintf("%s → %s: ", r, b))
 			}
 		}
 	})
@@ -749,13 +751,13 @@ func TestRay_ClipCircle(t *testing.T) {
 	circle := Circ(Pt(0, 0), 5)
 
 	t.Run("passing through gives the chord", func(t *testing.T) {
-		assertSegments(t, partsOf(RayAlong(Pt(-10, 0), Vec(1, 0)).ClipCircle(circle)), []Segment[int]{Seg(Pt(-5, 0), Pt(5, 0))})
+		geomtest.AssertSegments(t, partsOf(RayAlong(Pt(-10, 0), Vec(1, 0)).ClipCircle(circle)), []Segment[int]{Seg(Pt(-5, 0), Pt(5, 0))})
 	})
 	t.Run("the origin inside is kept", func(t *testing.T) {
-		assertSegments(t, partsOf(RayAlong(Pt(0, 0), Vec(0, 1)).ClipCircle(circle)), []Segment[int]{Seg(Pt(0, 0), Pt(0, 5))})
+		geomtest.AssertSegments(t, partsOf(RayAlong(Pt(0, 0), Vec(0, 1)).ClipCircle(circle)), []Segment[int]{Seg(Pt(0, 0), Pt(0, 5))})
 	})
 	t.Run("a tangent is the point of contact", func(t *testing.T) {
-		assertSegments(t, partsOf(RayAlong(Pt(-10, 5), Vec(1, 0)).ClipCircle(circle)), []Segment[int]{Seg(Pt(0, 5), Pt(0, 5))})
+		geomtest.AssertSegments(t, partsOf(RayAlong(Pt(-10, 5), Vec(1, 0)).ClipCircle(circle)), []Segment[int]{Seg(Pt(0, 5), Pt(0, 5))})
 	})
 	t.Run("pointing away gives none", func(t *testing.T) {
 		assert.Nil(t, partsOf(RayAlong(Pt(-10, 0), Vec(-1, 0)).ClipCircle(circle)))
@@ -764,7 +766,7 @@ func TestRay_ClipCircle(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := RayAlong(Pt(-10, 0), Vec(1, 0))
 
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			_, sinkBool = through.ClipCircle(circle)
 		}), 0)
 	})
@@ -781,12 +783,12 @@ func TestRay_ClipPolygon(t *testing.T) {
 	notched := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(4.0, 4.0), Pt(2.0, 1.0), Pt(0.0, 4.0)})
 
 	t.Run("a concave polygon cuts the ray into parts from Origin on", func(t *testing.T) {
-		assertSegments(t, RayAlong(Pt(-1.0, 3.0), Vec(1.0, 0.0)).ClipPolygon(notched), []Segment[float64]{
+		geomtest.AssertSegments(t, RayAlong(Pt(-1.0, 3.0), Vec(1.0, 0.0)).ClipPolygon(notched), []Segment[float64]{
 			Seg(Pt(0.0, 3.0), Pt(2.0/3, 3.0)), Seg(Pt(10.0/3, 3.0), Pt(4.0, 3.0)),
 		})
 	})
 	t.Run("the origin inside is kept", func(t *testing.T) {
-		assertSegments(t, RayAlong(Pt(1.0, 0.5), Vec(1.0, 0.0)).ClipPolygon(notched), []Segment[float64]{Seg(Pt(1.0, 0.5), Pt(4.0, 0.5))})
+		geomtest.AssertSegments(t, RayAlong(Pt(1.0, 0.5), Vec(1.0, 0.0)).ClipPolygon(notched), []Segment[float64]{Seg(Pt(1.0, 0.5), Pt(4.0, 0.5))})
 	})
 	t.Run("pointing away and empty give none", func(t *testing.T) {
 		assert.Nil(t, RayAlong(Pt(-1.0, 3.0), Vec(-1.0, 0.0)).ClipPolygon(notched))
@@ -807,19 +809,19 @@ func TestRay_AppendClipPolygon(t *testing.T) {
 	prefix := Seg(Pt(-7.5, 3.25), Pt(1.0, 1.0))
 
 	t.Run("appends the parts after the segments in dst", func(t *testing.T) {
-		assertSegments(t, through.AppendClipPolygon([]Segment[int]{Seg(Pt(9, 9), Pt(9, 9))}, square), []Segment[int]{Seg(Pt(9, 9), Pt(9, 9)), Seg(Pt(0, 1), Pt(2, 1))})
+		geomtest.AssertSegments(t, through.AppendClipPolygon([]Segment[int]{Seg(Pt(9, 9), Pt(9, 9))}, square), []Segment[int]{Seg(Pt(9, 9), Pt(9, 9)), Seg(Pt(0, 1), Pt(2, 1))})
 	})
 	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
 		buffer := make([]Segment[int], 0, 1)
 
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkSegments = through.AppendClipPolygon(buffer[:0], square)
 		}), 0)
 	})
 	t.Run("matches ClipPolygon after the segments in dst", func(t *testing.T) {
 		for _, r := range rayFixtures {
 			for _, p := range outlineFixtures() {
-				assertSegments(t, r.AppendClipPolygon(bufferWith(prefix), p), append([]Segment[float64]{prefix}, r.ClipPolygon(p)...), fmt.Sprintf("%s → %s: ", r, p))
+				geomtest.AssertSegments(t, r.AppendClipPolygon(bufferWith(prefix), p), append([]Segment[float64]{prefix}, r.ClipPolygon(p)...), fmt.Sprintf("%s → %s: ", r, p))
 			}
 		}
 	})
@@ -829,10 +831,10 @@ func TestRay_ClipRectangle(t *testing.T) {
 	rectangle := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0))
 
 	t.Run("passing through gives the part between the crossings", func(t *testing.T) {
-		assertSegments(t, partsOf(RayAlong(Pt(-5.0, 0.0), Vec(1.0, 0.0)).ClipRectangle(rectangle)), []Segment[float64]{Seg(Pt(-2.0, 0.0), Pt(2.0, 0.0))})
+		geomtest.AssertSegments(t, partsOf(RayAlong(Pt(-5.0, 0.0), Vec(1.0, 0.0)).ClipRectangle(rectangle)), []Segment[float64]{Seg(Pt(-2.0, 0.0), Pt(2.0, 0.0))})
 	})
 	t.Run("a rotated rectangle clips on its turned edges", func(t *testing.T) {
-		assertSegments(t, partsOf(RayAlong(Pt(-5.0, 0.0), Vec(1.0, 0.0)).ClipRectangle(rectangle.Rotate(Pi/2))), []Segment[float64]{Seg(Pt(-1.0, 0.0), Pt(1.0, 0.0))})
+		geomtest.AssertSegments(t, partsOf(RayAlong(Pt(-5.0, 0.0), Vec(1.0, 0.0)).ClipRectangle(rectangle.Rotate(Pi/2))), []Segment[float64]{Seg(Pt(-1.0, 0.0), Pt(1.0, 0.0))})
 	})
 	t.Run("pointing away gives none", func(t *testing.T) {
 		assert.Nil(t, partsOf(RayAlong(Pt(-5.0, 0.0), Vec(-1.0, 0.0)).ClipRectangle(rectangle)))
@@ -840,7 +842,7 @@ func TestRay_ClipRectangle(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := RayAlong(Pt(-5.0, 0.0), Vec(1.0, 0.0))
 
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			_, sinkBool = through.ClipRectangle(rectangle)
 		}), 0)
 	})
@@ -857,7 +859,7 @@ func TestRay_ClipRegularPolygon(t *testing.T) {
 	hexagon := Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationFlatTop)
 
 	t.Run("passing through gives the part between the crossings", func(t *testing.T) {
-		assertSegments(t, partsOf(RayAlong(Pt(-20.0, 0.0), Vec(1.0, 0.0)).ClipRegularPolygon(hexagon)), []Segment[float64]{Seg(Pt(-10.0, 0.0), Pt(10.0, 0.0))})
+		geomtest.AssertSegments(t, partsOf(RayAlong(Pt(-20.0, 0.0), Vec(1.0, 0.0)).ClipRegularPolygon(hexagon)), []Segment[float64]{Seg(Pt(-10.0, 0.0), Pt(10.0, 0.0))})
 	})
 	t.Run("pointing away and empty give none", func(t *testing.T) {
 		assert.Nil(t, partsOf(RayAlong(Pt(-20.0, 0.0), Vec(-1.0, 0.0)).ClipRegularPolygon(hexagon)))
@@ -866,7 +868,7 @@ func TestRay_ClipRegularPolygon(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := RayAlong(Pt(-20.0, 0.0), Vec(1.0, 0.0))
 
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			_, sinkBool = through.ClipRegularPolygon(hexagon)
 		}), 0)
 	})
@@ -883,37 +885,13 @@ func TestRay_ClipBox(t *testing.T) {
 	box := BoxFromMinMax(Pt(0, 0), Pt(4, 2))
 
 	t.Run("passing through gives the part between the crossings", func(t *testing.T) {
-		assertSegments(t, partsOf(RayAlong(Pt(-1, 1), Vec(1, 0)).ClipBox(box)), []Segment[int]{Seg(Pt(0, 1), Pt(4, 1))})
+		geomtest.AssertSegments(t, partsOf(RayAlong(Pt(-1, 1), Vec(1, 0)).ClipBox(box)), []Segment[int]{Seg(Pt(0, 1), Pt(4, 1))})
 	})
 	t.Run("matches ClipRectangle on the box's Rectangle", func(t *testing.T) {
 		for _, r := range rayFixtures {
 			for _, b := range boxFixtures {
-				assertSegments(t, partsOf(r.ClipBox(b)), partsOf(r.ClipRectangle(b.Rectangle())), fmt.Sprintf("%s → %s: ", r, b))
+				geomtest.AssertSegments(t, partsOf(r.ClipBox(b)), partsOf(r.ClipRectangle(b.Rectangle())), fmt.Sprintf("%s → %s: ", r, b))
 			}
-		}
-	})
-}
-
-func TestRay_reach(t *testing.T) {
-	t.Run("ends where the farthest corner projects", func(t *testing.T) {
-		AssertSegment(t, RayAlong(Pt(0.0, 0.0), Vec(1.0, 0.0)).reach(Pt(3.0, -1.0), Pt(5.0, 2.0)), Seg(Pt(0.0, 0.0), Pt(5.0, 0.0)))
-		AssertSegment(t, RayAlong(Pt(0.0, 0.0), Vec(-2.0, 0.0)).reach(Pt(-5.0, -1.0), Pt(-3.0, 2.0)), Seg(Pt(0.0, 0.0), Pt(-5.0, 0.0)))
-	})
-	t.Run("int ends on a whole step past it", func(t *testing.T) {
-		AssertSegment(t, RayAlong(Pt(0, 0), Vec(2, 1)).reach(Pt(3, 0), Pt(5, 2)), Seg(Pt(0, 0), Pt(6, 3)))
-	})
-	t.Run("an extent behind the origin is the origin alone", func(t *testing.T) {
-		AssertSegment(t, RayAlong(Pt(0, 0), Vec(1, 0)).reach(Pt(-5, -1), Pt(-3, 2)), Seg(Pt(0, 0), Pt(0, 0)))
-	})
-	t.Run("a zero direction is the origin alone", func(t *testing.T) {
-		AssertSegment(t, RayAlong(Pt(1, 1), Vec(0, 0)).reach(Pt(3, 0), Pt(5, 2)), Seg(Pt(1, 1), Pt(1, 1)))
-	})
-	t.Run("int lies on the ray", func(t *testing.T) {
-		for _, r := range []Ray[int]{RayAlong(Pt(0, 0), Vec(3, 7)), RayAlong(Pt(-4, 2), Vec(-5, 2)), RayAlong(Pt(1, 1), Vec(0, -3))} {
-			reach := r.reach(Pt(-20, -20), Pt(20, 20))
-
-			assert.True(t, r.Contains(reach.End), r.String()+": ")
-			assert.True(t, reach.Length() >= r.Direction.Length(), r.String()+": ")
 		}
 	})
 }
@@ -949,29 +927,29 @@ func TestRay_Cast(t *testing.T) {
 	ray := RayAlong(Pt(1.4, -2.6), Vec(0.4, 3.5))
 
 	t.Run("matches Int and Float", func(t *testing.T) {
-		AssertRay(t, ray.Cast[int](), ray.Int())
-		AssertRay(t, ray.Int().Cast[float64](), ray.Int().Float())
+		geomtest.AssertRay(t, ray.Cast[int](), ray.Int())
+		geomtest.AssertRay(t, ray.Int().Cast[float64](), ray.Int().Float())
 	})
 	t.Run("a type the other conversions cannot name", func(t *testing.T) {
-		AssertRay(t, ray.Cast[int8](), RayAlong(Pt[int8](1, -3), Vec[int8](0, 4)))
+		geomtest.AssertRay(t, ray.Cast[int8](), RayAlong(Pt[int8](1, -3), Vec[int8](0, 4)))
 	})
 }
 
 func TestRay_Int(t *testing.T) {
 	t.Run("int is a no-op", func(t *testing.T) {
-		AssertRay(t, RayAlong(Pt(1, 2), Vec(3, 4)).Int(), RayAlong(Pt(1, 2), Vec(3, 4)))
+		geomtest.AssertRay(t, RayAlong(Pt(1, 2), Vec(3, 4)).Int(), RayAlong(Pt(1, 2), Vec(3, 4)))
 	})
 	t.Run("float rounds, and a short direction rounds to zero", func(t *testing.T) {
-		AssertRay(t, RayAlong(Pt(1.5, -2.5), Vec(0.4, 0.3)).Int(), RayAlong(Pt(2, -3), Vec(0, 0)))
+		geomtest.AssertRay(t, RayAlong(Pt(1.5, -2.5), Vec(0.4, 0.3)).Int(), RayAlong(Pt(2, -3), Vec(0, 0)))
 	})
 }
 
 func TestRay_Float(t *testing.T) {
 	t.Run("int widens", func(t *testing.T) {
-		AssertRay(t, RayAlong(Pt(1, 2), Vec(3, 4)).Float(), RayAlong(Pt(1.0, 2.0), Vec(3.0, 4.0)))
+		geomtest.AssertRay(t, RayAlong(Pt(1, 2), Vec(3, 4)).Float(), RayAlong(Pt(1.0, 2.0), Vec(3.0, 4.0)))
 	})
 	t.Run("float is a no-op", func(t *testing.T) {
-		AssertRay(t, RayAlong(Pt(1.5, 2.0), Vec(3.0, 4.25)).Float(), RayAlong(Pt(1.5, 2.0), Vec(3.0, 4.25)))
+		geomtest.AssertRay(t, RayAlong(Pt(1.5, 2.0), Vec(3.0, 4.25)).Float(), RayAlong(Pt(1.5, 2.0), Vec(3.0, 4.25)))
 	})
 }
 
@@ -990,7 +968,7 @@ func TestRay_JSON(t *testing.T) {
 
 		var r Ray[int]
 		assert.NoError(t, json.Unmarshal([]byte(`{"o":{"x":10,"y":16},"d":{"x":1,"y":-2}}`), &r))
-		AssertRay(t, r, RayAlong(Pt(10, 16), Vec(1, -2)))
+		geomtest.AssertRay(t, r, RayAlong(Pt(10, 16), Vec(1, -2)))
 	})
 	t.Run("round-trip", func(t *testing.T) {
 		for _, ray := range rayFixtures {
@@ -1007,12 +985,12 @@ func TestRay_JSON(t *testing.T) {
 func TestRay_Properties(t *testing.T) {
 	t.Run("the angle is the direction's", func(t *testing.T) {
 		for _, r := range rayFixtures {
-			AssertNumber(t, r.Angle(), r.Direction.Angle(), r.String()+": ")
+			geomtest.AssertNumber(t, r.Angle(), r.Direction.Angle(), r.String()+": ")
 		}
 	})
 	t.Run("every point ahead of the origin lies on the ray, none behind it", func(t *testing.T) {
 		for _, r := range rayFixtures {
-			if !r.Direction.hasDirection() {
+			if r.Direction == (Vector[float64]{}) {
 				continue
 			}
 
@@ -1047,7 +1025,7 @@ func TestRay_Immutable(t *testing.T) {
 	r.Scale(2)
 	r.Rotate(Pi / 2)
 
-	AssertRay(t, r, RayAlong(Pt(1, 2), Vec(3, 5)))
+	geomtest.AssertRay(t, r, RayAlong(Pt(1, 2), Vec(3, 5)))
 }
 
 // far returns a segment along the ray reaching well past every fixture, the ray as a caller

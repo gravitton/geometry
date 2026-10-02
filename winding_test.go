@@ -1,10 +1,11 @@
-package geom
+package geom_test
 
 import (
 	"encoding/json"
 	"testing"
 
 	"github.com/gravitton/assert"
+	. "github.com/gravitton/geometry"
 )
 
 func TestWindings(t *testing.T) {

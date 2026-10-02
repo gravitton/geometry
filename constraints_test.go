@@ -1,4 +1,4 @@
-package geom
+package geom_test
 
 import (
 	"fmt"
@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/gravitton/assert"
+	. "github.com/gravitton/geometry"
+	"github.com/gravitton/geometry/geomtest"
 )
 
 // Named types over the constraint's underlying types: the ~ in Number admits them,
@@ -110,74 +112,14 @@ func TestString(t *testing.T) {
 	})
 }
 
-func TestIsIntType(t *testing.T) {
-	t.Run("integers", func(t *testing.T) {
-		assertIsInt[int](t, true)
-		assertIsInt[int8](t, true)
-		assertIsInt[int16](t, true)
-		assertIsInt[int32](t, true)
-		assertIsInt[int64](t, true)
-	})
-	t.Run("floats", func(t *testing.T) {
-		assertIsInt[float32](t, false)
-		assertIsInt[float64](t, false)
-	})
-	t.Run("defined types follow their underlying kind", func(t *testing.T) {
-		assertIsInt[namedInt](t, true)
-		assertIsInt[namedInt8](t, true)
-		assertIsInt[namedFloat32](t, false)
-		assertIsInt[namedFloat64](t, false)
-	})
-}
-
-func BenchmarkIsIntType_Int(b *testing.B) {
-	for b.Loop() {
-		isInt[int]()
-	}
-}
-
-func BenchmarkIsIntType_Float64(b *testing.B) {
-	for b.Loop() {
-		isInt[float64]()
-	}
-}
-
-func TestIsFloat32(t *testing.T) {
-	t.Run("float32", func(t *testing.T) {
-		assertIsFloat32[float32](t, true)
-	})
-	t.Run("anything else", func(t *testing.T) {
-		assertIsFloat32[float64](t, false)
-		assertIsFloat32[int](t, false)
-		assertIsFloat32[int32](t, false) // same width, but an integer
-	})
-	t.Run("defined types follow their underlying kind", func(t *testing.T) {
-		assertIsFloat32[namedFloat32](t, true)
-		assertIsFloat32[namedFloat64](t, false)
-		assertIsFloat32[namedInt](t, false)
-	})
-}
-
 func assertCast[T Number](t *testing.T, value float64, expected T) {
 	t.Helper()
 
-	AssertNumber(t, Cast[T](value), expected)
+	geomtest.AssertNumber(t, Cast[T](value), expected)
 }
 
 func assertString[T Number](t *testing.T, value T, expected string) {
 	t.Helper()
 
 	assert.Equal(t, String(value), expected)
-}
-
-func assertIsInt[T Number](t *testing.T, expected bool) {
-	t.Helper()
-
-	assert.Equal(t, isInt[T](), expected)
-}
-
-func assertIsFloat32[T Number](t *testing.T, expected bool) {
-	t.Helper()
-
-	assert.Equal(t, isFloat32[T](), expected)
 }

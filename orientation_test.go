@@ -1,4 +1,4 @@
-package geom
+package geom_test
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/gravitton/assert"
+	. "github.com/gravitton/geometry"
 )
 
 func TestOrientations(t *testing.T) {

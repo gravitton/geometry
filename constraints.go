@@ -81,13 +81,12 @@ func isInt[T Number]() bool {
 // It is built by division because T(1e-10) does not compile when T may be an integer, and a
 // constant above 127 overflows int8 at compile time even where the line never runs.
 //
+// It is asked only for a float T, after isInt, as Epsilon and epsilonAt ask it: for an integer
+// T the division truncates to zero and the sum is one again.
+//
 // The arithmetic detection is deliberate: unsafe.Sizeof would be more direct, but the package
 // stays free of the unsafe import.
 func isFloat32[T Number]() bool {
-	if isInt[T]() {
-		return false
-	}
-
 	const step = 100
 
 	one := T(1)

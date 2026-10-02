@@ -27,6 +27,7 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.15.0.md](docs
 - `Outline`, `Transformable` and `Rectangle.MinMaxString` are removed
 - `Rectangle.Clamp(point)` is `Nearest`, read off the edge walk
 - `RegPol` takes a phase, and the orientation constructors set it rather than the angle; `RegularPolygonOrientationAngle` is `RegularPolygonOrientationPhase`
+- The `Assert*` helpers moved to `geomtest`, taking `assert.Testing`; `geom.Testing` is removed
 
 ### Added
 - `Box` – the axis-aligned box as `Min` and `Max`, a `Shape` and a `Collider`, with `Bx`

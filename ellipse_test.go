@@ -1,4 +1,4 @@
-package geom
+package geom_test
 
 import (
 	"encoding/json"
@@ -7,50 +7,52 @@ import (
 	"testing"
 
 	"github.com/gravitton/assert"
+	. "github.com/gravitton/geometry"
+	"github.com/gravitton/geometry/geomtest"
 )
 
 func TestEllipse_Constructor(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(10, 16), Sz(12, 4), 0), Ellipse[int]{Center: Pt(10, 16), Size: Sz(12, 4)})
+		geomtest.AssertEllipse(t, Ell(Pt(10, 16), Sz(12, 4), 0), Ellipse[int]{Center: Pt(10, 16), Size: Sz(12, 4)})
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(0.16, 204), Sz(5.1, 1.2), 0.5), Ellipse[float64]{Center: Pt(0.16, 204.0), Size: Sz(5.1, 1.2), Angle: 0.5})
+		geomtest.AssertEllipse(t, Ell(Pt(0.16, 204), Sz(5.1, 1.2), 0.5), Ellipse[float64]{Center: Pt(0.16, 204.0), Size: Sz(5.1, 1.2), Angle: 0.5})
 	})
 	t.Run("a negative semi-axis is taken absolute", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(10, 16), Sz(-12, -4), 0), Ell(Pt(10, 16), Sz(12, 4), 0))
+		geomtest.AssertEllipse(t, Ell(Pt(10, 16), Sz(-12, -4), 0), Ell(Pt(10, 16), Sz(12, 4), 0))
 	})
 }
 
 func TestEllipse_SemiMajor(t *testing.T) {
 	t.Run("the wider axis", func(t *testing.T) {
-		AssertNumber(t, Ell(Pt(0, 0), Sz(5, 3), 0).SemiMajor(), 5)
+		geomtest.AssertNumber(t, Ell(Pt(0, 0), Sz(5, 3), 0).SemiMajor(), 5)
 	})
 	t.Run("the taller axis", func(t *testing.T) {
-		AssertNumber(t, Ell(Pt(0, 0), Sz(3, 5), 0).SemiMajor(), 5)
+		geomtest.AssertNumber(t, Ell(Pt(0, 0), Sz(3, 5), 0).SemiMajor(), 5)
 	})
 }
 
 func TestEllipse_SemiMinor(t *testing.T) {
 	t.Run("the wider axis", func(t *testing.T) {
-		AssertNumber(t, Ell(Pt(0, 0), Sz(5, 3), 0).SemiMinor(), 3)
+		geomtest.AssertNumber(t, Ell(Pt(0, 0), Sz(5, 3), 0).SemiMinor(), 3)
 	})
 	t.Run("the taller axis", func(t *testing.T) {
-		AssertNumber(t, Ell(Pt(0, 0), Sz(3, 5), 0).SemiMinor(), 3)
+		geomtest.AssertNumber(t, Ell(Pt(0, 0), Sz(3, 5), 0).SemiMinor(), 3)
 	})
 }
 
 func TestEllipse_Eccentricity(t *testing.T) {
 	t.Run("a circle is not eccentric", func(t *testing.T) {
-		AssertNumber(t, Ell(Pt(0.0, 0.0), SzU(4.0), 0).Eccentricity(), 0.0)
+		geomtest.AssertNumber(t, Ell(Pt(0.0, 0.0), SzU(4.0), 0).Eccentricity(), 0.0)
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertNumber(t, Ell(Pt(0.0, 0.0), Sz(5.0, 3.0), 0).Eccentricity(), 0.8)
+		geomtest.AssertNumber(t, Ell(Pt(0.0, 0.0), Sz(5.0, 3.0), 0).Eccentricity(), 0.8)
 	})
 	t.Run("a degenerate ellipse is fully eccentric", func(t *testing.T) {
-		AssertNumber(t, Ell(Pt(0.0, 0.0), Sz(5.0, 0.0), 0).Eccentricity(), 1.0)
+		geomtest.AssertNumber(t, Ell(Pt(0.0, 0.0), Sz(5.0, 0.0), 0).Eccentricity(), 1.0)
 	})
 	t.Run("an ellipse of no extent is a point", func(t *testing.T) {
-		AssertNumber(t, Ell(Pt(0.0, 0.0), Sz(0.0, 0.0), 0).Eccentricity(), 0.0)
+		geomtest.AssertNumber(t, Ell(Pt(0.0, 0.0), Sz(0.0, 0.0), 0).Eccentricity(), 0.0)
 	})
 }
 
@@ -58,26 +60,26 @@ func TestEllipse_Foci(t *testing.T) {
 	t.Run("on the horizontal major axis", func(t *testing.T) {
 		a, b := Ell(Pt(1.0, 2.0), Sz(5.0, 3.0), 0).Foci()
 
-		AssertPoint(t, a, Pt(-3.0, 2.0))
-		AssertPoint(t, b, Pt(5.0, 2.0))
+		geomtest.AssertPoint(t, a, Pt(-3.0, 2.0))
+		geomtest.AssertPoint(t, b, Pt(5.0, 2.0))
 	})
 	t.Run("on the vertical major axis", func(t *testing.T) {
 		a, b := Ell(Pt(1.0, 2.0), Sz(3.0, 5.0), 0).Foci()
 
-		AssertPoint(t, a, Pt(1.0, -2.0))
-		AssertPoint(t, b, Pt(1.0, 6.0))
+		geomtest.AssertPoint(t, a, Pt(1.0, -2.0))
+		geomtest.AssertPoint(t, b, Pt(1.0, 6.0))
 	})
 	t.Run("a circle has both at the center", func(t *testing.T) {
 		a, b := Ell(Pt(1.0, 2.0), SzU(3.0), 0).Foci()
 
-		AssertPoint(t, a, Pt(1.0, 2.0))
-		AssertPoint(t, b, Pt(1.0, 2.0))
+		geomtest.AssertPoint(t, a, Pt(1.0, 2.0))
+		geomtest.AssertPoint(t, b, Pt(1.0, 2.0))
 	})
 	t.Run("turned with the ellipse", func(t *testing.T) {
 		a, b := Ell(Pt(0.0, 0.0), Sz(5.0, 3.0), Pi/2).Foci()
 
-		AssertPoint(t, a, Pt(0.0, -4.0))
-		AssertPoint(t, b, Pt(0.0, 4.0))
+		geomtest.AssertPoint(t, a, Pt(0.0, -4.0))
+		geomtest.AssertPoint(t, b, Pt(0.0, 4.0))
 	})
 }
 
@@ -85,51 +87,51 @@ func TestEllipse_Anchor(t *testing.T) {
 	e := Ell(Pt(10.0, 10.0), Sz(5.0, 3.0), 0)
 
 	t.Run("cardinal directions end the semi-axes", func(t *testing.T) {
-		AssertPoint(t, e.Anchor(Right), Pt(15.0, 10.0))
-		AssertPoint(t, e.Anchor(Left), Pt(5.0, 10.0))
-		AssertPoint(t, e.Anchor(Top), Pt(10.0, 7.0))
-		AssertPoint(t, e.Anchor(Bottom), Pt(10.0, 13.0))
+		geomtest.AssertPoint(t, e.Anchor(Right), Pt(15.0, 10.0))
+		geomtest.AssertPoint(t, e.Anchor(Left), Pt(5.0, 10.0))
+		geomtest.AssertPoint(t, e.Anchor(Top), Pt(10.0, 7.0))
+		geomtest.AssertPoint(t, e.Anchor(Bottom), Pt(10.0, 13.0))
 	})
 	t.Run("diagonals land on the boundary in their direction", func(t *testing.T) {
 		reach := 15 / math.Sqrt(34)
 
-		AssertPoint(t, e.Anchor(DirectionDownRight), Pt(10+reach, 10+reach))
-		AssertPoint(t, e.Anchor(DirectionUpLeft), Pt(10-reach, 10-reach))
+		geomtest.AssertPoint(t, e.Anchor(DirectionDownRight), Pt(10+reach, 10+reach))
+		geomtest.AssertPoint(t, e.Anchor(DirectionUpLeft), Pt(10-reach, 10-reach))
 	})
 	t.Run("a circle anchors like Circle", func(t *testing.T) {
-		AssertPoint(t, Ell(Pt(10.0, 10.0), SzU(5.0), 0).Anchor(DirectionDownRight), Circ(Pt(10.0, 10.0), 5.0).Anchor(DirectionDownRight))
+		geomtest.AssertPoint(t, Ell(Pt(10.0, 10.0), SzU(5.0), 0).Anchor(DirectionDownRight), Circ(Pt(10.0, 10.0), 5.0).Anchor(DirectionDownRight))
 	})
 	t.Run("a degenerate ellipse anchors on its segment", func(t *testing.T) {
-		AssertPoint(t, Ell(Pt(10.0, 10.0), Sz(0.0, 3.0), 0).Anchor(Top), Pt(10.0, 7.0))
-		AssertPoint(t, Ell(Pt(10.0, 10.0), Sz(0.0, 3.0), 0).Anchor(DirectionDownRight), Pt(10.0, 10+3*OneOverSqrt2))
+		geomtest.AssertPoint(t, Ell(Pt(10.0, 10.0), Sz(0.0, 3.0), 0).Anchor(Top), Pt(10.0, 7.0))
+		geomtest.AssertPoint(t, Ell(Pt(10.0, 10.0), Sz(0.0, 3.0), 0).Anchor(DirectionDownRight), Pt(10.0, 10+3*OneOverSqrt2))
 	})
 	t.Run("none is the center", func(t *testing.T) {
-		AssertPoint(t, e.Anchor(DirectionNone), Pt(10.0, 10.0))
+		geomtest.AssertPoint(t, e.Anchor(DirectionNone), Pt(10.0, 10.0))
 	})
 	t.Run("named in the frame before the turn", func(t *testing.T) {
-		AssertPoint(t, e.Rotate(Pi/2).Anchor(Right), Pt(10.0, 15.0))
+		geomtest.AssertPoint(t, e.Rotate(Pi/2).Anchor(Right), Pt(10.0, 15.0))
 	})
 }
 
 func TestEllipse_Centroid(t *testing.T) {
-	AssertPoint(t, Ell(Pt(1, 2), Sz(10, 4), 0).Centroid(), Pt(1, 2))
+	geomtest.AssertPoint(t, Ell(Pt(1, 2), Sz(10, 4), 0).Centroid(), Pt(1, 2))
 }
 
 func TestEllipse_Area(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertNumber(t, Ell(Pt(1, 2), Sz(10, 4), 0).Area(), Pi*40.0)
+		geomtest.AssertNumber(t, Ell(Pt(1, 2), Sz(10, 4), 0).Area(), Pi*40.0)
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertNumber(t, Ell(Pt(0.6, -0.25), Sz(1.2, 0.5), 0).Area(), Pi*0.6)
+		geomtest.AssertNumber(t, Ell(Pt(0.6, -0.25), Sz(1.2, 0.5), 0).Area(), Pi*0.6)
 	})
 	t.Run("the turn does not change it", func(t *testing.T) {
-		AssertNumber(t, Ell(Pt(1, 2), Sz(10, 4), 1.0).Area(), Pi*40.0)
+		geomtest.AssertNumber(t, Ell(Pt(1, 2), Sz(10, 4), 1.0).Area(), Pi*40.0)
 	})
 }
 
 func TestEllipse_Perimeter(t *testing.T) {
 	t.Run("a circle is exact", func(t *testing.T) {
-		AssertNumber(t, Ell(Pt(1.0, 2.0), SzU(10.0), 0).Perimeter(), 2*Pi*10)
+		geomtest.AssertNumber(t, Ell(Pt(1.0, 2.0), SzU(10.0), 0).Perimeter(), 2*Pi*10)
 	})
 	t.Run("float", func(t *testing.T) {
 		// Ramanujan's second approximation, within a part in 1e9 of the true 25.527
@@ -139,22 +141,22 @@ func TestEllipse_Perimeter(t *testing.T) {
 		assert.EqualDelta(t, Ell(Pt(0.0, 0.0), Sz(5.0, 0.0), 0).Perimeter(), 20.0, 1e-2)
 	})
 	t.Run("an ellipse of no extent has no boundary", func(t *testing.T) {
-		AssertNumber(t, Ell(Pt(1.0, 2.0), Sz(0.0, 0.0), 0).Perimeter(), 0.0)
+		geomtest.AssertNumber(t, Ell(Pt(1.0, 2.0), Sz(0.0, 0.0), 0).Perimeter(), 0.0)
 	})
 }
 
 func TestEllipse_Inertia(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertNumber(t, Ell(Pt(1, 2), Sz(10, 4), 0).Inertia(), Pi*1160.0)
+		geomtest.AssertNumber(t, Ell(Pt(1, 2), Sz(10, 4), 0).Inertia(), Pi*1160.0)
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertNumber(t, Ell(Pt(0.6, -0.25), Sz(1.2, 0.5), 0).Inertia(), Pi*0.6*1.69/4)
+		geomtest.AssertNumber(t, Ell(Pt(0.6, -0.25), Sz(1.2, 0.5), 0).Inertia(), Pi*0.6*1.69/4)
 	})
 	t.Run("the turn does not change it", func(t *testing.T) {
-		AssertNumber(t, Ell(Pt(1, 2), Sz(10, 4), 1.0).Inertia(), Pi*1160.0)
+		geomtest.AssertNumber(t, Ell(Pt(1, 2), Sz(10, 4), 1.0).Inertia(), Pi*1160.0)
 	})
 	t.Run("a circle agrees with Circle", func(t *testing.T) {
-		AssertNumber(t, Ell(Pt(1.0, 2.0), SzU(10.0), 0).Inertia(), Circ(Pt(1.0, 2.0), 10.0).Inertia())
+		geomtest.AssertNumber(t, Ell(Pt(1.0, 2.0), SzU(10.0), 0).Inertia(), Circ(Pt(1.0, 2.0), 10.0).Inertia())
 	})
 	t.Run("is approached by the polygon", func(t *testing.T) {
 		for _, e := range ellipseFixtures {
@@ -165,72 +167,68 @@ func TestEllipse_Inertia(t *testing.T) {
 
 func TestEllipse_Bounds(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertBox(t, Ell(Pt(1, 2), Sz(10, 4), 0).Bounds(), BoxFromMinMax(Pt(-9, -2), Pt(11, 6)))
+		geomtest.AssertBox(t, Ell(Pt(1, 2), Sz(10, 4), 0).Bounds(), BoxFromMinMax(Pt(-9, -2), Pt(11, 6)))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertBox(t, Ell(Pt(0.6, -0.25), Sz(1.2, 0.5), 0).Bounds(), BoxFromMinMax(Pt(-0.6, -0.75), Pt(1.8, 0.25)))
+		geomtest.AssertBox(t, Ell(Pt(0.6, -0.25), Sz(1.2, 0.5), 0).Bounds(), BoxFromMinMax(Pt(-0.6, -0.75), Pt(1.8, 0.25)))
 	})
 	t.Run("a quarter turn transposes it", func(t *testing.T) {
-		AssertBox(t, Ell(Pt(1.0, 2.0), Sz(10.0, 4.0), Pi/2).Bounds(), BoxFromMinMax(Pt(-3.0, -8.0), Pt(5.0, 12.0)))
+		geomtest.AssertBox(t, Ell(Pt(1.0, 2.0), Sz(10.0, 4.0), Pi/2).Bounds(), BoxFromMinMax(Pt(-3.0, -8.0), Pt(5.0, 12.0)))
 	})
 	t.Run("a turned ellipse reaches where its tangent is axis-aligned", func(t *testing.T) {
 		// not the corner of the turned box: √(w²cos² + h²sin²) either side
-		AssertBox(t, Ell(Pt(0.0, 0.0), Sz(10.0, 4.0), Pi/6).Bounds(), Rect(Pt(0.0, 0.0), Sz(2*math.Hypot(10*math.Cos(Pi/6), 4*math.Sin(Pi/6)), 2*math.Hypot(10*math.Sin(Pi/6), 4*math.Cos(Pi/6)))).Bounds())
+		geomtest.AssertBox(t, Ell(Pt(0.0, 0.0), Sz(10.0, 4.0), Pi/6).Bounds(), Rect(Pt(0.0, 0.0), Sz(2*math.Hypot(10*math.Cos(Pi/6), 4*math.Sin(Pi/6)), 2*math.Hypot(10*math.Sin(Pi/6), 4*math.Cos(Pi/6)))).Bounds())
 	})
-}
-
-func TestEllipse_minMax(t *testing.T) {
-	a, b := Ell(Pt(1, 2), Sz(10, 4), 0).minMax()
-
-	AssertPoint(t, a, Pt(-9, -2))
-	AssertPoint(t, b, Pt(11, 6))
+	t.Run("int is rounded once", func(t *testing.T) {
+		geomtest.AssertBox(t, Ell(Pt(1, 2), Sz(10, 4), 0).Bounds(), Bx(Pt(-9, -2), Pt(11, 6)))
+	})
 }
 
 func TestEllipse_Translate(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).Translate(Vec(3, -2)), Ell(Pt(4, 0), Sz(10, 4), 0))
+		geomtest.AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).Translate(Vec(3, -2)), Ell(Pt(4, 0), Sz(10, 4), 0))
 	})
 	t.Run("the turn is kept", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(1.0, 2.0), Sz(10.0, 4.0), 0.5).Translate(Vec(3.0, -2.0)), Ell(Pt(4.0, 0.0), Sz(10.0, 4.0), 0.5))
+		geomtest.AssertEllipse(t, Ell(Pt(1.0, 2.0), Sz(10.0, 4.0), 0.5).Translate(Vec(3.0, -2.0)), Ell(Pt(4.0, 0.0), Sz(10.0, 4.0), 0.5))
 	})
 }
 
 func TestEllipse_MoveTo(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).MoveTo(Pt(3, -2)), Ell(Pt(3, -2), Sz(10, 4), 0))
+		geomtest.AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).MoveTo(Pt(3, -2)), Ell(Pt(3, -2), Sz(10, 4), 0))
 	})
 	t.Run("the turn is kept", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(1.0, 2.0), Sz(10.0, 4.0), 0.5).MoveTo(Pt(3.0, -2.0)), Ell(Pt(3.0, -2.0), Sz(10.0, 4.0), 0.5))
+		geomtest.AssertEllipse(t, Ell(Pt(1.0, 2.0), Sz(10.0, 4.0), 0.5).MoveTo(Pt(3.0, -2.0)), Ell(Pt(3.0, -2.0), Sz(10.0, 4.0), 0.5))
 	})
 }
 
 func TestEllipse_Scale(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).Scale(2.5), Ell(Pt(1, 2), Sz(25, 10), 0))
+		geomtest.AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).Scale(2.5), Ell(Pt(1, 2), Sz(25, 10), 0))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(0.6, -0.25), Sz(1.2, 0.5), 0).Scale(2.5), Ell(Pt(0.6, -0.25), Sz(3.0, 1.25), 0))
+		geomtest.AssertEllipse(t, Ell(Pt(0.6, -0.25), Sz(1.2, 0.5), 0).Scale(2.5), Ell(Pt(0.6, -0.25), Sz(3.0, 1.25), 0))
 	})
 	t.Run("a negative factor scales by its absolute value", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).Scale(-2), Ell(Pt(1, 2), Sz(20, 8), 0))
+		geomtest.AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).Scale(-2), Ell(Pt(1, 2), Sz(20, 8), 0))
 	})
 }
 
 func TestEllipse_ScaleXY(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).ScaleXY(2, 0.5), Ell(Pt(1, 2), Sz(20, 2), 0))
+		geomtest.AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).ScaleXY(2, 0.5), Ell(Pt(1, 2), Sz(20, 2), 0))
 	})
 	t.Run("a negative factor scales by its absolute value", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).ScaleXY(-2, 1), Ell(Pt(1, 2), Sz(20, 4), 0))
+		geomtest.AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).ScaleXY(-2, 1), Ell(Pt(1, 2), Sz(20, 4), 0))
 	})
 }
 
 func TestEllipse_Unscale(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(1, 2), Sz(25, 10), 0).Unscale(2.5), Ell(Pt(1, 2), Sz(10, 4), 0))
+		geomtest.AssertEllipse(t, Ell(Pt(1, 2), Sz(25, 10), 0).Unscale(2.5), Ell(Pt(1, 2), Sz(10, 4), 0))
 	})
 	t.Run("a negative factor scales by its absolute value", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(1, 2), Sz(20, 8), 0).Unscale(-2), Ell(Pt(1, 2), Sz(10, 4), 0))
+		geomtest.AssertEllipse(t, Ell(Pt(1, 2), Sz(20, 8), 0).Unscale(-2), Ell(Pt(1, 2), Sz(10, 4), 0))
 	})
 	t.Run("a zero factor panics", func(t *testing.T) {
 		assert.Panics(t, func() {
@@ -241,7 +239,7 @@ func TestEllipse_Unscale(t *testing.T) {
 
 func TestEllipse_UnscaleXY(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(1, 2), Sz(20, 2), 0).UnscaleXY(2, 0.5), Ell(Pt(1, 2), Sz(10, 4), 0))
+		geomtest.AssertEllipse(t, Ell(Pt(1, 2), Sz(20, 2), 0).UnscaleXY(2, 0.5), Ell(Pt(1, 2), Sz(10, 4), 0))
 	})
 	t.Run("a zero factor panics", func(t *testing.T) {
 		assert.Panics(t, func() {
@@ -252,19 +250,19 @@ func TestEllipse_UnscaleXY(t *testing.T) {
 
 func TestEllipse_Resize(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).Resize(Sz(3, 7)), Ell(Pt(1, 2), Sz(3, 7), 0))
+		geomtest.AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).Resize(Sz(3, 7)), Ell(Pt(1, 2), Sz(3, 7), 0))
 	})
 	t.Run("a negative semi-axis is taken absolute", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).Resize(Sz(-3, 7)), Ell(Pt(1, 2), Sz(3, 7), 0))
+		geomtest.AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).Resize(Sz(-3, 7)), Ell(Pt(1, 2), Sz(3, 7), 0))
 	})
 }
 
 func TestEllipse_Canonical(t *testing.T) {
 	t.Run("a well-formed ellipse is unchanged", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(1.0, 2.0), Sz(10.0, 4.0), 1.0).Canonical(), Ell(Pt(1.0, 2.0), Sz(10.0, 4.0), 1.0))
+		geomtest.AssertEllipse(t, Ell(Pt(1.0, 2.0), Sz(10.0, 4.0), 1.0).Canonical(), Ell(Pt(1.0, 2.0), Sz(10.0, 4.0), 1.0))
 	})
 	t.Run("a negative semi-axis is repaired", func(t *testing.T) {
-		AssertEllipse(t, Ellipse[int]{Pt(1, 2), Sz(-10, 4), 0}.Canonical(), Ell(Pt(1, 2), Sz(10, 4), 0))
+		geomtest.AssertEllipse(t, Ellipse[int]{Pt(1, 2), Sz(-10, 4), 0}.Canonical(), Ell(Pt(1, 2), Sz(10, 4), 0))
 	})
 	t.Run("the angle is normalized", func(t *testing.T) {
 		assert.Equal(t, Ellipse[int]{Pt(1, 2), Sz(10, 4), -Pi / 2}.Canonical().Angle, 3*Pi/2)
@@ -276,37 +274,37 @@ func TestEllipse_Canonical(t *testing.T) {
 
 func TestEllipse_Grow(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).Grow(2), Ell(Pt(1, 2), Sz(12, 6), 0))
+		geomtest.AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).Grow(2), Ell(Pt(1, 2), Sz(12, 6), 0))
 	})
 	t.Run("clamped at zero", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).Grow(-6), Ell(Pt(1, 2), Sz(4, 0), 0))
+		geomtest.AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).Grow(-6), Ell(Pt(1, 2), Sz(4, 0), 0))
 	})
 }
 
 func TestEllipse_GrowXY(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).GrowXY(2, 3), Ell(Pt(1, 2), Sz(12, 7), 0))
+		geomtest.AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).GrowXY(2, 3), Ell(Pt(1, 2), Sz(12, 7), 0))
 	})
 	t.Run("clamped at zero", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).GrowXY(0, -6), Ell(Pt(1, 2), Sz(10, 0), 0))
+		geomtest.AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).GrowXY(0, -6), Ell(Pt(1, 2), Sz(10, 0), 0))
 	})
 }
 
 func TestEllipse_Shrink(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).Shrink(2), Ell(Pt(1, 2), Sz(8, 2), 0))
+		geomtest.AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).Shrink(2), Ell(Pt(1, 2), Sz(8, 2), 0))
 	})
 	t.Run("clamped at zero", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).Shrink(6), Ell(Pt(1, 2), Sz(4, 0), 0))
+		geomtest.AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).Shrink(6), Ell(Pt(1, 2), Sz(4, 0), 0))
 	})
 }
 
 func TestEllipse_ShrinkXY(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).ShrinkXY(2, 3), Ell(Pt(1, 2), Sz(8, 1), 0))
+		geomtest.AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).ShrinkXY(2, 3), Ell(Pt(1, 2), Sz(8, 1), 0))
 	})
 	t.Run("clamped at zero", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).ShrinkXY(0, 6), Ell(Pt(1, 2), Sz(10, 0), 0))
+		geomtest.AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).ShrinkXY(0, 6), Ell(Pt(1, 2), Sz(10, 0), 0))
 	})
 }
 
@@ -314,13 +312,13 @@ func TestEllipse_Lerp(t *testing.T) {
 	a, b := Ell(Pt(0.0, 0.0), Sz(10.0, 4.0), 0), Ell(Pt(4.0, 8.0), Sz(2.0, 8.0), Pi/2)
 
 	t.Run("half way", func(t *testing.T) {
-		AssertEllipse(t, a.Lerp(b, 0.5), Ell(Pt(2.0, 4.0), Sz(6.0, 6.0), Pi/4))
+		geomtest.AssertEllipse(t, a.Lerp(b, 0.5), Ell(Pt(2.0, 4.0), Sz(6.0, 6.0), Pi/4))
 	})
 	t.Run("turns along the shorter arc", func(t *testing.T) {
 		assert.Equal(t, Ell(Pt(0.0, 0.0), SzU(1.0), 2*Pi-0.2).Lerp(Ell(Pt(0.0, 0.0), SzU(1.0), 0.2), 0.5).Angle, 0.0)
 	})
 	t.Run("extrapolates past a zero semi-axis", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(0.0, 0.0), Sz(2.0, 2.0), 0).Lerp(Ell(Pt(0.0, 0.0), Sz(1.0, 1.0), 0), 3), Ell(Pt(0.0, 0.0), Sz(1.0, 1.0), 0))
+		geomtest.AssertEllipse(t, Ell(Pt(0.0, 0.0), Sz(2.0, 2.0), 0).Lerp(Ell(Pt(0.0, 0.0), Sz(1.0, 1.0), 0), 3), Ell(Pt(0.0, 0.0), Sz(1.0, 1.0), 0))
 	})
 }
 
@@ -328,16 +326,16 @@ func TestEllipse_Transform(t *testing.T) {
 	e := Ell(Pt(2.0, 3.0), Sz(4.0, 2.0), 0)
 
 	t.Run("a move", func(t *testing.T) {
-		AssertEllipse(t, e.Transform(TranslationMatrix(1.0, -1.0)), Ell(Pt(3.0, 2.0), Sz(4.0, 2.0), 0))
+		geomtest.AssertEllipse(t, e.Transform(TranslationMatrix(1.0, -1.0)), Ell(Pt(3.0, 2.0), Sz(4.0, 2.0), 0))
 	})
 	t.Run("a turn", func(t *testing.T) {
-		AssertEllipse(t, e.Transform(RotationMatrix[float64](Pi/2)), Ell(Pt(-3.0, 2.0), Sz(4.0, 2.0), Pi/2))
+		geomtest.AssertEllipse(t, e.Transform(RotationMatrix[float64](Pi/2)), Ell(Pt(-3.0, 2.0), Sz(4.0, 2.0), Pi/2))
 	})
 	t.Run("a scale of the axes while aligned", func(t *testing.T) {
-		AssertEllipse(t, e.Transform(ScaleMatrix(2.0, 3.0)), Ell(Pt(4.0, 9.0), Sz(8.0, 6.0), 0))
+		geomtest.AssertEllipse(t, e.Transform(ScaleMatrix(2.0, 3.0)), Ell(Pt(4.0, 9.0), Sz(8.0, 6.0), 0))
 	})
 	t.Run("a reflection mirrors the angle", func(t *testing.T) {
-		AssertEllipse(t, e.Rotate(Pi/6).Transform(ReflectionMatrix[float64](AxisHorizontal)), Ell(Pt(2.0, -3.0), Sz(4.0, 2.0), -Pi/6))
+		geomtest.AssertEllipse(t, e.Rotate(Pi/6).Transform(ReflectionMatrix[float64](AxisHorizontal)), Ell(Pt(2.0, -3.0), Sz(4.0, 2.0), -Pi/6))
 	})
 	t.Run("a shear is exact", func(t *testing.T) {
 		assertTransformed(t, e, ShearMatrix(1.0, 0.0), "")
@@ -371,7 +369,7 @@ func assertTransformed(t *testing.T, e Ellipse[float64], m Matrix[float64], mess
 
 	transformed, inverse := e.Transform(m), m.Inverse()
 
-	AssertPoint(t, transformed.Center, e.Center.Transform(m), message)
+	geomtest.AssertPoint(t, transformed.Center, e.Center.Transform(m), message)
 	for i := range 16 {
 		forward := boundaryAt(e, float64(i)*Pi/8).Transform(m)
 		back := boundaryAt(transformed, float64(i)*Pi/8).Transform(inverse)
@@ -388,7 +386,7 @@ func boundaryAt(e Ellipse[float64], parameter float64) Point[float64] {
 
 func TestEllipse_Rotate(t *testing.T) {
 	t.Run("turns about the center", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(1.0, 2.0), Sz(10.0, 4.0), 0).Rotate(Pi/2), Ell(Pt(1.0, 2.0), Sz(10.0, 4.0), Pi/2))
+		geomtest.AssertEllipse(t, Ell(Pt(1.0, 2.0), Sz(10.0, 4.0), 0).Rotate(Pi/2), Ell(Pt(1.0, 2.0), Sz(10.0, 4.0), Pi/2))
 	})
 	t.Run("normalized to a single turn", func(t *testing.T) {
 		assert.Equal(t, Ell(Pt(1.0, 2.0), Sz(10.0, 4.0), Pi).Rotate(3*Pi/2).Angle, Pi/2)
@@ -399,10 +397,10 @@ func TestEllipse_AlignTo(t *testing.T) {
 	e := Ell(Pt(10.0, 10.0), Sz(5.0, 3.0), 0)
 
 	t.Run("an anchor lands on the point", func(t *testing.T) {
-		AssertEllipse(t, e.AlignTo(Left, Pt(0.0, 0.0)), Ell(Pt(5.0, 0.0), Sz(5.0, 3.0), 0))
+		geomtest.AssertEllipse(t, e.AlignTo(Left, Pt(0.0, 0.0)), Ell(Pt(5.0, 0.0), Sz(5.0, 3.0), 0))
 	})
 	t.Run("none aligns the center", func(t *testing.T) {
-		AssertEllipse(t, e.AlignTo(DirectionNone, Pt(0.0, 0.0)), Ell(Pt(0.0, 0.0), Sz(5.0, 3.0), 0))
+		geomtest.AssertEllipse(t, e.AlignTo(DirectionNone, Pt(0.0, 0.0)), Ell(Pt(0.0, 0.0), Sz(5.0, 3.0), 0))
 	})
 }
 
@@ -460,21 +458,21 @@ func TestEllipse_DistanceTo(t *testing.T) {
 	e := Ell(Pt(0.0, 0.0), Sz(5.0, 3.0), 0)
 
 	t.Run("zero inside", func(t *testing.T) {
-		AssertNumber(t, e.DistanceTo(Pt(1.0, 1.0)), 0.0)
+		geomtest.AssertNumber(t, e.DistanceTo(Pt(1.0, 1.0)), 0.0)
 	})
 	t.Run("along an axis", func(t *testing.T) {
-		AssertNumber(t, e.DistanceTo(Pt(10.0, 0.0)), 5.0)
-		AssertNumber(t, e.DistanceTo(Pt(0.0, 10.0)), 7.0)
+		geomtest.AssertNumber(t, e.DistanceTo(Pt(10.0, 0.0)), 5.0)
+		geomtest.AssertNumber(t, e.DistanceTo(Pt(0.0, 10.0)), 7.0)
 	})
 	t.Run("off both axes", func(t *testing.T) {
 		// the nearest point of the boundary, not the point at the same angle
-		AssertNumber(t, e.DistanceTo(Pt(8.0, 6.0)), Pt(8.0, 6.0).DistanceTo(e.worldPoint(e.nearestOffset(Vec(8.0, 6.0)))))
+		geomtest.AssertNumber(t, e.DistanceTo(Pt(8.0, 6.0)), Pt(8.0, 6.0).DistanceTo(e.Nearest(Pt(8.0, 6.0))))
 	})
 	t.Run("the turn is applied", func(t *testing.T) {
-		AssertNumber(t, e.Rotate(Pi/2).DistanceTo(Pt(0.0, 10.0)), 5.0)
+		geomtest.AssertNumber(t, e.Rotate(Pi/2).DistanceTo(Pt(0.0, 10.0)), 5.0)
 	})
 	t.Run("a degenerate ellipse measures to its segment", func(t *testing.T) {
-		AssertNumber(t, Ell(Pt(0.0, 0.0), Sz(5.0, 0.0), 0).DistanceTo(Pt(9.0, 3.0)), 5.0)
+		geomtest.AssertNumber(t, Ell(Pt(0.0, 0.0), Sz(5.0, 0.0), 0).DistanceTo(Pt(9.0, 3.0)), 5.0)
 	})
 }
 
@@ -482,7 +480,7 @@ func TestEllipse_DistanceSquaredTo(t *testing.T) {
 	e := Ell(Pt(0.0, 0.0), Sz(5.0, 3.0), 0)
 
 	t.Run("the square of the distance", func(t *testing.T) {
-		AssertNumber(t, e.DistanceSquaredTo(Pt(0.0, 10.0)), 49.0)
+		geomtest.AssertNumber(t, e.DistanceSquaredTo(Pt(0.0, 10.0)), 49.0)
 	})
 	t.Run("a point within the tolerance of the boundary is on it", func(t *testing.T) {
 		assert.Equal(t, e.DistanceSquaredTo(Pt(0.0, 3.0+Delta/2)), 0.0)
@@ -496,14 +494,14 @@ func TestEllipse_Nearest(t *testing.T) {
 	e := Ell(Pt(0.0, 0.0), Sz(5.0, 3.0), 0)
 
 	t.Run("the foot of the perpendicular", func(t *testing.T) {
-		AssertPoint(t, e.Nearest(Pt(0.0, 10.0)), Pt(0.0, 3.0))
-		AssertPoint(t, e.Nearest(Pt(10.0, 0.0)), Pt(5.0, 0.0))
+		geomtest.AssertPoint(t, e.Nearest(Pt(0.0, 10.0)), Pt(0.0, 3.0))
+		geomtest.AssertPoint(t, e.Nearest(Pt(10.0, 0.0)), Pt(5.0, 0.0))
 	})
 	t.Run("rotated places the foot in the world", func(t *testing.T) {
-		AssertPoint(t, Ell(Pt(1.0, 2.0), Sz(5.0, 3.0), Pi/2).Nearest(Pt(1.0, 12.0)), Pt(1.0, 7.0))
+		geomtest.AssertPoint(t, Ell(Pt(1.0, 2.0), Sz(5.0, 3.0), Pi/2).Nearest(Pt(1.0, 12.0)), Pt(1.0, 7.0))
 	})
 	t.Run("a point inside is its own nearest point", func(t *testing.T) {
-		AssertPoint(t, e.Nearest(Pt(1.0, 1.0)), Pt(1.0, 1.0))
+		geomtest.AssertPoint(t, e.Nearest(Pt(1.0, 1.0)), Pt(1.0, 1.0))
 	})
 	t.Run("a point within the tolerance is kept as it is", func(t *testing.T) {
 		assert.Equal(t, e.Nearest(Pt(0.0, 3.0+Delta/2)), Pt(0.0, 3.0+Delta/2))
@@ -515,49 +513,27 @@ func TestEllipse_Nearest(t *testing.T) {
 			}
 		}
 	})
-}
-
-func TestEllipse_nearestOffset(t *testing.T) {
-	e := Ell(Pt(0.0, 0.0), Sz(5.0, 3.0), 0)
-
-	t.Run("on the major axis beyond the evolute", func(t *testing.T) {
-		AssertVector(t, e.nearestOffset(Vec(10.0, 0.0)), Vec(5.0, 0.0))
-	})
-	t.Run("on the major axis within the evolute", func(t *testing.T) {
-		// the foot leaves the axis: the center of curvature at (5,0) is at (16/5, 0)
-		ratio := 5 * 1.0 / (5*5 - 3*3)
-
-		AssertVector(t, e.nearestOffset(Vec(1.0, 0.0)), Vec(5*ratio, 3*math.Sqrt(1-ratio*ratio)))
-	})
-	t.Run("on the minor axis", func(t *testing.T) {
-		AssertVector(t, e.nearestOffset(Vec(0.0, 10.0)), Vec(0.0, 3.0))
-	})
-	t.Run("inside, off both axes", func(t *testing.T) {
-		// the bisection brackets the root from the other side, and still lands on the boundary
-		assert.True(t, EqualDelta(e.form(e.nearestOffset(Vec(1.0, 1.0))), 1, Delta))
-	})
-	t.Run("the signs of the offset are kept", func(t *testing.T) {
-		AssertVector(t, e.nearestOffset(Vec(-10.0, 0.0)), Vec(-5.0, 0.0))
-		AssertVector(t, e.nearestOffset(Vec(0.0, -10.0)), Vec(0.0, -3.0))
+	t.Run("the signs of the point are kept", func(t *testing.T) {
+		geomtest.AssertPoint(t, e.Nearest(Pt(-10.0, 0.0)), Pt(-5.0, 0.0))
+		geomtest.AssertPoint(t, e.Nearest(Pt(0.0, -10.0)), Pt(0.0, -3.0))
 	})
 	t.Run("a taller ellipse swaps the axes", func(t *testing.T) {
-		AssertVector(t, Ell(Pt(0.0, 0.0), Sz(3.0, 5.0), 0).nearestOffset(Vec(0.0, 10.0)), Vec(0.0, 5.0))
-		AssertVector(t, Ell(Pt(0.0, 0.0), Sz(3.0, 5.0), 0).nearestOffset(Vec(10.0, 0.0)), Vec(3.0, 0.0))
+		geomtest.AssertPoint(t, Ell(Pt(0.0, 0.0), Sz(3.0, 5.0), 0).Nearest(Pt(0.0, 10.0)), Pt(0.0, 5.0))
+		geomtest.AssertPoint(t, Ell(Pt(0.0, 0.0), Sz(3.0, 5.0), 0).Nearest(Pt(10.0, 0.0)), Pt(3.0, 0.0))
 	})
 	t.Run("a degenerate ellipse clamps to its segment", func(t *testing.T) {
-		AssertVector(t, Ell(Pt(0.0, 0.0), Sz(5.0, 0.0), 0).nearestOffset(Vec(9.0, 3.0)), Vec(5.0, 0.0))
-		AssertVector(t, Ell(Pt(0.0, 0.0), Sz(0.0, 5.0), 0).nearestOffset(Vec(9.0, 3.0)), Vec(0.0, 3.0))
+		geomtest.AssertPoint(t, Ell(Pt(0.0, 0.0), Sz(5.0, 0.0), 0).Nearest(Pt(9.0, 3.0)), Pt(5.0, 0.0))
+		geomtest.AssertPoint(t, Ell(Pt(0.0, 0.0), Sz(0.0, 5.0), 0).Nearest(Pt(9.0, 3.0)), Pt(0.0, 3.0))
 	})
 	t.Run("it is the nearest point of a fine sampling", func(t *testing.T) {
 		for _, e := range ellipseFixtures {
 			for _, point := range pointFixtures {
-				local := e.localOffset(point)
-				nearest := local.Subtract(e.nearestOffset(local)).LengthSquared()
+				nearest := e.DistanceSquaredTo(point)
 
 				for i := range 720 {
-					sample := VectorFromAngleSize(float64(i)*Pi/360, e.Size.Float())
+					sample := boundaryAt(e, float64(i)*Pi/360)
 
-					assert.True(t, nearest <= local.Subtract(sample).LengthSquared()+Delta, fmt.Sprintf("%s → %s: ", e, point))
+					assert.True(t, nearest <= point.DistanceSquaredTo(sample)+Delta, fmt.Sprintf("%s → %s: ", e, point))
 				}
 			}
 		}
@@ -611,11 +587,11 @@ func TestEllipse_IsCircle(t *testing.T) {
 
 func TestEllipse_Circle(t *testing.T) {
 	t.Run("a circle converts exactly", func(t *testing.T) {
-		AssertCircle(t, Ell(Pt(1, 2), SzU(4), 1.0).Circle(), Circ(Pt(1, 2), 4))
+		geomtest.AssertCircle(t, Ell(Pt(1, 2), SzU(4), 1.0).Circle(), Circ(Pt(1, 2), 4))
 	})
 	t.Run("an ellipse gives the circle around it", func(t *testing.T) {
-		AssertCircle(t, Ell(Pt(1, 2), Sz(4, 3), 0).Circle(), Circ(Pt(1, 2), 4))
-		AssertCircle(t, Ell(Pt(1, 2), Sz(3, 4), 1.0).Circle(), Circ(Pt(1, 2), 4))
+		geomtest.AssertCircle(t, Ell(Pt(1, 2), Sz(4, 3), 0).Circle(), Circ(Pt(1, 2), 4))
+		geomtest.AssertCircle(t, Ell(Pt(1, 2), Sz(3, 4), 1.0).Circle(), Circ(Pt(1, 2), 4))
 	})
 }
 
@@ -623,11 +599,11 @@ func TestEllipse_RegularPolygon(t *testing.T) {
 	e := Ell(Pt(1.0, 2.0), Sz(10.0, 4.0), Pi/6)
 
 	t.Run("the same center, semi-axes and angle", func(t *testing.T) {
-		AssertRegularPolygon(t, e.RegularPolygon(6), RegPol(Pt(1.0, 2.0), Sz(10.0, 4.0), 6, Pi/6, 0))
+		geomtest.AssertRegularPolygon(t, e.RegularPolygon(6), RegPol(Pt(1.0, 2.0), Sz(10.0, 4.0), 6, Pi/6, 0))
 	})
 	t.Run("every vertex lies on the boundary", func(t *testing.T) {
 		for vertex := range e.RegularPolygon(7).Vertices() {
-			AssertNumber(t, e.DistanceTo(vertex), 0.0, fmt.Sprintf("%s: ", vertex))
+			geomtest.AssertNumber(t, e.DistanceTo(vertex), 0.0, fmt.Sprintf("%s: ", vertex))
 		}
 	})
 	t.Run("the polygon is inside the ellipse", func(t *testing.T) {
@@ -639,7 +615,7 @@ func TestEllipse_RegularPolygon(t *testing.T) {
 		assert.True(t, e.RegularPolygon(0).IsEmpty())
 	})
 	t.Run("it round-trips through Ellipse", func(t *testing.T) {
-		AssertEllipse(t, e.RegularPolygon(6).Ellipse(), e)
+		geomtest.AssertEllipse(t, e.RegularPolygon(6).Ellipse(), e)
 	})
 }
 
@@ -647,29 +623,29 @@ func TestEllipse_Cast(t *testing.T) {
 	e := Ell(Pt(1.5, -2.5), Sz(3.5, 1.5), 1.0)
 
 	t.Run("matches Int and Float", func(t *testing.T) {
-		AssertEllipse(t, e.Cast[int](), e.Int())
-		AssertEllipse(t, e.Cast[float64](), e.Float())
+		geomtest.AssertEllipse(t, e.Cast[int](), e.Int())
+		geomtest.AssertEllipse(t, e.Cast[float64](), e.Float())
 	})
 	t.Run("a type the other conversions cannot name", func(t *testing.T) {
-		AssertEllipse(t, e.Cast[int8](), Ell(Pt[int8](2, -3), Sz[int8](4, 2), 1.0))
+		geomtest.AssertEllipse(t, e.Cast[int8](), Ell(Pt[int8](2, -3), Sz[int8](4, 2), 1.0))
 	})
 }
 
 func TestEllipse_Int(t *testing.T) {
 	t.Run("int is a no-op", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).Int(), Ell(Pt(1, 2), Sz(10, 4), 0))
+		geomtest.AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).Int(), Ell(Pt(1, 2), Sz(10, 4), 0))
 	})
 	t.Run("float rounds and keeps the angle", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(0.6, -0.25), Sz(1.2, 0.5), 1.0).Int(), Ell(Pt(1, 0), Sz(1, 1), 1.0))
+		geomtest.AssertEllipse(t, Ell(Pt(0.6, -0.25), Sz(1.2, 0.5), 1.0).Int(), Ell(Pt(1, 0), Sz(1, 1), 1.0))
 	})
 }
 
 func TestEllipse_Float(t *testing.T) {
 	t.Run("int widens", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).Float(), Ell(Pt(1.0, 2.0), Sz(10.0, 4.0), 0))
+		geomtest.AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).Float(), Ell(Pt(1.0, 2.0), Sz(10.0, 4.0), 0))
 	})
 	t.Run("float is a no-op", func(t *testing.T) {
-		AssertEllipse(t, Ell(Pt(0.6, -0.25), Sz(1.2, 0.5), 0).Float(), Ell(Pt(0.6, -0.25), Sz(1.2, 0.5), 0))
+		geomtest.AssertEllipse(t, Ell(Pt(0.6, -0.25), Sz(1.2, 0.5), 0).Float(), Ell(Pt(0.6, -0.25), Sz(1.2, 0.5), 0))
 	})
 }
 
@@ -691,7 +667,7 @@ func TestEllipse_JSON(t *testing.T) {
 
 		var e Ellipse[int]
 		assert.NoError(t, json.Unmarshal([]byte(`{"x":10,"y":16,"w":12,"h":4}`), &e))
-		AssertEllipse(t, e, Ell(Pt(10, 16), Sz(12, 4), 0))
+		geomtest.AssertEllipse(t, e, Ell(Pt(10, 16), Sz(12, 4), 0))
 	})
 	t.Run("a turned ellipse carries its angle", func(t *testing.T) {
 		assert.JSON(t, Ell(Pt(10, 16), Sz(12, 4), 1.5), `{"x":10,"y":16,"w":12,"h":4,"a":1.5}`)
@@ -711,7 +687,7 @@ func TestEllipse_JSON(t *testing.T) {
 func TestEllipse_Properties(t *testing.T) {
 	t.Run("area follows the semi-axes", func(t *testing.T) {
 		for _, e := range ellipseFixtures {
-			AssertNumber(t, e.Area(), Pi*e.Size.Width*e.Size.Height, fmt.Sprintf("%s: ", e))
+			geomtest.AssertNumber(t, e.Area(), Pi*e.Size.Width*e.Size.Height, fmt.Sprintf("%s: ", e))
 		}
 	})
 	t.Run("the perimeter is between the axes and the circle around them", func(t *testing.T) {
@@ -729,10 +705,10 @@ func TestEllipse_Properties(t *testing.T) {
 			for _, direction := range Directions() {
 				anchor := e.Anchor(direction)
 
-				AssertNumber(t, e.DistanceTo(anchor), 0.0, fmt.Sprintf("%s → %s: ", e, direction))
+				geomtest.AssertNumber(t, e.DistanceTo(anchor), 0.0, fmt.Sprintf("%s → %s: ", e, direction))
 				assert.True(t, e.Bounds().Contains(anchor), fmt.Sprintf("%s → %s: ", e, direction))
 				if e.SemiMinor() > 0 {
-					AssertAngle(t, e.Center.AngleTo(anchor), e.Angle+direction.Angle(), fmt.Sprintf("%s → %s: ", e, direction))
+					geomtest.AssertAngle(t, e.Center.AngleTo(anchor), e.Angle+direction.Angle(), fmt.Sprintf("%s → %s: ", e, direction))
 				}
 			}
 		}
@@ -740,7 +716,7 @@ func TestEllipse_Properties(t *testing.T) {
 	t.Run("the boundary is contained and its bounds hold it", func(t *testing.T) {
 		for _, e := range ellipseFixtures {
 			for i := range 16 {
-				point := e.worldPoint(VectorFromAngleSize(float64(i)*Pi/8, e.Size.Float()))
+				point := boundaryAt(e, float64(i)*Pi/8)
 
 				assert.True(t, e.Contains(point), fmt.Sprintf("%s → %s: ", e, point))
 				assert.True(t, e.Bounds().Contains(point), fmt.Sprintf("%s → %s: ", e, point))
@@ -752,9 +728,9 @@ func TestEllipse_Properties(t *testing.T) {
 			a, b := e.Foci()
 
 			for i := range 16 {
-				point := e.worldPoint(VectorFromAngleSize(float64(i)*Pi/8, e.Size.Float()))
+				point := boundaryAt(e, float64(i)*Pi/8)
 
-				AssertNumber(t, point.DistanceTo(a)+point.DistanceTo(b), 2*float64(e.SemiMajor()), fmt.Sprintf("%s → %s: ", e, point))
+				geomtest.AssertNumber(t, point.DistanceTo(a)+point.DistanceTo(b), 2*float64(e.SemiMajor()), fmt.Sprintf("%s → %s: ", e, point))
 			}
 		}
 	})
@@ -770,7 +746,7 @@ func TestEllipse_Properties(t *testing.T) {
 			for _, point := range pointFixtures {
 				turned := point.RotateAround(e.Center, Pi/3)
 
-				AssertNumber(t, e.Rotate(Pi/3).DistanceTo(turned), e.DistanceTo(point), fmt.Sprintf("%s → %s: ", e, point))
+				geomtest.AssertNumber(t, e.Rotate(Pi/3).DistanceTo(turned), e.DistanceTo(point), fmt.Sprintf("%s → %s: ", e, point))
 			}
 		}
 	})
@@ -796,7 +772,7 @@ func TestEllipse_Properties(t *testing.T) {
 	})
 	t.Run("the identity transform leaves the ellipse", func(t *testing.T) {
 		for _, e := range ellipseFixtures {
-			AssertEllipse(t, e.Transform(IdentityMatrix[float64]()), e.Canonical(), fmt.Sprintf("%s: ", e))
+			geomtest.AssertEllipse(t, e.Transform(IdentityMatrix[float64]()), e.Canonical(), fmt.Sprintf("%s: ", e))
 		}
 	})
 	t.Run("grow and shrink are inverse above zero", func(t *testing.T) {
@@ -813,7 +789,7 @@ func TestEllipse_Properties(t *testing.T) {
 			around := e.Circle()
 
 			for i := range 16 {
-				point := e.worldPoint(VectorFromAngleSize(float64(i)*Pi/8, e.Size.Float()))
+				point := boundaryAt(e, float64(i)*Pi/8)
 
 				assert.True(t, around.Contains(point), fmt.Sprintf("%s → %s: ", e, point))
 			}
@@ -825,7 +801,7 @@ func TestEllipse_Properties(t *testing.T) {
 				polygon := e.RegularPolygon(n)
 
 				for vertex := range polygon.Vertices() {
-					AssertNumber(t, e.DistanceTo(vertex), 0.0, fmt.Sprintf("%s ×%d → %s: ", e, n, vertex))
+					geomtest.AssertNumber(t, e.DistanceTo(vertex), 0.0, fmt.Sprintf("%s ×%d → %s: ", e, n, vertex))
 				}
 
 				for edge := range polygon.Edges() {
@@ -840,14 +816,14 @@ func TestEllipse_Properties(t *testing.T) {
 				around := e.Scale(1 / math.Cos(Pi/float64(n))).RegularPolygon(n)
 
 				for edge := range around.Edges() {
-					AssertNumber(t, e.DistanceTo(edge.Midpoint()), 0.0, fmt.Sprintf("%s ×%d → %s: ", e, n, edge))
+					geomtest.AssertNumber(t, e.DistanceTo(edge.Midpoint()), 0.0, fmt.Sprintf("%s ×%d → %s: ", e, n, edge))
 				}
 			}
 		}
 	})
 	t.Run("the polygon round-trips through the ellipse", func(t *testing.T) {
 		for _, e := range ellipseFixtures {
-			AssertEllipse(t, e.RegularPolygon(6).Ellipse(), e, fmt.Sprintf("%s: ", e))
+			geomtest.AssertEllipse(t, e.RegularPolygon(6).Ellipse(), e, fmt.Sprintf("%s: ", e))
 		}
 	})
 	t.Run("a circle answers as the circle of the same radius", func(t *testing.T) {
@@ -856,7 +832,7 @@ func TestEllipse_Properties(t *testing.T) {
 
 			for _, point := range pointFixtures {
 				assert.Equal(t, e.Contains(point), c.Contains(point), fmt.Sprintf("%s → %s: ", e, point))
-				AssertNumber(t, e.DistanceTo(point), c.DistanceTo(point), fmt.Sprintf("%s → %s: ", e, point))
+				geomtest.AssertNumber(t, e.DistanceTo(point), c.DistanceTo(point), fmt.Sprintf("%s → %s: ", e, point))
 			}
 		}
 	})
@@ -873,7 +849,7 @@ func TestEllipse_Immutable(t *testing.T) {
 	e.Shrink(2)
 	e.Rotate(1)
 
-	AssertEllipse(t, e, Ell(Pt(1, 2), Sz(10, 4), 0))
+	geomtest.AssertEllipse(t, e, Ell(Pt(1, 2), Sz(10, 4), 0))
 }
 
 // ellipseFixtures span the degenerate, circular, turned and off-origin cases.

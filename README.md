@@ -30,7 +30,7 @@ Generic, immutable 2D geometry library for game development
   shape without knowing which one.
 - **Directions, axes and orientations** as enums, with compass and rectangle-anchor aliases.
 - **Screen space** – top-left origin, `+Y` down, one winding order everywhere.
-- **Extras** – `image` interop, JSON, string parsing, numeric helpers, test assertions.
+- **Extras** – `image` interop, JSON, string parsing, numeric helpers, and test assertions in `geomtest`.
 
 ## Installation
 
@@ -319,11 +319,12 @@ The flat JSON of `Rectangle`, `Circle` and `RegularPolygon` relies on the `embed
 
 ### Testing
 
-One assertion per shape, comparing with the tolerance of the asserted type:
+The `geomtest` package holds one assertion per shape, comparing with the tolerance of the asserted type, so the
+main package imports no test library:
 
 ```go
-geom.AssertPoint(t, got, geom.Pt(1.0, 2.0))
-geom.AssertRectangle(t, got, want, "after inset")
+geomtest.AssertPoint(t, got, geom.Pt(1.0, 2.0))
+geomtest.AssertRectangle(t, got, want, "after inset")
 ```
 
 Full reference: [pkg.go.dev][link-go-dev-reference].

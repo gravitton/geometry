@@ -1,4 +1,4 @@
-package geom
+package geom_test
 
 import (
 	"fmt"
@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/gravitton/assert"
+	. "github.com/gravitton/geometry"
+	"github.com/gravitton/geometry/geomtest"
 )
 
 var (
@@ -162,7 +164,7 @@ func assertNearest[T Number](t *testing.T, shape Shape[T], point Point[T]) {
 	assert.Equal(t, nearest.Equal(point), shape.Contains(point), message)
 	assert.True(t, shape.Contains(nearest), message)
 	assert.True(t, shape.Nearest(nearest).Equal(nearest), message)
-	AssertNumber(t, float64(point.DistanceSquaredTo(nearest)), shape.DistanceSquaredTo(point), message)
+	geomtest.AssertNumber(t, float64(point.DistanceSquaredTo(nearest)), shape.DistanceSquaredTo(point), message)
 }
 
 // assertCrossings asserts the properties the boundary crossings of a segment have on every
@@ -437,12 +439,12 @@ func TestBody(t *testing.T) {
 
 func TestTransformable(t *testing.T) {
 	t.Run("every shape moves and scales in its own type", func(t *testing.T) {
-		AssertSegment(t, moved(Seg(Pt(0, 0), Pt(2, 2)), Vec(1, 1)), Seg(Pt(1, 1), Pt(3, 3)))
-		AssertRay(t, moved(RayAlong(Pt(0, 0), Vec(2, 2)), Vec(1, 1)), RayAlong(Pt(1, 1), Vec(2, 2)))
-		AssertRectangle(t, moved(Rect(Pt(0, 0), Sz(2, 2)), Vec(1, 1)), Rect(Pt(1, 1), Sz(2, 2)))
-		AssertCircle(t, moved(Circ(Pt(0, 0), 2), Vec(1, 1)), Circ(Pt(1, 1), 2))
-		AssertPolygon(t, moved(Pol(squareVertices()), Vec(1, 1)), Pol([]Point[int]{Pt(1, 1), Pt(3, 1), Pt(3, 3), Pt(1, 3)}))
-		AssertRegularPolygon(t, moved(RegPol(Pt(0, 0), Sz(2, 2), 6, 0, 0), Vec(1, 1)), RegPol(Pt(1, 1), Sz(2, 2), 6, 0, 0))
+		geomtest.AssertSegment(t, moved(Seg(Pt(0, 0), Pt(2, 2)), Vec(1, 1)), Seg(Pt(1, 1), Pt(3, 3)))
+		geomtest.AssertRay(t, moved(RayAlong(Pt(0, 0), Vec(2, 2)), Vec(1, 1)), RayAlong(Pt(1, 1), Vec(2, 2)))
+		geomtest.AssertRectangle(t, moved(Rect(Pt(0, 0), Sz(2, 2)), Vec(1, 1)), Rect(Pt(1, 1), Sz(2, 2)))
+		geomtest.AssertCircle(t, moved(Circ(Pt(0, 0), 2), Vec(1, 1)), Circ(Pt(1, 1), 2))
+		geomtest.AssertPolygon(t, moved(Pol(squareVertices()), Vec(1, 1)), Pol([]Point[int]{Pt(1, 1), Pt(3, 1), Pt(3, 3), Pt(1, 3)}))
+		geomtest.AssertRegularPolygon(t, moved(RegPol(Pt(0, 0), Sz(2, 2), 6, 0, 0), Vec(1, 1)), RegPol(Pt(1, 1), Sz(2, 2), 6, 0, 0))
 	})
 }
 

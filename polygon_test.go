@@ -1,4 +1,4 @@
-package geom
+package geom_test
 
 import (
 	"encoding/json"
@@ -8,20 +8,22 @@ import (
 	"testing"
 
 	"github.com/gravitton/assert"
+	. "github.com/gravitton/geometry"
+	"github.com/gravitton/geometry/geomtest"
 )
 
 func TestPolygon_Constructor(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertPolygon(t, Pol(squareVertices()), Polygon[int]{Points: squareVertices()})
+		geomtest.AssertPolygon(t, Pol(squareVertices()), Polygon[int]{Points: squareVertices()})
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertPolygon(t, Pol(triangleVertices()), Polygon[float64]{Points: triangleVertices()})
+		geomtest.AssertPolygon(t, Pol(triangleVertices()), Polygon[float64]{Points: triangleVertices()})
 	})
 }
 
 func TestPolygon_Vertices(t *testing.T) {
 	t.Run("iterates the points in order", func(t *testing.T) {
-		AssertVertices(t, slices.Collect(Pol(squareVertices()).Vertices()), squareVertices())
+		geomtest.AssertVertices(t, slices.Collect(Pol(squareVertices()).Vertices()), squareVertices())
 	})
 	t.Run("nil and empty yield nothing", func(t *testing.T) {
 		assert.Nil(t, slices.Collect(Pol[int](nil).Vertices()))
@@ -29,7 +31,7 @@ func TestPolygon_Vertices(t *testing.T) {
 	})
 	t.Run("ranging allocates nothing", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
-			AssertNumber(t, testing.AllocsPerRun(100, func() {
+			geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 				for vertex := range p.Vertices() {
 					sinkBool = vertex.IsZero()
 				}
@@ -43,14 +45,14 @@ func TestPolygon_Edges(t *testing.T) {
 		edges := slices.Collect(Pol(squareVertices()).Edges())
 
 		assert.Length(t, edges, 4)
-		AssertSegment(t, edges[0], Seg(Pt(0, 0), Pt(2, 0)))
-		AssertSegment(t, edges[3], Seg(Pt(0, 2), Pt(0, 0)))
+		geomtest.AssertSegment(t, edges[0], Seg(Pt(0, 0), Pt(2, 0)))
+		geomtest.AssertSegment(t, edges[3], Seg(Pt(0, 2), Pt(0, 0)))
 	})
 	t.Run("single vertex is one zero-length edge", func(t *testing.T) {
 		edges := slices.Collect(Pol([]Point[int]{Pt(1, 1)}).Edges())
 
 		assert.Length(t, edges, 1)
-		AssertSegment(t, edges[0], Seg(Pt(1, 1), Pt(1, 1)))
+		geomtest.AssertSegment(t, edges[0], Seg(Pt(1, 1), Pt(1, 1)))
 	})
 	t.Run("nil and empty yield nothing", func(t *testing.T) {
 		assert.Nil(t, slices.Collect(Pol[int](nil).Edges()))
@@ -58,14 +60,14 @@ func TestPolygon_Edges(t *testing.T) {
 	})
 	t.Run("stops where the caller breaks", func(t *testing.T) {
 		for edge := range Pol(squareVertices()).Edges() {
-			AssertSegment(t, edge, Seg(Pt(0, 0), Pt(2, 0)))
+			geomtest.AssertSegment(t, edge, Seg(Pt(0, 0), Pt(2, 0)))
 
 			break
 		}
 	})
 	t.Run("ranging allocates nothing", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
-			AssertNumber(t, testing.AllocsPerRun(100, func() {
+			geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 				for edge := range p.Edges() {
 					sinkBool = edge.IsZero()
 				}
@@ -76,24 +78,24 @@ func TestPolygon_Edges(t *testing.T) {
 
 func TestPolygon_Centroid(t *testing.T) {
 	t.Run("int rounds the average", func(t *testing.T) {
-		AssertPoint(t, Pol(squareVertices()).Centroid(), Pt(1, 1))
-		AssertPoint(t, Pol([]Point[int]{Pt(-1, -2), Pt(0, 0), Pt(0, 0)}).Centroid(), Pt(0, -1))
+		geomtest.AssertPoint(t, Pol(squareVertices()).Centroid(), Pt(1, 1))
+		geomtest.AssertPoint(t, Pol([]Point[int]{Pt(-1, -2), Pt(0, 0), Pt(0, 0)}).Centroid(), Pt(0, -1))
 	})
 	t.Run("narrow integers do not overflow the sum", func(t *testing.T) {
-		AssertPoint(t, Pol([]Point[int8]{Pt[int8](100, 100), Pt[int8](100, 100), Pt[int8](100, 100)}).Centroid(), Pt[int8](100, 100))
+		geomtest.AssertPoint(t, Pol([]Point[int8]{Pt[int8](100, 100), Pt[int8](100, 100), Pt[int8](100, 100)}).Centroid(), Pt[int8](100, 100))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertPoint(t, Pol(triangleVertices()).Centroid(), Pt(1.5, 0.5))
+		geomtest.AssertPoint(t, Pol(triangleVertices()).Centroid(), Pt(1.5, 0.5))
 	})
 	t.Run("a vertex on an edge does not move the centroid", func(t *testing.T) {
 		subdivided := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(1.0, 0.0), Pt(2.0, 0.0), Pt(2.0, 2.0), Pt(0.0, 2.0)})
 
-		AssertPoint(t, subdivided.Centroid(), Pt(1.0, 1.0))
+		geomtest.AssertPoint(t, subdivided.Centroid(), Pt(1.0, 1.0))
 	})
 	t.Run("winding does not matter", func(t *testing.T) {
 		reversed := Pol([]Point[float64]{Pt(0.0, 2.0), Pt(2.0, 2.0), Pt(2.0, 0.0), Pt(1.0, 0.0), Pt(0.0, 0.0)})
 
-		AssertPoint(t, reversed.Centroid(), Pt(1.0, 1.0))
+		geomtest.AssertPoint(t, reversed.Centroid(), Pt(1.0, 1.0))
 	})
 	t.Run("degenerate float vertices are their own center exactly", func(t *testing.T) {
 		repeated := Pol([]Point[float64]{Pt(13.5, 1.9), Pt(13.5, 1.9)})
@@ -101,33 +103,33 @@ func TestPolygon_Centroid(t *testing.T) {
 		assert.Equal(t, repeated.Centroid(), Pt(13.5, 1.9))
 	})
 	t.Run("collinear falls back to the vertex average", func(t *testing.T) {
-		AssertPoint(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(1.0, 1.0), Pt(3.0, 3.0)}).Centroid(), Pt(4.0/3, 4.0/3))
-		AssertPoint(t, Pol([]Point[int]{Pt(0, 0), Pt(4, 0)}).Centroid(), Pt(2, 0))
+		geomtest.AssertPoint(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(1.0, 1.0), Pt(3.0, 3.0)}).Centroid(), Pt(4.0/3, 4.0/3))
+		geomtest.AssertPoint(t, Pol([]Point[int]{Pt(0, 0), Pt(4, 0)}).Centroid(), Pt(2, 0))
 	})
 	t.Run("empty is the zero point", func(t *testing.T) {
-		AssertPoint(t, Pol([]Point[int]{}).Centroid(), Pt(0, 0))
-		AssertPoint(t, Polygon[float64]{}.Centroid(), Pt(0.0, 0.0))
+		geomtest.AssertPoint(t, Pol([]Point[int]{}).Centroid(), Pt(0, 0))
+		geomtest.AssertPoint(t, Polygon[float64]{}.Centroid(), Pt(0.0, 0.0))
 	})
 }
 
 func TestPolygon_Area(t *testing.T) {
 	t.Run("square", func(t *testing.T) {
-		AssertNumber(t, Pol(squareVertices()).Area(), 4.0)
+		geomtest.AssertNumber(t, Pol(squareVertices()).Area(), 4.0)
 	})
 	t.Run("winding does not matter", func(t *testing.T) {
 		reversed := Pol([]Point[int]{Pt(0, 2), Pt(2, 2), Pt(2, 0), Pt(0, 0)})
 
-		AssertNumber(t, reversed.Area(), 4.0)
+		geomtest.AssertNumber(t, reversed.Area(), 4.0)
 	})
 	t.Run("lattice triangle encloses half units", func(t *testing.T) {
-		AssertNumber(t, Pol([]Point[int]{Pt(0, 0), Pt(1, 0), Pt(0, 1)}).Area(), 0.5)
+		geomtest.AssertNumber(t, Pol([]Point[int]{Pt(0, 0), Pt(1, 0), Pt(0, 1)}).Area(), 0.5)
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertNumber(t, Pol(triangleVertices()).Area(), 0.75)
+		geomtest.AssertNumber(t, Pol(triangleVertices()).Area(), 0.75)
 	})
 	t.Run("degenerate is zero", func(t *testing.T) {
-		AssertNumber(t, Pol([]Point[int]{}).Area(), 0.0)
-		AssertNumber(t, Pol([]Point[int]{Pt(1, 1), Pt(4, 4)}).Area(), 0.0)
+		geomtest.AssertNumber(t, Pol([]Point[int]{}).Area(), 0.0)
+		geomtest.AssertNumber(t, Pol([]Point[int]{Pt(1, 1), Pt(4, 4)}).Area(), 0.0)
 	})
 	t.Run("degenerate float is exactly zero", func(t *testing.T) {
 		assert.Equal(t, Pol([]Point[float64]{Pt(13.5, 1.9), Pt(13.5, 1.9)}).Area(), 0.0)
@@ -136,40 +138,40 @@ func TestPolygon_Area(t *testing.T) {
 	t.Run("far from the origin keeps the area", func(t *testing.T) {
 		square := Pol(squareVertices()).Float()
 
-		AssertNumber(t, square.Translate(Vec(1e9, 1e9)).Area(), square.Area())
-		AssertNumber(t, Pol(triangleVertices()).Translate(Vec(1e9, -1e9)).Area(), Pol(triangleVertices()).Area())
+		geomtest.AssertNumber(t, square.Translate(Vec(1e9, 1e9)).Area(), square.Area())
+		geomtest.AssertNumber(t, Pol(triangleVertices()).Translate(Vec(1e9, -1e9)).Area(), Pol(triangleVertices()).Area())
 	})
 }
 
 func TestPolygon_Perimeter(t *testing.T) {
 	t.Run("square", func(t *testing.T) {
-		AssertNumber(t, Pol(squareVertices()).Perimeter(), 8.0)
+		geomtest.AssertNumber(t, Pol(squareVertices()).Perimeter(), 8.0)
 	})
 	t.Run("right triangle", func(t *testing.T) {
-		AssertNumber(t, Pol([]Point[int]{Pt(0, 0), Pt(3, 0), Pt(0, 4)}).Perimeter(), 12.0)
+		geomtest.AssertNumber(t, Pol([]Point[int]{Pt(0, 0), Pt(3, 0), Pt(0, 4)}).Perimeter(), 12.0)
 	})
 	t.Run("two vertices count the segment twice", func(t *testing.T) {
-		AssertNumber(t, Pol([]Point[int]{Pt(0, 0), Pt(3, 4)}).Perimeter(), 10.0)
+		geomtest.AssertNumber(t, Pol([]Point[int]{Pt(0, 0), Pt(3, 4)}).Perimeter(), 10.0)
 	})
 	t.Run("empty is zero", func(t *testing.T) {
-		AssertNumber(t, Polygon[float64]{}.Perimeter(), 0.0)
+		geomtest.AssertNumber(t, Polygon[float64]{}.Perimeter(), 0.0)
 	})
 }
 
 func TestPolygon_Inertia(t *testing.T) {
 	t.Run("square", func(t *testing.T) {
-		AssertNumber(t, Pol(squareVertices()).Inertia(), 8.0/3)
+		geomtest.AssertNumber(t, Pol(squareVertices()).Inertia(), 8.0/3)
 	})
 	t.Run("winding does not matter", func(t *testing.T) {
 		reversed := Pol([]Point[int]{Pt(0, 2), Pt(2, 2), Pt(2, 0), Pt(0, 0)})
 
-		AssertNumber(t, reversed.Inertia(), 8.0/3)
+		geomtest.AssertNumber(t, reversed.Inertia(), 8.0/3)
 	})
 	t.Run("is taken about the centroid wherever the polygon lies", func(t *testing.T) {
 		square := Pol(squareVertices())
 
-		AssertNumber(t, square.Translate(Vec(100, -250)).Inertia(), square.Inertia())
-		AssertNumber(t, Pol(triangleVertices()).Translate(Vec(100.0, -250.0)).Inertia(), Pol(triangleVertices()).Inertia())
+		geomtest.AssertNumber(t, square.Translate(Vec(100, -250)).Inertia(), square.Inertia())
+		geomtest.AssertNumber(t, Pol(triangleVertices()).Translate(Vec(100.0, -250.0)).Inertia(), Pol(triangleVertices()).Inertia())
 	})
 	t.Run("a triangle has the moment of its sides, A(a²+b²+c²)/36", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
@@ -182,13 +184,13 @@ func TestPolygon_Inertia(t *testing.T) {
 				sides += edge.Vector().LengthSquared()
 			}
 
-			AssertNumber(t, p.Inertia(), p.Area()*sides/36, p.String())
+			geomtest.AssertNumber(t, p.Inertia(), p.Area()*sides/36, p.String())
 		}
 	})
 	t.Run("degenerate is zero", func(t *testing.T) {
-		AssertNumber(t, Pol([]Point[int]{}).Inertia(), 0.0)
-		AssertNumber(t, Pol([]Point[int]{Pt(1, 1), Pt(4, 4)}).Inertia(), 0.0)
-		AssertNumber(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(1.0, 1.0), Pt(3.0, 3.0)}).Inertia(), 0.0)
+		geomtest.AssertNumber(t, Pol([]Point[int]{}).Inertia(), 0.0)
+		geomtest.AssertNumber(t, Pol([]Point[int]{Pt(1, 1), Pt(4, 4)}).Inertia(), 0.0)
+		geomtest.AssertNumber(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(1.0, 1.0), Pt(3.0, 3.0)}).Inertia(), 0.0)
 	})
 }
 
@@ -209,7 +211,7 @@ func TestPolygon_Winding(t *testing.T) {
 		assert.Equal(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 2), Pt(2, 0), Pt(0, 2)}).Winding(), WindingNone)
 	})
 	t.Run("allocates nothing", func(t *testing.T) {
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkBool = square.Winding().IsNone()
 		}), 0)
 	})
@@ -217,36 +219,21 @@ func TestPolygon_Winding(t *testing.T) {
 
 func TestPolygon_Bounds(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertBox(t, Pol(squareVertices()).Bounds(), BoxFromMinMax(Pt(0, 0), Pt(2, 2)))
+		geomtest.AssertBox(t, Pol(squareVertices()).Bounds(), BoxFromMinMax(Pt(0, 0), Pt(2, 2)))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertBox(t, Pol(triangleVertices()).Bounds(), BoxFromMinMax(Pt(0.0, 0.0), Pt(2.5, 1.0)))
+		geomtest.AssertBox(t, Pol(triangleVertices()).Bounds(), BoxFromMinMax(Pt(0.0, 0.0), Pt(2.5, 1.0)))
 	})
 	t.Run("vertex order does not matter", func(t *testing.T) {
-		AssertBox(t, Pol([]Point[int]{Pt(3, -1), Pt(-2, 4), Pt(0, 0)}).Bounds(), BoxFromMinMax(Pt(-2, -1), Pt(3, 4)))
+		geomtest.AssertBox(t, Pol([]Point[int]{Pt(3, -1), Pt(-2, 4), Pt(0, 0)}).Bounds(), BoxFromMinMax(Pt(-2, -1), Pt(3, 4)))
 	})
 	t.Run("empty is the zero rectangle", func(t *testing.T) {
-		AssertBox(t, Polygon[int]{}.Bounds(), Box[int]{})
-	})
-}
-
-func TestPolygon_minMax(t *testing.T) {
-	t.Run("spans the vertices", func(t *testing.T) {
-		a, b := Pol([]Point[int]{Pt(3, 1), Pt(-2, 4), Pt(0, 0)}).minMax()
-
-		AssertPoint(t, a, Pt(-2, 0))
-		AssertPoint(t, b, Pt(3, 4))
-	})
-	t.Run("an empty polygon has zero corners", func(t *testing.T) {
-		a, b := Pol[int](nil).minMax()
-
-		AssertPoint(t, a, Pt(0, 0))
-		AssertPoint(t, b, Pt(0, 0))
+		geomtest.AssertBox(t, Polygon[int]{}.Bounds(), Box[int]{})
 	})
 }
 
 func TestPolygon_Translate(t *testing.T) {
-	AssertPolygon(t, Pol(squareVertices()).Translate(Vec(1, -1)), Pol([]Point[int]{
+	geomtest.AssertPolygon(t, Pol(squareVertices()).Translate(Vec(1, -1)), Pol([]Point[int]{
 		Pt(1, -1),
 		Pt(3, -1),
 		Pt(3, 1),
@@ -255,7 +242,7 @@ func TestPolygon_Translate(t *testing.T) {
 }
 
 func TestPolygon_MoveTo(t *testing.T) {
-	AssertPolygon(t, Pol(squareVertices()).MoveTo(Pt(10, 10)), Pol([]Point[int]{
+	geomtest.AssertPolygon(t, Pol(squareVertices()).MoveTo(Pt(10, 10)), Pol([]Point[int]{
 		Pt(9, 9),
 		Pt(11, 9),
 		Pt(11, 11),
@@ -265,18 +252,18 @@ func TestPolygon_MoveTo(t *testing.T) {
 	t.Run("int lands on the point when the average crosses zero", func(t *testing.T) {
 		moved := Pol([]Point[int]{Pt(-1, 0), Pt(0, 0), Pt(0, 0)}).MoveTo(Pt(1, 0))
 
-		AssertPoint(t, moved.Centroid(), Pt(1, 0))
+		geomtest.AssertPoint(t, moved.Centroid(), Pt(1, 0))
 	})
 	t.Run("int misses by one when a half average changes sign", func(t *testing.T) {
 		moved := Pol([]Point[int]{Pt(-1, 0), Pt(0, 0)}).MoveTo(Pt(0, 0))
 
-		AssertPoint(t, moved.Centroid(), Pt(1, 0))
+		geomtest.AssertPoint(t, moved.Centroid(), Pt(1, 0))
 	})
 }
 
 func TestPolygon_Scale(t *testing.T) {
 	t.Run("uniform factor", func(t *testing.T) {
-		AssertPolygon(t, Pol(squareVertices()).Scale(2), Pol([]Point[int]{
+		geomtest.AssertPolygon(t, Pol(squareVertices()).Scale(2), Pol([]Point[int]{
 			Pt(-1, -1),
 			Pt(3, -1),
 			Pt(3, 3),
@@ -284,7 +271,7 @@ func TestPolygon_Scale(t *testing.T) {
 		}))
 	})
 	t.Run("per-axis factor", func(t *testing.T) {
-		AssertPolygon(t, Pol(triangleVertices()).ScaleXY(0.5, 2.5), Pol([]Point[float64]{
+		geomtest.AssertPolygon(t, Pol(triangleVertices()).ScaleXY(0.5, 2.5), Pol([]Point[float64]{
 			Pt(0.75, -0.75),
 			Pt(2.0, 0.5),
 			Pt(1.75, 1.75),
@@ -294,11 +281,11 @@ func TestPolygon_Scale(t *testing.T) {
 
 func TestPolygon_Unscale(t *testing.T) {
 	t.Run("uniform factor", func(t *testing.T) {
-		AssertPolygon(t, Pol(squareVertices()).Scale(2).Unscale(2), Pol(squareVertices()))
-		AssertPolygon(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(4.0, 4.0), Pt(0.0, 4.0)}).Unscale(2), Pol([]Point[float64]{Pt(1.0, 1.0), Pt(3.0, 1.0), Pt(3.0, 3.0), Pt(1.0, 3.0)}))
+		geomtest.AssertPolygon(t, Pol(squareVertices()).Scale(2).Unscale(2), Pol(squareVertices()))
+		geomtest.AssertPolygon(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(4.0, 4.0), Pt(0.0, 4.0)}).Unscale(2), Pol([]Point[float64]{Pt(1.0, 1.0), Pt(3.0, 1.0), Pt(3.0, 3.0), Pt(1.0, 3.0)}))
 	})
 	t.Run("per-axis factor", func(t *testing.T) {
-		AssertPolygon(t, Pol(triangleVertices()).ScaleXY(0.5, 2.5).UnscaleXY(0.5, 2.5), Pol(triangleVertices()))
+		geomtest.AssertPolygon(t, Pol(triangleVertices()).ScaleXY(0.5, 2.5).UnscaleXY(0.5, 2.5), Pol(triangleVertices()))
 	})
 	t.Run("nil stays nil", func(t *testing.T) {
 		assert.Zero(t, Pol[int](nil).Unscale(2))
@@ -319,17 +306,17 @@ func TestPolygon_Lerp(t *testing.T) {
 	b := Pol([]Point[float64]{Pt(10.0, 0.0), Pt(14.0, 0.0), Pt(14.0, 8.0), Pt(10.0, 8.0)})
 
 	t.Run("moves every vertex towards its pair", func(t *testing.T) {
-		AssertPolygon(t, a.Lerp(b, 0.5), Pol([]Point[float64]{Pt(5.0, 0.0), Pt(8.0, 0.0), Pt(8.0, 5.0), Pt(5.0, 5.0)}))
+		geomtest.AssertPolygon(t, a.Lerp(b, 0.5), Pol([]Point[float64]{Pt(5.0, 0.0), Pt(8.0, 0.0), Pt(8.0, 5.0), Pt(5.0, 5.0)}))
 	})
 	t.Run("the ends are the polygons themselves", func(t *testing.T) {
-		AssertPolygon(t, a.Lerp(b, 0), a)
-		AssertPolygon(t, a.Lerp(b, 1), b)
+		geomtest.AssertPolygon(t, a.Lerp(b, 0), a)
+		geomtest.AssertPolygon(t, a.Lerp(b, 1), b)
 	})
 	t.Run("extrapolates outside the unit range", func(t *testing.T) {
-		AssertPolygon(t, a.Lerp(b, 2), Pol([]Point[float64]{Pt(20.0, 0.0), Pt(26.0, 0.0), Pt(26.0, 14.0), Pt(20.0, 14.0)}))
+		geomtest.AssertPolygon(t, a.Lerp(b, 2), Pol([]Point[float64]{Pt(20.0, 0.0), Pt(26.0, 0.0), Pt(26.0, 14.0), Pt(20.0, 14.0)}))
 	})
 	t.Run("int rounds", func(t *testing.T) {
-		AssertPolygon(t, Pol(squareVertices()).Lerp(Pol([]Point[int]{Pt(5, 5), Pt(7, 5), Pt(7, 7), Pt(5, 7)}), 0.5), Pol([]Point[int]{Pt(3, 3), Pt(5, 3), Pt(5, 5), Pt(3, 5)}))
+		geomtest.AssertPolygon(t, Pol(squareVertices()).Lerp(Pol([]Point[int]{Pt(5, 5), Pt(7, 5), Pt(7, 7), Pt(5, 7)}), 0.5), Pol([]Point[int]{Pt(3, 3), Pt(5, 3), Pt(5, 5), Pt(3, 5)}))
 	})
 	t.Run("nil stays nil", func(t *testing.T) {
 		assert.Zero(t, Pol[int](nil).Lerp(Pol[int](nil), 0.5))
@@ -357,7 +344,7 @@ func TestPolygon_Transform(t *testing.T) {
 		matrix := Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)
 		square := Pol(squareVertices())
 
-		AssertPolygon(t, square.Transform(matrix), Pol([]Point[int]{Pt(3, 7), Pt(6, 15), Pt(10, 26), Pt(8, 18)}))
+		geomtest.AssertPolygon(t, square.Transform(matrix), Pol([]Point[int]{Pt(3, 7), Pt(6, 15), Pt(10, 26), Pt(8, 18)}))
 	})
 	t.Run("nil stays nil", func(t *testing.T) {
 		assert.Zero(t, Pol[int](nil).Transform(IdentityMatrix[float64]()))
@@ -366,7 +353,7 @@ func TestPolygon_Transform(t *testing.T) {
 
 func TestPolygon_Rotate(t *testing.T) {
 	t.Run("quarter turn about the centroid", func(t *testing.T) {
-		AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 2), Pt(0, 2)}).Rotate(Pi/2), Pol([]Point[int]{
+		geomtest.AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 2), Pt(0, 2)}).Rotate(Pi/2), Pol([]Point[int]{
 			Pt(3, -1),
 			Pt(3, 3),
 			Pt(1, 3),
@@ -377,13 +364,13 @@ func TestPolygon_Rotate(t *testing.T) {
 		p := Pol(triangleVertices())
 		rotated := p.Rotate(0.7)
 
-		AssertPoint(t, rotated.Centroid(), p.Centroid())
-		AssertNumber(t, rotated.Area(), p.Area())
-		AssertNumber(t, rotated.Perimeter(), p.Perimeter())
+		geomtest.AssertPoint(t, rotated.Centroid(), p.Centroid())
+		geomtest.AssertNumber(t, rotated.Area(), p.Area())
+		geomtest.AssertNumber(t, rotated.Perimeter(), p.Perimeter())
 	})
 	t.Run("a full turn is identity", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
-			AssertPolygon(t, p.Rotate(2*Pi), p, fmt.Sprintf("%s: ", p))
+			geomtest.AssertPolygon(t, p.Rotate(2*Pi), p, fmt.Sprintf("%s: ", p))
 		}
 	})
 	t.Run("nil stays nil", func(t *testing.T) {
@@ -397,26 +384,26 @@ func TestPolygon_ConvexHull(t *testing.T) {
 	t.Run("drops the vertices inside and on the edges", func(t *testing.T) {
 		scattered := Pol([]Point[int]{Pt(1, 1), Pt(0, 0), Pt(0, 1), Pt(2, 2), Pt(2, 0), Pt(0, 2), Pt(1, 0)})
 
-		AssertPolygon(t, scattered.ConvexHull(), Pol(squareVertices()))
+		geomtest.AssertPolygon(t, scattered.ConvexHull(), Pol(squareVertices()))
 	})
 	t.Run("drops the vertices of a concavity", func(t *testing.T) {
-		AssertPolygon(t, dart.ConvexHull(), Pol([]Point[int]{Pt(0, 0), Pt(4, 2), Pt(0, 4)}))
+		geomtest.AssertPolygon(t, dart.ConvexHull(), Pol([]Point[int]{Pt(0, 0), Pt(4, 2), Pt(0, 4)}))
 	})
 	t.Run("winds clockwise from the least vertex whatever the input winding", func(t *testing.T) {
-		AssertPolygon(t, Pol([]Point[int]{Pt(0, 2), Pt(2, 2), Pt(2, 0), Pt(0, 0)}).ConvexHull(), Pol(squareVertices()))
+		geomtest.AssertPolygon(t, Pol([]Point[int]{Pt(0, 2), Pt(2, 2), Pt(2, 0), Pt(0, 0)}).ConvexHull(), Pol(squareVertices()))
 	})
 	t.Run("collinear vertices give the two ends", func(t *testing.T) {
-		AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 2), Pt(1, 1), Pt(3, 3)}).ConvexHull(), Pol([]Point[int]{Pt(0, 0), Pt(3, 3)}))
+		geomtest.AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 2), Pt(1, 1), Pt(3, 3)}).ConvexHull(), Pol([]Point[int]{Pt(0, 0), Pt(3, 3)}))
 	})
 	t.Run("repeated vertices count once", func(t *testing.T) {
-		AssertPolygon(t, Pol([]Point[int]{Pt(1, 1), Pt(1, 1), Pt(1, 1)}).ConvexHull(), Pol([]Point[int]{Pt(1, 1)}))
-		AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(2, 0), Pt(0, 2), Pt(0, 0)}).ConvexHull(), Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(0, 2)}))
+		geomtest.AssertPolygon(t, Pol([]Point[int]{Pt(1, 1), Pt(1, 1), Pt(1, 1)}).ConvexHull(), Pol([]Point[int]{Pt(1, 1)}))
+		geomtest.AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(2, 0), Pt(0, 2), Pt(0, 0)}).ConvexHull(), Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(0, 2)}))
 	})
 	t.Run("an empty polygon gives an empty one", func(t *testing.T) {
 		assert.Zero(t, Polygon[int]{}.ConvexHull())
 	})
 	t.Run("allocates once", func(t *testing.T) {
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkPoints = dart.ConvexHull().Points
 		}), 1)
 	})
@@ -452,85 +439,85 @@ func TestPolygon_AppendConvexHull(t *testing.T) {
 	dart := Pol([]Point[int]{Pt(0, 0), Pt(4, 2), Pt(0, 4), Pt(1, 2)})
 
 	t.Run("appends the hull after the points in dst", func(t *testing.T) {
-		AssertVertices(t, dart.AppendConvexHull([]Point[int]{Pt(9, 9)}), []Point[int]{Pt(9, 9), Pt(0, 0), Pt(4, 2), Pt(0, 4)})
+		geomtest.AssertVertices(t, dart.AppendConvexHull([]Point[int]{Pt(9, 9)}), []Point[int]{Pt(9, 9), Pt(0, 0), Pt(4, 2), Pt(0, 4)})
 	})
 	t.Run("an empty polygon leaves dst as it is", func(t *testing.T) {
-		AssertVertices(t, Polygon[int]{}.AppendConvexHull([]Point[int]{Pt(9, 9)}), []Point[int]{Pt(9, 9)})
+		geomtest.AssertVertices(t, Polygon[int]{}.AppendConvexHull([]Point[int]{Pt(9, 9)}), []Point[int]{Pt(9, 9)})
 		assert.Nil(t, Polygon[int]{}.AppendConvexHull(nil))
 	})
 	t.Run("a buffer with room for every vertex allocates nothing", func(t *testing.T) {
 		buffer := make([]Point[int], 0, len(dart.Points))
 
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkPoints = dart.AppendConvexHull(buffer[:0])
 		}), 0)
 	})
 	t.Run("matches ConvexHull after the points in dst", func(t *testing.T) {
 		for _, p := range outlineFixtures() {
-			AssertVertices(t, p.AppendConvexHull(bufferWith(prefixPoint)), append([]Point[float64]{prefixPoint}, p.ConvexHull().Points...), fmt.Sprintf("%s: ", p))
+			geomtest.AssertVertices(t, p.AppendConvexHull(bufferWith(prefixPoint)), append([]Point[float64]{prefixPoint}, p.ConvexHull().Points...), fmt.Sprintf("%s: ", p))
 		}
 	})
 }
 
 func TestPolygon_Simplify(t *testing.T) {
 	t.Run("drops a vertex on the line between its neighbours", func(t *testing.T) {
-		AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(1, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2)}).Simplify(0), Pol(squareVertices()))
+		geomtest.AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(1, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2)}).Simplify(0), Pol(squareVertices()))
 	})
 	t.Run("drops a repeated vertex", func(t *testing.T) {
-		AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2)}).Simplify(0), Pol(squareVertices()))
+		geomtest.AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2)}).Simplify(0), Pol(squareVertices()))
 	})
 	t.Run("keeps a spike reaching beyond the edge that would replace it", func(t *testing.T) {
 		spike := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(2, 0), Pt(2, 2)})
 
-		AssertPolygon(t, spike.Simplify(0), spike)
+		geomtest.AssertPolygon(t, spike.Simplify(0), spike)
 	})
 	t.Run("drops a fold running back along the edge that replaces it", func(t *testing.T) {
 		folded := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(2, 0), Pt(6, 0), Pt(6, 6), Pt(0, 6)})
 
-		AssertPolygon(t, folded.Simplify(0), Pol([]Point[int]{Pt(0, 0), Pt(6, 0), Pt(6, 6), Pt(0, 6)}))
+		geomtest.AssertPolygon(t, folded.Simplify(0), Pol([]Point[int]{Pt(0, 0), Pt(6, 0), Pt(6, 6), Pt(0, 6)}))
 	})
 	t.Run("drops a vertex within the tolerance", func(t *testing.T) {
 		bumped := Pol([]Point[int]{Pt(0, 0), Pt(5, 1), Pt(10, 0), Pt(10, 10), Pt(0, 10)})
 
-		AssertPolygon(t, bumped.Simplify(1), Pol([]Point[int]{Pt(0, 0), Pt(10, 0), Pt(10, 10), Pt(0, 10)}))
-		AssertPolygon(t, bumped.Simplify(0.5), bumped)
+		geomtest.AssertPolygon(t, bumped.Simplify(1), Pol([]Point[int]{Pt(0, 0), Pt(10, 0), Pt(10, 10), Pt(0, 10)}))
+		geomtest.AssertPolygon(t, bumped.Simplify(0.5), bumped)
 	})
 	t.Run("drops a run of vertices within the tolerance of the edge replacing them", func(t *testing.T) {
 		wavy := Pol([]Point[int]{Pt(0, 0), Pt(10, 2), Pt(14, -1), Pt(20, 0), Pt(20, 20), Pt(0, 20)})
 
-		AssertPolygon(t, wavy.Simplify(2.2), Pol([]Point[int]{Pt(0, 0), Pt(20, 0), Pt(20, 20), Pt(0, 20)}))
+		geomtest.AssertPolygon(t, wavy.Simplify(2.2), Pol([]Point[int]{Pt(0, 0), Pt(20, 0), Pt(20, 20), Pt(0, 20)}))
 	})
 	t.Run("drops the vertices where the outline closes", func(t *testing.T) {
-		AssertPolygon(t, Pol([]Point[int]{Pt(1, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2), Pt(0, 0)}).Simplify(0), Pol([]Point[int]{Pt(2, 0), Pt(2, 2), Pt(0, 2), Pt(0, 0)}))
-		AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2), Pt(0, 1)}).Simplify(0), Pol(squareVertices()))
+		geomtest.AssertPolygon(t, Pol([]Point[int]{Pt(1, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2), Pt(0, 0)}).Simplify(0), Pol([]Point[int]{Pt(2, 0), Pt(2, 2), Pt(0, 2), Pt(0, 0)}))
+		geomtest.AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2), Pt(0, 1)}).Simplify(0), Pol(squareVertices()))
 	})
 	t.Run("collinear vertices give the two ends", func(t *testing.T) {
-		AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(1, 1), Pt(2, 2), Pt(3, 3)}).Simplify(0), Pol([]Point[int]{Pt(0, 0), Pt(3, 3)}))
+		geomtest.AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(1, 1), Pt(2, 2), Pt(3, 3)}).Simplify(0), Pol([]Point[int]{Pt(0, 0), Pt(3, 3)}))
 	})
 	t.Run("an outline within the tolerance of one vertex keeps it alone", func(t *testing.T) {
-		AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(1, 0), Pt(0, 1)}).Simplify(2), Pol([]Point[int]{Pt(0, 0)}))
-		AssertPolygon(t, Pol([]Point[int]{Pt(1, 1), Pt(1, 1), Pt(1, 1)}).Simplify(0), Pol([]Point[int]{Pt(1, 1)}))
+		geomtest.AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(1, 0), Pt(0, 1)}).Simplify(2), Pol([]Point[int]{Pt(0, 0)}))
+		geomtest.AssertPolygon(t, Pol([]Point[int]{Pt(1, 1), Pt(1, 1), Pt(1, 1)}).Simplify(0), Pol([]Point[int]{Pt(1, 1)}))
 	})
 	t.Run("a negative tolerance is taken absolute", func(t *testing.T) {
 		bumped := Pol([]Point[int]{Pt(0, 0), Pt(5, 1), Pt(10, 0), Pt(10, 10), Pt(0, 10)})
 
-		AssertPolygon(t, bumped.Simplify(-1), bumped.Simplify(1))
+		geomtest.AssertPolygon(t, bumped.Simplify(-1), bumped.Simplify(1))
 	})
 	t.Run("float drops within Epsilon at zero tolerance", func(t *testing.T) {
 		nearly := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(1.0, Delta/2), Pt(2.0, 0.0), Pt(2.0, 2.0), Pt(0.0, 2.0)})
 
-		AssertPolygon(t, nearly.Simplify(0), Pol([]Point[float64]{Pt(0.0, 0.0), Pt(2.0, 0.0), Pt(2.0, 2.0), Pt(0.0, 2.0)}))
+		geomtest.AssertPolygon(t, nearly.Simplify(0), Pol([]Point[float64]{Pt(0.0, 0.0), Pt(2.0, 0.0), Pt(2.0, 2.0), Pt(0.0, 2.0)}))
 	})
 	t.Run("keeps the vertex a curve strays farthest by, and drops those within the edges to it", func(t *testing.T) {
 		arc := Pol([]Point[int]{Pt(0, 0), Pt(4, 1), Pt(8, 2), Pt(12, 2), Pt(16, 1), Pt(20, 0), Pt(20, 10), Pt(0, 10)})
 
-		AssertPolygon(t, arc.Simplify(1.5), Pol([]Point[int]{Pt(0, 0), Pt(8, 2), Pt(20, 0), Pt(20, 10), Pt(0, 10)}))
-		AssertPolygon(t, arc.Simplify(2), Pol([]Point[int]{Pt(0, 0), Pt(20, 0), Pt(20, 10), Pt(0, 10)}))
+		geomtest.AssertPolygon(t, arc.Simplify(1.5), Pol([]Point[int]{Pt(0, 0), Pt(8, 2), Pt(20, 0), Pt(20, 10), Pt(0, 10)}))
+		geomtest.AssertPolygon(t, arc.Simplify(2), Pol([]Point[int]{Pt(0, 0), Pt(20, 0), Pt(20, 10), Pt(0, 10)}))
 	})
 	t.Run("keeps the polygon's order, from the first kept vertex", func(t *testing.T) {
 		turned := Pol([]Point[int]{Pt(2, 2), Pt(0, 2), Pt(0, 1), Pt(0, 0), Pt(2, 0)})
 
-		AssertPolygon(t, turned.Simplify(0), Pol([]Point[int]{Pt(2, 2), Pt(0, 2), Pt(0, 0), Pt(2, 0)}))
+		geomtest.AssertPolygon(t, turned.Simplify(0), Pol([]Point[int]{Pt(2, 2), Pt(0, 2), Pt(0, 0), Pt(2, 0)}))
 	})
 	t.Run("an empty polygon gives an empty one", func(t *testing.T) {
 		assert.Zero(t, Polygon[int]{}.Simplify(1))
@@ -538,7 +525,7 @@ func TestPolygon_Simplify(t *testing.T) {
 	t.Run("allocates once", func(t *testing.T) {
 		square := Pol([]Point[int]{Pt(0, 0), Pt(1, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2)})
 
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkPoints = square.Simplify(0).Points
 		}), 1)
 	})
@@ -551,7 +538,7 @@ func TestPolygon_Simplify(t *testing.T) {
 				assert.True(t, simplified.Simplify(tolerance).Equal(simplified), message)
 				for _, vertex := range p.Points {
 					assert.True(t, slices.ContainsFunc(slices.Collect(simplified.Edges()), func(edge Segment[float64]) bool {
-						return lessOrEqualSquared(edge.DistanceSquaredTo(vertex), tolerance, Delta)
+						return edge.DistanceSquaredTo(vertex) <= (tolerance+Delta)*(tolerance+Delta)
 					}), message+vertex.String()+" within the tolerance: ")
 				}
 				assert.Equal(t, simplified.IsEmpty(), p.IsEmpty(), message)
@@ -567,7 +554,7 @@ func TestPolygon_Simplify(t *testing.T) {
 				}
 			}
 
-			AssertNumber(t, p.Simplify(0).Area(), p.Area(), fmt.Sprintf("%s: ", p))
+			geomtest.AssertNumber(t, p.Simplify(0).Area(), p.Area(), fmt.Sprintf("%s: ", p))
 		}
 	})
 }
@@ -576,23 +563,23 @@ func TestPolygon_AppendSimplify(t *testing.T) {
 	turned := Pol([]Point[int]{Pt(2, 2), Pt(0, 2), Pt(0, 1), Pt(0, 0), Pt(2, 0)})
 
 	t.Run("appends the kept vertices in the polygon's order after the points in dst", func(t *testing.T) {
-		AssertVertices(t, turned.AppendSimplify([]Point[int]{Pt(9, 9)}, 0), []Point[int]{Pt(9, 9), Pt(2, 2), Pt(0, 2), Pt(0, 0), Pt(2, 0)})
+		geomtest.AssertVertices(t, turned.AppendSimplify([]Point[int]{Pt(9, 9)}, 0), []Point[int]{Pt(9, 9), Pt(2, 2), Pt(0, 2), Pt(0, 0), Pt(2, 0)})
 	})
 	t.Run("an empty polygon leaves dst as it is", func(t *testing.T) {
-		AssertVertices(t, Polygon[int]{}.AppendSimplify([]Point[int]{Pt(9, 9)}, 1), []Point[int]{Pt(9, 9)})
+		geomtest.AssertVertices(t, Polygon[int]{}.AppendSimplify([]Point[int]{Pt(9, 9)}, 1), []Point[int]{Pt(9, 9)})
 		assert.Nil(t, Polygon[int]{}.AppendSimplify(nil, 1))
 	})
 	t.Run("a buffer with room for every vertex allocates nothing", func(t *testing.T) {
 		buffer := make([]Point[int], 0, len(turned.Points))
 
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkPoints = turned.AppendSimplify(buffer[:0], 0)
 		}), 0)
 	})
 	t.Run("matches Simplify after the points in dst", func(t *testing.T) {
 		for _, p := range outlineFixtures() {
 			for _, tolerance := range []float64{0, 0.5, 2} {
-				AssertVertices(t, p.AppendSimplify(bufferWith(prefixPoint), tolerance), append([]Point[float64]{prefixPoint}, p.Simplify(tolerance).Points...), fmt.Sprintf("%s ~%v: ", p, tolerance))
+				geomtest.AssertVertices(t, p.AppendSimplify(bufferWith(prefixPoint), tolerance), append([]Point[float64]{prefixPoint}, p.Simplify(tolerance).Points...), fmt.Sprintf("%s ~%v: ", p, tolerance))
 			}
 		}
 	})
@@ -681,11 +668,11 @@ func TestPolygon_DistanceTo(t *testing.T) {
 	square := Pol(squareVertices())
 
 	t.Run("beside an edge measures to the edge", func(t *testing.T) {
-		AssertNumber(t, square.DistanceTo(Pt(5, 1)), 3.0)
-		AssertNumber(t, square.DistanceTo(Pt(1, -2)), 2.0)
+		geomtest.AssertNumber(t, square.DistanceTo(Pt(5, 1)), 3.0)
+		geomtest.AssertNumber(t, square.DistanceTo(Pt(1, -2)), 2.0)
 	})
 	t.Run("beyond a vertex measures to the vertex", func(t *testing.T) {
-		AssertNumber(t, square.DistanceTo(Pt(5, 6)), 5.0)
+		geomtest.AssertNumber(t, square.DistanceTo(Pt(5, 6)), 5.0)
 	})
 	t.Run("inside and on the boundary are zero", func(t *testing.T) {
 		assert.Equal(t, square.DistanceTo(Pt(1, 1)), 0.0)
@@ -694,7 +681,7 @@ func TestPolygon_DistanceTo(t *testing.T) {
 	t.Run("a concave notch measures to the notch edges", func(t *testing.T) {
 		notched := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(4.0, 4.0), Pt(2.0, 2.0), Pt(0.0, 4.0)})
 
-		AssertNumber(t, notched.DistanceTo(Pt(2.0, 4.0)), Sqrt2)
+		geomtest.AssertNumber(t, notched.DistanceTo(Pt(2.0, 4.0)), Sqrt2)
 	})
 	t.Run("an empty polygon is infinitely far", func(t *testing.T) {
 		assert.True(t, math.IsInf(Pol[int](nil).DistanceTo(Pt(0, 0)), 1))
@@ -721,17 +708,17 @@ func TestPolygon_DistanceSquaredTo(t *testing.T) {
 	square := Pol(squareVertices())
 
 	t.Run("is the square of DistanceTo", func(t *testing.T) {
-		AssertNumber(t, square.DistanceSquaredTo(Pt(5, 6)), 25.0)
-		AssertNumber(t, square.DistanceSquaredTo(Pt(5, 1)), 9.0)
+		geomtest.AssertNumber(t, square.DistanceSquaredTo(Pt(5, 6)), 25.0)
+		geomtest.AssertNumber(t, square.DistanceSquaredTo(Pt(5, 1)), 9.0)
 		assert.Equal(t, square.DistanceSquaredTo(Pt(1, 1)), 0.0)
 	})
 	t.Run("stays fractional for an integer T", func(t *testing.T) {
-		AssertNumber(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 1)}).DistanceSquaredTo(Pt(0, 1)), 0.8)
+		geomtest.AssertNumber(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 1)}).DistanceSquaredTo(Pt(0, 1)), 0.8)
 	})
 	t.Run("agrees with DistanceTo", func(t *testing.T) {
 		for _, polygon := range polygonFixtures() {
 			for _, p := range pointFixtures {
-				AssertNumber(t, polygon.DistanceSquaredTo(p), polygon.DistanceTo(p)*polygon.DistanceTo(p), fmt.Sprintf("%s → %s: ", polygon, p))
+				geomtest.AssertNumber(t, polygon.DistanceSquaredTo(p), polygon.DistanceTo(p)*polygon.DistanceTo(p), fmt.Sprintf("%s → %s: ", polygon, p))
 			}
 		}
 	})
@@ -741,14 +728,14 @@ func TestPolygon_Nearest(t *testing.T) {
 	square := Pol(squareVertices())
 
 	t.Run("the foot on the nearest edge", func(t *testing.T) {
-		AssertPoint(t, square.Nearest(Pt(5, 1)), Pt(2, 1))
-		AssertPoint(t, square.Nearest(Pt(5, 6)), Pt(2, 2))
+		geomtest.AssertPoint(t, square.Nearest(Pt(5, 1)), Pt(2, 1))
+		geomtest.AssertPoint(t, square.Nearest(Pt(5, 6)), Pt(2, 2))
 	})
 	t.Run("a point inside is its own nearest point", func(t *testing.T) {
-		AssertPoint(t, square.Nearest(Pt(1, 1)), Pt(1, 1))
+		geomtest.AssertPoint(t, square.Nearest(Pt(1, 1)), Pt(1, 1))
 	})
 	t.Run("an empty polygon returns the zero point", func(t *testing.T) {
-		AssertPoint(t, Polygon[int]{}.Nearest(Pt(3, 4)), Pt(0, 0))
+		geomtest.AssertPoint(t, Polygon[int]{}.Nearest(Pt(3, 4)), Pt(0, 0))
 	})
 	t.Run("over the fixtures", func(t *testing.T) {
 		for _, polygon := range polygonFixtures() {
@@ -859,7 +846,7 @@ func TestPolygon_EnclosesRegularPolygon(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		inside := RegPol(Pt(2, 2), Sz(1, 1), 6, Pi/5, 0)
 
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkBool = notched.EnclosesRegularPolygon(inside)
 		}), 0)
 	})
@@ -898,7 +885,7 @@ func TestPolygon_IntersectionSegment(t *testing.T) {
 	t.Run("matches Segment.IntersectionPolygon", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
 			for _, s := range segmentFixtures {
-				AssertVertices(t, p.IntersectionSegment(s), s.IntersectionPolygon(p), fmt.Sprintf("%s → %s: ", p, s))
+				geomtest.AssertVertices(t, p.IntersectionSegment(s), s.IntersectionPolygon(p), fmt.Sprintf("%s → %s: ", p, s))
 			}
 		}
 	})
@@ -908,7 +895,7 @@ func TestPolygon_AppendIntersectionSegment(t *testing.T) {
 	t.Run("matches Segment.AppendIntersectionPolygon", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
 			for _, s := range segmentFixtures {
-				AssertVertices(t, p.AppendIntersectionSegment(bufferWith(prefixPoint), s), s.AppendIntersectionPolygon(bufferWith(prefixPoint), p), fmt.Sprintf("%s → %s: ", p, s))
+				geomtest.AssertVertices(t, p.AppendIntersectionSegment(bufferWith(prefixPoint), s), s.AppendIntersectionPolygon(bufferWith(prefixPoint), p), fmt.Sprintf("%s → %s: ", p, s))
 			}
 		}
 	})
@@ -928,7 +915,7 @@ func TestPolygon_IntersectionRay(t *testing.T) {
 	t.Run("matches Ray.IntersectionPolygon", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
 			for _, r := range rayFixtures {
-				AssertVertices(t, p.IntersectionRay(r), r.IntersectionPolygon(p), fmt.Sprintf("%s → %s: ", p, r))
+				geomtest.AssertVertices(t, p.IntersectionRay(r), r.IntersectionPolygon(p), fmt.Sprintf("%s → %s: ", p, r))
 			}
 		}
 	})
@@ -938,7 +925,7 @@ func TestPolygon_AppendIntersectionRay(t *testing.T) {
 	t.Run("matches Ray.AppendIntersectionPolygon", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
 			for _, r := range rayFixtures {
-				AssertVertices(t, p.AppendIntersectionRay(bufferWith(prefixPoint), r), r.AppendIntersectionPolygon(bufferWith(prefixPoint), p), fmt.Sprintf("%s → %s: ", p, r))
+				geomtest.AssertVertices(t, p.AppendIntersectionRay(bufferWith(prefixPoint), r), r.AppendIntersectionPolygon(bufferWith(prefixPoint), p), fmt.Sprintf("%s → %s: ", p, r))
 			}
 		}
 	})
@@ -1168,7 +1155,7 @@ func TestPolygon_IsConvex(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		square := Pol(squareVertices())
 
-		AssertNumber(t, testing.AllocsPerRun(100, func() {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkBool = square.IsConvex()
 		}), 0)
 	})
@@ -1186,20 +1173,20 @@ func TestPolygon_Cast(t *testing.T) {
 	p := Pol([]Point[float64]{Pt(1.5, -2.5), Pt(3.5, 4.5), Pt(-1.5, 2.5)})
 
 	t.Run("matches Int and Float", func(t *testing.T) {
-		AssertPolygon(t, p.Cast[int](), p.Int())
-		AssertPolygon(t, p.Cast[float64](), p.Float())
+		geomtest.AssertPolygon(t, p.Cast[int](), p.Int())
+		geomtest.AssertPolygon(t, p.Cast[float64](), p.Float())
 	})
 	t.Run("a type the other conversions cannot name", func(t *testing.T) {
-		AssertPolygon(t, p.Cast[int8](), Pol([]Point[int8]{Pt[int8](2, -3), Pt[int8](4, 5), Pt[int8](-2, 3)}))
+		geomtest.AssertPolygon(t, p.Cast[int8](), Pol([]Point[int8]{Pt[int8](2, -3), Pt[int8](4, 5), Pt[int8](-2, 3)}))
 	})
 }
 
 func TestPolygon_Int(t *testing.T) {
 	t.Run("int is a no-op", func(t *testing.T) {
-		AssertPolygon(t, Pol(squareVertices()).Int(), Pol(squareVertices()))
+		geomtest.AssertPolygon(t, Pol(squareVertices()).Int(), Pol(squareVertices()))
 	})
 	t.Run("float rounds", func(t *testing.T) {
-		AssertPolygon(t, Pol(triangleVertices()).Int(), Pol([]Point[int]{
+		geomtest.AssertPolygon(t, Pol(triangleVertices()).Int(), Pol([]Point[int]{
 			Pt(0, 0),
 			Pt(3, 1),
 			Pt(2, 1),
@@ -1209,7 +1196,7 @@ func TestPolygon_Int(t *testing.T) {
 
 func TestPolygon_Float(t *testing.T) {
 	t.Run("int widens", func(t *testing.T) {
-		AssertPolygon(t, Pol(squareVertices()).Float(), Pol([]Point[float64]{
+		geomtest.AssertPolygon(t, Pol(squareVertices()).Float(), Pol([]Point[float64]{
 			Pt(0.0, 0.0),
 			Pt(2.0, 0.0),
 			Pt(2.0, 2.0),
@@ -1217,7 +1204,7 @@ func TestPolygon_Float(t *testing.T) {
 		}))
 	})
 	t.Run("float is a no-op", func(t *testing.T) {
-		AssertPolygon(t, Pol(triangleVertices()).Float(), Pol(triangleVertices()))
+		geomtest.AssertPolygon(t, Pol(triangleVertices()).Float(), Pol(triangleVertices()))
 	})
 }
 
@@ -1236,28 +1223,28 @@ func TestPolygon_JSON(t *testing.T) {
 
 		var p Polygon[int]
 		assert.NoError(t, json.Unmarshal([]byte(`[{"x":0,"y":0},{"x":2,"y":0},{"x":2,"y":2},{"x":0,"y":2}]`), &p))
-		AssertPolygon(t, p, Pol(squareVertices()))
+		geomtest.AssertPolygon(t, p, Pol(squareVertices()))
 	})
 	t.Run("float wire format", func(t *testing.T) {
 		assert.JSON(t, Pol(triangleVertices()), `[{"x":0,"y":0},{"x":2.5,"y":0.5},{"x":2,"y":1}]`)
 
 		var p Polygon[float64]
 		assert.NoError(t, json.Unmarshal([]byte(`[{"x":0,"y":0},{"x":2.5,"y":0.5},{"x":2,"y":1}]`), &p))
-		AssertPolygon(t, p, Pol(triangleVertices()))
+		geomtest.AssertPolygon(t, p, Pol(triangleVertices()))
 	})
 	t.Run("decoding leaves a shared slice untouched", func(t *testing.T) {
 		shared := squareVertices()
 		p := Pol(shared)
 
 		assert.NoError(t, json.Unmarshal([]byte(`[{"x":9,"y":9}]`), &p))
-		AssertVertices(t, shared, squareVertices())
-		AssertPolygon(t, p, Pol([]Point[int]{{9, 9}}))
+		geomtest.AssertVertices(t, shared, squareVertices())
+		geomtest.AssertPolygon(t, p, Pol([]Point[int]{{9, 9}}))
 	})
 	t.Run("invalid input leaves the polygon untouched", func(t *testing.T) {
 		p := Pol(squareVertices())
 
 		assert.Error(t, json.Unmarshal([]byte(`[{"x":"nine"}]`), &p))
-		AssertPolygon(t, p, Pol(squareVertices()))
+		geomtest.AssertPolygon(t, p, Pol(squareVertices()))
 	})
 	t.Run("round-trip", func(t *testing.T) {
 		for _, polygon := range polygonFixtures() {
@@ -1338,7 +1325,7 @@ func TestPolygon_Immutable(t *testing.T) {
 	p.Lerp(Pol([]Point[int]{Pt(4, 4), Pt(6, 4)}), 0.5)
 	p.ConvexHull()
 
-	AssertVertices(t, p.Points, []Point[int]{Pt(0, 0), Pt(2, 0)})
+	geomtest.AssertVertices(t, p.Points, []Point[int]{Pt(0, 0), Pt(2, 0)})
 }
 
 // squareVertices and triangleVertices build fresh slices, so a test that mutates one

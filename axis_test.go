@@ -1,4 +1,4 @@
-package geom
+package geom_test
 
 import (
 	"encoding/json"
@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/gravitton/assert"
+	. "github.com/gravitton/geometry"
+	"github.com/gravitton/geometry/geomtest"
 )
 
 func TestParseAxis(t *testing.T) {
@@ -100,23 +102,23 @@ func TestAxis_Project(t *testing.T) {
 
 func TestAxis_ScaleAlong(t *testing.T) {
 	t.Run("leaves the cross axis alone", func(t *testing.T) {
-		AssertSize(t, AxisHorizontal.ScaleAlong(Sz(10, 20), 0.5), Sz(5, 20))
-		AssertSize(t, AxisVertical.ScaleAlong(Sz(10, 20), 0.5), Sz(10, 10))
-		AssertSize(t, AxisHorizontal.ScaleAlong(Sz(1.0, 2.0), 3), Sz(3.0, 2.0))
+		geomtest.AssertSize(t, AxisHorizontal.ScaleAlong(Sz(10, 20), 0.5), Sz(5, 20))
+		geomtest.AssertSize(t, AxisVertical.ScaleAlong(Sz(10, 20), 0.5), Sz(10, 10))
+		geomtest.AssertSize(t, AxisHorizontal.ScaleAlong(Sz(1.0, 2.0), 3), Sz(3.0, 2.0))
 	})
 	t.Run("none leaves the size unchanged", func(t *testing.T) {
-		AssertSize(t, AxisNone.ScaleAlong(Sz(10, 20), 0.5), Sz(10, 20))
+		geomtest.AssertSize(t, AxisNone.ScaleAlong(Sz(10, 20), 0.5), Sz(10, 20))
 	})
 }
 
 func TestAxis_ScaleAcross(t *testing.T) {
 	t.Run("leaves the main axis alone", func(t *testing.T) {
-		AssertSize(t, AxisHorizontal.ScaleAcross(Sz(10, 20), 0.5), Sz(10, 10))
-		AssertSize(t, AxisVertical.ScaleAcross(Sz(10, 20), 0.5), Sz(5, 20))
-		AssertSize(t, AxisHorizontal.ScaleAcross(Sz(1.0, 2.0), 3), Sz(1.0, 6.0))
+		geomtest.AssertSize(t, AxisHorizontal.ScaleAcross(Sz(10, 20), 0.5), Sz(10, 10))
+		geomtest.AssertSize(t, AxisVertical.ScaleAcross(Sz(10, 20), 0.5), Sz(5, 20))
+		geomtest.AssertSize(t, AxisHorizontal.ScaleAcross(Sz(1.0, 2.0), 3), Sz(1.0, 6.0))
 	})
 	t.Run("none leaves the size unchanged", func(t *testing.T) {
-		AssertSize(t, AxisNone.ScaleAcross(Sz(10, 20), 0.5), Sz(10, 20))
+		geomtest.AssertSize(t, AxisNone.ScaleAcross(Sz(10, 20), 0.5), Sz(10, 20))
 	})
 }
 
@@ -134,31 +136,31 @@ func TestAxis_IsNone(t *testing.T) {
 
 func TestAxis_Vector(t *testing.T) {
 	t.Run("horizontal keeps the order", func(t *testing.T) {
-		AssertVector(t, AxisHorizontal.Vector(3, 4), Vec(3, 4))
+		geomtest.AssertVector(t, AxisHorizontal.Vector(3, 4), Vec(3, 4))
 	})
 	t.Run("vertical swaps it", func(t *testing.T) {
-		AssertVector(t, AxisVertical.Vector(3, 4), Vec(4, 3))
-		AssertVector(t, AxisVertical.Vector(1.5, 2.5), Vec(2.5, 1.5))
+		geomtest.AssertVector(t, AxisVertical.Vector(3, 4), Vec(4, 3))
+		geomtest.AssertVector(t, AxisVertical.Vector(1.5, 2.5), Vec(2.5, 1.5))
 	})
 	t.Run("none is the zero vector", func(t *testing.T) {
-		AssertVector(t, AxisNone.Vector(3, 4), Vec(0, 0))
+		geomtest.AssertVector(t, AxisNone.Vector(3, 4), Vec(0, 0))
 	})
 }
 
 func TestAxis_Size(t *testing.T) {
 	t.Run("horizontal keeps the order", func(t *testing.T) {
-		AssertSize(t, AxisHorizontal.Size(3, 4), Sz(3, 4))
+		geomtest.AssertSize(t, AxisHorizontal.Size(3, 4), Sz(3, 4))
 	})
 	t.Run("vertical swaps it", func(t *testing.T) {
-		AssertSize(t, AxisVertical.Size(3, 4), Sz(4, 3))
-		AssertSize(t, AxisVertical.Size(1.5, 2.5), Sz(2.5, 1.5))
+		geomtest.AssertSize(t, AxisVertical.Size(3, 4), Sz(4, 3))
+		geomtest.AssertSize(t, AxisVertical.Size(1.5, 2.5), Sz(2.5, 1.5))
 	})
 	t.Run("keeps the sign, like Sz", func(t *testing.T) {
-		AssertSize(t, AxisHorizontal.Size(-3, 4), Sz(-3, 4))
-		AssertSize(t, AxisHorizontal.ScaleAlong(Sz(10, 4), -1), Sz(10, 4).ScaleXY(-1, 1))
+		geomtest.AssertSize(t, AxisHorizontal.Size(-3, 4), Sz(-3, 4))
+		geomtest.AssertSize(t, AxisHorizontal.ScaleAlong(Sz(10, 4), -1), Sz(10, 4).ScaleXY(-1, 1))
 	})
 	t.Run("none has no extent", func(t *testing.T) {
-		AssertSize(t, AxisNone.Size(3, 4), Sz(0, 0))
+		geomtest.AssertSize(t, AxisNone.Size(3, 4), Sz(0, 0))
 	})
 }
 
@@ -206,16 +208,16 @@ func TestAxis_Properties(t *testing.T) {
 		size := Sz(10.0, 20.0)
 
 		for _, axis := range Axes() {
-			AssertNumber(t, axis.Perpendicular().Along(size), axis.Across(size), axis.String()+": ")
-			AssertNumber(t, axis.Perpendicular().Across(size), axis.Along(size), axis.String()+": ")
+			geomtest.AssertNumber(t, axis.Perpendicular().Along(size), axis.Across(size), axis.String()+": ")
+			geomtest.AssertNumber(t, axis.Perpendicular().Across(size), axis.Along(size), axis.String()+": ")
 		}
 	})
 	t.Run("size and along are inverse", func(t *testing.T) {
 		for _, axis := range Axes() {
 			built := axis.Size(1.0, 2.0)
 
-			AssertNumber(t, axis.Along(built), 1.0, axis.String()+": ")
-			AssertNumber(t, axis.Across(built), 2.0, axis.String()+": ")
+			geomtest.AssertNumber(t, axis.Along(built), 1.0, axis.String()+": ")
+			geomtest.AssertNumber(t, axis.Across(built), 2.0, axis.String()+": ")
 		}
 	})
 	t.Run("direction round-trips through axis and sign", func(t *testing.T) {
@@ -232,14 +234,14 @@ func TestAxis_Properties(t *testing.T) {
 		size := Sz(10.0, 20.0)
 
 		for _, axis := range Axes() {
-			AssertSize(t, axis.Perpendicular().ScaleAlong(size, 0.5), axis.ScaleAcross(size, 0.5), axis.String()+": ")
-			AssertSize(t, axis.Perpendicular().ScaleAcross(size, 0.5), axis.ScaleAlong(size, 0.5), axis.String()+": ")
+			geomtest.AssertSize(t, axis.Perpendicular().ScaleAlong(size, 0.5), axis.ScaleAcross(size, 0.5), axis.String()+": ")
+			geomtest.AssertSize(t, axis.Perpendicular().ScaleAcross(size, 0.5), axis.ScaleAlong(size, 0.5), axis.String()+": ")
 		}
 	})
 	t.Run("project is the component of the vector", func(t *testing.T) {
 		for _, axis := range Axes() {
 			for _, vector := range vectorFixtures {
-				AssertNumber(t, axis.Project(vector), axis.Along(Sz(vector.X, vector.Y)), fmt.Sprintf("%s → %s: ", axis, vector))
+				geomtest.AssertNumber(t, axis.Project(vector), axis.Along(Sz(vector.X, vector.Y)), fmt.Sprintf("%s → %s: ", axis, vector))
 			}
 		}
 	})

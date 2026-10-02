@@ -1,4 +1,4 @@
-package geom
+package geom_test
 
 import (
 	"encoding/json"
@@ -9,16 +9,18 @@ import (
 	"testing"
 
 	"github.com/gravitton/assert"
+	. "github.com/gravitton/geometry"
+	"github.com/gravitton/geometry/geomtest"
 )
 
 func TestPoint_Constructor(t *testing.T) {
 	t.Run("from coordinates", func(t *testing.T) {
-		AssertPoint(t, Pt(10, 16), Point[int]{X: 10, Y: 16})
-		AssertPoint(t, Pt[float64](0.16, 204), Point[float64]{X: 0.16, Y: 204})
+		geomtest.AssertPoint(t, Pt(10, 16), Point[int]{X: 10, Y: 16})
+		geomtest.AssertPoint(t, Pt[float64](0.16, 204), Point[float64]{X: 0.16, Y: 204})
 	})
 	t.Run("zero", func(t *testing.T) {
-		AssertPoint(t, ZeroPoint[int](), Point[int]{})
-		AssertPoint(t, ZeroPoint[float64](), Point[float64]{})
+		geomtest.AssertPoint(t, ZeroPoint[int](), Point[int]{})
+		geomtest.AssertPoint(t, ZeroPoint[float64](), Point[float64]{})
 	})
 }
 
@@ -26,12 +28,12 @@ func TestParsePoint(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		point, err := ParsePoint[int]("(10,-16)")
 		assert.NoError(t, err)
-		AssertPoint(t, point, Pt(10, -16))
+		geomtest.AssertPoint(t, point, Pt(10, -16))
 	})
 	t.Run("float", func(t *testing.T) {
 		point, err := ParsePoint[float64]("(0.25,-1.50)")
 		assert.NoError(t, err)
-		AssertPoint(t, point, Pt(0.25, -1.5))
+		geomtest.AssertPoint(t, point, Pt(0.25, -1.5))
 	})
 	t.Run("int rejects fractional values", func(t *testing.T) {
 		_, err := ParsePoint[int]("(1.5,2)")
@@ -68,55 +70,55 @@ func TestParsePoint(t *testing.T) {
 func TestPoint_XY(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		x, y := Pt(10, 16).XY()
-		AssertNumber(t, x, 10)
-		AssertNumber(t, y, 16)
+		geomtest.AssertNumber(t, x, 10)
+		geomtest.AssertNumber(t, y, 16)
 	})
 	t.Run("float", func(t *testing.T) {
 		x, y := Pt(0.6, -0.25).XY()
-		AssertNumber(t, x, 0.6)
-		AssertNumber(t, y, -0.25)
+		geomtest.AssertNumber(t, x, 0.6)
+		geomtest.AssertNumber(t, y, -0.25)
 	})
 }
 
 func TestPoint_Add(t *testing.T) {
 	t.Run("vector", func(t *testing.T) {
-		AssertPoint(t, Pt(1, 2).Add(Vec(3, -2)), Pt(4, 0))
-		AssertPoint(t, Pt(0.6, -0.25).Add(Vec(100.1, -0.1)), Pt(100.7, -0.35))
+		geomtest.AssertPoint(t, Pt(1, 2).Add(Vec(3, -2)), Pt(4, 0))
+		geomtest.AssertPoint(t, Pt(0.6, -0.25).Add(Vec(100.1, -0.1)), Pt(100.7, -0.35))
 	})
 	t.Run("coordinates", func(t *testing.T) {
-		AssertPoint(t, Pt(1, 2).AddXY(3, -2), Pt(4, 0))
-		AssertPoint(t, Pt(0.6, -0.25).AddXY(100.1, -0.1), Pt(100.7, -0.35))
+		geomtest.AssertPoint(t, Pt(1, 2).AddXY(3, -2), Pt(4, 0))
+		geomtest.AssertPoint(t, Pt(0.6, -0.25).AddXY(100.1, -0.1), Pt(100.7, -0.35))
 	})
 }
 
 func TestPoint_Subtract(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertVector(t, Pt(1, 2).Subtract(Pt(3, -3)), Vec(-2, 5))
+		geomtest.AssertVector(t, Pt(1, 2).Subtract(Pt(3, -3)), Vec(-2, 5))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertVector(t, Pt(0.6, -0.25).Subtract(Pt(100.1, -0.1)), Vec(-99.5, -0.15))
+		geomtest.AssertVector(t, Pt(0.6, -0.25).Subtract(Pt(100.1, -0.1)), Vec(-99.5, -0.15))
 	})
 }
 
 func TestPoint_Multiply(t *testing.T) {
 	t.Run("uniform factor", func(t *testing.T) {
-		AssertPoint(t, Pt(1, 2).Multiply(3), Pt(3, 6))
-		AssertPoint(t, Pt(0.6, -0.25).Multiply(-1.5), Pt(-0.9, 0.375))
+		geomtest.AssertPoint(t, Pt(1, 2).Multiply(3), Pt(3, 6))
+		geomtest.AssertPoint(t, Pt(0.6, -0.25).Multiply(-1.5), Pt(-0.9, 0.375))
 	})
 	t.Run("per-axis factor", func(t *testing.T) {
-		AssertPoint(t, Pt(1, 2).MultiplyXY(3, 4), Pt(3, 8))
-		AssertPoint(t, Pt(0.6, -0.25).MultiplyXY(-1.5, 2), Pt(-0.9, -0.5))
+		geomtest.AssertPoint(t, Pt(1, 2).MultiplyXY(3, 4), Pt(3, 8))
+		geomtest.AssertPoint(t, Pt(0.6, -0.25).MultiplyXY(-1.5, 2), Pt(-0.9, -0.5))
 	})
 }
 
 func TestPoint_Divide(t *testing.T) {
 	t.Run("uniform factor", func(t *testing.T) {
-		AssertPoint(t, Pt(5, 10).Divide(2), Pt(3, 5)) // int: 2.5 rounds to 3
-		AssertPoint(t, Pt(0.6, -0.25).Divide(-2), Pt(-0.3, 0.125))
+		geomtest.AssertPoint(t, Pt(5, 10).Divide(2), Pt(3, 5)) // int: 2.5 rounds to 3
+		geomtest.AssertPoint(t, Pt(0.6, -0.25).Divide(-2), Pt(-0.3, 0.125))
 	})
 	t.Run("per-axis factor", func(t *testing.T) {
-		AssertPoint(t, Pt(5, 10).DivideXY(3, 2), Pt(2, 5)) // int: 1.66 rounds to 2
-		AssertPoint(t, Pt(0.6, -0.25).DivideXY(-4, 0.5), Pt(-0.15, -0.5))
+		geomtest.AssertPoint(t, Pt(5, 10).DivideXY(3, 2), Pt(2, 5)) // int: 1.66 rounds to 2
+		geomtest.AssertPoint(t, Pt(0.6, -0.25).DivideXY(-4, 0.5), Pt(-0.15, -0.5))
 	})
 	t.Run("zero factor panics", func(t *testing.T) {
 		assert.Panics(t, func() {
@@ -130,130 +132,130 @@ func TestPoint_Divide(t *testing.T) {
 
 func TestPoint_Abs(t *testing.T) {
 	t.Run("negative coordinates", func(t *testing.T) {
-		AssertPoint(t, Pt(-3, -4).Abs(), Pt(3, 4))
-		AssertPoint(t, Pt(-1.5, 2.5).Abs(), Pt(1.5, 2.5))
+		geomtest.AssertPoint(t, Pt(-3, -4).Abs(), Pt(3, 4))
+		geomtest.AssertPoint(t, Pt(-1.5, 2.5).Abs(), Pt(1.5, 2.5))
 	})
 	t.Run("non-negative coordinates unchanged", func(t *testing.T) {
-		AssertPoint(t, Pt(3, 4).Abs(), Pt(3, 4))
-		AssertPoint(t, Pt(0, 0).Abs(), Pt(0, 0))
+		geomtest.AssertPoint(t, Pt(3, 4).Abs(), Pt(3, 4))
+		geomtest.AssertPoint(t, Pt(0, 0).Abs(), Pt(0, 0))
 	})
 }
 
 func TestPoint_Round(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
-		AssertPoint(t, Pt(1.4, 2.5).Round(), Pt(1.0, 3.0))
-		AssertPoint(t, Pt(-1.5, -2.4).Round(), Pt(-2.0, -2.0))
+		geomtest.AssertPoint(t, Pt(1.4, 2.5).Round(), Pt(1.0, 3.0))
+		geomtest.AssertPoint(t, Pt(-1.5, -2.4).Round(), Pt(-2.0, -2.0))
 	})
 	t.Run("int is a no-op", func(t *testing.T) {
-		AssertPoint(t, Pt(3, 4).Round(), Pt(3, 4))
+		geomtest.AssertPoint(t, Pt(3, 4).Round(), Pt(3, 4))
 	})
 }
 
 func TestPoint_Floor(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
-		AssertPoint(t, Pt(1.9, 2.1).Floor(), Pt(1.0, 2.0))
-		AssertPoint(t, Pt(-1.1, -2.9).Floor(), Pt(-2.0, -3.0))
+		geomtest.AssertPoint(t, Pt(1.9, 2.1).Floor(), Pt(1.0, 2.0))
+		geomtest.AssertPoint(t, Pt(-1.1, -2.9).Floor(), Pt(-2.0, -3.0))
 	})
 	t.Run("int is a no-op", func(t *testing.T) {
-		AssertPoint(t, Pt(3, 4).Floor(), Pt(3, 4))
+		geomtest.AssertPoint(t, Pt(3, 4).Floor(), Pt(3, 4))
 	})
 }
 
 func TestPoint_Ceil(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
-		AssertPoint(t, Pt(1.1, 2.9).Ceil(), Pt(2.0, 3.0))
-		AssertPoint(t, Pt(-1.9, -2.1).Ceil(), Pt(-1.0, -2.0))
+		geomtest.AssertPoint(t, Pt(1.1, 2.9).Ceil(), Pt(2.0, 3.0))
+		geomtest.AssertPoint(t, Pt(-1.9, -2.1).Ceil(), Pt(-1.0, -2.0))
 	})
 	t.Run("int is a no-op", func(t *testing.T) {
-		AssertPoint(t, Pt(3, 4).Ceil(), Pt(3, 4))
+		geomtest.AssertPoint(t, Pt(3, 4).Ceil(), Pt(3, 4))
 	})
 }
 
 func TestPoint_Lerp(t *testing.T) {
 	t.Run("between points", func(t *testing.T) {
-		AssertPoint(t, Pt(1, 2).Lerp(Pt(3, -3), 0.3), Pt(2, 1))
-		AssertPoint(t, Pt(0.6, -0.25).Lerp(Pt(100.1, -0.1), 0.1), Pt(10.55, -0.235))
+		geomtest.AssertPoint(t, Pt(1, 2).Lerp(Pt(3, -3), 0.3), Pt(2, 1))
+		geomtest.AssertPoint(t, Pt(0.6, -0.25).Lerp(Pt(100.1, -0.1), 0.1), Pt(10.55, -0.235))
 	})
 	t.Run("endpoints", func(t *testing.T) {
-		AssertPoint(t, Pt(1, 2).Lerp(Pt(3, -3), 0), Pt(1, 2))
-		AssertPoint(t, Pt(1, 2).Lerp(Pt(3, -3), 1), Pt(3, -3))
+		geomtest.AssertPoint(t, Pt(1, 2).Lerp(Pt(3, -3), 0), Pt(1, 2))
+		geomtest.AssertPoint(t, Pt(1, 2).Lerp(Pt(3, -3), 1), Pt(3, -3))
 	})
 	t.Run("extrapolates outside the unit range", func(t *testing.T) {
-		AssertPoint(t, Pt(0.0, 0.0).Lerp(Pt(2.0, 2.0), 2), Pt(4.0, 4.0))
-		AssertPoint(t, Pt(0.0, 0.0).Lerp(Pt(2.0, 2.0), -1), Pt(-2.0, -2.0))
+		geomtest.AssertPoint(t, Pt(0.0, 0.0).Lerp(Pt(2.0, 2.0), 2), Pt(4.0, 4.0))
+		geomtest.AssertPoint(t, Pt(0.0, 0.0).Lerp(Pt(2.0, 2.0), -1), Pt(-2.0, -2.0))
 	})
 }
 
 func TestPoint_Midpoint(t *testing.T) {
 	t.Run("int rounds the half away from zero", func(t *testing.T) {
-		AssertPoint(t, Pt(1, 2).Midpoint(Pt(3, -3)), Pt(2, -1))
+		geomtest.AssertPoint(t, Pt(1, 2).Midpoint(Pt(3, -3)), Pt(2, -1))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertPoint(t, Pt(0.6, -0.25).Midpoint(Pt(100.1, -0.1)), Pt(50.35, -0.175))
+		geomtest.AssertPoint(t, Pt(0.6, -0.25).Midpoint(Pt(100.1, -0.1)), Pt(50.35, -0.175))
 	})
 }
 
 func TestPoint_Transform(t *testing.T) {
 	t.Run("float64 matrix", func(t *testing.T) {
-		AssertPoint(t, Pt(1, 2).Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), Pt(9, 22))
-		AssertPoint(t, Pt(0.6, -0.25).Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), Pt(3.385, 7.865))
+		geomtest.AssertPoint(t, Pt(1, 2).Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), Pt(9, 22))
+		geomtest.AssertPoint(t, Pt(0.6, -0.25).Transform(Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)), Pt(3.385, 7.865))
 	})
 	t.Run("rounds each product, the same bits on every architecture", func(t *testing.T) {
 		assert.Equal(t, Pt(5.1, 2.3).Transform(Mat(tenth, 0.7, 0.7, 0.0, 1.0, 0.0)).X, 2.8200000000000003)
 	})
 	t.Run("float32 matrix", func(t *testing.T) {
-		AssertPoint(t, Pt(1, 2).Transform(Mat[float32](1, 2, 3, 4, 5, 6)), Pt(8, 20))
-		AssertPoint(t, Pt(0.6, -0.25).Transform(Mat[float32](1, 2, 3, 4, 5, 6)), Pt(3.1, 7.15))
+		geomtest.AssertPoint(t, Pt(1, 2).Transform(Mat[float32](1, 2, 3, 4, 5, 6)), Pt(8, 20))
+		geomtest.AssertPoint(t, Pt(0.6, -0.25).Transform(Mat[float32](1, 2, 3, 4, 5, 6)), Pt(3.1, 7.15))
 	})
 	t.Run("integer matrix converted to float", func(t *testing.T) {
-		AssertPoint(t, Pt(1, 2).Transform(Mat(1, 2, 3, 4, 5, 6).Float()), Pt(8, 20))
-		AssertPoint(t, Pt(0.6, -0.25).Transform(Mat(1, 2, 3, 4, 5, 6).Float()), Pt(3.1, 7.15))
+		geomtest.AssertPoint(t, Pt(1, 2).Transform(Mat(1, 2, 3, 4, 5, 6).Float()), Pt(8, 20))
+		geomtest.AssertPoint(t, Pt(0.6, -0.25).Transform(Mat(1, 2, 3, 4, 5, 6).Float()), Pt(3.1, 7.15))
 	})
 }
 
 func TestPoint_RotateAround(t *testing.T) {
 	t.Run("quarter turn about a pivot", func(t *testing.T) {
-		AssertPoint(t, Pt(3, 1).RotateAround(Pt(1, 1), Pi/2), Pt(1, 3))
-		AssertPoint(t, Pt(3, 1).RotateAround(Pt(1, 1), -Pi/2), Pt(1, -1))
+		geomtest.AssertPoint(t, Pt(3, 1).RotateAround(Pt(1, 1), Pi/2), Pt(1, 3))
+		geomtest.AssertPoint(t, Pt(3, 1).RotateAround(Pt(1, 1), -Pi/2), Pt(1, -1))
 	})
 	t.Run("half turn mirrors through the pivot", func(t *testing.T) {
-		AssertPoint(t, Pt(3.0, 4.0).RotateAround(Pt(1.0, 1.0), Pi), Pt(-1.0, -2.0))
+		geomtest.AssertPoint(t, Pt(3.0, 4.0).RotateAround(Pt(1.0, 1.0), Pi), Pt(-1.0, -2.0))
 	})
 	t.Run("about itself is identity", func(t *testing.T) {
-		AssertPoint(t, Pt(3.0, 4.0).RotateAround(Pt(3.0, 4.0), 0.7), Pt(3.0, 4.0))
+		geomtest.AssertPoint(t, Pt(3.0, 4.0).RotateAround(Pt(3.0, 4.0), 0.7), Pt(3.0, 4.0))
 	})
 	t.Run("about the origin matches Vector.Rotate", func(t *testing.T) {
 		for _, p := range pointFixtures {
-			AssertPoint(t, p.RotateAround(ZeroPoint[float64](), 0.7), p.Vector().Rotate(0.7).Point(), fmt.Sprintf("%s: ", p))
+			geomtest.AssertPoint(t, p.RotateAround(ZeroPoint[float64](), 0.7), p.Vector().Rotate(0.7).Point(), fmt.Sprintf("%s: ", p))
 		}
 	})
 	t.Run("keeps the distance to the pivot", func(t *testing.T) {
 		pivot := Pt(-2.5, 1.25)
 		for _, p := range pointFixtures {
-			AssertNumber(t, p.RotateAround(pivot, 2.1).DistanceTo(pivot), p.DistanceTo(pivot), fmt.Sprintf("%s: ", p))
+			geomtest.AssertNumber(t, p.RotateAround(pivot, 2.1).DistanceTo(pivot), p.DistanceTo(pivot), fmt.Sprintf("%s: ", p))
 		}
 	})
 }
 
 func TestPoint_AngleTo(t *testing.T) {
 	t.Run("cardinal directions", func(t *testing.T) {
-		AssertNumber(t, Pt(0, 0).AngleTo(Pt(1, 0)), ToRadians(0))
-		AssertNumber(t, Pt(0, 0).AngleTo(Pt(0, 1)), ToRadians(90))
-		AssertNumber(t, Pt(0, 0).AngleTo(Pt(-1, 0)), ToRadians(180))
-		AssertNumber(t, Pt(0, 0).AngleTo(Pt(0, -1)), ToRadians(-90))
+		geomtest.AssertNumber(t, Pt(0, 0).AngleTo(Pt(1, 0)), ToRadians(0))
+		geomtest.AssertNumber(t, Pt(0, 0).AngleTo(Pt(0, 1)), ToRadians(90))
+		geomtest.AssertNumber(t, Pt(0, 0).AngleTo(Pt(-1, 0)), ToRadians(180))
+		geomtest.AssertNumber(t, Pt(0, 0).AngleTo(Pt(0, -1)), ToRadians(-90))
 	})
 	t.Run("diagonals", func(t *testing.T) {
-		AssertNumber(t, Pt(0, 0).AngleTo(Pt(1, 1)), ToRadians(45))
-		AssertNumber(t, Pt(0, 0).AngleTo(Pt(-1, 1)), ToRadians(135))
-		AssertNumber(t, Pt(0, 0).AngleTo(Pt(-1, -1)), ToRadians(-135))
-		AssertNumber(t, Pt(0, 0).AngleTo(Pt(1, -1)), ToRadians(-45))
+		geomtest.AssertNumber(t, Pt(0, 0).AngleTo(Pt(1, 1)), ToRadians(45))
+		geomtest.AssertNumber(t, Pt(0, 0).AngleTo(Pt(-1, 1)), ToRadians(135))
+		geomtest.AssertNumber(t, Pt(0, 0).AngleTo(Pt(-1, -1)), ToRadians(-135))
+		geomtest.AssertNumber(t, Pt(0, 0).AngleTo(Pt(1, -1)), ToRadians(-45))
 	})
 	t.Run("off the origin", func(t *testing.T) {
-		AssertNumber(t, Pt(2, 2).AngleTo(Pt(3, 2)), ToRadians(0))
-		AssertNumber(t, Pt(0.6, -0.25).AngleTo(Pt(0.7, -0.35)), ToRadians(-45))
+		geomtest.AssertNumber(t, Pt(2, 2).AngleTo(Pt(3, 2)), ToRadians(0))
+		geomtest.AssertNumber(t, Pt(0.6, -0.25).AngleTo(Pt(0.7, -0.35)), ToRadians(-45))
 	})
 	t.Run("a narrow integer difference wider than its range", func(t *testing.T) {
-		AssertNumber(t, Pt[int8](-100, 0).AngleTo(Pt[int8](100, 0)), 0.0)
+		geomtest.AssertNumber(t, Pt[int8](-100, 0).AngleTo(Pt[int8](100, 0)), 0.0)
 	})
 }
 
@@ -285,21 +287,39 @@ func TestPoint_Between(t *testing.T) {
 			}
 		}
 	})
+	t.Run("the tolerance widens to two ulps of T far from the origin", func(t *testing.T) {
+		far32, far64 := float32(1<<20), float64(1<<40)
+
+		assert.True(t, Pt(far32+0.25, 0).Between(Pt[float32](0, 0), Pt(far32, 1)))
+		assert.False(t, Pt(far32+0.375, 0).Between(Pt[float32](0, 0), Pt(far32, 1)))
+		assert.True(t, Pt(far64+0x1p-11, 0).Between(Pt(0.0, 0.0), Pt(far64, 1)))
+		assert.False(t, Pt(far64+3*0x1p-12, 0).Between(Pt(0.0, 0.0), Pt(far64, 1)))
+	})
+	t.Run("and is Epsilon near it", func(t *testing.T) {
+		assert.True(t, Pt[float32](100.00009, 0).Between(Pt[float32](0, 0), Pt[float32](100, 1)))
+		assert.False(t, Pt[float32](100.00012, 0).Between(Pt[float32](0, 0), Pt[float32](100, 1)))
+	})
+	t.Run("int stays exact at any magnitude", func(t *testing.T) {
+		assert.False(t, Pt(1_000_000_000_001, 0).Between(Pt(0, 0), Pt(1_000_000_000_000, 1)))
+	})
+	t.Run("an infinite coordinate lies within nothing", func(t *testing.T) {
+		assert.False(t, Pt(math.Inf(1), 0.0).Between(Pt(0.0, 0.0), Pt(math.Inf(1), 1.0)))
+	})
 }
 
 func TestPoint_DistanceTo(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
 		for _, test := range distanceFixtures {
 			t.Run(test.name, func(t *testing.T) {
-				AssertNumber(t, test.a.DistanceTo(test.b), test.euclidean)
+				geomtest.AssertNumber(t, test.a.DistanceTo(test.b), test.euclidean)
 			})
 		}
 	})
 	t.Run("int", func(t *testing.T) {
-		AssertNumber(t, Pt(1, 2).DistanceTo(Pt(2, 3)), Sqrt2)
+		geomtest.AssertNumber(t, Pt(1, 2).DistanceTo(Pt(2, 3)), Sqrt2)
 	})
 	t.Run("a narrow integer difference wider than its range", func(t *testing.T) {
-		AssertNumber(t, Pt[int8](-100, 0).DistanceTo(Pt[int8](100, 0)), 200.0)
+		geomtest.AssertNumber(t, Pt[int8](-100, 0).DistanceTo(Pt[int8](100, 0)), 200.0)
 	})
 }
 
@@ -307,12 +327,12 @@ func TestPoint_DistanceSquaredTo(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
 		for _, test := range distanceFixtures {
 			t.Run(test.name, func(t *testing.T) {
-				AssertNumber(t, test.a.DistanceSquaredTo(test.b), test.squared)
+				geomtest.AssertNumber(t, test.a.DistanceSquaredTo(test.b), test.squared)
 			})
 		}
 	})
 	t.Run("int", func(t *testing.T) {
-		AssertNumber(t, Pt(1, 2).DistanceSquaredTo(Pt(2, 3)), 2)
+		geomtest.AssertNumber(t, Pt(1, 2).DistanceSquaredTo(Pt(2, 3)), 2)
 	})
 }
 
@@ -320,12 +340,12 @@ func TestPoint_ManhattanDistanceTo(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
 		for _, test := range distanceFixtures {
 			t.Run(test.name, func(t *testing.T) {
-				AssertNumber(t, test.a.ManhattanDistanceTo(test.b), test.manhattan)
+				geomtest.AssertNumber(t, test.a.ManhattanDistanceTo(test.b), test.manhattan)
 			})
 		}
 	})
 	t.Run("int", func(t *testing.T) {
-		AssertNumber(t, Pt(1, 2).ManhattanDistanceTo(Pt(2, 3)), 2)
+		geomtest.AssertNumber(t, Pt(1, 2).ManhattanDistanceTo(Pt(2, 3)), 2)
 	})
 }
 
@@ -333,12 +353,12 @@ func TestPoint_ChebyshevDistanceTo(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
 		for _, test := range distanceFixtures {
 			t.Run(test.name, func(t *testing.T) {
-				AssertNumber(t, test.a.ChebyshevDistanceTo(test.b), test.chebyshev)
+				geomtest.AssertNumber(t, test.a.ChebyshevDistanceTo(test.b), test.chebyshev)
 			})
 		}
 	})
 	t.Run("int", func(t *testing.T) {
-		AssertNumber(t, Pt(1, 2).ChebyshevDistanceTo(Pt(2, 3)), 1)
+		geomtest.AssertNumber(t, Pt(1, 2).ChebyshevDistanceTo(Pt(2, 3)), 1)
 	})
 }
 
@@ -346,12 +366,12 @@ func TestPoint_OctileDistanceTo(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
 		for _, test := range distanceFixtures {
 			t.Run(test.name, func(t *testing.T) {
-				AssertNumber(t, test.a.OctileDistanceTo(test.b), test.octile)
+				geomtest.AssertNumber(t, test.a.OctileDistanceTo(test.b), test.octile)
 			})
 		}
 	})
 	t.Run("int", func(t *testing.T) {
-		AssertNumber(t, Pt(1, 2).OctileDistanceTo(Pt(2, 3)), Sqrt2)
+		geomtest.AssertNumber(t, Pt(1, 2).OctileDistanceTo(Pt(2, 3)), Sqrt2)
 	})
 }
 
@@ -446,49 +466,49 @@ func TestPoint_IsZero(t *testing.T) {
 
 func TestPoint_Vector(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertVector(t, Pt(1, 2).Vector(), Vec(1, 2))
+		geomtest.AssertVector(t, Pt(1, 2).Vector(), Vec(1, 2))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertVector(t, Pt(0.6, -0.25).Vector(), Vec(0.6, -0.25))
+		geomtest.AssertVector(t, Pt(0.6, -0.25).Vector(), Vec(0.6, -0.25))
 	})
 }
 
 func TestPoint_Cast(t *testing.T) {
 	t.Run("float rounds half away from zero", func(t *testing.T) {
-		AssertPoint(t, Pt(0.6, -0.25).Cast[int](), Pt(1, 0))
-		AssertPoint(t, Pt(-1.5, 2.5).Cast[int](), Pt(-2, 3))
+		geomtest.AssertPoint(t, Pt(0.6, -0.25).Cast[int](), Pt(1, 0))
+		geomtest.AssertPoint(t, Pt(-1.5, 2.5).Cast[int](), Pt(-2, 3))
 	})
 	t.Run("a narrow type the other conversions cannot name", func(t *testing.T) {
-		AssertPoint(t, Pt(1.5, -2.5).Cast[int8](), Pt[int8](2, -3))
-		AssertPoint(t, Pt[int8](1, 2).Cast[float32](), Pt[float32](1, 2))
+		geomtest.AssertPoint(t, Pt(1.5, -2.5).Cast[int8](), Pt[int8](2, -3))
+		geomtest.AssertPoint(t, Pt[int8](1, 2).Cast[float32](), Pt[float32](1, 2))
 	})
 	t.Run("matches Int and Float over the fixtures", func(t *testing.T) {
 		for _, p := range pointFixtures {
-			AssertPoint(t, p.Cast[int](), p.Int(), p.String())
-			AssertPoint(t, p.Cast[float64](), p.Float(), p.String())
+			geomtest.AssertPoint(t, p.Cast[int](), p.Int(), p.String())
+			geomtest.AssertPoint(t, p.Cast[float64](), p.Float(), p.String())
 		}
 	})
 }
 
 func TestPoint_Int(t *testing.T) {
 	t.Run("int is a no-op", func(t *testing.T) {
-		AssertPoint(t, Pt(1, 2).Int(), Pt(1, 2))
+		geomtest.AssertPoint(t, Pt(1, 2).Int(), Pt(1, 2))
 	})
 	t.Run("float rounds", func(t *testing.T) {
-		AssertPoint(t, Pt(0.6, -0.25).Int(), Pt(1, 0))
-		AssertPoint(t, Pt(-1.5, 2.5).Int(), Pt(-2, 3))
+		geomtest.AssertPoint(t, Pt(0.6, -0.25).Int(), Pt(1, 0))
+		geomtest.AssertPoint(t, Pt(-1.5, 2.5).Int(), Pt(-2, 3))
 	})
 	t.Run("wide integer stays exact", func(t *testing.T) {
-		AssertPoint(t, Pt[int64](1<<53+1, -(1<<53+1)).Int(), Pt(1<<53+1, -(1<<53+1)))
+		geomtest.AssertPoint(t, Pt[int64](1<<53+1, -(1<<53+1)).Int(), Pt(1<<53+1, -(1<<53+1)))
 	})
 }
 
 func TestPoint_Float(t *testing.T) {
 	t.Run("int widens", func(t *testing.T) {
-		AssertPoint(t, Pt(1, 2).Float(), Pt(1.0, 2.0))
+		geomtest.AssertPoint(t, Pt(1, 2).Float(), Pt(1.0, 2.0))
 	})
 	t.Run("float is a no-op", func(t *testing.T) {
-		AssertPoint(t, Pt(0.6, -0.25).Float(), Pt(0.6, -0.25))
+		geomtest.AssertPoint(t, Pt(0.6, -0.25).Float(), Pt(0.6, -0.25))
 	})
 }
 
@@ -513,14 +533,14 @@ func TestPoint_JSON(t *testing.T) {
 
 		var p Point[int]
 		assert.NoError(t, json.Unmarshal([]byte(`{"x":10,"y":16}`), &p))
-		AssertPoint(t, p, Pt(10, 16))
+		geomtest.AssertPoint(t, p, Pt(10, 16))
 	})
 	t.Run("float wire format", func(t *testing.T) {
 		assert.JSON(t, Pt(100, -34.0000115), `{"x":100.0,"y":-34.0000115}`)
 
 		var p Point[float64]
 		assert.NoError(t, json.Unmarshal([]byte(`{"x":100.0,"y":-34.0000115}`), &p))
-		AssertPoint(t, p, Pt(100.0, -34.0000115))
+		geomtest.AssertPoint(t, p, Pt(100.0, -34.0000115))
 	})
 	t.Run("round-trip", func(t *testing.T) {
 		for _, point := range pointFixtures {
@@ -553,7 +573,7 @@ func TestPoint_Properties(t *testing.T) {
 		for _, a := range pointFixtures {
 			for _, b := range pointFixtures {
 				distance := a.DistanceTo(b)
-				AssertNumber(t, distance*distance, a.DistanceSquaredTo(b), fmt.Sprintf("%s → %s: ", a, b))
+				geomtest.AssertNumber(t, distance*distance, a.DistanceSquaredTo(b), fmt.Sprintf("%s → %s: ", a, b))
 			}
 		}
 	})
@@ -576,7 +596,7 @@ func TestPoint_Properties(t *testing.T) {
 					continue
 				}
 
-				AssertNumber(t, Abs(a.AngleTo(b)-b.AngleTo(a)), Pi, fmt.Sprintf("%s → %s: ", a, b))
+				geomtest.AssertNumber(t, Abs(a.AngleTo(b)-b.AngleTo(a)), Pi, fmt.Sprintf("%s → %s: ", a, b))
 			}
 		}
 	})
@@ -615,8 +635,8 @@ func TestPoint_Immutable(t *testing.T) {
 	p1.Midpoint(p2)
 	p1.Lerp(p2, 0.1)
 
-	AssertPoint(t, p1, Pt(1, 2))
-	AssertPoint(t, p2, Pt(3, -3))
+	geomtest.AssertPoint(t, p1, Pt(1, 2))
+	geomtest.AssertPoint(t, p2, Pt(3, -3))
 }
 
 // distanceFixtures feeds every DistanceTo variant, which all measure the same geometry.

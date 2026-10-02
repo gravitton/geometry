@@ -1,136 +1,136 @@
-package geom
+package geom_test
 
 import (
 	"encoding/json"
 	"fmt"
-	"math"
-	"slices"
 	"testing"
 
 	"github.com/gravitton/assert"
+	. "github.com/gravitton/geometry"
+	"github.com/gravitton/geometry/geomtest"
 )
 
 func TestMatrix_Constructor(t *testing.T) {
 	t.Run("from components", func(t *testing.T) {
-		AssertMatrix(t, Mat(1, 2, 3, 4, 5, 6), Matrix[int]{A: 1, B: 2, C: 3, D: 4, E: 5, F: 6})
-		AssertMatrix(t, Mat(1.0, 2.1, 3.2, 4.0, 5.3, 6.4), Matrix[float64]{A: 1.0, B: 2.1, C: 3.2, D: 4.0, E: 5.3, F: 6.4})
+		geomtest.AssertMatrix(t, Mat(1, 2, 3, 4, 5, 6), Matrix[int]{A: 1, B: 2, C: 3, D: 4, E: 5, F: 6})
+		geomtest.AssertMatrix(t, Mat(1.0, 2.1, 3.2, 4.0, 5.3, 6.4), Matrix[float64]{A: 1.0, B: 2.1, C: 3.2, D: 4.0, E: 5.3, F: 6.4})
 	})
 	t.Run("identity", func(t *testing.T) {
-		AssertMatrix(t, IdentityMatrix[float64](), Mat(1.0, 0.0, 0.0, 0.0, 1.0, 0.0))
-		AssertMatrix(t, IdentityMatrix[float32](), Mat[float32](1, 0, 0, 0, 1, 0))
-		AssertMatrix(t, IdentityMatrix[int](), Mat(1, 0, 0, 0, 1, 0))
+		geomtest.AssertMatrix(t, IdentityMatrix[float64](), Mat(1.0, 0.0, 0.0, 0.0, 1.0, 0.0))
+		geomtest.AssertMatrix(t, IdentityMatrix[float32](), Mat[float32](1, 0, 0, 0, 1, 0))
+		geomtest.AssertMatrix(t, IdentityMatrix[int](), Mat(1, 0, 0, 0, 1, 0))
 	})
 	t.Run("translation", func(t *testing.T) {
-		AssertMatrix(t, TranslationMatrix(5.0, 3.0), Mat(1.0, 0.0, 5.0, 0.0, 1.0, 3.0))
-		AssertMatrix(t, TranslationMatrix[float32](5, 3), Mat[float32](1, 0, 5, 0, 1, 3))
-		AssertMatrix(t, TranslationMatrix(5, 3), Mat(1, 0, 5, 0, 1, 3))
+		geomtest.AssertMatrix(t, TranslationMatrix(5.0, 3.0), Mat(1.0, 0.0, 5.0, 0.0, 1.0, 3.0))
+		geomtest.AssertMatrix(t, TranslationMatrix[float32](5, 3), Mat[float32](1, 0, 5, 0, 1, 3))
+		geomtest.AssertMatrix(t, TranslationMatrix(5, 3), Mat(1, 0, 5, 0, 1, 3))
 	})
 	t.Run("scale", func(t *testing.T) {
-		AssertMatrix(t, ScaleMatrix(2.0, 3.0), Mat(2.0, 0.0, 0.0, 0.0, 3.0, 0.0))
-		AssertMatrix(t, ScaleMatrix[float32](2, 3), Mat[float32](2, 0, 0, 0, 3, 0))
-		AssertMatrix(t, ScaleMatrix(2, 3), Mat(2, 0, 0, 0, 3, 0))
+		geomtest.AssertMatrix(t, ScaleMatrix(2.0, 3.0), Mat(2.0, 0.0, 0.0, 0.0, 3.0, 0.0))
+		geomtest.AssertMatrix(t, ScaleMatrix[float32](2, 3), Mat[float32](2, 0, 0, 0, 3, 0))
+		geomtest.AssertMatrix(t, ScaleMatrix(2, 3), Mat(2, 0, 0, 0, 3, 0))
 	})
 	t.Run("rotation", func(t *testing.T) {
-		AssertMatrix(t, RotationMatrix[float64](0.0), IdentityMatrix[float64]())
-		AssertMatrix(t, RotationMatrix[float64](Pi/2), Mat(0.0, -1.0, 0.0, 1.0, 0.0, 0.0))
-		AssertMatrix(t, RotationMatrix[float64](Pi), Mat(-1.0, 0.0, 0.0, 0.0, -1.0, 0.0))
+		geomtest.AssertMatrix(t, RotationMatrix[float64](0.0), IdentityMatrix[float64]())
+		geomtest.AssertMatrix(t, RotationMatrix[float64](Pi/2), Mat(0.0, -1.0, 0.0, 1.0, 0.0, 0.0))
+		geomtest.AssertMatrix(t, RotationMatrix[float64](Pi), Mat(-1.0, 0.0, 0.0, 0.0, -1.0, 0.0))
 
 		// the angle is always computed in float64 and narrowed afterwards
-		AssertMatrix(t, RotationMatrix[float32](Pi/2), Mat[float32](0, -1, 0, 1, 0, 0))
+		geomtest.AssertMatrix(t, RotationMatrix[float32](Pi/2), Mat[float32](0, -1, 0, 1, 0, 0))
 	})
 	t.Run("shear", func(t *testing.T) {
-		AssertMatrix(t, ShearMatrix(2, 3), Mat(1, 2, 0, 3, 1, 0))
-		AssertMatrix(t, ShearMatrix(0.5, 0.0), Mat(1.0, 0.5, 0.0, 0.0, 1.0, 0.0))
-		AssertPoint(t, Pt(1.0, 1.0).Transform(ShearMatrix(0.5, 0.0)), Pt(1.5, 1.0))
+		geomtest.AssertMatrix(t, ShearMatrix(2, 3), Mat(1, 2, 0, 3, 1, 0))
+		geomtest.AssertMatrix(t, ShearMatrix(0.5, 0.0), Mat(1.0, 0.5, 0.0, 0.0, 1.0, 0.0))
+		geomtest.AssertPoint(t, Pt(1.0, 1.0).Transform(ShearMatrix(0.5, 0.0)), Pt(1.5, 1.0))
 	})
 	t.Run("reflection", func(t *testing.T) {
-		AssertMatrix(t, ReflectionMatrix[int](AxisHorizontal), Mat(1, 0, 0, 0, -1, 0))
-		AssertMatrix(t, ReflectionMatrix[int](AxisVertical), Mat(-1, 0, 0, 0, 1, 0))
-		AssertMatrix(t, ReflectionMatrix[float64](AxisNone), IdentityMatrix[float64]())
-		AssertPoint(t, Pt(2.0, 3.0).Transform(ReflectionMatrix[float64](AxisHorizontal)), Pt(2.0, -3.0))
-		AssertPoint(t, Pt(2.0, 3.0).Transform(ReflectionMatrix[float64](AxisVertical)), Pt(-2.0, 3.0))
+		geomtest.AssertMatrix(t, ReflectionMatrix[int](AxisHorizontal), Mat(1, 0, 0, 0, -1, 0))
+		geomtest.AssertMatrix(t, ReflectionMatrix[int](AxisVertical), Mat(-1, 0, 0, 0, 1, 0))
+		geomtest.AssertMatrix(t, ReflectionMatrix[float64](AxisNone), IdentityMatrix[float64]())
+		geomtest.AssertPoint(t, Pt(2.0, 3.0).Transform(ReflectionMatrix[float64](AxisHorizontal)), Pt(2.0, -3.0))
+		geomtest.AssertPoint(t, Pt(2.0, 3.0).Transform(ReflectionMatrix[float64](AxisVertical)), Pt(-2.0, 3.0))
 	})
 	t.Run("a reflection undoes itself", func(t *testing.T) {
 		for _, axis := range Axes() {
 			m := ReflectionMatrix[int](axis)
 
-			AssertMatrix(t, m.Multiply(m), IdentityMatrix[int](), axis.String()+": ")
+			geomtest.AssertMatrix(t, m.Multiply(m), IdentityMatrix[int](), axis.String()+": ")
 			assert.Equal(t, m.Determinant(), -1, axis.String()+": ")
 		}
 	})
 	t.Run("integer rotation is exact only for quarter turns", func(t *testing.T) {
 		// cos(π/2) ≈ 6e-17 rounds to 0; sin(π/2) = 1 exactly
-		AssertMatrix(t, RotationMatrix[int](Pi/2), Mat(0, -1, 0, 1, 0, 0))
-		AssertMatrix(t, RotationMatrix[int](Pi), Mat(-1, 0, 0, 0, -1, 0))
+		geomtest.AssertMatrix(t, RotationMatrix[int](Pi/2), Mat(0, -1, 0, 1, 0, 0))
+		geomtest.AssertMatrix(t, RotationMatrix[int](Pi), Mat(-1, 0, 0, 0, -1, 0))
 
 		// anything else is not a rotation: π/6 rounds to a √2 scale plus shear
-		AssertMatrix(t, RotationMatrix[int](Pi/6), Mat(1, -1, 0, 1, 1, 0))
+		geomtest.AssertMatrix(t, RotationMatrix[int](Pi/6), Mat(1, -1, 0, 1, 1, 0))
 	})
 }
 
 func TestMatrix_Determinant(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
-		AssertNumber(t, IdentityMatrix[float64]().Determinant(), 1.0)
-		AssertNumber(t, ScaleMatrix(2.0, 3.0).Determinant(), 6.0)
-		AssertNumber(t, Mat(1.0, 2.0, 0.0, 3.0, 4.0, 0.0).Determinant(), -2.0) // 1*4 - 2*3
-		AssertNumber(t, ScaleMatrix[float32](2, 3).Determinant(), float32(6))
+		geomtest.AssertNumber(t, IdentityMatrix[float64]().Determinant(), 1.0)
+		geomtest.AssertNumber(t, ScaleMatrix(2.0, 3.0).Determinant(), 6.0)
+		geomtest.AssertNumber(t, Mat(1.0, 2.0, 0.0, 3.0, 4.0, 0.0).Determinant(), -2.0) // 1*4 - 2*3
+		geomtest.AssertNumber(t, ScaleMatrix[float32](2, 3).Determinant(), float32(6))
 	})
 	t.Run("rotation preserves area", func(t *testing.T) {
-		AssertNumber(t, RotationMatrix[float64](Pi/4).Determinant(), 1.0)
+		geomtest.AssertNumber(t, RotationMatrix[float64](Pi/4).Determinant(), 1.0)
 	})
 	t.Run("int", func(t *testing.T) {
-		AssertNumber(t, IdentityMatrix[int]().Determinant(), 1)
-		AssertNumber(t, ScaleMatrix(2, 3).Determinant(), 6)
-		AssertNumber(t, Mat(1, 2, 0, 3, 4, 0).Determinant(), -2) // 1*4 - 2*3
+		geomtest.AssertNumber(t, IdentityMatrix[int]().Determinant(), 1)
+		geomtest.AssertNumber(t, ScaleMatrix(2, 3).Determinant(), 6)
+		geomtest.AssertNumber(t, Mat(1, 2, 0, 3, 4, 0).Determinant(), -2) // 1*4 - 2*3
 	})
 }
 
 func TestMatrix_Translation(t *testing.T) {
 	t.Run("reads the translation back", func(t *testing.T) {
-		AssertVector(t, TranslationMatrix(3, -4).Translation(), Vec(3, -4))
-		AssertVector(t, Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6).Translation(), Vec(3.3, 6.6))
+		geomtest.AssertVector(t, TranslationMatrix(3, -4).Translation(), Vec(3, -4))
+		geomtest.AssertVector(t, Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6).Translation(), Vec(3.3, 6.6))
 	})
 	t.Run("identity has none", func(t *testing.T) {
-		AssertVector(t, IdentityMatrix[int]().Translation(), Vec(0, 0))
+		geomtest.AssertVector(t, IdentityMatrix[int]().Translation(), Vec(0, 0))
 	})
 }
 
 func TestMatrix_Angle(t *testing.T) {
 	t.Run("reads a rotation back", func(t *testing.T) {
-		AssertNumber(t, RotationMatrix[float64](0.7).Angle(), 0.7)
-		AssertNumber(t, RotationMatrix[float64](-2.5).Angle(), -2.5)
-		AssertNumber(t, RotationMatrix[int](Pi/2).Angle(), Pi/2)
+		geomtest.AssertNumber(t, RotationMatrix[float64](0.7).Angle(), 0.7)
+		geomtest.AssertNumber(t, RotationMatrix[float64](-2.5).Angle(), -2.5)
+		geomtest.AssertNumber(t, RotationMatrix[int](Pi/2).Angle(), Pi/2)
 	})
 	t.Run("scale and translation do not change it", func(t *testing.T) {
-		AssertNumber(t, RotationMatrix[float64](0.7).Scale(2, 3).Translate(5, 6).Angle(), 0.7)
+		geomtest.AssertNumber(t, RotationMatrix[float64](0.7).Scale(2, 3).Translate(5, 6).Angle(), 0.7)
 	})
 	t.Run("identity and the zero matrix are at zero", func(t *testing.T) {
-		AssertNumber(t, IdentityMatrix[float64]().Angle(), 0.0)
-		AssertNumber(t, Matrix[float64]{}.Angle(), 0.0)
+		geomtest.AssertNumber(t, IdentityMatrix[float64]().Angle(), 0.0)
+		geomtest.AssertNumber(t, Matrix[float64]{}.Angle(), 0.0)
 	})
 	t.Run("a shear gives the angle of its X axis", func(t *testing.T) {
-		AssertNumber(t, Mat(1.0, 1.0, 0.0, 0.0, 1.0, 0.0).Angle(), 0.0)
+		geomtest.AssertNumber(t, Mat(1.0, 1.0, 0.0, 0.0, 1.0, 0.0).Angle(), 0.0)
 	})
 }
 
 func TestMatrix_Scaling(t *testing.T) {
 	t.Run("reads a scale back", func(t *testing.T) {
-		AssertVector(t, ScaleMatrix(2, 3).Scaling(), Vec(2, 3))
-		AssertVector(t, ScaleMatrix(0.5, 4.0).Scaling(), Vec(0.5, 4.0))
+		geomtest.AssertVector(t, ScaleMatrix(2, 3).Scaling(), Vec(2, 3))
+		geomtest.AssertVector(t, ScaleMatrix(0.5, 4.0).Scaling(), Vec(0.5, 4.0))
 	})
 	t.Run("rotation and translation do not change it", func(t *testing.T) {
-		AssertVector(t, RotationMatrix[float64](0.7).Scale(2, 3).Translate(5, 6).Scaling(), Vec(2.0, 3.0))
+		geomtest.AssertVector(t, RotationMatrix[float64](0.7).Scale(2, 3).Translate(5, 6).Scaling(), Vec(2.0, 3.0))
 	})
 	t.Run("a reflection has a negative Y factor", func(t *testing.T) {
-		AssertVector(t, ScaleMatrix(2.0, -3.0).Scaling(), Vec(2.0, -3.0))
-		AssertVector(t, RotationMatrix[float64](0.7).Scale(2, -3).Scaling(), Vec(2.0, -3.0))
+		geomtest.AssertVector(t, ScaleMatrix(2.0, -3.0).Scaling(), Vec(2.0, -3.0))
+		geomtest.AssertVector(t, RotationMatrix[float64](0.7).Scale(2, -3).Scaling(), Vec(2.0, -3.0))
 	})
 	t.Run("identity is one and the zero matrix is zero", func(t *testing.T) {
-		AssertVector(t, IdentityMatrix[int]().Scaling(), Vec(1, 1))
-		AssertVector(t, Matrix[int]{}.Scaling(), Vec(0, 0))
+		geomtest.AssertVector(t, IdentityMatrix[int]().Scaling(), Vec(1, 1))
+		geomtest.AssertVector(t, Matrix[int]{}.Scaling(), Vec(0, 0))
 	})
 	t.Run("int rounds", func(t *testing.T) {
-		AssertVector(t, RotationMatrix[int](Pi/2).Scaling(), Vec(1, 1))
+		geomtest.AssertVector(t, RotationMatrix[int](Pi/2).Scaling(), Vec(1, 1))
 	})
 	t.Run("rebuilds the matrix with Angle and Translation", func(t *testing.T) {
 		for _, m := range matrixFixtures {
@@ -141,96 +141,46 @@ func TestMatrix_Scaling(t *testing.T) {
 				continue // singular or sheared matrices do not decompose
 			}
 
-			AssertMatrix(t, rebuilt, m, fmt.Sprintf("%s: ", m))
-		}
-	})
-}
-
-func TestMatrix_decomposition(t *testing.T) {
-	t.Run("a turn and a scale along the axes have no turn before", func(t *testing.T) {
-		after, stretch, before, reflected := RotationMatrix[float64](0.7).Scale(2, 3).decomposition()
-
-		AssertNumber(t, after, 0.7)
-		AssertVector(t, stretch, Vec(2.0, 3.0))
-		AssertNumber(t, before, 0.0)
-		assert.False(t, reflected)
-	})
-	t.Run("a reflection is reported and the stretch stays positive", func(t *testing.T) {
-		after, stretch, before, reflected := ScaleMatrix(2.0, -3.0).decomposition()
-
-		AssertNumber(t, after, 0.0)
-		AssertVector(t, stretch, Vec(2.0, 3.0))
-		AssertNumber(t, before, 0.0)
-		assert.True(t, reflected)
-	})
-	t.Run("an equal stretch has no turn before", func(t *testing.T) {
-		after, stretch, before, _ := RotationMatrix[float64](2.5).Scale(2, 2).decomposition()
-
-		AssertNumber(t, after, 2.5)
-		AssertVector(t, stretch, Vec(2.0, 2.0))
-		assert.Equal(t, before, 0.0)
-	})
-	t.Run("the zero matrix stretches by nothing", func(t *testing.T) {
-		after, stretch, before, reflected := Matrix[float64]{}.decomposition()
-
-		assert.Equal(t, after, 0.0)
-		AssertVector(t, stretch, Vec(0.0, 0.0))
-		assert.Equal(t, before, 0.0)
-		assert.False(t, reflected)
-	})
-	t.Run("rebuilds every linear part, sheared and singular ones included, with the turn before within an eighth", func(t *testing.T) {
-		matrices := append(slices.Clone(matrixFixtures), ShearMatrix(1.0, 0.0), ShearMatrix(0.5, -2.0), Mat(1.0, 2.0, 0.0, 2.0, 4.0, 0.0))
-
-		for _, m := range matrices {
-			after, stretch, before, reflected := m.decomposition()
-			mirror := 1.0
-			if reflected {
-				mirror = -1
-			}
-
-			rebuilt := RotationMatrix[float64](after).Multiply(ScaleMatrix(stretch.X, mirror*stretch.Y)).Multiply(RotationMatrix[float64](before))
-
-			AssertMatrix(t, rebuilt, Matrix[float64]{m.A, m.B, 0, m.D, m.E, 0}, fmt.Sprintf("%s: ", m))
-			assert.True(t, math.Abs(before) <= Pi/4+Delta, fmt.Sprintf("%s: ", m))
+			geomtest.AssertMatrix(t, rebuilt, m, fmt.Sprintf("%s: ", m))
 		}
 	})
 }
 
 func TestMatrix_Multiply(t *testing.T) {
 	t.Run("identity is neutral", func(t *testing.T) {
-		AssertMatrix(t, IdentityMatrix[float64]().Multiply(TranslationMatrix(5.0, 3.0)), TranslationMatrix(5.0, 3.0))
-		AssertMatrix(t, TranslationMatrix(5.0, 3.0).Multiply(IdentityMatrix[float64]()), TranslationMatrix(5.0, 3.0))
-		AssertMatrix(t, IdentityMatrix[int]().Multiply(TranslationMatrix(5, 3)), TranslationMatrix(5, 3))
+		geomtest.AssertMatrix(t, IdentityMatrix[float64]().Multiply(TranslationMatrix(5.0, 3.0)), TranslationMatrix(5.0, 3.0))
+		geomtest.AssertMatrix(t, TranslationMatrix(5.0, 3.0).Multiply(IdentityMatrix[float64]()), TranslationMatrix(5.0, 3.0))
+		geomtest.AssertMatrix(t, IdentityMatrix[int]().Multiply(TranslationMatrix(5, 3)), TranslationMatrix(5, 3))
 	})
 	t.Run("narrow integers do not overflow mid-computation", func(t *testing.T) {
-		AssertMatrix(t, Mat[int8](100, 50, 0, 0, 1, 0).Multiply(Mat[int8](2, 0, 0, -2, 1, 0)), Mat[int8](100, 50, 0, -2, 1, 0))
+		geomtest.AssertMatrix(t, Mat[int8](100, 50, 0, 0, 1, 0).Multiply(Mat[int8](2, 0, 0, -2, 1, 0)), Mat[int8](100, 50, 0, -2, 1, 0))
 	})
 	t.Run("rounds each product, the same bits on every architecture", func(t *testing.T) {
 		assert.Equal(t, Mat(tenth, 0.2, 0.0, 0.0, 1.0, 0.0).Multiply(Mat(1.1, 0.0, 0.0, 1.3, 1.0, 0.0)).A, 0.37)
 	})
 	t.Run("translations compose additively", func(t *testing.T) {
-		AssertMatrix(t, TranslationMatrix(5.0, 3.0).Multiply(TranslationMatrix(2.0, 1.0)), TranslationMatrix(7.0, 4.0))
-		AssertMatrix(t, TranslationMatrix[float32](5, 3).Multiply(TranslationMatrix[float32](2, 1)), TranslationMatrix[float32](7, 4))
-		AssertMatrix(t, TranslationMatrix(5, 3).Multiply(TranslationMatrix(2, 1)), TranslationMatrix(7, 4))
+		geomtest.AssertMatrix(t, TranslationMatrix(5.0, 3.0).Multiply(TranslationMatrix(2.0, 1.0)), TranslationMatrix(7.0, 4.0))
+		geomtest.AssertMatrix(t, TranslationMatrix[float32](5, 3).Multiply(TranslationMatrix[float32](2, 1)), TranslationMatrix[float32](7, 4))
+		geomtest.AssertMatrix(t, TranslationMatrix(5, 3).Multiply(TranslationMatrix(2, 1)), TranslationMatrix(7, 4))
 	})
 	t.Run("scales compose multiplicatively", func(t *testing.T) {
-		AssertMatrix(t, ScaleMatrix(2.0, 3.0).Multiply(ScaleMatrix(4.0, 2.0)), ScaleMatrix(8.0, 6.0))
-		AssertMatrix(t, ScaleMatrix[float32](2, 3).Multiply(ScaleMatrix[float32](4, 2)), ScaleMatrix[float32](8, 6))
-		AssertMatrix(t, ScaleMatrix(2, 3).Multiply(ScaleMatrix(4, 2)), ScaleMatrix(8, 6))
+		geomtest.AssertMatrix(t, ScaleMatrix(2.0, 3.0).Multiply(ScaleMatrix(4.0, 2.0)), ScaleMatrix(8.0, 6.0))
+		geomtest.AssertMatrix(t, ScaleMatrix[float32](2, 3).Multiply(ScaleMatrix[float32](4, 2)), ScaleMatrix[float32](8, 6))
+		geomtest.AssertMatrix(t, ScaleMatrix(2, 3).Multiply(ScaleMatrix(4, 2)), ScaleMatrix(8, 6))
 	})
 }
 
 func TestMatrix_Inverse(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
-		AssertMatrix(t, IdentityMatrix[float64]().Inverse(), IdentityMatrix[float64]())
-		AssertMatrix(t, TranslationMatrix(5.0, 3.0).Inverse(), TranslationMatrix(-5.0, -3.0))
-		AssertMatrix(t, ScaleMatrix(2.0, 4.0).Inverse(), ScaleMatrix(0.5, 0.25))
-		AssertMatrix(t, ScaleMatrix(0.0005, 0.0005).Inverse(), ScaleMatrix(2000.0, 2000.0))
+		geomtest.AssertMatrix(t, IdentityMatrix[float64]().Inverse(), IdentityMatrix[float64]())
+		geomtest.AssertMatrix(t, TranslationMatrix(5.0, 3.0).Inverse(), TranslationMatrix(-5.0, -3.0))
+		geomtest.AssertMatrix(t, ScaleMatrix(2.0, 4.0).Inverse(), ScaleMatrix(0.5, 0.25))
+		geomtest.AssertMatrix(t, ScaleMatrix(0.0005, 0.0005).Inverse(), ScaleMatrix(2000.0, 2000.0))
 
 		// float32 inverts exactly too — the fractions are not rounded away
-		AssertMatrix(t, ScaleMatrix[float32](2, 4).Inverse(), ScaleMatrix[float32](0.5, 0.25))
-		AssertMatrix(t, ScaleMatrix[float32](0.005, 0.005).Inverse(), ScaleMatrix[float32](200, 200))
-		AssertMatrix(t, TranslationMatrix[float32](5, 3).Inverse(), TranslationMatrix[float32](-5, -3))
+		geomtest.AssertMatrix(t, ScaleMatrix[float32](2, 4).Inverse(), ScaleMatrix[float32](0.5, 0.25))
+		geomtest.AssertMatrix(t, ScaleMatrix[float32](0.005, 0.005).Inverse(), ScaleMatrix[float32](200, 200))
+		geomtest.AssertMatrix(t, TranslationMatrix[float32](5, 3).Inverse(), TranslationMatrix[float32](-5, -3))
 	})
 	t.Run("singular matrix panics", func(t *testing.T) {
 		assert.Panics(t, func() {
@@ -248,74 +198,74 @@ func TestMatrix_Inverse(t *testing.T) {
 	})
 	t.Run("large translations do not overflow", func(t *testing.T) {
 		m := Mat[int64](1, 0, 1<<40, 0, 1, 1<<40)
-		AssertMatrix(t, m.Inverse(), Mat[int64](1, 0, -(1<<40), 0, 1, -(1<<40)))
+		geomtest.AssertMatrix(t, m.Inverse(), Mat[int64](1, 0, -(1<<40), 0, 1, -(1<<40)))
 	})
 	t.Run("integer is exact only for unit determinant", func(t *testing.T) {
-		AssertMatrix(t, IdentityMatrix[int]().Inverse(), IdentityMatrix[int]())
-		AssertMatrix(t, TranslationMatrix(5, 3).Inverse(), TranslationMatrix(-5, -3))
-		AssertMatrix(t, RotationMatrix[int](Pi/2).Inverse(), RotationMatrix[int](-Pi/2))
+		geomtest.AssertMatrix(t, IdentityMatrix[int]().Inverse(), IdentityMatrix[int]())
+		geomtest.AssertMatrix(t, TranslationMatrix(5, 3).Inverse(), TranslationMatrix(-5, -3))
+		geomtest.AssertMatrix(t, RotationMatrix[int](Pi/2).Inverse(), RotationMatrix[int](-Pi/2))
 
 		// det=4, invDet=0.25 → Cast[int](2*0.25) = Cast[int](0.5) = 1, so the inverse does not undo it
-		AssertMatrix(t, ScaleMatrix(2, 2).Inverse(), IdentityMatrix[int]())
+		geomtest.AssertMatrix(t, ScaleMatrix(2, 2).Inverse(), IdentityMatrix[int]())
 	})
 }
 
 func TestMatrix_Translate(t *testing.T) {
 	t.Run("from identity", func(t *testing.T) {
-		AssertMatrix(t, IdentityMatrix[float64]().Translate(5.0, 3.0), TranslationMatrix(5.0, 3.0))
+		geomtest.AssertMatrix(t, IdentityMatrix[float64]().Translate(5.0, 3.0), TranslationMatrix(5.0, 3.0))
 	})
 	t.Run("accumulates", func(t *testing.T) {
-		AssertMatrix(t, IdentityMatrix[float64]().Translate(2.0, 1.0).Translate(3.0, 2.0), TranslationMatrix(5.0, 3.0))
-		AssertMatrix(t, IdentityMatrix[float32]().Translate(2, 1).Translate(3, 2), TranslationMatrix[float32](5, 3))
-		AssertMatrix(t, IdentityMatrix[int]().Translate(2, 1).Translate(3, 2), TranslationMatrix(5, 3))
+		geomtest.AssertMatrix(t, IdentityMatrix[float64]().Translate(2.0, 1.0).Translate(3.0, 2.0), TranslationMatrix(5.0, 3.0))
+		geomtest.AssertMatrix(t, IdentityMatrix[float32]().Translate(2, 1).Translate(3, 2), TranslationMatrix[float32](5, 3))
+		geomtest.AssertMatrix(t, IdentityMatrix[int]().Translate(2, 1).Translate(3, 2), TranslationMatrix(5, 3))
 	})
 }
 
 func TestMatrix_Untranslate(t *testing.T) {
 	t.Run("undoes a translation", func(t *testing.T) {
-		AssertMatrix(t, TranslationMatrix(5.0, 3.0).Untranslate(5.0, 3.0), IdentityMatrix[float64]())
+		geomtest.AssertMatrix(t, TranslationMatrix(5.0, 3.0).Untranslate(5.0, 3.0), IdentityMatrix[float64]())
 	})
 	t.Run("partial", func(t *testing.T) {
-		AssertMatrix(t, TranslationMatrix(5.0, 3.0).Untranslate(2.0, 1.0), TranslationMatrix(3.0, 2.0))
-		AssertMatrix(t, TranslationMatrix[float32](5, 3).Untranslate(2, 1), TranslationMatrix[float32](3, 2))
-		AssertMatrix(t, TranslationMatrix(5, 3).Untranslate(2, 1), TranslationMatrix(3, 2))
+		geomtest.AssertMatrix(t, TranslationMatrix(5.0, 3.0).Untranslate(2.0, 1.0), TranslationMatrix(3.0, 2.0))
+		geomtest.AssertMatrix(t, TranslationMatrix[float32](5, 3).Untranslate(2, 1), TranslationMatrix[float32](3, 2))
+		geomtest.AssertMatrix(t, TranslationMatrix(5, 3).Untranslate(2, 1), TranslationMatrix(3, 2))
 	})
 }
 
 func TestMatrix_PreTranslate(t *testing.T) {
 	t.Run("from identity", func(t *testing.T) {
-		AssertMatrix(t, IdentityMatrix[float64]().PreTranslate(5.0, 3.0), TranslationMatrix(5.0, 3.0))
+		geomtest.AssertMatrix(t, IdentityMatrix[float64]().PreTranslate(5.0, 3.0), TranslationMatrix(5.0, 3.0))
 	})
 	t.Run("applies before the current transform", func(t *testing.T) {
 		// S * PreTranslate(tx,ty) = T(tx,ty) * S
-		AssertMatrix(t, ScaleMatrix(2.0, 2.0).PreTranslate(5.0, 3.0), Mat(2.0, 0.0, 5.0, 0.0, 2.0, 3.0))
-		AssertMatrix(t, ScaleMatrix[float32](2, 2).PreTranslate(5, 3), Mat[float32](2, 0, 5, 0, 2, 3))
-		AssertMatrix(t, ScaleMatrix(2, 2).PreTranslate(5, 3), Mat(2, 0, 5, 0, 2, 3))
+		geomtest.AssertMatrix(t, ScaleMatrix(2.0, 2.0).PreTranslate(5.0, 3.0), Mat(2.0, 0.0, 5.0, 0.0, 2.0, 3.0))
+		geomtest.AssertMatrix(t, ScaleMatrix[float32](2, 2).PreTranslate(5, 3), Mat[float32](2, 0, 5, 0, 2, 3))
+		geomtest.AssertMatrix(t, ScaleMatrix(2, 2).PreTranslate(5, 3), Mat(2, 0, 5, 0, 2, 3))
 	})
 }
 
 func TestMatrix_Rotate(t *testing.T) {
 	t.Run("zero angle is identity", func(t *testing.T) {
-		AssertMatrix(t, IdentityMatrix[float64]().Rotate(0.0), IdentityMatrix[float64]())
-		AssertMatrix(t, IdentityMatrix[int]().Rotate(0), IdentityMatrix[int]())
+		geomtest.AssertMatrix(t, IdentityMatrix[float64]().Rotate(0.0), IdentityMatrix[float64]())
+		geomtest.AssertMatrix(t, IdentityMatrix[int]().Rotate(0), IdentityMatrix[int]())
 	})
 	t.Run("quarter turn", func(t *testing.T) {
-		AssertPoint(t, Pt(1.0, 0.0).Transform(IdentityMatrix[float64]().Rotate(Pi/2)), Pt(0.0, 1.0))
-		AssertMatrix(t, IdentityMatrix[float32]().Rotate(Pi), Mat[float32](-1, 0, 0, 0, -1, 0))
+		geomtest.AssertPoint(t, Pt(1.0, 0.0).Transform(IdentityMatrix[float64]().Rotate(Pi/2)), Pt(0.0, 1.0))
+		geomtest.AssertMatrix(t, IdentityMatrix[float32]().Rotate(Pi), Mat[float32](-1, 0, 0, 0, -1, 0))
 	})
 	t.Run("float matrix rotates an int point", func(t *testing.T) {
 		// the point keeps its integer coordinates; the matrix carries the fractions
-		AssertPoint(t, Pt(3, 0).Transform(IdentityMatrix[float64]().Rotate(Pi/6)), Pt(3, 2))
+		geomtest.AssertPoint(t, Pt(3, 0).Transform(IdentityMatrix[float64]().Rotate(Pi/6)), Pt(3, 2))
 	})
 	t.Run("integer is exact only for quarter turns", func(t *testing.T) {
-		AssertMatrix(t, IdentityMatrix[int]().Rotate(Pi/2), Mat(0, -1, 0, 1, 0, 0))
-		AssertMatrix(t, IdentityMatrix[int]().Rotate(Pi), Mat(-1, 0, 0, 0, -1, 0))
+		geomtest.AssertMatrix(t, IdentityMatrix[int]().Rotate(Pi/2), Mat(0, -1, 0, 1, 0, 0))
+		geomtest.AssertMatrix(t, IdentityMatrix[int]().Rotate(Pi), Mat(-1, 0, 0, 0, -1, 0))
 	})
 }
 
 func TestMatrix_PreRotate(t *testing.T) {
 	t.Run("zero angle is identity", func(t *testing.T) {
-		AssertMatrix(t, IdentityMatrix[float64]().PreRotate(0.0), IdentityMatrix[float64]())
+		geomtest.AssertMatrix(t, IdentityMatrix[float64]().PreRotate(0.0), IdentityMatrix[float64]())
 	})
 	t.Run("differs from rotating after", func(t *testing.T) {
 		before := TranslationMatrix(5.0, 0.0).PreRotate(Pi / 2)
@@ -327,31 +277,31 @@ func TestMatrix_PreRotate(t *testing.T) {
 
 func TestMatrix_Scale(t *testing.T) {
 	t.Run("from identity", func(t *testing.T) {
-		AssertMatrix(t, IdentityMatrix[float64]().Scale(2.0, 3.0), ScaleMatrix(2.0, 3.0))
+		geomtest.AssertMatrix(t, IdentityMatrix[float64]().Scale(2.0, 3.0), ScaleMatrix(2.0, 3.0))
 	})
 	t.Run("accumulates", func(t *testing.T) {
-		AssertMatrix(t, ScaleMatrix(2.0, 2.0).Scale(3.0, 3.0), ScaleMatrix(6.0, 6.0))
-		AssertMatrix(t, ScaleMatrix[float32](2, 2).Scale(3, 3), ScaleMatrix[float32](6, 6))
-		AssertMatrix(t, ScaleMatrix(2, 2).Scale(3, 3), ScaleMatrix(6, 6))
+		geomtest.AssertMatrix(t, ScaleMatrix(2.0, 2.0).Scale(3.0, 3.0), ScaleMatrix(6.0, 6.0))
+		geomtest.AssertMatrix(t, ScaleMatrix[float32](2, 2).Scale(3, 3), ScaleMatrix[float32](6, 6))
+		geomtest.AssertMatrix(t, ScaleMatrix(2, 2).Scale(3, 3), ScaleMatrix(6, 6))
 	})
 	t.Run("float factors on an integer matrix round each column", func(t *testing.T) {
-		AssertMatrix(t, ScaleMatrix(4, 6).Scale(0.5, 0.5), ScaleMatrix(2, 3))
-		AssertMatrix(t, Mat(4, 6, 8, 2, 9, 5).Scale(0.5, 2), Mat(2, 12, 8, 1, 18, 5))
+		geomtest.AssertMatrix(t, ScaleMatrix(4, 6).Scale(0.5, 0.5), ScaleMatrix(2, 3))
+		geomtest.AssertMatrix(t, Mat(4, 6, 8, 2, 9, 5).Scale(0.5, 2), Mat(2, 12, 8, 1, 18, 5))
 	})
 	t.Run("equals right-multiplying a scale matrix", func(t *testing.T) {
 		m := Mat(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)
 
-		AssertMatrix(t, m.Scale(2.0, 3.0), m.Multiply(ScaleMatrix(2.0, 3.0)))
+		geomtest.AssertMatrix(t, m.Scale(2.0, 3.0), m.Multiply(ScaleMatrix(2.0, 3.0)))
 	})
 }
 
 func TestMatrix_Unscale(t *testing.T) {
 	t.Run("undoes a scale", func(t *testing.T) {
-		AssertMatrix(t, ScaleMatrix(2.0, 3.0).Unscale(2.0, 3.0), IdentityMatrix[float64]())
+		geomtest.AssertMatrix(t, ScaleMatrix(2.0, 3.0).Unscale(2.0, 3.0), IdentityMatrix[float64]())
 	})
 	t.Run("partial", func(t *testing.T) {
-		AssertMatrix(t, ScaleMatrix(4.0, 6.0).Unscale(2.0, 3.0), ScaleMatrix(2.0, 2.0))
-		AssertMatrix(t, ScaleMatrix[float32](4, 6).Unscale(2, 3), ScaleMatrix[float32](2, 2))
+		geomtest.AssertMatrix(t, ScaleMatrix(4.0, 6.0).Unscale(2.0, 3.0), ScaleMatrix(2.0, 2.0))
+		geomtest.AssertMatrix(t, ScaleMatrix[float32](4, 6).Unscale(2, 3), ScaleMatrix[float32](2, 2))
 	})
 	t.Run("zero factor panics", func(t *testing.T) {
 		m := ScaleMatrix(2.0, 3.0)
@@ -364,37 +314,37 @@ func TestMatrix_Unscale(t *testing.T) {
 		}, "geom: division by zero")
 	})
 	t.Run("integer divides each column", func(t *testing.T) {
-		AssertMatrix(t, ScaleMatrix(4, 6).Unscale(1, 1), ScaleMatrix(4, 6))
-		AssertMatrix(t, ScaleMatrix(4, 6).Unscale(2, 3), ScaleMatrix(2, 2))
-		AssertMatrix(t, ScaleMatrix(2, 3).Unscale(2, 3), IdentityMatrix[int]())
-		AssertMatrix(t, Mat(4, 6, 8, 2, 9, 5).Unscale(2, 3), Mat(2, 2, 8, 1, 3, 5))
+		geomtest.AssertMatrix(t, ScaleMatrix(4, 6).Unscale(1, 1), ScaleMatrix(4, 6))
+		geomtest.AssertMatrix(t, ScaleMatrix(4, 6).Unscale(2, 3), ScaleMatrix(2, 2))
+		geomtest.AssertMatrix(t, ScaleMatrix(2, 3).Unscale(2, 3), IdentityMatrix[int]())
+		geomtest.AssertMatrix(t, Mat(4, 6, 8, 2, 9, 5).Unscale(2, 3), Mat(2, 2, 8, 1, 3, 5))
 	})
 	t.Run("integer rounds a component that does not divide", func(t *testing.T) {
-		AssertMatrix(t, ScaleMatrix(3, 5).Unscale(2, 2), ScaleMatrix(2, 3))
+		geomtest.AssertMatrix(t, ScaleMatrix(3, 5).Unscale(2, 2), ScaleMatrix(2, 3))
 	})
 }
 
 func TestMatrix_PreScale(t *testing.T) {
 	t.Run("from identity", func(t *testing.T) {
-		AssertMatrix(t, IdentityMatrix[float64]().PreScale(2.0, 3.0), ScaleMatrix(2.0, 3.0))
+		geomtest.AssertMatrix(t, IdentityMatrix[float64]().PreScale(2.0, 3.0), ScaleMatrix(2.0, 3.0))
 	})
 	t.Run("applies before the current transform", func(t *testing.T) {
 		// S(2,2) * T(5,5) maps (1,2) to (12,14)
 		m := TranslationMatrix(5.0, 5.0).PreScale(2.0, 2.0)
 
-		AssertMatrix(t, m, Mat(2.0, 0.0, 10.0, 0.0, 2.0, 10.0))
-		AssertPoint(t, Pt(1.0, 2.0).Transform(m), Pt(12.0, 14.0))
+		geomtest.AssertMatrix(t, m, Mat(2.0, 0.0, 10.0, 0.0, 2.0, 10.0))
+		geomtest.AssertPoint(t, Pt(1.0, 2.0).Transform(m), Pt(12.0, 14.0))
 
-		AssertMatrix(t, TranslationMatrix[float32](5, 5).PreScale(2, 2), Mat[float32](2, 0, 10, 0, 2, 10))
-		AssertMatrix(t, TranslationMatrix(5, 5).PreScale(2, 2), Mat(2, 0, 10, 0, 2, 10))
+		geomtest.AssertMatrix(t, TranslationMatrix[float32](5, 5).PreScale(2, 2), Mat[float32](2, 0, 10, 0, 2, 10))
+		geomtest.AssertMatrix(t, TranslationMatrix(5, 5).PreScale(2, 2), Mat(2, 0, 10, 0, 2, 10))
 	})
 	t.Run("float factors on an integer matrix round each row", func(t *testing.T) {
-		AssertMatrix(t, Mat(4, 6, 8, 2, 9, 5).PreScale(0.5, 2), Mat(2, 3, 4, 4, 18, 10))
+		geomtest.AssertMatrix(t, Mat(4, 6, 8, 2, 9, 5).PreScale(0.5, 2), Mat(2, 3, 4, 4, 18, 10))
 	})
 	t.Run("equals left-multiplying a scale matrix", func(t *testing.T) {
 		m := Mat(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)
 
-		AssertMatrix(t, m.PreScale(2.0, 3.0), ScaleMatrix(2.0, 3.0).Multiply(m))
+		geomtest.AssertMatrix(t, m.PreScale(2.0, 3.0), ScaleMatrix(2.0, 3.0).Multiply(m))
 	})
 }
 
@@ -402,11 +352,11 @@ func TestMatrix_Shear(t *testing.T) {
 	t.Run("composes with the shear matrix", func(t *testing.T) {
 		m := TranslationMatrix(5.0, 6.0)
 
-		AssertMatrix(t, m.Shear(2.0, 3.0), m.Multiply(ShearMatrix(2.0, 3.0)))
-		AssertMatrix(t, IdentityMatrix[float64]().Shear(2.0, 3.0), ShearMatrix(2.0, 3.0))
+		geomtest.AssertMatrix(t, m.Shear(2.0, 3.0), m.Multiply(ShearMatrix(2.0, 3.0)))
+		geomtest.AssertMatrix(t, IdentityMatrix[float64]().Shear(2.0, 3.0), ShearMatrix(2.0, 3.0))
 	})
 	t.Run("shears the transformed point", func(t *testing.T) {
-		AssertPoint(t, Pt(1.0, 2.0).Transform(IdentityMatrix[float64]().Shear(2.0, 0.0)), Pt(5.0, 2.0))
+		geomtest.AssertPoint(t, Pt(1.0, 2.0).Transform(IdentityMatrix[float64]().Shear(2.0, 0.0)), Pt(5.0, 2.0))
 	})
 }
 
@@ -414,7 +364,7 @@ func TestMatrix_PreShear(t *testing.T) {
 	t.Run("composes on the other side", func(t *testing.T) {
 		m := TranslationMatrix(5.0, 6.0)
 
-		AssertMatrix(t, m.PreShear(2.0, 3.0), ShearMatrix(2.0, 3.0).Multiply(m))
+		geomtest.AssertMatrix(t, m.PreShear(2.0, 3.0), ShearMatrix(2.0, 3.0).Multiply(m))
 	})
 	t.Run("differs from shear once the matrix translates", func(t *testing.T) {
 		m := TranslationMatrix(5.0, 6.0)
@@ -427,23 +377,23 @@ func TestMatrix_Reflect(t *testing.T) {
 	t.Run("composes with the reflection matrix", func(t *testing.T) {
 		m := ScaleMatrix(2.0, 3.0)
 
-		AssertMatrix(t, m.Reflect(AxisHorizontal), m.Multiply(ReflectionMatrix[float64](AxisHorizontal)))
-		AssertMatrix(t, m.Reflect(AxisVertical), m.Multiply(ReflectionMatrix[float64](AxisVertical)))
+		geomtest.AssertMatrix(t, m.Reflect(AxisHorizontal), m.Multiply(ReflectionMatrix[float64](AxisHorizontal)))
+		geomtest.AssertMatrix(t, m.Reflect(AxisVertical), m.Multiply(ReflectionMatrix[float64](AxisVertical)))
 	})
 	t.Run("flips the transformed point", func(t *testing.T) {
-		AssertPoint(t, Pt(1.0, 2.0).Transform(IdentityMatrix[float64]().Reflect(AxisHorizontal)), Pt(1.0, -2.0))
-		AssertPoint(t, Pt(1.0, 2.0).Transform(IdentityMatrix[float64]().Reflect(AxisVertical)), Pt(-1.0, 2.0))
+		geomtest.AssertPoint(t, Pt(1.0, 2.0).Transform(IdentityMatrix[float64]().Reflect(AxisHorizontal)), Pt(1.0, -2.0))
+		geomtest.AssertPoint(t, Pt(1.0, 2.0).Transform(IdentityMatrix[float64]().Reflect(AxisVertical)), Pt(-1.0, 2.0))
 	})
 	t.Run("none leaves the matrix unchanged", func(t *testing.T) {
 		m := ScaleMatrix(2.0, 3.0)
 
-		AssertMatrix(t, m.Reflect(AxisNone), m)
+		geomtest.AssertMatrix(t, m.Reflect(AxisNone), m)
 	})
 	t.Run("is its own inverse", func(t *testing.T) {
 		m := Mat(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)
 
 		for _, axis := range Axes() {
-			AssertMatrix(t, m.Reflect(axis).Reflect(axis), m, axis.String()+": ")
+			geomtest.AssertMatrix(t, m.Reflect(axis).Reflect(axis), m, axis.String()+": ")
 		}
 	})
 }
@@ -452,12 +402,12 @@ func TestMatrix_PreReflect(t *testing.T) {
 	t.Run("composes on the other side", func(t *testing.T) {
 		m := TranslationMatrix(5.0, 6.0)
 
-		AssertMatrix(t, m.PreReflect(AxisHorizontal), ReflectionMatrix[float64](AxisHorizontal).Multiply(m))
+		geomtest.AssertMatrix(t, m.PreReflect(AxisHorizontal), ReflectionMatrix[float64](AxisHorizontal).Multiply(m))
 	})
 	t.Run("none leaves the matrix unchanged", func(t *testing.T) {
 		m := TranslationMatrix(5.0, 6.0)
 
-		AssertMatrix(t, m.PreReflect(AxisNone), m)
+		geomtest.AssertMatrix(t, m.PreReflect(AxisNone), m)
 	})
 	t.Run("differs from reflect once the matrix translates", func(t *testing.T) {
 		m := TranslationMatrix(5.0, 6.0)
@@ -514,7 +464,7 @@ func TestMatrix_IsIdentity(t *testing.T) {
 		m := IdentityMatrix[float64]()
 
 		for _, p := range pointFixtures {
-			AssertPoint(t, p.Transform(m), p, p.String()+": ")
+			geomtest.AssertPoint(t, p.Transform(m), p, p.String()+": ")
 		}
 	})
 }
@@ -542,35 +492,35 @@ func TestMatrix_Cast(t *testing.T) {
 	m := Mat(1.5, -1.5, 2.5, -2.5, 3.5, -3.5)
 
 	t.Run("matches Int and Float", func(t *testing.T) {
-		AssertMatrix(t, m.Cast[int](), m.Int())
-		AssertMatrix(t, m.Cast[float64](), m.Float())
+		geomtest.AssertMatrix(t, m.Cast[int](), m.Int())
+		geomtest.AssertMatrix(t, m.Cast[float64](), m.Float())
 	})
 	t.Run("a type the other conversions cannot name", func(t *testing.T) {
-		AssertMatrix(t, m.Cast[int8](), Mat[int8](2, -2, 3, -3, 4, -4))
+		geomtest.AssertMatrix(t, m.Cast[int8](), Mat[int8](2, -2, 3, -3, 4, -4))
 	})
 }
 
 func TestMatrix_Int(t *testing.T) {
 	t.Run("int is a no-op", func(t *testing.T) {
-		AssertMatrix(t, TranslationMatrix(5, 3).Int(), TranslationMatrix(5, 3))
+		geomtest.AssertMatrix(t, TranslationMatrix(5, 3).Int(), TranslationMatrix(5, 3))
 	})
 	t.Run("float rounds", func(t *testing.T) {
-		AssertMatrix(t, IdentityMatrix[float64]().Int(), IdentityMatrix[int]())
-		AssertMatrix(t, TranslationMatrix(5.9, 3.1).Int(), TranslationMatrix(6, 3))
-		AssertMatrix(t, TranslationMatrix(-5.9, -3.1).Int(), TranslationMatrix(-6, -3))
+		geomtest.AssertMatrix(t, IdentityMatrix[float64]().Int(), IdentityMatrix[int]())
+		geomtest.AssertMatrix(t, TranslationMatrix(5.9, 3.1).Int(), TranslationMatrix(6, 3))
+		geomtest.AssertMatrix(t, TranslationMatrix(-5.9, -3.1).Int(), TranslationMatrix(-6, -3))
 	})
 }
 
 func TestMatrix_Float(t *testing.T) {
 	t.Run("int widens", func(t *testing.T) {
-		AssertMatrix(t, IdentityMatrix[int]().Float(), IdentityMatrix[float64]())
+		geomtest.AssertMatrix(t, IdentityMatrix[int]().Float(), IdentityMatrix[float64]())
 	})
 	t.Run("float32 widens", func(t *testing.T) {
-		AssertMatrix(t, IdentityMatrix[float32]().Float(), IdentityMatrix[float64]())
-		AssertMatrix(t, TranslationMatrix[float32](5, 3).Float(), TranslationMatrix(5.0, 3.0))
+		geomtest.AssertMatrix(t, IdentityMatrix[float32]().Float(), IdentityMatrix[float64]())
+		geomtest.AssertMatrix(t, TranslationMatrix[float32](5, 3).Float(), TranslationMatrix(5.0, 3.0))
 	})
 	t.Run("float64 is a no-op", func(t *testing.T) {
-		AssertMatrix(t, TranslationMatrix(5.1, 3.0).Float(), TranslationMatrix(5.1, 3.0))
+		geomtest.AssertMatrix(t, TranslationMatrix(5.1, 3.0).Float(), TranslationMatrix(5.1, 3.0))
 	})
 }
 
@@ -594,7 +544,7 @@ func TestMatrix_JSON(t *testing.T) {
 
 		var m Matrix[int]
 		assert.NoError(t, json.Unmarshal([]byte(`{"a":1,"b":2,"c":3,"d":4,"e":5,"f":6}`), &m))
-		AssertMatrix(t, m, Mat(1, 2, 3, 4, 5, 6))
+		geomtest.AssertMatrix(t, m, Mat(1, 2, 3, 4, 5, 6))
 	})
 	t.Run("float wire format", func(t *testing.T) {
 		assert.JSON(t, Mat(1.0, 2.1, 3.2, 4.0, 5.3, 6.4), `{"a":1,"b":2.1,"c":3.2,"d":4,"e":5.3,"f":6.4}`)
@@ -602,11 +552,11 @@ func TestMatrix_JSON(t *testing.T) {
 
 		var m64 Matrix[float64]
 		assert.NoError(t, json.Unmarshal([]byte(`{"a":1,"b":2.1,"c":3.2,"d":4,"e":5.3,"f":6.4}`), &m64))
-		AssertMatrix(t, m64, Mat(1.0, 2.1, 3.2, 4.0, 5.3, 6.4))
+		geomtest.AssertMatrix(t, m64, Mat(1.0, 2.1, 3.2, 4.0, 5.3, 6.4))
 
 		var m32 Matrix[float32]
 		assert.NoError(t, json.Unmarshal([]byte(`{"a":1,"b":2.1,"c":3.2,"d":4,"e":5.3,"f":6.4}`), &m32))
-		AssertMatrix(t, m32, Mat[float32](1, 2.1, 3.2, 4, 5.3, 6.4))
+		geomtest.AssertMatrix(t, m32, Mat[float32](1, 2.1, 3.2, 4, 5.3, 6.4))
 	})
 	t.Run("round-trip", func(t *testing.T) {
 		for _, matrix := range matrixFixtures {
@@ -623,19 +573,19 @@ func TestMatrix_JSON(t *testing.T) {
 func TestMatrix_Properties(t *testing.T) {
 	t.Run("shear and reflect compose like their constructors", func(t *testing.T) {
 		for _, m := range matrixFixtures {
-			AssertMatrix(t, m.Shear(2.0, 3.0), m.Multiply(ShearMatrix(2.0, 3.0)), m.String()+": ")
-			AssertMatrix(t, m.PreShear(2.0, 3.0), ShearMatrix(2.0, 3.0).Multiply(m), m.String()+": ")
+			geomtest.AssertMatrix(t, m.Shear(2.0, 3.0), m.Multiply(ShearMatrix(2.0, 3.0)), m.String()+": ")
+			geomtest.AssertMatrix(t, m.PreShear(2.0, 3.0), ShearMatrix(2.0, 3.0).Multiply(m), m.String()+": ")
 
 			for _, axis := range Axes() {
-				AssertMatrix(t, m.Reflect(axis), m.Multiply(ReflectionMatrix[float64](axis)), m.String()+": ")
-				AssertMatrix(t, m.PreReflect(axis), ReflectionMatrix[float64](axis).Multiply(m), m.String()+": ")
+				geomtest.AssertMatrix(t, m.Reflect(axis), m.Multiply(ReflectionMatrix[float64](axis)), m.String()+": ")
+				geomtest.AssertMatrix(t, m.PreReflect(axis), ReflectionMatrix[float64](axis).Multiply(m), m.String()+": ")
 			}
 		}
 	})
 	t.Run("identity is the only matrix that composes to nothing", func(t *testing.T) {
 		for _, m := range matrixFixtures {
 			assert.Equal(t, m.IsIdentity(), m.Equal(IdentityMatrix[float64]()), m.String()+": ")
-			AssertMatrix(t, m.Multiply(IdentityMatrix[float64]()), m, m.String()+": ")
+			geomtest.AssertMatrix(t, m.Multiply(IdentityMatrix[float64]()), m, m.String()+": ")
 		}
 	})
 	t.Run("identity is neutral", func(t *testing.T) {
@@ -669,7 +619,7 @@ func TestMatrix_Properties(t *testing.T) {
 		for _, a := range matrixFixtures {
 			for _, b := range matrixFixtures {
 				product := a.Multiply(b).Determinant()
-				AssertNumber(t, product, a.Determinant()*b.Determinant(), fmt.Sprintf("%s → %s: ", a, b))
+				geomtest.AssertNumber(t, product, a.Determinant()*b.Determinant(), fmt.Sprintf("%s → %s: ", a, b))
 			}
 		}
 	})
@@ -697,7 +647,7 @@ func TestMatrix_Properties(t *testing.T) {
 	})
 	t.Run("rotation preserves area", func(t *testing.T) {
 		for _, angle := range []float64{0, Pi / 6, Pi / 2, 2, -1.5} {
-			AssertNumber(t, RotationMatrix[float64](angle).Determinant(), 1.0, fmt.Sprintf("%v rad: ", angle))
+			geomtest.AssertNumber(t, RotationMatrix[float64](angle).Determinant(), 1.0, fmt.Sprintf("%v rad: ", angle))
 		}
 	})
 }
@@ -716,7 +666,7 @@ func TestMatrix_Immutable(t *testing.T) {
 	m.Unscale(2, 4)
 	m.PreScale(2, 4)
 
-	AssertMatrix(t, m, Mat(1.0, 2.0, 3.0, 4.0, 5.0, 6.0))
+	geomtest.AssertMatrix(t, m, Mat(1.0, 2.0, 3.0, 4.0, 5.0, 6.0))
 }
 
 // matrixFixtures span identity, translation, scale, rotation, and a general affine transform.

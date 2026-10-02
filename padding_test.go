@@ -1,4 +1,4 @@
-package geom
+package geom_test
 
 import (
 	"encoding/json"
@@ -6,106 +6,108 @@ import (
 	"testing"
 
 	"github.com/gravitton/assert"
+	. "github.com/gravitton/geometry"
+	"github.com/gravitton/geometry/geomtest"
 )
 
 func TestPadding_Constructor(t *testing.T) {
 	t.Run("from edges", func(t *testing.T) {
-		AssertPadding(t, Pad(2, 4, 3, 5), Padding[int]{Top: 2, Right: 4, Bottom: 3, Left: 5})
-		AssertPadding(t, Pad(0.1, 3.0, 0.6, 2.4), Padding[float64]{Top: 0.1, Right: 3.0, Bottom: 0.6, Left: 2.4})
+		geomtest.AssertPadding(t, Pad(2, 4, 3, 5), Padding[int]{Top: 2, Right: 4, Bottom: 3, Left: 5})
+		geomtest.AssertPadding(t, Pad(0.1, 3.0, 0.6, 2.4), Padding[float64]{Top: 0.1, Right: 3.0, Bottom: 0.6, Left: 2.4})
 	})
 	t.Run("uniform", func(t *testing.T) {
-		AssertPadding(t, PadU(20), Pad(20, 20, 20, 20))
-		AssertPadding(t, PadU(20.0), Pad(20.0, 20.0, 20.0, 20.0))
+		geomtest.AssertPadding(t, PadU(20), Pad(20, 20, 20, 20))
+		geomtest.AssertPadding(t, PadU(20.0), Pad(20.0, 20.0, 20.0, 20.0))
 	})
 	t.Run("per-axis", func(t *testing.T) {
-		AssertPadding(t, PadXY(10, 20), Pad(10, 20, 10, 20))
-		AssertPadding(t, PadXY(10.0, 20.0), Pad(10.0, 20.0, 10.0, 20.0))
+		geomtest.AssertPadding(t, PadXY(10, 20), Pad(10, 20, 10, 20))
+		geomtest.AssertPadding(t, PadXY(10.0, 20.0), Pad(10.0, 20.0, 10.0, 20.0))
 	})
 }
 
 func TestPadding_Width(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertNumber(t, Pad(2, 4, 3, 5).Width(), 9)
+		geomtest.AssertNumber(t, Pad(2, 4, 3, 5).Width(), 9)
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertNumber(t, Pad(0.1, 3.0, 0.6, 2.4).Width(), 5.4)
+		geomtest.AssertNumber(t, Pad(0.1, 3.0, 0.6, 2.4).Width(), 5.4)
 	})
 }
 
 func TestPadding_Height(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertNumber(t, Pad(2, 4, 3, 5).Height(), 5)
+		geomtest.AssertNumber(t, Pad(2, 4, 3, 5).Height(), 5)
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertNumber(t, Pad(0.1, 3.0, 0.6, 2.4).Height(), 0.7)
+		geomtest.AssertNumber(t, Pad(0.1, 3.0, 0.6, 2.4).Height(), 0.7)
 	})
 }
 
 func TestPadding_XY(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		width, height := Pad(2, 4, 3, 5).XY()
-		AssertNumber(t, width, 9)
-		AssertNumber(t, height, 5)
+		geomtest.AssertNumber(t, width, 9)
+		geomtest.AssertNumber(t, height, 5)
 	})
 	t.Run("float", func(t *testing.T) {
 		width, height := Pad(0.1, 3.0, 0.6, 2.4).XY()
-		AssertNumber(t, width, 5.4)
-		AssertNumber(t, height, 0.7)
+		geomtest.AssertNumber(t, width, 5.4)
+		geomtest.AssertNumber(t, height, 0.7)
 	})
 }
 
 func TestPadding_Add(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertPadding(t, Pad(1, 2, 3, 4).Add(Pad(10, 20, 30, 40)), Pad(11, 22, 33, 44))
+		geomtest.AssertPadding(t, Pad(1, 2, 3, 4).Add(Pad(10, 20, 30, 40)), Pad(11, 22, 33, 44))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertPadding(t, Pad(0.1, 0.2, 0.3, 0.4).Add(PadU(0.5)), Pad(0.6, 0.7, 0.8, 0.9))
+		geomtest.AssertPadding(t, Pad(0.1, 0.2, 0.3, 0.4).Add(PadU(0.5)), Pad(0.6, 0.7, 0.8, 0.9))
 	})
 }
 
 func TestPadding_Subtract(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertPadding(t, Pad(11, 22, 33, 44).Subtract(Pad(1, 2, 3, 4)), Pad(10, 20, 30, 40))
+		geomtest.AssertPadding(t, Pad(11, 22, 33, 44).Subtract(Pad(1, 2, 3, 4)), Pad(10, 20, 30, 40))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertPadding(t, Pad(0.6, 0.7, 0.8, 0.9).Subtract(PadU(0.5)), Pad(0.1, 0.2, 0.3, 0.4))
+		geomtest.AssertPadding(t, Pad(0.6, 0.7, 0.8, 0.9).Subtract(PadU(0.5)), Pad(0.1, 0.2, 0.3, 0.4))
 	})
 	t.Run("undoes add", func(t *testing.T) {
-		AssertPadding(t, Pad(1, 2, 3, 4).Add(Pad(5, 6, 7, 8)).Subtract(Pad(5, 6, 7, 8)), Pad(1, 2, 3, 4))
+		geomtest.AssertPadding(t, Pad(1, 2, 3, 4).Add(Pad(5, 6, 7, 8)).Subtract(Pad(5, 6, 7, 8)), Pad(1, 2, 3, 4))
 	})
 }
 
 func TestPadding_Negate(t *testing.T) {
 	t.Run("negates every edge", func(t *testing.T) {
-		AssertPadding(t, Pad(1, -2, 3, -4).Negate(), Pad(-1, 2, -3, 4))
+		geomtest.AssertPadding(t, Pad(1, -2, 3, -4).Negate(), Pad(-1, 2, -3, 4))
 	})
 	t.Run("undoes an inset", func(t *testing.T) {
 		r := RectangleFromMinMax(Pt(0.0, 0.0), Pt(10.0, 10.0))
 		padding := Pad(1.0, 2.0, 3.0, 4.0)
 
-		AssertRectangle(t, r.Inset(padding).Inset(padding.Negate()), r)
-		AssertRectangle(t, r.Outset(padding).Inset(padding.Negate()), r.Outset(padding).Outset(padding))
+		geomtest.AssertRectangle(t, r.Inset(padding).Inset(padding.Negate()), r)
+		geomtest.AssertRectangle(t, r.Outset(padding).Inset(padding.Negate()), r.Outset(padding).Outset(padding))
 	})
 }
 
 func TestPadding_Scale(t *testing.T) {
 	t.Run("int rounds", func(t *testing.T) {
-		AssertPadding(t, Pad(1, 2, 3, 4).Scale(1.5), Pad(2, 3, 5, 6))
+		geomtest.AssertPadding(t, Pad(1, 2, 3, 4).Scale(1.5), Pad(2, 3, 5, 6))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertPadding(t, Pad(0.1, 0.2, 0.3, 0.4).Scale(2), Pad(0.2, 0.4, 0.6, 0.8))
+		geomtest.AssertPadding(t, Pad(0.1, 0.2, 0.3, 0.4).Scale(2), Pad(0.2, 0.4, 0.6, 0.8))
 	})
 }
 
 func TestPadding_Unscale(t *testing.T) {
 	t.Run("int rounds", func(t *testing.T) {
-		AssertPadding(t, Pad(3, 6, 9, 12).Unscale(2), Pad(2, 3, 5, 6))
+		geomtest.AssertPadding(t, Pad(3, 6, 9, 12).Unscale(2), Pad(2, 3, 5, 6))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertPadding(t, Pad(0.2, 0.4, 0.6, 0.8).Unscale(2), Pad(0.1, 0.2, 0.3, 0.4))
+		geomtest.AssertPadding(t, Pad(0.2, 0.4, 0.6, 0.8).Unscale(2), Pad(0.1, 0.2, 0.3, 0.4))
 	})
 	t.Run("undoes scale", func(t *testing.T) {
-		AssertPadding(t, Pad(1.5, 2.5, 3.5, 4.5).Scale(4).Unscale(4), Pad(1.5, 2.5, 3.5, 4.5))
+		geomtest.AssertPadding(t, Pad(1.5, 2.5, 3.5, 4.5).Scale(4).Unscale(4), Pad(1.5, 2.5, 3.5, 4.5))
 	})
 	t.Run("zero factor panics", func(t *testing.T) {
 		assert.Panics(t, func() {
@@ -116,13 +118,13 @@ func TestPadding_Unscale(t *testing.T) {
 
 func TestPadding_Lerp(t *testing.T) {
 	t.Run("interpolates edge by edge", func(t *testing.T) {
-		AssertPadding(t, Pad(0.0, 0.0, 0.0, 0.0).Lerp(Pad(2.0, 4.0, 6.0, 8.0), 0.5), Pad(1.0, 2.0, 3.0, 4.0))
+		geomtest.AssertPadding(t, Pad(0.0, 0.0, 0.0, 0.0).Lerp(Pad(2.0, 4.0, 6.0, 8.0), 0.5), Pad(1.0, 2.0, 3.0, 4.0))
 	})
 	t.Run("the ends are the paddings themselves", func(t *testing.T) {
 		a, b := Pad(1, 2, 3, 4), Pad(10, 20, 30, 40)
 
-		AssertPadding(t, a.Lerp(b, 0), a)
-		AssertPadding(t, a.Lerp(b, 1), b)
+		geomtest.AssertPadding(t, a.Lerp(b, 0), a)
+		geomtest.AssertPadding(t, a.Lerp(b, 1), b)
 	})
 }
 
@@ -150,10 +152,10 @@ func TestPadding_IsZero(t *testing.T) {
 
 func TestPadding_Size(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		AssertSize(t, Pad(2, 4, 3, 5).Size(), Sz(9, 5))
+		geomtest.AssertSize(t, Pad(2, 4, 3, 5).Size(), Sz(9, 5))
 	})
 	t.Run("float", func(t *testing.T) {
-		AssertSize(t, Pad(0.1, 3.0, 0.6, 2.4).Size(), Sz(5.4, 0.7))
+		geomtest.AssertSize(t, Pad(0.1, 3.0, 0.6, 2.4).Size(), Sz(5.4, 0.7))
 	})
 }
 
@@ -161,29 +163,29 @@ func TestPadding_Cast(t *testing.T) {
 	p := Pad(1.5, 2.5, -1.5, -2.5)
 
 	t.Run("matches Int and Float", func(t *testing.T) {
-		AssertPadding(t, p.Cast[int](), p.Int())
-		AssertPadding(t, p.Cast[float64](), p.Float())
+		geomtest.AssertPadding(t, p.Cast[int](), p.Int())
+		geomtest.AssertPadding(t, p.Cast[float64](), p.Float())
 	})
 	t.Run("a type the other conversions cannot name", func(t *testing.T) {
-		AssertPadding(t, p.Cast[int8](), Pad[int8](2, 3, -2, -3))
+		geomtest.AssertPadding(t, p.Cast[int8](), Pad[int8](2, 3, -2, -3))
 	})
 }
 
 func TestPadding_Int(t *testing.T) {
 	t.Run("int is a no-op", func(t *testing.T) {
-		AssertPadding(t, Pad(2, 4, 3, 5).Int(), Pad(2, 4, 3, 5))
+		geomtest.AssertPadding(t, Pad(2, 4, 3, 5).Int(), Pad(2, 4, 3, 5))
 	})
 	t.Run("float rounds", func(t *testing.T) {
-		AssertPadding(t, Pad(0.1, 3.0, 0.6, 2.4).Int(), Pad(0, 3, 1, 2))
+		geomtest.AssertPadding(t, Pad(0.1, 3.0, 0.6, 2.4).Int(), Pad(0, 3, 1, 2))
 	})
 }
 
 func TestPadding_Float(t *testing.T) {
 	t.Run("int widens", func(t *testing.T) {
-		AssertPadding(t, Pad(2, 4, 3, 5).Float(), Pad(2.0, 4.0, 3.0, 5.0))
+		geomtest.AssertPadding(t, Pad(2, 4, 3, 5).Float(), Pad(2.0, 4.0, 3.0, 5.0))
 	})
 	t.Run("float is a no-op", func(t *testing.T) {
-		AssertPadding(t, Pad(0.1, 3.0, 0.6, 2.4).Float(), Pad(0.1, 3.0, 0.6, 2.4))
+		geomtest.AssertPadding(t, Pad(0.1, 3.0, 0.6, 2.4).Float(), Pad(0.1, 3.0, 0.6, 2.4))
 	})
 }
 
@@ -207,14 +209,14 @@ func TestPadding_JSON(t *testing.T) {
 
 		var p Padding[int]
 		assert.NoError(t, json.Unmarshal([]byte(`{"t":2,"r":4,"b":3,"l":5}`), &p))
-		AssertPadding(t, p, Pad(2, 4, 3, 5))
+		geomtest.AssertPadding(t, p, Pad(2, 4, 3, 5))
 	})
 	t.Run("float wire format", func(t *testing.T) {
 		assert.JSON(t, Pad(0.1, 3.0, 0.6, 2.4), `{"t":0.10,"r":3,"b":0.60,"l":2.40}`)
 
 		var p Padding[float64]
 		assert.NoError(t, json.Unmarshal([]byte(`{"t":0.10,"r":3,"b":0.60,"l":2.40}`), &p))
-		AssertPadding(t, p, Pad(0.1, 3.0, 0.6, 2.4))
+		geomtest.AssertPadding(t, p, Pad(0.1, 3.0, 0.6, 2.4))
 	})
 	t.Run("round-trip", func(t *testing.T) {
 		for _, padding := range paddingFixtures {
@@ -231,16 +233,16 @@ func TestPadding_JSON(t *testing.T) {
 func TestPadding_Properties(t *testing.T) {
 	t.Run("width and height sum the opposite edges", func(t *testing.T) {
 		for _, padding := range paddingFixtures {
-			AssertNumber(t, padding.Width(), padding.Left+padding.Right, fmt.Sprintf("%s: ", padding))
-			AssertNumber(t, padding.Height(), padding.Top+padding.Bottom, fmt.Sprintf("%s: ", padding))
+			geomtest.AssertNumber(t, padding.Width(), padding.Left+padding.Right, fmt.Sprintf("%s: ", padding))
+			geomtest.AssertNumber(t, padding.Height(), padding.Top+padding.Bottom, fmt.Sprintf("%s: ", padding))
 		}
 	})
 	t.Run("xy and size agree with width and height", func(t *testing.T) {
 		for _, padding := range paddingFixtures {
 			width, height := padding.XY()
 
-			AssertNumber(t, width, padding.Width(), fmt.Sprintf("%s: ", padding))
-			AssertNumber(t, height, padding.Height(), fmt.Sprintf("%s: ", padding))
+			geomtest.AssertNumber(t, width, padding.Width(), fmt.Sprintf("%s: ", padding))
+			geomtest.AssertNumber(t, height, padding.Height(), fmt.Sprintf("%s: ", padding))
 			assert.True(t, padding.Size().Equal(Sz(padding.Width(), padding.Height())), fmt.Sprintf("%s: ", padding))
 		}
 	})
@@ -255,7 +257,7 @@ func TestPadding_Properties(t *testing.T) {
 	})
 	t.Run("float is the inverse of int on whole values", func(t *testing.T) {
 		for _, padding := range []Padding[int]{Pad(2, 4, 3, 5), PadU(0), PadXY(-1, 7)} {
-			AssertPadding(t, padding.Float().Int(), padding)
+			geomtest.AssertPadding(t, padding.Float().Int(), padding)
 		}
 	})
 }
