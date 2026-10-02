@@ -10,7 +10,8 @@ import (
 // Every product, distance and interpolation is computed in float64 and stored back through
 // Cast, so a narrow T such as int8 never overflows mid-computation; only a result outside its
 // range is affected, as Cast documents. A value of an int64 T beyond 2^53 loses precision on
-// the way through float64.
+// the way through float64, and the cross products that decide a crossing, a turn or a winding
+// are exact only while the coordinate differences stay within 2^26.
 type Integer interface {
 	~int | ~int8 | ~int16 | ~int32 | ~int64
 }
@@ -92,4 +93,32 @@ func isFloat32[T Number]() bool {
 	one := T(1)
 
 	return one+one/step/step/step/step/step == one
+}
+
+// castClamped is Cast with the value first clamped into the range of an integer T, so a value
+// past either end stores that end rather than the arbitrary one Cast leaves it: the extent of a
+// shape reaching past the range, which every shape it is tested against lies within. A float T
+// is cast as it is.
+func castClamped[T Number](a float64) T {
+	if isInt[T]() {
+		lowest, highest := intRange[T]()
+		a = Clamp(a, lowest, highest)
+	}
+
+	return Cast[T](a)
+}
+
+// intRange returns the least and the greatest value of an integer T, as the float64 values
+// nearest within it: the range of the narrowest width that holds the next value past it, found
+// by converting that value and reading it back, as Parse checks a parsed one, so a defined type
+// over any width is measured by its own. The greatest int64 is not a float64, and the one just
+// below it stands in.
+func intRange[T Number]() (float64, float64) {
+	for _, bits := range [...]uint{7, 15, 31} {
+		if past := int64(1) << bits; int64(T(past)) != past {
+			return float64(-past), float64(past - 1)
+		}
+	}
+
+	return -0x1p63, math.Nextafter(0x1p63, 0)
 }

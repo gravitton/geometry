@@ -27,7 +27,9 @@ func SzU[T Number](size T) Size[T] {
 	return Size[T]{size, size}
 }
 
-// ParseSize parses a size string in the form "WxH", the form String prints, each side a number Parse accepts.
+// ParseSize parses a size string in the form "WxH", the form String prints, each side a decimal
+// number Parse accepts: the string is split at its first x, so a hexadecimal float, which Parse
+// takes on its own, cannot stand for the width.
 // For integer T, only integer strings parse; a fractional value is an error, not a rounded size.
 func ParseSize[T Number](s string) (Size[T], error) {
 	width, height, ok := strings.Cut(s, "x")

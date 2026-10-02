@@ -166,8 +166,10 @@ func (p Point[T]) DistanceTo(point Point[T]) float64 {
 }
 
 // DistanceSquaredTo returns the squared Euclidean distance to the given point (faster than DistanceTo for comparisons).
+// The differences are taken in float64, as DistanceTo takes them, so a float32 difference is not
+// rounded before it is squared and the two agree; the result is stored back through Cast.
 func (p Point[T]) DistanceSquaredTo(point Point[T]) T {
-	return point.Subtract(p).LengthSquared()
+	return Cast[T](point.Float().Subtract(p.Float()).LengthSquared())
 }
 
 // ManhattanDistanceTo returns the Manhattan (taxicab) distance from the current point to the given point.

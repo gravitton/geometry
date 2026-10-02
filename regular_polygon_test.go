@@ -416,6 +416,25 @@ func TestRegularPolygon_Bounds(t *testing.T) {
 			}
 		}
 	})
+	t.Run("two vertices reaching equally far are both read, for int whichever rounds farther", func(t *testing.T) {
+		rp := RegPol(Pt(0, 8), Sz(3, 5), 3, 3*Pi/2, 0)
+
+		geomtest.AssertBox(t, rp.Bounds(), Bx(Pt(-4, 5), Pt(4, 10)))
+		assert.True(t, rp.Contains(Pt(-4, 10)))
+	})
+	t.Run("is exactly the box around the vertices of small int polygons turned and phased in steps", func(t *testing.T) {
+		for n := 3; n <= 6; n++ {
+			for size := range 25 {
+				for turn := range 16 {
+					for phase := range 24 {
+						rp := RegPol(Pt(0, 8), Sz(size%5+1, size/5+1), n, float64(turn)*Pi/8, float64(phase)*Pi/12)
+
+						assert.Equal(t, rp.Bounds(), rp.Polygon().Bounds(), rp.String())
+					}
+				}
+			}
+		}
+	})
 }
 
 func TestRegularPolygon_Translate(t *testing.T) {
@@ -653,7 +672,7 @@ func TestRegularPolygon_Transform(t *testing.T) {
 		geomtest.AssertNumber(t, rp.Transform(RotationMatrix[float64](Pi/3)).Phase, Pi/7)
 		geomtest.AssertNumber(t, rp.Transform(ScaleMatrix(2.0, 3.0)).Phase, Pi/7)
 	})
-	t.Run("matches the polygon of the vertices for every matrix", func(t *testing.T) {
+	t.Run("matches the polygon of the vertices for every matrix, vertex by vertex", func(t *testing.T) {
 		matrices := []Matrix[float64]{
 			IdentityMatrix[float64](),
 			TranslationMatrix(3.0, -2.0),
@@ -669,21 +688,25 @@ func TestRegularPolygon_Transform(t *testing.T) {
 
 		for _, rp := range regularPolygonFixtures {
 			for _, m := range matrices {
-				assertSameVertices(t, slices.Collect(rp.Transform(m).Vertices()), rp.Polygon().Transform(m).Points, fmt.Sprintf("%s → %s: ", rp, m))
+				actual, expected := slices.Collect(rp.Transform(m).Vertices()), rp.Polygon().Transform(m).Points
+
+				assert.Equal(t, len(actual), len(expected), fmt.Sprintf("%s → %s: ", rp, m))
+				for i, vertex := range expected {
+					j := i
+					if m.Determinant() < 0 {
+						j = (len(expected) - i) % len(expected)
+					}
+
+					geomtest.AssertPoint(t, actual[j], vertex, fmt.Sprintf("%s → %s: vertex %d: ", rp, m, i))
+				}
 			}
 		}
 	})
-}
+	t.Run("a long thin polygon keeps its lesser semi-axis", func(t *testing.T) {
+		thin := RegPol(Pt(0.0, 0.0), Sz(1e6, 1e-3), 6, 0, 0)
 
-// assertSameVertices checks that the vertices are the expected ones in any order, as a
-// reflection numbers them the other way round.
-func assertSameVertices(t *testing.T, actual, expected []Point[float64], message string) {
-	t.Helper()
-
-	assert.Equal(t, len(actual), len(expected), message)
-	for _, vertex := range expected {
-		assert.True(t, slices.ContainsFunc(actual, vertex.Equal), message+vertex.String()+": ")
-	}
+		assert.EqualDelta(t, thin.Transform(IdentityMatrix[float64]()).Size.Height, 1e-3, 1e-18)
+	})
 }
 
 func TestRegularPolygon_Rotate(t *testing.T) {
@@ -1395,11 +1418,13 @@ func TestRegularPolygon_Properties(t *testing.T) {
 			}
 		}
 	})
-	t.Run("the ellipse round-trips through the polygon of zero phase", func(t *testing.T) {
+	t.Run("the ellipse round-trips through the polygon of the phase of an orientation", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
-			unphased := RegPol(rp.Center, rp.Size, rp.N, rp.Angle, 0)
+			for _, orientation := range []Orientation{OrientationFlatTop, OrientationPointyTop} {
+				oriented := RegPol(rp.Center, rp.Size, rp.N, rp.Angle, RegularPolygonOrientationPhase(rp.N, orientation))
 
-			geomtest.AssertRegularPolygon(t, rp.Ellipse().RegularPolygon(rp.N), unphased, fmt.Sprintf("%s: ", rp))
+				geomtest.AssertRegularPolygon(t, rp.Ellipse().RegularPolygon(rp.N, orientation), oriented, fmt.Sprintf("%s %s: ", rp, orientation))
+			}
 		}
 	})
 	t.Run("the circle around holds every vertex", func(t *testing.T) {
@@ -1434,6 +1459,7 @@ var regularPolygonFixtures = []RegularPolygon[float64]{
 	Hexagon(Pt(0.0, 0.0), Sz(20.0, 10.0), OrientationFlatTop),
 	Square(Pt(1.0, 2.0), Sz(4.0, 2.0), OrientationFlatTop),
 	RegPol(Pt(1.0, -2.0), Sz(6.0, 3.0), 7, Pi/5, Pi/9),
+	RegPol(Pt(-2.0, 4.0), Sz(5.0, 1.5), 6, 2*Pi/3, Pi/11),
 }
 
 func ExampleRegPol() {

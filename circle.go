@@ -64,7 +64,7 @@ func (c Circle[T]) Diameter() T {
 }
 
 // Bounds returns the axis-aligned bounding box: the square of side Diameter centered on the
-// circle.
+// circle, clamped into the range of a narrow integer T where it reaches past it.
 func (c Circle[T]) Bounds() Box[T] {
 	a, b := c.minMax()
 
@@ -72,9 +72,16 @@ func (c Circle[T]) Bounds() Box[T] {
 }
 
 // minMax returns the minimum and maximum corner of the circle, the corners of Bounds: the pair
-// the intersection tests reject shapes by before examining any edge.
+// the intersection tests reject shapes by before examining any edge. The corners are taken in
+// float64 and clamped into the range of an integer T, so a narrow T whose circle reaches past
+// its range bounds it at the end of the range, which every shape it is tested against lies
+// within, rather than at a corner wrapped to the other side.
 func (c Circle[T]) minMax() (Point[T], Point[T]) {
-	return Point[T]{c.Center.X - c.Radius, c.Center.Y - c.Radius}, Point[T]{c.Center.X + c.Radius, c.Center.Y + c.Radius}
+	center, radius := c.Center.Float(), float64(c.Radius)
+	a := Point[T]{castClamped[T](center.X - radius), castClamped[T](center.Y - radius)}
+	b := Point[T]{castClamped[T](center.X + radius), castClamped[T](center.Y + radius)}
+
+	return a, b
 }
 
 // magnitude returns the largest absolute coordinate of the circle, that of a corner of its
@@ -253,10 +260,16 @@ func (c Circle[T]) EnclosesRegularPolygon(polygon RegularPolygon[T]) bool {
 	return true
 }
 
-// EnclosesBox reports whether the box lies within the circle, as EnclosesRectangle decides on
-// the box's Rectangle.
+// EnclosesBox reports whether the box lies within the circle: every corner is contained, within
+// the tolerance.
 func (c Circle[T]) EnclosesBox(box Box[T]) bool {
-	return c.EnclosesRectangle(box.Rectangle())
+	for _, corner := range box.corners() {
+		if !c.Contains(corner) {
+			return false
+		}
+	}
+
+	return true
 }
 
 // IntersectsCircle reports whether the circles overlap: the center of one lies within the sum of the
@@ -498,13 +511,12 @@ func (c Circle[T]) Ellipse() Ellipse[T] {
 }
 
 // RegularPolygon converts the circle into the RegularPolygon of n vertices inscribed in it,
-// with the given orientation, as Ellipse.RegularPolygon does without one: every vertex lies on
+// with the given orientation, as Ellipse.RegularPolygon does: every vertex lies on
 // the boundary, and the orientation places the first of them by RegularPolygonOrientationPhase,
 // so OrientationPointyTop puts a vertex at the top and OrientationFlatTop the midpoint of an edge. It is the outline a
 // circle does not have, so its Vertices and Edges are what draws or walks one.
 //
-// Only a circle takes an Orientation, since turning it and stepping around it are the same
-// thing. Like RegularPolygonOrientationPhase it panics for an orientation that is neither
+// Like RegularPolygonOrientationPhase it panics for an orientation that is neither
 // OrientationFlatTop nor OrientationPointyTop.
 func (c Circle[T]) RegularPolygon(n int, orientation Orientation) RegularPolygon[T] {
 	return RegularPolygon[T]{c.Center, SzU(c.Radius), n, 0, RegularPolygonOrientationPhase(n, orientation)}

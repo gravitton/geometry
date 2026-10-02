@@ -334,6 +334,11 @@ func TestPoint_DistanceSquaredTo(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		geomtest.AssertNumber(t, Pt(1, 2).DistanceSquaredTo(Pt(2, 3)), 2)
 	})
+	t.Run("float32 far from the origin squares the difference unrounded, as DistanceTo does", func(t *testing.T) {
+		a, b := Pt[float32](1<<24, 0), Pt[float32](-1, 0)
+
+		assert.Equal(t, a.DistanceSquaredTo(b), float32(a.DistanceTo(b)*a.DistanceTo(b)))
+	})
 }
 
 func TestPoint_ManhattanDistanceTo(t *testing.T) {

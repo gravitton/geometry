@@ -795,6 +795,29 @@ func TestRectangle_Clamp(t *testing.T) {
 			}
 		}
 	})
+	t.Run("an int rectangle within one of an odd extent is not moved by the half unit of its frame", func(t *testing.T) {
+		container := Rect(Pt(0, 0), Sz(3, 3))
+		r := Rect(Pt(2, 2), Sz(0, 0)).Rotate(Pi)
+
+		assert.True(t, container.EnclosesRectangle(r))
+		geomtest.AssertRectangle(t, r.Clamp(container), r)
+	})
+	t.Run("an int rectangle within is kept at every quarter turn of either", func(t *testing.T) {
+		for x := -3; x <= 3; x++ {
+			for y := -3; y <= 3; y++ {
+				for size := range 16 {
+					for turn := range 4 {
+						container := Rect(Pt(0, 0), Sz(5, 3)).Rotate(float64(turn) * Pi / 2)
+						r := Rect(Pt(x, y), Sz(size%4, size/4)).Rotate(Pi)
+
+						if container.EnclosesRectangle(r) {
+							geomtest.AssertRectangle(t, r.Clamp(container), r, fmt.Sprintf("%s → %s: ", r, container))
+						}
+					}
+				}
+			}
+		}
+	})
 }
 
 // within reports whether every vertex of the rectangle lies within the other.

@@ -390,6 +390,11 @@ func TestVector_Slerp(t *testing.T) {
 			}
 		}
 	})
+	t.Run("a t of zero gives the receiver back exactly", func(t *testing.T) {
+		for _, from := range []Vector[float64]{Vec(3.0, 4.0), Vec(-0.1, 0.7), Vec(1e-3, -2e5)} {
+			assert.Equal(t, from.Slerp(Vec(0.0, 1.0), 0), from)
+		}
+	})
 }
 
 func TestVector_Normalize(t *testing.T) {

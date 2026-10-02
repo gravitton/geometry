@@ -27,6 +27,7 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.15.0.md](docs
 - `Outline`, `Transformable` and `Rectangle.MinMaxString` are removed
 - `Rectangle.Clamp(point)` is `Nearest`, read off the edge walk
 - `RegPol` takes a phase, and the orientation constructors set it rather than the angle; `RegularPolygonOrientationAngle` is `RegularPolygonOrientationPhase`
+- `Ellipse.RegularPolygon` takes an `Orientation`, as `Circle.RegularPolygon` does
 - The `Assert*` helpers moved to `geomtest`, taking `assert.Testing`; `geom.Testing` is removed
 
 ### Added
@@ -52,6 +53,8 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.15.0.md](docs
 - Float32 and narrow integer shapes convert before subtracting, so far coordinates measure true and `int8` does not overflow
 - Narrow integer crossings are ordered from `Start`, and `Mod` no longer overflows near the end of the range
 - Long rectangles turned a hair apart are no longer tested as parallel
+- Integer regular polygons contain their own vertices, and polygons on one line enclose no area
+- A segment along an edge crosses at most twice, and a crossing on a half unit rounds alike at any length
 
 
 ## [v1.14.0](https://github.com/gravitton/geometry/compare/v1.13.0...v1.14.0) (2026-09-20)

@@ -281,9 +281,12 @@ func (s Segment[T]) IntersectsSegment(segment Segment[T]) bool {
 // endpoint is the point, which is also the answer for nearly collinear float segments whose
 // crossing rounding would place off them. The touch is judged on the endpoint's distance, like Contains, rather than on the
 // fraction along the segment, which for a shallow crossing can put the same endpoint far
-// outside the other segment.
+// outside the other segment. Segments running along each other within the tolerance, sharing
+// a stretch rather than a point, are answered by an endpoint too, even where rounding gives
+// them a proper crossing: it would land anywhere along the stretch, beside the endpoints an
+// outline's next edges find, and give a segment along an edge three crossings.
 func (s Segment[T]) IntersectionSegment(segment Segment[T]) (Point[T], bool) {
-	if point, ok := s.crossing(segment); ok {
+	if point, ok := s.crossing(segment); ok && !s.runsAlong(segment) {
 		return point.Cast[T](), true
 	}
 
@@ -460,21 +463,49 @@ func (s Segment[T]) AppendIntersectionRegularPolygon(dst []Point[T], polygon Reg
 }
 
 // IntersectsBox reports whether the segment and the box share a point, as IntersectsRectangle
-// decides on the box's Rectangle, whose corners are those of the box.
+// decides it on a rectangle that is not rotated: the start lies within the box, or the segment
+// crosses one of its edges, the edges between its own corners. Touching shapes intersect,
+// within the tolerance. A segment whose extent lies outside the box is rejected before any edge
+// is examined.
 func (s Segment[T]) IntersectsBox(box Box[T]) bool {
-	return s.IntersectsRectangle(box.Rectangle())
+	probe := edgeProbe[T]{a: box.Min, b: box.Max}
+
+	if !probe.aim(s) {
+		return false
+	}
+
+	if box.Contains(s.Start) {
+		return true
+	}
+
+	corners := box.corners()
+	for edge := range edgesOf(corners[:]) {
+		if probe.meets(edge) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // IntersectionBox returns the points where the segment crosses the box boundary, from Start to
-// End, as IntersectionRectangle finds them on the box's Rectangle.
+// End, as IntersectionRectangle finds them on a rectangle that is not rotated, over the edges
+// between the corners of the box.
 func (s Segment[T]) IntersectionBox(box Box[T]) []Point[T] {
-	return s.IntersectionRectangle(box.Rectangle())
+	return s.AppendIntersectionBox(nil, box)
 }
 
 // AppendIntersectionBox appends the points IntersectionBox returns to dst and returns the
-// extended slice, as AppendIntersectionRectangle does on the box's Rectangle.
+// extended slice, so a caller reusing dst allocates nothing once it has room. The points already
+// in dst are kept as they are, as AppendIntersectionRectangle keeps them.
 func (s Segment[T]) AppendIntersectionBox(dst []Point[T], box Box[T]) []Point[T] {
-	return s.AppendIntersectionRectangle(dst, box.Rectangle())
+	e := edgeIntersections[T]{segment: s, points: dst, from: len(dst)}
+	corners := box.corners()
+	for edge := range edgesOf(corners[:]) {
+		e.add(edge)
+	}
+
+	return e.sorted()
 }
 
 // ClipCircle returns the part of the segment inside the circle, boundary included within
@@ -509,20 +540,22 @@ func (s Segment[T]) ClipPolygon(polygon Polygon[T]) []Segment[T] {
 }
 
 // AppendClipPolygon appends the parts ClipPolygon returns to dst and returns the extended slice,
-// so a caller reusing dst allocates nothing once it has room.
+// so a caller reusing dst allocates nothing once it has room. The sweep ends at End once it has
+// stepped there, even where End compares Equal to nothing, as a NaN or an infinite coordinate
+// does, so every segment is clipped in a bounded number of sweeps.
 func (s Segment[T]) AppendClipPolygon(dst []Segment[T], polygon Polygon[T]) []Segment[T] {
 	var from Point[T]
 
-	point, contained, open := s.Start, polygon.Contains(s.Start), false
+	point, contained, open, ended := s.Start, polygon.Contains(s.Start), false, false
 	for {
 		sweep := edgeSweep[T]{segment: s, reached: point}
 		for edge := range polygon.Edges() {
 			sweep.add(edge)
 		}
 
-		next, ahead := sweep.point, sweep.found
-		if !ahead && !point.Equal(s.End) {
-			next, ahead = s.End, true
+		next, ahead := sweep.point, sweep.found && !ended
+		if !ahead && !ended && !point.Equal(s.End) {
+			next, ahead, ended = s.End, true, true
 		}
 
 		inside := ahead && polygon.containsMidpoint(point, next)
@@ -573,10 +606,17 @@ func (s Segment[T]) ClipRegularPolygon(polygon RegularPolygon[T]) (Segment[T], b
 	return s.clipConvex(span.crossings(), polygon.Contains(s.Start), polygon.Contains(s.End))
 }
 
-// ClipBox returns the part of the segment inside the box, as ClipRectangle clips it to the
-// box's Rectangle: the segment as a viewport shows it.
+// ClipBox returns the part of the segment inside the box, as ClipRectangle clips it to a
+// rectangle that is not rotated, over the edges between the corners of the box: the segment as
+// a viewport shows it. It allocates nothing.
 func (s Segment[T]) ClipBox(box Box[T]) (Segment[T], bool) {
-	return s.ClipRectangle(box.Rectangle())
+	span := edgeSpan[T]{segment: s}
+	corners := box.corners()
+	for edge := range edgesOf(corners[:]) {
+		span.add(edge)
+	}
+
+	return s.clipConvex(span.crossings(), box.Contains(s.Start), box.Contains(s.End))
 }
 
 // distanceSquaredTo returns the squared distance to the point with no tolerance applied, which
@@ -648,19 +688,53 @@ func (s Segment[T]) separates(segment Segment[T]) bool {
 // products near zero, lands anywhere on that line. A point whose fraction along this segment,
 // or whose projection onto the other, falls outside it is therefore no crossing, and the pair is
 // left to the endpoints, on the comparisons foot makes.
+//
+// The point is placed from Start by each component of the direction times the numerator of the
+// fraction, divided by its denominator once, rather than by the rounded fraction: for an integer
+// T the product and the cross products are exact, so a crossing on a half unit is exactly there
+// and rounds the same way whatever lengths the two segments have.
 func (s Segment[T]) crossing(segment Segment[T]) (Point[float64], bool) {
 	if !s.separates(segment) || !segment.separates(s) {
 		return Point[float64]{}, false
 	}
 
 	a, b := s.Float(), segment.Float()
-	direction := b.Vector()
+	along, direction := a.Vector(), b.Vector()
+	numerator, denominator := b.Start.Subtract(a.Start).Cross(direction), along.Cross(direction)
 
-	t := b.Start.Subtract(a.Start).Cross(direction) / a.Vector().Cross(direction)
-	point := a.PointAt(t)
-	along := point.Subtract(b.Start).Dot(direction)
+	t := numerator / denominator
+	point := Point[float64]{a.Start.X + float64(numerator*along.X)/denominator, a.Start.Y + float64(numerator*along.Y)/denominator}
+	projection := point.Subtract(b.Start).Dot(direction)
 
-	return point, 0 <= t && t <= 1 && 0 <= along && along <= direction.LengthSquared()
+	return point, 0 <= t && t <= 1 && 0 <= projection && projection <= direction.LengthSquared()
+}
+
+// runsAlong reports whether the segments run along each other within the tolerance: two
+// endpoints, of either, lie on the other by Contains and do not coincide, so the segments share
+// a stretch rather than a point. A pair meeting at an endpoint shares that one point and does
+// not run along.
+func (s Segment[T]) runsAlong(segment Segment[T]) bool {
+	var shared [4]Point[T]
+
+	n := 0
+	for _, endpoint := range [2]Point[T]{segment.Start, segment.End} {
+		if s.Contains(endpoint) {
+			shared[n], n = endpoint, n+1
+		}
+	}
+	for _, endpoint := range [2]Point[T]{s.Start, s.End} {
+		if segment.Contains(endpoint) {
+			shared[n], n = endpoint, n+1
+		}
+	}
+
+	for _, point := range shared[1:max(n, 1)] {
+		if !point.coincides(shared[0]) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // parallel reports whether the segments run along the same direction. A zero-length segment

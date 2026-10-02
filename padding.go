@@ -25,6 +25,11 @@ func PadXY[T Number](topBottom, leftRight T) Padding[T] {
 	return Padding[T]{topBottom, leftRight, topBottom, leftRight}
 }
 
+// XY returns the width and height of the padding.
+func (p Padding[T]) XY() (T, T) {
+	return p.Width(), p.Height()
+}
+
 // Width returns the width of the padding.
 func (p Padding[T]) Width() T {
 	return p.Left + p.Right
@@ -33,11 +38,6 @@ func (p Padding[T]) Width() T {
 // Height returns the height of the padding.
 func (p Padding[T]) Height() T {
 	return p.Top + p.Bottom
-}
-
-// XY returns the width and height of the padding.
-func (p Padding[T]) XY() (T, T) {
-	return p.Width(), p.Height()
 }
 
 // Add creates a new Padding by adding the given padding edge by edge.

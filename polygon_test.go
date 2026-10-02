@@ -110,6 +110,23 @@ func TestPolygon_Centroid(t *testing.T) {
 		geomtest.AssertPoint(t, Pol([]Point[int]{}).Centroid(), Pt(0, 0))
 		geomtest.AssertPoint(t, Polygon[float64]{}.Centroid(), Pt(0.0, 0.0))
 	})
+	t.Run("float vertices on a line, each rounded off it, fall back to the vertex average", func(t *testing.T) {
+		geomtest.AssertPoint(t, Pol(alongLine()).Centroid(), Pt(1.05, 2.2))
+	})
+	t.Run("lobes cancelling exactly fall back to the vertex average", func(t *testing.T) {
+		geomtest.AssertPoint(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(2.0, 2.0), Pt(2.0, 0.0), Pt(0.0, 2.0)}).Centroid(), Pt(1.0, 1.0))
+	})
+}
+
+// alongLine returns vertices placed on the line y = 2x + 0.1 by float64 arithmetic at run time,
+// each rounded a hair off it, running back and forth along it.
+func alongLine() []Point[float64] {
+	var vertices []Point[float64]
+	for _, x := range []float64{0.1, 1.2, 0.3, 2.6} {
+		vertices = append(vertices, Pt(x, float64(2*x)+0.1))
+	}
+
+	return vertices
 }
 
 func TestPolygon_Area(t *testing.T) {
@@ -140,6 +157,9 @@ func TestPolygon_Area(t *testing.T) {
 
 		geomtest.AssertNumber(t, square.Translate(Vec(1e9, 1e9)).Area(), square.Area())
 		geomtest.AssertNumber(t, Pol(triangleVertices()).Translate(Vec(1e9, -1e9)).Area(), Pol(triangleVertices()).Area())
+	})
+	t.Run("float vertices on a line, each rounded off it, enclose none", func(t *testing.T) {
+		assert.Equal(t, Pol(alongLine()).Area(), 0.0)
 	})
 }
 
@@ -192,6 +212,10 @@ func TestPolygon_Inertia(t *testing.T) {
 		geomtest.AssertNumber(t, Pol([]Point[int]{Pt(1, 1), Pt(4, 4)}).Inertia(), 0.0)
 		geomtest.AssertNumber(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(1.0, 1.0), Pt(3.0, 3.0)}).Inertia(), 0.0)
 	})
+	t.Run("float vertices on a line, each rounded off it, have no moment", func(t *testing.T) {
+		assert.Equal(t, Pol(alongLine()).Inertia(), 0.0)
+		assert.Equal(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(2.0, 2.0), Pt(2.0, 0.0), Pt(0.0, 2.0)}).Inertia(), 0.0)
+	})
 }
 
 func TestPolygon_Winding(t *testing.T) {
@@ -214,6 +238,9 @@ func TestPolygon_Winding(t *testing.T) {
 		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkBool = square.Winding().IsNone()
 		}), 0)
+	})
+	t.Run("float vertices on a line, each rounded off it, have no winding", func(t *testing.T) {
+		assert.Equal(t, Pol(alongLine()).Winding(), WindingNone)
 	})
 }
 
@@ -809,6 +836,16 @@ func TestPolygon_EnclosesSegment(t *testing.T) {
 			}
 		}
 	})
+	t.Run("a repeated reflex vertex keeps both its sides", func(t *testing.T) {
+		through := Seg(Pt(1, 3), Pt(3, 1))
+
+		for _, vertices := range [][]Point[int]{
+			{Pt(0, 0), Pt(4, 0), Pt(4, 2), Pt(2, 2), Pt(2, 2), Pt(2, 4), Pt(0, 4)},
+			{Pt(2, 2), Pt(2, 4), Pt(0, 4), Pt(0, 0), Pt(4, 0), Pt(4, 2), Pt(2, 2)},
+		} {
+			assert.True(t, Pol(vertices).EnclosesSegment(through), fmt.Sprintf("%s: ", Pol(vertices)))
+		}
+	})
 }
 
 func TestPolygon_EnclosesPolygon(t *testing.T) {
@@ -821,6 +858,14 @@ func TestPolygon_EnclosesPolygon(t *testing.T) {
 	t.Run("an empty polygon on either side encloses nothing", func(t *testing.T) {
 		assert.False(t, notched.EnclosesPolygon(Pol[int](nil)))
 		assert.False(t, Pol[int](nil).EnclosesPolygon(notched))
+	})
+	t.Run("a polygon with repeated vertices encloses itself", func(t *testing.T) {
+		for _, vertices := range [][]Point[int]{
+			{Pt(0, 0), Pt(4, 0), Pt(4, 2), Pt(2, 2), Pt(2, 2), Pt(2, 4), Pt(0, 4)},
+			{Pt(0, 0), Pt(4, 0), Pt(4, 2), Pt(2, 2), Pt(2, 4), Pt(0, 4), Pt(0, 0)},
+		} {
+			assert.True(t, Pol(vertices).EnclosesPolygon(Pol(vertices)), fmt.Sprintf("%s: ", Pol(vertices)))
+		}
 	})
 }
 

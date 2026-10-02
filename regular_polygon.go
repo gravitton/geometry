@@ -255,35 +255,60 @@ func (rp RegularPolygon[T]) edgeIndex(direction float64) int {
 }
 
 // nearestIndex returns the index of the vertex that reaches farthest in the given direction of
-// the world, at most half a central angle from the point that reaches farthest there. The
-// direction is taken into the frame before the turn, and for unequal semi-axes onto the
-// ellipse, where a semi-axis stretches it away from the direction itself; equal semi-axes take
-// the direction as it is, the same expression vertex places them from, and both count the steps
-// from Phase. With one or two
-// vertices the nearest can be more than a quarter turn off, so the reach is negative exactly
-// where no vertex lies on that side.
-func (rp RegularPolygon[T]) nearestIndex(direction float64) int {
+// the world, at most half a central angle from the point that reaches farthest there, and the
+// index of its neighbour on the side the direction falls toward, which reaches as far where the
+// direction lies halfway between the two. The direction is taken into the frame before the
+// turn, and for unequal semi-axes onto the ellipse, where a semi-axis stretches it away from
+// the direction itself; equal semi-axes take the direction as it is, the same expression vertex
+// places them from, and both count the steps from Phase. With one or two vertices the nearest
+// can be more than a quarter turn off, so the reach is negative exactly where no vertex lies on
+// that side.
+func (rp RegularPolygon[T]) nearestIndex(direction float64) (int, int) {
 	local := direction - rp.Angle
 	if rp.Size.Width != rp.Size.Height {
 		sin, cos := math.Sincos(local)
 		local = math.Atan2(float64(rp.Size.Height)*sin, float64(rp.Size.Width)*cos)
 	}
 
-	return Mod(int(math.Round((local-rp.Phase)/rp.centralAngle())), rp.N)
+	step := (local - rp.Phase) / rp.centralAngle()
+	nearest := math.Round(step)
+
+	neighbour := nearest + 1
+	if step < nearest {
+		neighbour = nearest - 1
+	}
+
+	return Mod(int(nearest), rp.N), Mod(int(neighbour), rp.N)
+}
+
+// farthestVertices returns the vertices at the two indices nearestIndex gives for the direction,
+// as Vertices places them. Two vertices half a step to either side of the direction reach
+// equally far, and each is placed with a rounding residue of its own, which for an integer T
+// can round them a unit apart, so the farther of the two is read off the placed vertices rather
+// than judged before they are placed.
+func (rp RegularPolygon[T]) farthestVertices(direction float64) (Point[T], Point[T]) {
+	nearest, neighbour := rp.nearestIndex(direction)
+
+	return rp.vertex(nearest), rp.vertex(neighbour)
 }
 
 // minMax returns the minimum and maximum corner of the vertices, the corners of Bounds: the pair
-// the intersection tests reject shapes by before examining any edge. Each side is set by the vertex
-// nearest to that direction, at most half a step away, and reads that vertex as Vertices
-// places it, so the corners are exactly those of Polygon().Bounds(), rounded alike for an
+// the intersection tests reject shapes by before examining any edge. Each side is set by the
+// farther of the vertices farthestVertices places for that direction, the nearest and its
+// neighbour, so the corners are exactly those of Polygon().Bounds(), rounded alike for an
 // integer T. An empty polygon returns two zero points.
 func (rp RegularPolygon[T]) minMax() (Point[T], Point[T]) {
 	if rp.IsEmpty() {
 		return Point[T]{}, Point[T]{}
 	}
 
-	a := Point[T]{rp.vertex(rp.nearestIndex(Pi)).X, rp.vertex(rp.nearestIndex(3 * Pi / 2)).Y}
-	b := Point[T]{rp.vertex(rp.nearestIndex(0)).X, rp.vertex(rp.nearestIndex(Pi / 2)).Y}
+	left, otherLeft := rp.farthestVertices(Pi)
+	top, otherTop := rp.farthestVertices(3 * Pi / 2)
+	right, otherRight := rp.farthestVertices(0)
+	bottom, otherBottom := rp.farthestVertices(Pi / 2)
+
+	a := Point[T]{min(left.X, otherLeft.X), min(top.Y, otherTop.Y)}
+	b := Point[T]{max(right.X, otherRight.X), max(bottom.Y, otherBottom.Y)}
 
 	return a, b
 }
@@ -521,10 +546,17 @@ func (rp RegularPolygon[T]) EnclosesRegularPolygon(polygon RegularPolygon[T]) bo
 	return true
 }
 
-// EnclosesBox reports whether the box lies within the regular polygon, as EnclosesRectangle decides on
-// the box's Rectangle.
+// EnclosesBox reports whether the box lies within the regular polygon: every corner of the box is
+// contained, within the tolerance.
 func (rp RegularPolygon[T]) EnclosesBox(box Box[T]) bool {
-	return rp.EnclosesRectangle(box.Rectangle())
+	a, b := rp.minMax()
+	for _, corner := range box.corners() {
+		if !rp.containsWithin(corner, a, b) {
+			return false
+		}
+	}
+
+	return true
 }
 
 // IntersectsCircle reports whether the polygon and the circle share a point, as
@@ -621,9 +653,41 @@ func (rp RegularPolygon[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) 
 }
 
 // IntersectsBox reports whether the polygon and the box share a point, as
-// Rectangle.IntersectsRegularPolygon decides on the box's Rectangle.
+// Rectangle.IntersectsRegularPolygon decides it against a rectangle that is not rotated: a
+// vertex of one lies within the other, or an edge of the box, between its own corners, crosses
+// an edge of the polygon. The two Bounds reject the pair before any edge is examined, and an
+// empty polygon intersects nothing. The polygon places its vertices again for every edge of the
+// box, since no vertex slice is built.
 func (rp RegularPolygon[T]) IntersectsBox(box Box[T]) bool {
-	return box.Rectangle().IntersectsRegularPolygon(rp)
+	if rp.IsEmpty() {
+		return false
+	}
+
+	a, b := rp.minMax()
+
+	if !overlaps(box.Min, box.Max, a, b) {
+		return false
+	}
+
+	if rp.containsWithin(box.Min, a, b) || box.Contains(rp.vertex(0)) {
+		return true
+	}
+
+	probe := edgeProbe[T]{a: a, b: b}
+	corners := box.corners()
+	for edge := range edgesOf(corners[:]) {
+		if !probe.aim(edge) {
+			continue
+		}
+
+		for other := range rp.Edges() {
+			if probe.meets(other) {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // containsWithin is Contains for a caller that already holds the corners of Bounds, so the
@@ -691,8 +755,9 @@ func (rp RegularPolygon[T]) Polygon() Polygon[T] {
 
 // Ellipse converts the polygon into the Ellipse its vertices lie on, the one it is inscribed
 // in: the same center, semi-axes and angle, so the conversion is exact and Ellipse.RegularPolygon
-// is its inverse for the same vertex count and a zero phase, which the ellipse does not carry. A polygon with N < 1 has no vertices and still
-// names the ellipse its Size and Angle describe.
+// is its inverse for the same vertex count and the orientation whose phase the polygon has,
+// which the ellipse does not carry. A polygon with N < 1 has no vertices and still names the
+// ellipse its Size and Angle describe.
 func (rp RegularPolygon[T]) Ellipse() Ellipse[T] {
 	return Ellipse[T]{rp.Center, rp.Size, rp.Angle}
 }

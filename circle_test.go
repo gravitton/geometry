@@ -98,6 +98,11 @@ func TestCircle_Bounds(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
 		geomtest.AssertBox(t, Circ(Pt(0.6, -0.25), 1.2).Bounds(), BoxFromMinMax(Pt(-0.6, -1.45), Pt(1.8, 0.95)))
 	})
+	t.Run("a narrow integer circle reaching past its range is bounded at the end of it", func(t *testing.T) {
+		geomtest.AssertBox(t, Circ(Pt[int8](100, -100), 30).Bounds(), Bx(Pt[int8](70, -128), Pt[int8](127, -70)))
+		geomtest.AssertBox(t, Circ(Pt[int16](32000, 0), 1000).Bounds(), Bx(Pt[int16](31000, -1000), Pt[int16](32767, 1000)))
+		geomtest.AssertBox(t, Circ(Pt[int32](-2147483000, 0), 1000).Bounds(), Bx(Pt[int32](-2147483648, -1000), Pt[int32](-2147482000, 1000)))
+	})
 }
 
 func TestCircle_Translate(t *testing.T) {
@@ -887,6 +892,9 @@ func TestCircle_IntersectsRay(t *testing.T) {
 			}
 		}
 	})
+	t.Run("a narrow integer circle at the end of its range", func(t *testing.T) {
+		assert.True(t, Circ(Pt[int8](100, 100), 30).IntersectsRay(RayAlong(Pt[int8](0, 100), Vec[int8](1, 0))))
+	})
 }
 
 func TestCircle_IntersectionRay(t *testing.T) {
@@ -931,6 +939,9 @@ func TestCircle_IntersectionRay(t *testing.T) {
 				}
 			}
 		}
+	})
+	t.Run("a narrow integer circle at the end of its range", func(t *testing.T) {
+		geomtest.AssertVertices(t, Circ(Pt[int8](100, 100), 20).IntersectionRay(RayAlong(Pt[int8](0, 100), Vec[int8](1, 0))), []Point[int8]{Pt[int8](80, 100), Pt[int8](120, 100)})
 	})
 }
 
@@ -987,6 +998,11 @@ func TestCircle_IntersectsPolygon(t *testing.T) {
 				assert.Equal(t, c.IntersectsPolygon(p), expected, fmt.Sprintf("%s → %s: ", p, c))
 			}
 		}
+	})
+	t.Run("a narrow integer circle at the end of its range", func(t *testing.T) {
+		polygon := Pol([]Point[int8]{Pt[int8](120, 100), Pt[int8](127, 90), Pt[int8](127, 110)})
+
+		assert.True(t, Circ(Pt[int8](100, 100), 30).IntersectsPolygon(polygon))
 	})
 }
 
@@ -1060,6 +1076,9 @@ func TestCircle_IntersectsRegularPolygon(t *testing.T) {
 				assert.Equal(t, c.IntersectsRegularPolygon(rp), c.IntersectsPolygon(rp.Polygon()), fmt.Sprintf("%s → %s: ", rp, c))
 			}
 		}
+	})
+	t.Run("a narrow integer circle at the end of its range", func(t *testing.T) {
+		assert.True(t, Circ(Pt[int8](100, 100), 30).IntersectsRegularPolygon(RegPol(Pt[int8](120, 100), SzU[int8](3), 4, 0, 0)))
 	})
 }
 

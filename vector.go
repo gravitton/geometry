@@ -217,20 +217,23 @@ func (v Vector[T]) Resize(length float64) Vector[T] {
 // the straight line Lerp takes. Vectors pointing exactly opposite have no shorter arc and turn in
 // the sense of increasing angle, as LerpAngle does. It extrapolates outside [0, 1] like Lerp,
 // and a length taken past zero flips the direction, as Resize does for a negative length.
-// For integer T, sin/cos components are rounded as with Rotate.
+// The receiver is turned and scaled rather than placed again from its angle, so a t of zero
+// gives it back exactly, as Lerp does. For integer T, sin/cos components are rounded as with
+// Rotate.
 func (v Vector[T]) Slerp(vector Vector[T], t float64) Vector[T] {
-	from, to := v.Angle(), vector.Angle()
-	if !v.hasDirection() {
-		from = to
-	}
-	if !vector.hasDirection() {
-		to = from
+	from, to := v.Float(), vector.Float()
+
+	switch {
+	case !from.hasDirection():
+		return to.Multiply(t).Cast[T]()
+	case !to.hasDirection():
+		return from.Multiply(1 - t).Cast[T]()
 	}
 
-	sin, cos := math.Sincos(LerpAngle(from, to, t))
-	length := Lerp(v.Length(), vector.Length(), t)
+	length := from.Length()
+	turned := from.Rotate(LerpAngle(0, to.Angle()-from.Angle(), t))
 
-	return Vector[T]{Cast[T](length * cos), Cast[T](length * sin)}
+	return turned.Multiply(Lerp(length, to.Length(), t) / length).Cast[T]()
 }
 
 // Normalize creates a new Vector resized to a length of 1.

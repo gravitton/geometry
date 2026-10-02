@@ -503,22 +503,22 @@ func (e Ellipse[T]) Circle() Circle[T] {
 }
 
 // RegularPolygon converts the ellipse into the RegularPolygon of n vertices inscribed in it,
-// on the same center, semi-axes and angle: every vertex lies on the boundary, the first at the
-// end of the width semi-axis, and the polygon is the outline a circle and an ellipse do not
-// have, so its Vertices and Edges are what draws or walks one. The resolution is the caller's:
-// the polygon is the ellipse only in the limit, and it is always inside it.
-//
-// It takes no Orientation, where Circle.RegularPolygon does: an orientation is the phase of the
-// first vertex around the ring, and only a circle can be turned to place it, since turning the
-// ring and stepping around it are the same thing there. A polygon with fewer than one vertex
-// is empty, as RegPol builds it.
+// on the same center, semi-axes and angle, with the given orientation: every vertex lies on
+// the boundary, and the orientation places the first of them by RegularPolygonOrientationPhase
+// before the semi-axes stretch the ring, so OrientationPointyTop puts a vertex at the end of
+// the height semi-axis and OrientationFlatTop the midpoint of an edge across it. The polygon is
+// the outline a circle and an ellipse do not have, so its Vertices and Edges are what draws or
+// walks one. The resolution is the caller's: the polygon is the ellipse only in the limit, and
+// it is always inside it. A polygon with fewer than one vertex is empty, as RegPol builds it,
+// and like RegularPolygonOrientationPhase it panics for an orientation that is neither
+// OrientationFlatTop nor OrientationPointyTop.
 //
 // It is the polygon within the ellipse, the only one that converts back exactly. For the
 // polygon about it, whose edges touch the boundary at their midpoints, scale the ellipse by
 // the ratio of the circumradius of a regular polygon to its apothem first:
-// e.Scale(1 / math.Cos(Pi / float64(n))).RegularPolygon(n).
-func (e Ellipse[T]) RegularPolygon(n int) RegularPolygon[T] {
-	return RegularPolygon[T]{e.Center, e.Size, n, e.Angle, 0}
+// e.Scale(1 / math.Cos(Pi / float64(n))).RegularPolygon(n, orientation).
+func (e Ellipse[T]) RegularPolygon(n int, orientation Orientation) RegularPolygon[T] {
+	return RegularPolygon[T]{e.Center, e.Size, n, e.Angle, RegularPolygonOrientationPhase(n, orientation)}
 }
 
 // Cast converts the ellipse to an Ellipse of another number type, rounding as Cast does and

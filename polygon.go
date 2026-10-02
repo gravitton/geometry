@@ -43,8 +43,11 @@ func (p Polygon[T]) Edges() iter.Seq[Segment[T]] {
 
 // Centroid returns the center of the enclosed area, so a vertex added in
 // the middle of an edge does not move it. A polygon that encloses no area, with fewer than
-// three vertices or all of them collinear, has no such center and falls back to the average of
-// its vertices; an empty polygon returns the zero point.
+// three vertices or all of them on one line within the tolerance, or with lobes that cancel
+// exactly, has no such center and falls back to the average of its vertices; an empty polygon
+// returns the zero point. The line is judged on the distance, as Contains judges a boundary, so
+// vertices placed along a line in float64, each rounded a hair off it, are on it rather than
+// around a sliver whose rounding residue of an area would put the centroid anywhere.
 // For integer T the centroid is rounded like every other result stored into T; use float64
 // when centroid accuracy matters.
 //
@@ -54,6 +57,10 @@ func (p Polygon[T]) Edges() iter.Seq[Segment[T]] {
 func (p Polygon[T]) Centroid() Point[T] {
 	if p.IsEmpty() {
 		return Point[T]{}
+	}
+
+	if p.isFlat() {
+		return p.mean()
 	}
 
 	origin := p.Points[0].Float()
@@ -80,7 +87,8 @@ func (p Polygon[T]) Centroid() Point[T] {
 
 // Area returns the area enclosed by the polygon, by the shoelace formula, regardless of winding.
 // It is a float64 even for an integer T, since a lattice polygon can enclose half a unit;
-// a self-intersecting polygon has its lobes cancel where they wind the opposite way.
+// a self-intersecting polygon has its lobes cancel where they wind the opposite way, and a
+// polygon whose vertices lie on one line within the tolerance encloses none.
 //
 // The sum is taken with the origin moved to the first vertex, as Centroid and Inertia take
 // theirs, so the products stay small and a polygon far from the origin keeps its area rather
@@ -102,13 +110,14 @@ func (p Polygon[T]) Perimeter() float64 {
 // Inertia returns the polar second moment of area about the centroid, the rotational inertia
 // of the enclosed area at unit density, summed per edge like Area and Centroid: about the
 // first vertex, so the products stay small, then moved to the centroid by the parallel axis
-// theorem. Winding does not matter, and a polygon that encloses no area has no moment.
+// theorem. Winding does not matter, and a polygon that encloses no area, its vertices on one
+// line within the tolerance as Centroid judges it, has no moment.
 //
 // The moment is the one a simple polygon has. Where the outline crosses itself the two sums
 // cancel by different amounts, the way Area has its lobes cancel, and what is left is no
 // longer a moment of area: it can come out negative, which no area about its own centroid has.
 func (p Polygon[T]) Inertia() float64 {
-	if p.IsEmpty() {
+	if p.isFlat() {
 		return 0
 	}
 
@@ -138,7 +147,7 @@ func (p Polygon[T]) Inertia() float64 {
 // Winding returns the sense in which the vertices run around the area they enclose, from the
 // sign of the sum Area takes the absolute value of: WindingClockwise for the winding of
 // Rectangle.Vertices, WindingCounterClockwise for the reverse, and WindingNone for a polygon
-// that encloses no area. A self-intersecting polygon winds the way its larger lobes do, and
+// that encloses no area, its vertices on one line within the tolerance as Centroid judges it. A self-intersecting polygon winds the way its larger lobes do, and
 // lobes of equal area either way give WindingNone.
 func (p Polygon[T]) Winding() Winding {
 	switch twiceArea := p.twiceArea(); {
@@ -174,9 +183,10 @@ func (p Polygon[T]) mean() Point[T] {
 
 // twiceArea returns the signed sum of the shoelace formula, twice the enclosed area, positive
 // for a clockwise winding: Area takes its absolute value and Winding its sign. The sum is
-// taken with the origin moved to the first vertex; an empty polygon sums to zero.
+// taken with the origin moved to the first vertex; a flat polygon, an empty one included, sums
+// to zero.
 func (p Polygon[T]) twiceArea() float64 {
-	if p.IsEmpty() {
+	if p.isFlat() {
 		return 0
 	}
 
@@ -593,10 +603,20 @@ func (p Polygon[T]) EnclosesRegularPolygon(polygon RegularPolygon[T]) bool {
 	return true
 }
 
-// EnclosesBox reports whether the box lies within the polygon, as EnclosesRectangle decides on
-// the box's Rectangle.
+// EnclosesBox reports whether the box lies within the polygon: every edge of it, between its
+// corners, is enclosed, as EnclosesSegment decides.
 func (p Polygon[T]) EnclosesBox(box Box[T]) bool {
-	return p.EnclosesRectangle(box.Rectangle())
+	a, b := p.minMax()
+	twiceArea := p.twiceArea()
+
+	corners := box.corners()
+	for edge := range edgesOf(corners[:]) {
+		if !p.containsWithin(edge.Start, a, b) || !p.keeps(edge, twiceArea) {
+			return false
+		}
+	}
+
+	return true
 }
 
 // IntersectsCircle reports whether the polygon and the circle share a point, as
@@ -752,9 +772,39 @@ func (p Polygon[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 }
 
 // IntersectsBox reports whether the polygon and the box share a point, as IntersectsRectangle
-// decides on the box's Rectangle.
+// decides it against a rectangle that is not rotated: a corner of one lies within the other,
+// or an edge of the box, between its own corners, crosses an edge of the polygon. The box
+// rejects it before any edge is examined, and an empty polygon intersects nothing.
 func (p Polygon[T]) IntersectsBox(box Box[T]) bool {
-	return p.IntersectsRectangle(box.Rectangle())
+	if p.IsEmpty() {
+		return false
+	}
+
+	a, b := p.minMax()
+
+	if !overlaps(a, b, box.Min, box.Max) {
+		return false
+	}
+
+	if box.Contains(p.Points[0]) || p.containsWithin(box.Min, a, b) {
+		return true
+	}
+
+	probe := edgeProbe[T]{a: box.Min, b: box.Max}
+	corners := box.corners()
+	for edge := range p.Edges() {
+		if !probe.aim(edge) {
+			continue
+		}
+
+		for other := range edgesOf(corners[:]) {
+			if probe.meets(other) {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // containsWithin is Contains for a caller that already holds the extent of the vertices, so the
@@ -804,17 +854,30 @@ func (p Polygon[T]) walk(point Point[T]) edgeWalk[T] {
 // toward the outer side of that edge, a boundary point where the outline runs straight. The
 // last two are asked of leavesThrough, a vertex or an endpoint is found on the boundary within
 // the tolerance, and an endpoint at a vertex is left to the vertex, which judges both its edges.
+// A vertex repeating the one before it is skipped, as IsConvex skips it, so a vertex is judged
+// by the edges toward its distinct neighbours, never by the zero direction of a repeat, which
+// would leave a reflex vertex only one of its sides.
 func (p Polygon[T]) keeps(segment Segment[T], twiceArea float64) bool {
-	previous := p.Points[len(p.Points)-1]
+	previous := p.Points[0]
+	for _, vertex := range slices.Backward(p.Points) {
+		if vertex != p.Points[0] {
+			previous = vertex
+
+			break
+		}
+	}
 
 	for edge := range p.Edges() {
+		along := edge.Float().Vector()
+		if !along.hasDirection() {
+			continue
+		}
+
 		if segment.crosses(edge) {
 			if _, touching := segment.touch(edge); !touching {
 				return false
 			}
 		}
-
-		along := edge.Float().Vector()
 
 		if vertex := edge.Start; segment.Contains(vertex) {
 			if p.leavesThrough(vertex, previous.Float().Subtract(vertex.Float()), along, segment, twiceArea) {
@@ -920,6 +983,26 @@ func (p Polygon[T]) IsConvex() bool {
 	}
 
 	return c.result()
+}
+
+// isFlat reports whether the polygon encloses no area within the tolerance: it has fewer than
+// three vertices, or every vertex lies on the segment between the least and the greatest by
+// Point.Compare, as Segment.Contains judges a point on it, which for vertices on one line are
+// its two ends. The tolerance is on the distance of each vertex from that line, never on the
+// area, so an outline is flat exactly where none of its vertices stands off the line by more.
+func (p Polygon[T]) isFlat() bool {
+	if len(p.Points) < 3 {
+		return true
+	}
+
+	chord := Segment[T]{slices.MinFunc(p.Points, Point[T].Compare), slices.MaxFunc(p.Points, Point[T].Compare)}
+	for _, vertex := range p.Points {
+		if !chord.Contains(vertex) {
+			return false
+		}
+	}
+
+	return true
 }
 
 // Cast converts the polygon to a Polygon of another number type, rounding as Cast does.

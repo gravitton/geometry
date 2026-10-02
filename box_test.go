@@ -72,6 +72,10 @@ func TestBox_Center(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
 		geomtest.AssertPoint(t, BoxFromMinMax(Pt(0.6, -0.25), Pt(1.8, 3.35)).Center(), Pt(1.2, 1.55))
 	})
+	t.Run("a narrow integer box spanning more than its type holds", func(t *testing.T) {
+		geomtest.AssertPoint(t, Bx(Pt[int8](-100, -100), Pt[int8](100, 100)).Center(), Pt[int8](0, 0))
+		geomtest.AssertPoint(t, Bx(Pt[int8](-128, -128), Pt[int8](127, 127)).Center(), Pt[int8](-1, -1))
+	})
 }
 
 func TestBox_Bounds(t *testing.T) {
@@ -174,6 +178,10 @@ func TestBox_Clamp(t *testing.T) {
 			}
 		}
 	})
+	t.Run("a narrow integer box within one spanning more than its type holds stays", func(t *testing.T) {
+		geomtest.AssertBox(t, Bx(Pt[int8](-10, -10), Pt[int8](10, 10)).Clamp(Bx(Pt[int8](-100, -100), Pt[int8](100, 100))), Bx(Pt[int8](-10, -10), Pt[int8](10, 10)))
+		geomtest.AssertBox(t, Bx(Pt[int8](-128, -10), Pt[int8](-100, 10)).Clamp(Bx(Pt[int8](-90, -100), Pt[int8](100, 100))), Bx(Pt[int8](-90, -10), Pt[int8](-62, 10)))
+	})
 }
 
 func TestBox_Contains(t *testing.T) {
@@ -217,6 +225,21 @@ func TestBox_Contains(t *testing.T) {
 	})
 	t.Run("a narrow integer box does not contain a point a wrapped gap away", func(t *testing.T) {
 		assert.False(t, Bx(Pt[int8](-100, 0), Pt[int8](-100, 0)).Contains(Pt[int8](28, 0)))
+	})
+	t.Run("every test of a point on the box agrees with it at the boundary", func(t *testing.T) {
+		boxes := []Box[float32]{Bx(Pt[float32](3.5497787, 1.5453138), Pt[float32](7.1348896, 4.0049815)), Bx(Pt[float32](8.56645, 9.768216), Pt[float32](9.503749, 19.746952))}
+		points := []Point[float32]{Pt[float32](3.5496886, 1.5452706), Pt[float32](8.566437, 9.768117)}
+
+		for i, b := range boxes {
+			p, contains := points[i], boxes[i].Contains(points[i])
+			message := fmt.Sprintf("%s → %s: ", p, b)
+
+			assert.Equal(t, b.IntersectsBox(Bx(p, p)), contains, message)
+			assert.Equal(t, b.IntersectsSegment(Seg(p, p)), contains, message)
+			assert.Equal(t, b.IntersectsRectangle(Rect(p, Sz[float32](0, 0))), contains, message)
+			assert.Equal(t, b.IntersectsPolygon(Pol([]Point[float32]{p})), contains, message)
+			assert.Equal(t, b.EnclosesSegment(Seg(p, p)), contains, message)
+		}
 	})
 }
 
@@ -306,6 +329,11 @@ func TestBox_EnclosesCircle(t *testing.T) {
 			}
 		}
 	})
+	t.Run("a center outside is not enclosed, a point on the boundary only as a point", func(t *testing.T) {
+		assert.False(t, box.EnclosesCircle(Circ(Pt(-1, 3), 0)))
+		assert.True(t, box.EnclosesCircle(Circ(Pt(0, 3), 0)))
+		assert.False(t, box.EnclosesCircle(Circ(Pt(0, 3), 1)))
+	})
 }
 
 func TestBox_EnclosesSegment(t *testing.T) {
@@ -348,6 +376,16 @@ func TestBox_EnclosesRegularPolygon(t *testing.T) {
 				assert.Equal(t, b.EnclosesRegularPolygon(rp), b.EnclosesBox(rp.Bounds()), fmt.Sprintf("%s → %s: ", b, rp))
 			}
 		}
+	})
+	t.Run("an empty polygon is enclosed by nothing", func(t *testing.T) {
+		assert.False(t, BoxFromMinMax(Pt(0, 0), Pt(4, 4)).EnclosesRegularPolygon(RegPol(Pt(2, 2), SzU(1), 0, 0, 0)))
+	})
+	t.Run("inside and touching a side", func(t *testing.T) {
+		box := BoxFromMinMax(Pt(0.0, 0.0), Pt(10.0, 10.0))
+
+		assert.True(t, box.EnclosesRegularPolygon(RegPol(Pt(5.0, 5.0), SzU(2.0), 6, 0, 0)))
+		assert.True(t, box.EnclosesRegularPolygon(RegPol(Pt(8.0, 5.0), SzU(2.0), 4, 0, 0)))
+		assert.False(t, box.EnclosesRegularPolygon(RegPol(Pt(9.0, 5.0), SzU(2.0), 4, 0, 0)))
 	})
 }
 

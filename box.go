@@ -67,11 +67,10 @@ func (b Box[T]) Size() Size[T] {
 
 // Center returns the point halfway from Min to Max. For integer T half the size is truncated
 // toward Min, so the center of an odd span lies nearer Min and the Rectangle of the box keeps
-// its corners.
+// its corners. Half the size is taken in float64, so a narrow integer box spanning more than T
+// holds still finds its center.
 func (b Box[T]) Center() Point[T] {
-	w, h := b.Size().XY()
-
-	return b.Min.AddXY(w/2, h/2)
+	return Point[T]{b.Min.X + b.halfSpan(b.Min.X, b.Max.X), b.Min.Y + b.halfSpan(b.Min.Y, b.Max.Y)}
 }
 
 // Bounds returns the box itself, the box around it.
@@ -79,10 +78,30 @@ func (b Box[T]) Bounds() Box[T] {
 	return b
 }
 
+// halfSpan returns half the extent from a to b on one axis, the offset of the center from a:
+// taken in float64, where the difference of a narrow integer T cannot overflow, and truncated
+// toward a for an integer T. It reads no field of the box, only the ends it is given, so the
+// receiver is unnamed.
+func (Box[T]) halfSpan(a, b T) T {
+	half := (float64(b) - float64(a)) / 2
+	if isInt[T]() {
+		half = math.Trunc(half)
+	}
+
+	return T(half)
+}
+
 // magnitude returns the largest absolute coordinate of the box, that of a corner: the size
 // epsilonAt widens the tolerance by for a comparison that reads the box.
 func (b Box[T]) magnitude() float64 {
 	return max(b.Min.magnitude(), b.Max.magnitude())
+}
+
+// corners returns the vertices of the box as an array, in the winding of Rectangle.Vertices from
+// Min: the exact corners every outline pair of the box reads, where its Rectangle would place
+// them again from a center and a size, an ulp off for a float T.
+func (b Box[T]) corners() [4]Point[T] {
+	return [4]Point[T]{b.Min, {b.Max.X, b.Min.Y}, b.Max, {b.Min.X, b.Max.Y}}
 }
 
 // Translate creates a new Box translated by the given vector.
@@ -153,40 +172,75 @@ func (b Box[T]) Nearest(point Point[T]) Point[T] {
 	return Point[T]{Clamp(point.X, b.Min.X, b.Max.X), Clamp(point.Y, b.Min.Y, b.Max.Y)}
 }
 
-// EnclosesCircle reports whether the circle lies within the box, as Rectangle.EnclosesCircle
-// decides on the box's Rectangle.
+// EnclosesCircle reports whether the circle lies within the box: its center is contained and
+// every side is at least the radius away, within the tolerance, the gap from the center to the
+// nearest side taken on the two axes as DistanceSquaredTo takes the gap beyond them, so a circle
+// touching a side from inside is enclosed.
 func (b Box[T]) EnclosesCircle(circle Circle[T]) bool {
-	return b.Rectangle().EnclosesCircle(circle)
+	if !b.Contains(circle.Center) {
+		return false
+	}
+
+	a, c, center := b.Min.Float(), b.Max.Float(), circle.Center.Float()
+	gap := max(min(center.X-a.X, c.X-center.X, center.Y-a.Y, c.Y-center.Y), 0)
+
+	return greaterOrEqualSquared(float64(gap*gap), float64(circle.Radius), circle.epsilonWith(b.magnitude()))
 }
 
-// EnclosesSegment reports whether the segment lies within the box, as
-// Rectangle.EnclosesSegment decides on the box's Rectangle.
+// EnclosesSegment reports whether the segment lies within the box: both endpoints are contained,
+// within the tolerance, and a box holds every point between two it contains.
 func (b Box[T]) EnclosesSegment(segment Segment[T]) bool {
-	return b.Rectangle().EnclosesSegment(segment)
+	return b.Contains(segment.Start) && b.Contains(segment.End)
 }
 
-// EnclosesPolygon reports whether the polygon lies within the box, as
-// Rectangle.EnclosesPolygon decides on the box's Rectangle.
+// EnclosesPolygon reports whether the polygon lies within the box: every vertex is contained,
+// within the tolerance. An empty polygon is enclosed by nothing.
 func (b Box[T]) EnclosesPolygon(polygon Polygon[T]) bool {
-	return b.Rectangle().EnclosesPolygon(polygon)
+	if polygon.IsEmpty() {
+		return false
+	}
+
+	for vertex := range polygon.Vertices() {
+		if !b.Contains(vertex) {
+			return false
+		}
+	}
+
+	return true
 }
 
-// EnclosesRectangle reports whether the rectangle lies within the box, as
-// Rectangle.EnclosesRectangle decides on the box's Rectangle.
+// EnclosesRectangle reports whether the rectangle lies within the box: every corner is
+// contained, within the tolerance, whatever its angle.
 func (b Box[T]) EnclosesRectangle(rectangle Rectangle[T]) bool {
-	return b.Rectangle().EnclosesRectangle(rectangle)
+	for vertex := range rectangle.Vertices() {
+		if !b.Contains(vertex) {
+			return false
+		}
+	}
+
+	return true
 }
 
-// EnclosesRegularPolygon reports whether the regular polygon lies within the box, as
-// Rectangle.EnclosesRegularPolygon decides on the box's Rectangle.
+// EnclosesRegularPolygon reports whether the regular polygon lies within the box: every vertex is
+// contained, within the tolerance. An empty polygon is enclosed by nothing.
 func (b Box[T]) EnclosesRegularPolygon(polygon RegularPolygon[T]) bool {
-	return b.Rectangle().EnclosesRegularPolygon(polygon)
+	if polygon.IsEmpty() {
+		return false
+	}
+
+	for vertex := range polygon.Vertices() {
+		if !b.Contains(vertex) {
+			return false
+		}
+	}
+
+	return true
 }
 
-// EnclosesBox reports whether the given box lies within this one, as
-// Rectangle.EnclosesRectangle decides on the Rectangle of each.
+// EnclosesBox reports whether the given box lies within this one: both its corners are
+// contained, within the tolerance.
 func (b Box[T]) EnclosesBox(box Box[T]) bool {
-	return b.Rectangle().EnclosesRectangle(box.Rectangle())
+	return b.Contains(box.Min) && b.Contains(box.Max)
 }
 
 // IntersectsCircle reports whether the box and the circle overlap, as Circle.IntersectsBox does.
@@ -292,11 +346,13 @@ func (b Box[T]) clampOffset(box Box[T]) Vector[T] {
 // clampAxis returns the move along one axis that Clamp makes, from the extent a1 to b1 and the
 // center c1 of the box being moved and those of the one it is clamped within: the difference of
 // the centers where the first is the larger, the least move that brings it within otherwise,
-// and zero where it already lies within. It reads no field of the box, only the extents it is
-// given, so the receiver is unnamed.
+// and zero where it already lies within. The extents are compared in float64, where a narrow
+// integer T spanning more than it holds cannot overflow them; the move itself stays in T, the
+// result it is added to. It reads no field of the box, only the extents it is given, so the
+// receiver is unnamed.
 func (Box[T]) clampAxis(a1, b1, c1, a2, b2, c2 T) T {
 	switch {
-	case b1-a1 > b2-a2:
+	case float64(b1)-float64(a1) > float64(b2)-float64(a2):
 		return c2 - c1
 	case a1 < a2:
 		return a2 - a1
@@ -335,9 +391,10 @@ func (b Box[T]) IsZero() bool {
 	return b.Equal(Box[T]{})
 }
 
-// Rectangle converts the box into the Rectangle with the same corners, not rotated: the shape
-// the outline pairs of the box are decided on, and the inverse of Rectangle.Bounds for a
-// rectangle that is not rotated.
+// Rectangle converts the box into the Rectangle with the same corners, not rotated, the inverse
+// of Rectangle.Bounds for a rectangle that is not rotated. For a float T the rectangle places
+// its corners again from the center and the size, which can move them by an ulp, so the
+// outline pairs of the box read its own corners rather than this rectangle's.
 func (b Box[T]) Rectangle() Rectangle[T] {
 	return Rectangle[T]{b.Center(), b.Size(), 0}
 }

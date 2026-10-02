@@ -159,7 +159,9 @@ func (m Matrix[T]) turnedAngle(angle float64, scaling Vector[T]) float64 {
 // needs, so the stretch is never negative. The decomposition is not unique, and the turn before
 // is taken within an eighth of a turn of zero, a quarter turn moved into the turn after with
 // the stretch swapped, so a matrix that turns and scales along the axes reports none; where
-// the stretch is the same on both axes, any turn before would do, and it is zero.
+// the stretch is the same on both axes, any turn before would do, and it is zero. The lesser
+// stretch is the determinant divided by the greater, its product with it, rather than the
+// difference of the two halves, which loses the lesser to cancellation on a long thin shape.
 func (m Matrix[T]) decomposition() (float64, Vector[float64], float64, bool) {
 	f := m.Float()
 	e, g := float64((f.A+f.E)/2), float64((f.A-f.E)/2)
@@ -175,7 +177,10 @@ func (m Matrix[T]) decomposition() (float64, Vector[float64], float64, bool) {
 	}
 
 	after, before := float64((rotation+anisotropy)/2), float64((rotation-anisotropy)/2)
-	stretch, reflected := Vector[float64]{q + r, math.Abs(q - r)}, q < r
+	stretch, reflected := Vector[float64]{q + r, 0}, q < r
+	if q+r > 0 {
+		stretch.Y = math.Abs(f.determinant()) / (q + r)
+	}
 
 	quarters := math.Round(before / (Pi / 2))
 	before -= float64(quarters * (Pi / 2))

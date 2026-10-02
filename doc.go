@@ -29,7 +29,7 @@
 // # Panics
 //
 // [Divide], and every method built on it ([Point.Divide], [Padding.Unscale], and the Unscale of
-// every shape and of [Matrix]), panics for a zero factor, and [Matrix.Inverse] panics for a
+// every shape but [Box], which has none, and of [Matrix]), panics for a zero factor, and [Matrix.Inverse] panics for a
 // singular matrix, the same way the integer / operator and [Mod] do. Check
 // [Matrix.IsInvertible] before inverting a matrix that may be singular. [Cast] panics when a NaN
 // or ±Inf would be stored into an integer T: Multiply, Lerp, Rotate, Transform and Int on an
@@ -47,7 +47,10 @@
 //
 // Products, distances and interpolations are computed in float64 and stored back through Cast,
 // whatever T is, so a narrow integer T never overflows mid-computation and every integer result
-// follows the one rounding rule above. Sums and differences of two values stay in T.
+// follows the one rounding rule above. Sums and differences of two values stay in T. The signs
+// that decide a crossing, a turn or a winding are cross products of coordinate differences in
+// float64, exact for an integer T while the differences stay within 2^26, the square root of the
+// integers float64 holds exactly; beyond it a sign can round to zero.
 //
 // # Reproducibility
 //

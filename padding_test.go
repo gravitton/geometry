@@ -25,6 +25,19 @@ func TestPadding_Constructor(t *testing.T) {
 	})
 }
 
+func TestPadding_XY(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		width, height := Pad(2, 4, 3, 5).XY()
+		geomtest.AssertNumber(t, width, 9)
+		geomtest.AssertNumber(t, height, 5)
+	})
+	t.Run("float", func(t *testing.T) {
+		width, height := Pad(0.1, 3.0, 0.6, 2.4).XY()
+		geomtest.AssertNumber(t, width, 5.4)
+		geomtest.AssertNumber(t, height, 0.7)
+	})
+}
+
 func TestPadding_Width(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		geomtest.AssertNumber(t, Pad(2, 4, 3, 5).Width(), 9)
@@ -40,19 +53,6 @@ func TestPadding_Height(t *testing.T) {
 	})
 	t.Run("float", func(t *testing.T) {
 		geomtest.AssertNumber(t, Pad(0.1, 3.0, 0.6, 2.4).Height(), 0.7)
-	})
-}
-
-func TestPadding_XY(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		width, height := Pad(2, 4, 3, 5).XY()
-		geomtest.AssertNumber(t, width, 9)
-		geomtest.AssertNumber(t, height, 5)
-	})
-	t.Run("float", func(t *testing.T) {
-		width, height := Pad(0.1, 3.0, 0.6, 2.4).XY()
-		geomtest.AssertNumber(t, width, 5.4)
-		geomtest.AssertNumber(t, height, 0.7)
 	})
 }
 

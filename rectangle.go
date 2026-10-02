@@ -445,8 +445,10 @@ func (r Rectangle[T]) AlignTo(direction Direction, point Point[T]) Rectangle[T] 
 // exactly, as Box.Clamp moves their Bounds; otherwise the corners of this one are taken into
 // the frame of the other, where it is an aligned box and the extent of the corners lies within
 // it exactly where the rectangle does, and the move Box.Clamp finds there is turned back into
-// the world. For integer T the move is
-// rounded once, so the corners can land a unit past the edges of a rotated rectangle.
+// the world. The frame is the box localMinMax spans, which for an integer T lies a half unit
+// off the center on an odd extent, so a rectangle already within is not moved by that half.
+// For integer T the move is rounded once, so the corners can land a unit past the edges of a
+// rotated rectangle.
 func (r Rectangle[T]) Clamp(rectangle Rectangle[T]) Rectangle[T] {
 	if r.IsAligned() && rectangle.IsAligned() {
 		return r.Translate(r.Bounds().clampOffset(rectangle.Bounds()))
@@ -457,8 +459,9 @@ func (r Rectangle[T]) Clamp(rectangle Rectangle[T]) Rectangle[T] {
 		local[i] = rectangle.localOffset(corner).Point()
 	}
 
+	a, b := rectangle.localMinMax()
 	extent := BoxFromMinMax(minMaxOf(local[:]))
-	frame := Rectangle[float64]{Point[float64]{}, rectangle.Size.Float(), 0}.Bounds()
+	frame := Box[float64]{a.Float().Point(), b.Float().Point()}
 	move := extent.clampOffset(frame)
 
 	return r.Translate(move.Rotate(rectangle.Angle).Cast[T]())
@@ -566,10 +569,17 @@ func (r Rectangle[T]) EnclosesRegularPolygon(polygon RegularPolygon[T]) bool {
 	return true
 }
 
-// EnclosesBox reports whether the box lies within the rectangle, as EnclosesRectangle decides on
-// the box's Rectangle.
+// EnclosesBox reports whether the box lies within the rectangle: every corner of the box is
+// contained, within the tolerance, whatever the rectangle's angle.
 func (r Rectangle[T]) EnclosesBox(box Box[T]) bool {
-	return r.EnclosesRectangle(box.Rectangle())
+	a, b := r.MinMax()
+	for _, corner := range box.corners() {
+		if !r.containsWithin(corner, a, b) {
+			return false
+		}
+	}
+
+	return true
 }
 
 // IntersectsCircle reports whether the rectangle and the circle overlap, as
@@ -735,10 +745,26 @@ func (r Rectangle[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 }
 
 // IntersectsBox reports whether the rectangle and the box share a point, as IntersectsRectangle
-// decides on the box's Rectangle, which is not rotated, so a rectangle that is not rotated
-// either is decided on the exact overlap of the two extents.
+// decides it against a rectangle that is not rotated: a rectangle that is not rotated either is
+// decided on the exact overlap of the two extents, and otherwise a corner of one lies within
+// the other or an edge of one meets an edge of the other, the edges of the box joining its own
+// corners.
 func (r Rectangle[T]) IntersectsBox(box Box[T]) bool {
-	return r.IntersectsRectangle(box.Rectangle())
+	a, b := r.MinMax()
+
+	switch {
+	case !overlaps(a, b, box.Min, box.Max):
+		return false
+	case r.IsAligned() && a.X <= box.Max.X && box.Min.X <= b.X && a.Y <= box.Max.Y && box.Min.Y <= b.Y:
+		return true
+	}
+
+	corners, others := r.corners(), box.corners()
+	if box.Contains(corners[0]) || r.containsWithin(others[0], a, b) {
+		return true
+	}
+
+	return r.edgesMeet(corners, others, box.Min, box.Max)
 }
 
 // walk folds every edge into the edgeWalk DistanceSquaredTo, Nearest and EnclosesCircle read, stopping
@@ -783,7 +809,15 @@ func (r Rectangle[T]) meetsWithin(rectangle Rectangle[T], a1, b1, a2, b2 Point[T
 		return true
 	}
 
-	probe := edgeProbe[T]{a: a2, b: b2}
+	return r.edgesMeet(corners, others, a2, b2)
+}
+
+// edgesMeet reports whether an edge between the corners meets an edge between the others,
+// whose extent is a, b, by Segment.IntersectsSegment through an edgeProbe: the edge loop of
+// meetsWithin and IntersectsBox, over corners each side turned once. It reads no field of the
+// rectangle, only the corners it is given, so the receiver is unnamed.
+func (Rectangle[T]) edgesMeet(corners, others [4]Point[T], a, b Point[T]) bool {
+	probe := edgeProbe[T]{a: a, b: b}
 	for edge := range edgesOf(corners[:]) {
 		if !probe.aim(edge) {
 			continue

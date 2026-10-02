@@ -14,7 +14,9 @@ func SizeFromImage[T Number](r image.Rectangle) Size[T] {
 	return Size[T]{T(r.Dx()), T(r.Dy())}
 }
 
-// RectangleFromImage converts a Rectangle from an image.Rectangle.
+// RectangleFromImage converts a Rectangle from an image.Rectangle. For an integer T it is the
+// inverse of Rectangle.Rectangle; a float T centers an odd extent on a half, which Rectangle
+// rounds away from zero through Int, so the box it gives back can lie a pixel off.
 func RectangleFromImage[T Number](r image.Rectangle) Rectangle[T] {
 	return RectangleFromMin(PointFromImage[T](r.Min), SizeFromImage[T](r))
 }

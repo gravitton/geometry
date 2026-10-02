@@ -577,4 +577,10 @@ func TestParse(t *testing.T) {
 		_, err = Parse[float64]("abc")
 		assert.Error(t, err)
 	})
+	t.Run("float32 rounds once, correctly", func(t *testing.T) {
+		value, err := Parse[float32]("1.000000059604644775390625000001")
+
+		assert.NoError(t, err)
+		assert.Equal(t, value, float32(1.0000001))
+	})
 }

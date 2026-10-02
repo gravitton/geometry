@@ -255,22 +255,24 @@ func (r Ray[T]) AppendIntersectionRegularPolygon(dst []Point[T], polygon Regular
 	return r.reach(polygon.minMax()).AppendIntersectionRegularPolygon(dst, polygon)
 }
 
-// IntersectsBox reports whether the ray and the box share a point, as IntersectsRectangle
-// decides on the box's Rectangle, whose corners are those of the box.
+// IntersectsBox reports whether the ray and the box share a point, as Segment.IntersectsBox
+// decides it on the reach of the ray past the box: the origin lies within the box, or the ray
+// crosses one of its edges. Touching shapes intersect, within the tolerance.
 func (r Ray[T]) IntersectsBox(box Box[T]) bool {
-	return r.IntersectsRectangle(box.Rectangle())
+	return r.reach(box.Min, box.Max).IntersectsBox(box)
 }
 
 // IntersectionBox returns the points where the ray crosses the box boundary, from Origin on, as
-// IntersectionRectangle finds them on the box's Rectangle.
+// Segment.IntersectionBox finds them on the reach of the ray past the box.
 func (r Ray[T]) IntersectionBox(box Box[T]) []Point[T] {
-	return r.IntersectionRectangle(box.Rectangle())
+	return r.AppendIntersectionBox(nil, box)
 }
 
 // AppendIntersectionBox appends the points IntersectionBox returns to dst and returns the
-// extended slice, as AppendIntersectionRectangle does on the box's Rectangle.
+// extended slice, as Segment.AppendIntersectionBox does on the reach of the ray past the box, so
+// a caller reusing dst allocates nothing once it has room.
 func (r Ray[T]) AppendIntersectionBox(dst []Point[T], box Box[T]) []Point[T] {
-	return r.AppendIntersectionRectangle(dst, box.Rectangle())
+	return r.reach(box.Min, box.Max).AppendIntersectionBox(dst, box)
 }
 
 // ClipCircle returns the part of the ray inside the circle, boundary included within the
@@ -313,10 +315,12 @@ func (r Ray[T]) ClipRegularPolygon(polygon RegularPolygon[T]) (Segment[T], bool)
 	return r.reach(polygon.minMax()).ClipRegularPolygon(polygon)
 }
 
-// ClipBox returns the part of the ray inside the box, as ClipRectangle clips it to the box's
-// Rectangle.
+// ClipBox returns the part of the ray inside the box, boundary included within the tolerance,
+// and false where they share no point, as Segment.ClipBox clips the reach of the ray past the
+// box. Its Start is the cast of the ray, the first point of the box it reaches. It allocates
+// nothing.
 func (r Ray[T]) ClipBox(box Box[T]) (Segment[T], bool) {
-	return r.ClipRectangle(box.Rectangle())
+	return r.reach(box.Min, box.Max).ClipBox(box)
 }
 
 // reach returns the part of the ray from Origin to where it passes the extent a, b of a shape:
@@ -324,13 +328,17 @@ func (r Ray[T]) ClipBox(box Box[T]) (Segment[T], bool) {
 // extent lies behind it or the ray has no direction. No point of the extent projects past the
 // end, so the segment shares every point of the shape the ray does, and a pair of the ray is
 // decided by the segment's own tests. For integer T the fraction is rounded up to a whole step
-// of Direction, so the end is a lattice point on the ray rather than a rounded point beside it.
+// of Direction, so the end is a lattice point on the ray rather than a rounded point beside it,
+// short of where the ray leaves the range of T: a whole step past the extent of a shape near
+// the end of that range would wrap around, so the reach stops where the range does, a rounded
+// point there, which every shape the ray is tested against lies within.
 func (r Ray[T]) reach(a, b Point[T]) Segment[T] {
 	if !r.Direction.hasDirection() {
 		return Segment[T]{r.Origin, r.Origin}
 	}
 
-	direction, corner := r.Direction.Float(), a
+	direction, scale := r.scaledDirection()
+	corner := a
 	if direction.X > 0 {
 		corner.X = b.X
 	}
@@ -338,19 +346,53 @@ func (r Ray[T]) reach(a, b Point[T]) Segment[T] {
 		corner.Y = b.Y
 	}
 
-	t := max(corner.Float().Subtract(r.Origin.Float()).Dot(direction)/direction.LengthSquared(), 0)
+	t := max(corner.Float().Subtract(r.Origin.Float()).Dot(direction)/direction.LengthSquared()*scale, 0)
 	if isInt[T]() {
-		t = math.Ceil(t)
+		t = min(math.Ceil(t), r.rangeExit())
 	}
 
 	return Segment[T]{r.Origin, r.PointAt(t)}
 }
 
+// rangeExit returns the fraction along Direction at which the ray of an integer T leaves the
+// range T holds, on whichever axis it reaches the end of the range first, and infinity for a
+// ray that never does.
+func (r Ray[T]) rangeExit() float64 {
+	lowest, highest := intRange[T]()
+	origin, direction := r.Origin.Float(), r.Direction.Float()
+
+	exit := math.Inf(1)
+	for _, axis := range [2][2]float64{{origin.X, direction.X}, {origin.Y, direction.Y}} {
+		switch from, step := axis[0], axis[1]; {
+		case step > 0:
+			exit = min(exit, (highest-from)/step)
+		case step < 0:
+			exit = min(exit, (lowest-from)/step)
+		}
+	}
+
+	return exit
+}
+
+// scaledDirection returns Direction in float64 scaled by a power of two to a length near one,
+// and the power of two that scales a fraction measured along it back to one along Direction.
+// The scaling is exact, so a projection or a squared distance divided by the squared length
+// gives the bits it would on Direction itself, but no squared length leaves the range of
+// float64, as it would for a Direction of a float T longer than its square root or shorter
+// than the square root of the least normal value.
+func (r Ray[T]) scaledDirection() (Vector[float64], float64) {
+	direction := r.Direction.Float()
+	_, exponent := math.Frexp(max(math.Abs(direction.X), math.Abs(direction.Y)))
+
+	return Vector[float64]{math.Ldexp(direction.X, -exponent), math.Ldexp(direction.Y, -exponent)}, math.Ldexp(1, -exponent)
+}
+
 // distanceSquaredTo returns the squared distance to the point with no tolerance applied, which
 // DistanceSquaredTo snaps to zero within the tolerance: Segment.distanceSquaredTo with no end to
-// clamp to.
+// clamp to, on the scaled direction, so a Direction of any length a float T holds measures.
 func (r Ray[T]) distanceSquaredTo(point Point[T]) float64 {
-	direction, offset := r.Direction.Float(), point.Float().Subtract(r.Origin.Float())
+	direction, _ := r.scaledDirection()
+	offset := point.Float().Subtract(r.Origin.Float())
 
 	along := offset.Dot(direction)
 	if along <= 0 {
@@ -366,14 +408,15 @@ func (r Ray[T]) distanceSquaredTo(point Point[T]) float64 {
 // where the projection distanceSquaredTo makes falls behind it, on the same comparison, and the
 // point at that fraction along the ray otherwise.
 func (r Ray[T]) foot(point Point[T]) Point[T] {
-	direction, offset := r.Direction.Float(), point.Float().Subtract(r.Origin.Float())
+	direction, scale := r.scaledDirection()
+	offset := point.Float().Subtract(r.Origin.Float())
 
 	along := offset.Dot(direction)
 	if along <= 0 {
 		return r.Origin
 	}
 
-	return r.PointAt(along / direction.LengthSquared())
+	return r.PointAt(along / direction.LengthSquared() * scale)
 }
 
 // crosses reports whether the rays properly cross, as crossing decides it: the lines through
@@ -392,29 +435,33 @@ func (r Ray[T]) crosses(ray Ray[T]) bool {
 // both fractions the sign of a crossing, and the point, divided out of cross products near zero,
 // lands anywhere along this ray; a point whose projection onto the other falls behind its
 // origin is therefore no crossing, and the pair is left to the origins, on the comparison foot
-// makes.
+// makes. The directions are scaled as scaledDirection scales them, which changes no sign and no
+// point, so rays of any length a float T holds cross.
 func (r Ray[T]) crossing(ray Ray[T]) (Point[float64], bool) {
-	a, b := r.Float(), ray.Float()
-	offset := b.Origin.Subtract(a.Origin)
-	denominator, along, other := a.Direction.Cross(b.Direction), offset.Cross(b.Direction), offset.Cross(a.Direction)
+	a, _ := r.scaledDirection()
+	b, _ := ray.scaledDirection()
+	origin := r.Origin.Float()
+	offset := ray.Origin.Float().Subtract(origin)
+	denominator, along, other := a.Cross(b), offset.Cross(b), offset.Cross(a)
 
 	ahead := (denominator > 0 && along > 0 && other > 0) || (denominator < 0 && along < 0 && other < 0)
 	if !ahead {
 		return Point[float64]{}, false
 	}
 
-	point := a.PointAt(along / denominator)
+	point := Ray[float64]{origin, a}.PointAt(along / denominator)
 
-	return point, point.Subtract(b.Origin).Dot(b.Direction) >= 0
+	return point, point.Subtract(ray.Origin.Float()).Dot(b) >= 0
 }
 
 // parallel reports whether the rays run along the same line direction, either way. A ray with a
 // zero Direction has none and is parallel to nothing, so its origin can still be found on the
 // other.
 func (r Ray[T]) parallel(ray Ray[T]) bool {
-	a, b := r.Direction, ray.Direction
+	a, _ := r.scaledDirection()
+	b, _ := ray.scaledDirection()
 
-	return a.hasDirection() && b.hasDirection() && a.Float().Cross(b.Float()) == 0
+	return a.hasDirection() && b.hasDirection() && a.Cross(b) == 0
 }
 
 // touch returns the origin of either ray that lies on the other, within the tolerance as Contains

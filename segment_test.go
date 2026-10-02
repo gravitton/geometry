@@ -743,6 +743,26 @@ func TestSegment_IntersectionSegment(t *testing.T) {
 			}
 		}
 	})
+	t.Run("segments running along each other within the tolerance answer with an endpoint", func(t *testing.T) {
+		r := Rectangle[float64]{Pt(-9.555794994732457, -7.1447161806712565), Sz(1.9672661593065617, 2.772250161572721), 2.3562338764659856}
+		corners := slices.Collect(r.Vertices())
+		edge, s := Seg(corners[0], corners[1]), Seg(Pt(-7.1845731257763275, -7.555551584844245), Pt(-9.966817184817401, -4.773526681623244))
+
+		point, ok := s.IntersectionSegment(edge)
+
+		assert.True(t, ok)
+		geomtest.AssertPoint(t, point, edge.Start)
+	})
+	t.Run("a crossing on a half unit rounds alike whatever the lengths", func(t *testing.T) {
+		edge := Seg(Pt(9, -9), Pt(-1, 1))
+
+		for _, end := range []Point[int]{Pt(1, -12), Pt(-986, -999)} {
+			point, ok := Seg(Pt(14, 1), end).IntersectionSegment(edge)
+
+			assert.True(t, ok)
+			geomtest.AssertPoint(t, point, Pt(7, -7), fmt.Sprintf("to %s: ", end))
+		}
+	})
 }
 
 func FuzzSegment_IntersectionSegment(f *testing.F) {
@@ -1121,6 +1141,27 @@ func TestSegment_IntersectionRectangle(t *testing.T) {
 			}
 		}
 	})
+	t.Run("a segment a rounding error off an edge crosses only the edges at its ends", func(t *testing.T) {
+		r := Rectangle[float64]{Pt(-9.555794994732457, -7.1447161806712565), Sz(1.9672661593065617, 2.772250161572721), 2.3562338764659856}
+		corners := slices.Collect(r.Vertices())
+		s := Seg(Pt(-7.1845731257763275, -7.555551584844245), Pt(-9.966817184817401, -4.773526681623244))
+
+		geomtest.AssertVertices(t, s.IntersectionRectangle(r), corners[:2])
+		geomtest.AssertVertices(t, s.IntersectionPolygon(r.Polygon()), corners[:2])
+	})
+	t.Run("a segment along an edge of the fixtures, extended past both ends, crosses at most twice", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, turn := range []float64{0, 0.3, 2.3562338764659856} {
+				r := r.Rotate(turn)
+
+				for edge := range r.Edges() {
+					s := Seg(edge.PointAt(-0.5), edge.PointAt(1.5))
+
+					assert.True(t, len(s.IntersectionRectangle(r)) <= 2, fmt.Sprintf("%s → %s: ", s, r))
+				}
+			}
+		}
+	})
 }
 
 func TestSegment_AppendIntersectionRectangle(t *testing.T) {
@@ -1308,6 +1349,16 @@ func TestSegment_IntersectsBox(t *testing.T) {
 			}
 		}
 	})
+	t.Run("decides on the corners of the box, where Contains does", func(t *testing.T) {
+		boxes := []Box[float32]{Bx(Pt[float32](3.5497787, 1.5453138), Pt[float32](7.1348896, 4.0049815)), Bx(Pt[float32](8.56645, 9.768216), Pt[float32](9.503749, 19.746952))}
+		points := []Point[float32]{Pt[float32](3.5496886, 1.5452706), Pt[float32](8.566437, 9.768117)}
+
+		for i, b := range boxes {
+			p := points[i]
+
+			assert.Equal(t, Seg(p, p).IntersectsBox(b), b.Contains(p), fmt.Sprintf("%s → %s: ", p, b))
+		}
+	})
 }
 
 func TestSegment_IntersectionBox(t *testing.T) {
@@ -1477,6 +1528,13 @@ func TestSegment_ClipPolygon(t *testing.T) {
 			}
 		}
 	})
+	t.Run("a NaN or infinite End ends the sweep", func(t *testing.T) {
+		square := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(10.0, 0.0), Pt(10.0, 10.0), Pt(0.0, 10.0)})
+
+		for _, end := range []Point[float64]{Pt(math.NaN(), 5.0), Pt(math.Inf(1), 5.0)} {
+			geomtest.AssertSegments(t, Seg(Pt(1.0, 1.0), end).ClipPolygon(square), []Segment[float64]{Seg(Pt(1.0, 1.0), Pt(1.0, 1.0))}, fmt.Sprintf("to %s: ", end))
+		}
+	})
 }
 
 func TestSegment_AppendClipPolygon(t *testing.T) {
@@ -1642,6 +1700,13 @@ func TestSegment_ClipBox(t *testing.T) {
 				geomtest.AssertSegments(t, partsOf(s.ClipBox(b)), partsOf(s.ClipRectangle(b.Rectangle())), fmt.Sprintf("%s → %s: ", s, b))
 			}
 		}
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		through := Seg(Pt(-5, 0), Pt(5, 0))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.ClipBox(box)
+		}), 0)
 	})
 }
 

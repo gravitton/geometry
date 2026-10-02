@@ -25,13 +25,15 @@ Generic, immutable 2D geometry library for game development
 
 - **Generic** over every integer and float type, named types included.
 - **Immutable** – every method returns a new value.
-- **Shapes** – rectangle, box, circle, ellipse, segment, ray, polygon and regular polygon, on top of point, vector,
-  size, padding and an affine matrix.
-- **Interfaces** – `Shape`, `Collider` and `Body`, so a spatial index, a collision pass or a physics body holds a
-  shape without knowing which one.
-- **Directions, axes and orientations** as enums, with compass and rectangle-anchor aliases.
+- **Shapes** – rectangle, box, circle, ellipse, segment, ray, polygon and regular polygon.
+- **Collisions** – intersections, containment, ray casts and nearest points.
+- **Interfaces** – `Shape`, `Collider` and `Body` hold a shape without knowing which one.
 - **Screen space** – top-left origin, `+Y` down, one winding order everywhere.
-- **Extras** – `image` interop, JSON, string parsing, numeric helpers, and test assertions in `geomtest`.
+- **Closed boundaries** – the edge counts as inside, within a tolerance matched to `T`.
+- **Reproducible** – the same bits on amd64 and arm64.
+- **Extras** – direction enums, `image` interop, JSON, parsing and `geomtest` assertions.
+
+The rules behind them are in [docs/conventions.md](docs/conventions.md).
 
 ## Installation
 
@@ -45,17 +47,15 @@ go get github.com/gravitton/geometry
 import geom "github.com/gravitton/geometry"
 ```
 
-A taste, before the tour:
-
 ```go
 ship := geom.Circ(geom.Pt(0.0, 0.0), 10.0)
 rock := geom.Hexagon(geom.Pt(50.0, 0.0), geom.SzU(20.0), geom.OrientationFlatTop).Rotate(0.3)
 
-ship.IntersectsRegularPolygon(rock)                                // false, for now
-ship.Translate(geom.Vec(25.0, 0.0)).IntersectsRegularPolygon(rock) // true: boom
+ship.IntersectsRegularPolygon(rock)                                // false
+ship.Translate(geom.Vec(25.0, 0.0)).IntersectsRegularPolygon(rock) // true, after the move
 
 laser := geom.RayAlong(ship.Center, geom.Vec(1.0, 0.0))
-hit, ok := laser.ClipRegularPolygon(rock) // Seg((32.24,0.00);(67.76,0.00)), true: hit.Start is where it lands
+hit, ok := laser.ClipRegularPolygon(rock) // Seg((32.24,0.00);(67.76,0.00)), true; hit.Start is the first point hit
 ```
 
 ### Points and vectors
@@ -159,8 +159,8 @@ Neither has vertices: the `RegularPolygon` of the wanted resolution is what draw
 walks one, and it converts back exactly.
 
 ```go
-e.RegularPolygon(64)                           // every vertex on the boundary, and Ellipse() converts back
-c.RegularPolygon(6, geom.OrientationPointyTop) // only a circle also takes an orientation
+e.RegularPolygon(64, geom.OrientationPointyTop) // every vertex on the boundary, and Ellipse() converts back
+c.RegularPolygon(6, geom.OrientationFlatTop)     // the orientation places the first vertex before the stretch
 
 slices.Collect(c.RegularPolygon(64, geom.OrientationFlatTop).Vertices()) // the points that draw the circle
 ```
@@ -218,7 +218,7 @@ s.DistanceTo(geom.Pt(10.0, 5.0))
 geom.Intersects(d, c) // two shapes held as Collider, dispatched on the kind of the second
 
 var b geom.Body[float64] = c // Area, Centroid, Inertia — the mass properties at unit density,
-b.Inertia()                  // for a physics body to scale by its density; every shape but Segment
+b.Inertia()                  // for a physics body to scale by its density; every shape but Segment and Box
 ```
 
 The interfaces are for the code around a hot loop: a call through one allocates, where the same call on a concrete
@@ -227,9 +227,8 @@ resolution.
 
 ### Intersections
 
-Every shape carries one test per shape kind, named for the kind it takes and its own kind included, so the family
-reads the same on all of them and an interface can list it. The test is symmetric and includes a touch within
-the boundary tolerance; where a derived result exists it is `Intersection<Kind>`, answering exactly where `Intersects` holds:
+Every shape has one `Intersects<Kind>` per kind, symmetric and counting a touch; where a result exists it is
+`Intersection<Kind>`:
 
 ```go
 a.IntersectsRectangle(b) // IntersectsSegment, IntersectsRay, IntersectsRectangle, IntersectsCircle, IntersectsPolygon,
@@ -247,8 +246,8 @@ buffer = s.AppendIntersectionPolygon(buffer[:0], p) // every slice result has an
 hull = p.AppendConvexHull(hull[:0])                 // so a loop reusing its buffer allocates nothing
 ```
 
-A `Ray` is a half-line from `Origin` along `Direction`, a `Collider` like the shapes. Its `Clip<Kind>` is the cast:
-the `Start` of the part inside is the first point of the shape the ray reaches, its origin where the shape contains it:
+A `Ray` is a half-line from `Origin` along `Direction`. Its `Clip<Kind>` is the cast, starting at the first point
+hit:
 
 ```go
 ray := geom.RayThrough(camera, cursor) // from the camera through the cursor; RayAlong takes a direction
@@ -261,13 +260,9 @@ if hit, ok := ray.ClipCircle(c); ok { // allocation-free on every convex shape
 }
 ```
 
-The pair logic is written once, on the earlier shape of `Circle`, `Segment`, `Ray`, `Polygon`, `Rectangle`,
-`RegularPolygon`, `Box`, and the other side delegates to it, so both sides always answer the same.
-
 ### Containment
 
-`Contains` takes a point; `Encloses<Kind>` takes a shape and reports whether every point of it lies within, the
-boundary included within the tolerance, on every shape with an area but `Ellipse`:
+`Contains` takes a point; `Encloses<Kind>` takes a whole shape, on every shape with an area but `Ellipse`:
 
 ```go
 view.EnclosesCircle(c) // EnclosesCircle, EnclosesSegment, EnclosesPolygon, EnclosesRectangle,
@@ -332,9 +327,6 @@ geom.ParseSize[int]("4x2")                            // Size{4, 2}
 geom.ParsePoint[int]("(1,2)")                         // Point{1, 2}
 ```
 
-The flat JSON of `Rectangle`, `Circle` and `RegularPolygon` relies on the `embed` struct tag of the v2-backed
-`encoding/json`, the default since Go 1.27; under `GOEXPERIMENT=nojsonv2` the nested fields are emitted as objects.
-
 ### Testing
 
 The `geomtest` package holds one assertion per shape, comparing with the tolerance of the asserted type, so the
@@ -346,46 +338,6 @@ geomtest.AssertRectangle(t, got, want, "after inset")
 ```
 
 Full reference: [pkg.go.dev][link-go-dev-reference].
-
-## Conventions
-
-**Coordinates.** The origin is top-left and `+Y` points down. Angles follow the mathematical convention, so a positive
-angle is counterclockwise in math coordinates and appears clockwise on screen. Direction order and polygon winding
-follow the same rule: `Directions`, `Rectangle.Vertices` and `RegularPolygon.Vertices` all wind by increasing angle,
-clockwise as drawn. Each `Direction` has three names: canonical (`DirectionDownRight`), compass (`SouthEast`) and
-rectangle corner (`BottomRight`).
-
-**Numbers.** Products, distances and interpolations are computed in `float64` and rounded back into `T`, so a narrow
-`int8` never overflows mid-computation. A float result stored into an integer `T` rounds half away from zero;
-`Rectangle` and `Box` are the exception, truncating half the size toward `Min` so that `Max - Min` stays exactly the
-size.
-`Divide`, `Unscale` and `Matrix.Inverse` on a singular matrix panic, like the integer `/` operator; check
-`IsInvertible` first when a matrix may be singular. Every other degenerate input returns a value the type can express.
-
-**Equality.** `Equal` compares an integer `T` exactly and a float `T` within `Epsilon[T]()`, a tolerance matched to
-`float32` or `float64`. `EqualRelative` scales it for values far from zero, and `EqualAngle` compares modulo a full
-turn.
-
-**Boundaries.** `Contains`, `Intersects` and `Vector.LessOrEqual` are closed and tolerant: a point within the
-tolerance of the boundary counts as on it, so a float rectangle contains the corners it was built from and a polygon
-contains its vertices. The tolerance is `Epsilon[T]()` near the origin and widens to two ulps of `T` at the largest
-coordinate compared, so a `Nearest` point or an `Intersection` rounded into `T` far from the origin stays on the
-boundary; `float32` widens beyond a few hundred units. Every boundary is judged on a distance, never on a
-coordinate, so two rectangles that meet corner to corner intersect exactly where their polygons do. `DistanceTo` is
-zero exactly where `Contains` holds, and `Intersection` answers exactly where `Intersects` holds, apart from parallel
-and coincident segments and rectangles of different angles, which have no single answer. `Vector.Less` is strict.
-
-**Matrices.** An integer `Matrix` composes lattice transforms exactly: translation, integer scale, reflection, quarter
-turns. Anything else rounds into a different matrix; use a float `Matrix` there. `Transform` takes a float matrix, so
-convert an integer one with `Float()` at the call.
-
-**Reproducibility.** Every product is rounded before it is added, so the same inputs give the same bits on amd64 and
-arm64, where the compiler would otherwise fuse the two into one multiply-add. Only what `math` computes from an angle
-(`Sincos`, `Atan2`, `Hypot`) may differ in the last bit between architectures.
-
-**Methods.** Every value type has `Equal`, `Cast`, `Int`, `Float` and `String`; every shape adds `Bounds` and
-`Contains`, and every shape but `Ellipse` adds `Intersects`. The enums (`Direction`, `Axis`, `Orientation`, `Winding`)
-are compared with `==` and marshal as their names.
 
 ## Credits
 

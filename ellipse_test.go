@@ -160,7 +160,7 @@ func TestEllipse_Inertia(t *testing.T) {
 	})
 	t.Run("is approached by the polygon", func(t *testing.T) {
 		for _, e := range ellipseFixtures {
-			assert.EqualDelta(t, e.Inertia(), e.RegularPolygon(360).Inertia(), e.Inertia()*1e-3, e.String())
+			assert.EqualDelta(t, e.Inertia(), e.RegularPolygon(360, OrientationPointyTop).Inertia(), e.Inertia()*1e-3, e.String())
 		}
 	})
 }
@@ -599,23 +599,36 @@ func TestEllipse_RegularPolygon(t *testing.T) {
 	e := Ell(Pt(1.0, 2.0), Sz(10.0, 4.0), Pi/6)
 
 	t.Run("the same center, semi-axes and angle", func(t *testing.T) {
-		geomtest.AssertRegularPolygon(t, e.RegularPolygon(6), RegPol(Pt(1.0, 2.0), Sz(10.0, 4.0), 6, Pi/6, 0))
+		geomtest.AssertRegularPolygon(t, e.RegularPolygon(6, OrientationPointyTop), RegPol(Pt(1.0, 2.0), Sz(10.0, 4.0), 6, Pi/6, 3*Pi/2))
+	})
+	t.Run("the orientation places the first vertex before the stretch", func(t *testing.T) {
+		geomtest.AssertRegularPolygon(t, e.RegularPolygon(6, OrientationFlatTop), RegularPolygonWithOrientation(Pt(1.0, 2.0), Sz(10.0, 4.0), 6, OrientationFlatTop).Rotate(Pi/6))
+		for vertex := range Ell(Pt(1.0, 2.0), Sz(10.0, 4.0), 0).RegularPolygon(4, OrientationPointyTop).Vertices() {
+			geomtest.AssertPoint(t, vertex, Pt(1.0, -2.0))
+
+			break
+		}
+	})
+	t.Run("an orientation that is neither panics", func(t *testing.T) {
+		assert.Panics(t, func() {
+			e.RegularPolygon(6, OrientationNone)
+		})
 	})
 	t.Run("every vertex lies on the boundary", func(t *testing.T) {
-		for vertex := range e.RegularPolygon(7).Vertices() {
+		for vertex := range e.RegularPolygon(7, OrientationPointyTop).Vertices() {
 			geomtest.AssertNumber(t, e.DistanceTo(vertex), 0.0, fmt.Sprintf("%s: ", vertex))
 		}
 	})
 	t.Run("the polygon is inside the ellipse", func(t *testing.T) {
-		for edge := range e.RegularPolygon(7).Edges() {
+		for edge := range e.RegularPolygon(7, OrientationPointyTop).Edges() {
 			assert.True(t, e.Contains(edge.Midpoint()), fmt.Sprintf("%s: ", edge))
 		}
 	})
 	t.Run("fewer than one vertex is empty", func(t *testing.T) {
-		assert.True(t, e.RegularPolygon(0).IsEmpty())
+		assert.True(t, e.RegularPolygon(0, OrientationPointyTop).IsEmpty())
 	})
 	t.Run("it round-trips through Ellipse", func(t *testing.T) {
-		geomtest.AssertEllipse(t, e.RegularPolygon(6).Ellipse(), e)
+		geomtest.AssertEllipse(t, e.RegularPolygon(6, OrientationFlatTop).Ellipse(), e)
 	})
 }
 
@@ -798,7 +811,7 @@ func TestEllipse_Properties(t *testing.T) {
 	t.Run("the polygon lies within the ellipse, on its boundary", func(t *testing.T) {
 		for _, e := range ellipseFixtures {
 			for _, n := range []int{3, 5, 8, 32} {
-				polygon := e.RegularPolygon(n)
+				polygon := e.RegularPolygon(n, OrientationPointyTop)
 
 				for vertex := range polygon.Vertices() {
 					geomtest.AssertNumber(t, e.DistanceTo(vertex), 0.0, fmt.Sprintf("%s ×%d → %s: ", e, n, vertex))
@@ -813,7 +826,7 @@ func TestEllipse_Properties(t *testing.T) {
 	t.Run("scaling by the apothem ratio puts the polygon about the ellipse", func(t *testing.T) {
 		for _, e := range ellipseFixtures {
 			for _, n := range []int{3, 5, 8, 32} {
-				around := e.Scale(1 / math.Cos(Pi/float64(n))).RegularPolygon(n)
+				around := e.Scale(1/math.Cos(Pi/float64(n))).RegularPolygon(n, OrientationPointyTop)
 
 				for edge := range around.Edges() {
 					geomtest.AssertNumber(t, e.DistanceTo(edge.Midpoint()), 0.0, fmt.Sprintf("%s ×%d → %s: ", e, n, edge))
@@ -823,7 +836,7 @@ func TestEllipse_Properties(t *testing.T) {
 	})
 	t.Run("the polygon round-trips through the ellipse", func(t *testing.T) {
 		for _, e := range ellipseFixtures {
-			geomtest.AssertEllipse(t, e.RegularPolygon(6).Ellipse(), e, fmt.Sprintf("%s: ", e))
+			geomtest.AssertEllipse(t, e.RegularPolygon(6, OrientationFlatTop).Ellipse(), e, fmt.Sprintf("%s: ", e))
 		}
 	})
 	t.Run("a circle answers as the circle of the same radius", func(t *testing.T) {
