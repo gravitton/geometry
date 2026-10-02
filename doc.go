@@ -23,9 +23,9 @@
 // Cast panics when a NaN or ±Inf would be stored into an integer T: Multiply, Lerp, Rotate,
 // Transform and Int on an integer shape all go through it. A float T carries NaN and ±Inf
 // through unchanged. A finite value outside the range of an integer T is not checked and
-// stores a platform-dependent value, as Cast documents. RegularPolygonOrientationAngle panics
+// stores a platform-dependent value, as Cast documents. RegularPolygonOrientationPhase panics
 // for an Orientation that is neither OrientationFlatTop nor OrientationPointyTop, OrientationNone included: the
-// absence of an alignment has no angle to give. Polygon.Lerp and RegularPolygon.Lerp panic for
+// absence of an alignment has no phase to give. Polygon.Lerp and RegularPolygon.Lerp panic for
 // a polygon with a different vertex count, which has no shape between. Intersects panics for two Colliders
 // of another package, which have no method this package can reach.
 // These are the only panics: every other guard returns a value the type can express, such as

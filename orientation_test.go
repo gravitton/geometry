@@ -2,7 +2,7 @@ package geom
 
 import (
 	"encoding/json"
-	"slices"
+	"fmt"
 	"testing"
 
 	"github.com/gravitton/assert"
@@ -102,14 +102,8 @@ func TestOrientation_Properties(t *testing.T) {
 		for _, orientation := range Orientations() {
 			for n := 3; n <= 8; n++ {
 				polygon := RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), n, orientation)
-				vertices := slices.Collect(polygon.Vertices())
-				top := vertices[0]
 
-				if orientation == OrientationPointyTop {
-					AssertPoint(t, top, Pt(0.0, -10.0), orientation.String()+": ")
-				} else {
-					AssertVector(t, top.Midpoint(vertices[1]).Vector().Normalize(), Vec(0.0, -1.0), orientation.String()+": ")
-				}
+				assertOrientation(t, polygon, orientation, fmt.Sprintf("%s n=%d: ", orientation, n))
 			}
 		}
 	})

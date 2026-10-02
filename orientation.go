@@ -14,7 +14,7 @@ const (
 	OrientationPointyTop
 
 	// OrientationNone is the absence of an orientation. It names no alignment, so
-	// RegularPolygonOrientationAngle has no angle to give for it and panics.
+	// RegularPolygonOrientationPhase has no phase to give for it and panics.
 	OrientationNone Orientation = -1
 )
 

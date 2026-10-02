@@ -850,14 +850,14 @@ func TestPolygon_EnclosesRegularPolygon(t *testing.T) {
 	notched := Pol(notchedVertices())
 
 	t.Run("beside the notch and reaching into it", func(t *testing.T) {
-		assert.True(t, notched.EnclosesRegularPolygon(RegPol(Pt(2, 2), Sz(1, 1), 4, 0)))
-		assert.False(t, notched.EnclosesRegularPolygon(RegPol(Pt(4, 2), Sz(2, 2), 4, 0)))
+		assert.True(t, notched.EnclosesRegularPolygon(RegPol(Pt(2, 2), Sz(1, 1), 4, 0, 0)))
+		assert.False(t, notched.EnclosesRegularPolygon(RegPol(Pt(4, 2), Sz(2, 2), 4, 0, 0)))
 	})
 	t.Run("an empty polygon is enclosed by nothing", func(t *testing.T) {
-		assert.False(t, notched.EnclosesRegularPolygon(RegPol(Pt(2, 2), Sz(1, 1), 0, 0)))
+		assert.False(t, notched.EnclosesRegularPolygon(RegPol(Pt(2, 2), Sz(1, 1), 0, 0, 0)))
 	})
 	t.Run("allocates nothing", func(t *testing.T) {
-		inside := RegPol(Pt(2, 2), Sz(1, 1), 6, Pi/5)
+		inside := RegPol(Pt(2, 2), Sz(1, 1), 6, Pi/5, 0)
 
 		AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkBool = notched.EnclosesRegularPolygon(inside)
@@ -1034,24 +1034,24 @@ func TestPolygon_IntersectsRegularPolygon(t *testing.T) {
 	square := Pol(squareVertices())
 
 	t.Run("overlapping", func(t *testing.T) {
-		assert.True(t, square.IntersectsRegularPolygon(RegPol(Pt(2, 2), Sz(2, 2), 4, 0)))
+		assert.True(t, square.IntersectsRegularPolygon(RegPol(Pt(2, 2), Sz(2, 2), 4, 0, 0)))
 	})
 	t.Run("apart", func(t *testing.T) {
-		assert.False(t, square.IntersectsRegularPolygon(RegPol(Pt(5, 5), Sz(2, 2), 4, 0)))
+		assert.False(t, square.IntersectsRegularPolygon(RegPol(Pt(5, 5), Sz(2, 2), 4, 0, 0)))
 	})
 	t.Run("apart within overlapping bounds", func(t *testing.T) {
-		assert.False(t, square.IntersectsRegularPolygon(RegPol(Pt(4, 4), Sz(2, 2), 4, 0)))
+		assert.False(t, square.IntersectsRegularPolygon(RegPol(Pt(4, 4), Sz(2, 2), 4, 0, 0)))
 	})
 	t.Run("one contained in the other", func(t *testing.T) {
-		assert.True(t, square.IntersectsRegularPolygon(RegPol(Pt(1, 1), Sz(20, 20), 6, 0)))
-		assert.True(t, square.IntersectsRegularPolygon(RegPol(Pt(1, 1), Sz(1, 1), 3, 0)))
+		assert.True(t, square.IntersectsRegularPolygon(RegPol(Pt(1, 1), Sz(20, 20), 6, 0, 0)))
+		assert.True(t, square.IntersectsRegularPolygon(RegPol(Pt(1, 1), Sz(1, 1), 3, 0, 0)))
 	})
 	t.Run("edges crossing without a vertex inside", func(t *testing.T) {
-		assert.True(t, square.IntersectsRegularPolygon(RegPol(Pt(1, 1), Sz(1, 20), 4, 0)))
+		assert.True(t, square.IntersectsRegularPolygon(RegPol(Pt(1, 1), Sz(1, 20), 4, 0, 0)))
 	})
 	t.Run("an empty polygon on either side intersects nothing", func(t *testing.T) {
-		assert.False(t, Pol[int](nil).IntersectsRegularPolygon(RegPol(Pt(1, 1), Sz(2, 2), 4, 0)))
-		assert.False(t, square.IntersectsRegularPolygon(RegPol(Pt(1, 1), Sz(2, 2), 0, 0)))
+		assert.False(t, Pol[int](nil).IntersectsRegularPolygon(RegPol(Pt(1, 1), Sz(2, 2), 4, 0, 0)))
+		assert.False(t, square.IntersectsRegularPolygon(RegPol(Pt(1, 1), Sz(2, 2), 0, 0, 0)))
 	})
 	t.Run("matches the polygon of the vertices", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
@@ -1144,7 +1144,7 @@ func TestPolygon_IsConvex(t *testing.T) {
 		assert.False(t, Pol([]Point[int]{Pt(0, 0), Pt(4, 2), Pt(0, 4), Pt(1, 2)}).IsConvex())
 	})
 	t.Run("a star turning one way throughout goes around twice", func(t *testing.T) {
-		pentagon := slices.Collect(RegPol(Pt(0.0, 0.0), SzU(10.0), 5, 0).Vertices())
+		pentagon := slices.Collect(RegPol(Pt(0.0, 0.0), SzU(10.0), 5, 0, 0).Vertices())
 		star := []Point[float64]{pentagon[0], pentagon[2], pentagon[4], pentagon[1], pentagon[3]}
 
 		assert.False(t, Pol(star).IsConvex())
@@ -1390,5 +1390,5 @@ func ExamplePol() {
 
 // benchPolygon is a 64-gon, large enough for the edge walk to dominate.
 func benchPolygon() Polygon[float64] {
-	return RegPol(Pt(0.0, 0.0), SzU(100.0), 64, 0).Polygon()
+	return RegPol(Pt(0.0, 0.0), SzU(100.0), 64, 0, 0).Polygon()
 }

@@ -94,9 +94,9 @@ func Pol[T geom.Number](vertices []geom.Point[T]) Polygon {
 	return geom.Pol(vertices).Float()
 }
 
-// RegPol is shorthand for geom.RegPol(center, size, n, angle).Float()
-func RegPol[T geom.Number](center geom.Point[T], size geom.Size[T], n int, angle float64) RegularPolygon {
-	return geom.RegPol(center, size, n, angle).Float()
+// RegPol is shorthand for geom.RegPol(center, size, n, angle, phase).Float()
+func RegPol[T geom.Number](center geom.Point[T], size geom.Size[T], n int, angle, phase float64) RegularPolygon {
+	return geom.RegPol(center, size, n, angle, phase).Float()
 }
 
 // Pad is shorthand for geom.Pad(top, right, bottom, left).Float()

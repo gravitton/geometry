@@ -442,7 +442,7 @@ func TestTransformable(t *testing.T) {
 		AssertRectangle(t, moved(Rect(Pt(0, 0), Sz(2, 2)), Vec(1, 1)), Rect(Pt(1, 1), Sz(2, 2)))
 		AssertCircle(t, moved(Circ(Pt(0, 0), 2), Vec(1, 1)), Circ(Pt(1, 1), 2))
 		AssertPolygon(t, moved(Pol(squareVertices()), Vec(1, 1)), Pol([]Point[int]{Pt(1, 1), Pt(3, 1), Pt(3, 3), Pt(1, 3)}))
-		AssertRegularPolygon(t, moved(RegPol(Pt(0, 0), Sz(2, 2), 6, 0), Vec(1, 1)), RegPol(Pt(1, 1), Sz(2, 2), 6, 0))
+		AssertRegularPolygon(t, moved(RegPol(Pt(0, 0), Sz(2, 2), 6, 0, 0), Vec(1, 1)), RegPol(Pt(1, 1), Sz(2, 2), 6, 0, 0))
 	})
 }
 

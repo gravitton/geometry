@@ -13,10 +13,14 @@ import (
 // r x r and spans up to twice it. This differs from Rectangle, whose Size is the full width
 // and height. Use Bounds for the extent.
 //
-// Angle turns the polygon about its center, the same meaning it has on Rectangle: the vertices
-// are placed on the ellipse of the semi-axes, the first at angle zero, and the whole ring is
-// then turned. Where the semi-axes are equal, turning and stepping around the ring are the
-// same thing and the first vertex lies at Angle.
+// Phase places the vertices on the ellipse of the semi-axes, the first at that parameter and
+// each next a step of 2π/n on, and Angle then turns the whole ring about the center, the same
+// meaning it has on Rectangle. The two differ only for unequal semi-axes: the phase decides
+// where the vertices sit against the axes the ellipse is stretched along, so a flat-top polygon
+// is stretched across its edges and a pointy-top one across its vertices, and the turn moves
+// that stretched shape. Where the semi-axes are equal, turning and stepping around the ring are
+// the same thing and the first vertex lies at Angle + Phase. Every affine image of a regular
+// polygon is one of these, which is what lets Transform keep any matrix exactly.
 //
 // The size is never negative: RegPol and the orientation constructors take it absolute, and
 // Scale takes a negative factor absolute, since a negative semi-axis would place
@@ -27,17 +31,20 @@ type RegularPolygon[T Number] struct {
 	Size   Size[T]  `json:",embed"`
 	N      int      `json:"n"`
 	Angle  float64  `json:"a,omitzero"`
+	Phase  float64  `json:"p,omitzero"`
 }
 
-// RegPol is shorthand for RegularPolygon{center, size, n, angle}, with the size taken absolute.
-func RegPol[T Number](center Point[T], size Size[T], n int, angle float64) RegularPolygon[T] {
-	return RegularPolygon[T]{center, size.Abs(), n, angle}
+// RegPol is shorthand for RegularPolygon{center, size, n, angle, phase}, with the size taken
+// absolute.
+func RegPol[T Number](center Point[T], size Size[T], n int, angle, phase float64) RegularPolygon[T] {
+	return RegularPolygon[T]{center, size.Abs(), n, angle, phase}
 }
 
-// RegularPolygonWithOrientation creates a RegularPolygon with the given orientation, with the
-// size taken absolute like RegPol.
+// RegularPolygonWithOrientation creates a RegularPolygon with the given orientation, its first
+// vertex placed by RegularPolygonOrientationPhase and not turned, with the size taken absolute
+// like RegPol: Width is the semi-axis across and Height the one up, for every n.
 func RegularPolygonWithOrientation[T Number](center Point[T], size Size[T], n int, orientation Orientation) RegularPolygon[T] {
-	return RegPol(center, size, n, RegularPolygonOrientationAngle(n, orientation))
+	return RegPol(center, size, n, 0, RegularPolygonOrientationPhase(n, orientation))
 }
 
 // Triangle creates a RegularPolygon with 3 vertices.
@@ -59,9 +66,8 @@ func Hexagon[T Number](center Point[T], size Size[T], orientation Orientation) R
 // center itself for DirectionNone: the point where the ray from the center leaves the polygon,
 // as Rectangle.Anchor gives a corner or an edge midpoint and Ellipse.Anchor the point of its
 // boundary. The direction is taken in the world, where the polygon stands after its turn,
-// unlike Rectangle.Anchor, since the orientation constructors turn the polygon to place its
-// top: on a flat-top polygon the Top anchor is the midpoint of the top edge, on a pointy-top
-// one its top vertex, and Rotate moves every anchor along the boundary. For integer T
+// unlike Rectangle.Anchor, so Rotate moves every anchor along the boundary: on a flat-top
+// polygon the Top anchor is the midpoint of the top edge, on a pointy-top one its top vertex. For integer T
 // the point of the edge between the rounded vertices is rounded once more, which can carry it
 // off that edge by up to half a diagonal, where Contains rejects it, as a diagonal
 // Circle.Anchor is. A polygon with fewer than three vertices encloses no area and
@@ -85,7 +91,7 @@ func (rp RegularPolygon[T]) Anchor(direction Direction) Point[T] {
 	return edge.PointAt(along).Cast[T]()
 }
 
-// Vertices iterates the polygon vertices in order starting from Angle, by increasing angle —
+// Vertices iterates the polygon vertices in order starting from Phase, by increasing angle —
 // the same winding as Directions and Rectangle.Vertices, and clockwise as drawn on a screen
 // with Y pointing down, without allocating; collect them with slices.Collect where a slice is
 // needed. A polygon with N < 1 has no vertices and yields nothing.
@@ -204,12 +210,12 @@ func (rp RegularPolygon[T]) centralAngle() float64 {
 	return 2 * Pi / float64(rp.N)
 }
 
-// vertexAngle returns the angle of the vertex at the given index on the ellipse before the
-// turn, that many central angles from the first: the one expression every vertex is placed
+// vertexAngle returns the parameter of the vertex at the given index on the ellipse before the
+// turn, that many central angles on from Phase: the one expression every vertex is placed
 // from, so a measure taken without building the vertices reads the same angles Vertices does,
-// and nearestIndex inverts it.
+// and nearestIndex and edgeIndex invert it.
 func (rp RegularPolygon[T]) vertexAngle(i int) float64 {
-	return float64(float64(i) * rp.centralAngle())
+	return rp.Phase + float64(float64(i)*rp.centralAngle())
 }
 
 // worldPoint returns the point at the given offset from the center on the ellipse before the
@@ -240,10 +246,10 @@ func (rp RegularPolygon[T]) edge(i int) Segment[T] {
 
 // edgeIndex returns the index of the edge the ray from the center leaves the polygon through in
 // the given direction of the frame before the turn: the direction is taken onto the parameter
-// of the ellipse the vertices lie on, where they are equally spaced, and the edge is the one
-// between the two parameters around it.
+// of the ellipse the vertices lie on, where they are equally spaced from Phase, and the edge is
+// the one between the two parameters around it.
 func (rp RegularPolygon[T]) edgeIndex(direction float64) int {
-	parameter := NormalizeAngle(rp.Ellipse().parametricAngle(direction))
+	parameter := NormalizeAngle(rp.Ellipse().parametricAngle(direction) - rp.Phase)
 
 	return int(parameter/rp.centralAngle()) % rp.N
 }
@@ -252,7 +258,8 @@ func (rp RegularPolygon[T]) edgeIndex(direction float64) int {
 // the world, at most half a central angle from the point that reaches farthest there. The
 // direction is taken into the frame before the turn, and for unequal semi-axes onto the
 // ellipse, where a semi-axis stretches it away from the direction itself; equal semi-axes take
-// the direction as it is, the same expression vertex places them from. With one or two
+// the direction as it is, the same expression vertex places them from, and both count the steps
+// from Phase. With one or two
 // vertices the nearest can be more than a quarter turn off, so the reach is negative exactly
 // where no vertex lies on that side.
 func (rp RegularPolygon[T]) nearestIndex(direction float64) int {
@@ -262,7 +269,7 @@ func (rp RegularPolygon[T]) nearestIndex(direction float64) int {
 		local = math.Atan2(float64(rp.Size.Height)*sin, float64(rp.Size.Width)*cos)
 	}
 
-	return Mod(int(math.Round(local/rp.centralAngle())), rp.N)
+	return Mod(int(math.Round((local-rp.Phase)/rp.centralAngle())), rp.N)
 }
 
 // minMax returns the minimum and maximum corner of the vertices, the corners of Bounds: the pair
@@ -283,12 +290,12 @@ func (rp RegularPolygon[T]) minMax() (Point[T], Point[T]) {
 
 // Translate creates a new RegularPolygon translated by the given vector.
 func (rp RegularPolygon[T]) Translate(vector Vector[T]) RegularPolygon[T] {
-	return RegularPolygon[T]{rp.Center.Add(vector), rp.Size, rp.N, rp.Angle}
+	return RegularPolygon[T]{rp.Center.Add(vector), rp.Size, rp.N, rp.Angle, rp.Phase}
 }
 
 // MoveTo creates a new RegularPolygon with center at point.
 func (rp RegularPolygon[T]) MoveTo(point Point[T]) RegularPolygon[T] {
-	return RegularPolygon[T]{point, rp.Size, rp.N, rp.Angle}
+	return RegularPolygon[T]{point, rp.Size, rp.N, rp.Angle, rp.Phase}
 }
 
 // Scale creates a new RegularPolygon with size scaled by the given factor. A negative factor
@@ -296,74 +303,75 @@ func (rp RegularPolygon[T]) MoveTo(point Point[T]) RegularPolygon[T] {
 // one would place every vertex half a turn away rather than shrink the polygon; use Rotate for
 // the half turn.
 func (rp RegularPolygon[T]) Scale(factor float64) RegularPolygon[T] {
-	return RegularPolygon[T]{rp.Center, rp.Size.Scale(factor).Abs(), rp.N, rp.Angle}
+	return RegularPolygon[T]{rp.Center, rp.Size.Scale(factor).Abs(), rp.N, rp.Angle, rp.Phase}
 }
 
 // ScaleXY creates a new RegularPolygon with size scaled by the given factors, negative ones by
 // their absolute value like Scale.
 func (rp RegularPolygon[T]) ScaleXY(factorX, factorY float64) RegularPolygon[T] {
-	return RegularPolygon[T]{rp.Center, rp.Size.ScaleXY(factorX, factorY).Abs(), rp.N, rp.Angle}
+	return RegularPolygon[T]{rp.Center, rp.Size.ScaleXY(factorX, factorY).Abs(), rp.N, rp.Angle, rp.Phase}
 }
 
 // Unscale creates a new RegularPolygon with size scaled by the inverse factor, the inverse of
 // Scale and negative factors taken absolute like it. Like Divide it panics for a zero factor.
 func (rp RegularPolygon[T]) Unscale(factor float64) RegularPolygon[T] {
-	return RegularPolygon[T]{rp.Center, rp.Size.Unscale(factor).Abs(), rp.N, rp.Angle}
+	return RegularPolygon[T]{rp.Center, rp.Size.Unscale(factor).Abs(), rp.N, rp.Angle, rp.Phase}
 }
 
 // UnscaleXY creates a new RegularPolygon with size scaled by the inverse of the given factors,
 // the inverse of ScaleXY. Like Divide it panics for a zero factor.
 func (rp RegularPolygon[T]) UnscaleXY(factorX, factorY float64) RegularPolygon[T] {
-	return RegularPolygon[T]{rp.Center, rp.Size.UnscaleXY(factorX, factorY).Abs(), rp.N, rp.Angle}
+	return RegularPolygon[T]{rp.Center, rp.Size.UnscaleXY(factorX, factorY).Abs(), rp.N, rp.Angle, rp.Phase}
 }
 
 // Resize creates a new RegularPolygon with the given semi-axes, taken absolute like RegPol.
 func (rp RegularPolygon[T]) Resize(size Size[T]) RegularPolygon[T] {
-	return RegularPolygon[T]{rp.Center, size.Abs(), rp.N, rp.Angle}
+	return RegularPolygon[T]{rp.Center, size.Abs(), rp.N, rp.Angle, rp.Phase}
 }
 
 // Canonical creates a new RegularPolygon in the form RegPol and Rotate build, with the size
-// taken absolute and the angle normalized to [0, 2π): a well-formed polygon is returned as it
-// is, up to the full turns Equal already ignores. It repairs a negative semi-axis written as a
+// taken absolute and the angle and the phase normalized to [0, 2π): a well-formed polygon is
+// returned as it is, up to the full turns Equal already ignores. It repairs a negative semi-axis written as a
 // struct literal or decoded from JSON, which would place every vertex half a turn away, and
 // brings a decoded angle onto the seam Rotate keeps. An angle within Delta of zero or of a
-// full turn, the residue a chain of Rotate and Lerp calls can leave, becomes exactly zero, as
-// Rectangle.Canonical makes it; Rotate itself never snaps.
+// full turn, the residue a chain of Rotate, Lerp and Transform calls can leave, becomes exactly
+// zero, as Rectangle.Canonical makes it, and so does a phase; Rotate itself never snaps. The
+// phase is not reduced to a step around the polygon, which would renumber the vertices.
 func (rp RegularPolygon[T]) Canonical() RegularPolygon[T] {
-	return RegularPolygon[T]{rp.Center, rp.Size.Abs(), rp.N, snapAngle(rp.Angle)}
+	return RegularPolygon[T]{rp.Center, rp.Size.Abs(), rp.N, snapAngle(rp.Angle), snapAngle(rp.Phase)}
 }
 
 // Grow creates a new RegularPolygon with both semi-axes increased by amount, clamped to zero.
 // The amount is added to each semi-axis, as Ellipse.Grow adds it, so each extent of Bounds
 // grows by about twice it.
 func (rp RegularPolygon[T]) Grow(amount T) RegularPolygon[T] {
-	return RegularPolygon[T]{rp.Center, rp.Size.Grow(amount).AtLeastZero(), rp.N, rp.Angle}
+	return RegularPolygon[T]{rp.Center, rp.Size.Grow(amount).AtLeastZero(), rp.N, rp.Angle, rp.Phase}
 }
 
 // GrowXY creates a new RegularPolygon with the semi-axes increased by the given amounts along
 // its own axes, clamped to zero. Each amount is added to that semi-axis, like Grow.
 func (rp RegularPolygon[T]) GrowXY(amountX, amountY T) RegularPolygon[T] {
-	return RegularPolygon[T]{rp.Center, rp.Size.GrowXY(amountX, amountY).AtLeastZero(), rp.N, rp.Angle}
+	return RegularPolygon[T]{rp.Center, rp.Size.GrowXY(amountX, amountY).AtLeastZero(), rp.N, rp.Angle, rp.Phase}
 }
 
 // Shrink creates a new RegularPolygon with both semi-axes decreased by amount, clamped to zero.
 func (rp RegularPolygon[T]) Shrink(amount T) RegularPolygon[T] {
-	return RegularPolygon[T]{rp.Center, rp.Size.Shrink(amount).AtLeastZero(), rp.N, rp.Angle}
+	return RegularPolygon[T]{rp.Center, rp.Size.Shrink(amount).AtLeastZero(), rp.N, rp.Angle, rp.Phase}
 }
 
 // ShrinkXY creates a new RegularPolygon with the semi-axes decreased by the given amounts along
 // its own axes, clamped to zero.
 func (rp RegularPolygon[T]) ShrinkXY(amountX, amountY T) RegularPolygon[T] {
-	return RegularPolygon[T]{rp.Center, rp.Size.ShrinkXY(amountX, amountY).AtLeastZero(), rp.N, rp.Angle}
+	return RegularPolygon[T]{rp.Center, rp.Size.ShrinkXY(amountX, amountY).AtLeastZero(), rp.N, rp.Angle, rp.Phase}
 }
 
 // Lerp creates a new RegularPolygon in linear interpolation towards the given polygon, moving
-// the center and the size together and turning the angle along the shorter arc with
-// LerpAngle, so a tween from 350° to 10° passes through the top rather than the long way
-// round; the result is normalized to [0, 2π) like Rotate. It extrapolates outside [0, 1] like
+// the center and the size together and turning the angle and the phase along the shorter arc
+// with LerpAngle, so a tween from 350° to 10° passes through the top rather than the long way
+// round; both are normalized to [0, 2π) like Rotate. It extrapolates outside [0, 1] like
 // Point.Lerp, with the size taken absolute like RegPol. The vertex count does not
 // interpolate: polygons with a different N have no shape between them, so Lerp panics for
-// them, the convention RegularPolygonOrientationAngle follows for an orientation with no
+// them, the convention RegularPolygonOrientationPhase follows for an orientation with no
 // meaning, rather than hiding the mistake in an empty polygon.
 func (rp RegularPolygon[T]) Lerp(polygon RegularPolygon[T], t float64) RegularPolygon[T] {
 	if rp.N != polygon.N {
@@ -375,30 +383,34 @@ func (rp RegularPolygon[T]) Lerp(polygon RegularPolygon[T], t float64) RegularPo
 		rp.Size.Lerp(polygon.Size, t).Abs(),
 		rp.N,
 		NormalizeAngle(LerpAngle(rp.Angle, polygon.Angle, t)),
+		NormalizeAngle(LerpAngle(rp.Phase, polygon.Phase, t)),
 	}
 }
 
-// Transform creates a new RegularPolygon by applying the given matrix: the center moves, the
-// semi-axes scale by the factors the matrix applies along its axes, the angle turns by the
-// angle of the matrix or is mirrored about it for a reflection, and the vertex count is kept.
-// A move, a turn, a reflection and a uniform scale are exact, and so is a scale of the axes
-// while the polygon is not turned, exactly as they are for a rectangle. A shear, or a scale of
-// the axes of a turned polygon, maps it onto one no value of this type holds and gives the
-// nearest, on the factors Matrix.Scaling reports. Take that case exactly through
-// Polygon().Transform. For integer T the
-// center and the semi-axes are each rounded once.
+// Transform creates a new RegularPolygon by applying the given matrix, exactly for every
+// matrix: the center moves, and the turn, the semi-axes and the phase are those of the matrix
+// applied to the stretched ring, taken apart again by its singular value decomposition, so a
+// shear or a scale of the axes of a turned polygon gives the polygon the vertices land on
+// rather than the nearest one. A reflection reverses the winding and mirrors the phase. A move,
+// a turn and a scale along the axes of an unturned polygon keep the phase; the decomposition is
+// not unique, and where it reads the semi-axes the other way round, the phase takes the
+// quarter turn. For integer T the center and the semi-axes are each rounded once.
 func (rp RegularPolygon[T]) Transform[M Float](matrix Matrix[M]) RegularPolygon[T] {
-	m := matrix.Float()
-	scaling := m.Scaling()
+	after, stretch, before, reflected := matrix.mapping(rp.Angle, rp.Size.Float()).decomposition()
 
-	return RegularPolygon[T]{rp.Center.Transform(matrix), rp.Size.ScaleXY(scaling.X, scaling.Y).Abs(), rp.N, m.turnedAngle(rp.Angle, scaling)}
+	phase := rp.Phase + before
+	if reflected {
+		phase = -phase
+	}
+
+	return RegularPolygon[T]{rp.Center.Transform(matrix), stretch.Size().Cast[T](), rp.N, NormalizeAngle(after), NormalizeAngle(phase)}
 }
 
 // Rotate creates a new RegularPolygon turned by the given angle (in radians) about its center,
 // in the same sense as Vector.Rotate and as Rectangle.Rotate turns a box.
 // The stored angle is normalized to [0, 2π) to prevent drift from repeated rotations.
 func (rp RegularPolygon[T]) Rotate(angle float64) RegularPolygon[T] {
-	return RegularPolygon[T]{rp.Center, rp.Size, rp.N, NormalizeAngle(rp.Angle + angle)}
+	return RegularPolygon[T]{rp.Center, rp.Size, rp.N, NormalizeAngle(rp.Angle + angle), rp.Phase}
 }
 
 // AlignTo creates a new RegularPolygon moved so that its Anchor in the given direction lands
@@ -633,14 +645,17 @@ func (rp RegularPolygon[T]) walk(point Point[T]) edgeWalk[T] {
 	return w
 }
 
-// Equal checks if center point, size, number of vertices and angle are equal. Angles are
-// compared with EqualAngle, so a full turn or the sign of an angle does not matter.
+// Equal checks if center point, size, number of vertices, angle and phase are equal. Angles
+// are compared with EqualAngle, so a full turn or the sign of an angle does not matter. The
+// values are compared, not the shapes: a phase a step around the polygon apart, or a turn
+// moved into the phase of equal semi-axes, draws the same polygon with its vertices numbered
+// otherwise, and is a different value.
 func (rp RegularPolygon[T]) Equal(polygon RegularPolygon[T]) bool {
-	return rp.Center.Equal(polygon.Center) && rp.Size.Equal(polygon.Size) && rp.N == polygon.N && EqualAngle(rp.Angle, polygon.Angle)
+	return rp.Center.Equal(polygon.Center) && rp.Size.Equal(polygon.Size) && rp.N == polygon.N && EqualAngle(rp.Angle, polygon.Angle) && EqualAngle(rp.Phase, polygon.Phase)
 }
 
-// IsZero checks if center point, size, number of vertices and angle are zero, comparing
-// the angle like Equal so that a full turn counts as zero.
+// IsZero checks if center point, size, number of vertices, angle and phase are zero, comparing
+// the angles like Equal so that a full turn counts as zero.
 func (rp RegularPolygon[T]) IsZero() bool {
 	return rp.Equal(RegularPolygon[T]{})
 }
@@ -652,8 +667,8 @@ func (rp RegularPolygon[T]) IsEmpty() bool {
 
 // IsAligned reports whether the polygon is not turned: its Angle is exactly zero, as RegPol
 // with no angle and Rotate by a full turn leave it, the same exact test Rectangle.IsAligned
-// makes. No tolerance is applied; Canonical snaps a residue to zero. An aligned polygon of
-// equal semi-axes has its first vertex at the end of the width semi-axis.
+// makes. No tolerance is applied; Canonical snaps a residue to zero. The phase places the
+// vertices within the frame and does not turn it, so an aligned polygon may have any phase.
 func (rp RegularPolygon[T]) IsAligned() bool {
 	return rp.Angle == 0
 }
@@ -676,7 +691,7 @@ func (rp RegularPolygon[T]) Polygon() Polygon[T] {
 
 // Ellipse converts the polygon into the Ellipse its vertices lie on, the one it is inscribed
 // in: the same center, semi-axes and angle, so the conversion is exact and Ellipse.RegularPolygon
-// is its inverse for the same vertex count. A polygon with N < 1 has no vertices and still
+// is its inverse for the same vertex count and a zero phase, which the ellipse does not carry. A polygon with N < 1 has no vertices and still
 // names the ellipse its Size and Angle describe.
 func (rp RegularPolygon[T]) Ellipse() Ellipse[T] {
 	return Ellipse[T]{rp.Center, rp.Size, rp.Angle}
@@ -692,37 +707,44 @@ func (rp RegularPolygon[T]) Circle() Circle[T] {
 
 // Cast converts the polygon to a RegularPolygon of another number type, rounding as Cast does.
 func (rp RegularPolygon[T]) Cast[R Number]() RegularPolygon[R] {
-	return RegularPolygon[R]{rp.Center.Cast[R](), rp.Size.Cast[R](), rp.N, rp.Angle}
+	return RegularPolygon[R]{rp.Center.Cast[R](), rp.Size.Cast[R](), rp.N, rp.Angle, rp.Phase}
 }
 
 // Int converts the regular polygon to a RegularPolygon[int].
 func (rp RegularPolygon[T]) Int() RegularPolygon[int] {
-	return RegularPolygon[int]{rp.Center.Int(), rp.Size.Int(), rp.N, rp.Angle}
+	return RegularPolygon[int]{rp.Center.Int(), rp.Size.Int(), rp.N, rp.Angle, rp.Phase}
 }
 
 // Float converts the regular polygon to a RegularPolygon[float64].
 func (rp RegularPolygon[T]) Float() RegularPolygon[float64] {
-	return RegularPolygon[float64]{rp.Center.Float(), rp.Size.Float(), rp.N, rp.Angle}
+	return RegularPolygon[float64]{rp.Center.Float(), rp.Size.Float(), rp.N, rp.Angle, rp.Phase}
 }
 
 // String returns the polygon in the form of its constructor: RegPol((x,y);WxH;n), center, size
-// and vertex count, with the angle appended as RegPol((x,y);WxH;n;a) for a rotated polygon, as
-// the JSON carries it only then.
+// and vertex count, with the angle appended as RegPol((x,y);WxH;n;a) for a rotated polygon and
+// the phase after it as RegPol((x,y);WxH;n;a;p) where it is not zero, as the JSON carries each
+// only then.
 func (rp RegularPolygon[T]) String() string {
-	if rp.IsAligned() {
+	switch {
+	case rp.Phase != 0:
+		return fmt.Sprintf("RegPol(%s;%s;%s;%s;%s)", rp.Center.String(), rp.Size.String(), String(rp.N), String(rp.Angle), String(rp.Phase))
+	case !rp.IsAligned():
+		return fmt.Sprintf("RegPol(%s;%s;%s;%s)", rp.Center.String(), rp.Size.String(), String(rp.N), String(rp.Angle))
+	default:
 		return fmt.Sprintf("RegPol(%s;%s;%s)", rp.Center.String(), rp.Size.String(), String(rp.N))
 	}
-
-	return fmt.Sprintf("RegPol(%s;%s;%s;%s)", rp.Center.String(), rp.Size.String(), String(rp.N), String(rp.Angle))
 }
 
-// RegularPolygonOrientationAngle returns the initial vertex angle for a regular polygon with n sides
-// and the given orientation, normalized to [0, 2π) like Rotate. OrientationPointyTop puts the first vertex at
-// the top (-Y, 3π/2); OrientationFlatTop puts the midpoint of an edge there, so the first vertex sits half a
-// step before it at 3π/2 - π/n. A polygon with n < 1 has no edge to place, so both orientations
-// give the top angle rather than dividing by n. An orientation other than OrientationFlatTop and OrientationPointyTop
-// has no meaning and panics.
-func RegularPolygonOrientationAngle(n int, orientation Orientation) float64 {
+// RegularPolygonOrientationPhase returns the phase the orientation constructors place the first
+// vertex of a regular polygon of n vertices at, normalized to [0, 2π) like Rotate.
+// OrientationPointyTop puts the first vertex at the top (-Y, 3π/2); OrientationFlatTop puts the
+// midpoint of an edge there, so the first vertex sits half a step before it at 3π/2 - π/n. The
+// phase places the vertices on the ellipse before its semi-axes stretch it, so the polygon is
+// stretched across Width and Height as they stand for either orientation and every n. A polygon
+// with n < 1 has no edge to place, so both orientations give the top phase rather than dividing
+// by n. An orientation other than OrientationFlatTop and OrientationPointyTop has no meaning and
+// panics.
+func RegularPolygonOrientationPhase(n int, orientation Orientation) float64 {
 	top := 3 * Pi / 2
 
 	switch orientation {

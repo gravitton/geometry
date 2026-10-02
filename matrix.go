@@ -142,15 +142,65 @@ func (m Matrix[T]) determinant() float64 {
 // turnedAngle returns the angle a shape at the given angle takes under the matrix: its own
 // angle plus the angle of the matrix, or mirrored about that angle where the matrix reflects,
 // which the negative Y factor of Scaling names. It is normalized to [0, 2π) like Rotate, and
-// is the angle Rectangle.Transform, Ellipse.Transform and RegularPolygon.Transform place, so
-// the three oriented shapes turn alike. The factors are the ones the caller already scaled
-// the shape by, rather than read from the matrix a second time.
+// is the angle Rectangle.Transform places, the nearest rectangle where the matrix shears it.
+// The factors are the ones the caller already scaled the shape by, rather than read from the
+// matrix a second time.
 func (m Matrix[T]) turnedAngle(angle float64, scaling Vector[T]) float64 {
 	if scaling.Y < 0 {
 		return NormalizeAngle(m.Angle() - angle)
 	}
 
 	return NormalizeAngle(angle + m.Angle())
+}
+
+// decomposition returns the linear part of the matrix as a turn after, a stretch along the axes
+// and a turn before, its singular value decomposition R(after) · diag(stretch) · R(before), and
+// whether a mirror of Y stands between the stretch and the turn before, which a reflection
+// needs, so the stretch is never negative. The decomposition is not unique, and the turn before
+// is taken within an eighth of a turn of zero, a quarter turn moved into the turn after with
+// the stretch swapped, so a matrix that turns and scales along the axes reports none; where
+// the stretch is the same on both axes, any turn before would do, and it is zero.
+func (m Matrix[T]) decomposition() (float64, Vector[float64], float64, bool) {
+	f := m.Float()
+	e, g := float64((f.A+f.E)/2), float64((f.A-f.E)/2)
+	h, k := float64((f.D+f.B)/2), float64((f.D-f.B)/2)
+
+	q, r := math.Hypot(e, k), math.Hypot(g, h)
+	anisotropy, rotation := math.Atan2(h, g), math.Atan2(k, e)
+	if r == 0 {
+		anisotropy = rotation
+	}
+	if q == 0 {
+		rotation = anisotropy
+	}
+
+	after, before := float64((rotation+anisotropy)/2), float64((rotation-anisotropy)/2)
+	stretch, reflected := Vector[float64]{q + r, math.Abs(q - r)}, q < r
+
+	quarters := math.Round(before / (Pi / 2))
+	before -= float64(quarters * (Pi / 2))
+	if reflected {
+		after -= float64(quarters * (Pi / 2))
+	} else {
+		after += float64(quarters * (Pi / 2))
+	}
+	if math.Mod(quarters, 2) != 0 {
+		stretch = Vector[float64]{stretch.Y, stretch.X}
+	}
+
+	return after, stretch, before, reflected
+}
+
+// mapping returns the linear part of the matrix applied to the frame of an oriented shape, the
+// unit circle stretched by the size and turned by the angle: the map whose decomposition gives
+// the turn, the semi-axes and, for a regular polygon, the phase the shape takes under the matrix,
+// so Ellipse.Transform and RegularPolygon.Transform read the one expression.
+func (m Matrix[T]) mapping(angle float64, size Size[float64]) Matrix[float64] {
+	f := m.Float()
+	sin, cos := math.Sincos(angle)
+	w, h := size.XY()
+
+	return Matrix[float64]{f.A, f.B, 0, f.D, f.E, 0}.Multiply(Matrix[float64]{cos * w, -sin * h, 0, sin * w, cos * h, 0})
 }
 
 // Multiply creates a new matrix by multiplying the current matrix with given matrix.

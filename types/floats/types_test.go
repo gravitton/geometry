@@ -22,7 +22,7 @@ func TestConstructors(t *testing.T) {
 
 	assert.True(t, Pol([]geom.Point[int]{geom.Pt(1, 2), geom.Pt(3, 4)}).Equal(geom.Pol([]geom.Point[float64]{geom.Pt(1.0, 2.0), geom.Pt(3.0, 4.0)})))
 
-	assert.Equal(t, RegPol(geom.Pt(1, 2), geom.Sz(3, 4), 6, 0.5), geom.RegPol(geom.Pt(1.0, 2.0), geom.Sz(3.0, 4.0), 6, 0.5))
+	assert.Equal(t, RegPol(geom.Pt(1, 2), geom.Sz(3, 4), 6, 0.5, 0), geom.RegPol(geom.Pt(1.0, 2.0), geom.Sz(3.0, 4.0), 6, 0.5, 0))
 
 	assert.Equal(t, Pad(1, 2, 3, 4), geom.Pad(1.0, 2.0, 3.0, 4.0))
 	assert.Equal(t, Mat(1, 2, 3, 4, 5, 6), geom.Mat(1.0, 2.0, 3.0, 4.0, 5.0, 6.0))

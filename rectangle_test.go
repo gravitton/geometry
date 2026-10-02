@@ -1039,11 +1039,11 @@ func TestRectangle_EnclosesRectangle(t *testing.T) {
 
 func TestRectangle_EnclosesRegularPolygon(t *testing.T) {
 	t.Run("inside and outside", func(t *testing.T) {
-		assert.True(t, Rect(Pt(0, 0), Sz(4, 4)).EnclosesRegularPolygon(RegPol(Pt(0, 0), Sz(2, 2), 6, 0)))
-		assert.False(t, Rect(Pt(0, 0), Sz(4, 4)).EnclosesRegularPolygon(RegPol(Pt(1, 0), Sz(2, 2), 6, 0)))
+		assert.True(t, Rect(Pt(0, 0), Sz(4, 4)).EnclosesRegularPolygon(RegPol(Pt(0, 0), Sz(2, 2), 6, 0, 0)))
+		assert.False(t, Rect(Pt(0, 0), Sz(4, 4)).EnclosesRegularPolygon(RegPol(Pt(1, 0), Sz(2, 2), 6, 0, 0)))
 	})
 	t.Run("an empty polygon is enclosed by nothing", func(t *testing.T) {
-		assert.False(t, Rect(Pt(0, 0), Sz(4, 4)).EnclosesRegularPolygon(RegPol(Pt(0, 0), Sz(2, 2), 0, 0)))
+		assert.False(t, Rect(Pt(0, 0), Sz(4, 4)).EnclosesRegularPolygon(RegPol(Pt(0, 0), Sz(2, 2), 0, 0, 0)))
 	})
 	t.Run("matches the polygon of the corners", func(t *testing.T) {
 		for _, r := range rectFixtures {
@@ -1393,7 +1393,7 @@ func TestRectangle_Union(t *testing.T) {
 }
 
 func TestRectangle_IntersectsRegularPolygon(t *testing.T) {
-	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0)
+	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0, 0)
 
 	t.Run("overlapping", func(t *testing.T) {
 		assert.True(t, Rect(Pt(1, 1), Sz(2, 2)).IntersectsRegularPolygon(diamond))
@@ -1407,17 +1407,17 @@ func TestRectangle_IntersectsRegularPolygon(t *testing.T) {
 		assert.True(t, Rect(Pt(0, 0), Sz(1, 1)).IntersectsRegularPolygon(diamond))
 	})
 	t.Run("edges crossing without a corner inside", func(t *testing.T) {
-		assert.True(t, Rect(Pt(0, 0), Sz(10, 1)).IntersectsRegularPolygon(RegPol(Pt(0, 0), Sz(2, 20), 4, 0)))
+		assert.True(t, Rect(Pt(0, 0), Sz(10, 1)).IntersectsRegularPolygon(RegPol(Pt(0, 0), Sz(2, 20), 4, 0, 0)))
 	})
 	t.Run("rotated is tested on its turned edges", func(t *testing.T) {
 		turned := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
-		corner := RegPol(Pt(1.5, 1.5), Sz(0.5, 0.5), 3, 0)
+		corner := RegPol(Pt(1.5, 1.5), Sz(0.5, 0.5), 3, 0, 0)
 
 		assert.False(t, turned.IntersectsRegularPolygon(corner))
 		assert.True(t, turned.Bounds().Rectangle().IntersectsRegularPolygon(corner))
 	})
 	t.Run("an empty polygon intersects nothing", func(t *testing.T) {
-		assert.False(t, Rect(Pt(0, 0), Sz(2, 2)).IntersectsRegularPolygon(RegPol(Pt(0, 0), Sz(2, 2), 0, 0)))
+		assert.False(t, Rect(Pt(0, 0), Sz(2, 2)).IntersectsRegularPolygon(RegPol(Pt(0, 0), Sz(2, 2), 0, 0, 0)))
 	})
 	t.Run("matches the polygon of the vertices", func(t *testing.T) {
 		for _, r := range rectFixtures {

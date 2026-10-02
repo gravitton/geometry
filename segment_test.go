@@ -1188,7 +1188,7 @@ func FuzzSegment_IntersectionRectangle(f *testing.F) {
 }
 
 func TestSegment_IntersectsRegularPolygon(t *testing.T) {
-	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0)
+	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0, 0)
 
 	t.Run("passing through", func(t *testing.T) {
 		assert.True(t, Seg(Pt(-3, 0), Pt(3, 0)).IntersectsRegularPolygon(diamond))
@@ -1204,7 +1204,7 @@ func TestSegment_IntersectsRegularPolygon(t *testing.T) {
 		assert.False(t, Seg(Pt(5, 0), Pt(6, 0)).IntersectsRegularPolygon(diamond))
 	})
 	t.Run("an empty polygon intersects nothing", func(t *testing.T) {
-		assert.False(t, Seg(Pt(-3, 0), Pt(3, 0)).IntersectsRegularPolygon(RegPol(Pt(0, 0), Sz(2, 2), 0, 0)))
+		assert.False(t, Seg(Pt(-3, 0), Pt(3, 0)).IntersectsRegularPolygon(RegPol(Pt(0, 0), Sz(2, 2), 0, 0, 0)))
 	})
 	t.Run("matches the polygon of the vertices", func(t *testing.T) {
 		for _, s := range segmentFixtures {
@@ -1216,7 +1216,7 @@ func TestSegment_IntersectsRegularPolygon(t *testing.T) {
 }
 
 func TestSegment_IntersectionRegularPolygon(t *testing.T) {
-	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0)
+	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0, 0)
 
 	t.Run("passing through gives both crossings from Start to End", func(t *testing.T) {
 		AssertVertices(t, Seg(Pt(-3, 0), Pt(3, 0)).IntersectionRegularPolygon(diamond), []Point[int]{Pt(-2, 0), Pt(2, 0)})
@@ -1228,7 +1228,7 @@ func TestSegment_IntersectionRegularPolygon(t *testing.T) {
 	t.Run("inside, apart and empty give none", func(t *testing.T) {
 		assert.Nil(t, Seg(Pt(0, 0), Pt(1, 0)).IntersectionRegularPolygon(diamond))
 		assert.Nil(t, Seg(Pt(5, 0), Pt(6, 0)).IntersectionRegularPolygon(diamond))
-		assert.Nil(t, Seg(Pt(-3, 0), Pt(3, 0)).IntersectionRegularPolygon(RegPol(Pt(0, 0), Sz(2, 2), 0, 0)))
+		assert.Nil(t, Seg(Pt(-3, 0), Pt(3, 0)).IntersectionRegularPolygon(RegPol(Pt(0, 0), Sz(2, 2), 0, 0, 0)))
 	})
 	t.Run("allocates the result alone", func(t *testing.T) {
 		through, apart := Seg(Pt(-3, 0), Pt(3, 0)), Seg(Pt(5, 0), Pt(6, 0))
@@ -1261,7 +1261,7 @@ func TestSegment_IntersectionRegularPolygon(t *testing.T) {
 }
 
 func TestSegment_AppendIntersectionRegularPolygon(t *testing.T) {
-	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0)
+	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0, 0)
 	through := Seg(Pt(-3, 0), Pt(3, 0))
 
 	t.Run("appends after the points in dst, comparing and ordering only its own", func(t *testing.T) {
@@ -1580,7 +1580,7 @@ func TestSegment_ClipRectangle(t *testing.T) {
 }
 
 func TestSegment_ClipRegularPolygon(t *testing.T) {
-	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0)
+	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0, 0)
 
 	t.Run("passing through gives the part between the crossings", func(t *testing.T) {
 		assertSegments(t, partsOf(Seg(Pt(-3, 0), Pt(3, 0)).ClipRegularPolygon(diamond)), []Segment[int]{Seg(Pt(-2, 0), Pt(2, 0))})
@@ -1596,7 +1596,7 @@ func TestSegment_ClipRegularPolygon(t *testing.T) {
 	})
 	t.Run("apart and empty give none", func(t *testing.T) {
 		assert.Nil(t, partsOf(Seg(Pt(5, 0), Pt(6, 0)).ClipRegularPolygon(diamond)))
-		assert.Nil(t, partsOf(Seg(Pt(-3, 0), Pt(3, 0)).ClipRegularPolygon(RegPol(Pt(0, 0), Sz(2, 2), 0, 0))))
+		assert.Nil(t, partsOf(Seg(Pt(-3, 0), Pt(3, 0)).ClipRegularPolygon(RegPol(Pt(0, 0), Sz(2, 2), 0, 0, 0))))
 	})
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(-3, 0), Pt(3, 0))

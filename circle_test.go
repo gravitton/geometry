@@ -442,10 +442,10 @@ func TestCircle_EnclosesRegularPolygon(t *testing.T) {
 		}
 	})
 	t.Run("a vertex outside", func(t *testing.T) {
-		assert.False(t, Circ(Pt(0, 0), 2).EnclosesRegularPolygon(RegPol(Pt(1, 0), Sz(2, 2), 4, 0)))
+		assert.False(t, Circ(Pt(0, 0), 2).EnclosesRegularPolygon(RegPol(Pt(1, 0), Sz(2, 2), 4, 0, 0)))
 	})
 	t.Run("an empty polygon is enclosed by nothing", func(t *testing.T) {
-		assert.False(t, Circ(Pt(0, 0), 2).EnclosesRegularPolygon(RegPol(Pt(0, 0), Sz(1, 1), 0, 0)))
+		assert.False(t, Circ(Pt(0, 0), 2).EnclosesRegularPolygon(RegPol(Pt(0, 0), Sz(1, 1), 0, 0, 0)))
 	})
 }
 
@@ -1037,7 +1037,7 @@ func TestCircle_IntersectsRectangle(t *testing.T) {
 }
 
 func TestCircle_IntersectsRegularPolygon(t *testing.T) {
-	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0)
+	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0, 0)
 
 	t.Run("center inside", func(t *testing.T) {
 		assert.True(t, Circ(Pt(0, 0), 1).IntersectsRegularPolygon(diamond))
@@ -1050,7 +1050,7 @@ func TestCircle_IntersectsRegularPolygon(t *testing.T) {
 		assert.False(t, Circ(Pt(2, 2), 1).IntersectsRegularPolygon(diamond))
 	})
 	t.Run("an empty polygon intersects nothing", func(t *testing.T) {
-		assert.False(t, Circ(Pt(0, 0), 1).IntersectsRegularPolygon(RegPol(Pt(0, 0), Sz(2, 2), 0, 0)))
+		assert.False(t, Circ(Pt(0, 0), 1).IntersectsRegularPolygon(RegPol(Pt(0, 0), Sz(2, 2), 0, 0, 0)))
 	})
 	t.Run("matches the polygon of the vertices", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
@@ -1157,7 +1157,7 @@ func TestCircle_RegularPolygon(t *testing.T) {
 
 	t.Run("pointy top places a vertex at the top", func(t *testing.T) {
 		AssertRegularPolygon(t, c.RegularPolygon(6, OrientationPointyTop), Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationPointyTop))
-		AssertPoint(t, slices.Collect(c.RegularPolygon(6, OrientationPointyTop).Vertices())[0], Pt(0.0, -10.0))
+		assertOrientation(t, c.RegularPolygon(6, OrientationPointyTop), OrientationPointyTop, "")
 	})
 	t.Run("flat top places an edge at the top", func(t *testing.T) {
 		AssertRegularPolygon(t, c.RegularPolygon(6, OrientationFlatTop), Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationFlatTop))

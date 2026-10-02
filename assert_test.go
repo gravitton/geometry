@@ -188,20 +188,21 @@ func TestAssertVertices(t *testing.T) {
 }
 
 func TestAssertRegularPolygon(t *testing.T) {
-	p := RegPol(Pt(1, 2), Sz(3, 4), 5, 0.5)
+	p := RegPol(Pt(1, 2), Sz(3, 4), 5, 0.5, 0)
 
 	t.Run("equal", func(t *testing.T) {
-		assertHelper(t, AssertRegularPolygon, p, RegPol(Pt(1, 2), Sz(3, 4), 5, 0.5), true)
+		assertHelper(t, AssertRegularPolygon, p, RegPol(Pt(1, 2), Sz(3, 4), 5, 0.5, 0), true)
 	})
 	t.Run("angle is compared normalized", func(t *testing.T) {
-		assertHelper(t, AssertRegularPolygon, p, RegPol(Pt(1, 2), Sz(3, 4), 5, 0.5+2*Pi), true)
-		assertHelper(t, AssertRegularPolygon, RegPol(Pt(1, 2), Sz(3, 4), 5, 0), RegPol(Pt(1, 2), Sz(3, 4), 5, -1e-9), true)
+		assertHelper(t, AssertRegularPolygon, p, RegPol(Pt(1, 2), Sz(3, 4), 5, 0.5+2*Pi, 0), true)
+		assertHelper(t, AssertRegularPolygon, RegPol(Pt(1, 2), Sz(3, 4), 5, 0, 0), RegPol(Pt(1, 2), Sz(3, 4), 5, -1e-9, 0), true)
 	})
 	t.Run("one field differs", func(t *testing.T) {
-		assertHelper(t, AssertRegularPolygon, p, RegPol(Pt(9, 2), Sz(3, 4), 5, 0.5), false, "center")
-		assertHelper(t, AssertRegularPolygon, p, RegPol(Pt(1, 2), Sz(9, 4), 5, 0.5), false, "size")
-		assertHelper(t, AssertRegularPolygon, p, RegPol(Pt(1, 2), Sz(3, 4), 9, 0.5), false, "n")
-		assertHelper(t, AssertRegularPolygon, p, RegPol(Pt(1, 2), Sz(3, 4), 5, 9.5), false, "angle")
+		assertHelper(t, AssertRegularPolygon, p, RegPol(Pt(9, 2), Sz(3, 4), 5, 0.5, 0), false, "center")
+		assertHelper(t, AssertRegularPolygon, p, RegPol(Pt(1, 2), Sz(9, 4), 5, 0.5, 0), false, "size")
+		assertHelper(t, AssertRegularPolygon, p, RegPol(Pt(1, 2), Sz(3, 4), 9, 0.5, 0), false, "n")
+		assertHelper(t, AssertRegularPolygon, p, RegPol(Pt(1, 2), Sz(3, 4), 5, 9.5, 0), false, "angle")
+		assertHelper(t, AssertRegularPolygon, p, RegPol(Pt(1, 2), Sz(3, 4), 5, 0.5, 1), false, "phase")
 	})
 }
 

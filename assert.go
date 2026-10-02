@@ -213,7 +213,7 @@ func AssertVertices[T Number](t Testing, actual, expected []Point[T], messages .
 }
 
 // AssertRegularPolygon asserts that actual equals expected (exactly for an integer T, within [EpsilonRelative] for a float T).
-// The angle goes through AssertAngle, so a full turn does not matter, like RegularPolygon.Equal.
+// The angle and the phase go through AssertAngle, so a full turn does not matter, like RegularPolygon.Equal.
 func AssertRegularPolygon[T Number](t Testing, actual, expected RegularPolygon[T], messages ...string) bool {
 	t.Helper()
 
@@ -229,6 +229,9 @@ func AssertRegularPolygon[T Number](t Testing, actual, expected RegularPolygon[T
 		ok = false
 	}
 	if !AssertAngle(t, actual.Angle, expected.Angle, messages...) {
+		ok = false
+	}
+	if !AssertAngle(t, actual.Phase, expected.Phase, prefixed(messages, "Phase.")...) {
 		ok = false
 	}
 

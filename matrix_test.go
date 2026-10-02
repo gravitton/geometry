@@ -3,6 +3,8 @@ package geom
 import (
 	"encoding/json"
 	"fmt"
+	"math"
+	"slices"
 	"testing"
 
 	"github.com/gravitton/assert"
@@ -140,6 +142,56 @@ func TestMatrix_Scaling(t *testing.T) {
 			}
 
 			AssertMatrix(t, rebuilt, m, fmt.Sprintf("%s: ", m))
+		}
+	})
+}
+
+func TestMatrix_decomposition(t *testing.T) {
+	t.Run("a turn and a scale along the axes have no turn before", func(t *testing.T) {
+		after, stretch, before, reflected := RotationMatrix[float64](0.7).Scale(2, 3).decomposition()
+
+		AssertNumber(t, after, 0.7)
+		AssertVector(t, stretch, Vec(2.0, 3.0))
+		AssertNumber(t, before, 0.0)
+		assert.False(t, reflected)
+	})
+	t.Run("a reflection is reported and the stretch stays positive", func(t *testing.T) {
+		after, stretch, before, reflected := ScaleMatrix(2.0, -3.0).decomposition()
+
+		AssertNumber(t, after, 0.0)
+		AssertVector(t, stretch, Vec(2.0, 3.0))
+		AssertNumber(t, before, 0.0)
+		assert.True(t, reflected)
+	})
+	t.Run("an equal stretch has no turn before", func(t *testing.T) {
+		after, stretch, before, _ := RotationMatrix[float64](2.5).Scale(2, 2).decomposition()
+
+		AssertNumber(t, after, 2.5)
+		AssertVector(t, stretch, Vec(2.0, 2.0))
+		assert.Equal(t, before, 0.0)
+	})
+	t.Run("the zero matrix stretches by nothing", func(t *testing.T) {
+		after, stretch, before, reflected := Matrix[float64]{}.decomposition()
+
+		assert.Equal(t, after, 0.0)
+		AssertVector(t, stretch, Vec(0.0, 0.0))
+		assert.Equal(t, before, 0.0)
+		assert.False(t, reflected)
+	})
+	t.Run("rebuilds every linear part, sheared and singular ones included, with the turn before within an eighth", func(t *testing.T) {
+		matrices := append(slices.Clone(matrixFixtures), ShearMatrix(1.0, 0.0), ShearMatrix(0.5, -2.0), Mat(1.0, 2.0, 0.0, 2.0, 4.0, 0.0))
+
+		for _, m := range matrices {
+			after, stretch, before, reflected := m.decomposition()
+			mirror := 1.0
+			if reflected {
+				mirror = -1
+			}
+
+			rebuilt := RotationMatrix[float64](after).Multiply(ScaleMatrix(stretch.X, mirror*stretch.Y)).Multiply(RotationMatrix[float64](before))
+
+			AssertMatrix(t, rebuilt, Matrix[float64]{m.A, m.B, 0, m.D, m.E, 0}, fmt.Sprintf("%s: ", m))
+			assert.True(t, math.Abs(before) <= Pi/4+Delta, fmt.Sprintf("%s: ", m))
 		}
 	})
 }

@@ -676,7 +676,7 @@ func TestRay_IntersectionRegularPolygon(t *testing.T) {
 }
 
 func TestRay_AppendIntersectionRegularPolygon(t *testing.T) {
-	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0)
+	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0, 0)
 	through := RayAlong(Pt(-3, 0), Vec(1, 0))
 
 	t.Run("appends after the points in dst, comparing and ordering only its own", func(t *testing.T) {
