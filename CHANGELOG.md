@@ -48,7 +48,7 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.15.0.md](docs
 - `RegularPolygon.Transform` and `Ellipse.Transform` are exact for every matrix, shears included
 
 ### Fixed
-- Every product is rounded before it is added, so arm64 and amd64 v3 no longer fuse it into a multiply-add
+- Every product is rounded before it is added, so arm64 and amd64 v3 no longer fuse it into a multiply-add, and CI fails on a new one
 - Nearly collinear float segments no longer cross off both of them
 - Float32 and narrow integer shapes convert before subtracting, so far coordinates measure true and `int8` does not overflow
 - Narrow integer crossings are ordered from `Start`, and `Mod` no longer overflows near the end of the range

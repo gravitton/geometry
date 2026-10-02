@@ -1,0 +1,5 @@
+box.go: a := Point[T]{min(b.Min.X+padding.Left, b.Max.X), min(b.Min.Y+padding.Top, b.Max.Y)}
+ellipse.go: if px, py := gradient/(s+aspect), y/(s+1); float64(px*px)+float64(py*py) > 1 {
+point.go: return Point[T]{p.X + deltaX, p.Y + deltaY}
+point.go: return Point[T]{p.X + vector.X, p.Y + vector.Y}
+rectangle.go: return Vector[T]{-w / 2, -h / 2}, Vector[T]{w - w/2, h - h/2}
