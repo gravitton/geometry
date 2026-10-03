@@ -74,9 +74,9 @@ func Seg[T geom.Number](start, end geom.Point[T]) Segment {
 	return geom.Seg(start, end).Float()
 }
 
-// RayAlong is shorthand for geom.RayAlong(origin, direction).Float()
-func RayAlong[T geom.Number](origin geom.Point[T], direction geom.Vector[T]) Ray {
-	return geom.RayAlong(origin, direction).Float()
+// Ry is shorthand for geom.Ry(origin, direction).Float()
+func Ry[T geom.Number](origin geom.Point[T], direction geom.Vector[T]) Ray {
+	return geom.Ry(origin, direction).Float()
 }
 
 // Rect is shorthand for geom.Rect(center, size).Float()

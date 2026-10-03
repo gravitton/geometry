@@ -14,13 +14,13 @@ import (
 )
 
 func TestRay_Constructor(t *testing.T) {
-	t.Run("along a direction", func(t *testing.T) {
-		geomtest.AssertRay(t, RayAlong(Pt(1, -1), Vec(3, 4)), Ray[int]{Origin: Pt(1, -1), Direction: Vec(3, 4)})
-		geomtest.AssertRay(t, RayAlong(Pt(0.5, -1.25), Vec(2.0, 5.0)), Ray[float64]{Origin: Pt(0.5, -1.25), Direction: Vec(2.0, 5.0)})
+	t.Run("shorthand", func(t *testing.T) {
+		geomtest.AssertRay(t, Ry(Pt(1, -1), Vec(3, 4)), Ray[int]{Origin: Pt(1, -1), Direction: Vec(3, 4)})
+		geomtest.AssertRay(t, Ry(Pt(0.5, -1.25), Vec(2.0, 5.0)), Ray[float64]{Origin: Pt(0.5, -1.25), Direction: Vec(2.0, 5.0)})
 	})
 	t.Run("through a point", func(t *testing.T) {
-		geomtest.AssertRay(t, RayThrough(Pt(1, -1), Pt(4, 3)), RayAlong(Pt(1, -1), Vec(3, 4)))
-		geomtest.AssertRay(t, RayThrough(Pt(0.5, -1.25), Pt(2.5, 3.75)), RayAlong(Pt(0.5, -1.25), Vec(2.0, 5.0)))
+		geomtest.AssertRay(t, RayThrough(Pt(1, -1), Pt(4, 3)), Ry(Pt(1, -1), Vec(3, 4)))
+		geomtest.AssertRay(t, RayThrough(Pt(0.5, -1.25), Pt(2.5, 3.75)), Ry(Pt(0.5, -1.25), Vec(2.0, 5.0)))
 	})
 	t.Run("through the origin itself runs nowhere", func(t *testing.T) {
 		geomtest.AssertRay(t, RayThrough(Pt(2, 3), Pt(2, 3)), Ray[int]{Origin: Pt(2, 3)})
@@ -29,11 +29,11 @@ func TestRay_Constructor(t *testing.T) {
 
 func TestRay_Angle(t *testing.T) {
 	t.Run("the angle of the direction", func(t *testing.T) {
-		geomtest.AssertNumber(t, RayAlong(Pt(1, 1), Vec(0, 2)).Angle(), Pi/2)
-		geomtest.AssertNumber(t, RayAlong(Pt(1.0, 1.0), Vec(-3.0, 0.0)).Angle(), Pi)
+		geomtest.AssertNumber(t, Ry(Pt(1, 1), Vec(0, 2)).Angle(), Pi/2)
+		geomtest.AssertNumber(t, Ry(Pt(1.0, 1.0), Vec(-3.0, 0.0)).Angle(), Pi)
 	})
 	t.Run("a zero direction gives zero", func(t *testing.T) {
-		geomtest.AssertNumber(t, RayAlong(Pt(1, 1), Vec(0, 0)).Angle(), 0)
+		geomtest.AssertNumber(t, Ry(Pt(1, 1), Vec(0, 0)).Angle(), 0)
 	})
 }
 

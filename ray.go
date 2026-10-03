@@ -19,9 +19,9 @@ type Ray[T Number] struct {
 	Direction Vector[T] `json:"d"`
 }
 
-// RayAlong creates a Ray starting at the origin and running along the direction, the ray its
-// fields name. A zero direction gives a ray that is its origin alone.
-func RayAlong[T Number](origin Point[T], direction Vector[T]) Ray[T] {
+// Ry is shorthand for Ray{origin, direction}, the ray starting at the origin and running along
+// the direction. A zero direction gives a ray that is its origin alone.
+func Ry[T Number](origin Point[T], direction Vector[T]) Ray[T] {
 	return Ray[T]{origin, direction}
 }
 
