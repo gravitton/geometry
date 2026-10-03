@@ -67,28 +67,14 @@ func (b Box[T]) Size() Size[T] {
 
 // Center returns the point halfway from Min to Max. For integer T half the size is truncated
 // toward Min, so the center of an odd span lies nearer Min and the Rectangle of the box keeps
-// its corners. Half the size is taken in float64, so a narrow integer box spanning more than T
-// holds still finds its center.
+// its corners.
 func (b Box[T]) Center() Point[T] {
-	return Point[T]{b.Min.X + b.halfSpan(b.Min.X, b.Max.X), b.Min.Y + b.halfSpan(b.Min.Y, b.Max.Y)}
+	return Point[T]{b.Min.X + (b.Max.X-b.Min.X)/2, b.Min.Y + (b.Max.Y-b.Min.Y)/2}
 }
 
 // Bounds returns the box itself, the box around it.
 func (b Box[T]) Bounds() Box[T] {
 	return b
-}
-
-// halfSpan returns half the extent from a to b on one axis, the offset of the center from a:
-// taken in float64, where the difference of a narrow integer T cannot overflow, and truncated
-// toward a for an integer T. It reads no field of the box, only the ends it is given, so the
-// receiver is unnamed.
-func (Box[T]) halfSpan(a, b T) T {
-	half := (float64(b) - float64(a)) / 2
-	if isInt[T]() {
-		half = math.Trunc(half)
-	}
-
-	return T(half)
 }
 
 // magnitude returns the largest absolute coordinate of the box, that of a corner: the size
@@ -346,13 +332,11 @@ func (b Box[T]) clampOffset(box Box[T]) Vector[T] {
 // clampAxis returns the move along one axis that Clamp makes, from the extent a1 to b1 and the
 // center c1 of the box being moved and those of the one it is clamped within: the difference of
 // the centers where the first is the larger, the least move that brings it within otherwise,
-// and zero where it already lies within. The extents are compared in float64, where a narrow
-// integer T spanning more than it holds cannot overflow them; the move itself stays in T, the
-// result it is added to. It reads no field of the box, only the extents it is given, so the
-// receiver is unnamed.
+// and zero where it already lies within. It reads no field of the box, only the extents it is
+// given, so the receiver is unnamed.
 func (Box[T]) clampAxis(a1, b1, c1, a2, b2, c2 T) T {
 	switch {
-	case float64(b1)-float64(a1) > float64(b2)-float64(a2):
+	case b1-a1 > b2-a2:
 		return c2 - c1
 	case a1 < a2:
 		return a2 - a1
@@ -366,8 +350,7 @@ func (Box[T]) clampAxis(a1, b1, c1, a2, b2, c2 T) T {
 // distanceSquaredToBox returns the squared distance between the nearest points of the two
 // boxes, from the gap between them on each axis: zero where they overlap or the gap is within
 // the tolerance, the one comparison Contains and IntersectsBox both read. A NaN coordinate leaves
-// a NaN gap, which the comparison never admits. The gaps are taken in float64, so a narrow
-// integer T cannot overflow them.
+// a NaN gap, which the comparison never admits.
 func (b Box[T]) distanceSquaredToBox(box Box[T]) float64 {
 	a1, b1, a2, b2 := b.Min.Float(), b.Max.Float(), box.Min.Float(), box.Max.Float()
 	dx := max(a2.X-b1.X, a1.X-b2.X, 0)

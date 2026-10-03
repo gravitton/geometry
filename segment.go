@@ -288,12 +288,11 @@ func (s Segment[T]) IntersectsSegment(segment Segment[T]) bool {
 // the same endpoint far outside the other segment. An endpoint within the tolerance replaces a
 // proper crossing too, so a segment passing a vertex within the tolerance meets both edges there
 // at that one vertex, rather than at the vertex on one and a crossing beside it on the other.
-// Segments running along each other within the tolerance, sharing a stretch rather than a point,
-// are answered by an endpoint too, even where rounding gives them a proper crossing: it would
-// land anywhere along the stretch, beside the endpoints an outline's next edges find, and give a
-// segment along an edge three crossings.
+// That covers segments running along each other within the tolerance, sharing a stretch rather
+// than a point: an endpoint of one lies on the other, so it is the answer even where rounding
+// gives them a proper crossing, which would land anywhere along the stretch.
 func (s Segment[T]) IntersectionSegment(segment Segment[T]) (Point[T], bool) {
-	if point, ok := s.crossing(segment); ok && !s.runsAlong(segment) {
+	if point, ok := s.crossing(segment); ok {
 		if endpoint, ok := s.touch(segment); ok {
 			return endpoint, true
 		}
@@ -686,23 +685,12 @@ func (s Segment[T]) crosses(segment Segment[T]) bool {
 	return ok
 }
 
-// separates reports whether the endpoints of the given segment lie strictly on opposite sides
-// of the line through this one.
-func (s Segment[T]) separates(segment Segment[T]) bool {
-	a, b := s.Float(), segment.Float()
-	direction := a.Vector()
-	start := direction.Cross(b.Start.Subtract(a.Start))
-	end := direction.Cross(b.End.Subtract(a.Start))
-
-	return (start > 0 && end < 0) || (start < 0 && end > 0)
-}
-
 // crossing returns the point where the lines through two properly crossing segments meet, in
-// float64, and false where they do not properly cross. The sides decide it on the exact signs of
-// cross products, but for nearly collinear float segments rounding can put the ends of each on
-// opposite sides of the line the other runs along, and the point, divided out of two cross
-// products near zero, lands anywhere on that line. A point whose fraction along this segment,
-// judged by within on its numerator and denominator, or whose projection onto the other, falls
+// float64, and false where they do not properly cross: the fraction along each segment lies
+// strictly between its ends, decided on the signs and the order of the cross products it is the
+// quotient of, which are exact for an integer T, with no division. For nearly collinear float
+// segments rounding can pass both fractions, and the point, divided out of two cross products
+// near zero, lands anywhere on the line; a point whose projection onto the other segment falls
 // outside it is therefore no crossing, and the pair is left to the endpoints, on the
 // comparisons foot makes.
 //
@@ -711,67 +699,21 @@ func (s Segment[T]) separates(segment Segment[T]) bool {
 // T the product and the cross products are exact, so a crossing on a half unit is exactly there
 // and rounds the same way whatever lengths the two segments have.
 func (s Segment[T]) crossing(segment Segment[T]) (Point[float64], bool) {
-	if !s.separates(segment) || !segment.separates(s) {
-		return Point[float64]{}, false
+	a, b := s.Float(), segment.Float()
+	along, direction, offset := a.Vector(), b.Vector(), b.Start.Subtract(a.Start)
+	denominator, numerator, other := along.Cross(direction), offset.Cross(direction), offset.Cross(along)
+	if denominator < 0 {
+		denominator, numerator, other = -denominator, -numerator, -other
 	}
 
-	a, b := s.Float(), segment.Float()
-	along, direction := a.Vector(), b.Vector()
-	numerator, denominator := b.Start.Subtract(a.Start).Cross(direction), along.Cross(direction)
+	if !(0 < numerator && numerator < denominator && 0 < other && other < denominator) {
+		return Point[float64]{}, false
+	}
 
 	point := Point[float64]{a.Start.X + float64(numerator*along.X)/denominator, a.Start.Y + float64(numerator*along.Y)/denominator}
 	projection := point.Subtract(b.Start).Dot(direction)
 
-	return point, s.within(numerator, denominator) && 0 <= projection && projection <= direction.LengthSquared()
-}
-
-// within reports whether the fraction numerator / denominator lies in [0, 1], decided on the
-// signs and the order of the two rather than on the rounded quotient. It reads no field of the
-// segment, so the receiver is unnamed.
-func (Segment[T]) within(numerator, denominator float64) bool {
-	if denominator < 0 {
-		numerator, denominator = -numerator, -denominator
-	}
-
-	return 0 <= numerator && numerator <= denominator
-}
-
-// runsAlong reports whether the segments run along each other within the tolerance: they are
-// parallel within it, and two endpoints, of either, lie on the other by Contains and do not
-// coincide, so the segments share a stretch rather than a point. Where one lies along the other
-// within the tolerance ε, the cross product of their directions is at most 2ε times the
-// longer, so the parallel test is that one product against twice the bound, the rest spare for
-// its rounding, and every proper crossing at a wider angle is answered there before any
-// endpoint is measured. A pair meeting at an endpoint shares that one point and does not run
-// along, and neither does a short overlap at a wider angle, whose crossing lies within it.
-func (s Segment[T]) runsAlong(segment Segment[T]) bool {
-	a, b := s.Float().Vector(), segment.Float().Vector()
-	cross, epsilon := a.Cross(b), epsilonAt[T](max(s.magnitude(), segment.magnitude()))
-	if cross*cross > float64(16*epsilon*epsilon)*max(a.LengthSquared(), b.LengthSquared()) {
-		return false
-	}
-
-	var shared [4]Point[T]
-
-	n := 0
-	for _, endpoint := range [2]Point[T]{segment.Start, segment.End} {
-		if s.Contains(endpoint) {
-			shared[n], n = endpoint, n+1
-		}
-	}
-	for _, endpoint := range [2]Point[T]{s.Start, s.End} {
-		if segment.Contains(endpoint) {
-			shared[n], n = endpoint, n+1
-		}
-	}
-
-	for _, point := range shared[1:max(n, 1)] {
-		if !point.coincides(shared[0]) {
-			return true
-		}
-	}
-
-	return false
+	return point, 0 <= projection && projection <= direction.LengthSquared()
 }
 
 // parallel reports whether the segments run along the same direction. A zero-length segment
@@ -887,8 +829,8 @@ func (s Segment[T]) containsAt(t float64) bool {
 }
 
 // compareDistance orders two points by their distance from Start, the order every boundary crossing
-// method returns its points in. The distances are measured in float64, where Point.DistanceSquaredTo
-// would overflow a narrow integer T and reorder the points.
+// method returns its points in. The distances are measured in float64, where the squared
+// distance of an integer T in T would overflow past the coordinate differences doc.go names.
 func (s Segment[T]) compareDistance(a, b Point[T]) int {
 	start := s.Start.Float()
 

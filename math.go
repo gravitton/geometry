@@ -125,8 +125,7 @@ func Clamp[T Number](value, min, max T) T {
 }
 
 // Sum adds the values, accumulating in float64 and storing the total back through Cast, so a
-// narrow integer T cannot overflow mid-sum; only a total outside its range is affected, as Cast
-// documents. An empty or nil slice sums to 0.
+// float32 sum is rounded once. An empty or nil slice sums to 0.
 func Sum[T Number](values []T) T {
 	var total float64
 	for _, value := range values {
@@ -137,7 +136,7 @@ func Sum[T Number](values []T) T {
 }
 
 // Lerp calculates the linear interpolation between a and b at a ratio t.
-// The difference is taken in float64, so it cannot overflow a narrow integer T.
+// The difference is taken in float64, so a float32 one is not rounded before it is scaled.
 func Lerp[T Number](a, b T, t float64) T {
 	return Cast[T](float64(a) + float64((float64(b)-float64(a))*t))
 }
@@ -164,7 +163,6 @@ func Equal[T Number](a, b T) bool {
 
 // EqualDelta reports whether a and b are equal within the given delta, or are the same value,
 // so an infinity equals itself where the difference of two would be NaN.
-// The difference is taken in float64, so it cannot overflow a narrow integer T.
 func EqualDelta[T Number](a, b T, delta float64) bool {
 	return a == b || math.Abs(float64(a)-float64(b)) <= delta
 }
@@ -192,7 +190,6 @@ func LessOrEqual[T Number](a, b T) bool {
 }
 
 // LessOrEqualDelta reports whether a is at most b within the given delta.
-// The comparison is made in float64, so it cannot overflow a narrow integer T.
 func LessOrEqualDelta[T Number](a, b T, delta float64) bool {
 	return float64(a) <= float64(b)+delta
 }

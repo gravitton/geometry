@@ -744,6 +744,9 @@ func TestRectangle_Clamp(t *testing.T) {
 	t.Run("a rectangle within is unchanged", func(t *testing.T) {
 		geomtest.AssertRectangle(t, Rect(Pt(5, 5), Sz(2, 2)).Clamp(box), Rect(Pt(5, 5), Sz(2, 2)))
 	})
+	t.Run("int rectangles that are not rotated are clamped on their exact corners", func(t *testing.T) {
+		geomtest.AssertRectangle(t, Rect(Pt(8, -7), Sz(9, 9)).Clamp(Rect(Pt(6, -6), Sz(8, 9))), Rect(Pt(6, -6), Sz(9, 9)))
+	})
 	t.Run("a rectangle outside moves in by the least", func(t *testing.T) {
 		geomtest.AssertRectangle(t, Rect(Pt(12, 5), Sz(4, 2)).Clamp(box), Rect(Pt(8, 5), Sz(4, 2)))
 		geomtest.AssertRectangle(t, Rect(Pt(-3, -3), Sz(2, 2)).Clamp(box), Rect(Pt(1, 1), Sz(2, 2)))
@@ -1191,6 +1194,10 @@ func TestRectangle_IntersectsRectangle(t *testing.T) {
 	t.Run("apart", func(t *testing.T) {
 		assert.False(t, rectangle.IntersectsRectangle(Rect(Pt(100.0, 350.0), Sz(200.0, 450.0))))
 	})
+	t.Run("rotated int rectangles of one angle are judged in their shared frame", func(t *testing.T) {
+		assert.True(t, Rect(Pt(-7, 1), Sz(3, 7)).Rotate(3.8).IntersectsRectangle(Rect(Pt(-1, -3), Sz(2, 6)).Rotate(3.8)))
+		assert.False(t, Rect(Pt(5, -6), Sz(4, 12)).Rotate(5.5).IntersectsRectangle(Rect(Pt(-3, -9), Sz(2, 5)).Rotate(5.5)))
+	})
 	t.Run("a shared edge counts as an intersection", func(t *testing.T) {
 		assert.True(t, rectangle.IntersectsRectangle(Rect(Pt(200.0, 0.0), Sz(200.0, 100.0))))
 		assert.False(t, rectangle.IntersectsRectangle(Rect(Pt(201.0, 0.0), Sz(200.0, 100.0))))
@@ -1269,6 +1276,14 @@ func TestRectangle_IntersectionRectangle(t *testing.T) {
 		_, ok := rectangle.IntersectionRectangle(Rect(Pt(10, 10), Sz(4, 4)))
 
 		assert.False(t, ok)
+	})
+	t.Run("rotated int rectangles of one angle overlap only where their shared frame holds one", func(t *testing.T) {
+		_, ok := Rect(Pt(5, -6), Sz(4, 12)).Rotate(5.5).IntersectionRectangle(Rect(Pt(-3, -9), Sz(2, 5)).Rotate(5.5))
+		assert.False(t, ok)
+
+		overlap, ok := Rect(Pt(-7, 1), Sz(3, 7)).Rotate(3.8).IntersectionRectangle(Rect(Pt(-1, -3), Sz(2, 6)).Rotate(3.8))
+		assert.True(t, ok)
+		geomtest.AssertRectangle(t, overlap, Rect(Pt(-4, -2), Sz(0, 0)).Rotate(3.8))
 	})
 	t.Run("half a turn apart overlap in a rectangle of the receiver's angle", func(t *testing.T) {
 		turned := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(0.3)

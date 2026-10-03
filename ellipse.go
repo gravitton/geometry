@@ -187,14 +187,11 @@ func (e Ellipse[T]) extent() Vector[float64] {
 }
 
 // minMax returns the minimum and maximum corner of the ellipse, the corners of Bounds: the
-// center less and plus its extent, each rounded once for an integer T and clamped into its
-// range, so an ellipse reaching past it is bounded at its end.
+// center less and plus its extent, each rounded once for an integer T.
 func (e Ellipse[T]) minMax() (Point[T], Point[T]) {
 	center, extent := e.Center.Float(), e.extent()
-	a := Point[T]{castClamped[T](center.X - extent.X), castClamped[T](center.Y - extent.Y)}
-	b := Point[T]{castClamped[T](center.X + extent.X), castClamped[T](center.Y + extent.Y)}
 
-	return a, b
+	return center.Add(extent.Negate()).Cast[T](), center.Add(extent).Cast[T]()
 }
 
 // Translate creates a new Ellipse translated by the given vector.

@@ -8,12 +8,8 @@ import (
 // Integer is a generic integer type, supporting operations like modulo that floats don't.
 //
 // Every product, distance and interpolation is computed in float64 and stored back through
-// Cast, and a result outside the range of T is affected as Cast documents. A value of an int64
-// T beyond 2^53 loses precision on the way through float64, and the cross products that decide
-// a crossing, a turn or a winding are exact only while the coordinate differences stay within
-// 2^26. A narrow T such as int8 or int16 compiles and never panics or hangs, but a sum or
-// difference near the end of its range may wrap; the package is tested for int, int32 and
-// int64.
+// Cast, so a value of an int64 T beyond 2^53 loses precision on the way. The package doc states
+// the range each T is supported in.
 type Integer interface {
 	~int | ~int8 | ~int16 | ~int32 | ~int64
 }
@@ -79,48 +75,12 @@ func isInt[T Number]() bool {
 	return T(1)/T(2) == 0
 }
 
-// isFloat32 reports whether T is a 32-bit float. 1e-10 lies between the float32 epsilon
-// (1.2e-7) and the float64 one (2.2e-16), so adding it to one is a no-op for float32 alone.
-// It is built by division because T(1e-10) does not compile when T may be an integer, and a
-// constant above 127 overflows int8 at compile time even where the line never runs.
-//
-// It is asked only for a float T, after isInt, as Epsilon and epsilonAt ask it: for an integer
-// T the division truncates to zero and the sum is one again.
+// isFloat32 reports whether T is a 32-bit float: a third taken in T is the float64 third only
+// where T is float64. It is asked only for a float T, after isInt, as Epsilon and epsilonAt ask
+// it, since an integer third is zero.
 //
 // The arithmetic detection is deliberate: unsafe.Sizeof would be more direct, but the package
 // stays free of the unsafe import.
 func isFloat32[T Number]() bool {
-	const step = 100
-
-	one := T(1)
-
-	return one+one/step/step/step/step/step == one
-}
-
-// castClamped is Cast with the value first clamped into the range of an integer T, so a value
-// past either end stores that end rather than the arbitrary one Cast leaves it: the extent of a
-// shape reaching past the range, which every shape it is tested against lies within. A float T
-// is cast as it is.
-func castClamped[T Number](a float64) T {
-	if isInt[T]() {
-		lowest, highest := intRange[T]()
-		a = Clamp(a, lowest, highest)
-	}
-
-	return Cast[T](a)
-}
-
-// intRange returns the least and the greatest value of an integer T, as the float64 values
-// nearest within it: the range of the narrowest width that holds the next value past it, found
-// by converting that value and reading it back, as Parse checks a parsed one, so a defined type
-// over any width is measured by its own. The greatest int64 is not a float64, and the one just
-// below it stands in.
-func intRange[T Number]() (float64, float64) {
-	for _, bits := range [...]uint{7, 15, 31} {
-		if past := int64(1) << bits; int64(T(past)) != past {
-			return float64(-past), float64(past - 1)
-		}
-	}
-
-	return -0x1p63, math.Nextafter(0x1p63, 0)
+	return float64(T(1)/T(3)) != 1.0/3
 }

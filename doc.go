@@ -50,7 +50,10 @@
 // place the same point by different roundings, which only a turned shape or a ray does, they
 // can disagree about a point within the tolerance of a boundary, and float32 far from the origin
 // is where that shows. A narrow integer T such as int8 or int16 compiles and never panics or
-// hangs, but a sum or difference near the end of its range may wrap.
+// hangs, but a sum or difference near the end of its range may wrap. The extent of a shape
+// must itself fit T, a circle's center plus its radius or the point a ray reaches a shape at,
+// and the square of a length must stay finite, so a segment or a ray direction past about 1e150
+// measures nothing.
 //
 // # Equality
 //

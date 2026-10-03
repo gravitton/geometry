@@ -432,6 +432,18 @@ func TestPolygon_ConvexHull(t *testing.T) {
 
 		assert.Contains(t, polygon.ConvexHull().Points, greatest)
 	})
+	t.Run("keeps the greatest vertex of float vertices on one line", func(t *testing.T) {
+		greatest := Pt(9.982548412928722, 1.300433240992127)
+		polygon := Pol([]Point[float64]{greatest, Pt(3.149295923379525, 9.697346924799326), Pt(5.057133205943216, 7.3529369957154), Pt(3.8964651210546473, 8.77920212191478)})
+
+		assert.Contains(t, polygon.ConvexHull().Points, greatest)
+	})
+	t.Run("keeps the greatest of three nearly collinear float vertices", func(t *testing.T) {
+		greatest := Pt(301.08430596042734, 591.3784032439396)
+		polygon := Pol([]Point[float64]{Pt(299.17200602842644, 591.2542325488599), Pt(299.5567848299204, 591.2792172546762), greatest})
+
+		assert.Contains(t, polygon.ConvexHull().Points, greatest)
+	})
 	t.Run("an empty polygon gives an empty one", func(t *testing.T) {
 		assert.Zero(t, Polygon[int]{}.ConvexHull())
 	})

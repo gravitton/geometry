@@ -607,6 +607,19 @@ func TestSegment_IntersectionSegment(t *testing.T) {
 		assert.True(t, ok)
 		geomtest.AssertPoint(t, point, Pt(2, 2))
 	})
+	t.Run("float segments apart on one line do not cross by rounding", func(t *testing.T) {
+		pairs := [][2]Segment[float64]{
+			{Seg(Pt(435.20098342749014, 249.93526920361418), Pt(269.47972773956184, 599.8089399849782)), Seg(Pt(442.2171109693957, 235.12269559881773), Pt(580.3540543853841, -56.51448312544401))},
+			{Seg(Pt(71.83665157236865, 3.930612186721294), Pt(16.415664262469555, 35.56353823021138)), Seg(Pt(11.32413283789975, 38.469658182584624), Pt(-38.713033109816024, 67.02963242121056))},
+		}
+
+		for _, pair := range pairs {
+			_, ok := pair[0].IntersectionSegment(pair[1])
+
+			assert.False(t, ok, fmt.Sprintf("%s → %s: ", pair[0], pair[1]))
+			assert.False(t, pair[0].IntersectsSegment(pair[1]), fmt.Sprintf("%s → %s: ", pair[0], pair[1]))
+		}
+	})
 	t.Run("apart", func(t *testing.T) {
 		_, ok := diagonal.IntersectionSegment(Seg(Pt(5, 0), Pt(5, 4)))
 

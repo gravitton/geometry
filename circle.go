@@ -56,15 +56,13 @@ func (c Circle[T]) Inertia() float64 {
 	return Pi * radius * radius * radius * radius / 2
 }
 
-// Diameter returns the circle diameter (2 * radius). It stays in T like a sum, since doubling
-// has no intermediate to overflow: only a diameter beyond the range of a narrow integer T is
-// lost, as with every other result outside it.
+// Diameter returns the circle diameter (2 * radius). It stays in T like a sum.
 func (c Circle[T]) Diameter() T {
 	return c.Radius * 2
 }
 
 // Bounds returns the axis-aligned bounding box: the square of side Diameter centered on the
-// circle, clamped into the range of a narrow integer T where it reaches past it.
+// circle.
 func (c Circle[T]) Bounds() Box[T] {
 	a, b := c.minMax()
 
@@ -72,21 +70,13 @@ func (c Circle[T]) Bounds() Box[T] {
 }
 
 // minMax returns the minimum and maximum corner of the circle, the corners of Bounds: the pair
-// the intersection tests reject shapes by before examining any edge. The corners are taken in
-// float64 and clamped into the range of an integer T, so a narrow T whose circle reaches past
-// its range bounds it at the end of the range, which every shape it is tested against lies
-// within, rather than at a corner wrapped to the other side.
+// the intersection tests reject shapes by before examining any edge.
 func (c Circle[T]) minMax() (Point[T], Point[T]) {
-	center, radius := c.Center.Float(), float64(c.Radius)
-	a := Point[T]{castClamped[T](center.X - radius), castClamped[T](center.Y - radius)}
-	b := Point[T]{castClamped[T](center.X + radius), castClamped[T](center.Y + radius)}
-
-	return a, b
+	return c.Center.AddXY(-c.Radius, -c.Radius), c.Center.AddXY(c.Radius, c.Radius)
 }
 
 // magnitude returns the largest absolute coordinate of the circle, that of a corner of its
-// Bounds, summed in float64 so a narrow integer T cannot overflow: the size epsilonAt widens
-// the tolerance by for a comparison that reads the circle.
+// Bounds: the size epsilonAt widens the tolerance by for a comparison that reads the circle.
 func (c Circle[T]) magnitude() float64 {
 	return c.Center.magnitude() + float64(c.Radius)
 }
@@ -273,9 +263,8 @@ func (c Circle[T]) EnclosesBox(box Box[T]) bool {
 }
 
 // IntersectsCircle reports whether the circles overlap: the distance between the centers is at
-// most the sum of the radii. Touching circles intersect, within the tolerance, by the same comparison
-// Contains makes, on the squared distance. The radii are summed in float64, so a narrow integer
-// T cannot overflow the threshold.
+// most the sum of the radii. Touching circles intersect, within the tolerance, by the same
+// comparison Contains makes, on the squared distance.
 func (c Circle[T]) IntersectsCircle(circle Circle[T]) bool {
 	return lessOrEqualSquared(c.centerDistanceSquared(circle.Center), float64(c.Radius)+float64(circle.Radius), c.epsilonWith(circle.magnitude()))
 }

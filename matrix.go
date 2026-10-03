@@ -19,8 +19,7 @@ import (
 // different matrix: rotation by anything but a multiple of 90° (see RotationMatrix), Inverse, and
 // Unscale.
 //
-// Multiply, Determinant and Inverse compute in float64 and round the result into T, so a
-// narrow integer T does not overflow mid-computation; only a result outside its range is lost.
+// Multiply, Determinant and Inverse compute in float64 and round the result into T.
 type Matrix[T Number] struct {
 	A T `json:"a"` // scale X
 	B T `json:"b"` // shear X (contribution of y to x')

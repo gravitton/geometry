@@ -320,16 +320,13 @@ func (r Ray[T]) ClipBox(box Box[T]) (Segment[T], bool) {
 // extent lies behind it or the ray has no direction. No point of the extent projects past the
 // end, so the segment shares every point of the shape the ray does, and a pair of the ray is
 // decided by the segment's own tests. For integer T the fraction is rounded up to a whole step
-// of Direction, so the end is a lattice point on the ray rather than a rounded point beside it,
-// short of where the ray leaves the range of T: a whole step past the extent of a shape near
-// the end of that range would wrap around, so the reach stops where the range does, a rounded
-// point there, which every shape the ray is tested against lies within.
+// of Direction, so the end is a lattice point on the ray rather than a rounded point beside it.
 func (r Ray[T]) reach(a, b Point[T]) Segment[T] {
 	if !r.Direction.hasDirection() {
 		return Segment[T]{r.Origin, r.Origin}
 	}
 
-	direction, scale := r.scaledDirection()
+	direction := r.Direction.Float()
 	corner := a
 	if direction.X > 0 {
 		corner.X = b.X
@@ -338,51 +335,12 @@ func (r Ray[T]) reach(a, b Point[T]) Segment[T] {
 		corner.Y = b.Y
 	}
 
-	t := max(corner.Float().Subtract(r.Origin.Float()).Dot(direction)/direction.LengthSquared()*scale, 0)
+	t := max(corner.Float().Subtract(r.Origin.Float()).Dot(direction)/direction.LengthSquared(), 0)
 	if isInt[T]() {
-		t = min(math.Ceil(t), r.rangeExit())
+		t = math.Ceil(t)
 	}
 
 	return Segment[T]{r.Origin, r.PointAt(t)}
-}
-
-// rangeExit returns the fraction along Direction at which the ray of an integer T leaves the
-// range T holds, on whichever axis it reaches the end of the range first, and infinity for a
-// ray that never does.
-func (r Ray[T]) rangeExit() float64 {
-	lowest, highest := intRange[T]()
-	origin, direction := r.Origin.Float(), r.Direction.Float()
-
-	exit := math.Inf(1)
-	for _, axis := range [2][2]float64{{origin.X, direction.X}, {origin.Y, direction.Y}} {
-		switch from, step := axis[0], axis[1]; {
-		case step > 0:
-			exit = min(exit, (highest-from)/step)
-		case step < 0:
-			exit = min(exit, (lowest-from)/step)
-		}
-	}
-
-	return exit
-}
-
-// scaledDirection returns Direction in float64 scaled by a power of two to a length near one,
-// and the power of two that scales a fraction measured along it back to one along Direction.
-// The scaling is exact, so a projection or a squared distance divided by the squared length
-// gives the bits it would on Direction itself, but no squared length leaves the range of
-// float64, as it would for a Direction of a float T longer than its square root or shorter
-// than the square root of the least normal value. A Direction whose squared length lies well
-// within that range, every one but the extremes, is returned as it is, which gives the same
-// bits without the scaling.
-func (r Ray[T]) scaledDirection() (Vector[float64], float64) {
-	direction := r.Direction.Float()
-	if lengthSquared := direction.LengthSquared(); 0x1p-200 <= lengthSquared && lengthSquared <= 0x1p200 {
-		return direction, 1
-	}
-
-	_, exponent := math.Frexp(max(math.Abs(direction.X), math.Abs(direction.Y)))
-
-	return Vector[float64]{math.Ldexp(direction.X, -exponent), math.Ldexp(direction.Y, -exponent)}, math.Ldexp(1, -exponent)
 }
 
 // crosses reports whether the rays properly cross, as crossing decides it: the lines through
@@ -401,16 +359,14 @@ func (r Ray[T]) crosses(ray Ray[T]) bool {
 // both fractions the sign of a crossing, and the point, divided out of cross products near zero,
 // lands anywhere along this ray; a point whose projection onto the other falls behind its
 // origin is therefore no crossing, and the pair is left to the origins, on the comparison foot
-// makes. The directions are scaled as scaledDirection scales them, which changes no sign and no
-// point, so rays of any length a float T holds cross.
+// makes.
 //
 // The point is placed from Origin by each component of the direction times the numerator of the
 // fraction, divided by its denominator once, rather than by the rounded fraction: for an integer
 // T the product and the cross products are exact, so a crossing on a half unit is exactly there
 // and rounds the same way whichever ray asks.
 func (r Ray[T]) crossing(ray Ray[T]) (Point[float64], bool) {
-	a, _ := r.scaledDirection()
-	b, _ := ray.scaledDirection()
+	a, b := r.Direction.Float(), ray.Direction.Float()
 	origin := r.Origin.Float()
 	offset := ray.Origin.Float().Subtract(origin)
 	denominator, along, other := a.Cross(b), offset.Cross(b), offset.Cross(a)
@@ -429,8 +385,7 @@ func (r Ray[T]) crossing(ray Ray[T]) (Point[float64], bool) {
 // zero Direction has none and is parallel to nothing, so its origin can still be found on the
 // other.
 func (r Ray[T]) parallel(ray Ray[T]) bool {
-	a, _ := r.scaledDirection()
-	b, _ := ray.scaledDirection()
+	a, b := r.Direction.Float(), ray.Direction.Float()
 
 	return a.hasDirection() && b.hasDirection() && a.Cross(b) == 0
 }

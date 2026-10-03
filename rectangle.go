@@ -639,11 +639,10 @@ func (r Rectangle[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 // IntersectsRectangle reports whether the rectangles share a point: a corner of one lies within the
 // other, or an edge of one meets an edge of the other, as Polygon.IntersectsPolygon decides and by
 // the same tolerance on the distance, so touching rectangles intersect within the tolerance,
-// the same closed convention as Contains. Rectangles whose extents do not overlap are rejected
-// before any edge is examined, and two rectangles that are not rotated whose extents overlap
-// exactly are decided there, since an exact overlap of two aligned boxes always shares a
-// corner or a crossing; only a gap within the tolerance goes to the edges. Two rectangles of
-// the same angle, or half a turn apart, are tested in their shared frame, as
+// the same closed convention as Contains. Two rectangles that are not rotated are their Bounds
+// and are decided as Box.IntersectsBox decides those. Rectangles whose extents do not overlap
+// are rejected before any edge is examined. Two rectangles of the same angle, or half a turn
+// apart, are tested in their shared frame, as
 // IntersectionRectangle finds their overlap, once the extents of their vertices overlap. The
 // offset between the centers is turned into that frame, where the vertices were placed in the
 // world, so two rotated rectangles of one angle can answer differently from IntersectsPolygon
@@ -651,16 +650,17 @@ func (r Rectangle[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 // within the tolerance for a float T, where the two placements part by an ulp. The frame is
 // what IntersectionRectangle and Union measure in, and the three agree with each other.
 func (r Rectangle[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
+	if r.IsAligned() && rectangle.IsAligned() {
+		return r.Bounds().IntersectsBox(rectangle.Bounds())
+	}
+
 	a1, b1 := r.MinMax()
 	a2, b2 := rectangle.MinMax()
-	aligned := r.IsAligned() && rectangle.IsAligned()
 
 	switch {
 	case !overlaps(a1, b1, a2, b2):
 		return false
-	case aligned && a1.X <= b2.X && a2.X <= b1.X && a1.Y <= b2.Y && a2.Y <= b1.Y:
-		return true
-	case !aligned && r.parallel(rectangle):
+	case r.parallel(rectangle):
 		return r.localRectangle(r).IntersectsRectangle(r.localRectangle(rectangle))
 	default:
 		return r.meetsWithin(rectangle, a1, b1, a2, b2)
@@ -673,8 +673,9 @@ func (r Rectangle[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 // tolerance is placed on the boundary of the other rectangle, never beyond it. Two rectangles
 // of the same angle, or half a turn apart, overlap in a rectangle of the receiver's angle,
 // found in their shared frame; rectangles of different angles overlap in a polygon that is not
-// a rectangle and return false even where IntersectsRectangle holds. The shared frame holds an overlap wherever IntersectsRectangle
-// found one there, since it judged the same frame. For integer T the offset between the
+// a rectangle and return false even where IntersectsRectangle holds. The shared frame holds
+// an overlap wherever IntersectsRectangle found one there, since it judged the same frame, and
+// two rectangles that are not rotated overlap as Box.IntersectionBox finds it. For integer T the offset between the
 // centers of two rotated rectangles is rounded into the shared frame and the result rounded back.
 func (r Rectangle[T]) IntersectionRectangle(rectangle Rectangle[T]) (Rectangle[T], bool) {
 	if !r.IntersectsRectangle(rectangle) {
@@ -683,13 +684,9 @@ func (r Rectangle[T]) IntersectionRectangle(rectangle Rectangle[T]) (Rectangle[T
 
 	switch {
 	case r.IsAligned() && rectangle.IsAligned():
-		a1, b1 := r.MinMax()
-		a2, b2 := rectangle.MinMax()
+		overlap, _ := r.Bounds().IntersectionBox(rectangle.Bounds())
 
-		a := Point[T]{max(a1.X, a2.X), max(a1.Y, a2.Y)}
-		b := Point[T]{max(min(b1.X, b2.X), a.X), max(min(b1.Y, b2.Y), a.Y)}
-
-		return RectangleFromMinMax(a, b), true
+		return overlap.Rectangle(), true
 	case r.parallel(rectangle):
 		overlap, _ := r.localRectangle(r).IntersectionRectangle(r.localRectangle(rectangle))
 
@@ -753,17 +750,17 @@ func (r Rectangle[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 
 // IntersectsBox reports whether the rectangle and the box share a point, as IntersectsRectangle
 // decides it against a rectangle that is not rotated: a rectangle that is not rotated either is
-// decided on the exact overlap of the two extents, and otherwise a corner of one lies within
-// the other or an edge of one meets an edge of the other, the edges of the box joining its own
-// corners.
+// its Bounds and is decided as Box.IntersectsBox decides those, and otherwise a corner of one
+// lies within the other or an edge of one meets an edge of the other, the edges of the box
+// joining its own corners.
 func (r Rectangle[T]) IntersectsBox(box Box[T]) bool {
-	a, b := r.MinMax()
+	if r.IsAligned() {
+		return r.Bounds().IntersectsBox(box)
+	}
 
-	switch {
-	case !overlaps(a, b, box.Min, box.Max):
+	a, b := r.MinMax()
+	if !overlaps(a, b, box.Min, box.Max) {
 		return false
-	case r.IsAligned() && a.X <= box.Max.X && box.Min.X <= b.X && a.Y <= box.Max.Y && box.Min.Y <= b.Y:
-		return true
 	}
 
 	corners, others := r.corners(), box.corners()

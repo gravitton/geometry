@@ -200,11 +200,6 @@ func TestRay_Contains(t *testing.T) {
 			}
 		}
 	})
-	t.Run("a direction too short or too long to square still runs", func(t *testing.T) {
-		for _, direction := range []Vector[float64]{Vec(1e-170, 0.0), Vec(1e160, 0.0)} {
-			assert.True(t, Ry(Pt(0.0, 0.0), direction).Contains(Pt(15.0, 0.0)), fmt.Sprintf("along %s: ", direction))
-		}
-	})
 }
 
 func TestRay_DistanceTo(t *testing.T) {
@@ -228,11 +223,6 @@ func TestRay_DistanceTo(t *testing.T) {
 
 		assert.Equal(t, r.DistanceTo(Pt(3.0, Delta/2)), 0.0)
 		geomtest.AssertNumber(t, r.DistanceTo(Pt(3.0, 2*Delta)), 2*Delta)
-	})
-	t.Run("a direction too short or too long to square still measures", func(t *testing.T) {
-		for _, direction := range []Vector[float64]{Vec(1e-170, 0.0), Vec(1e160, 0.0)} {
-			geomtest.AssertNumber(t, Ry(Pt(0.0, 0.0), direction).DistanceTo(Pt(15.0, 3.0)), 3.0, fmt.Sprintf("along %s: ", direction))
-		}
 	})
 }
 
@@ -292,9 +282,6 @@ func TestRay_Nearest(t *testing.T) {
 		nearest := ray.Nearest(Pt(math.NaN(), 0.0))
 
 		assert.True(t, math.IsNaN(nearest.X) || math.IsNaN(nearest.Y))
-	})
-	t.Run("a direction too long to square still finds the foot", func(t *testing.T) {
-		geomtest.AssertPoint(t, Ry(Pt(0.0, 0.0), Vec(1e160, 0.0)).Nearest(Pt(15.0, 3.0)), Pt(15.0, 0.0))
 	})
 }
 
@@ -485,14 +472,6 @@ func TestRay_IntersectionRay(t *testing.T) {
 			}
 		}
 	})
-	t.Run("directions too short or too long to square still cross", func(t *testing.T) {
-		for _, length := range []float64{1e-170, 1e160} {
-			point, ok := Ry(Pt(0.0, 0.0), Vec(length, 0.0)).IntersectionRay(Ry(Pt(5.0, -5.0), Vec(0.0, length)))
-
-			assert.True(t, ok)
-			geomtest.AssertPoint(t, point, Pt(5.0, 0.0), fmt.Sprintf("length %g: ", length))
-		}
-	})
 }
 
 func FuzzRay_IntersectionRay(f *testing.F) {
@@ -656,22 +635,6 @@ func TestRay_IntersectsRectangle(t *testing.T) {
 			}
 		}
 	})
-	t.Run("a narrow integer ray reaches a rectangle at the end of its range", func(t *testing.T) {
-		r := RectangleFromMinMax(Pt[int8](110, -5), Pt[int8](127, 5))
-
-		for _, direction := range []Vector[int8]{Vec[int8](1, 0), Vec[int8](2, 0), Vec[int8](100, 0)} {
-			assert.True(t, Ry(Pt[int8](0, 0), direction).IntersectsRectangle(r), fmt.Sprintf("along %s: ", direction))
-		}
-		assert.True(t, Ry(Pt[int16](0, 0), Vec[int16](3, 0)).IntersectsRectangle(RectangleFromMinMax(Pt[int16](32000, -5), Pt[int16](32767, 5))))
-		assert.True(t, Ry(Pt[int32](0, 0), Vec[int32](3, -3)).IntersectsRectangle(RectangleFromMinMax(Pt[int32](2147483000, -2147483648), Pt[int32](2147483647, -2147483000))))
-	})
-	t.Run("a direction too short or too long to square still reaches", func(t *testing.T) {
-		r := RectangleFromMinMax(Pt(10.0, -1.0), Pt(20.0, 1.0))
-
-		for _, direction := range []Vector[float64]{Vec(1e-170, 0.0), Vec(1e160, 0.0)} {
-			assert.True(t, Ry(Pt(0.0, 0.0), direction).IntersectsRectangle(r), fmt.Sprintf("along %s: ", direction))
-		}
-	})
 }
 
 func TestRay_IntersectionRectangle(t *testing.T) {
@@ -693,11 +656,6 @@ func TestRay_IntersectionRectangle(t *testing.T) {
 				assertRayCrossings(t, r, r.IntersectionRectangle(rect), r.IntersectsRectangle(rect), rect.Edges, fmt.Sprintf("%s → %s: ", r, rect))
 			}
 		}
-	})
-	t.Run("a narrow integer ray crosses a rectangle at the end of its range", func(t *testing.T) {
-		r := RectangleFromMinMax(Pt[int8](110, -5), Pt[int8](127, 5))
-
-		geomtest.AssertVertices(t, Ry(Pt[int8](0, 0), Vec[int8](2, 0)).IntersectionRectangle(r), []Point[int8]{Pt[int8](110, 0), Pt[int8](127, 0)})
 	})
 }
 

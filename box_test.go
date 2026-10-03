@@ -72,10 +72,6 @@ func TestBox_Center(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
 		geomtest.AssertPoint(t, BoxFromMinMax(Pt(0.6, -0.25), Pt(1.8, 3.35)).Center(), Pt(1.2, 1.55))
 	})
-	t.Run("a narrow integer box spanning more than its type holds", func(t *testing.T) {
-		geomtest.AssertPoint(t, Bx(Pt[int8](-100, -100), Pt[int8](100, 100)).Center(), Pt[int8](0, 0))
-		geomtest.AssertPoint(t, Bx(Pt[int8](-128, -128), Pt[int8](127, 127)).Center(), Pt[int8](-1, -1))
-	})
 }
 
 func TestBox_Bounds(t *testing.T) {
@@ -177,10 +173,6 @@ func TestBox_Clamp(t *testing.T) {
 				}
 			}
 		}
-	})
-	t.Run("a narrow integer box within one spanning more than its type holds stays", func(t *testing.T) {
-		geomtest.AssertBox(t, Bx(Pt[int8](-10, -10), Pt[int8](10, 10)).Clamp(Bx(Pt[int8](-100, -100), Pt[int8](100, 100))), Bx(Pt[int8](-10, -10), Pt[int8](10, 10)))
-		geomtest.AssertBox(t, Bx(Pt[int8](-128, -10), Pt[int8](-100, 10)).Clamp(Bx(Pt[int8](-90, -100), Pt[int8](100, 100))), Bx(Pt[int8](-90, -10), Pt[int8](-62, 10)))
 	})
 }
 

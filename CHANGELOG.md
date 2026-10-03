@@ -19,6 +19,11 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 - `Ray.Contains`, `DistanceTo` and `Nearest` measure on the ray's reach past the point, the segment every ray pair decides on, so a point the ray contains is one its pairs find on it
 - `Rectangle.EnclosesCircle` of an aligned rectangle answers as its `Bounds` does
 - `Equal` and `EqualDelta` hold for an infinity against itself
+- A circle, an ellipse or a ray reaching past the range of an integer `T` is no longer clamped at the end of it, and a ray direction too long or too short to square is no longer rescaled; the package doc says a shape's extent must fit `T` and the square of a length must stay finite
+- `Box.Center` and `Box.Clamp` stay in `T`, so an `int8` or `int16` box spanning more than its type holds wraps
+- `RegularPolygon.Bounds` ranges the vertices, O(n) where it read at most eight, and is the box of `Polygon().Bounds()` by construction
+- Two rectangles that are not rotated, and such a rectangle against a box, intersect as `Box.IntersectsBox` and `IntersectionBox` decide
+- `Segment.IntersectionSegment` decides a proper crossing on three cross products where it took six
 
 ### Fixed
 - A segment or ray passing a vertex within the tolerance no longer meets an outline more than twice: an endpoint within the tolerance replaces a proper crossing in `Segment.IntersectionSegment`
@@ -28,8 +33,7 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 - `Rectangle.IntersectionRectangle` and `Union` treat rectangles half a turn apart as the same frame
 - Integer `Ray.IntersectionRay` rounds a crossing on a half unit the same way from either ray
 - Integer `Circle.IntersectionCircle` gives two crossings rounding to one point once
-- `Ellipse.Bounds` clamps into the range of a narrow integer `T` instead of wrapping
-- `Segment.Scale`, `ScaleXY`, `Unscale`, `UnscaleXY`, `Rotate` and `Point.RotateAround` take offsets from the pivot in float64, so a narrow integer `T` does not wrap mid-computation
+- `Segment.Scale`, `ScaleXY`, `Unscale`, `UnscaleXY`, `Rotate` and `Point.RotateAround` take offsets from the pivot in float64, so a float32 offset is not rounded before it is scaled
 - Docs: comparisons to other shapes and numeric examples removed; `Ellipse.Foci`, `Circle.IntersectsCircle`, `Body`, `Matrix.Scaling`, the `Clamp` methods and the negative semi-axis of `RegularPolygon` now say what the code does, and the integer `RegularPolygon` enclosing limit, the pointer and NaN-angle panics, and the circle–segment tangent placement are documented
 
 

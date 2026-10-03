@@ -215,7 +215,7 @@ func (rp RegularPolygon[T]) centralAngle() float64 {
 // vertexAngle returns the parameter of the vertex at the given index on the ellipse before the
 // turn, that many central angles on from Phase: the one expression every vertex is placed
 // from, so a measure taken without building the vertices reads the same angles Vertices does,
-// and nearestIndex and edgeIndex invert it.
+// and edgeIndex inverts it.
 func (rp RegularPolygon[T]) vertexAngle(i int) float64 {
 	return rp.Phase + float64(float64(i)*rp.centralAngle())
 }
@@ -256,80 +256,22 @@ func (rp RegularPolygon[T]) edgeIndex(direction float64) int {
 	return int(parameter/rp.centralAngle()) % rp.N
 }
 
-// nearestIndex returns the index of the vertex that reaches farthest in the given direction of
-// the world, at most half a central angle from the point that reaches farthest there, and the
-// index of its neighbour on the side the direction falls toward where the two may reach as far,
-// or the nearest again where they cannot. The direction is taken into the frame before the
-// turn, and for unequal semi-axes onto the ellipse, where a semi-axis stretches it away from
-// the direction itself; equal semi-axes take the direction as it is, the same expression vertex
-// places them from, and both count the steps from Phase. With one or two vertices the nearest
-// can be more than a quarter turn off, so the reach is negative exactly where no vertex lies on
-// that side.
-//
-// The reach along the direction is ρ·cos of the parameter's offset from the farthest point, ρ
-// no less than the lesser semi-axis, so a nearest vertex δ steps short of the halfway point
-// reaches farther than its neighbour by at least 0.4·min(w, h)·c²·δ for a central angle c. The
-// neighbour is read only where that gap falls below 2^-40 of the coordinates, far above the
-// residue a placed vertex carries, so rounding into T, which keeps the order of two values,
-// cannot put the neighbour farther anywhere it is skipped.
-func (rp RegularPolygon[T]) nearestIndex(direction float64) (int, int) {
-	local := direction - rp.Angle
-	if rp.Size.Width != rp.Size.Height {
-		sin, cos := math.Sincos(local)
-		local = math.Atan2(float64(rp.Size.Height)*sin, float64(rp.Size.Width)*cos)
-	}
-
-	central := rp.centralAngle()
-	step := (local - rp.Phase) / central
-	nearest := math.Round(step)
-
-	w, h := rp.Size.Float().XY()
-	gap := float64(float64((0.5-math.Abs(step-nearest))*central*central) * min(w, h))
-	if gap > float64(0x1p-40*(rp.Center.magnitude()+max(w, h))) {
-		return Mod(int(nearest), rp.N), Mod(int(nearest), rp.N)
-	}
-
-	neighbour := nearest + 1
-	if step < nearest {
-		neighbour = nearest - 1
-	}
-
-	return Mod(int(nearest), rp.N), Mod(int(neighbour), rp.N)
-}
-
-// farthestVertices returns the vertices at the two indices nearestIndex gives for the direction,
-// as Vertices places them, the nearest one twice where it reads no neighbour. Two vertices half
-// a step to either side of the direction reach equally far, and each is placed with a rounding
-// residue of its own, which for an integer T can round them a unit apart, so the farther of
-// the two is read off the placed vertices rather than judged before they are placed.
-func (rp RegularPolygon[T]) farthestVertices(direction float64) (Point[T], Point[T]) {
-	nearest, neighbour := rp.nearestIndex(direction)
-
-	vertex := rp.vertex(nearest)
-	if neighbour == nearest {
-		return vertex, vertex
-	}
-
-	return vertex, rp.vertex(neighbour)
-}
-
 // minMax returns the minimum and maximum corner of the vertices, the corners of Bounds: the pair
-// the intersection tests reject shapes by before examining any edge. Each side is set by the
-// farther of the vertices farthestVertices places for that direction, the nearest and its
-// neighbour, so the corners are exactly those of Polygon().Bounds(), rounded alike for an
-// integer T. An empty polygon returns two zero points.
+// the intersection tests reject shapes by before examining any edge. It ranges the vertices as
+// Vertices places them, so the corners are exactly those of Polygon().Bounds(), rounded alike
+// for an integer T. An empty polygon returns two zero points.
 func (rp RegularPolygon[T]) minMax() (Point[T], Point[T]) {
 	if rp.IsEmpty() {
 		return Point[T]{}, Point[T]{}
 	}
 
-	left, otherLeft := rp.farthestVertices(Pi)
-	top, otherTop := rp.farthestVertices(3 * Pi / 2)
-	right, otherRight := rp.farthestVertices(0)
-	bottom, otherBottom := rp.farthestVertices(Pi / 2)
-
-	a := Point[T]{min(left.X, otherLeft.X), min(top.Y, otherTop.Y)}
-	b := Point[T]{max(right.X, otherRight.X), max(bottom.Y, otherBottom.Y)}
+	a := rp.vertex(0)
+	b := a
+	for i := 1; i < rp.N; i++ {
+		vertex := rp.vertex(i)
+		a = Point[T]{min(a.X, vertex.X), min(a.Y, vertex.Y)}
+		b = Point[T]{max(b.X, vertex.X), max(b.Y, vertex.Y)}
+	}
 
 	return a, b
 }

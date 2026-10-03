@@ -438,7 +438,19 @@ func TestRegularPolygon_Bounds(t *testing.T) {
 }
 
 func TestRegularPolygon_Translate(t *testing.T) {
-	geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0, 0).Translate(Vec(1, -2)), RegPol(Pt(2, 0), Sz(2, 2), 4, 0, 0))
+	t.Run("int", func(t *testing.T) {
+		geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0, 0).Translate(Vec(1, -2)), RegPol(Pt(2, 0), Sz(2, 2), 4, 0, 0))
+	})
+	t.Run("an int polygon of equal semi-axes moves every vertex by the vector", func(t *testing.T) {
+		for _, polygon := range []RegularPolygon[int]{RegPol(Pt(0, 0), Sz(9, 9), 9, Pi/6, 0), RegPol(Pt(0, 0), Sz(1, 1), 3, 0, 2*Pi/3)} {
+			for _, vector := range []Vector[int]{Vec(-1, 7), Vec(-9, -3)} {
+				moved := slices.Collect(polygon.Translate(vector).Vertices())
+				expected := slices.Collect(polygon.Polygon().Translate(vector).Vertices())
+
+				geomtest.AssertVertices(t, moved, expected, fmt.Sprintf("%s by %s: ", polygon, vector))
+			}
+		}
+	})
 }
 
 func TestRegularPolygon_MoveTo(t *testing.T) {
