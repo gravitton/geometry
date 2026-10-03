@@ -13,8 +13,27 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 
 ## [Unreleased](https://github.com/gravitton/geometry/compare/v1.15.0...main)
 
+### Changed
+- `ParsePoint` and `ParseSize` parse their two parts through one private `parsePair`, so a failing part is named and wrapped the same way in both
+- The package doc states the supported range: float64 at any finite coordinates, float32 within 1e5, and `int`, `int32` and `int64` within 2^26; `int8` and `int16` never panic or hang but may wrap, and `Integer` no longer promises they never overflow
+- `Ray.Contains`, `DistanceTo` and `Nearest` measure on the ray's reach past the point, the segment every ray pair decides on, so a point the ray contains is one its pairs find on it
+- `Rectangle.EnclosesCircle` of an aligned rectangle answers as its `Bounds` does
+- `Equal` and `EqualDelta` hold for an infinity against itself
 
-## [v1.15.0](https://github.com/gravitton/geometry/compare/v1.14.0...v1.15.0) (2026-10-02)
+### Fixed
+- A segment or ray passing a vertex within the tolerance no longer meets an outline more than twice: an endpoint within the tolerance replaces a proper crossing in `Segment.IntersectionSegment`
+- `Polygon.ConvexHull` always keeps the least and greatest vertex, which a nearly collinear float64 point could drop
+- `Polygon.Simplify` no longer recurses forever on a NaN tolerance or a NaN or infinite vertex
+- `Segment.ClipPolygon` and `Ray.ClipPolygon` no longer end a part at a point outside the polygon where the segment leaves an edge at a shallow angle
+- `Rectangle.IntersectionRectangle` and `Union` treat rectangles half a turn apart as the same frame
+- Integer `Ray.IntersectionRay` rounds a crossing on a half unit the same way from either ray
+- Integer `Circle.IntersectionCircle` gives two crossings rounding to one point once
+- `Ellipse.Bounds` clamps into the range of a narrow integer `T` instead of wrapping
+- `Segment.Scale`, `ScaleXY`, `Unscale`, `UnscaleXY`, `Rotate` and `Point.RotateAround` take offsets from the pivot in float64, so a narrow integer `T` does not wrap mid-computation
+- Docs: comparisons to other shapes and numeric examples removed; `Ellipse.Foci`, `Circle.IntersectsCircle`, `Body`, `Matrix.Scaling`, the `Clamp` methods and the negative semi-axis of `RegularPolygon` now say what the code does, and the integer `RegularPolygon` enclosing limit, the pointer and NaN-angle panics, and the circle–segment tangent placement are documented
+
+
+## [v1.15.0](https://github.com/gravitton/geometry/compare/v1.14.0...v1.15.0) (2026-10-03)
 
 Two new kinds and the queries between shapes. `Box` is the axis-aligned box every `Bounds` now returns, and `Ray` the half-line cast through every collider; shapes enclose, clip and find their nearest point, and every slice result has an `Append` form.
 The boundary tolerance widens with the coordinates, the same inputs give the same bits on every architecture, and a regular polygon takes a phase that keeps its orientation and every transform exact.

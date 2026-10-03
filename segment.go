@@ -111,9 +111,11 @@ func (s Segment[T]) Scale(factor float64) Segment[T] {
 // ScaleXY creates a new Segment scaled about its midpoint by the factors along X and Y, which
 // changes the direction unless the factors are equal.
 func (s Segment[T]) ScaleXY(factorX, factorY float64) Segment[T] {
-	pivot := s.Midpoint()
+	pivot := s.Midpoint().Float()
+	start := pivot.Add(s.Start.Float().Subtract(pivot).MultiplyXY(factorX, factorY))
+	end := pivot.Add(s.End.Float().Subtract(pivot).MultiplyXY(factorX, factorY))
 
-	return Segment[T]{pivot.Add(s.Start.Subtract(pivot).MultiplyXY(factorX, factorY)), pivot.Add(s.End.Subtract(pivot).MultiplyXY(factorX, factorY))}
+	return Segment[T]{start.Cast[T](), end.Cast[T]()}
 }
 
 // Unscale creates a new Segment uniformly scaled about its midpoint by the inverse factor, the
@@ -125,9 +127,11 @@ func (s Segment[T]) Unscale(factor float64) Segment[T] {
 // UnscaleXY creates a new Segment scaled about its midpoint by the inverse of the given factors,
 // the inverse of ScaleXY. Like Divide it panics for a zero factor.
 func (s Segment[T]) UnscaleXY(factorX, factorY float64) Segment[T] {
-	pivot := s.Midpoint()
+	pivot := s.Midpoint().Float()
+	start := pivot.Add(s.Start.Float().Subtract(pivot).DivideXY(factorX, factorY))
+	end := pivot.Add(s.End.Float().Subtract(pivot).DivideXY(factorX, factorY))
 
-	return Segment[T]{pivot.Add(s.Start.Subtract(pivot).DivideXY(factorX, factorY)), pivot.Add(s.End.Subtract(pivot).DivideXY(factorX, factorY))}
+	return Segment[T]{start.Cast[T](), end.Cast[T]()}
 }
 
 // Resize creates a new Segment of the given length about its midpoint, where Scale multiplies the
@@ -181,8 +185,8 @@ func (s Segment[T]) Normal() Vector[T] {
 	return s.Vector().Normal()
 }
 
-// Contains reports whether the given point lies on the segment, within the tolerance, the same
-// closed convention as Rectangle.Contains: it holds exactly where DistanceTo is zero.
+// Contains reports whether the given point lies on the segment, within the tolerance: it holds
+// exactly where DistanceTo is zero.
 func (s Segment[T]) Contains(point Point[T]) bool {
 	return s.DistanceSquaredTo(point) == 0
 }
@@ -279,14 +283,21 @@ func (s Segment[T]) IntersectsSegment(segment Segment[T]) bool {
 // cross products that are exact for an integer T, and the point is where the lines through
 // them meet, within both; or an endpoint of one lies on the other within the tolerance, and that
 // endpoint is the point, which is also the answer for nearly collinear float segments whose
-// crossing rounding would place off them. The touch is judged on the endpoint's distance, like Contains, rather than on the
-// fraction along the segment, which for a shallow crossing can put the same endpoint far
-// outside the other segment. Segments running along each other within the tolerance, sharing
-// a stretch rather than a point, are answered by an endpoint too, even where rounding gives
-// them a proper crossing: it would land anywhere along the stretch, beside the endpoints an
-// outline's next edges find, and give a segment along an edge three crossings.
+// crossing rounding would place off them. The touch is judged on the endpoint's distance, like
+// Contains, rather than on the fraction along the segment, which for a shallow crossing can put
+// the same endpoint far outside the other segment. An endpoint within the tolerance replaces a
+// proper crossing too, so a segment passing a vertex within the tolerance meets both edges there
+// at that one vertex, rather than at the vertex on one and a crossing beside it on the other.
+// Segments running along each other within the tolerance, sharing a stretch rather than a point,
+// are answered by an endpoint too, even where rounding gives them a proper crossing: it would
+// land anywhere along the stretch, beside the endpoints an outline's next edges find, and give a
+// segment along an edge three crossings.
 func (s Segment[T]) IntersectionSegment(segment Segment[T]) (Point[T], bool) {
 	if point, ok := s.crossing(segment); ok && !s.runsAlong(segment) {
+		if endpoint, ok := s.touch(segment); ok {
+			return endpoint, true
+		}
+
 		return point.Cast[T](), true
 	}
 
@@ -524,7 +535,10 @@ func (s Segment[T]) ClipCircle(circle Circle[T]) (Segment[T], bool) {
 // ClipPolygon returns the parts of the segment inside the polygon, boundary included within
 // the tolerance, from Start to End. The points IntersectionPolygon returns cut the segment into
 // pieces, each wholly inside or outside, and each piece is judged at its midpoint by the walk
-// Contains makes, Start and End by Contains itself. Pieces inside run together across a point
+// Contains makes, Start and End by Contains itself. A piece is inside only where both its ends
+// are too: a segment running along an edge at a shallow angle leaves the tolerance without
+// crossing it, so a piece from a Start or to an End the polygon does not contain is outside
+// whatever its midpoint, and the part ends at a point the polygon holds. Pieces inside run together across a point
 // where the segment touches the boundary from inside, such as a reflex vertex, and a point where
 // it touches the boundary from outside is a part of zero length, so there are parts exactly
 // where IntersectsPolygon holds. The midpoint is taken in float64, so for an integer T a gap
@@ -554,11 +568,13 @@ func (s Segment[T]) AppendClipPolygon(dst []Segment[T], polygon Polygon[T]) []Se
 		}
 
 		next, ahead := sweep.point, sweep.found && !ended
+		nextContained := ahead
 		if !ahead && !ended && !point.Equal(s.End) {
 			next, ahead, ended = s.End, true, true
+			nextContained = polygon.Contains(s.End)
 		}
 
-		inside := ahead && polygon.containsMidpoint(point, next)
+		inside := ahead && contained && nextContained && polygon.containsMidpoint(point, next)
 		if !open && (contained || sweep.touched || inside) {
 			from, open = point, true
 		}
@@ -571,7 +587,7 @@ func (s Segment[T]) AppendClipPolygon(dst []Segment[T], polygon Polygon[T]) []Se
 			return dst
 		}
 
-		point, contained = next, sweep.found || polygon.Contains(next)
+		point, contained = next, nextContained
 	}
 }
 

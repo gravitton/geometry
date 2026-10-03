@@ -17,8 +17,8 @@
 // [Direction], [Axis], [Orientation] and [Winding] are enums. Package geomtest holds test
 // assertions, and packages ints and floats alias the int and float64 instantiations.
 //
-// Every value type has Equal, Cast, Int, Float and String; every shape adds Bounds and Contains,
-// and every shape but Ellipse adds the Intersects methods. The enums are compared with == and
+// Every value type has Equal, Cast, Int, Float and String; every shape adds Contains, every one
+// but Ray adds Bounds, and every one but Ellipse adds the Intersects methods. The enums are compared with == and
 // marshal as their names.
 //
 // # Coordinates
@@ -33,15 +33,24 @@
 // # Numbers
 //
 // Products, distances and interpolations are computed in float64 and stored back through [Cast],
-// whatever T is, so a narrow integer T never overflows mid-computation. Cast rounds half away from
-// zero: Lerp, Midpoint, Multiply, Divide, Int and every method built on them follow it, so the
-// midpoint of an odd span rounds up. The exception is [Rectangle] and [Box], whose center is placed
+// whatever T is. Cast rounds half away from zero: Lerp, Midpoint, Multiply, Divide, Int and
+// every method built on them follow it, so the midpoint of an odd span rounds up. The exception is [Rectangle] and [Box], whose center is placed
 // by truncating half the size toward Min so that Max-Min stays exactly the size, and
 // Segment.Bounds().Center() can therefore differ from [Segment.Midpoint] by one unit on an odd
 // span. Sums and differences of two values stay in T. The signs that decide a crossing, a turn or
 // a winding are cross products of coordinate differences in float64, exact for an integer T while
 // the differences stay within 2^26, the square root of the integers float64 holds exactly; beyond
 // it a sign can round to zero.
+//
+// # Supported range
+//
+// The package is tested for float64 at any finite coordinates, for float32 within 1e5 of the
+// origin, and for int, int32 and int64 while coordinate differences stay within 2^26. Within
+// that range no method gives an answer wrong by more than the tolerance, but where two methods
+// place the same point by different roundings, which only a turned shape or a ray does, they
+// can disagree about a point within the tolerance of a boundary, and float32 far from the origin
+// is where that shows. A narrow integer T such as int8 or int16 compiles and never panics or
+// hangs, but a sum or difference near the end of its range may wrap.
 //
 // # Equality
 //
@@ -80,7 +89,9 @@
 // [OrientationFlatTop] nor [OrientationPointyTop], [OrientationNone] included: the absence of an
 // alignment has no phase to give. [Polygon.Lerp] and [RegularPolygon.Lerp] panic for a polygon
 // with a different vertex count, which has no shape between. [Intersects] panics for two colliders
-// of another package, which have no method this package can reach. These are the only panics:
+// of another package, which have no method this package can reach, a pointer to a shape of this
+// package included. An integer [RegularPolygon] with a NaN or infinite Angle or Phase panics
+// wherever it places a vertex, through Cast. These are the only panics:
 // every other guard returns a value the type can express, such as [DirectionNone], an empty
 // polygon, or the 0 that [Size.AspectRatio] gives for a zero height.
 //

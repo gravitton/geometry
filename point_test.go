@@ -221,6 +221,9 @@ func TestPoint_RotateAround(t *testing.T) {
 	t.Run("half turn mirrors through the pivot", func(t *testing.T) {
 		geomtest.AssertPoint(t, Pt(3.0, 4.0).RotateAround(Pt(1.0, 1.0), Pi), Pt(-1.0, -2.0))
 	})
+	t.Run("the offset from the pivot is taken in float64", func(t *testing.T) {
+		geomtest.AssertPoint(t, Pt[int8](127, 0).RotateAround(Pt[int8](-1, 0), -Pi/2), Pt[int8](-1, -128))
+	})
 	t.Run("about itself is identity", func(t *testing.T) {
 		geomtest.AssertPoint(t, Pt(3.0, 4.0).RotateAround(Pt(3.0, 4.0), 0.7), Pt(3.0, 4.0))
 	})

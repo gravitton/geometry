@@ -145,8 +145,9 @@ func (p Polygon[T]) Inertia() float64 {
 // Winding returns the sense in which the vertices run around the area they enclose, from the
 // sign of the sum Area takes the absolute value of: WindingClockwise for the winding of
 // Rectangle.Vertices, WindingCounterClockwise for the reverse, and WindingNone for a polygon
-// that encloses no area, its vertices on one line within the tolerance as Centroid judges it. A self-intersecting polygon winds the way its larger lobes do, and
-// lobes of equal area either way give WindingNone.
+// that encloses no area, its vertices on one line within the tolerance as Centroid judges it.
+// A self-intersecting polygon winds the way its larger lobes do, and lobes of equal area either
+// way give WindingNone.
 func (p Polygon[T]) Winding() Winding {
 	switch twiceArea := p.twiceArea(); {
 	case twiceArea > 0:
@@ -269,8 +270,7 @@ func (p Polygon[T]) UnscaleXY(factorX, factorY float64) Polygon[T] {
 // moving towards the vertex of the same index like Point.Lerp, extrapolating outside [0, 1]. The
 // vertices pair by index, so two outlines that start at different vertices or run in opposite
 // windings twist through each other on the way; align them first where that matters. Polygons
-// with a different vertex count have no shape between them, so Lerp panics for them, as
-// RegularPolygon.Lerp does for a different N.
+// with a different vertex count have no shape between them, so Lerp panics for them.
 func (p Polygon[T]) Lerp(polygon Polygon[T], t float64) Polygon[T] {
 	if len(p.Points) != len(polygon.Points) {
 		panic(fmt.Sprintf("geom: lerp between polygons of %d and %d vertices", len(p.Points), len(polygon.Points)))
@@ -323,13 +323,16 @@ func (p Polygon[T]) Rotate(angle float64) Polygon[T] {
 	})}
 }
 
-// ConvexHull returns the smallest convex polygon containing every vertex, wound clockwise
-// like Rectangle.Vertices and starting at the least vertex by Point.Compare: the vertices it
+// ConvexHull returns the smallest convex polygon containing every vertex, wound clockwise as
+// drawn on a screen with Y pointing down and starting at the least vertex by Point.Compare: the vertices it
 // keeps are vertices of the polygon, and one lying on an edge of the hull or repeating
 // another is dropped, so a polygon whose vertices are all collinear gives the two ends of
-// the line and a single point gives itself. The turns are decided on exact signs, as
-// IsConvex decides them, so the hull of a convex polygon is convex again and the hull of a
-// hull is itself. An empty polygon gives an empty one.
+// the line and a single point gives itself. The least and the greatest vertex are always kept,
+// so every vertex lies within the hull. The turns are the cross products IsConvex reads, exact
+// for an integer T and float32, so there the hull of a convex polygon is convex again and the
+// hull of a hull is itself; for float64 a vertex within rounding of the line through its
+// neighbours can turn either way, and points on one line can keep such a vertex between the
+// ends, a sliver IsConvex rejects. An empty polygon gives an empty one.
 //
 // It sorts a copy of the vertices along the boundary, the side of the line between the least
 // and the greatest vertex that the hull reaches first and then the other side back, and scans
@@ -355,21 +358,24 @@ func (p Polygon[T]) AppendConvexHull(dst []Point[T]) []Point[T] {
 		return p.compareAround(chord, a, b)
 	})
 
-	n := 0
-	for _, point := range points {
-		if n > 0 && point == points[n-1] {
-			continue
-		}
-
-		for n >= 2 && p.turn(points[n-2], points[n-1], point) <= 0 {
-			n--
-		}
-
-		points[n] = point
-		n++
+	split := slices.IndexFunc(points, func(point Point[T]) bool {
+		return p.returns(chord, point)
+	})
+	if split < 0 {
+		split = len(points)
 	}
 
-	for n >= 3 && p.turn(points[n-2], points[n-1], points[0]) <= 0 {
+	n := 0
+	for _, point := range points[:split] {
+		n = p.extendHull(points, n, 1, point)
+	}
+
+	greatest := n
+	for _, point := range points[split:] {
+		n = p.extendHull(points, n, greatest, point)
+	}
+
+	for n > greatest && p.turn(points[n-2], points[n-1], points[0]) <= 0 {
 		n--
 	}
 
@@ -434,16 +440,9 @@ func (p Polygon[T]) AppendSimplify(dst []Point[T], tolerance float64) []Point[T]
 // compareAround orders two points along the boundary of the hull whose least and greatest
 // vertex the chord joins: the points on the side of the chord a clockwise walk from Start
 // reaches first, or on the chord, by Point.Compare, then the points on the other side in the
-// reverse order. It reads no field of the polygon, only the chord and the points, so the
-// receiver is unnamed.
-func (Polygon[T]) compareAround(chord Segment[T], a, b Point[T]) int {
-	start, end := chord.Start.Float(), chord.End.Float()
-	direction := end.Subtract(start)
-	returning := func(point Point[T]) bool {
-		return direction.Cross(point.Float().Subtract(start)) > 0
-	}
-
-	switch ra, rb := returning(a), returning(b); {
+// reverse order.
+func (p Polygon[T]) compareAround(chord Segment[T], a, b Point[T]) int {
+	switch ra, rb := p.returns(chord, a), p.returns(chord, b); {
 	case ra != rb && ra:
 		return 1
 	case ra != rb:
@@ -453,6 +452,31 @@ func (Polygon[T]) compareAround(chord Segment[T], a, b Point[T]) int {
 	default:
 		return a.Compare(b)
 	}
+}
+
+// returns reports whether the point lies on the side of the chord a clockwise walk from its
+// Start reaches on the way back, by the turn the outline makes at End toward the point.
+func (p Polygon[T]) returns(chord Segment[T], point Point[T]) bool {
+	return p.turn(chord.Start, chord.End, point) > 0
+}
+
+// extendHull places the point at index n of the hull compacted into the front of points,
+// after dropping the vertices from index floor on that do not turn clockwise into it, and
+// returns the new count. A point repeating the last vertex is skipped. The floor keeps the
+// greatest vertex once the scan has passed it, so a nearly collinear point whose turn rounds
+// the other way can drop a point between the ends but never an end.
+func (p Polygon[T]) extendHull(points []Point[T], n, floor int, point Point[T]) int {
+	if n > 0 && point == points[n-1] {
+		return n
+	}
+
+	for n > floor && p.turn(points[n-2], points[n-1], point) <= 0 {
+		n--
+	}
+
+	points[n] = point
+
+	return n + 1
 }
 
 // turn returns the cross product of the edge from a to b and the edge from b to c, in
@@ -479,7 +503,7 @@ func (p Polygon[T]) appendKept(dst []Point[T], from, to int, tolerance float64) 
 		}
 	}
 
-	if lessOrEqualSquared(distance, tolerance, epsilonAt[T](max(edge.magnitude(), p.Points[farthest%n].magnitude()))) {
+	if farthest == from || lessOrEqualSquared(distance, tolerance, epsilonAt[T](max(edge.magnitude(), p.Points[farthest%n].magnitude()))) {
 		return dst, 0
 	}
 
@@ -491,7 +515,7 @@ func (p Polygon[T]) appendKept(dst []Point[T], from, to int, tolerance float64) 
 }
 
 // Contains reports whether the given point lies within the polygon, boundary included within
-// the tolerance, the same closed convention as Rectangle.Contains. The interior follows the
+// the tolerance. The interior follows the
 // even-odd rule, so a self-intersecting polygon excludes the regions it winds around twice.
 // A point outside the extent of the vertices is rejected before any edge is examined.
 func (p Polygon[T]) Contains(point Point[T]) bool {

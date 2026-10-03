@@ -37,16 +37,12 @@ func ParseSize[T Number](s string) (Size[T], error) {
 		return Size[T]{}, fmt.Errorf("geom: invalid size format %q", s)
 	}
 
-	x, err := Parse[T](width)
+	w, h, err := parsePair[T](width, height, "width", "height")
 	if err != nil {
-		return Size[T]{}, fmt.Errorf("geom: invalid width value: %w", err)
-	}
-	y, err := Parse[T](height)
-	if err != nil {
-		return Size[T]{}, fmt.Errorf("geom: invalid height value: %w", err)
+		return Size[T]{}, err
 	}
 
-	return Size[T]{x, y}, nil
+	return Size[T]{w, h}, nil
 }
 
 // XY returns the size width, height values in standard order.
@@ -118,11 +114,6 @@ func (s Size[T]) Ceil() Size[T] {
 	return Size[T]{Ceil(s.Width), Ceil(s.Height)}
 }
 
-// Lerp creates a new Size in linear interpolation towards the given size.
-func (s Size[T]) Lerp(size Size[T], t float64) Size[T] {
-	return Size[T]{Lerp(s.Width, size.Width, t), Lerp(s.Height, size.Height, t)}
-}
-
 // Grow creates a new Size expanded by the same amount in both dimensions. The amount is the
 // total change of each extent, not an amount per side. A size is signed, so nothing is clamped:
 // a shape that stores a size clamps its own extent at zero, as Rectangle.Grow does.
@@ -147,6 +138,11 @@ func (s Size[T]) Shrink(amount T) Size[T] {
 // Each amount is the total change of that extent, like Shrink.
 func (s Size[T]) ShrinkXY(amountX, amountY T) Size[T] {
 	return Size[T]{s.Width - amountX, s.Height - amountY}
+}
+
+// Lerp creates a new Size in linear interpolation towards the given size.
+func (s Size[T]) Lerp(size Size[T], t float64) Size[T] {
+	return Size[T]{Lerp(s.Width, size.Width, t), Lerp(s.Height, size.Height, t)}
 }
 
 // Fit creates a new Size scaled uniformly to the largest that fits within the given size, keeping

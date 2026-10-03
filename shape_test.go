@@ -285,17 +285,6 @@ func TestCollider(t *testing.T) {
 			}
 		}
 	})
-	t.Run("a collider of another kind is tested from the side that has one", func(t *testing.T) {
-		rectangle := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0))
-
-		assert.True(t, Intersects[float64](rectangle, stubCollider{result: true}))
-		assert.False(t, Intersects[float64](stubCollider{result: false}, rectangle))
-	})
-	t.Run("two colliders of another kind panic", func(t *testing.T) {
-		assert.Panics(t, func() {
-			Intersects[float64](stubCollider{}, stubCollider{})
-		})
-	})
 }
 
 // stubCollider is a Collider of no kind this package knows, for the paths Intersects takes
@@ -437,10 +426,24 @@ func TestBody(t *testing.T) {
 	})
 }
 
+func TestIntersects(t *testing.T) {
+	t.Run("a collider of another kind is tested from the side that has one", func(t *testing.T) {
+		rectangle := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0))
+
+		assert.True(t, Intersects[float64](rectangle, stubCollider{result: true}))
+		assert.False(t, Intersects[float64](stubCollider{result: false}, rectangle))
+	})
+	t.Run("two colliders of another kind panic", func(t *testing.T) {
+		assert.Panics(t, func() {
+			Intersects[float64](stubCollider{}, stubCollider{})
+		})
+	})
+}
+
 func TestTransformable(t *testing.T) {
 	t.Run("every shape moves and scales in its own type", func(t *testing.T) {
 		geomtest.AssertSegment(t, moved(Seg(Pt(0, 0), Pt(2, 2)), Vec(1, 1)), Seg(Pt(1, 1), Pt(3, 3)))
-		geomtest.AssertRay(t, moved(RayAlong(Pt(0, 0), Vec(2, 2)), Vec(1, 1)), RayAlong(Pt(1, 1), Vec(2, 2)))
+		geomtest.AssertRay(t, moved(Ry(Pt(0, 0), Vec(2, 2)), Vec(1, 1)), Ry(Pt(1, 1), Vec(2, 2)))
 		geomtest.AssertRectangle(t, moved(Rect(Pt(0, 0), Sz(2, 2)), Vec(1, 1)), Rect(Pt(1, 1), Sz(2, 2)))
 		geomtest.AssertCircle(t, moved(Circ(Pt(0, 0), 2), Vec(1, 1)), Circ(Pt(1, 1), 2))
 		geomtest.AssertPolygon(t, moved(Pol(squareVertices()), Vec(1, 1)), Pol([]Point[int]{Pt(1, 1), Pt(3, 1), Pt(3, 3), Pt(1, 3)}))

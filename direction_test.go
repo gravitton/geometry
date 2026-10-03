@@ -84,6 +84,32 @@ func TestParseDirection(t *testing.T) {
 	})
 }
 
+func TestDirection_Angle(t *testing.T) {
+	t.Run("measured from the positive X axis", func(t *testing.T) {
+		geomtest.AssertNumber(t, DirectionRight.Angle(), 0.0)
+		geomtest.AssertNumber(t, DirectionDown.Angle(), Pi/2)
+		geomtest.AssertNumber(t, DirectionUp.Angle(), -Pi/2)
+		geomtest.AssertNumber(t, DirectionUpRight.Angle(), -Pi/4)
+	})
+	t.Run("none has no angle", func(t *testing.T) {
+		assert.True(t, math.IsNaN(DirectionNone.Angle()))
+		assert.Equal(t, DirectionFromAngle(DirectionNone.Angle()), DirectionNone)
+	})
+}
+
+func TestDirection_Axis(t *testing.T) {
+	t.Run("cardinals have an axis", func(t *testing.T) {
+		assert.Equal(t, DirectionRight.Axis(), AxisHorizontal)
+		assert.Equal(t, DirectionLeft.Axis(), AxisHorizontal)
+		assert.Equal(t, DirectionDown.Axis(), AxisVertical)
+		assert.Equal(t, DirectionUp.Axis(), AxisVertical)
+	})
+	t.Run("diagonals and none do not", func(t *testing.T) {
+		assert.Equal(t, DirectionUpLeft.Axis(), AxisNone)
+		assert.Equal(t, DirectionNone.Axis(), AxisNone)
+	})
+}
+
 func TestDirection_Opposite(t *testing.T) {
 	t.Run("turns by a half turn", func(t *testing.T) {
 		assert.Equal(t, DirectionRight.Opposite(), DirectionLeft)
@@ -111,91 +137,6 @@ func TestDirection_Turn(t *testing.T) {
 	})
 	t.Run("none does not rotate", func(t *testing.T) {
 		assert.Equal(t, DirectionNone.Turn(3), DirectionNone)
-	})
-}
-
-func TestDirection_Axis(t *testing.T) {
-	t.Run("cardinals have an axis", func(t *testing.T) {
-		assert.Equal(t, DirectionRight.Axis(), AxisHorizontal)
-		assert.Equal(t, DirectionLeft.Axis(), AxisHorizontal)
-		assert.Equal(t, DirectionDown.Axis(), AxisVertical)
-		assert.Equal(t, DirectionUp.Axis(), AxisVertical)
-	})
-	t.Run("diagonals and none do not", func(t *testing.T) {
-		assert.Equal(t, DirectionUpLeft.Axis(), AxisNone)
-		assert.Equal(t, DirectionNone.Axis(), AxisNone)
-	})
-}
-
-func TestDirection_Offset(t *testing.T) {
-	t.Run("unit steps on the lattice", func(t *testing.T) {
-		geomtest.AssertVector(t, DirectionRight.Offset[int](), Vec(1, 0))
-		geomtest.AssertVector(t, DirectionUp.Offset[int](), Vec(0, -1))
-		geomtest.AssertVector(t, DirectionDownRight.Offset[int](), Vec(1, 1))
-	})
-	t.Run("diagonals are not normalized", func(t *testing.T) {
-		geomtest.AssertVector(t, DirectionUpLeft.Offset[float64](), Vec(-1.0, -1.0))
-	})
-	t.Run("none is the zero vector", func(t *testing.T) {
-		geomtest.AssertVector(t, DirectionNone.Offset[int](), Vec(0, 0))
-	})
-}
-
-func TestDirection_Unit(t *testing.T) {
-	t.Run("float", func(t *testing.T) {
-		geomtest.AssertVector(t, DirectionRight.Unit[float64](), Vec(1.0, 0.0))
-		geomtest.AssertVector(t, DirectionUp.Unit[float64](), Vec(0.0, -1.0))
-		geomtest.AssertVector(t, DirectionUpRight.Unit[float64](), Vec(OneOverSqrt2, -OneOverSqrt2))
-
-		geomtest.AssertVector(t, DirectionRight.Unit[float32](), Vec[float32](1, 0))
-	})
-	t.Run("int keeps the cardinals", func(t *testing.T) {
-		geomtest.AssertVector(t, DirectionRight.Unit[int](), Vec(1, 0))
-		geomtest.AssertVector(t, DirectionUp.Unit[int](), Vec(0, -1))
-	})
-	t.Run("int collapses the diagonals to an axis", func(t *testing.T) {
-		// no integer diagonal has length 1, so a diagonal cannot survive normalization;
-		// Offset keeps the lattice step (±1,±1) for callers that need the direction
-		geomtest.AssertVector(t, DirectionUpRight.Unit[int](), Vec(1, 0))
-		geomtest.AssertVector(t, DirectionUpRight.Offset[int](), Vec(1, -1))
-	})
-	t.Run("none is the zero vector", func(t *testing.T) {
-		geomtest.AssertVector(t, DirectionNone.Unit[float64](), Vec(0.0, 0.0))
-	})
-}
-
-func TestDirection_Vector(t *testing.T) {
-	t.Run("scales the unit vector", func(t *testing.T) {
-		geomtest.AssertVector(t, DirectionRight.Vector(5.0), Vec(5.0, 0.0))
-		geomtest.AssertVector(t, DirectionDown.Vector(5.0), Vec(0.0, 5.0))
-		geomtest.AssertVector(t, DirectionLeft.Vector(3), Vec(-3, 0))
-	})
-	t.Run("a diagonal keeps the requested length", func(t *testing.T) {
-		geomtest.AssertNumber(t, DirectionDownLeft.Vector(4.0).Length(), 4.0)
-	})
-	t.Run("an integer diagonal is rounded", func(t *testing.T) {
-		geomtest.AssertVector(t, DirectionDownRight.Vector(5), Vec(4, 4))
-	})
-	t.Run("a negative length points the other way", func(t *testing.T) {
-		geomtest.AssertVector(t, DirectionRight.Vector(-5.0), Vec(-5.0, 0.0))
-		geomtest.AssertNumber(t, DirectionDownLeft.Vector(-4.0).Length(), 4.0)
-		geomtest.AssertVector(t, DirectionUp.Vector(-5.0), DirectionDown.Vector(5.0))
-	})
-	t.Run("none is the zero vector", func(t *testing.T) {
-		geomtest.AssertVector(t, DirectionNone.Vector(5.0), Vec(0.0, 0.0))
-	})
-}
-
-func TestDirection_Angle(t *testing.T) {
-	t.Run("measured from the positive X axis", func(t *testing.T) {
-		geomtest.AssertNumber(t, DirectionRight.Angle(), 0.0)
-		geomtest.AssertNumber(t, DirectionDown.Angle(), Pi/2)
-		geomtest.AssertNumber(t, DirectionUp.Angle(), -Pi/2)
-		geomtest.AssertNumber(t, DirectionUpRight.Angle(), -Pi/4)
-	})
-	t.Run("none has no angle", func(t *testing.T) {
-		assert.True(t, math.IsNaN(DirectionNone.Angle()))
-		assert.Equal(t, DirectionFromAngle(DirectionNone.Angle()), DirectionNone)
 	})
 }
 
@@ -259,6 +200,65 @@ func TestDirection_IsPositive(t *testing.T) {
 		}
 
 		assert.False(t, DirectionNone.IsPositive())
+	})
+}
+
+func TestDirection_Offset(t *testing.T) {
+	t.Run("unit steps on the lattice", func(t *testing.T) {
+		geomtest.AssertVector(t, DirectionRight.Offset[int](), Vec(1, 0))
+		geomtest.AssertVector(t, DirectionUp.Offset[int](), Vec(0, -1))
+		geomtest.AssertVector(t, DirectionDownRight.Offset[int](), Vec(1, 1))
+	})
+	t.Run("diagonals are not normalized", func(t *testing.T) {
+		geomtest.AssertVector(t, DirectionUpLeft.Offset[float64](), Vec(-1.0, -1.0))
+	})
+	t.Run("none is the zero vector", func(t *testing.T) {
+		geomtest.AssertVector(t, DirectionNone.Offset[int](), Vec(0, 0))
+	})
+}
+
+func TestDirection_Unit(t *testing.T) {
+	t.Run("float", func(t *testing.T) {
+		geomtest.AssertVector(t, DirectionRight.Unit[float64](), Vec(1.0, 0.0))
+		geomtest.AssertVector(t, DirectionUp.Unit[float64](), Vec(0.0, -1.0))
+		geomtest.AssertVector(t, DirectionUpRight.Unit[float64](), Vec(OneOverSqrt2, -OneOverSqrt2))
+
+		geomtest.AssertVector(t, DirectionRight.Unit[float32](), Vec[float32](1, 0))
+	})
+	t.Run("int keeps the cardinals", func(t *testing.T) {
+		geomtest.AssertVector(t, DirectionRight.Unit[int](), Vec(1, 0))
+		geomtest.AssertVector(t, DirectionUp.Unit[int](), Vec(0, -1))
+	})
+	t.Run("int collapses the diagonals to an axis", func(t *testing.T) {
+		// no integer diagonal has length 1, so a diagonal cannot survive normalization;
+		// Offset keeps the lattice step (±1,±1) for callers that need the direction
+		geomtest.AssertVector(t, DirectionUpRight.Unit[int](), Vec(1, 0))
+		geomtest.AssertVector(t, DirectionUpRight.Offset[int](), Vec(1, -1))
+	})
+	t.Run("none is the zero vector", func(t *testing.T) {
+		geomtest.AssertVector(t, DirectionNone.Unit[float64](), Vec(0.0, 0.0))
+	})
+}
+
+func TestDirection_Vector(t *testing.T) {
+	t.Run("scales the unit vector", func(t *testing.T) {
+		geomtest.AssertVector(t, DirectionRight.Vector(5.0), Vec(5.0, 0.0))
+		geomtest.AssertVector(t, DirectionDown.Vector(5.0), Vec(0.0, 5.0))
+		geomtest.AssertVector(t, DirectionLeft.Vector(3), Vec(-3, 0))
+	})
+	t.Run("a diagonal keeps the requested length", func(t *testing.T) {
+		geomtest.AssertNumber(t, DirectionDownLeft.Vector(4.0).Length(), 4.0)
+	})
+	t.Run("an integer diagonal is rounded", func(t *testing.T) {
+		geomtest.AssertVector(t, DirectionDownRight.Vector(5), Vec(4, 4))
+	})
+	t.Run("a negative length points the other way", func(t *testing.T) {
+		geomtest.AssertVector(t, DirectionRight.Vector(-5.0), Vec(-5.0, 0.0))
+		geomtest.AssertNumber(t, DirectionDownLeft.Vector(-4.0).Length(), 4.0)
+		geomtest.AssertVector(t, DirectionUp.Vector(-5.0), DirectionDown.Vector(5.0))
+	})
+	t.Run("none is the zero vector", func(t *testing.T) {
+		geomtest.AssertVector(t, DirectionNone.Vector(5.0), Vec(0.0, 0.0))
 	})
 }
 

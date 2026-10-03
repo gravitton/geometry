@@ -146,20 +146,16 @@ func ParseDirection(name string) (Direction, error) {
 	return DirectionNone, fmt.Errorf("geom: unknown direction %q", name)
 }
 
-// Opposite returns the opposite direction, rotated 180°.
-func (d Direction) Opposite() Direction {
-	return d.Turn(4)
-}
-
-// Turn advances the direction by steps eighth-turns of increasing angle, the same sense as a
-// positive Vector.Rotate angle: counterclockwise in math coordinates, clockwise as drawn on a
-// screen with Y pointing down. Negative steps go the other way.
-func (d Direction) Turn(steps int) Direction {
+// Angle returns the angle of the direction in radians, measured in the standard math
+// convention where Y grows upward — so DirectionUp is -Pi/2, not +Pi/2, and NaN for
+// DirectionNone, which has no angle. Direction ordering follows this angle normalized to
+// [0, 2π), so DirectionFromAngle and Angle round-trip for every direction, DirectionNone included.
+func (d Direction) Angle() float64 {
 	if d.IsNone() {
-		return DirectionNone
+		return math.NaN()
 	}
 
-	return Mod(d+Direction(steps), 8)
+	return d.Offset[float64]().Angle()
 }
 
 // Axis returns the axis the direction runs on, or AxisNone for diagonals and DirectionNone.
@@ -174,50 +170,6 @@ func (d Direction) Axis() Axis {
 	}
 }
 
-// Offset creates a new non-normalized Vector with the lattice step of the direction, and the zero vector for DirectionNone.
-func (d Direction) Offset[T Number]() Vector[T] {
-	offset := d.offset()
-
-	return Vector[T]{T(offset.X), T(offset.Y)}
-}
-
-// Unit creates a new normalized Vector in the direction, and the zero vector for DirectionNone.
-// For integer T, only the four axis-aligned vectors have length 1, so a diagonal collapses onto
-// one of them; use Offset for the lattice step (±1,±1) that keeps the diagonal.
-func (d Direction) Unit[T Number]() Vector[T] {
-	if d.IsNone() {
-		return Vector[T]{}
-	}
-
-	return d.Offset[T]().Normalize()
-}
-
-// Vector creates a new Vector of the given length pointing in the direction, and the zero vector for DirectionNone.
-// A negative length points the other way, as Vector.Resize gives it, so the result runs along
-// the opposite direction with the absolute length.
-// For integer T, a diagonal has both components rounded, so its actual length is only
-// approximate. The diagonal is kept, unlike Unit, which snaps to an axis: a diagonal of unit
-// length is the lattice step of the direction, not the axis vector Unit gives.
-func (d Direction) Vector[T Number](length T) Vector[T] {
-	if d.IsNone() {
-		return Vector[T]{}
-	}
-
-	return d.Offset[T]().Resize(float64(length))
-}
-
-// Angle returns the angle of the direction in radians, measured in the standard math
-// convention where Y grows upward — so DirectionUp is -Pi/2, not +Pi/2, and NaN for
-// DirectionNone, which has no angle. Direction ordering follows this angle normalized to
-// [0, 2π), so DirectionFromAngle and Angle round-trip for every direction, DirectionNone included.
-func (d Direction) Angle() float64 {
-	if d.IsNone() {
-		return math.NaN()
-	}
-
-	return d.Offset[float64]().Angle()
-}
-
 // normalize returns the direction wrapped into [DirectionRight, DirectionUpRight],
 // preserving DirectionNone.
 func (d Direction) normalize() Direction {
@@ -228,13 +180,20 @@ func (d Direction) normalize() Direction {
 	return Mod(d, 8)
 }
 
-// offset returns the lattice step of the direction, or a zero step for DirectionNone.
-func (d Direction) offset() Vector[int] {
+// Opposite returns the opposite direction, rotated 180°.
+func (d Direction) Opposite() Direction {
+	return d.Turn(4)
+}
+
+// Turn advances the direction by steps eighth-turns of increasing angle, the same sense as a
+// positive Vector.Rotate angle: counterclockwise in math coordinates, clockwise as drawn on a
+// screen with Y pointing down. Negative steps go the other way.
+func (d Direction) Turn(steps int) Direction {
 	if d.IsNone() {
-		return Vector[int]{}
+		return DirectionNone
 	}
 
-	return directionOffsets[d.normalize()]
+	return Mod(d+Direction(steps), 8)
 }
 
 // IsNone reports whether the direction is DirectionNone.
@@ -272,6 +231,47 @@ func (d Direction) IsPositive() bool {
 	default:
 		return false
 	}
+}
+
+// Offset creates a new non-normalized Vector with the lattice step of the direction, and the zero vector for DirectionNone.
+func (d Direction) Offset[T Number]() Vector[T] {
+	offset := d.offset()
+
+	return Vector[T]{T(offset.X), T(offset.Y)}
+}
+
+// Unit creates a new normalized Vector in the direction, and the zero vector for DirectionNone.
+// For integer T, only the four axis-aligned vectors have length 1, so a diagonal collapses onto
+// one of them; use Offset for the lattice step (±1,±1) that keeps the diagonal.
+func (d Direction) Unit[T Number]() Vector[T] {
+	if d.IsNone() {
+		return Vector[T]{}
+	}
+
+	return d.Offset[T]().Normalize()
+}
+
+// Vector creates a new Vector of the given length pointing in the direction, and the zero vector for DirectionNone.
+// A negative length points the other way, as Vector.Resize gives it, so the result runs along
+// the opposite direction with the absolute length.
+// For integer T, a diagonal has both components rounded, so its actual length is only
+// approximate. The diagonal is kept, unlike Unit, which snaps to an axis: a diagonal of unit
+// length is the lattice step of the direction, not the axis vector Unit gives.
+func (d Direction) Vector[T Number](length T) Vector[T] {
+	if d.IsNone() {
+		return Vector[T]{}
+	}
+
+	return d.Offset[T]().Resize(float64(length))
+}
+
+// offset returns the lattice step of the direction, or a zero step for DirectionNone.
+func (d Direction) offset() Vector[int] {
+	if d.IsNone() {
+		return Vector[int]{}
+	}
+
+	return directionOffsets[d.normalize()]
 }
 
 // String returns the name of the direction constant.

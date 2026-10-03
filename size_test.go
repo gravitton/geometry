@@ -173,21 +173,6 @@ func TestSize_Ceil(t *testing.T) {
 	geomtest.AssertSize(t, Sz(1, 2).Ceil(), Sz(1, 2))
 }
 
-func TestSize_Lerp(t *testing.T) {
-	t.Run("interpolates between the sizes", func(t *testing.T) {
-		geomtest.AssertSize(t, Sz(0.0, 10.0).Lerp(Sz(10.0, 20.0), 0.25), Sz(2.5, 12.5))
-		geomtest.AssertSize(t, Sz(0, 10).Lerp(Sz(10, 20), 0.25), Sz(3, 13)) // int: 2.5 rounds away from zero
-	})
-	t.Run("the ends are the sizes themselves", func(t *testing.T) {
-		geomtest.AssertSize(t, Sz(2.0, 3.0).Lerp(Sz(8.0, 9.0), 0), Sz(2.0, 3.0))
-		geomtest.AssertSize(t, Sz(2.0, 3.0).Lerp(Sz(8.0, 9.0), 1), Sz(8.0, 9.0))
-	})
-	t.Run("extrapolates outside the unit range", func(t *testing.T) {
-		geomtest.AssertSize(t, Sz(2.0, 3.0).Lerp(Sz(4.0, 5.0), 2), Sz(6.0, 7.0))
-		geomtest.AssertSize(t, Sz(2.0, 3.0).Lerp(Sz(4.0, 5.0), -1), Sz(0.0, 1.0))
-	})
-}
-
 func TestSize_Grow(t *testing.T) {
 	t.Run("uniform amount", func(t *testing.T) {
 		geomtest.AssertSize(t, Sz(2, 3).Grow(2), Sz(4, 5))
@@ -217,6 +202,21 @@ func TestSize_Shrink(t *testing.T) {
 		geomtest.AssertSize(t, Sz(2, 3).ShrinkXY(5, 1), Sz(-3, 2))
 		geomtest.AssertSize(t, Sz(-10, 5).Shrink(2), Sz(-12, 3))
 		geomtest.AssertSize(t, Sz(0.4, 0.25).Shrink(1.0), Sz(-0.6, -0.75))
+	})
+}
+
+func TestSize_Lerp(t *testing.T) {
+	t.Run("interpolates between the sizes", func(t *testing.T) {
+		geomtest.AssertSize(t, Sz(0.0, 10.0).Lerp(Sz(10.0, 20.0), 0.25), Sz(2.5, 12.5))
+		geomtest.AssertSize(t, Sz(0, 10).Lerp(Sz(10, 20), 0.25), Sz(3, 13)) // int: 2.5 rounds away from zero
+	})
+	t.Run("the ends are the sizes themselves", func(t *testing.T) {
+		geomtest.AssertSize(t, Sz(2.0, 3.0).Lerp(Sz(8.0, 9.0), 0), Sz(2.0, 3.0))
+		geomtest.AssertSize(t, Sz(2.0, 3.0).Lerp(Sz(8.0, 9.0), 1), Sz(8.0, 9.0))
+	})
+	t.Run("extrapolates outside the unit range", func(t *testing.T) {
+		geomtest.AssertSize(t, Sz(2.0, 3.0).Lerp(Sz(4.0, 5.0), 2), Sz(6.0, 7.0))
+		geomtest.AssertSize(t, Sz(2.0, 3.0).Lerp(Sz(4.0, 5.0), -1), Sz(0.0, 1.0))
 	})
 }
 

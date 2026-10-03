@@ -134,8 +134,8 @@ func (b Box[T]) Outset(padding Padding[T]) Box[T] {
 }
 
 // Clamp creates a new Box moved so that it lies within the given one, keeping its size: the box
-// itself where it already lies within, and otherwise moved by the shortest distance that brings
-// it in. On an axis along which it is the larger it is centered on the other instead.
+// itself where it already lies exactly within, and otherwise moved by the shortest distance that
+// brings it in, so one enclosed only within the tolerance is moved onto the boundary. On an axis along which it is the larger it is centered on the other instead.
 func (b Box[T]) Clamp(box Box[T]) Box[T] {
 	return b.Translate(b.clampOffset(box))
 }

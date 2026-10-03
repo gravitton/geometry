@@ -34,13 +34,9 @@ func ParsePoint[T Number](s string) (Point[T], error) {
 		return Point[T]{}, fmt.Errorf("geom: invalid point format %q", s)
 	}
 
-	x, err := Parse[T](before)
+	x, y, err := parsePair[T](before, after, "x", "y")
 	if err != nil {
-		return Point[T]{}, fmt.Errorf("geom: invalid x value: %w", err)
-	}
-	y, err := Parse[T](after)
-	if err != nil {
-		return Point[T]{}, fmt.Errorf("geom: invalid y value: %w", err)
+		return Point[T]{}, err
 	}
 
 	return Point[T]{x, y}, nil
@@ -141,7 +137,9 @@ func (p Point[T]) Transform[M Float](matrix Matrix[M]) Point[T] {
 // the same sense as Vector.Rotate. For integer T the result is rounded; only multiples of 90°
 // give exact results.
 func (p Point[T]) RotateAround(pivot Point[T], angle float64) Point[T] {
-	return pivot.Add(p.Subtract(pivot).Rotate(angle))
+	center := pivot.Float()
+
+	return center.Add(p.Float().Subtract(center).Rotate(angle)).Cast[T]()
 }
 
 // AngleTo returns the angle in radians from the current point to the given point.

@@ -426,6 +426,12 @@ func TestPolygon_ConvexHull(t *testing.T) {
 		geomtest.AssertPolygon(t, Pol([]Point[int]{Pt(1, 1), Pt(1, 1), Pt(1, 1)}).ConvexHull(), Pol([]Point[int]{Pt(1, 1)}))
 		geomtest.AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(2, 0), Pt(0, 2), Pt(0, 0)}).ConvexHull(), Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(0, 2)}))
 	})
+	t.Run("keeps the greatest vertex past a nearly collinear float one", func(t *testing.T) {
+		greatest := Pt(9.56410038149687, 1.6192331065898036)
+		polygon := Pol([]Point[float64]{Pt(1.8290617591677738, 0.38844609966781296), greatest, Pt(3.493374376436207, 0.6532688684743018), Pt(2.9945811908958953, 8.451049574284257)})
+
+		assert.Contains(t, polygon.ConvexHull().Points, greatest)
+	})
 	t.Run("an empty polygon gives an empty one", func(t *testing.T) {
 		assert.Zero(t, Polygon[int]{}.ConvexHull())
 	})
@@ -460,6 +466,32 @@ func BenchmarkPolygon_ConvexHull(b *testing.B) {
 	for b.Loop() {
 		sinkBool = polygon.ConvexHull().IsEmpty()
 	}
+}
+
+func FuzzPolygon_ConvexHull(f *testing.F) {
+	f.Add(1.8290617591677738, 0.38844609966781296, 9.56410038149687, 1.6192331065898036, 2.9945811908958953, 8.451049574284257, 0.2)
+	f.Add(0.0, 0.0, 4.0, 2.0, 0.0, 4.0, 0.5)
+	f.Add(0.0, 0.0, 1.0, 1.0, 2.0, 2.0, 0.7)
+
+	f.Fuzz(func(t *testing.T, x1, y1, x2, y2, x3, y3, along float64) {
+		for _, v := range []float64{x1, y1, x2, y2, x3, y3, along} {
+			if math.IsNaN(v) || math.Abs(v) > 1e3 {
+				t.Skip()
+			}
+		}
+
+		a, b, c := Pt(x1, y1), Pt(x2, y2), Pt(x3, y3)
+		polygon := Pol([]Point[float64]{a, b, a.Lerp(b, along), c, b.Lerp(c, along)})
+		hull := polygon.ConvexHull()
+		message := fmt.Sprintf("%s → %s: ", polygon, hull)
+
+		for _, vertex := range polygon.Points {
+			assert.True(t, hull.Contains(vertex), message)
+		}
+		assert.Contains(t, hull.Points, slices.MinFunc(polygon.Points, Point[float64].Compare), message)
+		assert.Contains(t, hull.Points, slices.MaxFunc(polygon.Points, Point[float64].Compare), message)
+		assert.True(t, hull.ConvexHull().Equal(hull), message)
+	})
 }
 
 func TestPolygon_AppendConvexHull(t *testing.T) {
@@ -548,6 +580,13 @@ func TestPolygon_Simplify(t *testing.T) {
 	})
 	t.Run("an empty polygon gives an empty one", func(t *testing.T) {
 		assert.Zero(t, Polygon[int]{}.Simplify(1))
+	})
+	t.Run("a NaN tolerance or vertex ends the walk", func(t *testing.T) {
+		triangle := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(1.0, 1.0), Pt(2.0, 0.0)})
+
+		geomtest.AssertPolygon(t, triangle.Simplify(math.NaN()), triangle)
+		assert.False(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(math.NaN(), 1.0), Pt(2.0, 0.0)}).Simplify(0.5).IsEmpty())
+		assert.False(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(math.Inf(1), 1.0), Pt(2.0, 0.0)}).Simplify(1).IsEmpty())
 	})
 	t.Run("allocates once", func(t *testing.T) {
 		square := Pol([]Point[int]{Pt(0, 0), Pt(1, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2)})

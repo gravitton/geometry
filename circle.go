@@ -156,8 +156,8 @@ func (c Circle[T]) AlignTo(direction Direction, point Point[T]) Circle[T] {
 }
 
 // Contains reports whether the given point lies within the circle, boundary included within
-// the tolerance, the same closed convention as Rectangle.Contains: a float point a rounding
-// error outside the radius, such as an Anchor, is still contained.
+// the tolerance: a float point a rounding error outside the radius, such as an Anchor, is
+// still contained.
 func (c Circle[T]) Contains(point Point[T]) bool {
 	return c.containsSquared(c.centerDistanceSquared(point), point.magnitude())
 }
@@ -272,8 +272,8 @@ func (c Circle[T]) EnclosesBox(box Box[T]) bool {
 	return true
 }
 
-// IntersectsCircle reports whether the circles overlap: the center of one lies within the sum of the
-// radii of the other. Touching circles intersect, within the tolerance, by the same comparison
+// IntersectsCircle reports whether the circles overlap: the distance between the centers is at
+// most the sum of the radii. Touching circles intersect, within the tolerance, by the same comparison
 // Contains makes, on the squared distance. The radii are summed in float64, so a narrow integer
 // T cannot overflow the threshold.
 func (c Circle[T]) IntersectsCircle(circle Circle[T]) bool {
@@ -288,7 +288,8 @@ func (c Circle[T]) IntersectsCircle(circle Circle[T]) bool {
 // the same comparison Intersects makes, so a tangent a rounding error outside its reach gives
 // one point rather than the same point twice; that point is placed halfway between the two
 // boundaries where they meet, since the crossing formula amplifies the tolerance there. For
-// integer T the points are rounded like every other result stored into T.
+// integer T the points are rounded like every other result stored into T, and two crossings
+// rounding to the same point give it once.
 func (c Circle[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
 	return c.AppendIntersectionCircle(nil, circle)
 }
@@ -318,9 +319,12 @@ func (c Circle[T]) AppendIntersectionCircle(dst []Point[T], circle Circle[T]) []
 	along := (float64(r1*r1) - float64(r2*r2) + distanceSquared) / (2 * distance)
 	middle := center.Add(direction.Resize(along))
 	normal := direction.Normal().Resize(math.Sqrt(max(float64(r1*r1)-float64(along*along), 0)))
-	first, second := middle.Add(normal), middle.Add(normal.Negate())
+	first, second := middle.Add(normal).Cast[T](), middle.Add(normal.Negate()).Cast[T]()
+	if second.Equal(first) {
+		return append(dst, first)
+	}
 
-	return append(dst, first.Cast[T](), second.Cast[T]())
+	return append(dst, first, second)
 }
 
 // IntersectsSegment reports whether the circle and the segment share a point: the point of the
@@ -337,7 +341,10 @@ func (c Circle[T]) IntersectsSegment(segment Segment[T]) bool {
 // reports it. An endpoint within the tolerance of the boundary is the crossing nearest to it, judged
 // by the same comparison IntersectsSegment makes, so a shallow touch is not lost to the fraction
 // along the chord and the two agree to the last bit; where the chord is a tangent the endpoint
-// replaces it. For integer T the points are rounded like every other result stored into T.
+// replaces it. A tangent is placed at the foot on the segment, a fraction along it like every
+// crossing, so it lies within the tolerance of the circle rather than halfway between the two
+// boundaries, and a float32 tangent far from the origin can round just past the tolerance. For
+// integer T the points are rounded like every other result stored into T.
 func (c Circle[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
 	return c.AppendIntersectionSegment(nil, segment)
 }

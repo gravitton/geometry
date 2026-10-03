@@ -37,7 +37,7 @@ func TestRectangleFromImage(t *testing.T) {
 	})
 }
 
-func TestPoint_Image(t *testing.T) {
+func TestPoint_Point(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		assert.Equal(t, Pt(1, 2).Point(), image.Pt(1, 2))
 	})
@@ -51,7 +51,7 @@ func TestPoint_Image(t *testing.T) {
 	})
 }
 
-func TestRectangle_Image(t *testing.T) {
+func TestRectangle_Rectangle(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		assert.Equal(t, Rect(Pt(1, 2), Sz(2, 3)).Rectangle(), image.Rect(0, 1, 2, 4))
 	})

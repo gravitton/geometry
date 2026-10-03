@@ -32,12 +32,12 @@ func TestParseAxis(t *testing.T) {
 	})
 }
 
-func TestAxis_Cross(t *testing.T) {
+func TestAxis_Perpendicular(t *testing.T) {
 	t.Run("swaps the two axes", func(t *testing.T) {
 		assert.Equal(t, AxisHorizontal.Perpendicular(), AxisVertical)
 		assert.Equal(t, AxisVertical.Perpendicular(), AxisHorizontal)
 	})
-	t.Run("none has no cross", func(t *testing.T) {
+	t.Run("none has no perpendicular", func(t *testing.T) {
 		assert.Equal(t, AxisNone.Perpendicular(), AxisNone)
 		assert.Equal(t, Axis(2).Perpendicular(), AxisNone)
 	})

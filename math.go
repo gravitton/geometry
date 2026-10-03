@@ -1,6 +1,7 @@
 package geom
 
 import (
+	"fmt"
 	"math"
 	"strconv"
 )
@@ -161,10 +162,11 @@ func Equal[T Number](a, b T) bool {
 	return EqualDelta(a, b, Epsilon[T]())
 }
 
-// EqualDelta reports whether a and b are equal within the given delta.
+// EqualDelta reports whether a and b are equal within the given delta, or are the same value,
+// so an infinity equals itself where the difference of two would be NaN.
 // The difference is taken in float64, so it cannot overflow a narrow integer T.
 func EqualDelta[T Number](a, b T, delta float64) bool {
-	return math.Abs(float64(a)-float64(b)) <= delta
+	return a == b || math.Abs(float64(a)-float64(b)) <= delta
 }
 
 // EqualRelative reports whether a and b are equal within a tolerance that scales with
@@ -308,7 +310,7 @@ func AngleDistance(a, b float64) float64 {
 }
 
 // LerpAngle interpolates from angle a towards angle b at a ratio t along the shorter arc
-// between them, so a turn from 350° to 10° passes through 0° rather than the long way round.
+// between them, so a turn across the zero angle passes through it rather than the long way round.
 // The result is measured from a, not normalized, and t outside [0, 1] extrapolates along the
 // same arc like Lerp. Angles exactly half a turn apart have no shorter arc and turn in the
 // sense of increasing angle.
@@ -362,4 +364,19 @@ func Parse[T Number](s string) (T, error) {
 
 func rangeError(s string) error {
 	return &strconv.NumError{Func: "Parse", Num: s, Err: strconv.ErrRange}
+}
+
+// parsePair parses the two parts of a value already split from its format, naming the part that
+// fails in the error and wrapping the Parse error.
+func parsePair[T Number](first, second, firstName, secondName string) (T, T, error) {
+	a, err := Parse[T](first)
+	if err != nil {
+		return 0, 0, fmt.Errorf("geom: invalid %s value: %w", firstName, err)
+	}
+	b, err := Parse[T](second)
+	if err != nil {
+		return 0, 0, fmt.Errorf("geom: invalid %s value: %w", secondName, err)
+	}
+
+	return a, b, nil
 }

@@ -182,6 +182,9 @@ func TestEllipse_Bounds(t *testing.T) {
 	t.Run("int is rounded once", func(t *testing.T) {
 		geomtest.AssertBox(t, Ell(Pt(1, 2), Sz(10, 4), 0).Bounds(), Bx(Pt(-9, -2), Pt(11, 6)))
 	})
+	t.Run("a narrow integer ellipse reaching past its range is bounded at the end of it", func(t *testing.T) {
+		geomtest.AssertBox(t, Ell(Pt[int8](100, 0), Sz[int8](60, 10), 0).Bounds(), Bx(Pt[int8](40, -10), Pt[int8](127, 10)))
+	})
 }
 
 func TestEllipse_Translate(t *testing.T) {

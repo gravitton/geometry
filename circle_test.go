@@ -556,6 +556,9 @@ func TestCircle_IntersectionCircle(t *testing.T) {
 		geomtest.AssertVertices(t, Circ(Pt(0, 0), 5).IntersectionCircle(Circ(Pt(6, 0), 5)), []Point[int]{Pt(3, 4), Pt(3, -4)})
 		geomtest.AssertVertices(t, Circ(Pt(0, 0), 2).IntersectionCircle(Circ(Pt(3, 0), 2)), []Point[int]{Pt(2, 1), Pt(2, -1)})
 	})
+	t.Run("int gives two crossings rounding to one point once", func(t *testing.T) {
+		geomtest.AssertVertices(t, Circ(Pt(11, -20), 15).IntersectionCircle(Circ(Pt(-3, -19), 1)), []Point[int]{Pt(-4, -19)})
+	})
 	t.Run("points lie on both circles and mirror Intersects", func(t *testing.T) {
 		for _, a := range circleFixtures {
 			for _, b := range circleFixtures {
@@ -627,6 +630,7 @@ func FuzzCircle_IntersectionCircle(f *testing.F) {
 	f.Add(0.0, 0.0, 1.0, 2.0+Delta/2, 0.0, 1.0)
 	f.Add(0.0, 0.0, 2.0, 0.0, 0.0, 1.0)
 	f.Add(0.0, 0.0, 6.0, 2.0000005, 0.0, 4.0)
+	f.Add(11.0, -20.0, 15.0, -3.0, -19.0, 1.0)
 
 	f.Fuzz(func(t *testing.T, x1, y1, r1, x2, y2, r2 float64) {
 		for _, v := range []float64{x1, y1, r1, x2, y2, r2} {
@@ -651,6 +655,10 @@ func FuzzCircle_IntersectionCircle(f *testing.F) {
 
 		if len(points) > 0 {
 			assert.True(t, a.IntersectsCircle(b), fmt.Sprintf("%s → %s: points imply intersects: ", a, b))
+		}
+
+		if rounded := a.Int().IntersectionCircle(b.Int()); len(rounded) == 2 {
+			assert.True(t, !rounded[0].Equal(rounded[1]), fmt.Sprintf("%s → %s: two distinct rounded points: ", a.Int(), b.Int()))
 		}
 	})
 }
@@ -866,24 +874,24 @@ func TestCircle_IntersectsRay(t *testing.T) {
 	circle := Circ(Pt(0.0, 0.0), 1.0)
 
 	t.Run("passing through", func(t *testing.T) {
-		assert.True(t, circle.IntersectsRay(RayAlong(Pt(-2.0, 0.0), Vec(1.0, 0.0))))
+		assert.True(t, circle.IntersectsRay(Ry(Pt(-2.0, 0.0), Vec(1.0, 0.0))))
 	})
 	t.Run("pointing away", func(t *testing.T) {
-		assert.False(t, circle.IntersectsRay(RayAlong(Pt(-2.0, 0.0), Vec(-1.0, 0.0))))
+		assert.False(t, circle.IntersectsRay(Ry(Pt(-2.0, 0.0), Vec(-1.0, 0.0))))
 	})
 	t.Run("tangent counts", func(t *testing.T) {
-		assert.True(t, circle.IntersectsRay(RayAlong(Pt(-2.0, 1.0), Vec(1.0, 0.0))))
-		assert.False(t, circle.IntersectsRay(RayAlong(Pt(-2.0, 1.0+2*Delta), Vec(1.0, 0.0))))
+		assert.True(t, circle.IntersectsRay(Ry(Pt(-2.0, 1.0), Vec(1.0, 0.0))))
+		assert.False(t, circle.IntersectsRay(Ry(Pt(-2.0, 1.0+2*Delta), Vec(1.0, 0.0))))
 	})
 	t.Run("a tangent behind the origin is missed", func(t *testing.T) {
-		assert.False(t, circle.IntersectsRay(RayAlong(Pt(1.5, 1.0), Vec(1.0, 0.0))))
+		assert.False(t, circle.IntersectsRay(Ry(Pt(1.5, 1.0), Vec(1.0, 0.0))))
 	})
 	t.Run("the origin inside counts", func(t *testing.T) {
-		assert.True(t, circle.IntersectsRay(RayAlong(Pt(0.5, 0.0), Vec(0.0, -3.0))))
+		assert.True(t, circle.IntersectsRay(Ry(Pt(0.5, 0.0), Vec(0.0, -3.0))))
 	})
 	t.Run("a zero direction is its origin", func(t *testing.T) {
-		assert.True(t, circle.IntersectsRay(RayAlong(Pt(0.5, 0.0), Vec(0.0, 0.0))))
-		assert.False(t, circle.IntersectsRay(RayAlong(Pt(2.0, 0.0), Vec(0.0, 0.0))))
+		assert.True(t, circle.IntersectsRay(Ry(Pt(0.5, 0.0), Vec(0.0, 0.0))))
+		assert.False(t, circle.IntersectsRay(Ry(Pt(2.0, 0.0), Vec(0.0, 0.0))))
 	})
 	t.Run("matches a segment reaching past the circle along the ray", func(t *testing.T) {
 		for _, c := range circleFixtures {
@@ -893,7 +901,7 @@ func TestCircle_IntersectsRay(t *testing.T) {
 		}
 	})
 	t.Run("a narrow integer circle at the end of its range", func(t *testing.T) {
-		assert.True(t, Circ(Pt[int8](100, 100), 30).IntersectsRay(RayAlong(Pt[int8](0, 100), Vec[int8](1, 0))))
+		assert.True(t, Circ(Pt[int8](100, 100), 30).IntersectsRay(Ry(Pt[int8](0, 100), Vec[int8](1, 0))))
 	})
 }
 
@@ -901,20 +909,20 @@ func TestCircle_IntersectionRay(t *testing.T) {
 	circle := Circ(Pt(0, 0), 5)
 
 	t.Run("passing through gives both crossings from Origin on", func(t *testing.T) {
-		geomtest.AssertVertices(t, circle.IntersectionRay(RayAlong(Pt(-10, 0), Vec(1, 0))), []Point[int]{Pt(-5, 0), Pt(5, 0)})
-		geomtest.AssertVertices(t, circle.IntersectionRay(RayAlong(Pt(10, 0), Vec(-2, 0))), []Point[int]{Pt(5, 0), Pt(-5, 0)})
+		geomtest.AssertVertices(t, circle.IntersectionRay(Ry(Pt(-10, 0), Vec(1, 0))), []Point[int]{Pt(-5, 0), Pt(5, 0)})
+		geomtest.AssertVertices(t, circle.IntersectionRay(Ry(Pt(10, 0), Vec(-2, 0))), []Point[int]{Pt(5, 0), Pt(-5, 0)})
 	})
 	t.Run("starting inside gives the exit", func(t *testing.T) {
-		geomtest.AssertVertices(t, circle.IntersectionRay(RayAlong(Pt(0, 0), Vec(0, 1))), []Point[int]{Pt(0, 5)})
+		geomtest.AssertVertices(t, circle.IntersectionRay(Ry(Pt(0, 0), Vec(0, 1))), []Point[int]{Pt(0, 5)})
 	})
 	t.Run("tangent gives one point", func(t *testing.T) {
-		geomtest.AssertVertices(t, circle.IntersectionRay(RayAlong(Pt(-10, 5), Vec(1, 0))), []Point[int]{Pt(0, 5)})
+		geomtest.AssertVertices(t, circle.IntersectionRay(Ry(Pt(-10, 5), Vec(1, 0))), []Point[int]{Pt(0, 5)})
 	})
 	t.Run("pointing away gives none", func(t *testing.T) {
-		assert.Nil(t, circle.IntersectionRay(RayAlong(Pt(-10, 0), Vec(-1, 0))))
+		assert.Nil(t, circle.IntersectionRay(Ry(Pt(-10, 0), Vec(-1, 0))))
 	})
 	t.Run("allocates once for the result and not at all for none", func(t *testing.T) {
-		through, away := RayAlong(Pt(-10, 0), Vec(1, 0)), RayAlong(Pt(-10, 0), Vec(-1, 0))
+		through, away := Ry(Pt(-10, 0), Vec(1, 0)), Ry(Pt(-10, 0), Vec(-1, 0))
 
 		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkPoints = circle.IntersectionRay(through)
@@ -941,20 +949,20 @@ func TestCircle_IntersectionRay(t *testing.T) {
 		}
 	})
 	t.Run("a narrow integer circle at the end of its range", func(t *testing.T) {
-		geomtest.AssertVertices(t, Circ(Pt[int8](100, 100), 20).IntersectionRay(RayAlong(Pt[int8](0, 100), Vec[int8](1, 0))), []Point[int8]{Pt[int8](80, 100), Pt[int8](120, 100)})
+		geomtest.AssertVertices(t, Circ(Pt[int8](100, 100), 20).IntersectionRay(Ry(Pt[int8](0, 100), Vec[int8](1, 0))), []Point[int8]{Pt[int8](80, 100), Pt[int8](120, 100)})
 	})
 }
 
 func TestCircle_AppendIntersectionRay(t *testing.T) {
 	circle := Circ(Pt(0, 0), 5)
-	through := RayAlong(Pt(-10, 0), Vec(1, 0))
+	through := Ry(Pt(-10, 0), Vec(1, 0))
 
 	t.Run("appends after the points in dst, comparing and ordering only its own", func(t *testing.T) {
 		geomtest.AssertVertices(t, circle.AppendIntersectionRay([]Point[int]{Pt(5, 0)}, through), []Point[int]{Pt(5, 0), Pt(-5, 0), Pt(5, 0)})
 	})
 	t.Run("none leaves dst as it is", func(t *testing.T) {
-		geomtest.AssertVertices(t, circle.AppendIntersectionRay([]Point[int]{Pt(9, 9)}, RayAlong(Pt(-10, 0), Vec(-1, 0))), []Point[int]{Pt(9, 9)})
-		assert.Nil(t, circle.AppendIntersectionRay(nil, RayAlong(Pt(-10, 0), Vec(-1, 0))))
+		geomtest.AssertVertices(t, circle.AppendIntersectionRay([]Point[int]{Pt(9, 9)}, Ry(Pt(-10, 0), Vec(-1, 0))), []Point[int]{Pt(9, 9)})
+		assert.Nil(t, circle.AppendIntersectionRay(nil, Ry(Pt(-10, 0), Vec(-1, 0))))
 	})
 	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
 		buffer := make([]Point[int], 0, 2)

@@ -116,8 +116,9 @@ func (m Matrix[T]) Angle() float64 {
 // Scaling returns the scale factors the matrix applies along its rotated X and Y axes: the
 // length of the transformed X axis, and the signed length of the Y axis, negative for a
 // reflection. A matrix built from a rotation, a scale and a translation gives the scale back;
-// a sheared matrix gives the factors of the nearest rotation and scale. For integer T the
-// factors are rounded; the zero matrix gives the zero vector.
+// a sheared matrix gives the length of its X axis and the determinant divided by it, the
+// factors that keep that axis and the area. For integer T the factors are rounded; the zero
+// matrix gives the zero vector.
 func (m Matrix[T]) Scaling() Vector[T] {
 	f := m.Float()
 

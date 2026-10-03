@@ -1270,6 +1270,13 @@ func TestRectangle_IntersectionRectangle(t *testing.T) {
 
 		assert.False(t, ok)
 	})
+	t.Run("half a turn apart overlap in a rectangle of the receiver's angle", func(t *testing.T) {
+		turned := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(0.3)
+		overlap, ok := turned.IntersectionRectangle(turned.Rotate(Pi))
+
+		assert.True(t, ok)
+		geomtest.AssertRectangle(t, overlap, turned)
+	})
 	t.Run("touching gives a zero extent", func(t *testing.T) {
 		overlap, ok := rectangle.IntersectionRectangle(Rect(Pt(4, 0), Sz(4, 4)))
 
@@ -1389,6 +1396,11 @@ func TestRectangle_Union(t *testing.T) {
 		a := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(Pi / 2)
 
 		geomtest.AssertRectangle(t, a.Union(Rect(Pt(0.0, 1.0), Sz(4.0, 2.0)).Rotate(Pi/2)), Rect(Pt(0.0, 0.5), Sz(5.0, 2.0)).Rotate(Pi/2))
+	})
+	t.Run("half a turn apart unite in a rectangle of the receiver's angle", func(t *testing.T) {
+		turned := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(0.3)
+
+		geomtest.AssertRectangle(t, turned.Union(turned.Rotate(Pi)), turned)
 	})
 	t.Run("different angles unite in the box around both", func(t *testing.T) {
 		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)

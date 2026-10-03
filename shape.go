@@ -36,8 +36,8 @@ type Collider[T Number] interface {
 // Body is a shape with an area, the mass properties a physics engine takes from it: Rectangle,
 // Circle, Ellipse, Polygon and RegularPolygon. Area is the mass at unit density, Centroid the
 // center of mass and Inertia the polar second moment of area about it, the rotational inertia
-// at unit density; a physics body multiplies the last two by its density and never asks which
-// shape it holds. Segment is not a Body, since it encloses no area, and Size is not a shape.
+// at unit density; a physics body multiplies Area and Inertia by its density and never asks
+// which shape it holds. Segment is not a Body, since it encloses no area, and Size is not a shape.
 type Body[T Number] interface {
 	Area() float64
 	Centroid() Point[T]
@@ -50,9 +50,10 @@ type Body[T Number] interface {
 // touch within the tolerance, like every method it dispatches to.
 //
 // Both arguments escape to the heap, so a loop that knows its types calls the named method
-// directly and allocates nothing. A shape of another package satisfying Collider works on
-// either side, since the other side names its kind; two of them together have no method this
-// package can reach and panic.
+// directly and allocates nothing. The shapes of this package are named by value, so a pointer
+// to one is a shape of another package here. A shape of another package satisfying Collider
+// works on either side, since the other side names its kind; two of them together have no
+// method this package can reach and panic.
 func Intersects[T Number](a, b Collider[T]) bool {
 	if result, ok := intersectsKind(a, b); ok {
 		return result

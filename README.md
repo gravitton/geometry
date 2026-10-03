@@ -54,7 +54,7 @@ rock := geom.Hexagon(geom.Pt(50.0, 0.0), geom.SzU(20.0), geom.OrientationFlatTop
 ship.IntersectsRegularPolygon(rock)                                // false
 ship.Translate(geom.Vec(25.0, 0.0)).IntersectsRegularPolygon(rock) // true, after the move
 
-laser := geom.RayAlong(ship.Center, geom.Vec(1.0, 0.0))
+laser := geom.Ry(ship.Center, geom.Vec(1.0, 0.0))
 hit, ok := laser.ClipRegularPolygon(rock) // Seg((32.24,0.00);(67.76,0.00)), true; hit.Start is the first point hit
 ```
 
@@ -212,7 +212,7 @@ Every shape has `Translate`, `Bounds`, `Contains`, `DistanceTo` and `Nearest`, a
 holds a shape without knowing which one:
 
 ```go
-var s geom.Shape[float64] = c // Bounds, Contains, DistanceTo, DistanceSquaredTo — every shape
+var s geom.Shape[float64] = c // Bounds, Contains, DistanceTo, DistanceSquaredTo, Nearest — every shape
 s.DistanceTo(geom.Pt(10.0, 5.0))
 
 geom.Intersects(d, c) // two shapes held as Collider, dispatched on the kind of the second
@@ -250,7 +250,7 @@ A `Ray` is a half-line from `Origin` along `Direction`. Its `Clip<Kind>` is the 
 hit:
 
 ```go
-ray := geom.RayThrough(camera, cursor) // from the camera through the cursor; RayAlong takes a direction
+ray := geom.RayThrough(camera, cursor) // from the camera through the cursor; Ry takes a direction
 ray.IntersectsRectangle(r)             // IntersectsRay on every Collider gives the same answer
 ray.ClipPolygon(p)                     // the parts inside a concave polygon, from Origin on
 ray.IntersectionBox(box)               // the boundary crossings, from Origin on

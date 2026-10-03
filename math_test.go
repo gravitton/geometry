@@ -277,6 +277,10 @@ func TestEqualDelta(t *testing.T) {
 		assert.True(t, EqualDelta(5, 5, 0.0))
 		assert.False(t, EqualDelta(5, 6, 0.0))
 	})
+	t.Run("an infinity equals itself", func(t *testing.T) {
+		assert.True(t, EqualDelta(math.Inf(1), math.Inf(1), Delta))
+		assert.False(t, EqualDelta(math.Inf(1), math.Inf(-1), Delta))
+	})
 	t.Run("narrow integers do not overflow", func(t *testing.T) {
 		assert.False(t, EqualDelta[int8](127, -128, 1))
 		assert.True(t, EqualDelta[int8](127, -128, 255))

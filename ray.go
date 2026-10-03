@@ -51,8 +51,7 @@ func (r Ray[T]) MoveTo(point Point[T]) Ray[T] {
 
 // Scale creates a new Ray with its direction scaled by the factor about the origin: the points
 // of the ray stay, and PointAt steps the scaled length. A negative factor turns the ray to the
-// other side of its origin, as it flips the ends of a segment, and a zero factor collapses the
-// ray onto its origin. For integer T the direction is rounded.
+// other side of its origin, and a zero factor collapses the ray onto its origin. For integer T the direction is rounded.
 func (r Ray[T]) Scale(factor float64) Ray[T] {
 	return r.ScaleXY(factor, factor)
 }
@@ -97,8 +96,8 @@ func (r Ray[T]) Rotate(angle float64) Ray[T] {
 	return Ray[T]{r.Origin, r.Direction.Rotate(angle)}
 }
 
-// Contains reports whether the given point lies on the ray, within the tolerance, the same closed
-// convention as Segment.Contains: it holds exactly where DistanceTo is zero.
+// Contains reports whether the given point lies on the ray, within the tolerance: it holds
+// exactly where DistanceTo is zero.
 func (r Ray[T]) Contains(point Point[T]) bool {
 	return r.DistanceSquaredTo(point) == 0
 }
@@ -111,27 +110,20 @@ func (r Ray[T]) DistanceTo(point Point[T]) float64 {
 }
 
 // DistanceSquaredTo returns the squared distance DistanceTo takes the root of, faster for
-// comparisons, a float64 even for an integer T as on Segment. A distance within the tolerance is
-// snapped to zero, which is where Contains reads it.
+// comparisons, a float64 even for an integer T. It is Segment.DistanceSquaredTo on the reach of
+// the ray past the point, the segment every pair of the ray is decided on, so a point the ray
+// contains is one its pairs find on it. A distance within the tolerance is snapped to zero,
+// which is where Contains reads it.
 func (r Ray[T]) DistanceSquaredTo(point Point[T]) float64 {
-	distance := r.distanceSquaredTo(point)
-	if lessOrEqualSquared(distance, 0, epsilonAt[T](max(r.Origin.magnitude(), point.magnitude()))) {
-		return 0
-	}
-
-	return distance
+	return r.reach(point, point).DistanceSquaredTo(point)
 }
 
 // Nearest returns the point of the ray nearest to the given point: the point itself exactly
 // where Contains holds, and otherwise the foot of the perpendicular, or the origin where the foot
-// falls behind it, decided on the projection DistanceSquaredTo makes. For integer T the foot is
-// rounded once and can land off the ray, where Contains rejects it.
+// falls behind it, as Segment.Nearest finds it on the reach of the ray past the point. For
+// integer T the foot is rounded once and can land off the ray, where Contains rejects it.
 func (r Ray[T]) Nearest(point Point[T]) Point[T] {
-	if r.DistanceSquaredTo(point) == 0 {
-		return point
-	}
-
-	return r.foot(point)
+	return r.reach(point, point).Nearest(point)
 }
 
 // IntersectsCircle reports whether the ray and the circle share a point, as
@@ -393,38 +385,6 @@ func (r Ray[T]) scaledDirection() (Vector[float64], float64) {
 	return Vector[float64]{math.Ldexp(direction.X, -exponent), math.Ldexp(direction.Y, -exponent)}, math.Ldexp(1, -exponent)
 }
 
-// distanceSquaredTo returns the squared distance to the point with no tolerance applied, which
-// DistanceSquaredTo snaps to zero within the tolerance: Segment.distanceSquaredTo with no end to
-// clamp to, on the scaled direction, so a Direction of any length a float T holds measures.
-func (r Ray[T]) distanceSquaredTo(point Point[T]) float64 {
-	direction, _ := r.scaledDirection()
-	offset := point.Float().Subtract(r.Origin.Float())
-
-	along := offset.Dot(direction)
-	if along <= 0 {
-		return offset.LengthSquared()
-	}
-
-	cross := offset.Cross(direction)
-
-	return cross * cross / direction.LengthSquared()
-}
-
-// foot returns the point of the ray nearest to the given point with no tolerance applied: Origin
-// where the projection distanceSquaredTo makes falls behind it, on the same comparison, and the
-// point at that fraction along the ray otherwise.
-func (r Ray[T]) foot(point Point[T]) Point[T] {
-	direction, scale := r.scaledDirection()
-	offset := point.Float().Subtract(r.Origin.Float())
-
-	along := offset.Dot(direction)
-	if along <= 0 {
-		return r.Origin
-	}
-
-	return r.PointAt(along / direction.LengthSquared() * scale)
-}
-
 // crosses reports whether the rays properly cross, as crossing decides it: the lines through
 // them meet strictly ahead of both origins. Touching and parallel rays do not cross and are left
 // to the origin distances.
@@ -443,6 +403,11 @@ func (r Ray[T]) crosses(ray Ray[T]) bool {
 // origin is therefore no crossing, and the pair is left to the origins, on the comparison foot
 // makes. The directions are scaled as scaledDirection scales them, which changes no sign and no
 // point, so rays of any length a float T holds cross.
+//
+// The point is placed from Origin by each component of the direction times the numerator of the
+// fraction, divided by its denominator once, rather than by the rounded fraction: for an integer
+// T the product and the cross products are exact, so a crossing on a half unit is exactly there
+// and rounds the same way whichever ray asks.
 func (r Ray[T]) crossing(ray Ray[T]) (Point[float64], bool) {
 	a, _ := r.scaledDirection()
 	b, _ := ray.scaledDirection()
@@ -455,7 +420,7 @@ func (r Ray[T]) crossing(ray Ray[T]) (Point[float64], bool) {
 		return Point[float64]{}, false
 	}
 
-	point := Ray[float64]{origin, a}.PointAt(along / denominator)
+	point := Point[float64]{origin.X + float64(along*a.X)/denominator, origin.Y + float64(along*a.Y)/denominator}
 
 	return point, point.Subtract(ray.Origin.Float()).Dot(b) >= 0
 }

@@ -8,10 +8,12 @@ import (
 // Integer is a generic integer type, supporting operations like modulo that floats don't.
 //
 // Every product, distance and interpolation is computed in float64 and stored back through
-// Cast, so a narrow T such as int8 never overflows mid-computation; only a result outside its
-// range is affected, as Cast documents. A value of an int64 T beyond 2^53 loses precision on
-// the way through float64, and the cross products that decide a crossing, a turn or a winding
-// are exact only while the coordinate differences stay within 2^26.
+// Cast, and a result outside the range of T is affected as Cast documents. A value of an int64
+// T beyond 2^53 loses precision on the way through float64, and the cross products that decide
+// a crossing, a turn or a winding are exact only while the coordinate differences stay within
+// 2^26. A narrow T such as int8 or int16 compiles and never panics or hangs, but a sum or
+// difference near the end of its range may wrap; the package is tested for int, int32 and
+// int64.
 type Integer interface {
 	~int | ~int8 | ~int16 | ~int32 | ~int64
 }
