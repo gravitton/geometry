@@ -59,24 +59,21 @@ func (p Polygon[T]) Centroid() Point[T] {
 		return Point[T]{}
 	}
 
-	if p.isFlat() {
-		return p.mean()
-	}
-
 	origin := p.Points[0].Float()
 	offset := origin.Vector().Negate()
 
-	var x, y, twiceArea float64
+	var x, y, twiceArea, length float64
 	for edge := range p.Edges() {
 		shifted := edge.Float().Translate(offset)
-		cross := shifted.cross()
+		along, cross := shifted.Vector(), shifted.cross()
 
 		x += float64((shifted.Start.X + shifted.End.X) * cross)
 		y += float64((shifted.Start.Y + shifted.End.Y) * cross)
 		twiceArea += cross
+		length += math.Abs(along.X) + math.Abs(along.Y)
 	}
 
-	if twiceArea == 0 {
+	if twiceArea == 0 || p.isFlatWithin(twiceArea, length) {
 		return p.mean()
 	}
 
@@ -117,25 +114,26 @@ func (p Polygon[T]) Perimeter() float64 {
 // cancel by different amounts, the way Area has its lobes cancel, and what is left is no
 // longer a moment of area: it can come out negative, which no area about its own centroid has.
 func (p Polygon[T]) Inertia() float64 {
-	if p.isFlat() {
+	if p.IsEmpty() {
 		return 0
 	}
 
 	offset := p.Points[0].Vector().Float().Negate()
 
-	var x, y, twiceArea, moment float64
+	var x, y, twiceArea, moment, length float64
 	for edge := range p.Edges() {
 		shifted := edge.Float().Translate(offset)
 		a, b := shifted.Start.Vector(), shifted.End.Vector()
-		cross := shifted.cross()
+		along, cross := shifted.Vector(), shifted.cross()
 
 		x += float64((a.X + b.X) * cross)
 		y += float64((a.Y + b.Y) * cross)
 		twiceArea += cross
 		moment += float64((a.Dot(a) + a.Dot(b) + b.Dot(b)) * cross)
+		length += math.Abs(along.X) + math.Abs(along.Y)
 	}
 
-	if twiceArea == 0 {
+	if twiceArea == 0 || p.isFlatWithin(twiceArea, length) {
 		return 0
 	}
 
@@ -186,15 +184,23 @@ func (p Polygon[T]) mean() Point[T] {
 // taken with the origin moved to the first vertex; a flat polygon, an empty one included, sums
 // to zero.
 func (p Polygon[T]) twiceArea() float64 {
-	if p.isFlat() {
+	if p.IsEmpty() {
 		return 0
 	}
 
 	offset := p.Points[0].Vector().Float().Negate()
 
-	var twiceArea float64
+	var twiceArea, length float64
 	for edge := range p.Edges() {
-		twiceArea += edge.Float().Translate(offset).cross()
+		shifted := edge.Float().Translate(offset)
+		along := shifted.Vector()
+
+		twiceArea += shifted.cross()
+		length += math.Abs(along.X) + math.Abs(along.Y)
+	}
+
+	if p.isFlatWithin(twiceArea, length) {
+		return 0
 	}
 
 	return twiceArea
@@ -990,6 +996,7 @@ func (p Polygon[T]) IsConvex() bool {
 // Point.Compare, as Segment.Contains judges a point on it, which for vertices on one line are
 // its two ends. The tolerance is on the distance of each vertex from that line, never on the
 // area, so an outline is flat exactly where none of its vertices stands off the line by more.
+// The sums ask it through isFlatWithin, which skips it for every polygon enclosing more.
 func (p Polygon[T]) isFlat() bool {
 	if len(p.Points) < 3 {
 		return true
@@ -1003,6 +1010,20 @@ func (p Polygon[T]) isFlat() bool {
 	}
 
 	return true
+}
+
+// isFlatWithin is isFlat for a caller that has already summed the shoelace terms and the lengths
+// the edges run along the two axes: an outline within the tolerance ε of a line sums to no more
+// than 2ε times that length, and the rounding of the sum to less than the second term of the
+// bound, so only a sum within it is asked of isFlat, and every polygon enclosing more skips the
+// walk over its vertices. No vertex lies farther from the first than that length, so the
+// tolerance is taken at the first vertex's coordinates widened by it, never below the one any
+// vertex is judged at.
+func (p Polygon[T]) isFlatWithin(twiceArea, length float64) bool {
+	epsilon := epsilonAt[T](p.Points[0].magnitude() + length)
+	bound := float64(4*epsilon) + float64(float64(len(p.Points))*0x1p-48*length)
+
+	return math.Abs(twiceArea) <= float64(bound*length) && p.isFlat()
 }
 
 // Cast converts the polygon to a Polygon of another number type, rounding as Cast does.

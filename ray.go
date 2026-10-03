@@ -379,9 +379,15 @@ func (r Ray[T]) rangeExit() float64 {
 // The scaling is exact, so a projection or a squared distance divided by the squared length
 // gives the bits it would on Direction itself, but no squared length leaves the range of
 // float64, as it would for a Direction of a float T longer than its square root or shorter
-// than the square root of the least normal value.
+// than the square root of the least normal value. A Direction whose squared length lies well
+// within that range, every one but the extremes, is returned as it is, which gives the same
+// bits without the scaling.
 func (r Ray[T]) scaledDirection() (Vector[float64], float64) {
 	direction := r.Direction.Float()
+	if lengthSquared := direction.LengthSquared(); 0x1p-200 <= lengthSquared && lengthSquared <= 0x1p200 {
+		return direction, 1
+	}
+
 	_, exponent := math.Frexp(max(math.Abs(direction.X), math.Abs(direction.Y)))
 
 	return Vector[float64]{math.Ldexp(direction.X, -exponent), math.Ldexp(direction.Y, -exponent)}, math.Ldexp(1, -exponent)

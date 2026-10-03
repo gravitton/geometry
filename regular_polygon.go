@@ -256,13 +256,20 @@ func (rp RegularPolygon[T]) edgeIndex(direction float64) int {
 
 // nearestIndex returns the index of the vertex that reaches farthest in the given direction of
 // the world, at most half a central angle from the point that reaches farthest there, and the
-// index of its neighbour on the side the direction falls toward, which reaches as far where the
-// direction lies halfway between the two. The direction is taken into the frame before the
+// index of its neighbour on the side the direction falls toward where the two may reach as far,
+// or the nearest again where they cannot. The direction is taken into the frame before the
 // turn, and for unequal semi-axes onto the ellipse, where a semi-axis stretches it away from
 // the direction itself; equal semi-axes take the direction as it is, the same expression vertex
 // places them from, and both count the steps from Phase. With one or two vertices the nearest
 // can be more than a quarter turn off, so the reach is negative exactly where no vertex lies on
 // that side.
+//
+// The reach along the direction is ρ·cos of the parameter's offset from the farthest point, ρ
+// no less than the lesser semi-axis, so a nearest vertex δ steps short of the halfway point
+// reaches farther than its neighbour by at least 0.4·min(w, h)·c²·δ for a central angle c. The
+// neighbour is read only where that gap falls below 2^-40 of the coordinates, far above the
+// residue a placed vertex carries, so rounding into T, which keeps the order of two values,
+// cannot put the neighbour farther anywhere it is skipped.
 func (rp RegularPolygon[T]) nearestIndex(direction float64) (int, int) {
 	local := direction - rp.Angle
 	if rp.Size.Width != rp.Size.Height {
@@ -270,8 +277,15 @@ func (rp RegularPolygon[T]) nearestIndex(direction float64) (int, int) {
 		local = math.Atan2(float64(rp.Size.Height)*sin, float64(rp.Size.Width)*cos)
 	}
 
-	step := (local - rp.Phase) / rp.centralAngle()
+	central := rp.centralAngle()
+	step := (local - rp.Phase) / central
 	nearest := math.Round(step)
+
+	w, h := rp.Size.Float().XY()
+	gap := float64(float64((0.5-math.Abs(step-nearest))*central*central) * min(w, h))
+	if gap > float64(0x1p-40*(rp.Center.magnitude()+max(w, h))) {
+		return Mod(int(nearest), rp.N), Mod(int(nearest), rp.N)
+	}
 
 	neighbour := nearest + 1
 	if step < nearest {
@@ -282,14 +296,19 @@ func (rp RegularPolygon[T]) nearestIndex(direction float64) (int, int) {
 }
 
 // farthestVertices returns the vertices at the two indices nearestIndex gives for the direction,
-// as Vertices places them. Two vertices half a step to either side of the direction reach
-// equally far, and each is placed with a rounding residue of its own, which for an integer T
-// can round them a unit apart, so the farther of the two is read off the placed vertices rather
-// than judged before they are placed.
+// as Vertices places them, the nearest one twice where it reads no neighbour. Two vertices half
+// a step to either side of the direction reach equally far, and each is placed with a rounding
+// residue of its own, which for an integer T can round them a unit apart, so the farther of
+// the two is read off the placed vertices rather than judged before they are placed.
 func (rp RegularPolygon[T]) farthestVertices(direction float64) (Point[T], Point[T]) {
 	nearest, neighbour := rp.nearestIndex(direction)
 
-	return rp.vertex(nearest), rp.vertex(neighbour)
+	vertex := rp.vertex(nearest)
+	if neighbour == nearest {
+		return vertex, vertex
+	}
+
+	return vertex, rp.vertex(neighbour)
 }
 
 // minMax returns the minimum and maximum corner of the vertices, the corners of Bounds: the pair

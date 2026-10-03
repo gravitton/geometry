@@ -763,6 +763,12 @@ func TestSegment_IntersectionSegment(t *testing.T) {
 			geomtest.AssertPoint(t, point, Pt(7, -7), fmt.Sprintf("to %s: ", end))
 		}
 	})
+	t.Run("nearly parallel segments with no endpoint on the other keep their crossing", func(t *testing.T) {
+		point, ok := Seg(Pt(0.0, 0.0), Pt(10.0, 0.0)).IntersectionSegment(Seg(Pt(0.0, 1.5*Delta), Pt(10.0, -1.5*Delta)))
+
+		assert.True(t, ok)
+		geomtest.AssertPoint(t, point, Pt(5.0, 0.0))
+	})
 }
 
 func FuzzSegment_IntersectionSegment(f *testing.F) {
