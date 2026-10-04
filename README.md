@@ -23,7 +23,7 @@ Generic, immutable 2D geometry library for game development
 
 ## Features
 
-- **Generic** over every integer and float type, named types included.
+- **Generic** – every type works with any integer or float type, named types included.
 - **Immutable** – every method returns a new value.
 - **Shapes** – rectangle, box, circle, ellipse, segment, ray, polygon and regular polygon.
 - **Collisions** – intersections, containment, ray casts and nearest points.
