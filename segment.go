@@ -536,7 +536,9 @@ func (s Segment[T]) ClipCircle(circle Circle[T]) (Segment[T], bool) {
 // ClipPolygon returns the parts of the segment inside the polygon, boundary included within
 // the tolerance, from Start to End. The points IntersectionPolygon returns cut the segment into
 // pieces, each wholly inside or outside, and each piece is judged at its midpoint by the walk
-// Contains makes, Start and End by Contains itself. A piece is inside only where both its ends
+// Contains makes, Start and End by Contains itself. A Start that a crossing compares Equal to is
+// that crossing, as an End is, so an entry an integer T rounds onto a Start outside the polygon
+// still opens the part there. A piece is inside only where both its ends
 // are too: a segment running along an edge at a shallow angle leaves the tolerance without
 // crossing it, so a piece from a Start or to an End the polygon does not contain is outside
 // whatever its midpoint, and the part ends at a point the polygon holds. Pieces inside run together across a point
@@ -564,8 +566,9 @@ func (s Segment[T]) ClipPolygon(polygon Polygon[T]) []Segment[T] {
 func (s Segment[T]) AppendClipPolygon(dst []Segment[T], polygon Polygon[T]) []Segment[T] {
 	var from Point[T]
 
-	point, contained, open, ended := s.Start, polygon.Contains(s.Start), false, false
+	point, open, ended := s.Start, false, false
 	sweep := s.sweep(polygon, point)
+	contained := polygon.Contains(point) || sweep.touchedAt(point)
 	for {
 		next, found := sweep.next(point)
 		if !found && sweep.spent() {
@@ -581,7 +584,7 @@ func (s Segment[T]) AppendClipPolygon(dst []Segment[T], polygon Polygon[T]) []Se
 		}
 
 		inside := ahead && contained && nextContained && polygon.containsMidpoint(point, next)
-		if !open && (contained || sweep.touchedAt(point) || inside) {
+		if !open && contained {
 			from, open = point, true
 		}
 

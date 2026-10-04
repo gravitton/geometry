@@ -111,6 +111,11 @@ func TestMatrix_Angle(t *testing.T) {
 	t.Run("a shear gives the angle of its X axis", func(t *testing.T) {
 		geomtest.AssertNumber(t, Mat(1.0, 1.0, 0.0, 0.0, 1.0, 0.0).Angle(), 0.0)
 	})
+	t.Run("a collapsed X axis leaves the angle to the Y axis", func(t *testing.T) {
+		geomtest.AssertNumber(t, ScaleMatrix(0.0, 2.0).Angle(), 0.0)
+		geomtest.AssertNumber(t, RotationMatrix[float64](0.7).Scale(0, 2).Angle(), 0.7)
+		geomtest.AssertNumber(t, RotationMatrix[float64](-2.5).Scale(0, 2).Angle(), -2.5)
+	})
 }
 
 func TestMatrix_Scaling(t *testing.T) {
@@ -124,6 +129,12 @@ func TestMatrix_Scaling(t *testing.T) {
 	t.Run("a reflection has a negative Y factor", func(t *testing.T) {
 		geomtest.AssertVector(t, ScaleMatrix(2.0, -3.0).Scaling(), Vec(2.0, -3.0))
 		geomtest.AssertVector(t, RotationMatrix[float64](0.7).Scale(2, -3).Scaling(), Vec(2.0, -3.0))
+	})
+	t.Run("a collapsed axis keeps the factor of the other", func(t *testing.T) {
+		geomtest.AssertVector(t, ScaleMatrix(0.5, 0.0).Scaling(), Vec(0.5, 0.0))
+		geomtest.AssertVector(t, ScaleMatrix(0.0, 0.5).Scaling(), Vec(0.0, 0.5))
+		geomtest.AssertVector(t, RotationMatrix[float64](0.7).Scale(0, 3).Scaling(), Vec(0.0, 3.0))
+		geomtest.AssertVector(t, ScaleMatrix(0, 3).Scaling(), Vec(0, 3))
 	})
 	t.Run("identity is one and the zero matrix is zero", func(t *testing.T) {
 		geomtest.AssertVector(t, IdentityMatrix[int]().Scaling(), Vec(1, 1))

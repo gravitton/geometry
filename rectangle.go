@@ -436,7 +436,8 @@ func (r Rectangle[T]) Lerp(rectangle Rectangle[T], t float64) Rectangle[T] {
 // parallelogram this type cannot hold, and the result is the nearest rectangle, on the factors
 // and the angle Matrix.Scaling and Matrix.Angle report for such a matrix; take the exact
 // quadrilateral through Polygon().Transform. A matrix that
-// collapses the plane gives the zero size at the point everything maps to. For integer T the
+// collapses one axis gives the segment the other spans, and the zero matrix the zero size at
+// the point everything maps to. For integer T the
 // center and the size are each rounded once.
 func (r Rectangle[T]) Transform[M Float](matrix Matrix[M]) Rectangle[T] {
 	m := matrix.Float()

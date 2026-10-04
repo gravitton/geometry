@@ -106,9 +106,14 @@ func (m Matrix[T]) Translation() Vector[T] {
 
 // Angle returns the rotation the matrix applies, in radians: the angle of the transformed X
 // axis, so a matrix built from a rotation, a scale and a translation gives the rotation back.
-// A sheared matrix has no single rotation and gives the angle of its X axis. The zero matrix
-// gives 0.
+// A sheared matrix has no single rotation and gives the angle of its X axis. A matrix that
+// collapses the X axis to nothing gives the angle its Y axis leaves it, a quarter turn back
+// from that axis, and the zero matrix gives 0.
 func (m Matrix[T]) Angle() float64 {
+	if m.A == 0 && m.D == 0 {
+		return math.Atan2(-float64(m.B), float64(m.E))
+	}
+
 	return math.Atan2(float64(m.D), float64(m.A))
 }
 
@@ -116,14 +121,15 @@ func (m Matrix[T]) Angle() float64 {
 // length of the transformed X axis, and the signed length of the Y axis, negative for a
 // reflection. A matrix built from a rotation, a scale and a translation gives the scale back;
 // a sheared matrix gives the length of its X axis and the determinant divided by it, the
-// factors that keep that axis and the area. For integer T the factors are rounded; the zero
-// matrix gives the zero vector.
+// factors that keep that axis and the area. A matrix that collapses the X axis to nothing gives
+// zero and the length of its Y axis, which the determinant no longer names. For integer T the
+// factors are rounded; the zero matrix gives the zero vector.
 func (m Matrix[T]) Scaling() Vector[T] {
 	f := m.Float()
 
 	x := math.Hypot(f.A, f.D)
 	if x == 0 {
-		return Vector[T]{}
+		return Vector[T]{0, Cast[T](math.Hypot(f.B, f.E))}
 	}
 
 	return Vector[T]{Cast[T](x), Cast[T](f.determinant() / x)}

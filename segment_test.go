@@ -1560,6 +1560,22 @@ func TestSegment_ClipPolygon(t *testing.T) {
 	t.Run("an endpoint inside is kept", func(t *testing.T) {
 		geomtest.AssertSegments(t, Seg(Pt(1, 1), Pt(5, 1)).ClipPolygon(square), []Segment[int]{Seg(Pt(1, 1), Pt(2, 1))})
 	})
+	t.Run("an entry rounded onto a Start outside the polygon opens the part there", func(t *testing.T) {
+		wedge := Pol([]Point[int]{Pt(0, 0), Pt(10, 0), Pt(0, 4)})
+		segment := Seg(Pt(6, 2), Pt(6, -1))
+
+		assert.False(t, wedge.Contains(segment.Start))
+		geomtest.AssertSegments(t, segment.ClipPolygon(wedge), []Segment[int]{Seg(Pt(6, 2), Pt(6, 0))})
+		geomtest.AssertSegments(t, segment.Reverse().ClipPolygon(wedge), []Segment[int]{Seg(Pt(6, 0), Pt(6, 2))})
+	})
+	t.Run("an entry that compares Equal to a float Start outside the tolerance opens the part there", func(t *testing.T) {
+		diamond := Pol([]Point[float64]{Pt(0.0, -10.0), Pt(10.0, 0.0), Pt(0.0, 10.0), Pt(-10.0, 0.0)})
+		segment := Seg(Pt(-5-0.85e-6, -5-0.85e-6), Pt(20.0, 20.0))
+
+		assert.False(t, diamond.Contains(segment.Start))
+		geomtest.AssertSegments(t, segment.ClipPolygon(diamond), []Segment[float64]{Seg(Pt(-5.0, -5.0), Pt(5.0, 5.0))})
+		geomtest.AssertSegments(t, segment.Reverse().ClipPolygon(diamond), []Segment[float64]{Seg(Pt(5.0, 5.0), Pt(-5.0, -5.0))})
+	})
 	t.Run("inside is the segment itself", func(t *testing.T) {
 		geomtest.AssertSegments(t, Seg(Pt(1, 1), Pt(1, 2)).ClipPolygon(square), []Segment[int]{Seg(Pt(1, 1), Pt(1, 2))})
 		geomtest.AssertSegments(t, Seg(Pt(1, 1), Pt(1, 1)).ClipPolygon(square), []Segment[int]{Seg(Pt(1, 1), Pt(1, 1))})
@@ -1618,6 +1634,17 @@ func TestSegment_ClipPolygon(t *testing.T) {
 		for _, p := range outlineFixtures() {
 			for _, s := range segmentFixtures {
 				assertClipped(t, s, s.ClipPolygon(p), s.IntersectsPolygon(p), p.EnclosesSegment, fmt.Sprintf("%s → %s: ", s, p))
+			}
+		}
+	})
+	t.Run("a rounded segment and its Reverse are clipped to the same parts, near the origin and near 2^26", func(t *testing.T) {
+		for _, offset := range []Vector[int]{{}, Vec(1<<25, -(1 << 25))} {
+			for _, p := range outlineFixtures() {
+				for _, s := range segmentFixtures {
+					p, s := p.Int().Translate(offset), s.Int().Translate(offset)
+
+					geomtest.AssertSegments(t, reversedParts(s.Reverse().ClipPolygon(p)), s.ClipPolygon(p), fmt.Sprintf("%s → %s: ", s, p))
+				}
 			}
 		}
 	})
@@ -2076,6 +2103,17 @@ func partsOf[T Number](part Segment[T], ok bool) []Segment[T] {
 	}
 
 	return []Segment[T]{part}
+}
+
+// reversedParts returns the parts of a clipped segment as its Reverse would give them: in the
+// opposite order, each running the other way.
+func reversedParts[T Number](parts []Segment[T]) []Segment[T] {
+	reversed := make([]Segment[T], len(parts))
+	for i, part := range parts {
+		reversed[len(parts)-1-i] = part.Reverse()
+	}
+
+	return reversed
 }
 
 // assertOrdered checks that the points follow one another from the segment's Start, the order

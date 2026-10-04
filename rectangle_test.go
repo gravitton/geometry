@@ -658,6 +658,11 @@ func TestRectangle_Transform(t *testing.T) {
 	t.Run("a shear gives the nearest rectangle", func(t *testing.T) {
 		geomtest.AssertRectangle(t, rectangle.Transform(ShearMatrix(1.0, 0.0)), Rect(Pt(5.0, 3.0), Sz(4.0, 2.0)))
 	})
+	t.Run("a matrix that collapses one axis gives the segment the other spans", func(t *testing.T) {
+		for _, matrix := range []Matrix[float64]{ScaleMatrix(0.5, 0.0), ScaleMatrix(0.0, 0.5), RotationMatrix[float64](Pi/3).Scale(0, 0.5), RotationMatrix[float64](Pi/3).Scale(0.5, 0)} {
+			geomtest.AssertVertices(t, slices.Collect(rectangle.Transform(matrix).Vertices()), rectangle.Polygon().Transform(matrix).Points, fmt.Sprintf("%s: ", matrix))
+		}
+	})
 	t.Run("a matrix that collapses the plane gives the zero size", func(t *testing.T) {
 		geomtest.AssertRectangle(t, rectangle.Transform(ScaleMatrix(0.0, 0.0)), Rect(Pt(0.0, 0.0), Sz(0.0, 0.0)))
 	})
