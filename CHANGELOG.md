@@ -46,20 +46,18 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.15.0.md](docs
 - `Point.Transform` and `Vector.Transform` are about 7% faster, and parse errors start with `geom:`
 - `github.com/gravitton/x` is dropped; `github.com/gravitton/assert` is the only dependency, at v1.6.0
 - `RegularPolygon.Transform` and `Ellipse.Transform` are exact for every matrix, shears included
-- The package doc states the supported range of each `T`: `int8` and `int16` may wrap, and no extent is clamped into an integer range
-- `Segment.ClipPolygon` and `Ray.ClipPolygon` are three to four times faster
+- The package doc states the supported range of each `T`: `int8` and `int16` never panic or hang but may wrap
 
 ### Fixed
 - Every product is rounded before it is added, so arm64 and amd64 v3 no longer fuse it into a multiply-add, and CI fails on a new one
 - Nearly collinear float segments no longer cross off both of them
-- Float32 and narrow integer shapes convert before subtracting, so far coordinates measure true and `int8` does not overflow
+- Float32 and narrow integer shapes convert before subtracting, so far coordinates measure true
 - Narrow integer crossings are ordered from `Start`, and `Mod` no longer overflows near the end of the range
 - Long rectangles turned a hair apart are no longer tested as parallel
 - Integer regular polygons contain their own vertices, and polygons on one line enclose no area
 - A segment along an edge or past a vertex crosses at most twice, and a crossing on a half unit rounds alike at any length and from either side
 - An integer circle tangent to an edge intersects it across the supported range
 - Rectangles half a turn apart share a frame, and a pair of one angle answers alike in either order
-- `Polygon.Simplify` ends on a NaN, and `ConvexHull` keeps its least and greatest vertex
 
 
 ## [v1.14.0](https://github.com/gravitton/geometry/compare/v1.13.0...v1.14.0) (2026-09-20)
