@@ -32,7 +32,8 @@ func AssertAngle(t assert.Testing, actual, expected float64, messages ...string)
 	return assert.True(t, geom.EqualAngle(actual, expected), prefixed(messages, fmt.Sprintf("Angle: %v should equal %v modulo 2π: ", actual, expected))...)
 }
 
-// AssertPoint asserts that actual equals expected (exactly for an integer T, within [geom.EpsilonRelative] for a float T).
+// AssertPoint asserts that actual equals expected (exactly for an integer T, within
+// [geom.EpsilonRelative] for a float T).
 func AssertPoint[T geom.Number](t assert.Testing, actual, expected geom.Point[T], messages ...string) bool {
 	t.Helper()
 
@@ -48,7 +49,8 @@ func AssertPoint[T geom.Number](t assert.Testing, actual, expected geom.Point[T]
 	return ok
 }
 
-// AssertVector asserts that actual equals expected (exactly for an integer T, within [geom.EpsilonRelative] for a float T).
+// AssertVector asserts that actual equals expected (exactly for an integer T, within
+// [geom.EpsilonRelative] for a float T).
 func AssertVector[T geom.Number](t assert.Testing, actual, expected geom.Vector[T], messages ...string) bool {
 	t.Helper()
 
@@ -64,7 +66,8 @@ func AssertVector[T geom.Number](t assert.Testing, actual, expected geom.Vector[
 	return ok
 }
 
-// AssertSize asserts that actual equals expected (exactly for an integer T, within [geom.EpsilonRelative] for a float T).
+// AssertSize asserts that actual equals expected (exactly for an integer T, within
+// [geom.EpsilonRelative] for a float T).
 func AssertSize[T geom.Number](t assert.Testing, actual, expected geom.Size[T], messages ...string) bool {
 	t.Helper()
 
@@ -80,7 +83,8 @@ func AssertSize[T geom.Number](t assert.Testing, actual, expected geom.Size[T], 
 	return ok
 }
 
-// AssertCircle asserts that actual equals expected (exactly for an integer T, within [geom.EpsilonRelative] for a float T).
+// AssertCircle asserts that actual equals expected (exactly for an integer T, within
+// [geom.EpsilonRelative] for a float T).
 func AssertCircle[T geom.Number](t assert.Testing, actual, expected geom.Circle[T], messages ...string) bool {
 	t.Helper()
 
@@ -96,8 +100,9 @@ func AssertCircle[T geom.Number](t assert.Testing, actual, expected geom.Circle[
 	return ok
 }
 
-// AssertEllipse asserts that actual equals expected (exactly for an integer T, within [geom.EpsilonRelative] for a float T).
-// The angle goes through AssertAngle, so a full turn does not matter, like Ellipse.Equal.
+// AssertEllipse asserts that actual equals expected (exactly for an integer T, within
+// [geom.EpsilonRelative] for a float T). The angle goes through AssertAngle, so a full turn does
+// not matter, like Ellipse.Equal.
 func AssertEllipse[T geom.Number](t assert.Testing, actual, expected geom.Ellipse[T], messages ...string) bool {
 	t.Helper()
 
@@ -116,7 +121,8 @@ func AssertEllipse[T geom.Number](t assert.Testing, actual, expected geom.Ellips
 	return ok
 }
 
-// AssertSegment asserts that actual equals expected (exactly for an integer T, within [geom.EpsilonRelative] for a float T).
+// AssertSegment asserts that actual equals expected (exactly for an integer T, within
+// [geom.EpsilonRelative] for a float T).
 func AssertSegment[T geom.Number](t assert.Testing, actual, expected geom.Segment[T], messages ...string) bool {
 	t.Helper()
 
@@ -151,7 +157,8 @@ func AssertSegments[T geom.Number](t assert.Testing, actual, expected []geom.Seg
 	return ok
 }
 
-// AssertRay asserts that actual equals expected (exactly for an integer T, within [geom.EpsilonRelative] for a float T).
+// AssertRay asserts that actual equals expected (exactly for an integer T, within
+// [geom.EpsilonRelative] for a float T).
 func AssertRay[T geom.Number](t assert.Testing, actual, expected geom.Ray[T], messages ...string) bool {
 	t.Helper()
 
@@ -167,8 +174,9 @@ func AssertRay[T geom.Number](t assert.Testing, actual, expected geom.Ray[T], me
 	return ok
 }
 
-// AssertRectangle asserts that actual equals expected (exactly for an integer T, within [geom.EpsilonRelative] for a float T).
-// The angle goes through AssertAngle, so a full turn does not matter, like Rectangle.Equal.
+// AssertRectangle asserts that actual equals expected (exactly for an integer T, within
+// [geom.EpsilonRelative] for a float T). The angle goes through AssertAngle, so a full turn does
+// not matter, like Rectangle.Equal.
 func AssertRectangle[T geom.Number](t assert.Testing, actual, expected geom.Rectangle[T], messages ...string) bool {
 	t.Helper()
 
@@ -187,7 +195,8 @@ func AssertRectangle[T geom.Number](t assert.Testing, actual, expected geom.Rect
 	return ok
 }
 
-// AssertBox asserts that actual equals expected (exactly for an integer T, within [geom.EpsilonRelative] for a float T).
+// AssertBox asserts that actual equals expected (exactly for an integer T, within
+// [geom.EpsilonRelative] for a float T).
 func AssertBox[T geom.Number](t assert.Testing, actual, expected geom.Box[T], messages ...string) bool {
 	t.Helper()
 
@@ -203,14 +212,16 @@ func AssertBox[T geom.Number](t assert.Testing, actual, expected geom.Box[T], me
 	return ok
 }
 
-// AssertPolygon asserts that actual equals expected (exactly for an integer T, within [geom.EpsilonRelative] for a float T).
+// AssertPolygon asserts that actual equals expected (exactly for an integer T, within
+// [geom.EpsilonRelative] for a float T).
 func AssertPolygon[T geom.Number](t assert.Testing, actual, expected geom.Polygon[T], messages ...string) bool {
 	t.Helper()
 
 	return AssertVertices(t, actual.Points, expected.Points, messages...)
 }
 
-// AssertVertices asserts that actual matches expected element-by-element (exactly for an integer T, within [geom.EpsilonRelative] for a float T).
+// AssertVertices asserts that actual matches expected element-by-element
+// (exactly for an integer T, within [geom.EpsilonRelative] for a float T).
 func AssertVertices[T geom.Number](t assert.Testing, actual, expected []geom.Point[T], messages ...string) bool {
 	t.Helper()
 
@@ -228,8 +239,9 @@ func AssertVertices[T geom.Number](t assert.Testing, actual, expected []geom.Poi
 	return ok
 }
 
-// AssertRegularPolygon asserts that actual equals expected (exactly for an integer T, within [geom.EpsilonRelative] for a float T).
-// The angle and the phase go through AssertAngle, so a full turn does not matter, like RegularPolygon.Equal.
+// AssertRegularPolygon asserts that actual equals expected (exactly for an integer T, within
+// [geom.EpsilonRelative] for a float T). The angle and the phase go through AssertAngle, so a full
+// turn does not matter, like RegularPolygon.Equal.
 func AssertRegularPolygon[T geom.Number](t assert.Testing, actual, expected geom.RegularPolygon[T], messages ...string) bool {
 	t.Helper()
 
@@ -254,7 +266,8 @@ func AssertRegularPolygon[T geom.Number](t assert.Testing, actual, expected geom
 	return ok
 }
 
-// AssertPadding asserts that actual equals expected (exactly for an integer T, within [geom.EpsilonRelative] for a float T).
+// AssertPadding asserts that actual equals expected (exactly for an integer T, within
+// [geom.EpsilonRelative] for a float T).
 func AssertPadding[T geom.Number](t assert.Testing, actual, expected geom.Padding[T], messages ...string) bool {
 	t.Helper()
 
@@ -276,7 +289,8 @@ func AssertPadding[T geom.Number](t assert.Testing, actual, expected geom.Paddin
 	return ok
 }
 
-// AssertMatrix asserts that actual equals expected (exactly for an integer T, within [geom.EpsilonRelative] for a float T).
+// AssertMatrix asserts that actual equals expected (exactly for an integer T, within
+// [geom.EpsilonRelative] for a float T).
 func AssertMatrix[T geom.Number](t assert.Testing, actual, expected geom.Matrix[T], messages ...string) bool {
 	t.Helper()
 

@@ -64,7 +64,8 @@ func (v Vector[T]) Angle() float64 {
 	return math.Atan2(float64(v.Y), float64(v.X))
 }
 
-// Direction returns the direction nearest to the vector, or DirectionNone for the exact zero vector.
+// Direction returns the direction nearest to the vector, or DirectionNone for the exact zero
+// vector.
 func (v Vector[T]) Direction() Direction {
 	if !v.hasDirection() {
 		return DirectionNone
@@ -169,9 +170,9 @@ func (v Vector[T]) AtMost(length T) Vector[T] {
 	return v.Resize(float64(max(length, 0)))
 }
 
-// Transform creates a new Vector by applying the given matrix to the current vector.
-// The matrix is float-only, like an angle: convert an integer matrix with Matrix.Float first.
-// For integer T, the float64 result of each component is rounded; rotations and non-integer scales lose precision.
+// Transform creates a new Vector by applying the given matrix to the current vector. The matrix is
+// float-only, like an angle: convert an integer matrix with Matrix.Float first. For integer T, the
+// float64 result of each component is rounded; rotations and non-integer scales lose precision.
 func (v Vector[T]) Transform[M Float](matrix Matrix[M]) Vector[T] {
 	x, y := float64(v.X), float64(v.Y)
 	a, b := float64(matrix.A), float64(matrix.B)

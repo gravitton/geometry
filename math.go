@@ -81,7 +81,8 @@ func Round[T Number](x T) T {
 	return T(math.Round(float64(x)))
 }
 
-// Floor returns the largest integer value less than or equal to x. An integer T is returned unchanged.
+// Floor returns the largest integer value less than or equal to x. An integer T is returned
+// unchanged.
 func Floor[T Number](x T) T {
 	if isInt[T]() {
 		return x
@@ -90,7 +91,8 @@ func Floor[T Number](x T) T {
 	return T(math.Floor(float64(x)))
 }
 
-// Ceil returns the smallest integer value greater than or equal to x. An integer T is returned unchanged.
+// Ceil returns the smallest integer value greater than or equal to x. An integer T is returned
+// unchanged.
 func Ceil[T Number](x T) T {
 	if isInt[T]() {
 		return x

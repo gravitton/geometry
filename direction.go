@@ -7,9 +7,10 @@ import (
 
 // Direction is one of the eight neighbor directions on a square lattice.
 //
-// Directions are numbered by increasing normalized angle, matching Angle and Vector.Angle: counterclockwise
-// in the standard math convention where Y grows upward, which appears clockwise as drawn on a
-// screen with Y pointing down. A negative step or angle is therefore counterclockwise on screen.
+// Directions are numbered by increasing normalized angle, matching Angle and Vector.Angle:
+// counterclockwise in the standard math convention where Y grows upward, which appears clockwise as
+// drawn on a screen with Y pointing down. A negative step or angle is therefore counterclockwise on
+// screen.
 type Direction int
 
 const (
@@ -64,14 +65,14 @@ func Directions() [8]Direction {
 	return [8]Direction{DirectionRight, DirectionDownRight, DirectionDown, DirectionDownLeft, DirectionLeft, DirectionUpLeft, DirectionUp, DirectionUpRight}
 }
 
-// CardinalDirections lists the four cardinal directions ordered by increasing angle from DirectionRight.
-// It returns a fresh array, so a caller cannot alter the list.
+// CardinalDirections lists the four cardinal directions ordered by increasing angle from
+// DirectionRight. It returns a fresh array, so a caller cannot alter the list.
 func CardinalDirections() [4]Direction {
 	return [4]Direction{DirectionRight, DirectionDown, DirectionLeft, DirectionUp}
 }
 
-// DiagonalDirections lists the four diagonal directions ordered by increasing angle from DirectionDownRight.
-// It returns a fresh array, so a caller cannot alter the list.
+// DiagonalDirections lists the four diagonal directions ordered by increasing angle from
+// DirectionDownRight. It returns a fresh array, so a caller cannot alter the list.
 func DiagonalDirections() [4]Direction {
 	return [4]Direction{DirectionDownRight, DirectionDownLeft, DirectionUpLeft, DirectionUpRight}
 }
@@ -201,7 +202,8 @@ func (d Direction) IsNone() bool {
 	return d == DirectionNone
 }
 
-// IsCardinal reports whether the direction is one of DirectionRight, DirectionUp, DirectionLeft, or DirectionDown.
+// IsCardinal reports whether the direction is one of DirectionRight, DirectionUp, DirectionLeft, or
+// DirectionDown.
 func (d Direction) IsCardinal() bool {
 	switch d.normalize() {
 	case DirectionRight, DirectionUp, DirectionLeft, DirectionDown:
@@ -211,7 +213,8 @@ func (d Direction) IsCardinal() bool {
 	}
 }
 
-// IsDiagonal reports whether the direction is one of DirectionUpRight, DirectionUpLeft, DirectionDownLeft, or DirectionDownRight.
+// IsDiagonal reports whether the direction is one of DirectionUpRight, DirectionUpLeft,
+// DirectionDownLeft, or DirectionDownRight.
 func (d Direction) IsDiagonal() bool {
 	switch d.normalize() {
 	case DirectionUpRight, DirectionUpLeft, DirectionDownLeft, DirectionDownRight:
@@ -233,7 +236,8 @@ func (d Direction) IsPositive() bool {
 	}
 }
 
-// Offset creates a new non-normalized Vector with the lattice step of the direction, and the zero vector for DirectionNone.
+// Offset creates a new non-normalized Vector with the lattice step of the direction, and the zero
+// vector for DirectionNone.
 func (d Direction) Offset[T Number]() Vector[T] {
 	offset := d.offset()
 
@@ -251,12 +255,12 @@ func (d Direction) Unit[T Number]() Vector[T] {
 	return d.Offset[T]().Normalize()
 }
 
-// Vector creates a new Vector of the given length pointing in the direction, and the zero vector for DirectionNone.
-// A negative length points the other way, as Vector.Resize gives it, so the result runs along
-// the opposite direction with the absolute length.
-// For integer T, a diagonal has both components rounded, so its actual length is only
-// approximate. The diagonal is kept, unlike Unit, which snaps to an axis: a diagonal of unit
-// length is the lattice step of the direction, not the axis vector Unit gives.
+// Vector creates a new Vector of the given length pointing in the direction, and the zero vector
+// for DirectionNone. A negative length points the other way, as Vector.Resize gives it, so the
+// result runs along the opposite direction with the absolute length. For integer T, a diagonal has
+// both components rounded, so its actual length is only approximate. The diagonal is kept, unlike
+// Unit, which snaps to an axis: a diagonal of unit length is the lattice step of the direction, not
+// the axis vector Unit gives.
 func (d Direction) Vector[T Number](length T) Vector[T] {
 	if d.IsNone() {
 		return Vector[T]{}
@@ -304,7 +308,8 @@ func (d Direction) MarshalText() ([]byte, error) {
 	return []byte(d.String()), nil
 }
 
-// UnmarshalText implements encoding.TextUnmarshaler, the inverse of MarshalText through ParseDirection.
+// UnmarshalText implements encoding.TextUnmarshaler, the inverse of MarshalText through
+// ParseDirection.
 func (d *Direction) UnmarshalText(text []byte) error {
 	direction, err := ParseDirection(string(text))
 	if err != nil {

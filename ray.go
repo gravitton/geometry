@@ -50,9 +50,10 @@ func (r Ray[T]) MoveTo(point Point[T]) Ray[T] {
 	return Ray[T]{point, r.Direction}
 }
 
-// Scale creates a new Ray with its direction scaled by the factor about the origin: the points
-// of the ray stay, and PointAt steps the scaled length. A negative factor turns the ray to the
-// other side of its origin, and a zero factor collapses the ray onto its origin. For integer T the direction is rounded.
+// Scale creates a new Ray with its direction scaled by the factor about the origin: the points of
+// the ray stay, and PointAt steps the scaled length. A negative factor turns the ray to the other
+// side of its origin, and a zero factor collapses the ray onto its origin. For integer T the
+// direction is rounded.
 func (r Ray[T]) Scale(factor float64) Ray[T] {
 	return r.ScaleXY(factor, factor)
 }
@@ -270,20 +271,20 @@ func (r Ray[T]) AppendIntersectionBox(dst []Point[T], box Box[T]) []Point[T] {
 	return r.reach(box.Min, box.Max).AppendIntersectionBox(dst, box)
 }
 
-// ClipCircle returns the part of the ray inside the circle, boundary included within the
-// tolerance, and false where they share no point, as Segment.ClipCircle clips the reach of the ray past
-// the circle: from Origin where the circle contains it, or else from the first point where the
-// ray meets the circle, to the point where it leaves. Its Start is the cast of the ray, the first
-// point of the circle it reaches. It allocates nothing.
+// ClipCircle returns the part of the ray inside the circle, boundary included within the tolerance,
+// and false where they share no point, as Segment.ClipCircle clips the reach of the ray past the
+// circle: from Origin where the circle contains it, or else from the first point where the ray
+// meets the circle, to the point where it leaves. Its Start is the cast of the ray, the first point
+// of the circle it reaches. It allocates nothing.
 func (r Ray[T]) ClipCircle(circle Circle[T]) (Segment[T], bool) {
 	return r.reach(circle.minMax()).ClipCircle(circle)
 }
 
 // ClipPolygon returns the parts of the ray inside the polygon, boundary included within the
-// tolerance, from Origin on, as Segment.ClipPolygon clips the reach of the ray past the polygon. The
-// Start of the first part is the cast of the ray, the first point of the polygon it reaches. A
-// ray along the line of a flat polygon has no part, as Segment.ClipPolygon says. The result is
-// the one allocation, made on the first part.
+// tolerance, from Origin on, as Segment.ClipPolygon clips the reach of the ray past the polygon.
+// The Start of the first part is the cast of the ray, the first point of the polygon it reaches. A
+// ray along the line of a flat polygon has no part, as Segment.ClipPolygon says. The result is the
+// one allocation, made on the first part.
 func (r Ray[T]) ClipPolygon(polygon Polygon[T]) []Segment[T] {
 	return r.AppendClipPolygon(nil, polygon)
 }

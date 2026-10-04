@@ -17,9 +17,9 @@
 // [Direction], [Axis], [Orientation] and [Winding] are enums. Package geomtest holds test
 // assertions, and packages ints and floats alias the int and float64 instantiations.
 //
-// Every value type has Equal, Cast, Int, Float and String; every shape adds Contains, every one
-// but Ray adds Bounds, and every one but Ellipse adds the Intersects methods. The enums are compared with == and
-// marshal as their names.
+// Every value type has Equal, Cast, Int, Float and String; every shape adds Contains, every one but
+// Ray adds Bounds, and every one but Ellipse adds the Intersects methods. The enums are compared
+// with == and marshal as their names.
 //
 // # Coordinates
 //
@@ -33,18 +33,18 @@
 // # Numbers
 //
 // Products, distances and interpolations are computed in float64 and stored back through [Cast],
-// whatever T is. Cast rounds half away from zero: Lerp, Midpoint, Multiply, Divide, Int and
-// every method built on them follow it, so the midpoint of an odd span rounds up. The exception is [Rectangle] and [Box], whose center is placed
-// by truncating half the size toward Min so that Max-Min stays exactly the size, and
-// Segment.Bounds().Center() can therefore differ from [Segment.Midpoint] by one unit on an odd
-// span. Sums and differences of two values stay in T. The signs that decide a crossing, a turn or
-// a winding are cross products of coordinate differences in float64, exact for an integer T while
-// the differences stay within 2^26, the square root of the integers float64 holds exactly; beyond
-// it a sign can round to zero. The distance to an edge is that cross product divided by the
-// length of the edge, so an integer circle tangent to an edge is at exactly its radius across
-// that range. The point of a crossing is a product of three differences, exact while they stay
-// within 2^17; past that a crossing on a half unit can round to either neighbour, the same one
-// whichever shape asks.
+// whatever T is. Cast rounds half away from zero: Lerp, Midpoint, Multiply, Divide, Int and every
+// method built on them follow it, so the midpoint of an odd span rounds up. The exception is
+// [Rectangle] and [Box], whose center is placed by truncating half the size toward Min so that
+// Max-Min stays exactly the size, and Segment.Bounds().Center() can therefore differ from
+// [Segment.Midpoint] by one unit on an odd span. Sums and differences of two values stay in T. The
+// signs that decide a crossing, a turn or a winding are cross products of coordinate differences in
+// float64, exact for an integer T while the differences stay within 2^26, the square root of the
+// integers float64 holds exactly; beyond it a sign can round to zero. The distance to an edge is
+// that cross product divided by the length of the edge, so an integer circle tangent to an edge is
+// at exactly its radius across that range. The point of a crossing is a product of three
+// differences, exact while they stay within 2^17; past that a crossing on a half unit can round to
+// either neighbour, the same one whichever shape asks.
 //
 // # Supported range
 //

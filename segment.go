@@ -162,7 +162,8 @@ func (s Segment[T]) PointAt(t float64) Point[T] {
 	return s.Start.Lerp(s.End, t)
 }
 
-// Transform creates a new Segment by applying the given matrix to both points, like Point.Transform.
+// Transform creates a new Segment by applying the given matrix to both points, like
+// Point.Transform.
 func (s Segment[T]) Transform[M Float](matrix Matrix[M]) Segment[T] {
 	return Segment[T]{s.Start.Transform(matrix), s.End.Transform(matrix)}
 }
@@ -265,9 +266,9 @@ func (s Segment[T]) AppendIntersectionCircle(dst []Point[T], circle Circle[T]) [
 	return circle.AppendIntersectionSegment(dst, s)
 }
 
-// IntersectsSegment reports whether the segments share a point, within the tolerance, the same closed
-// convention as Contains: segments that touch at an endpoint or overlap collinearly intersect.
-// It holds exactly where DistanceToSegment is zero.
+// IntersectsSegment reports whether the segments share a point, within the tolerance, the same
+// closed convention as Contains: segments that touch at an endpoint or overlap collinearly
+// intersect. It holds exactly where DistanceToSegment is zero.
 func (s Segment[T]) IntersectsSegment(segment Segment[T]) bool {
 	return s.DistanceSquaredToSegment(segment) == 0
 }
@@ -533,23 +534,23 @@ func (s Segment[T]) ClipCircle(circle Circle[T]) (Segment[T], bool) {
 	return s.clipConvex(crossings, circle.Contains(s.Start), circle.Contains(s.End))
 }
 
-// ClipPolygon returns the parts of the segment inside the polygon, boundary included within
-// the tolerance, from Start to End. The points IntersectionPolygon returns cut the segment into
-// pieces, each wholly inside or outside, and each piece is judged at its midpoint by the walk
-// Contains makes, Start and End by Contains itself. A Start that a crossing compares Equal to is
-// that crossing, as an End is, so an entry an integer T rounds onto a Start outside the polygon
-// still opens the part there. A piece is inside only where both its ends
-// are too: a segment running along an edge at a shallow angle leaves the tolerance without
-// crossing it, so a piece from a Start or to an End the polygon does not contain is outside
-// whatever its midpoint, and the part ends at a point the polygon holds. Pieces inside run together across a point
-// where the segment touches the boundary from inside, such as a reflex vertex, and a point where
-// it touches the boundary from outside is a part of zero length, so there are parts exactly
-// where IntersectsPolygon holds, less a flat polygon, its vertices on one line: a segment along
-// that line with both ends beyond the polygon is parallel to every edge, crosses none and has
-// no part, while IntersectsPolygon still reports it. The midpoint is taken in float64, so for an integer T a gap
-// between two crossings is judged where it is rather than at a rounded point on either side;
-// the crossings themselves are rounded as IntersectionPolygon rounds them. The polygon follows
-// the even-odd rule of Contains, and an empty polygon clips everything away.
+// ClipPolygon returns the parts of the segment inside the polygon, boundary included within the
+// tolerance, from Start to End. The points IntersectionPolygon returns cut the segment into pieces,
+// each wholly inside or outside, and each piece is judged at its midpoint by the walk Contains
+// makes, Start and End by Contains itself. A Start that a crossing compares Equal to is that
+// crossing, as an End is, so an entry an integer T rounds onto a Start outside the polygon still
+// opens the part there. A piece is inside only where both its ends are too: a segment running along
+// an edge at a shallow angle leaves the tolerance without crossing it, so a piece from a Start or
+// to an End the polygon does not contain is outside whatever its midpoint, and the part ends at a
+// point the polygon holds. Pieces inside run together across a point where the segment touches the
+// boundary from inside, such as a reflex vertex, and a point where it touches the boundary from
+// outside is a part of zero length, so there are parts exactly where IntersectsPolygon holds, less
+// a flat polygon, its vertices on one line: a segment along that line with both ends beyond the
+// polygon is parallel to every edge, crosses none and has no part, while IntersectsPolygon still
+// reports it. The midpoint is taken in float64, so for an integer T a gap between two crossings is
+// judged where it is rather than at a rounded point on either side; the crossings themselves are
+// rounded as IntersectionPolygon rounds them. The polygon follows the even-odd rule of Contains,
+// and an empty polygon clips everything away.
 //
 // The crossings are held in an array, the next few from the point reached, and the edges are
 // swept again only where a segment crosses more often than it holds, so the result is the one

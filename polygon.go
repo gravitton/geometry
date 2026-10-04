@@ -305,7 +305,8 @@ func (p Polygon[T]) mapPointsIndexed[R any](fn func(int, Point[T]) R) []R {
 	return mapped
 }
 
-// Transform creates a new Polygon by applying the given matrix to every vertex, like Point.Transform.
+// Transform creates a new Polygon by applying the given matrix to every vertex, like
+// Point.Transform.
 func (p Polygon[T]) Transform[M Float](matrix Matrix[M]) Polygon[T] {
 	return Polygon[T]{p.mapPoints(func(point Point[T]) Point[T] {
 		return point.Transform(matrix)
@@ -323,16 +324,16 @@ func (p Polygon[T]) Rotate(angle float64) Polygon[T] {
 	})}
 }
 
-// ConvexHull returns the smallest convex polygon containing every vertex, wound clockwise as
-// drawn on a screen with Y pointing down and starting at the least vertex by Point.Compare: the vertices it
-// keeps are vertices of the polygon, and one lying on an edge of the hull or repeating
-// another is dropped, so a polygon whose vertices are all collinear gives the two ends of
-// the line and a single point gives itself. The least and the greatest vertex are always kept,
-// so every vertex lies within the hull. The turns are the cross products IsConvex reads, exact
-// for an integer T and float32, so there the hull of a convex polygon is convex again and the
-// hull of a hull is itself; for float64 a vertex within rounding of the line through its
-// neighbours can turn either way, and points on one line can keep such a vertex between the
-// ends, a sliver IsConvex rejects. An empty polygon gives an empty one.
+// ConvexHull returns the smallest convex polygon containing every vertex, wound clockwise as drawn
+// on a screen with Y pointing down and starting at the least vertex by Point.Compare: the vertices
+// it keeps are vertices of the polygon, and one lying on an edge of the hull or repeating another
+// is dropped, so a polygon whose vertices are all collinear gives the two ends of the line and a
+// single point gives itself. The least and the greatest vertex are always kept, so every vertex
+// lies within the hull. The turns are the cross products IsConvex reads, exact for an integer T and
+// float32, so there the hull of a convex polygon is convex again and the hull of a hull is itself;
+// for float64 a vertex within rounding of the line through its neighbours can turn either way, and
+// points on one line can keep such a vertex between the ends, a sliver IsConvex rejects. An empty
+// polygon gives an empty one.
 //
 // It sorts a copy of the vertices along the boundary, the side of the line between the least
 // and the greatest vertex that the hull reaches first and then the other side back, and scans
@@ -514,10 +515,10 @@ func (p Polygon[T]) appendKept(dst []Point[T], from, to int, tolerance float64) 
 	return dst, before + farthest/n + after
 }
 
-// Contains reports whether the given point lies within the polygon, boundary included within
-// the tolerance. The interior follows the
-// even-odd rule, so a self-intersecting polygon excludes the regions it winds around twice.
-// A point outside the extent of the vertices is rejected before any edge is examined.
+// Contains reports whether the given point lies within the polygon, boundary included within the
+// tolerance. The interior follows the even-odd rule, so a self-intersecting polygon excludes the
+// regions it winds around twice. A point outside the extent of the vertices is rejected before any
+// edge is examined.
 func (p Polygon[T]) Contains(point Point[T]) bool {
 	if p.IsEmpty() {
 		return false
@@ -691,11 +692,11 @@ func (p Polygon[T]) AppendIntersectionRay(dst []Point[T], ray Ray[T]) []Point[T]
 	return ray.AppendIntersectionPolygon(dst, p)
 }
 
-// IntersectsPolygon reports whether the polygons share a point: a vertex of one lies within the other,
-// or an edge of one crosses an edge of the other. Touching polygons intersect, within the
+// IntersectsPolygon reports whether the polygons share a point: a vertex of one lies within the
+// other, or an edge of one crosses an edge of the other. Touching polygons intersect, within the
 // tolerance, the same closed convention as Contains, and an empty polygon intersects nothing.
-// Polygons whose extents do not overlap are rejected before any edge pair is examined, and so
-// is every edge whose extent lies outside the other polygon.
+// Polygons whose extents do not overlap are rejected before any edge pair is examined, and so is
+// every edge whose extent lies outside the other polygon.
 func (p Polygon[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 	if p.IsEmpty() || polygon.IsEmpty() {
 		return false
@@ -864,8 +865,8 @@ func (p Polygon[T]) containsMidpoint(a, b Point[T]) bool {
 	return inside
 }
 
-// walk folds every edge into the edgeWalk DistanceSquaredTo, Nearest and EnclosesCircle read, stopping
-// at an edge the point lies on within the tolerance.
+// walk folds every edge into the edgeWalk DistanceSquaredTo, Nearest and EnclosesCircle read,
+// stopping at an edge the point lies on within the tolerance.
 func (p Polygon[T]) walk(point Point[T]) edgeWalk[T] {
 	w := edgeWalk[T]{distance: math.Inf(1)}
 	for edge := range p.Edges() {
@@ -961,12 +962,12 @@ func (p Polygon[T]) admits(toPrevious, toNext, offset Vector[float64], epsilon f
 	return insideNext || insidePrevious
 }
 
-// stays reports whether an offset lies on the inner side of an edge, given their cross
-// product, positive on that side, and the direction of the edge: on it, or beyond the line of
-// the edge by no more than the tolerance, on the squared gap Segment.distanceSquaredTo measures
-// beside a segment, the cross product divided by the length and then squared. An offset within the tolerance of the point stays on every side, so a
-// segment ending there is not judged by a direction it has not got. It reads no field of the
-// polygon, so the receiver is unnamed.
+// stays reports whether an offset lies on the inner side of an edge, given their cross product,
+// positive on that side, and the direction of the edge: on it, or beyond the line of the edge by no
+// more than the tolerance, on the squared gap Segment.distanceSquaredTo measures beside a segment,
+// the cross product divided by the length and then squared. An offset within the tolerance of the
+// point stays on every side, so a segment ending there is not judged by a direction it has not got.
+// It reads no field of the polygon, so the receiver is unnamed.
 func (Polygon[T]) stays(cross float64, edge Vector[float64], epsilon float64) bool {
 	gap := cross / math.Sqrt(edge.LengthSquared())
 

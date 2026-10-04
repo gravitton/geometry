@@ -565,7 +565,8 @@ func ExampleParseSize() {
 	// Output: 16x32 <nil>
 }
 
-// positiveSizeFixtures are the fixtures with no negative extent, the sizes Fit and Fill are defined for.
+// positiveSizeFixtures are the fixtures with no negative extent, the sizes Fit and Fill are defined
+// for.
 func positiveSizeFixtures() []Size[float64] {
 	var sizes []Size[float64]
 	for _, s := range sizeFixtures {

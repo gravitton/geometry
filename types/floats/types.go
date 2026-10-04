@@ -1,4 +1,5 @@
-// Package floats provides type aliases and constructors for geometry objects with [float64] type argument.
+// Package floats provides type aliases and constructors for geometry objects with [float64] type
+// argument.
 package floats
 
 import (

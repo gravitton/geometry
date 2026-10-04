@@ -13,14 +13,14 @@ import (
 // r x r and spans up to twice it. This differs from Rectangle, whose Size is the full width
 // and height. Use Bounds for the extent.
 //
-// Phase places the vertices on the ellipse of the semi-axes, the first at that parameter and
-// each next a step of 2π/n on, and Angle then turns the whole ring about the center. The two
-// differ only for unequal semi-axes: the phase decides
-// where the vertices sit against the axes the ellipse is stretched along, so a flat-top polygon
-// is stretched across its edges and a pointy-top one across its vertices, and the turn moves
-// that stretched shape. Where the semi-axes are equal, turning and stepping around the ring are
-// the same thing and the first vertex lies at Angle + Phase. Every affine image of a regular
-// polygon is one of these, which is what lets Transform keep any matrix exactly.
+// Phase places the vertices on the ellipse of the semi-axes, the first at that parameter and each
+// next a step of 2π/n on, and Angle then turns the whole ring about the center. The two differ only
+// for unequal semi-axes: the phase decides where the vertices sit against the axes the ellipse is
+// stretched along, so a flat-top polygon is stretched across its edges and a pointy-top one across
+// its vertices, and the turn moves that stretched shape. Where the semi-axes are equal, turning and
+// stepping around the ring are the same thing and the first vertex lies at Angle + Phase. Every
+// affine image of a regular polygon is one of these, which is what lets Transform keep any matrix
+// exactly.
 //
 // The size is never negative: RegPol and the orientation constructors take it absolute, and
 // Scale takes a negative factor absolute, since a negative semi-axis mirrors the vertices
@@ -67,14 +67,14 @@ func Hexagon[T Number](center Point[T], size Size[T], orientation Orientation) R
 	return RegularPolygonWithOrientation(center, size, 6, orientation)
 }
 
-// Anchor returns the point of the boundary in the given direction from the center, or the
-// center itself for DirectionNone: the point where the ray from the center leaves the polygon.
-// The direction is taken in the world, where the polygon stands after its turn, so Rotate
-// moves every anchor along the boundary: on a flat-top polygon the Top anchor is the midpoint
-// of the top edge, on a pointy-top one its top vertex. For integer T the point of the edge
-// between the rounded vertices is rounded once more, which can carry it off that edge by up to
-// half a diagonal, where Contains rejects it. A polygon with fewer than three vertices encloses no area and
-// anchors at its center, as does one whose semi-axis lies along the ray.
+// Anchor returns the point of the boundary in the given direction from the center, or the center
+// itself for DirectionNone: the point where the ray from the center leaves the polygon. The
+// direction is taken in the world, where the polygon stands after its turn, so Rotate moves every
+// anchor along the boundary: on a flat-top polygon the Top anchor is the midpoint of the top edge,
+// on a pointy-top one its top vertex. For integer T the point of the edge between the rounded
+// vertices is rounded once more, which can carry it off that edge by up to half a diagonal, where
+// Contains rejects it. A polygon with fewer than three vertices encloses no area and anchors at its
+// center, as does one whose semi-axis lies along the ray.
 func (rp RegularPolygon[T]) Anchor(direction Direction) Point[T] {
 	if direction.IsNone() || rp.N < 3 {
 		return rp.Center
@@ -316,15 +316,14 @@ func (rp RegularPolygon[T]) Resize(size Size[T]) RegularPolygon[T] {
 	return RegularPolygon[T]{rp.Center, size.Abs(), rp.N, rp.Angle, rp.Phase}
 }
 
-// Canonical creates a new RegularPolygon in the form RegPol and Rotate build, with the size
-// taken absolute and the angle and the phase normalized to [0, 2π): a well-formed polygon is
-// returned as it is, up to the full turns Equal already ignores. It takes absolute a negative
-// semi-axis written as a struct literal or decoded from JSON, which mirrors the vertices, or
-// turns them half a turn where both are negative, and brings a decoded angle onto the seam
-// Rotate keeps. An angle within Delta of zero or of a full turn, the residue a chain of Rotate,
-// Lerp and Transform calls can leave, becomes exactly zero, and so does a phase; Rotate itself
-// never snaps. The
-// phase is not reduced to a step around the polygon, which would renumber the vertices.
+// Canonical creates a new RegularPolygon in the form RegPol and Rotate build, with the size taken
+// absolute and the angle and the phase normalized to [0, 2π): a well-formed polygon is returned as
+// it is, up to the full turns Equal already ignores. It takes absolute a negative semi-axis written
+// as a struct literal or decoded from JSON, which mirrors the vertices, or turns them half a turn
+// where both are negative, and brings a decoded angle onto the seam Rotate keeps. An angle within
+// Delta of zero or of a full turn, the residue a chain of Rotate, Lerp and Transform calls can
+// leave, becomes exactly zero, and so does a phase; Rotate itself never snaps. The phase is not
+// reduced to a step around the polygon, which would renumber the vertices.
 func (rp RegularPolygon[T]) Canonical() RegularPolygon[T] {
 	return RegularPolygon[T]{rp.Center, rp.Size.Abs(), rp.N, snapAngle(rp.Angle), snapAngle(rp.Phase)}
 }
@@ -444,8 +443,8 @@ func (rp RegularPolygon[T]) Nearest(point Point[T]) Point[T] {
 	return rp.walk(point).nearest(point)
 }
 
-// EnclosesCircle reports whether the circle lies within the regular polygon: its center is contained
-// and every edge is at least the radius away, within the tolerance, read off the walk
+// EnclosesCircle reports whether the circle lies within the regular polygon: its center is
+// contained and every edge is at least the radius away, within the tolerance, read off the walk
 // DistanceSquaredTo makes, so a circle touching an edge from inside is enclosed.
 func (rp RegularPolygon[T]) EnclosesCircle(circle Circle[T]) bool {
 	return rp.walk(circle.Center).clears(circle)
@@ -574,13 +573,13 @@ func (rp RegularPolygon[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 	return rectangle.IntersectsRegularPolygon(rp)
 }
 
-// IntersectsRegularPolygon reports whether the polygons share a point: a vertex of one lies within the
-// other, or an edge of one crosses an edge of the other, as Polygon.IntersectsPolygon decides on
-// their Polygon forms, without building them. Touching polygons intersect, within the
-// tolerance, and an empty polygon intersects nothing. Polygons whose Bounds do not overlap are
-// rejected before any edge pair is examined. The vertices of the given polygon are placed
-// again for every edge of this one, since no vertex slice is built: the cost is a sine and
-// cosine per edge pair, not an allocation.
+// IntersectsRegularPolygon reports whether the polygons share a point: a vertex of one lies within
+// the other, or an edge of one crosses an edge of the other, as Polygon.IntersectsPolygon decides
+// on their Polygon forms, without building them. Touching polygons intersect, within the tolerance,
+// and an empty polygon intersects nothing. Polygons whose Bounds do not overlap are rejected before
+// any edge pair is examined. The vertices of the given polygon are placed again for every edge of
+// this one, since no vertex slice is built: the cost is a sine and cosine per edge pair, not an
+// allocation.
 func (rp RegularPolygon[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 	if rp.IsEmpty() || polygon.IsEmpty() {
 		return false
@@ -657,8 +656,8 @@ func (rp RegularPolygon[T]) containsWithin(point, a, b Point[T]) bool {
 	return point.Between(a, b) && rp.DistanceSquaredTo(point) == 0
 }
 
-// walk folds every edge into the edgeWalk DistanceSquaredTo, Nearest and EnclosesCircle read, stopping
-// at an edge the point lies on within the tolerance.
+// walk folds every edge into the edgeWalk DistanceSquaredTo, Nearest and EnclosesCircle read,
+// stopping at an edge the point lies on within the tolerance.
 func (rp RegularPolygon[T]) walk(point Point[T]) edgeWalk[T] {
 	w := edgeWalk[T]{distance: math.Inf(1)}
 	for edge := range rp.Edges() {
@@ -690,9 +689,10 @@ func (rp RegularPolygon[T]) IsEmpty() bool {
 	return rp.N < 1
 }
 
-// IsAligned reports whether the polygon is not turned: its Angle is exactly zero, as RegPol
-// with no angle and Rotate by a full turn leave it. No tolerance is applied; Canonical snaps a residue to zero. The phase places the
-// vertices within the frame and does not turn it, so an aligned polygon may have any phase.
+// IsAligned reports whether the polygon is not turned: its Angle is exactly zero, as RegPol with no
+// angle and Rotate by a full turn leave it. No tolerance is applied; Canonical snaps a residue to
+// zero. The phase places the vertices within the frame and does not turn it, so an aligned polygon
+// may have any phase.
 func (rp RegularPolygon[T]) IsAligned() bool {
 	return rp.Angle == 0
 }

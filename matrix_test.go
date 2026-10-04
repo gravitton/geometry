@@ -216,7 +216,8 @@ func TestMatrix_Inverse(t *testing.T) {
 		geomtest.AssertMatrix(t, TranslationMatrix(5, 3).Inverse(), TranslationMatrix(-5, -3))
 		geomtest.AssertMatrix(t, RotationMatrix[int](Pi/2).Inverse(), RotationMatrix[int](-Pi/2))
 
-		// det=4, invDet=0.25 → Cast[int](2*0.25) = Cast[int](0.5) = 1, so the inverse does not undo it
+		// det=4, invDet=0.25 → Cast[int](2*0.25) = Cast[int](0.5) = 1, so the inverse
+		// does not undo it
 		geomtest.AssertMatrix(t, ScaleMatrix(2, 2).Inverse(), IdentityMatrix[int]())
 	})
 }

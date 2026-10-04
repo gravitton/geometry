@@ -40,8 +40,8 @@ func ParseOrientation(name string) (Orientation, error) {
 	return OrientationNone, fmt.Errorf("geom: unknown orientation %q", name)
 }
 
-// IsNone reports whether the orientation is neither OrientationFlatTop nor OrientationPointyTop. Like Axis, an
-// Orientation outside the constants is not normalized, so every such value counts as
+// IsNone reports whether the orientation is neither OrientationFlatTop nor OrientationPointyTop.
+// Like Axis, an Orientation outside the constants is not normalized, so every such value counts as
 // OrientationNone.
 func (o Orientation) IsNone() bool {
 	return o != OrientationFlatTop && o != OrientationPointyTop

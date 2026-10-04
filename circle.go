@@ -324,18 +324,18 @@ func (c Circle[T]) IntersectsSegment(segment Segment[T]) bool {
 }
 
 // IntersectionSegment returns the points where the segment crosses the circle boundary, from the
-// segment's Start to its End: two where it passes through, one where it is tangent or ends
-// inside, within the tolerance like IntersectsSegment, and none where it misses or lies entirely
-// inside. A segment inside crosses no boundary, so it returns none while IntersectsSegment still
-// reports it. An endpoint within the tolerance of the boundary is one of the crossings, judged
-// by the same comparison IntersectsSegment makes, so a shallow touch is not lost to the fraction
-// along the chord and the two agree to the last bit: Start is where the segment enters and End
-// where it leaves, unless the chord lies wholly past that endpoint, and two such endpoints are
-// the two crossings, so a segment and its Reverse cross at the same points; where the chord is
-// a tangent the endpoint replaces it. A tangent is placed at the foot on the segment, a fraction along it like every
-// crossing, so it lies within the tolerance of the circle rather than halfway between the two
-// boundaries, and a float32 tangent far from the origin can round just past the tolerance. For
-// integer T the points are rounded like every other result stored into T.
+// segment's Start to its End: two where it passes through, one where it is tangent or ends inside,
+// within the tolerance like IntersectsSegment, and none where it misses or lies entirely inside. A
+// segment inside crosses no boundary, so it returns none while IntersectsSegment still reports it.
+// An endpoint within the tolerance of the boundary is one of the crossings, judged by the same
+// comparison IntersectsSegment makes, so a shallow touch is not lost to the fraction along the
+// chord and the two agree to the last bit: Start is where the segment enters and End where it
+// leaves, unless the chord lies wholly past that endpoint, and two such endpoints are the two
+// crossings, so a segment and its Reverse cross at the same points; where the chord is a tangent
+// the endpoint replaces it. A tangent is placed at the foot on the segment, a fraction along it
+// like every crossing, so it lies within the tolerance of the circle rather than halfway between
+// the two boundaries, and a float32 tangent far from the origin can round just past the tolerance.
+// For integer T the points are rounded like every other result stored into T.
 func (c Circle[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
 	return c.AppendIntersectionSegment(nil, segment)
 }
@@ -508,10 +508,10 @@ func (c Circle[T]) Ellipse() Ellipse[T] {
 	return Ellipse[T]{c.Center, SzU(c.Radius), 0}
 }
 
-// RegularPolygon converts the circle into the RegularPolygon of n vertices inscribed in it,
-// with the given orientation, as Ellipse.RegularPolygon does: every vertex lies on
-// the boundary, and the orientation places the first of them by RegularPolygonOrientationPhase,
-// so OrientationPointyTop puts a vertex at the top and OrientationFlatTop the midpoint of an edge. It is the outline a
+// RegularPolygon converts the circle into the RegularPolygon of n vertices inscribed in it, with
+// the given orientation, as Ellipse.RegularPolygon does: every vertex lies on the boundary, and the
+// orientation places the first of them by RegularPolygonOrientationPhase, so OrientationPointyTop
+// puts a vertex at the top and OrientationFlatTop the midpoint of an edge. It is the outline a
 // circle does not have, so its Vertices and Edges are what draws or walks one.
 //
 // Like RegularPolygonOrientationPhase it panics for an orientation that is neither

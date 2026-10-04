@@ -67,9 +67,10 @@ func (e Ellipse[T]) Eccentricity() float64 {
 }
 
 // Foci returns the two focal points, the pair whose distances to a point of the boundary sum to
-// twice the major semi-axis: they lie on the major axis, either side of the center and turned
-// by Angle with it, the one on the negative end of the major axis before the turn first. A
-// circle has both at the center. For integer T each focus is rounded like every other point placed from an angle.
+// twice the major semi-axis: they lie on the major axis, either side of the center and turned by
+// Angle with it, the one on the negative end of the major axis before the turn first. A circle has
+// both at the center. For integer T each focus is rounded like every other point placed from an
+// angle.
 func (e Ellipse[T]) Foci() (Point[T], Point[T]) {
 	w, h := e.Size.Float().Abs().XY()
 	a, b := max(w, h), min(w, h)
@@ -278,24 +279,24 @@ func (e Ellipse[T]) Lerp(ellipse Ellipse[T], t float64) Ellipse[T] {
 	return Ellipse[T]{e.Center.Lerp(ellipse.Center, t), e.Size.Lerp(ellipse.Size, t).Abs(), NormalizeAngle(LerpAngle(e.Angle, ellipse.Angle, t))}
 }
 
-// Transform creates a new Ellipse by applying the given matrix, exactly for every matrix: an
-// affine map takes an ellipse onto an ellipse, the center moves, and the angle and the
-// semi-axes are those of the matrix applied to the stretched circle, taken apart again by its
-// singular value decomposition. The turn before the stretch spins the circle onto itself, so
-// the ellipse has no phase to keep, and a reflection mirrors the angle. A move, a turn and a scale along the axes of an unturned
-// ellipse keep the semi-axes as they are; the decomposition is not unique, and where it reads
-// them the other way round, the angle takes the quarter turn. For integer T the center and the
-// semi-axes are each rounded once.
+// Transform creates a new Ellipse by applying the given matrix, exactly for every matrix: an affine
+// map takes an ellipse onto an ellipse, the center moves, and the angle and the semi-axes are those
+// of the matrix applied to the stretched circle, taken apart again by its singular value
+// decomposition. The turn before the stretch spins the circle onto itself, so the ellipse has no
+// phase to keep, and a reflection mirrors the angle. A move, a turn and a scale along the axes of
+// an unturned ellipse keep the semi-axes as they are; the decomposition is not unique, and where it
+// reads them the other way round, the angle takes the quarter turn. For integer T the center and
+// the semi-axes are each rounded once.
 func (e Ellipse[T]) Transform[M Float](matrix Matrix[M]) Ellipse[T] {
 	after, stretch, _, _ := matrix.mapping(e.Angle, e.Size.Float()).decomposition()
 
 	return Ellipse[T]{e.Center.Transform(matrix), stretch.Size().Cast[T](), NormalizeAngle(after)}
 }
 
-// Rotate creates a new Ellipse turned by the given angle (in radians) about its center, in the
-// same sense as Vector.Rotate. The stored angle is
-// normalized to [0, 2π) to prevent drift from repeated rotations. An ellipse of equal
-// semi-axes is a circle and no angle moves it, though the angle is stored all the same.
+// Rotate creates a new Ellipse turned by the given angle (in radians) about its center, in the same
+// sense as Vector.Rotate. The stored angle is normalized to [0, 2π) to prevent drift from repeated
+// rotations. An ellipse of equal semi-axes is a circle and no angle moves it, though the angle is
+// stored all the same.
 func (e Ellipse[T]) Rotate(angle float64) Ellipse[T] {
 	return Ellipse[T]{e.Center, e.Size, NormalizeAngle(e.Angle + angle)}
 }
@@ -306,9 +307,9 @@ func (e Ellipse[T]) AlignTo(direction Direction, point Point[T]) Ellipse[T] {
 	return e.Translate(point.Subtract(e.Anchor(direction)))
 }
 
-// Contains reports whether the given point lies within the ellipse, boundary included within
-// the tolerance: it holds exactly where DistanceTo is zero. A degenerate ellipse has no interior and contains the points of the
-// segment it is.
+// Contains reports whether the given point lies within the ellipse, boundary included within the
+// tolerance: it holds exactly where DistanceTo is zero. A degenerate ellipse has no interior and
+// contains the points of the segment it is.
 func (e Ellipse[T]) Contains(point Point[T]) bool {
 	return e.DistanceSquaredTo(point) == 0
 }
@@ -380,10 +381,10 @@ func (e Ellipse[T]) form(local Vector[float64]) float64 {
 	return float64(x*x) + float64(y*y)
 }
 
-// nearestOffset returns the offset of the point of the boundary nearest to the given offset
-// outside it, both in the local frame of the ellipse: the foot of the perpendicular from it,
-// asked by nearestLocal only after the quadratic form puts the offset outside. A degenerate ellipse is the segment
-// its other axis spans, and the foot is the offset clamped to it on each axis, the zero
+// nearestOffset returns the offset of the point of the boundary nearest to the given offset outside
+// it, both in the local frame of the ellipse: the foot of the perpendicular from it, asked by
+// nearestLocal only after the quadratic form puts the offset outside. A degenerate ellipse is the
+// segment its other axis spans, and the foot is the offset clamped to it on each axis, the zero
 // semi-axis clamping its own to zero.
 func (e Ellipse[T]) nearestOffset(local Vector[float64]) Vector[float64] {
 	w, h := e.Size.Float().Abs().XY()
@@ -435,12 +436,12 @@ func (e Ellipse[T]) foot(a, b, x, y float64) (float64, float64) {
 // nearestLocal decides the interior on the quadratic form first, on the same coordinates, so
 // no point inside reaches it.
 //
-// It is found by bisection, which halves that bracket until the midpoint is one of its ends
-// and no float lies between them, so it ends in the precision of a float64 and no iteration
-// count has to be chosen; a midpoint that lands exactly on the root is kept as the far end and
-// the halving runs down to it. A NaN coordinate gives a bracket with no midpoint at all and is
-// returned as it is, so the loop ends on it too. It reads no field of the ellipse, only the point in the frame
-// of its semi-axes, so the receiver is unnamed.
+// It is found by bisection, which halves that bracket until the midpoint is one of its ends and no
+// float lies between them, so it ends in the precision of a float64 and no iteration count has to
+// be chosen; a midpoint that lands exactly on the root is kept as the far end and the halving runs
+// down to it. A NaN coordinate gives a bracket with no midpoint at all and is returned as it is, so
+// the loop ends on it too. It reads no field of the ellipse, only the point in the frame of its
+// semi-axes, so the receiver is unnamed.
 func (Ellipse[T]) root(aspect, x, y float64) float64 {
 	gradient := aspect * x
 

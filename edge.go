@@ -274,8 +274,8 @@ func (p *edgeProbe[T]) aim(segment Segment[T]) bool {
 	return overlaps(p.a, p.b, p.c, p.d)
 }
 
-// meets reports whether the edge shares a point with the aimed segment, by Segment.IntersectsSegment,
-// run only where the extents of the two can share a point.
+// meets reports whether the edge shares a point with the aimed segment, by
+// Segment.IntersectsSegment, run only where the extents of the two can share a point.
 func (p *edgeProbe[T]) meets(edge Segment[T]) bool {
 	e, f := edge.minMax()
 

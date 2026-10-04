@@ -126,9 +126,9 @@ func (p Point[T]) Midpoint(point Point[T]) Point[T] {
 	return Point[T]{Midpoint(p.X, point.X), Midpoint(p.Y, point.Y)}
 }
 
-// Transform creates a new Point by applying the given matrix to the current point.
-// The matrix is float-only, like an angle: convert an integer matrix with Matrix.Float first.
-// For integer T, the float64 result of each component is rounded; rotations and non-integer scales lose precision.
+// Transform creates a new Point by applying the given matrix to the current point. The matrix is
+// float-only, like an angle: convert an integer matrix with Matrix.Float first. For integer T, the
+// float64 result of each component is rounded; rotations and non-integer scales lose precision.
 func (p Point[T]) Transform[M Float](matrix Matrix[M]) Point[T] {
 	x, y := float64(p.X), float64(p.Y)
 	a, b, c := float64(matrix.A), float64(matrix.B), float64(matrix.C)
@@ -167,22 +167,25 @@ func (p Point[T]) DistanceTo(point Point[T]) float64 {
 	return point.Float().Subtract(p.Float()).Length()
 }
 
-// DistanceSquaredTo returns the squared Euclidean distance to the given point (faster than DistanceTo for comparisons).
-// The differences are taken in float64, as DistanceTo takes them, so a float32 difference is not
-// rounded before it is squared and the two agree; the result is stored back through Cast.
+// DistanceSquaredTo returns the squared Euclidean distance to the given point
+// (faster than DistanceTo for comparisons). The differences are taken in float64, as DistanceTo
+// takes them, so a float32 difference is not rounded before it is squared and the two agree; the
+// result is stored back through Cast.
 func (p Point[T]) DistanceSquaredTo(point Point[T]) T {
 	return Cast[T](point.Float().Subtract(p.Float()).LengthSquared())
 }
 
-// ManhattanDistanceTo returns the Manhattan (taxicab) distance from the current point to the given point.
+// ManhattanDistanceTo returns the Manhattan (taxicab) distance from the current point to the given
+// point.
 func (p Point[T]) ManhattanDistanceTo(point Point[T]) T {
 	dx, dy := p.deltas(point)
 
 	return Cast[T](dx + dy)
 }
 
-// ChebyshevDistanceTo returns the Chebyshev distance (chessboard distance) from the current point to the given point.
-// It is the maximum of the absolute differences of the coordinates: max(|dx|, |dy|).
+// ChebyshevDistanceTo returns the Chebyshev distance (chessboard distance) from the current point
+// to the given point. It is the maximum of the absolute differences of the coordinates:
+// max(|dx|, |dy|).
 func (p Point[T]) ChebyshevDistanceTo(point Point[T]) T {
 	dx, dy := p.deltas(point)
 
@@ -274,10 +277,10 @@ func minMaxOf[T Number](vertices []Point[T]) (Point[T], Point[T]) {
 	return a, b
 }
 
-// overlaps reports whether the box from a1 to b1 and the box from a2 to b2 share a point,
-// boundary included within the tolerance. It is the check Rectangle.IntersectsRectangle makes on its
-// corners and the rejection every other intersection test makes before examining edges, and
-// like Between it expects each a to be the lesser corner on each axis.
+// overlaps reports whether the box from a1 to b1 and the box from a2 to b2 share a point, boundary
+// included within the tolerance. It is the check Rectangle.IntersectsRectangle makes on its corners
+// and the rejection every other intersection test makes before examining edges, and like Between it
+// expects each a to be the lesser corner on each axis.
 func overlaps[T Number](a1, b1, a2, b2 Point[T]) bool {
 	epsilon := epsilonAt[T](max(a1.magnitude(), b1.magnitude(), a2.magnitude(), b2.magnitude()))
 
