@@ -785,6 +785,35 @@ func TestSegment_IntersectionSegment(t *testing.T) {
 		assert.True(t, ok)
 		geomtest.AssertPoint(t, point, Pt(5.0, 0.0))
 	})
+	t.Run("the same point in either order", func(t *testing.T) {
+		for _, a := range segmentFixtures {
+			for _, b := range segmentFixtures {
+				point, ok := a.IntersectionSegment(b)
+				reversed, reversedOk := b.IntersectionSegment(a)
+				message := fmt.Sprintf("%s → %s: ", a, b)
+
+				assert.Equal(t, ok, reversedOk, message)
+				assert.Equal(t, point, reversed, message)
+			}
+		}
+	})
+	t.Run("a long int crossing on a half unit rounds the same way in either order", func(t *testing.T) {
+		pairs := [][2]Segment[int]{
+			{Seg(Pt(-67116, -108610), Pt(266866, 416662)), Seg(Pt(-290417, 594344), Pt(160846, -330808))},
+			{Seg(Pt(524931, 492740), Pt(-108509, -103996)), Seg(Pt(123825, -454723), Pt(-103886, 395159))},
+			{Seg(Pt(-14395822, -8911196), Pt(4330846, 2707652)), Seg(Pt(960221, -6190890), Pt(-864568, 5484762))},
+			{Seg(Pt(28146470, 21943757), Pt(-24376732, -18988783)), Seg(Pt(31427391, -8045225), Pt(-63955104, 16459085))},
+		}
+		for _, pair := range pairs {
+			point, ok := pair[0].IntersectionSegment(pair[1])
+			reversed, reversedOk := pair[1].IntersectionSegment(pair[0])
+			message := fmt.Sprintf("%s → %s: ", pair[0], pair[1])
+
+			assert.True(t, ok, message)
+			assert.True(t, reversedOk, message)
+			assert.Equal(t, point, reversed, message)
+		}
+	})
 }
 
 func FuzzSegment_IntersectionSegment(f *testing.F) {

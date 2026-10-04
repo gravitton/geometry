@@ -37,9 +37,13 @@ func ParseSize[T Number](s string) (Size[T], error) {
 		return Size[T]{}, fmt.Errorf("geom: invalid size format %q", s)
 	}
 
-	w, h, err := parsePair[T](width, height, "width", "height")
+	w, err := Parse[T](width)
 	if err != nil {
-		return Size[T]{}, err
+		return Size[T]{}, fmt.Errorf("geom: invalid width value: %w", err)
+	}
+	h, err := Parse[T](height)
+	if err != nil {
+		return Size[T]{}, fmt.Errorf("geom: invalid height value: %w", err)
 	}
 
 	return Size[T]{w, h}, nil

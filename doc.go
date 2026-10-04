@@ -40,7 +40,11 @@
 // span. Sums and differences of two values stay in T. The signs that decide a crossing, a turn or
 // a winding are cross products of coordinate differences in float64, exact for an integer T while
 // the differences stay within 2^26, the square root of the integers float64 holds exactly; beyond
-// it a sign can round to zero.
+// it a sign can round to zero. The distance to an edge is that cross product divided by the
+// length of the edge, so an integer circle tangent to an edge is at exactly its radius across
+// that range. The point of a crossing is a product of three differences, exact while they stay
+// within 2^17; past that a crossing on a half unit can round to either neighbour, the same one
+// whichever shape asks.
 //
 // # Supported range
 //

@@ -1,7 +1,6 @@
 package geom
 
 import (
-	"fmt"
 	"math"
 	"strconv"
 )
@@ -199,8 +198,8 @@ func LessOrEqualDelta[T Number](a, b T, delta float64) bool {
 // measured squared. It is the one comparison against a radius or a segment in the package:
 // every Contains, DistanceTo and Intersects makes it, with the epsilon epsilonAt gives at the
 // magnitude of what it compares, and a b of zero is the tolerance alone, the snap
-// Segment.DistanceSquaredTo applies to a point on a segment. Made on the square, no test pays a
-// square root and all of them round alike at the boundary.
+// Segment.DistanceSquaredTo applies to a point on a segment. Made on the square, every test
+// rounds alike at the boundary, and the distance itself is never rooted to be compared.
 func lessOrEqualSquared(a2, b, epsilon float64) bool {
 	reach := b + epsilon
 
@@ -361,19 +360,4 @@ func Parse[T Number](s string) (T, error) {
 
 func rangeError(s string) error {
 	return &strconv.NumError{Func: "Parse", Num: s, Err: strconv.ErrRange}
-}
-
-// parsePair parses the two parts of a value already split from its format, naming the part that
-// fails in the error and wrapping the Parse error.
-func parsePair[T Number](first, second, firstName, secondName string) (T, T, error) {
-	a, err := Parse[T](first)
-	if err != nil {
-		return 0, 0, fmt.Errorf("geom: invalid %s value: %w", firstName, err)
-	}
-	b, err := Parse[T](second)
-	if err != nil {
-		return 0, 0, fmt.Errorf("geom: invalid %s value: %w", secondName, err)
-	}
-
-	return a, b, nil
 }

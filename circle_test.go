@@ -678,6 +678,28 @@ func TestCircle_IntersectsSegment(t *testing.T) {
 	t.Run("a segment inside counts", func(t *testing.T) {
 		assert.True(t, circle.IntersectsSegment(Seg(Pt(-0.5, 0.0), Pt(0.5, 0.0))))
 	})
+	t.Run("an int tangent counts across the supported range", func(t *testing.T) {
+		for radius := 100; radius < 60000; radius += 211 {
+			for length := 100; length < 60000; length += 911 {
+				c := Circ(Pt(0, 0), radius)
+				wall := Seg(Pt(radius, -length), Pt(radius, length/3))
+				floor := Bx(Pt(-length, radius), Pt(length/3, radius+40))
+				message := fmt.Sprintf("%s → %s: ", c, wall)
+
+				assert.True(t, c.IntersectsSegment(wall), message)
+				assert.Length(t, c.IntersectionSegment(wall), 1, message)
+				assert.True(t, c.IntersectsBox(floor), message)
+				assert.True(t, c.IntersectsRectangle(floor.Rectangle()), message)
+				assert.True(t, c.IntersectsPolygon(floor.Rectangle().Polygon()), message)
+			}
+		}
+		for k := 1; k < 4000000; k += 9973 {
+			c := Circ(Pt(0, 0), 5*k)
+			slope := Seg(Pt(-k, 7*k), Pt(7*k, k))
+
+			assert.True(t, c.IntersectsSegment(slope), fmt.Sprintf("%s → %s: ", c, slope))
+		}
+	})
 }
 
 func TestCircle_IntersectionSegment(t *testing.T) {

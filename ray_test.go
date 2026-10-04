@@ -472,6 +472,29 @@ func TestRay_IntersectionRay(t *testing.T) {
 			}
 		}
 	})
+	t.Run("the same point in either order", func(t *testing.T) {
+		for _, a := range rayFixtures {
+			for _, b := range rayFixtures {
+				point, ok := a.IntersectionRay(b)
+				reversed, reversedOk := b.IntersectionRay(a)
+				message := fmt.Sprintf("%s → %s: ", a, b)
+
+				assert.Equal(t, ok, reversedOk, message)
+				assert.Equal(t, point, reversed, message)
+			}
+		}
+	})
+	t.Run("a long int crossing on a half unit rounds the same way in either order", func(t *testing.T) {
+		a := Ry(Pt(-67116, -108610), Vec(333982, 525272))
+		b := Ry(Pt(-290417, 594344), Vec(451263, -925152))
+
+		point, ok := a.IntersectionRay(b)
+		reversed, reversedOk := b.IntersectionRay(a)
+
+		assert.True(t, ok)
+		assert.True(t, reversedOk)
+		assert.Equal(t, point, reversed)
+	})
 }
 
 func FuzzRay_IntersectionRay(f *testing.F) {

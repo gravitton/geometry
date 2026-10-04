@@ -4,3 +4,4 @@ ellipse.go: if px, py := gradient/(s+aspect), y/(s+1); float64(px*px)+float64(py
 point.go: return Point[T]{p.X + deltaX, p.Y + deltaY}
 point.go: return Point[T]{p.X + vector.X, p.Y + vector.Y}
 rectangle.go: return Vector[T]{-w / 2, -h / 2}, Vector[T]{w - w/2, h - h/2}
+vector.go: return Vector[T]{v.X + vector.X, v.Y + vector.Y}

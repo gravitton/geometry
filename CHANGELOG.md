@@ -13,33 +13,8 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 
 ## [Unreleased](https://github.com/gravitton/geometry/compare/v1.15.0...main)
 
-### Changed
-- `ParsePoint` and `ParseSize` parse their two parts through one private `parsePair`, so a failing part is named and wrapped the same way in both
-- The package doc states the supported range: float64 at any finite coordinates, float32 within 1e5, and `int`, `int32` and `int64` within 2^26; `int8` and `int16` never panic or hang but may wrap, and `Integer` no longer promises they never overflow
-- `Ray.Contains`, `DistanceTo` and `Nearest` measure on the ray's reach past the point, the segment every ray pair decides on, so a point the ray contains is one its pairs find on it
-- `Rectangle.EnclosesCircle` of an aligned rectangle answers as its `Bounds` does
-- `Equal` and `EqualDelta` hold for an infinity against itself
-- A circle, an ellipse or a ray reaching past the range of an integer `T` is no longer clamped at the end of it, and a ray direction too long or too short to square is no longer rescaled; the package doc says a shape's extent must fit `T` and the square of a length must stay finite
-- `Box.Center` and `Box.Clamp` stay in `T`, so an `int8` or `int16` box spanning more than its type holds wraps
-- `RegularPolygon.Bounds` ranges the vertices, O(n) where it read at most eight, and is the box of `Polygon().Bounds()` by construction
-- Two rectangles that are not rotated, and such a rectangle against a box, intersect as `Box.IntersectsBox` and `IntersectionBox` decide
-- `Segment.IntersectionSegment` decides a proper crossing on three cross products where it took six
-- `Segment.ClipPolygon` and `Ray.ClipPolygon` gather the next sixteen crossings in one sweep of the edges where they swept once for each, about three to four times faster and still without allocating; a segment crossing more often sweeps again
 
-### Fixed
-- A segment or ray passing a vertex within the tolerance no longer meets an outline more than twice: an endpoint within the tolerance replaces a proper crossing in `Segment.IntersectionSegment`
-- `Polygon.ConvexHull` always keeps the least and greatest vertex, which a nearly collinear float64 point could drop
-- `Polygon.Simplify` no longer recurses forever on a NaN tolerance or a NaN or infinite vertex
-- `Segment.ClipPolygon` and `Ray.ClipPolygon` no longer end a part at a point outside the polygon where the segment leaves an edge at a shallow angle
-- `Rectangle.IntersectionRectangle` and `Union` treat rectangles half a turn apart as the same frame
-- `Rectangle.IntersectsRectangle` of two rotated float rectangles of one angle answers alike in either order: both are taken into the frame of the one with the lesser center
-- Integer `Ray.IntersectionRay` rounds a crossing on a half unit the same way from either ray
-- Integer `Circle.IntersectionCircle` gives two crossings rounding to one point once
-- `Segment.Scale`, `ScaleXY`, `Unscale`, `UnscaleXY`, `Rotate` and `Point.RotateAround` take offsets from the pivot in float64, so a float32 offset is not rounded before it is scaled
-- Docs: comparisons to other shapes and numeric examples removed; `Ellipse.Foci`, `Circle.IntersectsCircle`, `Body`, `Matrix.Scaling`, the `Clamp` methods and the negative semi-axis of `RegularPolygon` now say what the code does, and the integer `RegularPolygon` enclosing limit, the pointer and NaN-angle panics, and the circle–segment tangent placement are documented
-
-
-## [v1.15.0](https://github.com/gravitton/geometry/compare/v1.14.0...v1.15.0) (2026-10-03)
+## [v1.15.0](https://github.com/gravitton/geometry/compare/v1.14.0...v1.15.0) (2026-10-04)
 
 Two new kinds and the queries between shapes. `Box` is the axis-aligned box every `Bounds` now returns, and `Ray` the half-line cast through every collider; shapes enclose, clip and find their nearest point, and every slice result has an `Append` form.
 The boundary tolerance widens with the coordinates, the same inputs give the same bits on every architecture, and a regular polygon takes a phase that keeps its orientation and every transform exact.
@@ -71,6 +46,8 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.15.0.md](docs
 - `Point.Transform` and `Vector.Transform` are about 7% faster, and parse errors start with `geom:`
 - `github.com/gravitton/x` is dropped; `github.com/gravitton/assert` is the only dependency, at v1.6.0
 - `RegularPolygon.Transform` and `Ellipse.Transform` are exact for every matrix, shears included
+- The package doc states the supported range of each `T`: `int8` and `int16` may wrap, and no extent is clamped into an integer range
+- `Segment.ClipPolygon` and `Ray.ClipPolygon` are three to four times faster
 
 ### Fixed
 - Every product is rounded before it is added, so arm64 and amd64 v3 no longer fuse it into a multiply-add, and CI fails on a new one
@@ -79,7 +56,10 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.15.0.md](docs
 - Narrow integer crossings are ordered from `Start`, and `Mod` no longer overflows near the end of the range
 - Long rectangles turned a hair apart are no longer tested as parallel
 - Integer regular polygons contain their own vertices, and polygons on one line enclose no area
-- A segment along an edge crosses at most twice, and a crossing on a half unit rounds alike at any length
+- A segment along an edge or past a vertex crosses at most twice, and a crossing on a half unit rounds alike at any length and from either side
+- An integer circle tangent to an edge intersects it across the supported range
+- Rectangles half a turn apart share a frame, and a pair of one angle answers alike in either order
+- `Polygon.Simplify` ends on a NaN, and `ConvexHull` keeps its least and greatest vertex
 
 
 ## [v1.14.0](https://github.com/gravitton/geometry/compare/v1.13.0...v1.14.0) (2026-09-20)

@@ -34,9 +34,13 @@ func ParsePoint[T Number](s string) (Point[T], error) {
 		return Point[T]{}, fmt.Errorf("geom: invalid point format %q", s)
 	}
 
-	x, y, err := parsePair[T](before, after, "x", "y")
+	x, err := Parse[T](before)
 	if err != nil {
-		return Point[T]{}, err
+		return Point[T]{}, fmt.Errorf("geom: invalid x value: %w", err)
+	}
+	y, err := Parse[T](after)
+	if err != nil {
+		return Point[T]{}, fmt.Errorf("geom: invalid y value: %w", err)
 	}
 
 	return Point[T]{x, y}, nil

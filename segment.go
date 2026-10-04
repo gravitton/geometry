@@ -203,8 +203,8 @@ func (s Segment[T]) DistanceTo(point Point[T]) float64 {
 // DistanceSquaredTo returns the squared distance DistanceTo takes the root of, faster for
 // comparisons. It is a float64 even for an integer T, unlike Point.DistanceSquaredTo, since the
 // nearest point of a segment is not a lattice point in general. A distance within the tolerance
-// is snapped to zero, which is where Contains reads it, so a polygon boundary is walked without
-// a square root per edge.
+// is snapped to zero, which is where Contains reads it, so a polygon boundary is walked on one
+// comparison per edge.
 func (s Segment[T]) DistanceSquaredTo(point Point[T]) float64 {
 	distance := s.distanceSquaredTo(point)
 	if lessOrEqualSquared(distance, 0, epsilonAt[T](max(s.magnitude(), point.magnitude()))) {
@@ -290,7 +290,9 @@ func (s Segment[T]) IntersectsSegment(segment Segment[T]) bool {
 // at that one vertex, rather than at the vertex on one and a crossing beside it on the other.
 // That covers segments running along each other within the tolerance, sharing a stretch rather
 // than a point: an endpoint of one lies on the other, so it is the answer even where rounding
-// gives them a proper crossing, which would land anywhere along the stretch.
+// gives them a proper crossing, which would land anywhere along the stretch. Such segments
+// share more than one point, and the endpoint returned is one of the given segment before one
+// of this one, so the two orders can name different ends of the stretch.
 func (s Segment[T]) IntersectionSegment(segment Segment[T]) (Point[T], bool) {
 	if point, ok := s.crossing(segment); ok {
 		if endpoint, ok := s.touch(segment); ok {
@@ -540,7 +542,9 @@ func (s Segment[T]) ClipCircle(circle Circle[T]) (Segment[T], bool) {
 // whatever its midpoint, and the part ends at a point the polygon holds. Pieces inside run together across a point
 // where the segment touches the boundary from inside, such as a reflex vertex, and a point where
 // it touches the boundary from outside is a part of zero length, so there are parts exactly
-// where IntersectsPolygon holds. The midpoint is taken in float64, so for an integer T a gap
+// where IntersectsPolygon holds, less a flat polygon, its vertices on one line: a segment along
+// that line with both ends beyond the polygon is parallel to every edge, crosses none and has
+// no part, while IntersectsPolygon still reports it. The midpoint is taken in float64, so for an integer T a gap
 // between two crossings is judged where it is rather than at a rounded point on either side;
 // the crossings themselves are rounded as IntersectionPolygon rounds them. The polygon follows
 // the even-odd rule of Contains, and an empty polygon clips everything away.
@@ -614,7 +618,10 @@ func (s Segment[T]) ClipRectangle(rectangle Rectangle[T]) (Segment[T], bool) {
 // where the polygon contains it, or else to the last, the part ClipPolygon returns on the
 // polygon's Polygon form, without building it. A segment touching a vertex from outside is
 // clipped to that vertex, so the part exists exactly where IntersectsRegularPolygon holds, and
-// an empty polygon clips everything away. It allocates nothing.
+// an empty polygon clips everything away. A flat polygon, of two vertices or a zero semi-axis,
+// is the exception: a segment along its line with an end beyond it is parallel to every edge,
+// crosses none and has no part, while IntersectsRegularPolygon still reports it. It allocates
+// nothing.
 func (s Segment[T]) ClipRegularPolygon(polygon RegularPolygon[T]) (Segment[T], bool) {
 	span := edgeSpan[T]{segment: s}
 	for edge := range polygon.Edges() {
@@ -638,7 +645,12 @@ func (s Segment[T]) ClipBox(box Box[T]) (Segment[T], bool) {
 }
 
 // distanceSquaredTo returns the squared distance to the point with no tolerance applied, which
-// DistanceSquaredTo snaps to zero within the tolerance.
+// DistanceSquaredTo snaps to zero within the tolerance. Beside the segment it is the square of
+// the gap, the cross product divided by the length, rather than the squared cross product
+// divided by the squared length: for an integer T the cross product is exact and so is the
+// length wherever it is a whole number, the only lengths a lattice circle can be tangent on, so
+// a tangent is at exactly the radius across the supported range, where the squared cross
+// product rounds once the radius times the length passes 2^26.
 func (s Segment[T]) distanceSquaredTo(point Point[T]) float64 {
 	start, end, p := s.Start.Float(), s.End.Float(), point.Float()
 	direction, offset := end.Subtract(start), p.Subtract(start)
@@ -653,9 +665,9 @@ func (s Segment[T]) distanceSquaredTo(point Point[T]) float64 {
 		return p.Subtract(end).LengthSquared()
 	}
 
-	cross := offset.Cross(direction)
+	gap := offset.Cross(direction) / math.Sqrt(lengthSquared)
 
-	return cross * cross / lengthSquared
+	return gap * gap
 }
 
 // foot returns the point of the segment nearest to the given point with no tolerance applied:
@@ -700,8 +712,15 @@ func (s Segment[T]) crosses(segment Segment[T]) bool {
 // The point is placed from Start by each component of the direction times the numerator of the
 // fraction, divided by its denominator once, rather than by the rounded fraction: for an integer
 // T the product and the cross products are exact, so a crossing on a half unit is exactly there
-// and rounds the same way whatever lengths the two segments have.
+// and rounds the same way whatever lengths the two segments have, while that product stays
+// within the integers float64 holds exactly. Past it the product rounds, so the pair is taken
+// in one order whichever segment asks, the lesser by Point.Compare of Start and then End first,
+// and a crossing on a half unit still rounds the same way from either side.
 func (s Segment[T]) crossing(segment Segment[T]) (Point[float64], bool) {
+	if cmp.Or(segment.Start.Compare(s.Start), segment.End.Compare(s.End)) < 0 {
+		s, segment = segment, s
+	}
+
 	a, b := s.Float(), segment.Float()
 	along, direction, offset := a.Vector(), b.Vector(), b.Start.Subtract(a.Start)
 	denominator, numerator, other := along.Cross(direction), offset.Cross(direction), offset.Cross(along)
@@ -729,7 +748,9 @@ func (s Segment[T]) parallel(segment Segment[T]) bool {
 
 // touch returns the endpoint of either segment that lies on the other, within the tolerance
 // as Contains judges it, and false when there is none. Non-parallel segments that do not
-// properly cross can share a point only this way.
+// properly cross can share a point only this way. An endpoint of the given segment comes
+// first, so a segment ending at a vertex within the tolerance meets both edges there at the
+// vertex itself, the one point the two edges share.
 func (s Segment[T]) touch(segment Segment[T]) (Point[T], bool) {
 	switch {
 	case s.Contains(segment.Start):
@@ -748,7 +769,7 @@ func (s Segment[T]) touch(segment Segment[T]) (Point[T], bool) {
 // chord returns the fractions along the segment where the line through it enters and leaves
 // the circle, in that order and not clamped to the segment, and false where the line misses
 // or the segment has no direction. Whether the line reaches the circle is decided on the
-// squared distance of the line, the expression DistanceSquaredTo evaluates for a point beside
+// squared distance of the line, the squared gap DistanceSquaredTo evaluates for a point beside
 // the segment, by the same comparison IntersectsCircle makes, so the two agree to the last
 // bit. A chord whose ends lie within the tolerance of each other is a tangent and both
 // fractions are its midpoint, judged on the squared chord by the same comparison, before any
@@ -762,8 +783,8 @@ func (s Segment[T]) chord(circle Circle[T]) (float64, float64, bool) {
 	}
 
 	lengthSquared := direction.LengthSquared()
-	cross := offset.Cross(direction)
-	gapSquared := cross * cross / lengthSquared
+	gap := offset.Cross(direction) / math.Sqrt(lengthSquared)
+	gapSquared := float64(gap * gap)
 
 	if !circle.containsSquared(gapSquared, s.magnitude()) {
 		return 0, 0, false

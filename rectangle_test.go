@@ -945,7 +945,7 @@ func TestRectangle_DistanceSquaredTo(t *testing.T) {
 		turned := Rect(Pt(0, 0), Sz(4, 4)).Rotate(Pi / 4)
 
 		geomtest.AssertNumber(t, turned.DistanceTo(Pt(3, 3)), 3/Sqrt2)
-		assert.Equal(t, turned.DistanceSquaredTo(Pt(3, 3)), 4.5)
+		geomtest.AssertNumber(t, turned.DistanceSquaredTo(Pt(3, 3)), 4.5)
 	})
 }
 
@@ -1258,6 +1258,22 @@ func TestRectangle_IntersectsRectangle(t *testing.T) {
 			}
 		}
 	})
+	t.Run("int rectangles half a turn apart meet as their corners do", func(t *testing.T) {
+		for _, size := range []Size[int]{Sz(3, 5), Sz(4, 4), Sz(1, 0), Sz(5, 2)} {
+			for _, angle := range []float64{0, Pi} {
+				a := Rect(Pt(0, 1), size).Rotate(Pi)
+				for x := -8; x <= 8; x++ {
+					for y := -8; y <= 8; y++ {
+						b := Rect(Pt(x, y), Sz(4, 7)).Rotate(angle)
+						message := fmt.Sprintf("%s → %s: ", a, b)
+
+						assert.Equal(t, a.IntersectsRectangle(b), a.Bounds().IntersectsBox(b.Bounds()), message)
+						assert.Equal(t, a.IntersectsRectangle(b), b.IntersectsRectangle(a), message)
+					}
+				}
+			}
+		}
+	})
 }
 
 func BenchmarkRectangle_IntersectsRectangle(b *testing.B) {
@@ -1396,6 +1412,28 @@ func TestRectangle_IntersectionRectangle(t *testing.T) {
 		_, ok := a.IntersectionRectangle(a.Rotate(9e-7))
 		assert.False(t, ok)
 	})
+	t.Run("int rectangles half a turn apart overlap as their corners do, in either order", func(t *testing.T) {
+		for _, size := range []Size[int]{Sz(3, 5), Sz(4, 4), Sz(1, 0), Sz(5, 2)} {
+			a := Rect(Pt(0, 1), size).Rotate(Pi)
+			for x := -8; x <= 8; x++ {
+				for y := -8; y <= 8; y++ {
+					b := Rect(Pt(x, y), Sz(3, 7))
+					message := fmt.Sprintf("%s → %s: ", a, b)
+
+					overlap, ok := a.IntersectionRectangle(b)
+					reversed, reversedOk := b.IntersectionRectangle(a)
+					box, boxOk := a.Bounds().IntersectionBox(b.Bounds())
+
+					assert.Equal(t, ok, boxOk, message)
+					assert.Equal(t, ok, reversedOk, message)
+					if ok {
+						geomtest.AssertBox(t, overlap.Bounds(), box, message)
+						geomtest.AssertRectangle(t, overlap, reversed, message)
+					}
+				}
+			}
+		}
+	})
 }
 
 func TestRectangle_Union(t *testing.T) {
@@ -1447,6 +1485,20 @@ func TestRectangle_Union(t *testing.T) {
 		b := a.Rotate(9e-7)
 
 		geomtest.AssertRectangle(t, a.Union(b), a.Bounds().Union(b.Bounds()).Rectangle())
+	})
+	t.Run("int rectangles half a turn apart unite as their corners do, in either order", func(t *testing.T) {
+		for _, size := range []Size[int]{Sz(3, 5), Sz(4, 4), Sz(1, 0), Sz(5, 2)} {
+			a := Rect(Pt(0, 1), size).Rotate(Pi)
+			for x := -8; x <= 8; x++ {
+				for y := -8; y <= 8; y++ {
+					b := Rect(Pt(x, y), Sz(3, 7))
+					message := fmt.Sprintf("%s → %s: ", a, b)
+
+					geomtest.AssertBox(t, a.Union(b).Bounds(), a.Bounds().Union(b.Bounds()), message)
+					geomtest.AssertRectangle(t, a.Union(b), b.Union(a), message)
+				}
+			}
+		}
 	})
 }
 

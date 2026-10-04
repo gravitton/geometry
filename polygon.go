@@ -964,11 +964,13 @@ func (p Polygon[T]) admits(toPrevious, toNext, offset Vector[float64], epsilon f
 // stays reports whether an offset lies on the inner side of an edge, given their cross
 // product, positive on that side, and the direction of the edge: on it, or beyond the line of
 // the edge by no more than the tolerance, on the squared gap Segment.distanceSquaredTo measures
-// beside a segment. An offset within the tolerance of the point stays on every side, so a
+// beside a segment, the cross product divided by the length and then squared. An offset within the tolerance of the point stays on every side, so a
 // segment ending there is not judged by a direction it has not got. It reads no field of the
 // polygon, so the receiver is unnamed.
 func (Polygon[T]) stays(cross float64, edge Vector[float64], epsilon float64) bool {
-	return cross >= 0 || lessOrEqualSquared(cross*cross/edge.LengthSquared(), 0, epsilon)
+	gap := cross / math.Sqrt(edge.LengthSquared())
+
+	return cross >= 0 || lessOrEqualSquared(gap*gap, 0, epsilon)
 }
 
 // Equal checks if two polygons have the same vertices. A nil and an empty Points are equal,

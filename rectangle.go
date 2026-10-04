@@ -1,6 +1,7 @@
 package geom
 
 import (
+	"cmp"
 	"fmt"
 	"iter"
 	"math"
@@ -270,20 +271,28 @@ func (r Rectangle[T]) localOffset(point Point[T]) Vector[float64] {
 // frame before its turn: the offset between the centers turned back by Angle, about the origin,
 // with no angle of its own. Two rectangles of the same angle taken into the local frame of the
 // same rectangle, itself included, are aligned about the origin and overlap, intersect and
-// unite as aligned rectangles do; worldRectangle turns the result back. For integer T the
-// turned offset is rounded.
+// unite as aligned rectangles do; worldRectangle turns the result back. A rectangle half a turn
+// from this one lies mirrored about its center in the frame, so its center there is moved by
+// the sum of its two corner offsets, the unit an odd integer extent leaves between them and
+// zero for every other size, and the box of the frame has the corners the rectangle has. For
+// integer T the turned offset is rounded.
 func (r Rectangle[T]) localRectangle(rectangle Rectangle[T]) Rectangle[T] {
 	offset := r.localOffset(rectangle.Center).Cast[T]()
+	if AngleDistance(r.Angle, rectangle.Angle) > Pi/2 {
+		a, b := rectangle.localMinMax()
+		offset = offset.Subtract(a.Add(b))
+	}
 
 	return Rectangle[T]{offset.Point(), rectangle.Size, 0}
 }
 
 // sharedFrame returns the rectangle whose local frame a pair of the same angle is taken into:
-// the one with the lesser center by Point.Compare, this one where they are the same. The frame
-// is the same whichever of the two asks, so the corners a float T rounds in it are the same
-// too, and the pair answers alike in either order.
+// the one with the lesser center by Point.Compare, and the one with the lesser angle where the
+// centers are the same. The frame is the same whichever of the two asks, so the corners a float
+// T rounds in it and the angle of what is found there are the same too, and the pair answers
+// alike in either order.
 func (r Rectangle[T]) sharedFrame(rectangle Rectangle[T]) Rectangle[T] {
-	if rectangle.Center.Compare(r.Center) < 0 {
+	if cmp.Or(rectangle.Center.Compare(r.Center), cmp.Compare(rectangle.Angle, r.Angle)) < 0 {
 		return rectangle
 	}
 
@@ -660,8 +669,12 @@ func (r Rectangle[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 // offset between the centers is turned into that frame, where the vertices were placed in the
 // world, so two rotated rectangles of one angle can answer differently from IntersectsPolygon
 // on the Polygon of their corners: by a unit for an integer T, where both are rounded, and
-// within the tolerance for a float T, where the two placements part by an ulp. The frame is
-// what IntersectionRectangle and Union measure in, and the three agree with each other.
+// within the tolerance for a float T, where the two placements part by an ulp. The frame also
+// judges at the tolerance of its own coordinates, near its origin, where the edges are judged
+// at the tolerance of the world coordinates they lie at: far from the origin a touch within
+// the wider one is missed, so a rectangle EnclosesRectangle admits on an edge of this one may
+// not intersect it. The frame is what IntersectionRectangle and Union measure in, and the three
+// agree with each other.
 func (r Rectangle[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 	if r.IsAligned() && rectangle.IsAligned() {
 		return r.Bounds().IntersectsBox(rectangle.Bounds())

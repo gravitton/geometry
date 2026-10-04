@@ -1,6 +1,7 @@
 package geom
 
 import (
+	"cmp"
 	"fmt"
 	"math"
 )
@@ -169,7 +170,9 @@ func (r Ray[T]) IntersectsRay(ray Ray[T]) bool {
 // crossing point and return false even where they overlap, which IntersectsRay still reports. A
 // ray with a zero Direction is its origin, parallel to nothing, and is the answer wherever it
 // lies on the other ray. For integer T the crossing is rounded like every other result stored
-// into T.
+// into T. Rays running along each other within the tolerance, short of parallel, share more than
+// one point, and the origin returned is the given ray's before this one's, so the two orders can
+// name different origins.
 func (r Ray[T]) IntersectionRay(ray Ray[T]) (Point[T], bool) {
 	if point, ok := r.crossing(ray); ok {
 		return point.Cast[T](), true
@@ -278,8 +281,9 @@ func (r Ray[T]) ClipCircle(circle Circle[T]) (Segment[T], bool) {
 
 // ClipPolygon returns the parts of the ray inside the polygon, boundary included within the
 // tolerance, from Origin on, as Segment.ClipPolygon clips the reach of the ray past the polygon. The
-// Start of the first part is the cast of the ray, the first point of the polygon it reaches. The
-// result is the one allocation, made on the first part.
+// Start of the first part is the cast of the ray, the first point of the polygon it reaches. A
+// ray along the line of a flat polygon has no part, as Segment.ClipPolygon says. The result is
+// the one allocation, made on the first part.
 func (r Ray[T]) ClipPolygon(polygon Polygon[T]) []Segment[T] {
 	return r.AppendClipPolygon(nil, polygon)
 }
@@ -302,7 +306,8 @@ func (r Ray[T]) ClipRectangle(rectangle Rectangle[T]) (Segment[T], bool) {
 // ClipRegularPolygon returns the part of the ray inside the regular polygon, boundary included
 // within the tolerance, and false where they share no point, as Segment.ClipRegularPolygon clips
 // the reach of the ray past the polygon. Its Start is the cast of the ray, the first point of the
-// polygon it reaches, and an empty polygon clips everything away. It allocates nothing.
+// polygon it reaches, and an empty polygon clips everything away. A ray along the line of a
+// flat polygon has no part, as Segment.ClipRegularPolygon says. It allocates nothing.
 func (r Ray[T]) ClipRegularPolygon(polygon RegularPolygon[T]) (Segment[T], bool) {
 	return r.reach(polygon.minMax()).ClipRegularPolygon(polygon)
 }
@@ -364,8 +369,14 @@ func (r Ray[T]) crosses(ray Ray[T]) bool {
 // The point is placed from Origin by each component of the direction times the numerator of the
 // fraction, divided by its denominator once, rather than by the rounded fraction: for an integer
 // T the product and the cross products are exact, so a crossing on a half unit is exactly there
-// and rounds the same way whichever ray asks.
+// and rounds the same way whichever ray asks, while that product stays within the integers
+// float64 holds exactly. Past it the product rounds, so the pair is taken in one order whichever
+// ray asks, the lesser by Point.Compare of Origin and then Direction first.
 func (r Ray[T]) crossing(ray Ray[T]) (Point[float64], bool) {
+	if cmp.Or(ray.Origin.Compare(r.Origin), ray.Direction.Point().Compare(r.Direction.Point())) < 0 {
+		r, ray = ray, r
+	}
+
 	a, b := r.Direction.Float(), ray.Direction.Float()
 	origin := r.Origin.Float()
 	offset := ray.Origin.Float().Subtract(origin)
