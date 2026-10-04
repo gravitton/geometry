@@ -24,6 +24,7 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 - `RegularPolygon.Bounds` ranges the vertices, O(n) where it read at most eight, and is the box of `Polygon().Bounds()` by construction
 - Two rectangles that are not rotated, and such a rectangle against a box, intersect as `Box.IntersectsBox` and `IntersectionBox` decide
 - `Segment.IntersectionSegment` decides a proper crossing on three cross products where it took six
+- `Segment.ClipPolygon` and `Ray.ClipPolygon` gather the next sixteen crossings in one sweep of the edges where they swept once for each, about three to four times faster and still without allocating; a segment crossing more often sweeps again
 
 ### Fixed
 - A segment or ray passing a vertex within the tolerance no longer meets an outline more than twice: an endpoint within the tolerance replaces a proper crossing in `Segment.IntersectionSegment`
@@ -31,6 +32,7 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 - `Polygon.Simplify` no longer recurses forever on a NaN tolerance or a NaN or infinite vertex
 - `Segment.ClipPolygon` and `Ray.ClipPolygon` no longer end a part at a point outside the polygon where the segment leaves an edge at a shallow angle
 - `Rectangle.IntersectionRectangle` and `Union` treat rectangles half a turn apart as the same frame
+- `Rectangle.IntersectsRectangle` of two rotated float rectangles of one angle answers alike in either order: both are taken into the frame of the one with the lesser center
 - Integer `Ray.IntersectionRay` rounds a crossing on a half unit the same way from either ray
 - Integer `Circle.IntersectionCircle` gives two crossings rounding to one point once
 - `Segment.Scale`, `ScaleXY`, `Unscale`, `UnscaleXY`, `Rotate` and `Point.RotateAround` take offsets from the pivot in float64, so a float32 offset is not rounded before it is scaled

@@ -1194,6 +1194,12 @@ func TestRectangle_IntersectsRectangle(t *testing.T) {
 	t.Run("apart", func(t *testing.T) {
 		assert.False(t, rectangle.IntersectsRectangle(Rect(Pt(100.0, 350.0), Sz(200.0, 450.0))))
 	})
+	t.Run("rotated float rectangles of one angle answer alike in either order", func(t *testing.T) {
+		a := Rectangle[float32]{Pt[float32](1068.8204, -1021.89056), Sz[float32](3.7823658, 38.629623), 3.7726925760436387}
+		b := Rectangle[float32]{Pt[float32](1048.7158, -1029.476), Sz[float32](37.632782, 6.962456), 3.7726925760436387}
+
+		assert.Equal(t, a.IntersectsRectangle(b), b.IntersectsRectangle(a))
+	})
 	t.Run("rotated int rectangles of one angle are judged in their shared frame", func(t *testing.T) {
 		assert.True(t, Rect(Pt(-7, 1), Sz(3, 7)).Rotate(3.8).IntersectsRectangle(Rect(Pt(-1, -3), Sz(2, 6)).Rotate(3.8)))
 		assert.False(t, Rect(Pt(5, -6), Sz(4, 12)).Rotate(5.5).IntersectsRectangle(Rect(Pt(-3, -9), Sz(2, 5)).Rotate(5.5)))
@@ -1285,7 +1291,7 @@ func TestRectangle_IntersectionRectangle(t *testing.T) {
 		assert.True(t, ok)
 		geomtest.AssertRectangle(t, overlap, Rect(Pt(-4, -2), Sz(0, 0)).Rotate(3.8))
 	})
-	t.Run("half a turn apart overlap in a rectangle of the receiver's angle", func(t *testing.T) {
+	t.Run("half a turn apart overlap in a rectangle of their angle", func(t *testing.T) {
 		turned := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(0.3)
 		overlap, ok := turned.IntersectionRectangle(turned.Rotate(Pi))
 
@@ -1412,7 +1418,7 @@ func TestRectangle_Union(t *testing.T) {
 
 		geomtest.AssertRectangle(t, a.Union(Rect(Pt(0.0, 1.0), Sz(4.0, 2.0)).Rotate(Pi/2)), Rect(Pt(0.0, 0.5), Sz(5.0, 2.0)).Rotate(Pi/2))
 	})
-	t.Run("half a turn apart unite in a rectangle of the receiver's angle", func(t *testing.T) {
+	t.Run("half a turn apart unite in a rectangle of their angle", func(t *testing.T) {
 		turned := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(0.3)
 
 		geomtest.AssertRectangle(t, turned.Union(turned.Rotate(Pi)), turned)

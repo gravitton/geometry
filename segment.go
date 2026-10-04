@@ -545,9 +545,10 @@ func (s Segment[T]) ClipCircle(circle Circle[T]) (Segment[T], bool) {
 // the crossings themselves are rounded as IntersectionPolygon rounds them. The polygon follows
 // the even-odd rule of Contains, and an empty polygon clips everything away.
 //
-// The crossings are not gathered: the edges are swept once for each, finding the next beyond
-// the last, so the result is the one allocation, made on the first part with room for the one
-// a convex polygon gives; only a concave polygon grows it.
+// The crossings are held in an array, the next few from the point reached, and the edges are
+// swept again only where a segment crosses more often than it holds, so the result is the one
+// allocation, made on the first part with room for the one a convex polygon gives; only a
+// concave polygon grows it.
 func (s Segment[T]) ClipPolygon(polygon Polygon[T]) []Segment[T] {
 	return s.AppendClipPolygon(nil, polygon)
 }
@@ -560,13 +561,15 @@ func (s Segment[T]) AppendClipPolygon(dst []Segment[T], polygon Polygon[T]) []Se
 	var from Point[T]
 
 	point, contained, open, ended := s.Start, polygon.Contains(s.Start), false, false
+	sweep := s.sweep(polygon, point)
 	for {
-		sweep := edgeSweep[T]{segment: s, reached: point}
-		for edge := range polygon.Edges() {
-			sweep.add(edge)
+		next, found := sweep.next(point)
+		if !found && sweep.spent() {
+			sweep = s.sweep(polygon, point)
+			next, found = sweep.next(point)
 		}
 
-		next, ahead := sweep.point, sweep.found && !ended
+		ahead := found && !ended
 		nextContained := ahead
 		if !ahead && !ended && !point.Equal(s.End) {
 			next, ahead, ended = s.End, true, true
@@ -574,7 +577,7 @@ func (s Segment[T]) AppendClipPolygon(dst []Segment[T], polygon Polygon[T]) []Se
 		}
 
 		inside := ahead && contained && nextContained && polygon.containsMidpoint(point, next)
-		if !open && (contained || sweep.touched || inside) {
+		if !open && (contained || sweep.touchedAt(point) || inside) {
 			from, open = point, true
 		}
 
@@ -861,6 +864,17 @@ func (s Segment[T]) clipConvex(crossings []Point[T], start, end bool) (Segment[T
 	}
 
 	return clipped, true
+}
+
+// sweep returns the next points where the segment crosses the polygon boundary beyond the one
+// reached, as edgeSweep gathers them over the polygon's Edges.
+func (s Segment[T]) sweep(polygon Polygon[T], reached Point[T]) edgeSweep[T] {
+	sweep := edgeSweep[T]{segment: s, reached: reached}
+	for edge := range polygon.Edges() {
+		sweep.add(edge)
+	}
+
+	return sweep
 }
 
 // crossesRay reports whether a ray cast from the point along +X crosses the segment, counting

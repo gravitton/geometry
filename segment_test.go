@@ -1627,6 +1627,33 @@ func TestSegment_AppendClipPolygon(t *testing.T) {
 			sinkSegments = through.AppendClipPolygon(buffer[:0], square)
 		}), 0)
 	})
+	t.Run("more crossings than one sweep holds are found by sweeping again, without allocating", func(t *testing.T) {
+		const teeth = 12
+
+		comb := []Point[int]{Pt(0, 0), Pt(4*teeth-2, 0)}
+		parts := make([]Segment[int], 0, teeth)
+		for tooth := teeth - 1; tooth >= 0; tooth-- {
+			left := 4 * tooth
+
+			comb = append(comb, Pt(left+2, 2), Pt(left+2, 10), Pt(left, 10), Pt(left, 2))
+			parts = append(parts, Seg(Pt(left+2, 5), Pt(left, 5)))
+		}
+
+		across := Seg(Pt(4*teeth, 5), Pt(-2, 5))
+		buffer := make([]Segment[int], 0, teeth)
+
+		geomtest.AssertSegments(t, across.AppendClipPolygon(buffer[:0], Pol(comb)), parts)
+
+		slices.Reverse(parts)
+		for i, part := range parts {
+			parts[i] = part.Reverse()
+		}
+
+		geomtest.AssertSegments(t, across.Reverse().AppendClipPolygon(buffer[:0], Pol(comb)), parts)
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkSegments = across.AppendClipPolygon(buffer[:0], Pol(comb))
+		}), 0)
+	})
 	t.Run("matches ClipPolygon after the segments in dst", func(t *testing.T) {
 		for _, s := range segmentFixtures {
 			for _, p := range outlineFixtures() {

@@ -171,23 +171,24 @@ func (e *edgeSpan[T]) crossings() []Point[T] {
 	return e.ends[:]
 }
 
-// edgeSweep finds, among the points where a segment crosses the edges of an outline, the next
-// after a point already reached on the way from Start to End: the nearest beyond it, taken in
-// the order edgeIntersections sorts them with Point.Compare deciding a tie, so no two distinct
-// points share a place and none is skipped. A point that compares Equal to the reached one is
-// that point again, and the sweep notes that the reached point touches the boundary. A shape
-// sweeps its Edges once for each point it reaches, so the crossings are visited in order
-// without gathering them into a slice.
+// edgeSweep gathers, among the points where a segment crosses the edges of an outline, the next
+// ones after a point already reached on the way from Start to End: the nearest beyond it, in the
+// order edgeIntersections sorts them with Point.Compare deciding a tie, as many as its array
+// holds. A point that compares Equal to the reached one is that point again, and the sweep
+// notes that the reached point touches the boundary. A shape sweeps its Edges once and reads
+// the points it kept with next, and sweeps again from the last of them only where the array
+// came back full and is spent, so the crossings are visited in order without a slice to hold
+// them.
 type edgeSweep[T Number] struct {
 	segment Segment[T]
 	reached Point[T]
-	point   Point[T]
-	found   bool
+	points  [16]Point[T]
+	n, read int
 	touched bool
 }
 
 // add folds one edge in, keeping its crossing with the segment where it lies beyond the reached
-// point and before the nearest found so far.
+// point.
 func (e *edgeSweep[T]) add(edge Segment[T]) {
 	point, ok := e.segment.IntersectionSegment(edge)
 
@@ -195,9 +196,55 @@ func (e *edgeSweep[T]) add(edge Segment[T]) {
 	case !ok:
 	case point.Equal(e.reached):
 		e.touched = true
-	case e.precedes(e.reached, point) && (!e.found || e.precedes(point, e.point)):
-		e.point, e.found = point, true
+	case e.precedes(e.reached, point):
+		e.insert(point)
 	}
+}
+
+// insert places the point among those kept, in their order from the reached point, dropping
+// the farthest where the array is full, the point itself where it is the farthest.
+func (e *edgeSweep[T]) insert(point Point[T]) {
+	at := e.n
+	for at > 0 && e.precedes(point, e.points[at-1]) {
+		at--
+	}
+
+	if at == len(e.points) {
+		return
+	}
+
+	e.n = min(e.n+1, len(e.points))
+	copy(e.points[at+1:e.n], e.points[at:])
+	e.points[at] = point
+}
+
+// next returns the first point kept that has not been read and lies beyond the given one, and
+// false where none is left: a point that compares Equal to the given one is that point again
+// and is passed over.
+func (e *edgeSweep[T]) next(point Point[T]) (Point[T], bool) {
+	for e.read < e.n && e.points[e.read].Equal(point) {
+		e.read++
+	}
+
+	if e.read == e.n {
+		return Point[T]{}, false
+	}
+
+	e.read++
+
+	return e.points[e.read-1], true
+}
+
+// spent reports whether the array came back full and every point of it has been read, so more
+// crossings may lie beyond the last and the shape sweeps again from it.
+func (e *edgeSweep[T]) spent() bool {
+	return e.read == len(e.points)
+}
+
+// touchedAt reports whether the outline touches the given point: the one the sweep started
+// from, where a crossing compared Equal to it.
+func (e *edgeSweep[T]) touchedAt(point Point[T]) bool {
+	return e.touched && point == e.reached
 }
 
 // precedes reports whether a comes before b on the way from the segment's Start: nearer to

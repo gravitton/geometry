@@ -278,6 +278,18 @@ func (r Rectangle[T]) localRectangle(rectangle Rectangle[T]) Rectangle[T] {
 	return Rectangle[T]{offset.Point(), rectangle.Size, 0}
 }
 
+// sharedFrame returns the rectangle whose local frame a pair of the same angle is taken into:
+// the one with the lesser center by Point.Compare, this one where they are the same. The frame
+// is the same whichever of the two asks, so the corners a float T rounds in it are the same
+// too, and the pair answers alike in either order.
+func (r Rectangle[T]) sharedFrame(rectangle Rectangle[T]) Rectangle[T] {
+	if rectangle.Center.Compare(r.Center) < 0 {
+		return rectangle
+	}
+
+	return r
+}
+
 // worldRectangle returns a rectangle found in the local frame of this one, as localRectangle
 // gives it, turned back into the world: its center turned by Angle about this center, with
 // this angle.
@@ -642,7 +654,8 @@ func (r Rectangle[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 // the same closed convention as Contains. Two rectangles that are not rotated are their Bounds
 // and are decided as Box.IntersectsBox decides those. Rectangles whose extents do not overlap
 // are rejected before any edge is examined. Two rectangles of the same angle, or half a turn
-// apart, are tested in their shared frame, as
+// apart, are tested in their shared frame, the one sharedFrame picks whichever of the two
+// asks, as
 // IntersectionRectangle finds their overlap, once the extents of their vertices overlap. The
 // offset between the centers is turned into that frame, where the vertices were placed in the
 // world, so two rotated rectangles of one angle can answer differently from IntersectsPolygon
@@ -661,7 +674,9 @@ func (r Rectangle[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 	case !overlaps(a1, b1, a2, b2):
 		return false
 	case r.parallel(rectangle):
-		return r.localRectangle(r).IntersectsRectangle(r.localRectangle(rectangle))
+		frame := r.sharedFrame(rectangle)
+
+		return frame.localRectangle(r).IntersectsRectangle(frame.localRectangle(rectangle))
 	default:
 		return r.meetsWithin(rectangle, a1, b1, a2, b2)
 	}
@@ -671,8 +686,9 @@ func (r Rectangle[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 // Touching rectangles intersect in a rectangle of zero width or height, within the tolerance,
 // exactly where IntersectsRectangle holds, which is asked first: a corner admitted by the
 // tolerance is placed on the boundary of the other rectangle, never beyond it. Two rectangles
-// of the same angle, or half a turn apart, overlap in a rectangle of the receiver's angle,
-// found in their shared frame; rectangles of different angles overlap in a polygon that is not
+// of the same angle, or half a turn apart, overlap in a rectangle of that angle, found in
+// their shared frame, the frame of the one with the lesser center, so the answer is the same in
+// either order; rectangles of different angles overlap in a polygon that is not
 // a rectangle and return false even where IntersectsRectangle holds. The shared frame holds
 // an overlap wherever IntersectsRectangle found one there, since it judged the same frame, and
 // two rectangles that are not rotated overlap as Box.IntersectionBox finds it. For integer T the offset between the
@@ -688,23 +704,26 @@ func (r Rectangle[T]) IntersectionRectangle(rectangle Rectangle[T]) (Rectangle[T
 
 		return overlap.Rectangle(), true
 	case r.parallel(rectangle):
-		overlap, _ := r.localRectangle(r).IntersectionRectangle(r.localRectangle(rectangle))
+		frame := r.sharedFrame(rectangle)
+		overlap, _ := frame.localRectangle(r).IntersectionRectangle(frame.localRectangle(rectangle))
 
-		return r.worldRectangle(overlap), true
+		return frame.worldRectangle(overlap), true
 	default:
 		return Rectangle[T]{}, false
 	}
 }
 
 // Union returns the smallest rectangle containing both: the Box.Union of their Bounds for two
-// rectangles that are not rotated, of the receiver's angle for two rectangles of the same
-// angle or half a turn apart, found in their shared frame, and the same Box.Union for
+// rectangles that are not rotated, of their angle for two rectangles of the same angle or half
+// a turn apart, found in their shared frame, and the same Box.Union for
 // rectangles of other angles. For integer T the offset between the centers of two rotated
 // rectangles is rounded into the shared frame and the result rounded back, so the union need
 // not enclose either rectangle's rounded corners.
 func (r Rectangle[T]) Union(rectangle Rectangle[T]) Rectangle[T] {
 	if !(r.IsAligned() && rectangle.IsAligned()) && r.parallel(rectangle) {
-		return r.worldRectangle(r.localRectangle(r).Union(r.localRectangle(rectangle)))
+		frame := r.sharedFrame(rectangle)
+
+		return frame.worldRectangle(frame.localRectangle(r).Union(frame.localRectangle(rectangle)))
 	}
 
 	return r.Bounds().Union(rectangle.Bounds()).Rectangle()
