@@ -772,12 +772,26 @@ func TestCircle_IntersectionSegment(t *testing.T) {
 		geomtest.AssertVertices(t, circle.IntersectionSegment(Seg(Pt(-1.0, 0.0), Pt(2.0, 0.0))), []Point[float64]{Pt(-1.0, 0.0), Pt(1.0, 0.0)})
 		geomtest.AssertVertices(t, circle.IntersectionSegment(Seg(Pt(-2.0, 0.0), Pt(1.0, 0.0))), []Point[float64]{Pt(-1.0, 0.0), Pt(1.0, 0.0)})
 	})
-	t.Run("an endpoint on the boundary replaces the crossing nearest to it", func(t *testing.T) {
+	t.Run("an endpoint on the boundary before the chord is where the segment enters", func(t *testing.T) {
 		s, c := Seg(Pt(-1.0, 2.000001), Pt(-877.0315, 0.11111116666666668)), Circ(Pt(-1.0, 0.0), 2.0)
 		points := c.IntersectionSegment(s)
 
 		assert.Length(t, points, 2)
 		geomtest.AssertPoint(t, points[0], s.Start)
+	})
+	t.Run("an endpoint in the middle of a chord keeps the crossing ahead of it, whichever way the segment runs", func(t *testing.T) {
+		height := 1.0 - Delta/10
+		half := math.Sqrt(1 - height*height)
+		s := Seg(Pt(0.0, height), Pt(5.0, height))
+
+		geomtest.AssertVertices(t, circle.IntersectionSegment(s), []Point[float64]{s.Start, Pt(half, height)})
+		geomtest.AssertVertices(t, circle.IntersectionSegment(s.Reverse()), []Point[float64]{Pt(half, height), s.Start})
+	})
+	t.Run("an endpoint on the boundary of a segment leaving the circle is the one crossing", func(t *testing.T) {
+		leaving := Seg(Pt(1.0, 0.0), Pt(2.0, 0.0))
+
+		geomtest.AssertVertices(t, circle.IntersectionSegment(leaving), []Point[float64]{leaving.Start})
+		geomtest.AssertVertices(t, circle.IntersectionSegment(leaving.Reverse()), []Point[float64]{leaving.Start})
 	})
 	t.Run("a tangent segment with both ends on the boundary gives its ends", func(t *testing.T) {
 		grazing := Seg(Pt(-0.0003, 1.0), Pt(0.0003, 1.0))
@@ -808,6 +822,24 @@ func TestCircle_IntersectionSegment(t *testing.T) {
 				}
 				if len(points) > 0 {
 					assert.True(t, c.IntersectsSegment(s), fmt.Sprintf("%s → %s: ", s, c))
+				}
+			}
+		}
+	})
+	t.Run("a segment and its Reverse cross at the same points", func(t *testing.T) {
+		for _, c := range circleFixtures {
+			for _, s := range append(grazingSegments(c), segmentFixtures...) {
+				assertReversed(t, c.IntersectionSegment(s), c.IntersectionSegment(s.Reverse()), fmt.Sprintf("%s → %s: ", s, c))
+			}
+		}
+	})
+	t.Run("far from the origin a float32 segment and its Reverse cross as often", func(t *testing.T) {
+		for _, offset := range farOffsets {
+			for _, c := range circleFixtures {
+				for _, s := range append(grazingSegments(c), segmentFixtures...) {
+					s, c := s.Cast[float32]().Translate(offset), c.Cast[float32]().Translate(offset)
+
+					assert.Length(t, c.IntersectionSegment(s.Reverse()), len(c.IntersectionSegment(s)), fmt.Sprintf("%s → %s: ", s, c))
 				}
 			}
 		}
@@ -1377,6 +1409,25 @@ var circleFixtures = []Circle[float64]{
 func ExampleCirc() {
 	fmt.Println(Circ(Pt(10, 16), 5))
 	// Output: Circ((10,16);5)
+}
+
+// grazingSegments returns the segments a crossing of the circle is decided on within the
+// tolerance: each starts a tenth of Delta inside the boundary, in one of the eight directions
+// from the center, and runs along the tangent there, which puts the start in the middle of a
+// short chord, or to one of the point fixtures.
+func grazingSegments(circle Circle[float64]) []Segment[float64] {
+	var segments []Segment[float64]
+	for _, direction := range Directions() {
+		radius := VectorFromAngle(direction.Angle(), max(circle.Radius-Delta/10, 0))
+		start := circle.Center.Add(radius)
+
+		segments = append(segments, Seg(start, start.Add(radius.Normal())))
+		for _, p := range pointFixtures {
+			segments = append(segments, Seg(start, p))
+		}
+	}
+
+	return segments
 }
 
 // touches reports whether the point lies on the boundary of the circle within the tolerance, by

@@ -327,10 +327,12 @@ func (c Circle[T]) IntersectsSegment(segment Segment[T]) bool {
 // segment's Start to its End: two where it passes through, one where it is tangent or ends
 // inside, within the tolerance like IntersectsSegment, and none where it misses or lies entirely
 // inside. A segment inside crosses no boundary, so it returns none while IntersectsSegment still
-// reports it. An endpoint within the tolerance of the boundary is the crossing nearest to it, judged
+// reports it. An endpoint within the tolerance of the boundary is one of the crossings, judged
 // by the same comparison IntersectsSegment makes, so a shallow touch is not lost to the fraction
-// along the chord and the two agree to the last bit; where the chord is a tangent the endpoint
-// replaces it. A tangent is placed at the foot on the segment, a fraction along it like every
+// along the chord and the two agree to the last bit: Start is where the segment enters and End
+// where it leaves, unless the chord lies wholly past that endpoint, and two such endpoints are
+// the two crossings, so a segment and its Reverse cross at the same points; where the chord is
+// a tangent the endpoint replaces it. A tangent is placed at the foot on the segment, a fraction along it like every
 // crossing, so it lies within the tolerance of the circle rather than halfway between the two
 // boundaries, and a float32 tangent far from the origin can round just past the tolerance. For
 // integer T the points are rounded like every other result stored into T.
@@ -349,6 +351,8 @@ func (c Circle[T]) AppendIntersectionSegment(dst []Point[T], segment Segment[T])
 	end := c.touchesSquared(c.centerDistanceSquared(segment.End), segment.magnitude())
 
 	switch {
+	case start && end && segment.Vector().hasDirection():
+		return segment.appendPointsAt(dst, 0, 1)
 	case ok && entry < exit:
 		if start {
 			entry, exit = segment.snapToEndpoint(entry, exit, 0)
@@ -358,8 +362,6 @@ func (c Circle[T]) AppendIntersectionSegment(dst []Point[T], segment Segment[T])
 		}
 
 		return segment.appendPointsAt(dst, entry, exit)
-	case start && end && segment.Vector().hasDirection():
-		return segment.appendPointsAt(dst, 0, 1)
 	case start:
 		return segment.appendPointsAt(dst, 0)
 	case end:

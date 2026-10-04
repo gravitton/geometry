@@ -13,6 +13,10 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 
 ## [Unreleased](https://github.com/gravitton/geometry/compare/v1.15.0...main)
 
+### Fixed
+- `Circle.IntersectionSegment`, `Segment.ClipCircle` and the ray forms gave a segment and its `Reverse` different crossings where an endpoint within the tolerance of the boundary lay in the middle of the chord: the endpoint replaced the nearer crossing, which rounding decided, and one direction lost the crossing ahead of it; `Start` is now the entry and `End` the exit unless the chord lies wholly past that endpoint, and two endpoints on the boundary are the two crossings
+- `Ellipse.Foci` and `Ellipse.Nearest` panicked for an integer ellipse with a negative semi-axis written as a struct literal or decoded from JSON; both now measure it by its absolute value
+
 
 ## [v1.15.0](https://github.com/gravitton/geometry/compare/v1.14.0...v1.15.0) (2026-10-04)
 

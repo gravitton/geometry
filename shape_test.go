@@ -190,6 +190,17 @@ func assertCrossings[T Number](t *testing.T, segment Segment[T], shape polyline[
 	assert.True(t, len(points) == 0 || intersects, message)
 }
 
+// assertReversed asserts that a segment and its Reverse cross a boundary at the same points,
+// given the crossings of each: those of the one are those of the other in the opposite order.
+func assertReversed[T Number](t *testing.T, points, reversed []Point[T], message string) {
+	t.Helper()
+
+	ordered := slices.Clone(reversed)
+	slices.Reverse(ordered)
+
+	geomtest.AssertVertices(t, ordered, points, message)
+}
+
 func TestPolyline(t *testing.T) {
 	polylines := []polyline[float64]{
 		Seg(Pt(0.0, 0.0), Pt(3.0, 4.0)),

@@ -81,6 +81,12 @@ func TestEllipse_Foci(t *testing.T) {
 		geomtest.AssertPoint(t, a, Pt(0.0, -4.0))
 		geomtest.AssertPoint(t, b, Pt(0.0, 4.0))
 	})
+	t.Run("a literal negative semi-axis places them as its absolute value does", func(t *testing.T) {
+		a, b := Ellipse[int]{Center: Pt(1, 2), Size: Sz(-3, -5)}.Foci()
+
+		geomtest.AssertPoint(t, a, Pt(1, -2))
+		geomtest.AssertPoint(t, b, Pt(1, 6))
+	})
 }
 
 func TestEllipse_Anchor(t *testing.T) {
@@ -524,6 +530,10 @@ func TestEllipse_Nearest(t *testing.T) {
 	t.Run("a degenerate ellipse clamps to its segment", func(t *testing.T) {
 		geomtest.AssertPoint(t, Ell(Pt(0.0, 0.0), Sz(5.0, 0.0), 0).Nearest(Pt(9.0, 3.0)), Pt(5.0, 0.0))
 		geomtest.AssertPoint(t, Ell(Pt(0.0, 0.0), Sz(0.0, 5.0), 0).Nearest(Pt(9.0, 3.0)), Pt(0.0, 3.0))
+	})
+	t.Run("a literal negative semi-axis measures as its absolute value does", func(t *testing.T) {
+		geomtest.AssertPoint(t, Ellipse[int]{Center: Pt(0, 0), Size: Sz(-5, -3)}.Nearest(Pt(8, 6)), Ell(Pt(0, 0), Sz(5, 3), 0).Nearest(Pt(8, 6)))
+		geomtest.AssertPoint(t, Ellipse[int]{Center: Pt(8, 2), Size: Sz(-1, -2), Angle: Pi}.Nearest(Pt(5, 2)), Ell(Pt(8, 2), Sz(1, 2), Pi).Nearest(Pt(5, 2)))
 	})
 	t.Run("it is the nearest point of a fine sampling", func(t *testing.T) {
 		for _, e := range ellipseFixtures {

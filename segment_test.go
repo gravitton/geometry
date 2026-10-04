@@ -1030,6 +1030,13 @@ func TestSegment_IntersectionPolygon(t *testing.T) {
 			}
 		}
 	})
+	t.Run("a segment and its Reverse cross at the same points", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			for _, s := range segmentFixtures {
+				assertReversed(t, s.IntersectionPolygon(p), s.Reverse().IntersectionPolygon(p), fmt.Sprintf("%s → %s: ", s, p))
+			}
+		}
+	})
 	t.Run("far from the origin every float32 point lies on the segment and an edge", func(t *testing.T) {
 		for _, offset := range farOffsets {
 			for _, p := range polygonFixtures() {
@@ -1172,6 +1179,13 @@ func TestSegment_IntersectionRectangle(t *testing.T) {
 		for _, s := range segmentFixtures {
 			for _, r := range rectFixtures {
 				assertCrossings(t, s, r, s.IntersectionRectangle(r), s.IntersectsRectangle(r))
+			}
+		}
+	})
+	t.Run("a segment and its Reverse cross at the same points", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, r := range rectFixtures {
+				assertReversed(t, s.IntersectionRectangle(r), s.Reverse().IntersectionRectangle(r), fmt.Sprintf("%s → %s: ", s, r))
 			}
 		}
 	})
@@ -1345,6 +1359,13 @@ func TestSegment_IntersectionRegularPolygon(t *testing.T) {
 			}
 		}
 	})
+	t.Run("a segment and its Reverse cross at the same points", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, rp := range regularPolygonFixtures {
+				assertReversed(t, s.IntersectionRegularPolygon(rp), s.Reverse().IntersectionRegularPolygon(rp), fmt.Sprintf("%s → %s: ", s, rp))
+			}
+		}
+	})
 	t.Run("over the int16 fixtures, spanning past the square root of its range, the points follow from Start", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
 			for _, s := range segmentFixtures {
@@ -1444,6 +1465,13 @@ func TestSegment_IntersectionBox(t *testing.T) {
 			}
 		}
 	})
+	t.Run("a segment and its Reverse cross at the same points", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, b := range boxFixtures {
+				assertReversed(t, s.IntersectionBox(b), s.Reverse().IntersectionBox(b), fmt.Sprintf("%s → %s: ", s, b))
+			}
+		}
+	})
 	t.Run("far from the origin every float32 point lies on the segment and the boundary", func(t *testing.T) {
 		for _, offset := range farOffsets {
 			for _, s := range segmentFixtures {
@@ -1504,6 +1532,18 @@ func TestSegment_ClipCircle(t *testing.T) {
 		for _, s := range segmentFixtures {
 			for _, c := range circleFixtures {
 				assertClipped(t, s, partsOf(s.ClipCircle(c)), s.IntersectsCircle(c), c.EnclosesSegment, fmt.Sprintf("%s → %s: ", s, c))
+			}
+		}
+	})
+	t.Run("a segment and its Reverse are clipped to the same part", func(t *testing.T) {
+		for _, c := range circleFixtures {
+			for _, s := range append(grazingSegments(c), segmentFixtures...) {
+				parts := partsOf(s.Reverse().ClipCircle(c))
+				for i, part := range parts {
+					parts[i] = part.Reverse()
+				}
+
+				geomtest.AssertSegments(t, parts, partsOf(s.ClipCircle(c)), fmt.Sprintf("%s → %s: ", s, c))
 			}
 		}
 	})

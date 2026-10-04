@@ -802,12 +802,27 @@ func (s Segment[T]) chord(circle Circle[T]) (float64, float64, bool) {
 	return along - half, along + half, true
 }
 
-// snapToEndpoint replaces whichever of the two chord fractions lies nearer the given endpoint,
-// 0 for Start and 1 for End, with the endpoint itself: an endpoint on the boundary is the
-// crossing nearest to it, not a third crossing beside it. It reads no field of the segment,
-// only the fractions along it, so the receiver is unnamed.
-func (Segment[T]) snapToEndpoint(entry, exit, endpoint float64) (float64, float64) {
-	if math.Abs(entry-endpoint) <= math.Abs(exit-endpoint) {
+// snapToEndpoint replaces one of the two chord fractions with the given endpoint, 0 for Start
+// and 1 for End: an endpoint on the boundary is one of the two crossings, not a third beside
+// them. Start is the entry and End the exit, the crossing each is of a segment running through
+// the chord, so an endpoint within the chord keeps the crossing ahead of it and gives the one
+// behind it up, whichever way the segment runs; the nearer fraction would be decided by rounding
+// for an endpoint in the middle of the chord, and the reversed segment would lose the crossing
+// this one keeps. Only where the chord lies wholly past the endpoint, outside the segment or
+// ending at the endpoint within the tolerance scaled to the length as containsAt scales it, is
+// the endpoint the end of the chord it meets, the exit for Start and the entry for End.
+func (s Segment[T]) snapToEndpoint(entry, exit, endpoint float64) (float64, float64) {
+	epsilon := ratio(epsilonAt[T](s.magnitude()), s.Length())
+
+	if endpoint == 0 {
+		if entry < 0 && exit <= epsilon {
+			return entry, endpoint
+		}
+
+		return endpoint, exit
+	}
+
+	if exit > 1 && entry >= 1-epsilon {
 		return endpoint, exit
 	}
 

@@ -71,10 +71,11 @@ func (e Ellipse[T]) Eccentricity() float64 {
 // by Angle with it, the one on the negative end of the major axis before the turn first. A
 // circle has both at the center. For integer T each focus is rounded like every other point placed from an angle.
 func (e Ellipse[T]) Foci() (Point[T], Point[T]) {
-	a, b := float64(e.SemiMajor()), float64(e.SemiMinor())
+	w, h := e.Size.Float().Abs().XY()
+	a, b := max(w, h), min(w, h)
 
 	focal := Vector[float64]{math.Sqrt(float64(a*a) - float64(b*b)), 0}
-	if e.Size.Height > e.Size.Width {
+	if h > w {
 		focal = Vector[float64]{0, focal.X}
 	}
 
@@ -385,7 +386,7 @@ func (e Ellipse[T]) form(local Vector[float64]) float64 {
 // its other axis spans, and the foot is the offset clamped to it on each axis, the zero
 // semi-axis clamping its own to zero.
 func (e Ellipse[T]) nearestOffset(local Vector[float64]) Vector[float64] {
-	w, h := e.Size.Float().XY()
+	w, h := e.Size.Float().Abs().XY()
 	if w == 0 || h == 0 {
 		return Vector[float64]{Clamp(local.X, -w, w), Clamp(local.Y, -h, h)}
 	}
