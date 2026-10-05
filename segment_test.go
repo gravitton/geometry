@@ -928,7 +928,7 @@ func TestSegment_IntersectionRay(t *testing.T) {
 		point, ok := s.IntersectionRay(r)
 
 		assert.True(t, ok)
-		geomtest.AssertPoint(t, point, s.End)
+		geomtest.AssertPoint(t, point, s.Start)
 	})
 	t.Run("int rounds the crossing", func(t *testing.T) {
 		point, ok := Seg(Pt(0, 0), Pt(3, 0)).IntersectionRay(Ry(Pt(1, -1), Vec(1, 2)))
@@ -1156,6 +1156,14 @@ func TestSegment_IntersectionRectangle(t *testing.T) {
 	t.Run("through a corner counts it once", func(t *testing.T) {
 		geomtest.AssertVertices(t, Seg(Pt(1, 3), Pt(3, 1)).IntersectionRectangle(rectangle), []Point[int]{Pt(2, 2)})
 		geomtest.AssertVertices(t, Seg(Pt(-4, -4), Pt(4, 4)).IntersectionRectangle(rectangle), []Point[int]{Pt(-2, -2), Pt(2, 2)})
+	})
+	t.Run("an end within the band of a long edge just past a corner is the exit, the end ClipRectangle clips to", func(t *testing.T) {
+		rect := Rectangle[float32]{Center: Pt[float32](-50001.85, 10000.37), Size: Sz[float32](20000.74, 60002.22), Angle: 1.5707958391575285}
+		s := Seg(Pt[float32](-60002.22, 40001.48), Pt[float32](-20000.73, -0.0073))
+		clipped, ok := s.ClipRectangle(rect)
+
+		assert.True(t, ok)
+		geomtest.AssertVertices(t, s.IntersectionRectangle(rect), []Point[float32]{clipped.Start, clipped.End})
 	})
 	t.Run("an endpoint exactly Delta outside is judged like IntersectsRectangle", func(t *testing.T) {
 		s, r := Seg(Pt(-2.0, 2.000001), Pt(2.0, 68.0000005)), Rect(Pt(0.0, 0.0), Sz(26.0, 4.0))

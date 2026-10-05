@@ -322,10 +322,12 @@ func (r Ray[T]) ClipBox(box Box[T]) (Segment[T], bool) {
 }
 
 // reach returns the part of the ray from Origin to where it passes the extent a, b of a shape:
-// to the point the farthest corner of the extent projects to, or Origin alone where the whole
-// extent lies behind it or the ray has no direction. No point of the extent projects past the
-// end, so the segment shares every point of the shape the ray does, and a pair of the ray is
-// decided by the segment's own tests. For integer T the fraction is rounded up to a whole step
+// to twice the fraction the farthest corner of the extent projects to, or Origin alone where the
+// whole extent lies behind it or the ray has no direction. No point of the extent projects past
+// the end, so the segment shares every point of the shape the ray does, and a pair of the ray is
+// decided by the segment's own tests. The end lies as far past the extent as the corner lies
+// ahead of Origin, outside the band of every edge, so it is never taken for a touch beside a
+// vertex, and the ray answers as any longer segment along it. For integer T the fraction is rounded up to a whole step
 // of Direction, so the end is a lattice point on the ray rather than a rounded point beside it.
 func (r Ray[T]) reach(a, b Point[T]) Segment[T] {
 	if !r.Direction.hasDirection() {
@@ -341,7 +343,7 @@ func (r Ray[T]) reach(a, b Point[T]) Segment[T] {
 		corner.Y = b.Y
 	}
 
-	t := max(corner.Float().Subtract(r.Origin.Float()).Dot(direction)/direction.LengthSquared(), 0)
+	t := max(2*corner.Float().Subtract(r.Origin.Float()).Dot(direction)/direction.LengthSquared(), 0)
 	if isInt[T]() {
 		t = math.Ceil(t)
 	}

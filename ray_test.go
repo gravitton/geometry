@@ -680,6 +680,30 @@ func TestRay_IntersectionRectangle(t *testing.T) {
 			}
 		}
 	})
+	t.Run("a ray beside a corner of a long float32 rectangle crosses it at most twice", func(t *testing.T) {
+		r := Ry(Pt[float32](-60002.22, 40001.48), Vec[float32](1, -1))
+		rect := Rectangle[float32]{Center: Pt[float32](-50001.85, 10000.37), Size: Sz[float32](20000.74, 60002.22), Angle: 1.5707958391575285}
+
+		geomtest.AssertVertices(t, r.IntersectionRectangle(rect), Seg(r.Origin, r.PointAt(80000)).IntersectionRectangle(rect))
+
+		for _, offset := range farOffsets {
+			for _, jitter := range []float64{-1e-4, -1e-5, -1e-6, 1e-6, 1e-5, 1e-4} {
+				for _, quarter := range []float64{Pi / 2, 3 * Pi / 2} {
+					rect := Rect(Pt[float32](0, 0).Add(offset), Sz[float32](20000, 60000)).Rotate(quarter + jitter)
+					for corner := range rect.Vertices() {
+						for _, direction := range []Vector[float32]{Vec[float32](1, 0), Vec[float32](0, 1), Vec[float32](-1, 0), Vec[float32](0, -1)} {
+							for step := -10; step <= 10; step++ {
+								origin := corner.Add(direction.Multiply(-20000)).Add(Vec(direction.Y, -direction.X).Multiply(float64(step) * 0.002))
+								r := Ry(origin, direction)
+
+								assert.True(t, len(r.IntersectionRectangle(rect)) <= 2, fmt.Sprintf("%s → %s: ", r, rect))
+							}
+						}
+					}
+				}
+			}
+		}
+	})
 }
 
 func TestRay_AppendIntersectionRectangle(t *testing.T) {

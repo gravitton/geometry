@@ -20,6 +20,8 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 - `Ellipse.Foci` and `Ellipse.Nearest` panicked for an integer ellipse with a negative semi-axis
 - `Ellipse.Contains` rejected an integer point lying exactly on the boundary where dividing by the semi-axes rounded the quadratic form above one
 - For an integer T past 2^17, a segment and its `Reverse` rounded a crossing on a half unit to different neighbours in every `Intersection` and `Clip` form
+- `Segment.IntersectionRectangle`, `IntersectionRegularPolygon` and `IntersectionBox` and their ray forms could list three points where an endpoint lay within the band of a long edge just past a corner; they now return the ends their `Clip` form clips to, never more than two
+- A ray could end its reach beside a vertex and list a touch there that no longer segment along it gave; the reach now ends past the shape
 
 
 ## [v1.15.0](https://github.com/gravitton/geometry/compare/v1.14.0...v1.15.0) (2026-10-04)

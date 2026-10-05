@@ -98,12 +98,13 @@ func (w edgeWalk[T]) reaches(circle Circle[T]) bool {
 	return circle.containsSquared(w.result(), w.edge.magnitude())
 }
 
-// edgeIntersections collects the points where a segment crosses the edges of an outline, fed
-// one at a time by the shape ranging its own Edges, as edgeWalk folds a walk: each crossing by
+// edgeIntersections collects the points where a segment crosses the edges of a polygon, fed
+// one at a time by the polygon ranging its own Edges, as edgeWalk folds a walk: each crossing by
 // Segment.IntersectionSegment, a vertex hit by two edges counted once. It is started with the
 // slice the crossings are appended to and the length it had, so the points already there are
 // neither compared nor sorted; a nil slice is allocated on the first crossing with room for the
-// two a convex outline can have. Only a concave outline grows it.
+// two a convex outline can have. Only a concave outline grows it, and the convex shapes keep
+// their two outermost crossings in edgeSpan instead.
 type edgeIntersections[T Number] struct {
 	segment Segment[T]
 	points  []Point[T]
@@ -137,8 +138,10 @@ func (e *edgeIntersections[T]) sorted() []Point[T] {
 
 // edgeSpan folds the points where a segment crosses the edges of a convex outline into the
 // first and the last from the segment's Start, as edgeIntersections collects them all: the ends
-// of the part inside, which is all Segment.clipConvex reads. It holds them in an array of its
-// own rather than a slice, so a shape that only clips allocates nothing.
+// of the part inside, which is all Segment.clipConvex reads, and the boundary points the
+// Intersection of a convex shape returns, so the two agree and the crossings are never more than
+// two. It holds them in an array of its own rather than a slice, so a shape that only clips
+// allocates nothing.
 type edgeSpan[T Number] struct {
 	segment Segment[T]
 	ends    [2]Point[T]
@@ -169,6 +172,20 @@ func (e *edgeSpan[T]) crossings() []Point[T] {
 	}
 
 	return e.ends[:]
+}
+
+// appendCrossings appends the first and the last crossing from Start to dst, the one point where
+// they compare Equal and none where there was none, the boundary points of a convex outline
+// whose ends clipConvex reads, and returns the extended slice.
+func (e *edgeSpan[T]) appendCrossings(dst []Point[T]) []Point[T] {
+	switch {
+	case !e.crossed:
+		return dst
+	case e.ends[0].Equal(e.ends[1]):
+		return append(dst, e.ends[0])
+	default:
+		return append(dst, e.ends[0], e.ends[1])
+	}
 }
 
 // edgeSweep gathers, among the points where a segment crosses the edges of an outline, the next

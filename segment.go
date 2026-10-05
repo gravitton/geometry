@@ -357,7 +357,11 @@ func (s Segment[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 // Start to End: the crossings with its edges by IntersectionSegment, with a vertex hit by two
 // edges counted once. A segment inside crosses no boundary and returns none while
 // IntersectsPolygon still reports it, a segment along an edge is parallel to it and crosses
-// only the edges at its ends, and an empty polygon has no boundary to cross.
+// only the edges at its ends, and an empty polygon has no boundary to cross. Each edge judges
+// a touch within the band of its own coordinates, so an endpoint within the wider band of a long
+// edge just past a corner is a point of its own beside the crossing of the shorter neighbour;
+// the convex shapes return their two outermost crossings and never list it, but a polygon may
+// be concave, where an exit and a later touch are both real, and lists every one.
 func (s Segment[T]) IntersectionPolygon(polygon Polygon[T]) []Point[T] {
 	return s.AppendIntersectionPolygon(nil, polygon)
 }
@@ -401,8 +405,10 @@ func (s Segment[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 }
 
 // IntersectionRectangle returns the points where the segment crosses the rectangle boundary,
-// from Start to End: the crossings with its edges by IntersectionSegment, with a corner hit by two
-// edges counted once. A segment inside crosses no boundary and returns none while
+// from Start to End: the first and the last of its crossings with the edges by
+// IntersectionSegment, the ends ClipRectangle clips to, so a corner hit by two edges, or an
+// endpoint within the band of one edge just past the crossing of its neighbour, gives one point
+// and the convex boundary never more than two. A segment inside crosses no boundary and returns none while
 // IntersectsRectangle still reports it, and a segment along an edge is parallel to it and
 // crosses only the edges at its ends, if it reaches them.
 func (s Segment[T]) IntersectionRectangle(rectangle Rectangle[T]) []Point[T] {
@@ -414,12 +420,12 @@ func (s Segment[T]) IntersectionRectangle(rectangle Rectangle[T]) []Point[T] {
 // already in dst are kept as they are: a crossing equal to one of them is still appended, and only
 // the appended ones are ordered from Start.
 func (s Segment[T]) AppendIntersectionRectangle(dst []Point[T], rectangle Rectangle[T]) []Point[T] {
-	e := edgeIntersections[T]{segment: s, points: dst, from: len(dst)}
+	span := edgeSpan[T]{segment: s}
 	for edge := range rectangle.Edges() {
-		e.add(edge)
+		span.add(edge)
 	}
 
-	return e.sorted()
+	return span.appendCrossings(dst)
 }
 
 // IntersectsRegularPolygon reports whether the segment and the regular polygon share a point:
@@ -453,9 +459,11 @@ func (s Segment[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 }
 
 // IntersectionRegularPolygon returns the points where the segment crosses the regular polygon
-// boundary, from Start to End, the points IntersectionPolygon returns on the polygon's Polygon
-// form, collected over the edges Edges iterates without building the vertices: the crossings
-// by IntersectionSegment, with a vertex hit by two edges counted once. A segment inside crosses
+// boundary, from Start to End, collected over the edges Edges iterates without building the
+// vertices: the first and the last of its crossings with them by IntersectionSegment, the ends
+// ClipRegularPolygon clips to, so a vertex hit by two edges, or an endpoint within the band of
+// one edge just past the crossing of its neighbour, gives one point and the convex boundary
+// never more than two. A segment inside crosses
 // no boundary and returns none while IntersectsRegularPolygon still reports it, and an empty
 // polygon has no boundary to cross.
 func (s Segment[T]) IntersectionRegularPolygon(polygon RegularPolygon[T]) []Point[T] {
@@ -467,12 +475,12 @@ func (s Segment[T]) IntersectionRegularPolygon(polygon RegularPolygon[T]) []Poin
 // points already in dst are kept as they are: a crossing equal to one of them is still appended,
 // and only the appended ones are ordered from Start.
 func (s Segment[T]) AppendIntersectionRegularPolygon(dst []Point[T], polygon RegularPolygon[T]) []Point[T] {
-	e := edgeIntersections[T]{segment: s, points: dst, from: len(dst)}
+	span := edgeSpan[T]{segment: s}
 	for edge := range polygon.Edges() {
-		e.add(edge)
+		span.add(edge)
 	}
 
-	return e.sorted()
+	return span.appendCrossings(dst)
 }
 
 // IntersectsBox reports whether the segment and the box share a point, as IntersectsRectangle
@@ -512,13 +520,13 @@ func (s Segment[T]) IntersectionBox(box Box[T]) []Point[T] {
 // extended slice, so a caller reusing dst allocates nothing once it has room. The points already
 // in dst are kept as they are, as AppendIntersectionRectangle keeps them.
 func (s Segment[T]) AppendIntersectionBox(dst []Point[T], box Box[T]) []Point[T] {
-	e := edgeIntersections[T]{segment: s, points: dst, from: len(dst)}
+	span := edgeSpan[T]{segment: s}
 	corners := box.corners()
 	for edge := range edgesOf(corners[:]) {
-		e.add(edge)
+		span.add(edge)
 	}
 
-	return e.sorted()
+	return span.appendCrossings(dst)
 }
 
 // ClipCircle returns the part of the segment inside the circle, boundary included within
