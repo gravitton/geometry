@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gravitton/assert"
 	geom "github.com/gravitton/geometry"
 )
 
@@ -259,7 +258,7 @@ func TestAssertMatrix(t *testing.T) {
 // assertHelper runs one of the Assert helpers against a fresh recorder and checks it
 // reported the expected outcome. Every helper takes (actual, expected) of the same
 // type, so one signature covers them all.
-func assertHelper[V any](t *testing.T, assertion func(assert.Testing, V, V, ...string) bool, actual, expected V, result bool, labels ...string) {
+func assertHelper[V any](t *testing.T, assertion func(Testing, V, V, ...string) bool, actual, expected V, result bool, labels ...string) {
 	t.Helper()
 
 	recorder := &logger{}
