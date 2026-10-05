@@ -23,6 +23,10 @@ type Shape[T Number] interface {
 // Ellipse is deliberately not one: two ellipses meet at the roots of a quartic, which none of
 // the closed forms the circle pairs are built on reaches. Test an ellipse as its
 // RegularPolygon of the wanted resolution.
+//
+// A shape kind added to the package joins Collider with its own Intersects method in a minor
+// release, so a type of another package implementing Collider must add that method then; this
+// is the one change to the API a minor release makes, and Collider grows only by a new kind.
 type Collider[T Number] interface {
 	IntersectsCircle(circle Circle[T]) bool
 	IntersectsSegment(segment Segment[T]) bool

@@ -49,7 +49,7 @@ import geom "github.com/gravitton/geometry"
 
 ```go
 ship := geom.Circ(geom.Pt(0.0, 0.0), 10.0)
-rock := geom.Hexagon(geom.Pt(50.0, 0.0), geom.SzU(20.0), geom.OrientationFlatTop).Rotate(0.3)
+rock := geom.RegularPolygonWithOrientation(geom.Pt(50.0, 0.0), geom.SzU(20.0), 6, geom.OrientationFlatTop).Rotate(0.3)
 
 ship.IntersectsRegularPolygon(rock)                                // false
 ship.Translate(geom.Vec(25.0, 0.0)).IntersectsRegularPolygon(rock) // true, after the move
@@ -193,7 +193,7 @@ for vertex := range p.Vertices() { // the same loop draws a Segment, Rectangle o
 ### Regular polygons
 
 ```go
-hex := geom.Hexagon(geom.Pt(0, 0), geom.SzU(20), geom.OrientationFlatTop)
+hex := geom.RegularPolygonWithOrientation(geom.Pt(0, 0), geom.SzU(20), 6, geom.OrientationFlatTop)
 hex.Anchor(geom.Top)                 // Point{0, -17}, the midpoint of the top edge; a pointy-top one gives its top vertex
 hex.AlignTo(geom.Top, geom.Pt(0, 0)) // the hexagon moved so that anchor is at the origin
 hex.Bounds()                         // Box (-20,-17)-(20,17)
@@ -201,9 +201,9 @@ hex.Area()                           // 1039, 3√3/2 · r²
 hex.Contains(geom.Pt(10, 5))         // true, walked on the edges without building the vertices
 hex.Ellipse()                        // the ellipse its vertices lie on, exactly
 
-geom.Square(geom.Pt(0, 0), geom.Sz(20, 10), geom.OrientationFlatTop) // stretched across its edges: a 28x14 rectangle
-geom.RegPol(geom.Pt(0, 0), geom.Sz(20, 10), 8, 0, geom.Pi/8)         // n, angle and phase: the phase places the vertices, the angle turns the shape
-hex.Transform(geom.ShearMatrix(1.0, 0.0))                            // exact for every matrix, shears included
+geom.RegularPolygonWithOrientation(geom.Pt(0, 0), geom.Sz(20, 10), 4, geom.OrientationFlatTop) // stretched across its edges: a 28x14 rectangle
+geom.RegPol(geom.Pt(0, 0), geom.Sz(20, 10), 8, 0, geom.Pi/8)                                   // n, angle and phase: the phase places the vertices, the angle turns the shape
+hex.Transform(geom.ShearMatrix(1.0, 0.0))                                                      // exact for every matrix, shears included
 ```
 
 ### Interfaces
@@ -285,8 +285,8 @@ axis := geom.AxisVertical
 axis.Along(size)             // Height, because the axis is vertical
 axis.Size(length, thickness) // Size{thickness, length}
 
-geom.Hexagon(center, size, geom.OrientationPointyTop) // orientation places a vertex or an edge at the top
-geom.ParseOrientation("FlatTop")                      // the name back to the constant, "None" to OrientationNone
+geom.RegularPolygonWithOrientation(center, size, 6, geom.OrientationPointyTop) // orientation places a vertex or an edge at the top
+geom.ParseOrientation("FlatTop")                                               // the name back to the constant, "None" to OrientationNone
 ```
 
 ### Matrices

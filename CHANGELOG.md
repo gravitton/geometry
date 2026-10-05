@@ -16,6 +16,12 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 ### Added
 - `Polygon.IsSimple` – whether the outline goes around without touching itself: no two edges meet but neighbours at their shared vertex, and no edge doubles back
 
+### Changed
+- The `geomtest` helpers take `geomtest.Testing`, declared in the package with the `Helper` and `Errorf` methods they call, rather than `assert.Testing`, so no signature names the assertion library; a `*testing.T` and any `assert.Testing` still pass as they are
+
+### Removed
+- **breaking** `Triangle`, `Square` and `Hexagon` – `RegularPolygonWithOrientation` with 3, 4 or 6 vertices; `Square` of unequal semi-axes drew a rhombus or a rectangle rather than a square, and the three took generic names at package level
+
 ### Fixed
 - `Circle.IntersectionSegment`, `Segment.ClipCircle` and the ray forms gave a segment and its `Reverse` different crossings where an endpoint on the boundary lay inside the chord
 - `Segment.ClipPolygon` and `Ray.ClipPolygon` lost the inside part where the entry crossing rounded onto a `Start` just outside the polygon
