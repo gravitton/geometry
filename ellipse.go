@@ -328,8 +328,8 @@ func (e Ellipse[T]) DistanceTo(point Point[T]) float64 {
 // integer T, since that foot is not a lattice point in general, like every shape with an edge.
 // Contains is built on it.
 //
-// The interior is decided on the quadratic form, which is exact, and only a point outside it
-// pays for the foot, which no closed form gives and nearestOffset finds by bisection.
+// The interior is decided on the quadratic form, multiplied through by the semi-axes so no
+// division rounds it, and only a point outside it pays for the foot, which no closed form gives and nearestOffset finds by bisection.
 func (e Ellipse[T]) DistanceSquaredTo(point Point[T]) float64 {
 	_, distanceSquared := e.nearestLocal(point)
 
@@ -356,7 +356,7 @@ func (e Ellipse[T]) Nearest(point Point[T]) Point[T] {
 // the other returns the point.
 func (e Ellipse[T]) nearestLocal(point Point[T]) (Vector[float64], float64) {
 	local := e.localOffset(point)
-	if e.form(local) <= 1 {
+	if e.containsOffset(local) {
 		return local, 0
 	}
 
@@ -369,16 +369,22 @@ func (e Ellipse[T]) nearestLocal(point Point[T]) (Vector[float64], float64) {
 	return foot, distanceSquared
 }
 
-// form returns the quadratic form of the ellipse at the given offset in its local frame,
-// (x/width)² + (y/height)²: below one inside the boundary, exactly one on it and above it
-// outside, the one exact test of the interior. A zero semi-axis divides by zero and gives an
-// infinity, or a NaN on the axis itself, and neither is at most one, so a degenerate ellipse
-// has no interior and every point is left to the distance to its boundary.
-func (e Ellipse[T]) form(local Vector[float64]) float64 {
+// containsOffset reports whether the given offset in the local frame lies within the boundary,
+// on the quadratic form multiplied through by the squared semi-axes, (x·height)² + (y·width)²
+// at most (width·height)², so no division rounds it: for an axis-aligned integer ellipse it is
+// exact while the squared extent stays within the integers float64 holds, and a lattice point
+// on the boundary is inside. A degenerate ellipse has no interior, where the products would
+// put every point on a zero boundary, and every point is left to the distance to its boundary,
+// as a NaN offset is.
+func (e Ellipse[T]) containsOffset(local Vector[float64]) bool {
 	w, h := e.Size.Float().XY()
-	x, y := local.X/w, local.Y/h
+	if w == 0 || h == 0 {
+		return false
+	}
 
-	return float64(x*x) + float64(y*y)
+	x, y, extent := local.X*h, local.Y*w, w*h
+
+	return float64(x*x)+float64(y*y) <= extent*extent
 }
 
 // nearestOffset returns the offset of the point of the boundary nearest to the given offset outside
@@ -433,8 +439,9 @@ func (e Ellipse[T]) foot(a, b, x, y float64) (float64, float64) {
 // units of the semi-axes, outside the boundary and off both axes, and aspect is the squared
 // ratio of the longer semi-axis to the shorter. The parameter is the sole root of a function
 // falling through zero over the bracket the point itself gives, positive for a point outside;
-// nearestLocal decides the interior on the quadratic form first, on the same coordinates, so
-// no point inside reaches it.
+// nearestLocal decides the interior on the quadratic form first, so a point reaching it is
+// outside, or an ulp from the boundary where the units of the semi-axes round it, and the
+// bisection closes on either.
 //
 // It is found by bisection, which halves that bracket until the midpoint is one of its ends and no
 // float lies between them, so it ends in the precision of a float64 and no iteration count has to

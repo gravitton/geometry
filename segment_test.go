@@ -814,6 +814,17 @@ func TestSegment_IntersectionSegment(t *testing.T) {
 			assert.Equal(t, point, reversed, message)
 		}
 	})
+	t.Run("a long int crossing on a half unit rounds the same way for a Reverse", func(t *testing.T) {
+		s, edge := Seg(Pt(-2097166, 0), Pt(5242915, 2097166)), Seg(Pt(-1048583, 1048583), Pt(4194332, 1048583))
+
+		for _, pair := range [][2]Segment[int]{{s, edge}, {s.Reverse(), edge}, {s, edge.Reverse()}, {edge.Reverse(), s.Reverse()}} {
+			point, ok := pair[0].IntersectionSegment(pair[1])
+			message := fmt.Sprintf("%s → %s: ", pair[0], pair[1])
+
+			assert.True(t, ok, message)
+			geomtest.AssertPoint(t, point, Pt(1572874, 1048583), message)
+		}
+	})
 }
 
 func FuzzSegment_IntersectionSegment(f *testing.F) {
@@ -1471,6 +1482,11 @@ func TestSegment_IntersectionBox(t *testing.T) {
 				assertReversed(t, s.IntersectionBox(b), s.Reverse().IntersectionBox(b), fmt.Sprintf("%s → %s: ", s, b))
 			}
 		}
+	})
+	t.Run("a long int segment and its Reverse round a half unit alike", func(t *testing.T) {
+		s, b := Seg(Pt(-2097166, 0), Pt(5242915, 2097166)), BoxFromMinMax(Pt(-1048583, 0), Pt(4194332, 1048583))
+
+		assertReversed(t, s.IntersectionBox(b), s.Reverse().IntersectionBox(b), "")
 	})
 	t.Run("far from the origin every float32 point lies on the segment and the boundary", func(t *testing.T) {
 		for _, offset := range farOffsets {

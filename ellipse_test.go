@@ -426,6 +426,26 @@ func TestEllipse_Contains(t *testing.T) {
 		assert.True(t, e.Contains(Pt(0.0, 3.0)))
 		assert.True(t, e.Contains(Pt(5.0+Delta/2, 0.0)))
 	})
+	t.Run("an integer point on the boundary is contained", func(t *testing.T) {
+		assert.True(t, Ell(Pt(0, 0), Sz(39, 52), 0).Contains(Pt(36, 20)))
+		assert.True(t, Ell(Pt(-7, 11), Sz(52, 39), 0).Contains(Pt(13, 47)))
+		assert.False(t, Ell(Pt(0, 0), Sz(39, 52), 0).Contains(Pt(36, 21)))
+	})
+	t.Run("every integer point on the boundary is contained", func(t *testing.T) {
+		for w := 1; w <= 120; w++ {
+			for h := 1; h <= 120; h++ {
+				e := Ell(Pt(3, -5), Sz(w, h), 0)
+				for x := 0; x <= w; x++ {
+					for y := 0; y <= h; y++ {
+						if x*x*h*h+y*y*w*w == w*w*h*h {
+							assert.True(t, e.Contains(Pt(3+x, -5-y)))
+							assert.Equal(t, 0.0, e.DistanceTo(Pt(3-x, -5+y)))
+						}
+					}
+				}
+			}
+		}
+	})
 	t.Run("the turn is applied", func(t *testing.T) {
 		assert.True(t, e.Rotate(Pi/2).Contains(Pt(0.0, 4.0)))
 		assert.False(t, e.Rotate(Pi/2).Contains(Pt(4.0, 0.0)))

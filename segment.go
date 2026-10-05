@@ -718,9 +718,18 @@ func (s Segment[T]) crosses(segment Segment[T]) bool {
 // T the product and the cross products are exact, so a crossing on a half unit is exactly there
 // and rounds the same way whatever lengths the two segments have, while that product stays
 // within the integers float64 holds exactly. Past it the product rounds, so the pair is taken
-// in one order whichever segment asks, the lesser by Point.Compare of Start and then End first,
-// and a crossing on a half unit still rounds the same way from either side.
+// in one order whichever segment asks and whichever way each runs: each from its lesser
+// endpoint by Point.Compare, then the lesser segment by Start and then End first, and a
+// crossing on a half unit still rounds the same way from either side and for a Reverse.
 func (s Segment[T]) crossing(segment Segment[T]) (Point[float64], bool) {
+	if s.End.Compare(s.Start) < 0 {
+		s = s.Reverse()
+	}
+
+	if segment.End.Compare(segment.Start) < 0 {
+		segment = segment.Reverse()
+	}
+
 	if cmp.Or(segment.Start.Compare(s.Start), segment.End.Compare(s.End)) < 0 {
 		s, segment = segment, s
 	}

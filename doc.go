@@ -44,7 +44,7 @@
 // that cross product divided by the length of the edge, so an integer circle tangent to an edge is
 // at exactly its radius across that range. The point of a crossing is a product of three
 // differences, exact while they stay within 2^17; past that a crossing on a half unit can round to
-// either neighbour, the same one whichever shape asks.
+// either neighbour, the same one whichever shape asks and whichever way a segment runs.
 //
 // # Supported range
 //
