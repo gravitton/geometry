@@ -1220,11 +1220,11 @@ func TestCircle_RegularPolygon(t *testing.T) {
 	c := Circ(Pt(0.0, 0.0), 10.0)
 
 	t.Run("pointy top places a vertex at the top", func(t *testing.T) {
-		geomtest.AssertRegularPolygon(t, c.RegularPolygon(6, OrientationPointyTop), Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationPointyTop))
+		geomtest.AssertRegularPolygon(t, c.RegularPolygon(6, OrientationPointyTop), RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationPointyTop))
 		assertOrientation(t, c.RegularPolygon(6, OrientationPointyTop), OrientationPointyTop, "")
 	})
 	t.Run("flat top places an edge at the top", func(t *testing.T) {
-		geomtest.AssertRegularPolygon(t, c.RegularPolygon(6, OrientationFlatTop), Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationFlatTop))
+		geomtest.AssertRegularPolygon(t, c.RegularPolygon(6, OrientationFlatTop), RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop))
 	})
 	t.Run("every vertex lies on the boundary", func(t *testing.T) {
 		for vertex := range c.RegularPolygon(7, OrientationPointyTop).Vertices() {

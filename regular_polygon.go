@@ -22,7 +22,7 @@ import (
 // affine image of a regular polygon is one of these, which is what lets Transform keep any matrix
 // exactly.
 //
-// The size is never negative: RegPol and the orientation constructors take it absolute, and
+// The size is never negative: RegPol and RegularPolygonWithOrientation take it absolute, and
 // Scale takes a negative factor absolute, since a negative semi-axis mirrors the vertices
 // rather than describe a different kind of polygon. A negative size can only be written as a
 // struct literal or decoded from JSON; Canonical takes it absolute.
@@ -50,21 +50,6 @@ func RegPol[T Number](center Point[T], size Size[T], n int, angle, phase float64
 // like RegPol: Width is the semi-axis across and Height the one up, for every n.
 func RegularPolygonWithOrientation[T Number](center Point[T], size Size[T], n int, orientation Orientation) RegularPolygon[T] {
 	return RegPol(center, size, n, 0, RegularPolygonOrientationPhase(n, orientation))
-}
-
-// Triangle creates a RegularPolygon with 3 vertices.
-func Triangle[T Number](center Point[T], size Size[T], orientation Orientation) RegularPolygon[T] {
-	return RegularPolygonWithOrientation(center, size, 3, orientation)
-}
-
-// Square creates a RegularPolygon with 4 vertices.
-func Square[T Number](center Point[T], size Size[T], orientation Orientation) RegularPolygon[T] {
-	return RegularPolygonWithOrientation(center, size, 4, orientation)
-}
-
-// Hexagon creates a RegularPolygon with 6 vertices.
-func Hexagon[T Number](center Point[T], size Size[T], orientation Orientation) RegularPolygon[T] {
-	return RegularPolygonWithOrientation(center, size, 6, orientation)
 }
 
 // Anchor returns the point of the boundary in the given direction from the center, or the center
@@ -760,7 +745,7 @@ func (rp RegularPolygon[T]) String() string {
 	}
 }
 
-// RegularPolygonOrientationPhase returns the phase the orientation constructors place the first
+// RegularPolygonOrientationPhase returns the phase RegularPolygonWithOrientation places the first
 // vertex of a regular polygon of n vertices at, normalized to [0, 2π) like Rotate.
 // OrientationPointyTop puts the first vertex at the top (-Y, 3π/2); OrientationFlatTop puts the
 // midpoint of an edge there, so the first vertex sits half a step before it at 3π/2 - π/n. The

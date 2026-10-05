@@ -96,7 +96,7 @@ func TestShape(t *testing.T) {
 		Circ(Pt(1.0, 1.0), 2.0),
 		Ell(Pt(1.0, 2.0), Sz(4.0, 2.0), Pi/6),
 		Pol(triangleVertices()),
-		Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationFlatTop),
+		RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop),
 		BoxFromMinMax(Pt(-1.0, 0.5), Pt(2.0, 3.0)),
 	}
 
@@ -206,7 +206,7 @@ func TestPolyline(t *testing.T) {
 		Seg(Pt(0.0, 0.0), Pt(3.0, 4.0)),
 		Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi / 6),
 		Pol(triangleVertices()),
-		Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationFlatTop),
+		RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop),
 	}
 
 	t.Run("every edge starts at a vertex and ends at the next", func(t *testing.T) {
@@ -223,7 +223,7 @@ func TestPolyline(t *testing.T) {
 		assert.False(t, closed[float64](Seg(Pt(0.0, 0.0), Pt(3.0, 4.0))))
 		assert.True(t, closed[float64](Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi/6)))
 		assert.True(t, closed[float64](Pol(triangleVertices())))
-		assert.True(t, closed[float64](Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationFlatTop)))
+		assert.True(t, closed[float64](RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop)))
 	})
 }
 
@@ -234,7 +234,7 @@ func TestCollider(t *testing.T) {
 		Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi / 6),
 		Circ(Pt(1.0, 1.0), 2.0),
 		Pol(triangleVertices()),
-		Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationFlatTop),
+		RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop),
 		BoxFromMinMax(Pt(-1.0, 0.5), Pt(2.0, 3.0)),
 	}
 	for _, s := range segmentFixtures {
@@ -418,7 +418,7 @@ func TestBody(t *testing.T) {
 		Circ(Pt(1.0, 1.0), 2.0),
 		Ell(Pt(1.0, 2.0), Sz(4.0, 2.0), Pi/6),
 		Pol(triangleVertices()),
-		Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationFlatTop),
+		RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop),
 	}
 
 	t.Run("the centroid lies within the shape", func(t *testing.T) {

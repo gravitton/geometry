@@ -734,7 +734,7 @@ func TestRay_AppendIntersectionRectangle(t *testing.T) {
 }
 
 func TestRay_IntersectsRegularPolygon(t *testing.T) {
-	hexagon := Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationFlatTop)
+	hexagon := RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop)
 
 	t.Run("passing through", func(t *testing.T) {
 		assert.True(t, Ry(Pt(-20.0, 0.0), Vec(1.0, 0.0)).IntersectsRegularPolygon(hexagon))
@@ -755,7 +755,7 @@ func TestRay_IntersectsRegularPolygon(t *testing.T) {
 }
 
 func TestRay_IntersectionRegularPolygon(t *testing.T) {
-	hexagon := Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationFlatTop)
+	hexagon := RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop)
 
 	t.Run("passing through gives both crossings from Origin on", func(t *testing.T) {
 		geomtest.AssertVertices(t, Ry(Pt(-20.0, 0.0), Vec(1.0, 0.0)).IntersectionRegularPolygon(hexagon), []Point[float64]{Pt(-10.0, 0.0), Pt(10.0, 0.0)})
@@ -957,7 +957,7 @@ func TestRay_ClipRectangle(t *testing.T) {
 }
 
 func TestRay_ClipRegularPolygon(t *testing.T) {
-	hexagon := Hexagon(Pt(0.0, 0.0), SzU(10.0), OrientationFlatTop)
+	hexagon := RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop)
 
 	t.Run("passing through gives the part between the crossings", func(t *testing.T) {
 		geomtest.AssertSegments(t, partsOf(Ry(Pt(-20.0, 0.0), Vec(1.0, 0.0)).ClipRegularPolygon(hexagon)), []Segment[float64]{Seg(Pt(-10.0, 0.0), Pt(10.0, 0.0))})
