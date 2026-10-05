@@ -1265,6 +1265,81 @@ func TestPolygon_IsConvex(t *testing.T) {
 	})
 }
 
+func TestPolygon_IsSimple(t *testing.T) {
+	t.Run("a triangle, a square and a concavity in either winding", func(t *testing.T) {
+		assert.True(t, Pol(triangleVertices()).IsSimple())
+		assert.True(t, Pol(squareVertices()).IsSimple())
+		assert.True(t, Pol([]Point[int]{Pt(0, 2), Pt(2, 2), Pt(2, 0), Pt(0, 0)}).IsSimple())
+		assert.True(t, Pol([]Point[int]{Pt(0, 0), Pt(4, 2), Pt(0, 4), Pt(1, 2)}).IsSimple())
+	})
+	t.Run("crossing edges are not", func(t *testing.T) {
+		pentagon := slices.Collect(RegPol(Pt(0.0, 0.0), SzU(10.0), 5, 0, 0).Vertices())
+		star := []Point[float64]{pentagon[0], pentagon[2], pentagon[4], pentagon[1], pentagon[3]}
+
+		assert.False(t, Pol(star).IsSimple())
+		assert.False(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 2), Pt(2, 0), Pt(0, 2)}).IsSimple())
+	})
+	t.Run("a vertex on an edge that is no neighbour is not", func(t *testing.T) {
+		assert.False(t, Pol([]Point[int]{Pt(0, 0), Pt(6, 0), Pt(6, 4), Pt(3, 0), Pt(0, 4)}).IsSimple())
+		assert.False(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(1, 1), Pt(2, 2), Pt(0, 2), Pt(1, 1)}).IsSimple())
+	})
+	t.Run("a vertex within the tolerance of an edge that is no neighbour is not", func(t *testing.T) {
+		assert.False(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(6.0, 0.0), Pt(6.0, 4.0), Pt(3.0, Delta/2), Pt(0.0, 4.0)}).IsSimple())
+		assert.True(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(6.0, 0.0), Pt(6.0, 4.0), Pt(3.0, 2*Delta), Pt(0.0, 4.0)}).IsSimple())
+	})
+	t.Run("an edge doubling back is not", func(t *testing.T) {
+		assert.False(t, Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(4, 2), Pt(0, 2)}).IsSimple())
+		assert.False(t, Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(4, -2), Pt(0, 2)}).IsSimple())
+	})
+	t.Run("a repeated vertex, a closing vertex and a vertex on an edge are allowed", func(t *testing.T) {
+		assert.True(t, Pol([]Point[int]{Pt(0, 0), Pt(0, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2)}).IsSimple())
+		assert.True(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2), Pt(0, 0)}).IsSimple())
+		assert.True(t, Pol([]Point[int]{Pt(0, 0), Pt(1, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2)}).IsSimple())
+		assert.True(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(2, 2), Pt(2, 2), Pt(2, 2), Pt(0, 2), Pt(0, 0)}).IsSimple())
+	})
+	t.Run("empty is simple and no area is not", func(t *testing.T) {
+		assert.True(t, Polygon[int]{}.IsSimple())
+		assert.False(t, Pol([]Point[int]{Pt(1, 1)}).IsSimple())
+		assert.False(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 2)}).IsSimple())
+		assert.False(t, Pol([]Point[int]{Pt(0, 0), Pt(1, 1), Pt(2, 2)}).IsSimple())
+		assert.False(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 2), Pt(0, 0), Pt(2, 2)}).IsSimple())
+	})
+	t.Run("a NaN vertex ends the search", func(t *testing.T) {
+		assert.True(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(math.NaN(), 0.0), Pt(0.0, 2.0), Pt(-1.0, 1.0)}).IsSimple())
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		square := Pol(squareVertices())
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkBool = square.IsSimple()
+		}), 0)
+	})
+	t.Run("every convex polygon is simple, as is the outline of every shape with an area", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			if p.IsConvex() {
+				assert.True(t, p.IsSimple(), p.String()+": ")
+			}
+		}
+		for _, r := range rectFixtures {
+			assert.Equal(t, r.Polygon().IsSimple(), r.Area() > 0, r.String()+": ")
+		}
+		for _, rp := range regularPolygonFixtures {
+			assert.True(t, rp.Polygon().IsSimple(), rp.String()+": ")
+		}
+	})
+	t.Run("int8 answers without a panic", func(t *testing.T) {
+		assert.False(t, Pol([]Point[int8]{Pt[int8](-128, -128), Pt[int8](127, 127), Pt[int8](127, -128), Pt[int8](-128, 127)}).IsSimple())
+	})
+}
+
+func BenchmarkPolygon_IsSimple(b *testing.B) {
+	polygon := RegPol(Pt(0.0, 0.0), SzU(10.0), 32, 0, 0).Polygon()
+
+	for b.Loop() {
+		sinkBool = polygon.IsSimple()
+	}
+}
+
 func TestPolygon_Cast(t *testing.T) {
 	p := Pol([]Point[float64]{Pt(1.5, -2.5), Pt(3.5, 4.5), Pt(-1.5, 2.5)})
 

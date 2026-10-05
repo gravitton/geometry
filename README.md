@@ -179,6 +179,7 @@ p.Contains(geom.Pt(2, 3)) // false, inside the notch
 p.Points[3]               // Point{2, 1}, the notch
 p.Winding()               // WindingClockwise, the winding of a Rectangle's corners
 p.IsConvex()              // false, the notch turns the other way
+p.IsSimple()              // true, no two edges meet but neighbours at their vertex
 p.ConvexHull()            // Pol((0,0);(4,0);(4,4);(0,4)), the notch dropped
 
 edged := geom.Pol([]geom.Point[int]{{0, 0}, {2, 0}, {4, 0}, {4, 4}, {0, 4}})

@@ -13,6 +13,9 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 
 ## [Unreleased](https://github.com/gravitton/geometry/compare/v1.15.0...main)
 
+### Added
+- `Polygon.IsSimple` – whether the outline goes around without touching itself: no two edges meet but neighbours at their shared vertex, and no edge doubles back
+
 ### Fixed
 - `Circle.IntersectionSegment`, `Segment.ClipCircle` and the ray forms gave a segment and its `Reverse` different crossings where an endpoint on the boundary lay inside the chord
 - `Segment.ClipPolygon` and `Ray.ClipPolygon` lost the inside part where the entry crossing rounded onto a `Start` just outside the polygon

@@ -1018,6 +1018,51 @@ func (p Polygon[T]) IsConvex() bool {
 	return c.result()
 }
 
+// IsSimple reports whether the outline goes around without touching itself: no two edges meet,
+// by IntersectsSegment and so within the tolerance, other than neighbours at the vertex they
+// share, and no edge doubles back, its far end lying on the edge before it or the far end of
+// that edge on it, as Contains judges a point on a segment. A vertex repeating the one before it
+// is skipped, so the edges either side of it are neighbours. EnclosesSegment and Inertia take
+// the polygon to be simple, and a polygon decoded or drawn by a user is the one to ask. An empty polygon is simple and a flat one, which encloses no area,
+// is not; a NaN vertex meets no edge and leaves the answer to the others. It takes every pair of
+// edges whose extents overlap, so its cost grows with the square of the vertex count, and
+// allocates nothing.
+func (p Polygon[T]) IsSimple() bool {
+	if p.IsEmpty() {
+		return true
+	}
+
+	if p.isFlat() {
+		return false
+	}
+
+	for i := range p.Points {
+		a := p.edge(i)
+		if a.Start == a.End {
+			continue
+		}
+
+		next := p.next(i)
+		if b := p.edge(next); a.Contains(b.End) || b.Contains(a.Start) {
+			return false
+		}
+
+		a1, b1 := a.minMax()
+		for j := i + 1; j < len(p.Points); j++ {
+			b := p.edge(j)
+			if j == next || b.Start == b.End || p.next(j) == i {
+				continue
+			}
+
+			if a2, b2 := b.minMax(); overlaps(a1, b1, a2, b2) && a.IntersectsSegment(b) {
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
 // isFlat reports whether the polygon encloses no area within the tolerance: it has fewer than
 // three vertices, or every vertex lies on the segment between the least and the greatest by
 // Point.Compare, as Segment.Contains judges a point on it, which for vertices on one line are
@@ -1051,6 +1096,25 @@ func (p Polygon[T]) isFlatWithin(twiceArea, length float64) bool {
 	bound := float64(4*epsilon) + float64(float64(len(p.Points))*0x1p-48*length)
 
 	return math.Abs(twiceArea) <= float64(bound*length) && p.isFlat()
+}
+
+// next returns the index of the edge after the given one that has a direction, the neighbour it
+// meets at its end once the edges of repeated vertices are skipped. It is asked only of a
+// polygon that is not flat, which has two vertices apart, so the search ends; a NaN vertex
+// never equals itself and ends it too.
+func (p Polygon[T]) next(i int) int {
+	for {
+		i = (i + 1) % len(p.Points)
+		if edge := p.edge(i); edge.Start != edge.End {
+			return i
+		}
+	}
+}
+
+// edge returns the edge at the given index, the one Edges yields there: from that vertex to the
+// next, the last one closing back to the first.
+func (p Polygon[T]) edge(i int) Segment[T] {
+	return Segment[T]{p.Points[i], p.Points[(i+1)%len(p.Points)]}
 }
 
 // Cast converts the polygon to a Polygon of another number type, rounding as Cast does.
