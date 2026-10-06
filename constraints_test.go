@@ -110,6 +110,11 @@ func TestString(t *testing.T) {
 		assertString(t, namedFloat64(29.59), "29.59")
 		assertString(t, namedFloat32(1.00), "1.00")
 	})
+	t.Run("allocates the string alone", func(t *testing.T) {
+		assertStringAllocation(t, func() string {
+			return String(tenth)
+		})
+	})
 }
 
 func assertCast[T Number](t *testing.T, value float64, expected T) {

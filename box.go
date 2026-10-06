@@ -1,7 +1,6 @@
 package geom
 
 import (
-	"fmt"
 	"math"
 )
 
@@ -403,5 +402,10 @@ func (b Box[T]) Float() Box[float64] {
 // String returns the box by its corners: (x,y)-(x,y), Min then Max, the form image.Rectangle
 // prints.
 func (b Box[T]) String() string {
-	return fmt.Sprintf("%s-%s", b.Min.String(), b.Max.String())
+	buf := make([]byte, 0, stringSize)
+	buf = b.Min.appendString(buf)
+	buf = append(buf, '-')
+	buf = b.Max.appendString(buf)
+
+	return string(buf)
 }

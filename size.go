@@ -227,5 +227,17 @@ func (s Size[T]) Float() Size[float64] {
 
 // String returns a string in the form "WxH" using the underlying number formatting.
 func (s Size[T]) String() string {
-	return fmt.Sprintf("%sx%s", String(s.Width), String(s.Height))
+	buf := make([]byte, 0, stringSize)
+	buf = s.appendString(buf)
+
+	return string(buf)
+}
+
+// appendString appends the size to buf and returns the extended buffer, as String prints it.
+func (s Size[T]) appendString(buf []byte) []byte {
+	buf = appendString(buf, s.Width)
+	buf = append(buf, 'x')
+	buf = appendString(buf, s.Height)
+
+	return buf
 }

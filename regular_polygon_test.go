@@ -1254,6 +1254,9 @@ func TestRegularPolygon_String(t *testing.T) {
 	t.Run("a phase is printed after the angle, the angle with it", func(t *testing.T) {
 		assert.Equal(t, RegPol(Pt(1.0, 2.0), Sz(2.0, 1.0), 4, 0, 0.5).String(), "RegPol((1.00,2.00);2.00x1.00;4;0.00;0.50)")
 	})
+	t.Run("allocates the string alone", func(t *testing.T) {
+		assertStringAllocation(t, RegPol(Pt(1.0, 2.0), Sz(2.0, 1.0), 4, 0, 0.5).String)
+	})
 }
 
 func TestRegularPolygon_JSON(t *testing.T) {

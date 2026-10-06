@@ -838,6 +838,9 @@ func TestVector_String(t *testing.T) {
 		assert.Equal(t, Vec(-0, 0).String(), "⟨0,0⟩")
 		assert.Equal(t, Vec(negativeZero, 0.0).String(), "⟨0.00,0.00⟩")
 	})
+	t.Run("allocates the string alone", func(t *testing.T) {
+		assertStringAllocation(t, Vec(100, -34.0000115).String)
+	})
 }
 
 func TestVector_JSON(t *testing.T) {

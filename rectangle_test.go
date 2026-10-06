@@ -1689,6 +1689,9 @@ func TestRectangle_String(t *testing.T) {
 	t.Run("rotated appends the angle", func(t *testing.T) {
 		assert.Equal(t, Rect(Pt(1, 2), Sz(2, 3)).Rotate(Pi/2).String(), "Rect((1,2);2x3;1.57)")
 	})
+	t.Run("allocates the string alone", func(t *testing.T) {
+		assertStringAllocation(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Rotate(Pi/2).String)
+	})
 }
 
 func TestRectangle_JSON(t *testing.T) {

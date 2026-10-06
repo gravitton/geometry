@@ -414,6 +414,9 @@ func TestSize_String(t *testing.T) {
 		assert.Equal(t, Sz(-0, 0).String(), "0x0")
 		assert.Equal(t, Sz(negativeZero, 0.0).String(), "0.00x0.00")
 	})
+	t.Run("allocates the string alone", func(t *testing.T) {
+		assertStringAllocation(t, Sz(100, -34.0000115).String)
+	})
 }
 
 func TestSize_JSON(t *testing.T) {

@@ -1386,6 +1386,12 @@ func TestPolygon_String(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
 		assert.Equal(t, Pol(triangleVertices()).String(), "Pol((0.00,0.00);(2.50,0.50);(2.00,1.00))")
 	})
+	t.Run("allocates the string alone", func(t *testing.T) {
+		assertStringAllocation(t, Pol(triangleVertices()).String)
+	})
+	t.Run("vertices longer than the first still print", func(t *testing.T) {
+		assert.Equal(t, Pol([]Point[int]{Pt(1, 2), Pt(-1000, -2000), Pt(30000, 4)}).String(), "Pol((1,2);(-1000,-2000);(30000,4))")
+	})
 }
 
 func TestPolygon_JSON(t *testing.T) {

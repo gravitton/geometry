@@ -735,14 +735,24 @@ func (rp RegularPolygon[T]) Float() RegularPolygon[float64] {
 // the phase after it as RegPol((x,y);WxH;n;a;p) where it is not zero, as the JSON carries each
 // only then.
 func (rp RegularPolygon[T]) String() string {
-	switch {
-	case rp.Phase != 0:
-		return fmt.Sprintf("RegPol(%s;%s;%s;%s;%s)", rp.Center.String(), rp.Size.String(), String(rp.N), String(rp.Angle), String(rp.Phase))
-	case !rp.IsAligned():
-		return fmt.Sprintf("RegPol(%s;%s;%s;%s)", rp.Center.String(), rp.Size.String(), String(rp.N), String(rp.Angle))
-	default:
-		return fmt.Sprintf("RegPol(%s;%s;%s)", rp.Center.String(), rp.Size.String(), String(rp.N))
+	buf := make([]byte, 0, stringSize)
+	buf = append(buf, "RegPol("...)
+	buf = rp.Center.appendString(buf)
+	buf = append(buf, ';')
+	buf = rp.Size.appendString(buf)
+	buf = append(buf, ';')
+	buf = appendString(buf, rp.N)
+	if rp.Phase != 0 || !rp.IsAligned() {
+		buf = append(buf, ';')
+		buf = appendString(buf, rp.Angle)
 	}
+	if rp.Phase != 0 {
+		buf = append(buf, ';')
+		buf = appendString(buf, rp.Phase)
+	}
+	buf = append(buf, ')')
+
+	return string(buf)
 }
 
 // RegularPolygonOrientationPhase returns the phase RegularPolygonWithOrientation places the first

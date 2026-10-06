@@ -1069,6 +1069,9 @@ func TestRay_String(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
 		assert.Equal(t, Ry(Pt(100, -34.0000115), Vec(0.2, 0.4)).String(), "Ray((100.00,-34.00);⟨0.20,0.40⟩)")
 	})
+	t.Run("allocates the string alone", func(t *testing.T) {
+		assertStringAllocation(t, Ry(Pt(100, -34.0000115), Vec(0.2, 0.4)).String)
+	})
 }
 
 func TestRay_JSON(t *testing.T) {

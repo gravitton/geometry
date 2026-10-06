@@ -1,8 +1,8 @@
 package geom
 
 import (
-	"fmt"
 	"math"
+	"strconv"
 )
 
 // Integer is a generic integer type, supporting operations like modulo that floats don't.
@@ -58,16 +58,30 @@ func Int[T Number](value T) int {
 // float types with two decimals. The formatting follows T, not the value. A value that rounds
 // to zero prints as 0.00 without a sign, whether it is a negative zero or a small negative.
 func String[T Number](value T) string {
+	buf := make([]byte, 0, stringSize)
+	buf = appendString(buf, value)
+
+	return string(buf)
+}
+
+// stringSize is the capacity every String starts its buffer at: it holds each type of fixed
+// size at coordinates of a few digits, so the buffer stays on the stack and the string
+// returned is the one allocation. A longer text grows the buffer like any append.
+const stringSize = 128
+
+// appendString appends the number to buf and returns the extended buffer, as String prints it.
+func appendString[T Number](buf []byte, value T) []byte {
 	if isInt[T]() {
-		return fmt.Sprintf("%d", int64(value))
+		return strconv.AppendInt(buf, int64(value), 10)
 	}
 
-	s := fmt.Sprintf("%.2f", float64(value))
-	if s == "-0.00" {
-		return "0.00"
+	start := len(buf)
+	buf = strconv.AppendFloat(buf, float64(value), 'f', 2, 64)
+	if string(buf[start:]) == "-0.00" {
+		return append(buf[:start], "0.00"...)
 	}
 
-	return s
+	return buf
 }
 
 // isInt reports whether T is an integer type.

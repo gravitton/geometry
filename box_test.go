@@ -692,6 +692,9 @@ func TestBox_String(t *testing.T) {
 	t.Run("prints the extent of a rectangle", func(t *testing.T) {
 		assert.Equal(t, Rect(Pt(1, 2), Sz(2, 3)).Bounds().String(), "(0,1)-(2,4)")
 	})
+	t.Run("allocates the string alone", func(t *testing.T) {
+		assertStringAllocation(t, BoxFromMinMax(Pt(0.0, -2.05), Pt(1.2, 1.55)).String)
+	})
 }
 
 func TestBox_JSON(t *testing.T) {

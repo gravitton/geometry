@@ -533,6 +533,9 @@ func TestPoint_String(t *testing.T) {
 		assert.Equal(t, Pt(-0, 0).String(), "(0,0)")
 		assert.Equal(t, Pt(negativeZero, 0.0).String(), "(0.00,0.00)")
 	})
+	t.Run("allocates the string alone", func(t *testing.T) {
+		assertStringAllocation(t, Pt(100, -34.0000115).String)
+	})
 }
 
 func TestPoint_JSON(t *testing.T) {

@@ -6,7 +6,6 @@ import (
 	"iter"
 	"math"
 	"slices"
-	"strings"
 )
 
 // Polygon is a 2D polygon given by its vertices. The vertex count is not checked: a polygon with
@@ -1135,7 +1134,18 @@ func (p Polygon[T]) Float() Polygon[float64] {
 // String returns the polygon in the form of its constructor: Pol((x,y);(x,y);...), the
 // vertices separated as every other shape separates its fields.
 func (p Polygon[T]) String() string {
-	return fmt.Sprintf("Pol(%s)", strings.Join(p.mapPoints(Point[T].String), ";"))
+	buf := make([]byte, 0, stringSize)
+	buf = append(buf, "Pol("...)
+	for i, point := range p.Points {
+		if i > 0 {
+			buf = append(buf, ';')
+		}
+
+		buf = point.appendString(buf)
+	}
+	buf = append(buf, ')')
+
+	return string(buf)
 }
 
 // MarshalJSON implements json.Marshaler.

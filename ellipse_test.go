@@ -702,6 +702,9 @@ func TestEllipse_String(t *testing.T) {
 	t.Run("a turned ellipse carries its angle", func(t *testing.T) {
 		assert.Equal(t, Ell(Pt(10, 16), Sz(5, 2), 1.5).String(), "Ell((10,16);5x2;1.50)")
 	})
+	t.Run("allocates the string alone", func(t *testing.T) {
+		assertStringAllocation(t, Ell(Pt(10, 16), Sz(5, 2), 1.5).String)
+	})
 }
 
 func TestEllipse_JSON(t *testing.T) {

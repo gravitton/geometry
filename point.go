@@ -257,7 +257,21 @@ func (p Point[T]) Float() Point[float64] {
 
 // String returns a string representing the point.
 func (p Point[T]) String() string {
-	return fmt.Sprintf("(%s,%s)", String(p.X), String(p.Y))
+	buf := make([]byte, 0, stringSize)
+	buf = p.appendString(buf)
+
+	return string(buf)
+}
+
+// appendString appends the point to buf and returns the extended buffer, as String prints it.
+func (p Point[T]) appendString(buf []byte) []byte {
+	buf = append(buf, '(')
+	buf = appendString(buf, p.X)
+	buf = append(buf, ',')
+	buf = appendString(buf, p.Y)
+	buf = append(buf, ')')
+
+	return buf
 }
 
 // minMaxOf returns the minimum and maximum corner of the vertices, the corners of their

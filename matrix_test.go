@@ -548,6 +548,9 @@ func TestMatrix_String(t *testing.T) {
 		assert.Equal(t, IdentityMatrix[float32]().String(), "[[1.00, 0.00, 0.00], [0.00, 1.00, 0.00]]")
 		assert.Equal(t, TranslationMatrix[float32](5, 3).String(), "[[1.00, 0.00, 5.00], [0.00, 1.00, 3.00]]")
 	})
+	t.Run("allocates the string alone", func(t *testing.T) {
+		assertStringAllocation(t, TranslationMatrix(5.1, 3.0).String)
+	})
 }
 
 func TestMatrix_JSON(t *testing.T) {

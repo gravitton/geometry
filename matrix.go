@@ -1,7 +1,6 @@
 package geom
 
 import (
-	"fmt"
 	"math"
 )
 
@@ -392,5 +391,20 @@ func (m Matrix[T]) Float() Matrix[float64] {
 
 // String returns a string representation of the Matrix[T].
 func (m Matrix[T]) String() string {
-	return fmt.Sprintf("[[%s, %s, %s], [%s, %s, %s]]", String(m.A), String(m.B), String(m.C), String(m.D), String(m.E), String(m.F))
+	buf := make([]byte, 0, stringSize)
+	buf = append(buf, "[["...)
+	buf = appendString(buf, m.A)
+	buf = append(buf, ", "...)
+	buf = appendString(buf, m.B)
+	buf = append(buf, ", "...)
+	buf = appendString(buf, m.C)
+	buf = append(buf, "], ["...)
+	buf = appendString(buf, m.D)
+	buf = append(buf, ", "...)
+	buf = appendString(buf, m.E)
+	buf = append(buf, ", "...)
+	buf = appendString(buf, m.F)
+	buf = append(buf, "]]"...)
+
+	return string(buf)
 }

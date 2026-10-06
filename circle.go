@@ -1,7 +1,6 @@
 package geom
 
 import (
-	"fmt"
 	"math"
 )
 
@@ -537,5 +536,12 @@ func (c Circle[T]) Float() Circle[float64] {
 
 // String returns the circle in the form of its constructor: Circ((x,y);r).
 func (c Circle[T]) String() string {
-	return fmt.Sprintf("Circ(%s;%s)", c.Center.String(), String(c.Radius))
+	buf := make([]byte, 0, stringSize)
+	buf = append(buf, "Circ("...)
+	buf = c.Center.appendString(buf)
+	buf = append(buf, ';')
+	buf = appendString(buf, c.Radius)
+	buf = append(buf, ')')
+
+	return string(buf)
 }

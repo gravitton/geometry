@@ -1,7 +1,6 @@
 package geom
 
 import (
-	"fmt"
 	"math"
 )
 
@@ -545,9 +544,16 @@ func (e Ellipse[T]) Float() Ellipse[float64] {
 // semi-axes, with the angle appended as Ell((x,y);WxH;a) for a turned ellipse, as the JSON
 // carries it only then.
 func (e Ellipse[T]) String() string {
-	if e.IsAligned() {
-		return fmt.Sprintf("Ell(%s;%s)", e.Center.String(), e.Size.String())
+	buf := make([]byte, 0, stringSize)
+	buf = append(buf, "Ell("...)
+	buf = e.Center.appendString(buf)
+	buf = append(buf, ';')
+	buf = e.Size.appendString(buf)
+	if !e.IsAligned() {
+		buf = append(buf, ';')
+		buf = appendString(buf, e.Angle)
 	}
+	buf = append(buf, ')')
 
-	return fmt.Sprintf("Ell(%s;%s;%s)", e.Center.String(), e.Size.String(), String(e.Angle))
+	return string(buf)
 }

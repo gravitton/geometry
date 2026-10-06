@@ -1999,6 +1999,9 @@ func TestSegment_String(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
 		assert.Equal(t, Seg(Pt(100, -34.0000115), Pt(0.2, 0.4)).String(), "Seg((100.00,-34.00);(0.20,0.40))")
 	})
+	t.Run("allocates the string alone", func(t *testing.T) {
+		assertStringAllocation(t, Seg(Pt(100, -34.0000115), Pt(0.2, 0.4)).String)
+	})
 }
 
 func TestSegment_JSON(t *testing.T) {

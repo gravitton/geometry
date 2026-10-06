@@ -28,6 +28,19 @@ var sinkSegments []Segment[int]
 // sinkBool is a shared boolean variable used to store results in benchmarking tests.
 var sinkBool bool
 
+// sinkString is the sinkPoints of the String methods.
+var sinkString string
+
+// assertStringAllocation asserts that the String method allocates the string it returns and
+// nothing else.
+func assertStringAllocation(t *testing.T, stringer func() string) {
+	t.Helper()
+
+	geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		sinkString = stringer()
+	}), 1)
+}
+
 func TestMultiply(t *testing.T) {
 	t.Run("int rounds", func(t *testing.T) {
 		geomtest.AssertNumber(t, Multiply(5, 2.0), 10)

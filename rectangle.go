@@ -2,7 +2,6 @@ package geom
 
 import (
 	"cmp"
-	"fmt"
 	"iter"
 	"math"
 )
@@ -935,9 +934,16 @@ func (r Rectangle[T]) Float() Rectangle[float64] {
 // size, with the angle appended as Rect((x,y);WxH;a) for a rotated rectangle, as the JSON
 // carries it only then. Bounds prints the corners.
 func (r Rectangle[T]) String() string {
-	if r.IsAligned() {
-		return fmt.Sprintf("Rect(%s;%s)", r.Center.String(), r.Size.String())
+	buf := make([]byte, 0, stringSize)
+	buf = append(buf, "Rect("...)
+	buf = r.Center.appendString(buf)
+	buf = append(buf, ';')
+	buf = r.Size.appendString(buf)
+	if !r.IsAligned() {
+		buf = append(buf, ';')
+		buf = appendString(buf, r.Angle)
 	}
+	buf = append(buf, ')')
 
-	return fmt.Sprintf("Rect(%s;%s;%s)", r.Center.String(), r.Size.String(), String(r.Angle))
+	return string(buf)
 }

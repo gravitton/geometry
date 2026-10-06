@@ -1,7 +1,6 @@
 package geom
 
 import (
-	"fmt"
 	"math"
 )
 
@@ -422,5 +421,19 @@ func (v Vector[T]) Float() Vector[float64] {
 
 // String returns a string representing the vector.
 func (v Vector[T]) String() string {
-	return fmt.Sprintf("⟨%s,%s⟩", String(v.X), String(v.Y))
+	buf := make([]byte, 0, stringSize)
+	buf = v.appendString(buf)
+
+	return string(buf)
+}
+
+// appendString appends the vector to buf and returns the extended buffer, as String prints it.
+func (v Vector[T]) appendString(buf []byte) []byte {
+	buf = append(buf, "⟨"...)
+	buf = appendString(buf, v.X)
+	buf = append(buf, ',')
+	buf = appendString(buf, v.Y)
+	buf = append(buf, "⟩"...)
+
+	return buf
 }

@@ -201,6 +201,9 @@ func TestPadding_String(t *testing.T) {
 		assert.Equal(t, Pad(-0, 0, 0, 0).String(), "Pad(0;0;0;0)")
 		assert.Equal(t, Pad(negativeZero, 0.0, 0.0, 0.0).String(), "Pad(0.00;0.00;0.00;0.00)")
 	})
+	t.Run("allocates the string alone", func(t *testing.T) {
+		assertStringAllocation(t, Pad(0.1, 3.0, 0.6, 2.4).String)
+	})
 }
 
 func TestPadding_JSON(t *testing.T) {

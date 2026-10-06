@@ -18,6 +18,7 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 
 ### Changed
 - The `geomtest` helpers take `geomtest.Testing`, declared in the package with the `Helper` and `Errorf` methods they call, rather than `assert.Testing`, so no signature names the assertion library; a `*testing.T` and any `assert.Testing` still pass as they are
+- `String` on every type and the package `String` append into a buffer on the stack rather than going through `fmt.Sprintf`, so each allocates the string it returns and nothing else, a polygon of many vertices its growing buffer besides; the text printed is unchanged
 
 ### Removed
 - **breaking** `Triangle`, `Square` and `Hexagon` – `RegularPolygonWithOrientation` with 3, 4 or 6 vertices; `Square` of unequal semi-axes drew a rhombus or a rectangle rather than a square, and the three took generic names at package level

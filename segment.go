@@ -2,7 +2,6 @@ package geom
 
 import (
 	"cmp"
-	"fmt"
 	"iter"
 	"math"
 	"slices"
@@ -984,5 +983,12 @@ func (s Segment[T]) Float() Segment[float64] {
 
 // String returns the segment in the form of its constructor: Seg((x,y);(x,y)).
 func (s Segment[T]) String() string {
-	return fmt.Sprintf("Seg(%s;%s)", s.Start.String(), s.End.String())
+	buf := make([]byte, 0, stringSize)
+	buf = append(buf, "Seg("...)
+	buf = s.Start.appendString(buf)
+	buf = append(buf, ';')
+	buf = s.End.appendString(buf)
+	buf = append(buf, ')')
+
+	return string(buf)
 }

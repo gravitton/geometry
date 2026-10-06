@@ -2,7 +2,6 @@ package geom
 
 import (
 	"cmp"
-	"fmt"
 	"math"
 )
 
@@ -447,5 +446,12 @@ func (r Ray[T]) Float() Ray[float64] {
 
 // String returns the ray by its origin and direction: Ray((x,y);⟨x,y⟩).
 func (r Ray[T]) String() string {
-	return fmt.Sprintf("Ray(%s;%s)", r.Origin.String(), r.Direction.String())
+	buf := make([]byte, 0, stringSize)
+	buf = append(buf, "Ray("...)
+	buf = r.Origin.appendString(buf)
+	buf = append(buf, ';')
+	buf = r.Direction.appendString(buf)
+	buf = append(buf, ')')
+
+	return string(buf)
 }

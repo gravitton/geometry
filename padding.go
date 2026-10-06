@@ -1,7 +1,5 @@
 package geom
 
-import "fmt"
-
 // Padding represents a 2D padding.
 type Padding[T Number] struct {
 	Top    T `json:"t"`
@@ -103,5 +101,16 @@ func (p Padding[T]) Float() Padding[float64] {
 
 // String returns a string representation of the Padding.
 func (p Padding[T]) String() string {
-	return fmt.Sprintf("Pad(%s;%s;%s;%s)", String(p.Top), String(p.Right), String(p.Bottom), String(p.Left))
+	buf := make([]byte, 0, stringSize)
+	buf = append(buf, "Pad("...)
+	buf = appendString(buf, p.Top)
+	buf = append(buf, ';')
+	buf = appendString(buf, p.Right)
+	buf = append(buf, ';')
+	buf = appendString(buf, p.Bottom)
+	buf = append(buf, ';')
+	buf = appendString(buf, p.Left)
+	buf = append(buf, ')')
+
+	return string(buf)
 }
