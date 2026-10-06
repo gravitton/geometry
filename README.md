@@ -280,6 +280,8 @@ dir.Vector(5.0) // Vector{0, -5}
 
 geom.DirectionFromAxes(up, down, left, right) // keyboard input to an 8-way direction
 geom.Vec(3, -7).Direction()                   // DirectionUpRight, nearest of the eight
+geom.CardinalDirections()                     // Right, Down, Left, Up
+geom.CardinalOffsets[int]()                   // their lattice steps, in the same order
 
 axis := geom.AxisVertical
 axis.Along(size)             // Height, because the axis is vertical

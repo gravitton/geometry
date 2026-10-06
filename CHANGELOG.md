@@ -14,6 +14,7 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 ## [Unreleased](https://github.com/gravitton/geometry/compare/v1.15.0...main)
 
 ### Added
+- `DirectionOffsets`, `CardinalOffsets` and `DiagonalOffsets` – the lattice steps of `Directions`, `CardinalDirections` and `DiagonalDirections` in the same order, as `Vector[T]` for any `T`, so a step and its direction share an index
 - `Polygon.IsSimple` – whether the outline goes around without touching itself: no two edges meet but neighbours at their shared vertex, and no edge doubles back
 
 ### Changed

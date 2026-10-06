@@ -77,16 +77,40 @@ func DiagonalDirections() [4]Direction {
 	return [4]Direction{DirectionDownRight, DirectionDownLeft, DirectionUpLeft, DirectionUpRight}
 }
 
-// directionOffsets lists the lattice step of each direction, indexed by direction.
-var directionOffsets = [8]Vector[int]{
-	{1, 0},   // Right
-	{1, 1},   // DownRight
-	{0, 1},   // Down
-	{-1, 1},  // DownLeft
-	{-1, 0},  // Left
-	{-1, -1}, // UpLeft
-	{0, -1},  // Up
-	{1, -1},  // UpRight
+// DirectionOffsets lists the lattice step of all eight directions in the order of Directions, so
+// the step at an index is the Offset of the direction at that index. It returns a fresh array, so
+// a caller cannot alter the list.
+func DirectionOffsets[T Number]() [8]Vector[T] {
+	var offsets [8]Vector[T]
+	for i, direction := range Directions() {
+		offsets[i] = direction.Offset[T]()
+	}
+
+	return offsets
+}
+
+// CardinalOffsets lists the lattice step of the four cardinal directions in the order of
+// CardinalDirections, so the step at an index is the Offset of the direction at that index. It
+// returns a fresh array, so a caller cannot alter the list.
+func CardinalOffsets[T Number]() [4]Vector[T] {
+	var offsets [4]Vector[T]
+	for i, direction := range CardinalDirections() {
+		offsets[i] = direction.Offset[T]()
+	}
+
+	return offsets
+}
+
+// DiagonalOffsets lists the lattice step of the four diagonal directions in the order of
+// DiagonalDirections, so the step at an index is the Offset of the direction at that index. It
+// returns a fresh array, so a caller cannot alter the list.
+func DiagonalOffsets[T Number]() [4]Vector[T] {
+	var offsets [4]Vector[T]
+	for i, direction := range DiagonalDirections() {
+		offsets[i] = direction.Offset[T]()
+	}
+
+	return offsets
 }
 
 // DirectionFromAngle returns the direction nearest to the given angle in radians,
@@ -276,6 +300,18 @@ func (d Direction) offset() Vector[int] {
 	}
 
 	return directionOffsets[d.normalize()]
+}
+
+// directionOffsets lists the lattice step of each direction, indexed by direction.
+var directionOffsets = [8]Vector[int]{
+	{1, 0},   // Right
+	{1, 1},   // DownRight
+	{0, 1},   // Down
+	{-1, 1},  // DownLeft
+	{-1, 0},  // Left
+	{-1, -1}, // UpLeft
+	{0, -1},  // Up
+	{1, -1},  // UpRight
 }
 
 // String returns the name of the direction constant.

@@ -10,6 +10,52 @@ import (
 	"github.com/gravitton/geometry/geomtest"
 )
 
+func TestDirectionOffsets(t *testing.T) {
+	t.Run("lists the eight steps by increasing angle", func(t *testing.T) {
+		assert.Equal(t, DirectionOffsets[int](), [8]Vector[int]{Vec(1, 0), Vec(1, 1), Vec(0, 1), Vec(-1, 1), Vec(-1, 0), Vec(-1, -1), Vec(0, -1), Vec(1, -1)})
+	})
+	t.Run("is the offset of every direction, in order", func(t *testing.T) {
+		offsets := DirectionOffsets[float64]()
+
+		for i, direction := range Directions() {
+			geomtest.AssertVector(t, offsets[i], direction.Offset[float64](), direction.String()+": ")
+		}
+	})
+	t.Run("returns a fresh array", func(t *testing.T) {
+		offsets := DirectionOffsets[int]()
+		offsets[0] = Vec(9, 9)
+
+		geomtest.AssertVector(t, DirectionOffsets[int]()[0], Vec(1, 0))
+		geomtest.AssertVector(t, DirectionRight.Offset[int](), Vec(1, 0))
+	})
+}
+
+func TestCardinalOffsets(t *testing.T) {
+	t.Run("lists the four steps along the axes by increasing angle", func(t *testing.T) {
+		assert.Equal(t, CardinalOffsets[int](), [4]Vector[int]{Vec(1, 0), Vec(0, 1), Vec(-1, 0), Vec(0, -1)})
+	})
+	t.Run("is the offset of every cardinal direction, in order", func(t *testing.T) {
+		offsets := CardinalOffsets[float64]()
+
+		for i, direction := range CardinalDirections() {
+			geomtest.AssertVector(t, offsets[i], direction.Offset[float64](), direction.String()+": ")
+		}
+	})
+}
+
+func TestDiagonalOffsets(t *testing.T) {
+	t.Run("lists the four steps to the corners by increasing angle", func(t *testing.T) {
+		assert.Equal(t, DiagonalOffsets[int](), [4]Vector[int]{Vec(1, 1), Vec(-1, 1), Vec(-1, -1), Vec(1, -1)})
+	})
+	t.Run("is the offset of every diagonal direction, in order", func(t *testing.T) {
+		offsets := DiagonalOffsets[float64]()
+
+		for i, direction := range DiagonalDirections() {
+			geomtest.AssertVector(t, offsets[i], direction.Offset[float64](), direction.String()+": ")
+		}
+	})
+}
+
 func TestDirectionFromAngle(t *testing.T) {
 	t.Run("cardinal angles", func(t *testing.T) {
 		assert.Equal(t, DirectionFromAngle(0), DirectionRight)
