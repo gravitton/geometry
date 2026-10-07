@@ -117,6 +117,76 @@ func TestString(t *testing.T) {
 	})
 }
 
+func TestParse(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		v, err := Parse[int]("42")
+		assert.NoError(t, err)
+		geomtest.AssertNumber(t, v, 42)
+	})
+	t.Run("every integer width", func(t *testing.T) {
+		v16, err := Parse[int16]("32000")
+		assert.NoError(t, err)
+		geomtest.AssertNumber(t, v16, int16(32000))
+
+		v32, err := Parse[int32]("2147483647")
+		assert.NoError(t, err)
+		geomtest.AssertNumber(t, v32, int32(2147483647))
+
+		v64, err := Parse[int64]("9223372036854775807")
+		assert.NoError(t, err)
+		geomtest.AssertNumber(t, v64, int64(9223372036854775807))
+	})
+	t.Run("float", func(t *testing.T) {
+		v32, err := Parse[float32]("3.14")
+		assert.NoError(t, err)
+		geomtest.AssertNumber(t, v32, float32(3.14))
+
+		v64, err := Parse[float64]("23.0")
+		assert.NoError(t, err)
+		geomtest.AssertNumber(t, v64, 23.0)
+	})
+	t.Run("defined types parse like their underlying type", func(t *testing.T) {
+		direction, err := Parse[Direction]("3")
+		assert.NoError(t, err)
+		assert.Equal(t, direction, DirectionDownLeft)
+
+		named, err := Parse[namedFloat32]("3.14")
+		assert.NoError(t, err)
+		geomtest.AssertNumber(t, named, namedFloat32(3.14))
+	})
+	t.Run("int rejects float strings", func(t *testing.T) {
+		_, err := Parse[int]("3.14")
+		assert.Error(t, err)
+	})
+	t.Run("the range is checked against T", func(t *testing.T) {
+		_, err := Parse[int8]("200")
+		assert.Error(t, err)
+
+		_, err = Parse[namedInt8]("200")
+		assert.Error(t, err)
+
+		_, err = Parse[float32]("1e39")
+		assert.Error(t, err)
+
+		v, err := Parse[float64]("1e39")
+		assert.NoError(t, err)
+		geomtest.AssertNumber(t, v, 1e39)
+	})
+	t.Run("non-numeric input", func(t *testing.T) {
+		_, err := Parse[int]("abc")
+		assert.Error(t, err)
+
+		_, err = Parse[float64]("abc")
+		assert.Error(t, err)
+	})
+	t.Run("float32 rounds once, correctly", func(t *testing.T) {
+		value, err := Parse[float32]("1.000000059604644775390625000001")
+
+		assert.NoError(t, err)
+		assert.Equal(t, value, float32(1.0000001))
+	})
+}
+
 func assertCast[T Number](t *testing.T, value float64, expected T) {
 	t.Helper()
 

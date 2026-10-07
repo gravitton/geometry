@@ -2,7 +2,6 @@ package geom
 
 import (
 	"math"
-	"strconv"
 )
 
 const (
@@ -325,41 +324,4 @@ func LerpAngle(a, b, t float64) float64 {
 // sign of an angle aside. Unlike comparing normalized angles it holds across the 0/2π seam.
 func EqualAngle(a, b float64) bool {
 	return EqualDelta(AngleDistance(a, b), 0, Delta)
-}
-
-// Parse parses s into T: an integer T with strconv.ParseInt, a float T with strconv.ParseFloat.
-// Parsing is done in int64, float32 or float64 and narrowed to T, so defined types over those
-// kinds (type Coord int) parse like their underlying type, and a float32 T is rounded once,
-// correctly, rather than through float64. A value outside the range of T is an error,
-// never a wrapped integer or an overflowed infinity. The literals strconv.ParseFloat accepts,
-// "NaN" and "Inf" among them, parse into a float T as they would into float64.
-func Parse[T Number](s string) (T, error) {
-	if isInt[T]() {
-		v, err := strconv.ParseInt(s, 10, 64)
-		if err != nil {
-			return 0, err
-		}
-
-		if int64(T(v)) != v {
-			return 0, rangeError(s)
-		}
-
-		return T(v), nil
-	}
-
-	bitSize := 64
-	if isFloat32[T]() {
-		bitSize = 32
-	}
-
-	v, err := strconv.ParseFloat(s, bitSize)
-	if err != nil {
-		return 0, err
-	}
-
-	return T(v), nil
-}
-
-func rangeError(s string) error {
-	return &strconv.NumError{Func: "Parse", Num: s, Err: strconv.ErrRange}
 }
