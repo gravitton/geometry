@@ -80,6 +80,25 @@ func Round[T Number](x T) T {
 	return T(math.Round(float64(x)))
 }
 
+// RoundHalfUp returns x rounded to the nearest integer, a tie rounded toward positive
+// infinity, where Round rounds it away from zero. A tie then falls the same way on both sides
+// of zero, so rounding a value shifted by an integer is the rounded value shifted by it: the
+// rounding of a lattice, whose cells each own the same edges. An integer T is returned
+// unchanged.
+func RoundHalfUp[T Number](x T) T {
+	if isInt[T]() {
+		return x
+	}
+
+	value := float64(x)
+	rounded := math.Floor(value)
+	if value-rounded >= 0.5 {
+		rounded++
+	}
+
+	return T(rounded)
+}
+
 // Floor returns the largest integer value less than or equal to x. An integer T is returned
 // unchanged.
 func Floor[T Number](x T) T {

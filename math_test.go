@@ -112,6 +112,43 @@ func TestRound(t *testing.T) {
 	})
 }
 
+func TestRoundHalfUp(t *testing.T) {
+	t.Run("float rounds to the nearest integer", func(t *testing.T) {
+		geomtest.AssertNumber(t, RoundHalfUp(1.4), 1.0)
+		geomtest.AssertNumber(t, RoundHalfUp(1.6), 2.0)
+		geomtest.AssertNumber(t, RoundHalfUp(-1.4), -1.0)
+		geomtest.AssertNumber(t, RoundHalfUp(-1.6), -2.0)
+	})
+	t.Run("a tie rounds toward positive infinity", func(t *testing.T) {
+		geomtest.AssertNumber(t, RoundHalfUp(0.5), 1.0)
+		geomtest.AssertNumber(t, RoundHalfUp(1.5), 2.0)
+		geomtest.AssertNumber(t, RoundHalfUp(-0.5), 0.0)
+		geomtest.AssertNumber(t, RoundHalfUp(-1.5), -1.0)
+	})
+	t.Run("the value just below a tie rounds down", func(t *testing.T) {
+		geomtest.AssertNumber(t, RoundHalfUp(math.Nextafter(0.5, 0)), 0.0)
+		geomtest.AssertNumber(t, RoundHalfUp(math.Nextafter(-0.5, -1)), -1.0)
+	})
+	t.Run("shifts with an integer", func(t *testing.T) {
+		for _, x := range []float64{0, 0.25, 0.5, 0.75} {
+			for shift := -8.0; shift <= 8; shift++ {
+				geomtest.AssertNumber(t, RoundHalfUp(x+shift), RoundHalfUp(x)+shift)
+			}
+		}
+	})
+	t.Run("float32", func(t *testing.T) {
+		geomtest.AssertNumber(t, RoundHalfUp(float32(-2.5)), float32(-2))
+	})
+	t.Run("a non-finite float is returned as it is", func(t *testing.T) {
+		assert.True(t, math.IsNaN(RoundHalfUp(math.NaN())))
+		assert.True(t, math.IsInf(RoundHalfUp(math.Inf(-1)), -1))
+	})
+	t.Run("int is a no-op", func(t *testing.T) {
+		geomtest.AssertNumber(t, RoundHalfUp(3), 3)
+		geomtest.AssertNumber(t, RoundHalfUp(int64(1<<53+1)), int64(1<<53+1))
+	})
+}
+
 func TestFloor(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
 		geomtest.AssertNumber(t, Floor(1.9), 1.0)
