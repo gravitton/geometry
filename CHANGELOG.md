@@ -11,7 +11,10 @@ more expensive of the two. A breaking change is marked **breaking** in its entry
 lists them under **Breaking** at the top of its section. Renames land as a rename; no deprecated alias is kept.
 
 
-## [Unreleased](https://github.com/gravitton/geometry/compare/v1.15.0...main)
+## [Unreleased](https://github.com/gravitton/geometry/compare/v1.16.0...main)
+
+
+## [v1.16.0](https://github.com/gravitton/geometry/compare/v1.15.0...v1.16.0) (2026-10-07)
 
 ### Added
 - `RoundHalfUp` – the nearest integer with a tie rounded toward positive infinity, where `Round` rounds it away from zero, so rounding commutes with a shift by an integer: the rounding a lattice needs for every cell to own the same edges
