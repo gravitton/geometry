@@ -20,6 +20,7 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 - `BoundingCircle` on `Segment`, `Rectangle`, `Circle`, `Ellipse`, `Polygon`, `RegularPolygon` and `Box` – the circle around the shape, a broad pass by one squared distance that stays the same as the shape turns: about the shape's own center, the `Centroid` of a `Polygon`, to its farthest vertex; for an integer type the radius is rounded up, so the circle contains every vertex
 - `CircleBetween` – the circle with two points at the ends of a diameter
 - `CircleThrough` – the circle through three points, with false where they lie on one line within the tolerance
+- `Circle.OuterTangents` and `Circle.InnerTangents`, with `AppendOuterTangents` and `AppendInnerTangents` – the segments of the lines that touch two circles, from the same side or crossing between them, each from its point on the circle to its point on the given one: two, one between two circles of zero radius, and none where one circle lies within the other (outer) or the circles intersect (inner)
 - `Circle.Tangents` and `AppendTangents` – the points where the lines through a point touch the circle: two for a point outside, mirrored across the line to the center, the point itself on the boundary within the tolerance, and none inside
 
 

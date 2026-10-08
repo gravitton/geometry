@@ -429,6 +429,9 @@ var narrowMatrix = ScaleMatrix(40.0, 40.0)
 // checked to follow it.
 var prefixPoint = Pt(-7.5, 3.25)
 
+// prefixSegment is the segment the Append methods of segments find in dst over the fixtures.
+var prefixSegment = Seg(Pt(-7.5, 3.25), Pt(4.5, -1.75))
+
 // bufferWith returns a slice holding the element with room for more, the dst the Append methods
 // are checked with over the fixtures, so their results are appended in place after it.
 func bufferWith[E any](element E) []E {

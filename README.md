@@ -148,6 +148,10 @@ c := geom.Circ(geom.Pt(0.0, 0.0), 5.0)
 c.Anchor(geom.Bottom)          // Point{0, 5}
 c.Tangents(geom.Pt(13.0, 0.0)) // the two points a line from there touches the circle at; one on it, none inside
 
+wheel := geom.Circ(geom.Pt(20.0, 0.0), 2.0)
+c.OuterTangents(wheel) // the two straight runs of a belt around both, each a Segment from c to wheel
+c.InnerTangents(wheel) // the two of a crossed belt; none once the circles touch
+
 geom.CircleBetween(geom.Pt(0.0, 0.0), geom.Pt(6.0, 8.0))                   // Circ((3,4);5), the two across a diameter
 geom.CircleThrough(geom.Pt(0.0, 0.0), geom.Pt(6.0, 0.0), geom.Pt(0.0, 8.0)) // Circ((3,4);5), true; false on one line
 
