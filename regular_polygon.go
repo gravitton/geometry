@@ -192,6 +192,27 @@ func (rp RegularPolygon[T]) Bounds() Box[T] {
 	return Box[T]{a, b}
 }
 
+// BoundingCircle returns the circle about the center through the farthest vertex, as Vertices
+// places it, or the zero circle for a polygon without vertices. It stays the same as the
+// polygon turns, and is the smallest circle around a polygon of equal semi-axes with two
+// vertices or more, the circle Circle returns; around one of unequal semi-axes or a single
+// vertex a smaller circle about another center exists. For integer T the radius is rounded up
+// from the rounded vertices, so the circle still contains every one.
+func (rp RegularPolygon[T]) BoundingCircle() Circle[T] {
+	if rp.IsEmpty() {
+		return Circle[T]{}
+	}
+
+	center := rp.Center.Float()
+
+	var reach float64
+	for i := range rp.N {
+		reach = max(reach, center.DistanceSquaredTo(rp.vertex(i).Float()))
+	}
+
+	return Circle[T]{rp.Center, castUp[T](math.Sqrt(reach))}
+}
+
 // centralAngle returns the angle between consecutive vertices.
 func (rp RegularPolygon[T]) centralAngle() float64 {
 	return 2 * Pi / float64(rp.N)

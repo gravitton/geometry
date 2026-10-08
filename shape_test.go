@@ -62,6 +62,13 @@ type transformable[T Number, S any] interface {
 	Unscale(factor float64) S
 }
 
+// bounded is a shape with a circle around it, beside the box Shape gives: every Shape of the
+// package, which the interface itself does not list.
+type bounded[T Number] interface {
+	Shape[T]
+	BoundingCircle() Circle[T]
+}
+
 // solid is a shape with mass properties, the pair the Body properties are checked through.
 type solid[T Number] interface {
 	Shape[T]
@@ -115,6 +122,28 @@ func TestShape(t *testing.T) {
 			}
 		}
 	})
+	t.Run("the bounding circle contains every contained point", func(t *testing.T) {
+		for _, shape := range shapes {
+			circle := shape.(bounded[float64]).BoundingCircle()
+
+			for _, p := range pointFixtures {
+				assert.True(t, !shape.Contains(p) || circle.Contains(p), fmt.Sprintf("%s → %s: ", shape, p))
+			}
+		}
+	})
+	t.Run("far from the origin the float32 bounding circle contains every contained point", func(t *testing.T) {
+		for _, offset := range farOffsets {
+			for _, shape := range farShapes(offset) {
+				circle := shape.(bounded[float32]).BoundingCircle()
+
+				for _, p := range pointFixtures {
+					point := p.Cast[float32]().Add(offset)
+
+					assert.True(t, !shape.Contains(point) || circle.Contains(point), fmt.Sprintf("%s → %s: ", shape, point))
+				}
+			}
+		}
+	})
 	t.Run("a NaN coordinate is contained by nothing and at NaN distance", func(t *testing.T) {
 		for _, shape := range shapes {
 			for _, p := range []Point[float64]{Pt(math.NaN(), 0.0), Pt(1.0, math.NaN()), Pt(math.Inf(1), 0.0)} {
@@ -165,6 +194,16 @@ func assertNearest[T Number](t *testing.T, shape Shape[T], point Point[T]) {
 	assert.True(t, shape.Contains(nearest), message)
 	assert.True(t, shape.Nearest(nearest).Equal(nearest), message)
 	geomtest.AssertNumber(t, float64(point.DistanceSquaredTo(nearest)), shape.DistanceSquaredTo(point), message)
+}
+
+// assertBoundingCircle asserts that a bounding circle contains every vertex of the shape it
+// was asked of, by the comparison Contains makes.
+func assertBoundingCircle[T Number](t *testing.T, circle Circle[T], vertices iter.Seq[Point[T]], message string) {
+	t.Helper()
+
+	for vertex := range vertices {
+		assert.True(t, circle.Contains(vertex), fmt.Sprintf("%s → %v ∌ %v: ", message, circle, vertex))
+	}
 }
 
 // assertCrossings asserts the properties the boundary crossings of a segment have on every

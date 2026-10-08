@@ -24,6 +24,17 @@ func Cast[T Number](a float64) T {
 	return T(a)
 }
 
+// castUp converts a float64 to T as Cast does, but rounds up for an integer T, where Cast rounds
+// to the nearest: the cast of an extent that must still reach what it was measured to, the
+// radius of a BoundingCircle. A float T keeps the value.
+func castUp[T Number](a float64) T {
+	if isInt[T]() {
+		return Cast[T](math.Ceil(a))
+	}
+
+	return Cast[T](a)
+}
+
 // Int converts a Number to int: an integer T by plain conversion, exact wherever int is at
 // least as wide as T and truncated otherwise (int64 on a 32-bit target), and a float T rounded
 // through Cast.

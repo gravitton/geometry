@@ -144,6 +144,28 @@ func TestSegment_Bounds(t *testing.T) {
 	})
 }
 
+func TestSegment_BoundingCircle(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		geomtest.AssertCircle(t, Seg(Pt(0, 0), Pt(6, 8)).BoundingCircle(), Circ(Pt(3, 4), 5))
+	})
+	t.Run("int reaches the farther endpoint from the rounded midpoint", func(t *testing.T) {
+		geomtest.AssertCircle(t, Seg(Pt(0, 0), Pt(1, 0)).BoundingCircle(), Circ(Pt(1, 0), 1))
+		geomtest.AssertCircle(t, Seg(Pt(0, 0), Pt(3, 3)).BoundingCircle(), Circ(Pt(2, 2), 3))
+	})
+	t.Run("float", func(t *testing.T) {
+		geomtest.AssertCircle(t, Seg(Pt(0.0, 0.0), Pt(3.0, 4.0)).BoundingCircle(), Circ(Pt(1.5, 2.0), 2.5))
+	})
+	t.Run("a zero-length segment is a circle of no radius", func(t *testing.T) {
+		geomtest.AssertCircle(t, Seg(Pt(1.5, 2.0), Pt(1.5, 2.0)).BoundingCircle(), Circ(Pt(1.5, 2.0), 0.0))
+	})
+	t.Run("contains both endpoints, rounded to int too", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			assertBoundingCircle(t, s.BoundingCircle(), s.Vertices(), s.String())
+			assertBoundingCircle(t, s.Int().BoundingCircle(), s.Int().Vertices(), s.String())
+		}
+	})
+}
+
 func TestSegment_Translate(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		geomtest.AssertSegment(t, Seg(Pt(1, 2), Pt(3, 5)).Translate(Vec(3, -2)), Seg(Pt(4, 0), Pt(6, 3)))

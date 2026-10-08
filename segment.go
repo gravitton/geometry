@@ -68,6 +68,18 @@ func (s Segment[T]) Bounds() Box[T] {
 	return Box[T]{a, b}
 }
 
+// BoundingCircle returns the smallest circle around the segment: the circle about Midpoint
+// through the endpoints, which stays the same size as the segment turns. For integer T the
+// midpoint is rounded and the radius is rounded up from it to the farther endpoint, so the
+// circle still contains both.
+func (s Segment[T]) BoundingCircle() Circle[T] {
+	center := s.Midpoint()
+	midpoint := center.Float()
+	reach := max(midpoint.DistanceSquaredTo(s.Start.Float()), midpoint.DistanceSquaredTo(s.End.Float()))
+
+	return Circle[T]{center, castUp[T](math.Sqrt(reach))}
+}
+
 // minMax returns the minimum and maximum corner of the segment, the corners of Bounds: the pair
 // the intersection tests reject shapes by before examining any edge.
 func (s Segment[T]) minMax() (Point[T], Point[T]) {

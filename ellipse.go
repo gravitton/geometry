@@ -147,6 +147,13 @@ func (e Ellipse[T]) Bounds() Box[T] {
 	return Box[T]{a, b}
 }
 
+// BoundingCircle returns the smallest circle around the ellipse, the one Circle converts it to:
+// it touches the boundary at the two ends of the longer axis and stays the same as the ellipse
+// turns.
+func (e Ellipse[T]) BoundingCircle() Circle[T] {
+	return e.Circle()
+}
+
 // worldPoint returns the point at the given offset from the center in the frame before the
 // turn, turned by Angle: the offset is rotated once and the sum rounded once for an integer T.
 func (e Ellipse[T]) worldPoint(offset Vector[float64]) Point[T] {

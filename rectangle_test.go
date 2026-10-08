@@ -402,6 +402,40 @@ func TestRectangle_Bounds(t *testing.T) {
 	})
 }
 
+func TestRectangle_BoundingCircle(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		geomtest.AssertCircle(t, Rect(Pt(3, 4), Sz(6, 8)).BoundingCircle(), Circ(Pt(3, 4), 5))
+	})
+	t.Run("int reaches the max corner from the truncated center", func(t *testing.T) {
+		geomtest.AssertCircle(t, RectangleFromMinMax(Pt(0, 0), Pt(3, 3)).BoundingCircle(), Circ(Pt(1, 1), 3))
+	})
+	t.Run("float is half the diagonal", func(t *testing.T) {
+		geomtest.AssertCircle(t, Rect(Pt(0.6, -0.25), Sz(3.0, 4.0)).BoundingCircle(), Circ(Pt(0.6, -0.25), 2.5))
+	})
+	t.Run("a turn leaves it as it is", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			geomtest.AssertCircle(t, r.Rotate(Pi/5).BoundingCircle(), r.BoundingCircle(), r.String())
+		}
+	})
+	t.Run("contains every corner, turned and rounded to int too", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, angle := range []float64{0, 0.3, Pi / 3, 2, -1} {
+				turned := r.Rotate(angle)
+
+				assertBoundingCircle(t, turned.BoundingCircle(), turned.Vertices(), turned.String())
+				assertBoundingCircle(t, turned.Int().BoundingCircle(), turned.Int().Vertices(), turned.String())
+			}
+		}
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		r := Rect(Pt(1, 2), Sz(2, 3)).Rotate(Pi / 6)
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkBool = r.BoundingCircle().IsZero()
+		}), 0)
+	})
+}
+
 func TestRectangle_Translate(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		geomtest.AssertRectangle(t, Rect(Pt(1, 2), Sz(2, 3)).Translate(Vec(3, -2)), Rect(Pt(4, 0), Sz(2, 3)))

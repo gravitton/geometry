@@ -190,6 +190,29 @@ func TestEllipse_Bounds(t *testing.T) {
 	})
 }
 
+func TestEllipse_BoundingCircle(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		geomtest.AssertCircle(t, Ell(Pt(1, 2), Sz(10, 4), 0).BoundingCircle(), Circ(Pt(1, 2), 10))
+	})
+	t.Run("float reaches the longer semi-axis whichever it is", func(t *testing.T) {
+		geomtest.AssertCircle(t, Ell(Pt(0.6, -0.25), Sz(0.5, 1.2), 0).BoundingCircle(), Circ(Pt(0.6, -0.25), 1.2))
+	})
+	t.Run("a turn leaves it as it is", func(t *testing.T) {
+		for _, e := range ellipseFixtures {
+			geomtest.AssertCircle(t, e.Rotate(Pi/5).BoundingCircle(), e.BoundingCircle(), e.String())
+		}
+	})
+	t.Run("contains the ends of both axes", func(t *testing.T) {
+		for _, e := range ellipseFixtures {
+			circle := e.BoundingCircle()
+
+			for _, direction := range CardinalDirections() {
+				assert.True(t, circle.Contains(e.Anchor(direction)), fmt.Sprintf("%s → %s: ", e, direction))
+			}
+		}
+	})
+}
+
 func TestEllipse_Translate(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		geomtest.AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).Translate(Vec(3, -2)), Ell(Pt(4, 0), Sz(10, 4), 0))

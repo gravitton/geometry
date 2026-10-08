@@ -100,6 +100,15 @@ func TestCircle_Bounds(t *testing.T) {
 	})
 }
 
+func TestCircle_BoundingCircle(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		geomtest.AssertCircle(t, Circ(Pt(1, 2), 10).BoundingCircle(), Circ(Pt(1, 2), 10))
+	})
+	t.Run("float", func(t *testing.T) {
+		geomtest.AssertCircle(t, Circ(Pt(0.6, -0.25), 1.2).BoundingCircle(), Circ(Pt(0.6, -0.25), 1.2))
+	})
+}
+
 func TestCircle_Translate(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		geomtest.AssertCircle(t, Circ(Pt(1, 2), 10).Translate(Vec(3, -2)), Circ(Pt(4, 0), 10))

@@ -259,6 +259,85 @@ func TestPolygon_Bounds(t *testing.T) {
 	})
 }
 
+func TestPolygon_BoundingCircle(t *testing.T) {
+	t.Run("int rounds the radius up", func(t *testing.T) {
+		geomtest.AssertCircle(t, Pol(squareVertices()).BoundingCircle(), Circ(Pt(1, 1), 2))
+	})
+	t.Run("int reaches the farthest vertex from the rounded centroid", func(t *testing.T) {
+		geomtest.AssertCircle(t, Pol([]Point[int]{Pt(0, 0), Pt(3, 0), Pt(3, 3), Pt(0, 3)}).BoundingCircle(), Circ(Pt(2, 2), 3))
+	})
+	t.Run("float is about the centroid through the farthest vertex", func(t *testing.T) {
+		geomtest.AssertCircle(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(6.0, 0.0), Pt(3.0, 9.0)}).BoundingCircle(), Circ(Pt(3.0, 3.0), 6.0))
+	})
+	t.Run("one vertex is a circle of no radius", func(t *testing.T) {
+		geomtest.AssertCircle(t, Pol([]Point[int]{Pt(3, 4)}).BoundingCircle(), Circ(Pt(3, 4), 0))
+		geomtest.AssertCircle(t, Pol([]Point[int]{Pt(3, 4), Pt(3, 4), Pt(3, 4)}).BoundingCircle(), Circ(Pt(3, 4), 0))
+	})
+	t.Run("vertices on one line are about their mean", func(t *testing.T) {
+		geomtest.AssertCircle(t, Pol([]Point[int]{Pt(2, 2), Pt(0, 0), Pt(6, 6), Pt(4, 4)}).BoundingCircle(), Circ(Pt(3, 3), 5))
+	})
+	t.Run("empty is the zero circle", func(t *testing.T) {
+		geomtest.AssertCircle(t, Polygon[int]{}.BoundingCircle(), Circle[int]{})
+	})
+	t.Run("a NaN vertex leaves no circle", func(t *testing.T) {
+		for i := range 4 {
+			vertices := []Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(2.0, 4.0), Pt(1.0, 1.0)}
+			vertices[i].X = math.NaN()
+
+			assert.True(t, math.IsNaN(Pol(vertices).BoundingCircle().Radius), fmt.Sprintf("#%d: ", i))
+		}
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		polygon := Pol(notchedVertices())
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkBool = polygon.BoundingCircle().IsZero()
+		}), 0)
+	})
+	t.Run("stays the same as the polygon turns", func(t *testing.T) {
+		for _, p := range outlineFixtures() {
+			geomtest.AssertNumber(t, p.Rotate(Pi/5).BoundingCircle().Radius, p.BoundingCircle().Radius, p.String())
+		}
+	})
+	t.Run("contains every vertex, from whichever vertex the outline starts", func(t *testing.T) {
+		for _, p := range outlineFixtures() {
+			for i := range p.Points {
+				turned := Pol(append(slices.Clone(p.Points[i:]), p.Points[:i]...))
+				circle := turned.BoundingCircle()
+
+				assertBoundingCircle(t, circle, turned.Vertices(), turned.String())
+				geomtest.AssertCircle(t, circle, p.BoundingCircle(), turned.String())
+			}
+		}
+	})
+	t.Run("contains every vertex rounded to int, near the origin and far from it", func(t *testing.T) {
+		for _, p := range outlineFixtures() {
+			for _, offset := range []Vector[int]{Vec(0, 0), Vec(1<<26, -1<<25)} {
+				polygon := p.Transform(narrowMatrix).Int().Translate(offset)
+
+				assertBoundingCircle(t, polygon.BoundingCircle(), polygon.Vertices(), polygon.String())
+			}
+		}
+	})
+	t.Run("far from the origin the float32 circle contains every vertex", func(t *testing.T) {
+		for _, offset := range farOffsets {
+			for _, p := range outlineFixtures() {
+				polygon := p.Cast[float32]().Translate(offset)
+
+				assertBoundingCircle(t, polygon.BoundingCircle(), polygon.Vertices(), polygon.String())
+			}
+		}
+	})
+}
+
+func BenchmarkPolygon_BoundingCircle(b *testing.B) {
+	polygon := benchPolygon()
+
+	for b.Loop() {
+		sinkBool = polygon.BoundingCircle().IsZero()
+	}
+}
+
 func TestPolygon_Translate(t *testing.T) {
 	geomtest.AssertPolygon(t, Pol(squareVertices()).Translate(Vec(1, -1)), Pol([]Point[int]{
 		Pt(1, -1),

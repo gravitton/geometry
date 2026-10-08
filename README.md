@@ -112,6 +112,7 @@ slices.Collect(b.Vertices()) // the four corners as a slice, clockwise from the 
 d := geom.Rect(geom.Pt(0.0, 0.0), geom.Sz(2.0, 2.0)).Rotate(geom.Pi / 4) // a diamond
 d.Contains(geom.Pt(0.9, 0.9))                                            // false, outside the turned edges
 d.Bounds()                                                               // the Box around it
+d.BoundingCircle()                                                       // the Circle around it, the same at any angle
 d.TopLeft()                                                              // the corner that was top-left before the turn
 
 d.Transform(geom.RotationMatrix[float64](geom.Pi / 2)) // a turn is exact, and so is a move, a reflection or a scale
@@ -181,6 +182,7 @@ p.Winding()               // WindingClockwise, the winding of a Rectangle's corn
 p.IsConvex()              // false, the notch turns the other way
 p.IsSimple()              // true, no two edges meet but neighbours at their vertex
 p.ConvexHull()            // Pol((0,0);(4,0);(4,4);(0,4)), the notch dropped
+p.BoundingCircle()        // Circ((2,1);4), about the rounded Centroid to the farthest vertex, the radius rounded up
 
 edged := geom.Pol([]geom.Point[int]{{0, 0}, {2, 0}, {4, 0}, {4, 4}, {0, 4}})
 edged.Simplify(0) // Pol((0,0);(4,0);(4,4);(0,4)), the vertex on an edge dropped; a tolerance drops the ones near it

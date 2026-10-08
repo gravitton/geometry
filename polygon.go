@@ -166,6 +166,24 @@ func (p Polygon[T]) Bounds() Box[T] {
 	return Box[T]{a, b}
 }
 
+// BoundingCircle returns the circle about Centroid through the farthest vertex, or the zero
+// circle for a polygon without vertices. It stays the same as the polygon turns, and is not the
+// smallest circle around the vertices, which may lie about another center: around a simple
+// polygon its radius is at most twice that one's, on an outline with most of its area far from
+// its farthest vertex. For integer T the radius is rounded up from the rounded centroid, so the
+// circle still contains every vertex.
+func (p Polygon[T]) BoundingCircle() Circle[T] {
+	center := p.Centroid()
+	origin := center.Float()
+
+	var reach float64
+	for _, vertex := range p.Points {
+		reach = max(reach, origin.DistanceSquaredTo(vertex.Float()))
+	}
+
+	return Circle[T]{center, castUp[T](math.Sqrt(reach))}
+}
+
 // mean returns the average of the vertices, which Centroid falls back to when the
 // polygon encloses no area.
 func (p Polygon[T]) mean() Point[T] {

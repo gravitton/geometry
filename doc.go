@@ -18,7 +18,7 @@
 // assertions, and packages ints and floats alias the int and float64 instantiations.
 //
 // Every value type has Equal, Cast, Int, Float and String; every shape adds Contains, every one but
-// Ray adds Bounds, and every one but Ellipse adds the Intersects methods. The enums are compared
+// Ray adds Bounds and BoundingCircle, and every one but Ellipse adds the Intersects methods. The enums are compared
 // with == and marshal as their names.
 //
 // # Coordinates

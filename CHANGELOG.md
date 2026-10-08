@@ -17,6 +17,7 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 - `Size.IsPositive` – whether the width and the height are both greater than zero, a size that encloses an area, exactly and with no tolerance, so a size too small for `IsZero` to tell from zero still is and one with a negative or a NaN extent is not
 - `IsFinite` – whether a number is neither NaN nor infinite, the values `Cast` and `Int` take into an integer type without a panic
 - `Point.IsFinite`, `Vector.IsFinite` and `Size.IsFinite` – whether both components are numbers, neither NaN nor infinite, the test to make before `Int` or `Cast` to an integer type
+- `BoundingCircle` on `Segment`, `Rectangle`, `Circle`, `Ellipse`, `Polygon`, `RegularPolygon` and `Box` – the circle around the shape, a broad pass by one squared distance that stays the same as the shape turns: about the shape's own center, the `Centroid` of a `Polygon`, to its farthest vertex; for an integer type the radius is rounded up, so the circle contains every vertex
 
 
 ## [v1.16.0](https://github.com/gravitton/geometry/compare/v1.15.0...v1.16.0) (2026-10-07)

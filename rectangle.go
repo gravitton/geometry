@@ -236,6 +236,22 @@ func (r Rectangle[T]) Bounds() Box[T] {
 	return Box[T]{a, b}
 }
 
+// BoundingCircle returns the smallest circle around the rectangle: the circle about Center
+// through the corners, which stays the same as the rectangle turns, so a broad pass tests it by
+// one squared distance whatever the angle. For integer T the radius is rounded up from the
+// farthest corner as Vertices places it, the truncated center and the rounding of a turned
+// corner included, so the circle still contains all four.
+func (r Rectangle[T]) BoundingCircle() Circle[T] {
+	center := r.Center.Float()
+
+	var reach float64
+	for _, corner := range r.corners() {
+		reach = max(reach, center.DistanceSquaredTo(corner.Float()))
+	}
+
+	return Circle[T]{r.Center, castUp[T](math.Sqrt(reach))}
+}
+
 // localMinMax returns the offsets of the minimum and maximum corner from the center in the
 // local frame of the rectangle, the frame before its turn, the pair MinMax gives in the world.
 // For integer T the minimum offset truncates toward the center and the maximum takes the rest,

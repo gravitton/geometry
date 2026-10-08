@@ -80,6 +80,24 @@ func TestBox_Bounds(t *testing.T) {
 	geomtest.AssertBox(t, box.Bounds(), box)
 }
 
+func TestBox_BoundingCircle(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		geomtest.AssertCircle(t, BoxFromMinMax(Pt(0, 0), Pt(6, 8)).BoundingCircle(), Circ(Pt(3, 4), 5))
+	})
+	t.Run("int reaches the max corner from the truncated center", func(t *testing.T) {
+		geomtest.AssertCircle(t, BoxFromMinMax(Pt(0, 0), Pt(3, 3)).BoundingCircle(), Circ(Pt(1, 1), 3))
+	})
+	t.Run("float", func(t *testing.T) {
+		geomtest.AssertCircle(t, BoxFromMinMax(Pt(0.5, -1.0), Pt(3.5, 3.0)).BoundingCircle(), Circ(Pt(2.0, 1.0), 2.5))
+	})
+	t.Run("contains every corner, rounded to int too", func(t *testing.T) {
+		for _, b := range boxFixtures {
+			assertBoundingCircle(t, b.BoundingCircle(), b.Rectangle().Vertices(), b.String())
+			assertBoundingCircle(t, b.Int().BoundingCircle(), b.Int().Rectangle().Vertices(), b.String())
+		}
+	})
+}
+
 func TestBox_Translate(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		geomtest.AssertBox(t, BoxFromMinMax(Pt(1, 2), Pt(4, 7)).Translate(Vec(3, -2)), BoxFromMinMax(Pt(4, 0), Pt(7, 5)))

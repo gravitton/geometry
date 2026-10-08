@@ -418,6 +418,50 @@ func TestRegularPolygon_Bounds(t *testing.T) {
 	})
 }
 
+func TestRegularPolygon_BoundingCircle(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		geomtest.AssertCircle(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0, 0).BoundingCircle(), Circ(Pt(1, 2), 2))
+	})
+	t.Run("int reaches the farthest rounded vertex", func(t *testing.T) {
+		geomtest.AssertCircle(t, RegPol(Pt(0, 0), Sz(1, 1), 8, 0, 0).BoundingCircle(), Circ(Pt(0, 0), 2))
+	})
+	t.Run("equal semi-axes give the circle through the vertices", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			if rp.Size.Width == rp.Size.Height {
+				geomtest.AssertCircle(t, rp.BoundingCircle(), rp.Circle(), rp.String())
+			}
+		}
+	})
+	t.Run("unequal semi-axes reach the farthest vertex, short of the longer semi-axis", func(t *testing.T) {
+		geomtest.AssertCircle(t, RegPol(Pt(0.0, 0.0), Sz(4.0, 2.0), 4, 0, Pi/4).BoundingCircle(), Circ(Pt(0.0, 0.0), math.Sqrt(10)))
+	})
+	t.Run("no vertices is the zero circle", func(t *testing.T) {
+		geomtest.AssertCircle(t, RegPol(Pt(3, 4), Sz(10, 10), 0, 0, 0).BoundingCircle(), Circle[int]{})
+	})
+	t.Run("a turn leaves it as it is", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			geomtest.AssertCircle(t, rp.Rotate(Pi/5).BoundingCircle(), rp.BoundingCircle(), rp.String())
+		}
+	})
+	t.Run("contains every vertex, turned and rounded to int too", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for _, angle := range []float64{0, 0.3, Pi / 3, 2, -1} {
+				turned := rp.Rotate(angle)
+
+				assertBoundingCircle(t, turned.BoundingCircle(), turned.Vertices(), turned.String())
+				assertBoundingCircle(t, turned.Int().BoundingCircle(), turned.Int().Vertices(), turned.String())
+			}
+		}
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		rp := RegPol(Pt(1, 2), Sz(2, 3), 6, Pi/6, 0)
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkBool = rp.BoundingCircle().IsZero()
+		}), 0)
+	})
+}
+
 func TestRegularPolygon_Translate(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0, 0).Translate(Vec(1, -2)), RegPol(Pt(2, 0), Sz(2, 2), 4, 0, 0))

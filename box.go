@@ -76,6 +76,17 @@ func (b Box[T]) Bounds() Box[T] {
 	return b
 }
 
+// BoundingCircle returns the smallest circle around the box: the circle about Center through
+// the corners. For integer T the center truncates toward Min and the radius is rounded up from
+// it to the farther corner, so the circle still contains all four.
+func (b Box[T]) BoundingCircle() Circle[T] {
+	center := b.Center()
+	midpoint := center.Float()
+	reach := max(midpoint.DistanceSquaredTo(b.Min.Float()), midpoint.DistanceSquaredTo(b.Max.Float()))
+
+	return Circle[T]{center, castUp[T](math.Sqrt(reach))}
+}
+
 // magnitude returns the largest absolute coordinate of the box, that of a corner: the size
 // epsilonAt widens the tolerance by for a comparison that reads the box.
 func (b Box[T]) magnitude() float64 {

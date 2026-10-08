@@ -68,6 +68,12 @@ func (c Circle[T]) Bounds() Box[T] {
 	return Box[T]{a, b}
 }
 
+// BoundingCircle returns the smallest circle around the circle, which is the circle itself. It
+// is here so every shape answers the same way.
+func (c Circle[T]) BoundingCircle() Circle[T] {
+	return c
+}
+
 // minMax returns the minimum and maximum corner of the circle, the corners of Bounds: the pair
 // the intersection tests reject shapes by before examining any edge.
 func (c Circle[T]) minMax() (Point[T], Point[T]) {
