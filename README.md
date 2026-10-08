@@ -145,7 +145,11 @@ view.IntersectsRectangle(r)    // a Box is a Collider, tested against every shap
 
 ```go
 c := geom.Circ(geom.Pt(0.0, 0.0), 5.0)
-c.Anchor(geom.Bottom) // Point{0, 5}
+c.Anchor(geom.Bottom)          // Point{0, 5}
+c.Tangents(geom.Pt(13.0, 0.0)) // the two points a line from there touches the circle at; one on it, none inside
+
+geom.CircleBetween(geom.Pt(0.0, 0.0), geom.Pt(6.0, 8.0))                   // Circ((3,4);5), the two across a diameter
+geom.CircleThrough(geom.Pt(0.0, 0.0), geom.Pt(6.0, 0.0), geom.Pt(0.0, 8.0)) // Circ((3,4);5), true; false on one line
 
 // a circle has no Transform of its own: an affine matrix takes it to an ellipse
 e := c.Ellipse().Transform(geom.ScaleMatrix(2.0, 1.0)) // Ellipse, semi-axes 10x5, exact for every matrix

@@ -21,6 +21,34 @@ func Circ[T Number](center Point[T], radius T) Circle[T] {
 	return Circle[T]{center, Abs(radius)}
 }
 
+// CircleBetween creates the Circle with the two points at the ends of a diameter: its center
+// is their midpoint and its radius half the distance between them. For integer T both are
+// rounded like every other result stored into T, so the points can lie off the boundary.
+func CircleBetween[T Number](a, b Point[T]) Circle[T] {
+	return Circle[T]{a.Midpoint(b), Cast[T](a.Float().DistanceTo(b.Float()) / 2)}
+}
+
+// CircleThrough creates the Circle through three points, the circumscribed circle of their
+// triangle, and reports false where there is none: the points lie on one line within the
+// tolerance, two or all of them being the same point included. The center is measured from
+// the first point, so the products stay small far from the origin, and the radius from the
+// center as it is stored into T to that point. For integer T both are rounded, so the points
+// can lie off the boundary. The radius grows without bound as the points near a line, and
+// must fit T.
+func CircleThrough[T Number](a, b, c Point[T]) (Circle[T], bool) {
+	points := [3]Point[T]{a, b, c}
+	if (Polygon[T]{points[:]}).isFlat() {
+		return Circle[T]{}, false
+	}
+
+	origin := a.Float()
+	toB, toC := b.Float().Subtract(origin), c.Float().Subtract(origin)
+	weighted := toB.Multiply(toC.LengthSquared()).Subtract(toC.Multiply(toB.LengthSquared()))
+	center := origin.Add(weighted.Normal().Multiply(1 / (2 * toB.Cross(toC)))).Cast[T]()
+
+	return Circle[T]{center, Cast[T](center.Float().DistanceTo(origin))}, true
+}
+
 // Anchor returns the point on the circle boundary in the given direction from its center,
 // or the center itself for DirectionNone. For integer T a diagonal anchor is rounded like
 // Direction.Vector and only approximates the boundary: at a small radius the rounding can
@@ -195,6 +223,34 @@ func (c Circle[T]) Nearest(point Point[T]) Point[T] {
 	return center.Add(offset).Cast[T]()
 }
 
+// Tangents returns the points where the lines through the given point touch the circle: two
+// for a point outside, the point itself for one on the boundary within the tolerance, by the
+// comparison Contains makes, and none for a point inside. The second point is the mirror of
+// the first across the line from the center to the point, the order IntersectionCircle gives
+// its own. For integer T the points are rounded like every other result stored into T, and two
+// rounding to the same point give it once; a circle of zero radius is touched at its center.
+func (c Circle[T]) Tangents(point Point[T]) []Point[T] {
+	return c.AppendTangents(nil, point)
+}
+
+// AppendTangents appends the points Tangents returns to dst and returns the extended slice, so
+// a caller reusing dst allocates nothing once it has room.
+func (c Circle[T]) AppendTangents(dst []Point[T], point Point[T]) []Point[T] {
+	distanceSquared := c.centerDistanceSquared(point)
+	magnitude := point.magnitude()
+
+	if c.touchesSquared(distanceSquared, magnitude) {
+		return append(dst, point)
+	}
+	if c.containsSquared(distanceSquared, magnitude) {
+		return dst
+	}
+
+	radius := float64(c.Radius)
+
+	return c.appendChordEnds(dst, point.Float().Subtract(c.Center.Float()), radius*radius/math.Sqrt(distanceSquared))
+}
+
 // EnclosesCircle reports whether the given circle lies within this one: its far point, the
 // point of it farthest from this center, is contained within the tolerance by the comparison
 // Contains makes, so a circle touching the boundary from inside is enclosed.
@@ -310,15 +366,7 @@ func (c Circle[T]) AppendIntersectionCircle(dst []Point[T], circle Circle[T]) []
 		return append(dst, point.Cast[T]())
 	}
 
-	along := (float64(r1*r1) - float64(r2*r2) + distanceSquared) / (2 * distance)
-	middle := center.Add(direction.Resize(along))
-	normal := direction.Normal().Resize(math.Sqrt(max(float64(r1*r1)-float64(along*along), 0)))
-	first, second := middle.Add(normal).Cast[T](), middle.Add(normal.Negate()).Cast[T]()
-	if second.Equal(first) {
-		return append(dst, first)
-	}
-
-	return append(dst, first, second)
+	return c.appendChordEnds(dst, direction, (float64(r1*r1)-float64(r2*r2)+distanceSquared)/(2*distance))
 }
 
 // IntersectsSegment reports whether the circle and the segment share a point: the point of the
@@ -493,6 +541,22 @@ func (c Circle[T]) tangent(circle Circle[T], distance float64, external bool) fl
 	default:
 		return (distance - r1 - r2) / 2
 	}
+}
+
+// appendChordEnds appends the two ends of the chord that crosses the given direction from the
+// center at a right angle, the given length along it: the two points IntersectionCircle and
+// Tangents place, the first a quarter turn from the direction by Normal and the second its
+// mirror, given once where both are stored into T as the same point.
+func (c Circle[T]) appendChordEnds(dst []Point[T], direction Vector[float64], along float64) []Point[T] {
+	radius := float64(c.Radius)
+	middle := c.Center.Float().Add(direction.Resize(along))
+	normal := direction.Normal().Resize(math.Sqrt(max(float64(radius*radius)-float64(along*along), 0)))
+	first, second := middle.Add(normal).Cast[T](), middle.Add(normal.Negate()).Cast[T]()
+	if second.Equal(first) {
+		return append(dst, first)
+	}
+
+	return append(dst, first, second)
 }
 
 // Equal checks for equal center and radius with given circle.
