@@ -131,6 +131,17 @@ func Mod[T Integer](n, m T) T {
 	return remainder
 }
 
+// IsFinite reports whether x is a number, neither NaN nor infinite: a value Cast and Int take
+// into an integer T, where they panic on any other. An integer always is.
+//
+// It is not x-x == 0: inlined after a product, the difference is fused with it into one
+// multiply-add, which leaves the rounding residue of the product rather than zero.
+func IsFinite[T Number](x T) bool {
+	value := float64(x)
+
+	return !math.IsNaN(value) && !math.IsInf(value, 0)
+}
+
 // Clamp adjusts the given value to be between the given minimum and maximum value.
 func Clamp[T Number](value, min, max T) T {
 	if value < min {

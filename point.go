@@ -235,6 +235,13 @@ func (p Point[T]) IsZero() bool {
 	return p.Equal(Point[T]{})
 }
 
+// IsFinite reports whether X and Y are both numbers, neither NaN nor infinite: a point with a
+// place in the plane, which Int and Cast take into an integer type where they panic on any
+// other. A point of integers always is.
+func (p Point[T]) IsFinite() bool {
+	return IsFinite(p.X) && IsFinite(p.Y)
+}
+
 // Vector converts the point to a Vector.
 func (p Point[T]) Vector() Vector[T] {
 	return Vector[T](p)

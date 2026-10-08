@@ -335,6 +335,13 @@ func (v Vector[T]) IsZero() bool {
 	return v.Equal(Vector[T]{})
 }
 
+// IsFinite reports whether X and Y are both numbers, neither NaN nor infinite: a vector Int
+// and Cast take into an integer type, where they panic on any other. A vector of integers
+// always is.
+func (v Vector[T]) IsFinite() bool {
+	return IsFinite(v.X) && IsFinite(v.Y)
+}
+
 // IsOne checks if X and Y values are (1,1).
 func (v Vector[T]) IsOne() bool {
 	return v.Equal(Vector[T]{1, 1})

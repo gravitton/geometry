@@ -205,6 +205,21 @@ func (s Size[T]) IsZero() bool {
 	return s.Equal(Size[T]{})
 }
 
+// IsPositive reports whether the width and the height are both greater than zero: a size that
+// encloses an area, with a ratio to keep and to divide by. It is exact and has no tolerance,
+// so a size too small for IsZero to tell from zero still is, and one with a negative or a NaN
+// extent is not. An infinite extent is positive; IsFinite is the test for that.
+func (s Size[T]) IsPositive() bool {
+	return s.Width > 0 && s.Height > 0
+}
+
+// IsFinite reports whether the width and the height are both numbers, neither NaN nor
+// infinite: a size Int and Cast take into an integer type, where they panic on any other. A
+// size of integers always is.
+func (s Size[T]) IsFinite() bool {
+	return IsFinite(s.Width) && IsFinite(s.Height)
+}
+
 // Vector converts the size to a Vector.
 func (s Size[T]) Vector() Vector[T] {
 	return Vector[T]{s.Width, s.Height}

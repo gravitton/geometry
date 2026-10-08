@@ -3,6 +3,7 @@ package geom_test
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"strconv"
 	"testing"
 
@@ -361,6 +362,57 @@ func TestSize_IsZero(t *testing.T) {
 	})
 }
 
+func TestSize_IsPositive(t *testing.T) {
+	t.Run("both extents above zero", func(t *testing.T) {
+		assert.True(t, Sz(1, 2).IsPositive())
+		assert.True(t, Sz(0.5, 64.0).IsPositive())
+	})
+	t.Run("a zero extent", func(t *testing.T) {
+		assert.False(t, Sz(0, 2).IsPositive())
+		assert.False(t, Sz(0.5, 0.0).IsPositive())
+		assert.False(t, Sz(negativeZero, 1.0).IsPositive())
+	})
+	t.Run("a negative extent", func(t *testing.T) {
+		assert.False(t, Sz(-1, 2).IsPositive())
+		assert.False(t, Sz(0.5, -64.0).IsPositive())
+	})
+	t.Run("an extent within delta of zero still is", func(t *testing.T) {
+		assert.True(t, Sz(0.0000001, 0.0000001).IsPositive())
+		assert.True(t, Sz(math.SmallestNonzeroFloat64, 1.0).IsPositive())
+	})
+	t.Run("a NaN extent is not", func(t *testing.T) {
+		assert.False(t, Sz(math.NaN(), 1.0).IsPositive())
+		assert.False(t, Sz(1.0, math.NaN()).IsPositive())
+	})
+	t.Run("an infinite extent is", func(t *testing.T) {
+		assert.True(t, Sz(math.Inf(1), 1.0).IsPositive())
+		assert.True(t, Sz(1.0, math.Inf(1)).IsPositive())
+	})
+}
+
+func TestSize_IsFinite(t *testing.T) {
+	t.Run("a size of numbers", func(t *testing.T) {
+		assert.True(t, Sz(1.5, 2.0).IsFinite())
+		assert.True(t, Sz(-math.MaxFloat64, math.MaxFloat64).IsFinite())
+	})
+	t.Run("a NaN extent", func(t *testing.T) {
+		assert.False(t, Sz(math.NaN(), 1).IsFinite())
+		assert.False(t, Sz(1, math.NaN()).IsFinite())
+	})
+	t.Run("an infinite extent", func(t *testing.T) {
+		assert.False(t, Sz(math.Inf(1), 1).IsFinite())
+		assert.False(t, Sz(1, math.Inf(-1)).IsFinite())
+	})
+	t.Run("float32", func(t *testing.T) {
+		assert.True(t, Sz[float32](math.MaxFloat32, -math.MaxFloat32).IsFinite())
+		assert.False(t, Sz(float32(math.NaN()), 0).IsFinite())
+		assert.False(t, Sz(0, float32(math.Inf(-1))).IsFinite())
+	})
+	t.Run("a size of integers always is", func(t *testing.T) {
+		assert.True(t, Sz(math.MaxInt, math.MinInt).IsFinite())
+	})
+}
+
 func TestSize_Vector(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		geomtest.AssertVector(t, Sz(10, 16).Vector(), Vec(10, 16))
@@ -447,6 +499,17 @@ func TestSize_JSON(t *testing.T) {
 }
 
 func TestSize_Properties(t *testing.T) {
+	t.Run("positive is a non-negative size with an area", func(t *testing.T) {
+		for _, size := range sizeFixtures {
+			assert.Equal(t, size.AtLeastZero() == size && size.Area() > 0, size.IsPositive(), fmt.Sprintf("%s: ", size))
+		}
+	})
+	t.Run("finite until scaled by an infinity", func(t *testing.T) {
+		for _, size := range sizeFixtures {
+			assert.True(t, size.IsFinite(), fmt.Sprintf("%s: ", size))
+			assert.False(t, size.Scale(math.Inf(1)).IsFinite(), fmt.Sprintf("%s: ", size))
+		}
+	})
 	t.Run("area and perimeter follow the dimensions", func(t *testing.T) {
 		for _, size := range sizeFixtures {
 			geomtest.AssertNumber(t, size.Area(), size.Width*size.Height, fmt.Sprintf("%s: ", size))

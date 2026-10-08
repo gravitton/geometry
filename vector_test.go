@@ -623,6 +623,29 @@ func TestVector_IsZero(t *testing.T) {
 	})
 }
 
+func TestVector_IsFinite(t *testing.T) {
+	t.Run("a vector of numbers", func(t *testing.T) {
+		assert.True(t, Vec(1.5, -2.0).IsFinite())
+		assert.True(t, Vec(math.MaxFloat64, -math.MaxFloat64).IsFinite())
+	})
+	t.Run("a NaN coordinate", func(t *testing.T) {
+		assert.False(t, Vec(math.NaN(), 0).IsFinite())
+		assert.False(t, Vec(0, math.NaN()).IsFinite())
+	})
+	t.Run("an infinite coordinate", func(t *testing.T) {
+		assert.False(t, Vec(math.Inf(1), 0).IsFinite())
+		assert.False(t, Vec(0, math.Inf(-1)).IsFinite())
+	})
+	t.Run("float32", func(t *testing.T) {
+		assert.True(t, Vec[float32](math.MaxFloat32, -math.MaxFloat32).IsFinite())
+		assert.False(t, Vec(float32(math.NaN()), 0).IsFinite())
+		assert.False(t, Vec(0, float32(math.Inf(-1))).IsFinite())
+	})
+	t.Run("a vector of integers always is", func(t *testing.T) {
+		assert.True(t, Vec(math.MaxInt, math.MinInt).IsFinite())
+	})
+}
+
 func TestVector_IsOne(t *testing.T) {
 	t.Run("one vector", func(t *testing.T) {
 		assert.True(t, OneVector[int]().IsOne())
@@ -871,6 +894,12 @@ func TestVector_JSON(t *testing.T) {
 }
 
 func TestVector_Properties(t *testing.T) {
+	t.Run("finite until multiplied by an infinity", func(t *testing.T) {
+		for _, vector := range vectorFixtures {
+			assert.True(t, vector.IsFinite(), fmt.Sprintf("%s: ", vector))
+			assert.False(t, vector.Multiply(math.Inf(1)).IsFinite(), fmt.Sprintf("%s: ", vector))
+		}
+	})
 	t.Run("add and subtract are inverse", func(t *testing.T) {
 		for _, a := range vectorFixtures {
 			for _, b := range vectorFixtures {

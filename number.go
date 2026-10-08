@@ -14,7 +14,7 @@ import (
 // Keep results within the range of T, or use a wider T.
 func Cast[T Number](a float64) T {
 	if isInt[T]() {
-		if math.IsNaN(a) || math.IsInf(a, 0) {
+		if !IsFinite(a) {
 			panic("geom: cast of a non-finite value to an integer")
 		}
 

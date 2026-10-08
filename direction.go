@@ -116,7 +116,7 @@ func DiagonalOffsets[T Number]() [4]Vector[T] {
 // DirectionFromAngle returns the direction nearest to the given angle in radians,
 // or DirectionNone for NaN and ±Inf.
 func DirectionFromAngle(angle float64) Direction {
-	if math.IsNaN(angle) || math.IsInf(angle, 0) {
+	if !IsFinite(angle) {
 		return DirectionNone
 	}
 

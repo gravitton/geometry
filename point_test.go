@@ -472,6 +472,29 @@ func TestPoint_IsZero(t *testing.T) {
 	})
 }
 
+func TestPoint_IsFinite(t *testing.T) {
+	t.Run("a point of numbers", func(t *testing.T) {
+		assert.True(t, Pt(1.5, -2.0).IsFinite())
+		assert.True(t, Pt(math.MaxFloat64, -math.MaxFloat64).IsFinite())
+	})
+	t.Run("a NaN coordinate", func(t *testing.T) {
+		assert.False(t, Pt(math.NaN(), 0).IsFinite())
+		assert.False(t, Pt(0, math.NaN()).IsFinite())
+	})
+	t.Run("an infinite coordinate", func(t *testing.T) {
+		assert.False(t, Pt(math.Inf(1), 0).IsFinite())
+		assert.False(t, Pt(0, math.Inf(-1)).IsFinite())
+	})
+	t.Run("float32", func(t *testing.T) {
+		assert.True(t, Pt[float32](math.MaxFloat32, -math.MaxFloat32).IsFinite())
+		assert.False(t, Pt(float32(math.NaN()), 0).IsFinite())
+		assert.False(t, Pt(0, float32(math.Inf(-1))).IsFinite())
+	})
+	t.Run("a point of integers always is", func(t *testing.T) {
+		assert.True(t, Pt(math.MaxInt, math.MinInt).IsFinite())
+	})
+}
+
 func TestPoint_Vector(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		geomtest.AssertVector(t, Pt(1, 2).Vector(), Vec(1, 2))
@@ -566,6 +589,12 @@ func TestPoint_JSON(t *testing.T) {
 }
 
 func TestPoint_Properties(t *testing.T) {
+	t.Run("finite until multiplied by an infinity", func(t *testing.T) {
+		for _, p := range pointFixtures {
+			assert.True(t, p.IsFinite(), fmt.Sprintf("%s: ", p))
+			assert.False(t, p.Multiply(math.Inf(1)).IsFinite(), fmt.Sprintf("%s: ", p))
+		}
+	})
 	t.Run("add and subtract are inverse", func(t *testing.T) {
 		for _, a := range pointFixtures {
 			for _, b := range pointFixtures {

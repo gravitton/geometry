@@ -201,6 +201,33 @@ func TestMod(t *testing.T) {
 	})
 }
 
+func TestIsFinite(t *testing.T) {
+	t.Run("a number", func(t *testing.T) {
+		assert.True(t, IsFinite(1.5))
+		assert.True(t, IsFinite(negativeZero))
+		assert.True(t, IsFinite(-math.MaxFloat64))
+		assert.True(t, IsFinite(math.SmallestNonzeroFloat64))
+	})
+	t.Run("NaN and the infinities are not", func(t *testing.T) {
+		assert.False(t, IsFinite(math.NaN()))
+		assert.False(t, IsFinite(math.Inf(1)))
+		assert.False(t, IsFinite(math.Inf(-1)))
+	})
+	t.Run("float32", func(t *testing.T) {
+		assert.True(t, IsFinite[float32](math.MaxFloat32))
+		assert.False(t, IsFinite(float32(math.NaN())))
+		assert.False(t, IsFinite(float32(math.Inf(-1))))
+	})
+	t.Run("an integer always is", func(t *testing.T) {
+		assert.True(t, IsFinite(math.MaxInt))
+		assert.True(t, IsFinite[int8](math.MinInt8))
+	})
+	t.Run("a product is not fused into the check", func(t *testing.T) {
+		assert.True(t, IsFinite(tenth*3))
+		assert.False(t, IsFinite(tenth*math.Inf(1)))
+	})
+}
+
 func TestClamp(t *testing.T) {
 	t.Run("inside the range", func(t *testing.T) {
 		geomtest.AssertNumber(t, Clamp(5, 0, 10), 5)
