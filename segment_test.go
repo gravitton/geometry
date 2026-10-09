@@ -554,16 +554,6 @@ func TestSegment_IntersectionCircle(t *testing.T) {
 	})
 }
 
-func TestSegment_AppendIntersectionCircle(t *testing.T) {
-	t.Run("matches Circle.AppendIntersectionSegment", func(t *testing.T) {
-		for _, s := range segmentFixtures {
-			for _, c := range circleFixtures {
-				geomtest.AssertVertices(t, s.AppendIntersectionCircle(bufferWith(prefixPoint), c), c.AppendIntersectionSegment(bufferWith(prefixPoint), s), fmt.Sprintf("%s → %s: ", s, c))
-			}
-		}
-	})
-}
-
 func TestSegment_IntersectsSegment(t *testing.T) {
 	diagonal := Seg(Pt(0, 0), Pt(4, 4))
 

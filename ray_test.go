@@ -305,16 +305,6 @@ func TestRay_IntersectionCircle(t *testing.T) {
 	})
 }
 
-func TestRay_AppendIntersectionCircle(t *testing.T) {
-	t.Run("matches Circle.AppendIntersectionRay", func(t *testing.T) {
-		for _, r := range rayFixtures {
-			for _, c := range circleFixtures {
-				geomtest.AssertVertices(t, r.AppendIntersectionCircle(bufferWith(prefixPoint), c), c.AppendIntersectionRay(bufferWith(prefixPoint), r), fmt.Sprintf("%s → %s: ", r, c))
-			}
-		}
-	})
-}
-
 func TestRay_IntersectsSegment(t *testing.T) {
 	t.Run("mirrors Segment.IntersectsRay", func(t *testing.T) {
 		for _, r := range rayFixtures {

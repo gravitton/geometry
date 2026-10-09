@@ -641,12 +641,6 @@ func (r Rectangle[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
 	return segment.IntersectionRectangle(r)
 }
 
-// AppendIntersectionSegment appends the points IntersectionSegment returns to dst and returns the
-// extended slice, as Segment.AppendIntersectionRectangle does.
-func (r Rectangle[T]) AppendIntersectionSegment(dst []Point[T], segment Segment[T]) []Point[T] {
-	return segment.AppendIntersectionRectangle(dst, r)
-}
-
 // IntersectsRay reports whether the rectangle and the ray share a point, as
 // Ray.IntersectsRectangle does.
 func (r Rectangle[T]) IntersectsRay(ray Ray[T]) bool {
@@ -659,12 +653,6 @@ func (r Rectangle[T]) IntersectionRay(ray Ray[T]) []Point[T] {
 	return ray.IntersectionRectangle(r)
 }
 
-// AppendIntersectionRay appends the points IntersectionRay returns to dst and returns the
-// extended slice, as Ray.AppendIntersectionRectangle does.
-func (r Rectangle[T]) AppendIntersectionRay(dst []Point[T], ray Ray[T]) []Point[T] {
-	return ray.AppendIntersectionRectangle(dst, r)
-}
-
 // IntersectsLine reports whether the rectangle and the line share a point, as
 // Line.IntersectsRectangle does.
 func (r Rectangle[T]) IntersectsLine(line Line[T]) bool {
@@ -675,12 +663,6 @@ func (r Rectangle[T]) IntersectsLine(line Line[T]) bool {
 // Line.IntersectionRectangle does.
 func (r Rectangle[T]) IntersectionLine(line Line[T]) []Point[T] {
 	return line.IntersectionRectangle(r)
-}
-
-// AppendIntersectionLine appends the points IntersectionLine returns to dst and returns the
-// extended slice, as Line.AppendIntersectionRectangle does.
-func (r Rectangle[T]) AppendIntersectionLine(dst []Point[T], line Line[T]) []Point[T] {
-	return line.AppendIntersectionRectangle(dst, r)
 }
 
 // IntersectsPolygon reports whether the rectangle and the polygon share a point, as

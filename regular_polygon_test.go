@@ -1014,16 +1014,6 @@ func TestRegularPolygon_IntersectionSegment(t *testing.T) {
 	})
 }
 
-func TestRegularPolygon_AppendIntersectionSegment(t *testing.T) {
-	t.Run("matches Segment.AppendIntersectionRegularPolygon", func(t *testing.T) {
-		for _, rp := range regularPolygonFixtures {
-			for _, s := range segmentFixtures {
-				geomtest.AssertVertices(t, rp.AppendIntersectionSegment(bufferWith(prefixPoint), s), s.AppendIntersectionRegularPolygon(bufferWith(prefixPoint), rp), fmt.Sprintf("%s → %s: ", rp, s))
-			}
-		}
-	})
-}
-
 func TestRegularPolygon_IntersectsRay(t *testing.T) {
 	t.Run("mirrors Ray.IntersectsRegularPolygon", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
@@ -1044,16 +1034,6 @@ func TestRegularPolygon_IntersectionRay(t *testing.T) {
 	})
 }
 
-func TestRegularPolygon_AppendIntersectionRay(t *testing.T) {
-	t.Run("matches Ray.AppendIntersectionRegularPolygon", func(t *testing.T) {
-		for _, rp := range regularPolygonFixtures {
-			for _, r := range rayFixtures {
-				geomtest.AssertVertices(t, rp.AppendIntersectionRay(bufferWith(prefixPoint), r), r.AppendIntersectionRegularPolygon(bufferWith(prefixPoint), rp), fmt.Sprintf("%s → %s: ", rp, r))
-			}
-		}
-	})
-}
-
 func TestRegularPolygon_IntersectsLine(t *testing.T) {
 	t.Run("mirrors Line.IntersectsRegularPolygon", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
@@ -1069,16 +1049,6 @@ func TestRegularPolygon_IntersectionLine(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
 			for _, l := range lineFixtures {
 				geomtest.AssertVertices(t, rp.IntersectionLine(l), l.IntersectionRegularPolygon(rp), fmt.Sprintf("%s → %s: ", rp, l))
-			}
-		}
-	})
-}
-
-func TestRegularPolygon_AppendIntersectionLine(t *testing.T) {
-	t.Run("matches Line.AppendIntersectionRegularPolygon", func(t *testing.T) {
-		for _, rp := range regularPolygonFixtures {
-			for _, l := range lineFixtures {
-				geomtest.AssertVertices(t, rp.AppendIntersectionLine(bufferWith(prefixPoint), l), l.AppendIntersectionRegularPolygon(bufferWith(prefixPoint), rp), fmt.Sprintf("%s → %s: ", rp, l))
 			}
 		}
 	})

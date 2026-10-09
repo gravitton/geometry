@@ -1167,16 +1167,6 @@ func TestRectangle_IntersectionSegment(t *testing.T) {
 	})
 }
 
-func TestRectangle_AppendIntersectionSegment(t *testing.T) {
-	t.Run("matches Segment.AppendIntersectionRectangle", func(t *testing.T) {
-		for _, rect := range rectFixtures {
-			for _, s := range segmentFixtures {
-				geomtest.AssertVertices(t, rect.AppendIntersectionSegment(bufferWith(prefixPoint), s), s.AppendIntersectionRectangle(bufferWith(prefixPoint), rect), fmt.Sprintf("%s → %s: ", rect, s))
-			}
-		}
-	})
-}
-
 func TestRectangle_IntersectsRay(t *testing.T) {
 	t.Run("mirrors Ray.IntersectsRectangle", func(t *testing.T) {
 		for _, rect := range rectFixtures {
@@ -1197,16 +1187,6 @@ func TestRectangle_IntersectionRay(t *testing.T) {
 	})
 }
 
-func TestRectangle_AppendIntersectionRay(t *testing.T) {
-	t.Run("matches Ray.AppendIntersectionRectangle", func(t *testing.T) {
-		for _, rect := range rectFixtures {
-			for _, r := range rayFixtures {
-				geomtest.AssertVertices(t, rect.AppendIntersectionRay(bufferWith(prefixPoint), r), r.AppendIntersectionRectangle(bufferWith(prefixPoint), rect), fmt.Sprintf("%s → %s: ", rect, r))
-			}
-		}
-	})
-}
-
 func TestRectangle_IntersectsLine(t *testing.T) {
 	t.Run("mirrors Line.IntersectsRectangle", func(t *testing.T) {
 		for _, r := range rectFixtures {
@@ -1222,16 +1202,6 @@ func TestRectangle_IntersectionLine(t *testing.T) {
 		for _, r := range rectFixtures {
 			for _, l := range lineFixtures {
 				geomtest.AssertVertices(t, r.IntersectionLine(l), l.IntersectionRectangle(r), fmt.Sprintf("%s → %s: ", r, l))
-			}
-		}
-	})
-}
-
-func TestRectangle_AppendIntersectionLine(t *testing.T) {
-	t.Run("matches Line.AppendIntersectionRectangle", func(t *testing.T) {
-		for _, r := range rectFixtures {
-			for _, l := range lineFixtures {
-				geomtest.AssertVertices(t, r.AppendIntersectionLine(bufferWith(prefixPoint), l), l.AppendIntersectionRectangle(bufferWith(prefixPoint), r), fmt.Sprintf("%s → %s: ", r, l))
 			}
 		}
 	})

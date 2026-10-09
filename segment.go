@@ -271,12 +271,6 @@ func (s Segment[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
 	return circle.IntersectionSegment(s)
 }
 
-// AppendIntersectionCircle appends the points IntersectionCircle returns to dst and returns the
-// extended slice, as Circle.AppendIntersectionSegment does.
-func (s Segment[T]) AppendIntersectionCircle(dst []Point[T], circle Circle[T]) []Point[T] {
-	return circle.AppendIntersectionSegment(dst, s)
-}
-
 // IntersectsSegment reports whether the segments share a point, within the tolerance, the same
 // closed convention as Contains: segments that touch at an endpoint or overlap collinearly
 // intersect. It holds exactly where DistanceToSegment is zero.

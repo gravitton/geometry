@@ -139,12 +139,6 @@ func (r Ray[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
 	return circle.IntersectionRay(r)
 }
 
-// AppendIntersectionCircle appends the points IntersectionCircle returns to dst and returns the
-// extended slice, as Circle.AppendIntersectionRay does.
-func (r Ray[T]) AppendIntersectionCircle(dst []Point[T], circle Circle[T]) []Point[T] {
-	return circle.AppendIntersectionRay(dst, r)
-}
-
 // IntersectsSegment reports whether the ray and the segment share a point, as
 // Segment.IntersectsRay does.
 func (r Ray[T]) IntersectsSegment(segment Segment[T]) bool {

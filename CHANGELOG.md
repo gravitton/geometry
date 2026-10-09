@@ -15,8 +15,8 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 
 ### Added
 - `Line` – the infinite line through `Origin` along `Direction`, with `Ln` and `LineThrough`, a `Collider` that is no `Shape`: `Side` gives the exact sign of the side a point lies on, `Reflect` mirrors a point across it, `Contains`, `DistanceTo`, `DistanceSquaredTo` and `Nearest` answer as a ray from its origin toward the point does, and it moves, turns and scales as `Ray` does
-- `Intersects`, `Intersection` and `Clip` on `Line` for every kind, with their `Append` forms, decided on the segment tests like the ray's and returned in order along the direction; `IntersectionLine` gives the point where two lines cross, the same whichever asks and false for parallel lines
-- `IntersectsLine` and `IntersectionLine` on `Circle`, `Segment`, `Ray`, `Polygon`, `Rectangle`, `RegularPolygon` and `Box`, with `AppendIntersectionLine` where the result is a slice
+- `Intersects`, `Intersection` and `Clip` on `Line` for every kind, with the `Append` forms of the pairs it holds, decided on the segment tests like the ray's and returned in order along the direction; `IntersectionLine` gives the point where two lines cross, the same whichever asks and false for parallel lines
+- `IntersectsLine` and `IntersectionLine` on `Circle`, `Segment`, `Ray`, `Polygon`, `Rectangle`, `RegularPolygon` and `Box`, with `Circle.AppendIntersectionLine`
 - `Segment.Line` and `Ray.Line` – the line through a segment or a ray
 - `geomtest.AssertLine`, and `Line` and `Ln` in `types/ints` and `types/floats`
 - `Size.IsPositive` – whether the width and the height are both greater than zero, a size that encloses an area, exactly and with no tolerance, so a size too small for `IsZero` to tell from zero still is and one with a negative or a NaN extent is not
@@ -31,6 +31,9 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 
 ### Changed
 - **breaking** `Collider` requires `IntersectsLine`, and `Intersects` dispatches to it; a type of another package implementing `Collider` must add the method
+
+### Removed
+- **breaking** The `Append` form on the delegating side of a pair: `AppendIntersectionCircle` on `Segment` and `Ray`, and `AppendIntersectionSegment` and `AppendIntersectionRay` on `Polygon`, `Rectangle`, `RegularPolygon` and `Box`; call the form on the other side, `circle.AppendIntersectionSegment(dst, s)` or `s.AppendIntersectionPolygon(dst, p)`, which they delegated to
 
 ## [v1.16.0](https://github.com/gravitton/geometry/compare/v1.15.0...v1.16.0) (2026-10-07)
 

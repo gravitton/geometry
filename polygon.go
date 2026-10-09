@@ -685,12 +685,6 @@ func (p Polygon[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
 	return segment.IntersectionPolygon(p)
 }
 
-// AppendIntersectionSegment appends the points IntersectionSegment returns to dst and returns the
-// extended slice, as Segment.AppendIntersectionPolygon does.
-func (p Polygon[T]) AppendIntersectionSegment(dst []Point[T], segment Segment[T]) []Point[T] {
-	return segment.AppendIntersectionPolygon(dst, p)
-}
-
 // IntersectsRay reports whether the polygon and the ray share a point, as
 // Ray.IntersectsPolygon does.
 func (p Polygon[T]) IntersectsRay(ray Ray[T]) bool {
@@ -703,12 +697,6 @@ func (p Polygon[T]) IntersectionRay(ray Ray[T]) []Point[T] {
 	return ray.IntersectionPolygon(p)
 }
 
-// AppendIntersectionRay appends the points IntersectionRay returns to dst and returns the
-// extended slice, as Ray.AppendIntersectionPolygon does.
-func (p Polygon[T]) AppendIntersectionRay(dst []Point[T], ray Ray[T]) []Point[T] {
-	return ray.AppendIntersectionPolygon(dst, p)
-}
-
 // IntersectsLine reports whether the polygon and the line share a point, as
 // Line.IntersectsPolygon does.
 func (p Polygon[T]) IntersectsLine(line Line[T]) bool {
@@ -719,12 +707,6 @@ func (p Polygon[T]) IntersectsLine(line Line[T]) bool {
 // Line.IntersectionPolygon does.
 func (p Polygon[T]) IntersectionLine(line Line[T]) []Point[T] {
 	return line.IntersectionPolygon(p)
-}
-
-// AppendIntersectionLine appends the points IntersectionLine returns to dst and returns the
-// extended slice, as Line.AppendIntersectionPolygon does.
-func (p Polygon[T]) AppendIntersectionLine(dst []Point[T], line Line[T]) []Point[T] {
-	return line.AppendIntersectionPolygon(dst, p)
 }
 
 // IntersectsPolygon reports whether the polygons share a point: a vertex of one lies within the

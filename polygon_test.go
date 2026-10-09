@@ -1066,16 +1066,6 @@ func TestPolygon_IntersectionSegment(t *testing.T) {
 	})
 }
 
-func TestPolygon_AppendIntersectionSegment(t *testing.T) {
-	t.Run("matches Segment.AppendIntersectionPolygon", func(t *testing.T) {
-		for _, p := range polygonFixtures() {
-			for _, s := range segmentFixtures {
-				geomtest.AssertVertices(t, p.AppendIntersectionSegment(bufferWith(prefixPoint), s), s.AppendIntersectionPolygon(bufferWith(prefixPoint), p), fmt.Sprintf("%s → %s: ", p, s))
-			}
-		}
-	})
-}
-
 func TestPolygon_IntersectsRay(t *testing.T) {
 	t.Run("mirrors Ray.IntersectsPolygon", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
@@ -1096,16 +1086,6 @@ func TestPolygon_IntersectionRay(t *testing.T) {
 	})
 }
 
-func TestPolygon_AppendIntersectionRay(t *testing.T) {
-	t.Run("matches Ray.AppendIntersectionPolygon", func(t *testing.T) {
-		for _, p := range polygonFixtures() {
-			for _, r := range rayFixtures {
-				geomtest.AssertVertices(t, p.AppendIntersectionRay(bufferWith(prefixPoint), r), r.AppendIntersectionPolygon(bufferWith(prefixPoint), p), fmt.Sprintf("%s → %s: ", p, r))
-			}
-		}
-	})
-}
-
 func TestPolygon_IntersectsLine(t *testing.T) {
 	t.Run("mirrors Line.IntersectsPolygon", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
@@ -1121,16 +1101,6 @@ func TestPolygon_IntersectionLine(t *testing.T) {
 		for _, p := range polygonFixtures() {
 			for _, l := range lineFixtures {
 				geomtest.AssertVertices(t, p.IntersectionLine(l), l.IntersectionPolygon(p), fmt.Sprintf("%s → %s: ", p, l))
-			}
-		}
-	})
-}
-
-func TestPolygon_AppendIntersectionLine(t *testing.T) {
-	t.Run("matches Line.AppendIntersectionPolygon", func(t *testing.T) {
-		for _, p := range polygonFixtures() {
-			for _, l := range lineFixtures {
-				geomtest.AssertVertices(t, p.AppendIntersectionLine(bufferWith(prefixPoint), l), l.AppendIntersectionPolygon(bufferWith(prefixPoint), p), fmt.Sprintf("%s → %s: ", p, l))
 			}
 		}
 	})

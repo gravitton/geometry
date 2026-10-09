@@ -257,12 +257,6 @@ func (b Box[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
 	return segment.IntersectionBox(b)
 }
 
-// AppendIntersectionSegment appends the points IntersectionSegment returns to dst and returns the
-// extended slice, as Segment.AppendIntersectionBox does.
-func (b Box[T]) AppendIntersectionSegment(dst []Point[T], segment Segment[T]) []Point[T] {
-	return segment.AppendIntersectionBox(dst, b)
-}
-
 // IntersectsRay reports whether the box and the ray share a point, as
 // Ray.IntersectsBox does.
 func (b Box[T]) IntersectsRay(ray Ray[T]) bool {
@@ -275,12 +269,6 @@ func (b Box[T]) IntersectionRay(ray Ray[T]) []Point[T] {
 	return ray.IntersectionBox(b)
 }
 
-// AppendIntersectionRay appends the points IntersectionRay returns to dst and returns the
-// extended slice, as Ray.AppendIntersectionBox does.
-func (b Box[T]) AppendIntersectionRay(dst []Point[T], ray Ray[T]) []Point[T] {
-	return ray.AppendIntersectionBox(dst, b)
-}
-
 // IntersectsLine reports whether the box and the line share a point, as
 // Line.IntersectsBox does.
 func (b Box[T]) IntersectsLine(line Line[T]) bool {
@@ -291,12 +279,6 @@ func (b Box[T]) IntersectsLine(line Line[T]) bool {
 // Line.IntersectionBox does.
 func (b Box[T]) IntersectionLine(line Line[T]) []Point[T] {
 	return line.IntersectionBox(b)
-}
-
-// AppendIntersectionLine appends the points IntersectionLine returns to dst and returns the
-// extended slice, as Line.AppendIntersectionBox does.
-func (b Box[T]) AppendIntersectionLine(dst []Point[T], line Line[T]) []Point[T] {
-	return line.AppendIntersectionBox(dst, b)
 }
 
 // IntersectsPolygon reports whether the box and the polygon share a point, as
