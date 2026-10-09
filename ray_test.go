@@ -1063,6 +1063,177 @@ func TestRay_ClipBox(t *testing.T) {
 	})
 }
 
+func TestRay_HitCircle(t *testing.T) {
+	circle := Circ(Pt(0, 0), 5)
+
+	t.Run("from outside is the first crossing, with the fraction in units of Direction", func(t *testing.T) {
+		hit, ok := Ry(Pt(-10, 0), Vec(2, 0)).HitCircle(circle)
+		assertHit(t, hit, ok, Hit[int]{Point: Pt(-5, 0), Normal: Vec(-1.0, 0.0), Fraction: 2.5})
+	})
+	t.Run("a tangent is the point of contact", func(t *testing.T) {
+		hit, ok := Ry(Pt(-10, 5), Vec(1, 0)).HitCircle(circle)
+		assertHit(t, hit, ok, Hit[int]{Point: Pt(0, 5), Normal: Vec(0.0, 1.0), Fraction: 10})
+	})
+	t.Run("an Origin inside or on the boundary hits nothing", func(t *testing.T) {
+		_, ok := Ry(Pt(0, 0), Vec(0, 1)).HitCircle(circle)
+		assert.False(t, ok)
+
+		_, ok = Ry(Pt(5, 0), Vec(1, 0)).HitCircle(circle)
+		assert.False(t, ok)
+	})
+	t.Run("pointing away hits nothing", func(t *testing.T) {
+		hit, ok := Ry(Pt(-10, 0), Vec(-1, 0)).HitCircle(circle)
+
+		assert.False(t, ok)
+		assert.Equal(t, hit, Hit[int]{})
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		through := Ry(Pt(-10, 0), Vec(1, 0))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.HitCircle(circle)
+		}), 0)
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, r := range rayFixtures {
+			for _, c := range circleFixtures {
+				hit, ok := r.HitCircle(c)
+				assertRayHit(t, r, hit, ok, c.Contains(r.Origin), r.IntersectionCircle(c), fmt.Sprintf("%s → %s: ", r, c))
+			}
+		}
+	})
+}
+
+func TestRay_HitPolygon(t *testing.T) {
+	notched := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(2, 1), Pt(0, 4)})
+
+	t.Run("from outside is the first edge reached", func(t *testing.T) {
+		hit, ok := Ry(Pt(2, 6), Vec(0, -1)).HitPolygon(notched)
+		assertHit(t, hit, ok, Hit[int]{Point: Pt(2, 1), Normal: Vec(-3/math.Sqrt(13), 2/math.Sqrt(13)), Fraction: 5})
+	})
+	t.Run("an Origin inside hits nothing", func(t *testing.T) {
+		_, ok := Ry(Pt(1, 1), Vec(1, 0)).HitPolygon(notched)
+		assert.False(t, ok)
+	})
+	t.Run("pointing away and empty hit nothing", func(t *testing.T) {
+		_, ok := Ry(Pt(2, 6), Vec(0, 1)).HitPolygon(notched)
+		assert.False(t, ok)
+
+		_, ok = Ry(Pt(2, 6), Vec(0, -1)).HitPolygon(Polygon[int]{})
+		assert.False(t, ok)
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		through := Ry(Pt(2, 6), Vec(0, -1))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.HitPolygon(notched)
+		}), 0)
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, r := range rayFixtures {
+			for _, p := range polygonFixtures() {
+				hit, ok := r.HitPolygon(p)
+				assertRayHit(t, r, hit, ok, p.Contains(r.Origin), r.IntersectionPolygon(p), fmt.Sprintf("%s → %s: ", r, p))
+			}
+		}
+	})
+}
+
+func TestRay_HitRectangle(t *testing.T) {
+	rectangle := Rect(Pt(0, 0), Sz(4, 4))
+
+	t.Run("from outside is the first crossing, with the normal of its edge", func(t *testing.T) {
+		hit, ok := Ry(Pt(-5, 0), Vec(1, 0)).HitRectangle(rectangle)
+		assertHit(t, hit, ok, Hit[int]{Point: Pt(-2, 0), Normal: Vec(-1.0, 0.0), Fraction: 3})
+	})
+	t.Run("an Origin inside hits nothing", func(t *testing.T) {
+		_, ok := Ry(Pt(0, 0), Vec(1, 0)).HitRectangle(rectangle)
+		assert.False(t, ok)
+	})
+	t.Run("pointing away hits nothing", func(t *testing.T) {
+		_, ok := Ry(Pt(-5, 0), Vec(-1, 0)).HitRectangle(rectangle)
+		assert.False(t, ok)
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		through := Ry(Pt(-5, 1), Vec(1, 0))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.HitRectangle(rectangle)
+		}), 0)
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, r := range rayFixtures {
+			for _, rectangle := range rectFixtures {
+				hit, ok := r.HitRectangle(rectangle)
+				assertRayHit(t, r, hit, ok, rectangle.Contains(r.Origin), r.IntersectionRectangle(rectangle), fmt.Sprintf("%s → %s: ", r, rectangle))
+			}
+		}
+	})
+}
+
+func TestRay_HitRegularPolygon(t *testing.T) {
+	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0, 0)
+
+	t.Run("from outside is the first crossing, with the normal of its edge", func(t *testing.T) {
+		hit, ok := Ry(Pt(-3, 1), Vec(1, 0)).HitRegularPolygon(diamond)
+		assertHit(t, hit, ok, Hit[int]{Point: Pt(-1, 1), Normal: Vec(-Sqrt2/2, Sqrt2/2), Fraction: 2})
+	})
+	t.Run("an Origin inside and an empty polygon hit nothing", func(t *testing.T) {
+		_, ok := Ry(Pt(0, 0), Vec(1, 0)).HitRegularPolygon(diamond)
+		assert.False(t, ok)
+
+		_, ok = Ry(Pt(-3, 1), Vec(1, 0)).HitRegularPolygon(RegularPolygon[int]{})
+		assert.False(t, ok)
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		through := Ry(Pt(-3, 1), Vec(1, 0))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.HitRegularPolygon(diamond)
+		}), 0)
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, r := range rayFixtures {
+			for _, rp := range regularPolygonFixtures {
+				hit, ok := r.HitRegularPolygon(rp)
+				assertRayHit(t, r, hit, ok, rp.Contains(r.Origin), r.IntersectionRegularPolygon(rp), fmt.Sprintf("%s → %s: ", r, rp))
+			}
+		}
+	})
+}
+
+func TestRay_HitBox(t *testing.T) {
+	box := BoxFromMinMax(Pt(0, 0), Pt(4, 2))
+
+	t.Run("from outside is the first crossing, with the normal of its edge", func(t *testing.T) {
+		hit, ok := Ry(Pt(-1, 1), Vec(1, 0)).HitBox(box)
+		assertHit(t, hit, ok, Hit[int]{Point: Pt(0, 1), Normal: Vec(-1.0, 0.0), Fraction: 1})
+	})
+	t.Run("an Origin inside hits nothing", func(t *testing.T) {
+		_, ok := Ry(Pt(1, 1), Vec(1, 0)).HitBox(box)
+		assert.False(t, ok)
+	})
+	t.Run("matches HitRectangle on the box's Rectangle", func(t *testing.T) {
+		for _, r := range rayFixtures {
+			for _, b := range boxFixtures {
+				hit, ok := r.HitBox(b)
+				expected, expectedOK := r.HitRectangle(b.Rectangle())
+
+				assert.Equal(t, ok, expectedOK, fmt.Sprintf("%s → %s: ", r, b))
+				assertHitEqual(t, hit, expected, fmt.Sprintf("%s → %s: ", r, b))
+			}
+		}
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		through := Ry(Pt(-5.0, 0.5), Vec(1.0, 0.0))
+		box := Bx(Pt(-2.0, -2.0), Pt(2.0, 2.0))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.HitBox(box)
+		}), 0)
+	})
+}
+
 func TestRay_Equal(t *testing.T) {
 	t.Run("same ray", func(t *testing.T) {
 		assert.True(t, Ry(Pt(1, 2), Vec(3, 4)).Equal(Ry(Pt(1, 2), Vec(3, 4))))
@@ -1261,6 +1432,26 @@ func assertRayClipped[T Number](t *testing.T, r Ray[T], parts []Segment[T], inte
 
 		reached = to
 	}
+}
+
+// assertRayHit checks the Hit a method returns for a ray over the fixtures, as assertSegmentHit checks
+// it for a segment: there is one exactly where the shape does not contain Origin and the ray
+// crosses its boundary, at the first of the crossings, with a unit normal that does not run
+// along the ray and a fraction ahead of Origin that PointAt takes back to the point.
+func assertRayHit[T Number](t *testing.T, r Ray[T], hit Hit[T], ok, contained bool, crossings []Point[T], message string) {
+	t.Helper()
+
+	assert.Equal(t, ok, !contained && len(crossings) > 0, message)
+	if !ok {
+		assert.Equal(t, hit, Hit[T]{}, message)
+
+		return
+	}
+
+	assert.True(t, hit.Point.Equal(crossings[0]), message+hit.Point.String()+" is the first crossing: ")
+	assert.True(t, hit.Normal.IsNormalized(), message+hit.Normal.String()+" is a unit: ")
+	assert.True(t, LessOrEqual(hit.Normal.Dot(r.Direction.Float().Normalize()), 0), message+hit.Normal.String()+" faces the ray: ")
+	assert.True(t, hit.Fraction >= 0 && r.PointAt(hit.Fraction).Equal(hit.Point), message+"PointAt of the fraction: ")
 }
 
 // rayFixtures span a zero direction, the axes both ways, diagonals, and short and long

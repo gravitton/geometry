@@ -257,8 +257,8 @@ buffer = s.AppendIntersectionPolygon(buffer[:0], p) // a slice result has an App
 hull = p.AppendConvexHull(hull[:0])                 // side that holds the pair, so a reused buffer allocates nothing
 ```
 
-A `Ray` is a half-line from `Origin` along `Direction`. Its `Clip<Kind>` is the cast, starting at the first point
-hit:
+A `Ray` is a half-line from `Origin` along `Direction`. Its `Clip<Kind>` is the part inside a shape, and its
+`Hit<Kind>` the first point of the boundary it reaches from outside, with the normal there:
 
 ```go
 ray := geom.RayThrough(camera, cursor) // from the camera through the cursor; Ry takes a direction
@@ -266,8 +266,13 @@ ray.IntersectsRectangle(r)             // IntersectsRay on every Collider gives 
 ray.ClipPolygon(p)                     // the parts inside a concave polygon, from Origin on
 ray.IntersectionBox(box)               // the boundary crossings, from Origin on
 
-if hit, ok := ray.ClipCircle(c); ok { // allocation-free on every convex shape
-	hit.Start // the first point of c on the ray, and hit.End where the ray leaves it
+if part, ok := ray.ClipCircle(c); ok { // allocation-free on every convex shape
+	part.Start // the first point of c on the ray, and part.End where the ray leaves it
+}
+
+if hit, ok := ray.HitRectangle(r); ok { // false from an Origin inside r; Segment has the same family
+	hit.Point                           // where the ray reaches r, ray.PointAt(hit.Fraction)
+	ray.Direction.Reflect(hit.Normal)   // the unit normal there faces the ray, so this is the bounce
 }
 ```
 

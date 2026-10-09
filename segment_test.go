@@ -2020,6 +2020,258 @@ func TestSegment_ClipBox(t *testing.T) {
 	})
 }
 
+func TestSegment_HitCircle(t *testing.T) {
+	circle := Circ(Pt(0.0, 0.0), 1.0)
+
+	t.Run("from outside is the first crossing, with the normal from the center", func(t *testing.T) {
+		hit, ok := Seg(Pt(-3.0, 0.0), Pt(1.0, 0.0)).HitCircle(circle)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(-1.0, 0.0), Normal: Vec(-1.0, 0.0), Fraction: 0.5})
+
+		hit, ok = Seg(Pt(-3.0, 0.6), Pt(3.0, 0.6)).HitCircle(circle)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(-0.8, 0.6), Normal: Vec(-0.8, 0.6), Fraction: 2.2 / 6})
+	})
+	t.Run("a tangent is the point of contact", func(t *testing.T) {
+		hit, ok := Seg(Pt(-2.0, 1.0), Pt(2.0, 1.0)).HitCircle(circle)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(0.0, 1.0), Normal: Vec(0.0, 1.0), Fraction: 0.5})
+	})
+	t.Run("an End touching from outside is hit there", func(t *testing.T) {
+		hit, ok := Seg(Pt(3.0, 0.0), Pt(1.0, 0.0)).HitCircle(circle)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(1.0, 0.0), Normal: Vec(1.0, 0.0), Fraction: 1})
+	})
+	t.Run("a Start inside or on the boundary hits nothing", func(t *testing.T) {
+		_, ok := Seg(Pt(0.5, 0.0), Pt(5.0, 0.0)).HitCircle(circle)
+		assert.False(t, ok)
+
+		_, ok = Seg(Pt(1.0, 0.0), Pt(5.0, 0.0)).HitCircle(circle)
+		assert.False(t, ok)
+
+		_, ok = Seg(Pt(1.0, 0.0), Pt(-5.0, 0.0)).HitCircle(circle)
+		assert.False(t, ok)
+	})
+	t.Run("apart or short of the circle hits nothing", func(t *testing.T) {
+		_, ok := Seg(Pt(-2.0, 2.0), Pt(2.0, 2.0)).HitCircle(circle)
+		assert.False(t, ok)
+
+		_, ok = Seg(Pt(-3.0, 0.0), Pt(-2.0, 0.0)).HitCircle(circle)
+		assert.False(t, ok)
+	})
+	t.Run("a circle of zero radius faces back along the segment", func(t *testing.T) {
+		hit, ok := Seg(Pt(-2.0, 0.0), Pt(2.0, 0.0)).HitCircle(Circ(Pt(0.0, 0.0), 0.0))
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(0.0, 0.0), Normal: Vec(-1.0, 0.0), Fraction: 0.5})
+	})
+	t.Run("int rounds the point and keeps the normal", func(t *testing.T) {
+		hit, ok := Seg(Pt(-10, 1), Pt(10, 1)).HitCircle(Circ(Pt(0, 0), 5))
+		assertHit(t, hit, ok, Hit[int]{Point: Pt(-5, 1), Normal: Vec(-math.Sqrt(24)/5, 0.2), Fraction: 0.25})
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		unit, through := Circ(Pt(0, 0), 5), Seg(Pt(-10, 0), Pt(10, 0))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.HitCircle(unit)
+		}), 0)
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, c := range circleFixtures {
+			for _, s := range append(grazingSegments(c), segmentFixtures...) {
+				hit, ok := s.HitCircle(c)
+				assertSegmentHit(t, s, hit, ok, c.Contains(s.Start), s.IntersectionCircle(c), fmt.Sprintf("%s → %s: ", s, c))
+			}
+		}
+	})
+}
+
+func TestSegment_HitPolygon(t *testing.T) {
+	square := Pol(squareVertices())
+	notched := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(2, 1), Pt(0, 4)})
+
+	t.Run("from outside is the first crossing, with the normal of its edge", func(t *testing.T) {
+		hit, ok := Seg(Pt(-1, 1), Pt(5, 1)).HitPolygon(square)
+		assertHit(t, hit, ok, Hit[int]{Point: Pt(0, 1), Normal: Vec(-1.0, 0.0), Fraction: 1.0 / 6})
+
+		hit, ok = Seg(Pt(5, 1), Pt(-1, 1)).HitPolygon(square)
+		assertHit(t, hit, ok, Hit[int]{Point: Pt(2, 1), Normal: Vec(1.0, 0.0), Fraction: 0.5})
+	})
+	t.Run("the normal faces the segment whichever way the polygon is wound", func(t *testing.T) {
+		vertices := squareVertices()
+		slices.Reverse(vertices)
+
+		hit, ok := Seg(Pt(-1, 1), Pt(5, 1)).HitPolygon(Pol(vertices))
+		assertHit(t, hit, ok, Hit[int]{Point: Pt(0, 1), Normal: Vec(-1.0, 0.0), Fraction: 1.0 / 6})
+	})
+	t.Run("a concave polygon is hit on the first edge reached", func(t *testing.T) {
+		hit, ok := Seg(Pt(2, 6), Pt(2, -2)).HitPolygon(notched)
+		assertHit(t, hit, ok, Hit[int]{Point: Pt(2, 1), Normal: Vec(1/math.Sqrt(13)*-3, 2/math.Sqrt(13)), Fraction: 0.625})
+	})
+	t.Run("a Start inside or on the boundary hits nothing", func(t *testing.T) {
+		_, ok := Seg(Pt(1, 1), Pt(5, 1)).HitPolygon(square)
+		assert.False(t, ok)
+
+		_, ok = Seg(Pt(0, 1), Pt(-5, 1)).HitPolygon(square)
+		assert.False(t, ok)
+	})
+	t.Run("apart and empty hit nothing", func(t *testing.T) {
+		_, ok := Seg(Pt(-1, 5), Pt(5, 5)).HitPolygon(square)
+		assert.False(t, ok)
+
+		_, ok = Seg(Pt(-1, 1), Pt(5, 1)).HitPolygon(Polygon[int]{})
+		assert.False(t, ok)
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		through := Seg(Pt(-1, 1), Pt(5, 1))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.HitPolygon(notched)
+		}), 0)
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			for _, s := range segmentFixtures {
+				hit, ok := s.HitPolygon(p)
+				assertSegmentHit(t, s, hit, ok, p.Contains(s.Start), s.IntersectionPolygon(p), fmt.Sprintf("%s → %s: ", s, p))
+			}
+		}
+	})
+}
+
+func TestSegment_HitRectangle(t *testing.T) {
+	rectangle := Rect(Pt(0, 0), Sz(4, 4))
+
+	t.Run("from outside is the first crossing, with the normal of its edge", func(t *testing.T) {
+		hit, ok := Seg(Pt(-5, 0), Pt(5, 0)).HitRectangle(rectangle)
+		assertHit(t, hit, ok, Hit[int]{Point: Pt(-2, 0), Normal: Vec(-1.0, 0.0), Fraction: 0.3})
+
+		hit, ok = Seg(Pt(1, 6), Pt(1, -6)).HitRectangle(rectangle)
+		assertHit(t, hit, ok, Hit[int]{Point: Pt(1, 2), Normal: Vec(0.0, 1.0), Fraction: 1.0 / 3})
+	})
+	t.Run("a corner takes the edge first in Edges", func(t *testing.T) {
+		hit, ok := Seg(Pt(-4, -4), Pt(4, 4)).HitRectangle(rectangle)
+		assertHit(t, hit, ok, Hit[int]{Point: Pt(-2, -2), Normal: Vec(0.0, -1.0), Fraction: 0.25})
+
+		hit, ok = Seg(Pt(1, 3), Pt(3, 1)).HitRectangle(rectangle)
+		assertHit(t, hit, ok, Hit[int]{Point: Pt(2, 2), Normal: Vec(-1.0, 0.0), Fraction: 0.5})
+	})
+	t.Run("along an edge is the corner it reaches, on the edge it meets there", func(t *testing.T) {
+		hit, ok := Seg(Pt(-5, -2), Pt(5, -2)).HitRectangle(rectangle)
+		assertHit(t, hit, ok, Hit[int]{Point: Pt(-2, -2), Normal: Vec(-1.0, 0.0), Fraction: 0.3})
+	})
+	t.Run("a Start inside or on the boundary hits nothing", func(t *testing.T) {
+		_, ok := Seg(Pt(0, 0), Pt(5, 0)).HitRectangle(rectangle)
+		assert.False(t, ok)
+
+		_, ok = Seg(Pt(2, 0), Pt(5, 0)).HitRectangle(rectangle)
+		assert.False(t, ok)
+	})
+	t.Run("apart hits nothing", func(t *testing.T) {
+		_, ok := Seg(Pt(3, -5), Pt(3, 5)).HitRectangle(rectangle)
+		assert.False(t, ok)
+	})
+	t.Run("a rotated rectangle is hit on its turned edges", func(t *testing.T) {
+		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
+
+		hit, ok := Seg(Pt(-3.0, 0.5), Pt(3.0, 0.5)).HitRectangle(diamond)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(0.5-Sqrt2, 0.5), Normal: Vec(-Sqrt2/2, Sqrt2/2), Fraction: (3.5 - Sqrt2) / 6})
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		through := Seg(Pt(-5, 1), Pt(5, 1))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.HitRectangle(rectangle)
+		}), 0)
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.HitRectangle(rectangle.Rotate(Pi / 5))
+		}), 0)
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, s := range segmentFixtures {
+				hit, ok := s.HitRectangle(r)
+				assertSegmentHit(t, s, hit, ok, r.Contains(s.Start), s.IntersectionRectangle(r), fmt.Sprintf("%s → %s: ", s, r))
+			}
+		}
+	})
+}
+
+func TestSegment_HitRegularPolygon(t *testing.T) {
+	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0, 0)
+
+	t.Run("from outside is the first crossing, with the normal of its edge", func(t *testing.T) {
+		hit, ok := Seg(Pt(-3, 1), Pt(3, 1)).HitRegularPolygon(diamond)
+		assertHit(t, hit, ok, Hit[int]{Point: Pt(-1, 1), Normal: Vec(-Sqrt2/2, Sqrt2/2), Fraction: 1.0 / 3})
+	})
+	t.Run("a Start inside hits nothing", func(t *testing.T) {
+		_, ok := Seg(Pt(0, 0), Pt(5, 0)).HitRegularPolygon(diamond)
+		assert.False(t, ok)
+	})
+	t.Run("apart and empty hit nothing", func(t *testing.T) {
+		_, ok := Seg(Pt(-3, 3), Pt(3, 3)).HitRegularPolygon(diamond)
+		assert.False(t, ok)
+
+		_, ok = Seg(Pt(-3, 1), Pt(3, 1)).HitRegularPolygon(RegularPolygon[int]{})
+		assert.False(t, ok)
+	})
+	t.Run("matches HitPolygon on the Polygon form", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for _, s := range segmentFixtures {
+				hit, ok := s.HitRegularPolygon(rp)
+				expected, expectedOK := s.HitPolygon(rp.Polygon())
+
+				assert.Equal(t, ok, expectedOK, fmt.Sprintf("%s → %s: ", s, rp))
+				assert.Equal(t, hit, expected, fmt.Sprintf("%s → %s: ", s, rp))
+			}
+		}
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		through := Seg(Pt(-3, 1), Pt(3, 1))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.HitRegularPolygon(diamond)
+		}), 0)
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for _, s := range segmentFixtures {
+				hit, ok := s.HitRegularPolygon(rp)
+				assertSegmentHit(t, s, hit, ok, rp.Contains(s.Start), s.IntersectionRegularPolygon(rp), fmt.Sprintf("%s → %s: ", s, rp))
+			}
+		}
+	})
+}
+
+func TestSegment_HitBox(t *testing.T) {
+	box := BoxFromMinMax(Pt(-2, -2), Pt(2, 2))
+
+	t.Run("from outside is the first crossing, with the normal of its edge", func(t *testing.T) {
+		hit, ok := Seg(Pt(-5, 0), Pt(5, 0)).HitBox(box)
+		assertHit(t, hit, ok, Hit[int]{Point: Pt(-2, 0), Normal: Vec(-1.0, 0.0), Fraction: 0.3})
+	})
+	t.Run("a Start inside hits nothing", func(t *testing.T) {
+		_, ok := Seg(Pt(0, 0), Pt(5, 0)).HitBox(box)
+		assert.False(t, ok)
+	})
+	t.Run("apart hits nothing", func(t *testing.T) {
+		_, ok := Seg(Pt(3, -5), Pt(3, 5)).HitBox(box)
+		assert.False(t, ok)
+	})
+	t.Run("matches HitRectangle on the box's Rectangle", func(t *testing.T) {
+		for _, b := range boxFixtures {
+			for _, s := range segmentFixtures {
+				hit, ok := s.HitBox(b)
+				expected, expectedOK := s.HitRectangle(b.Rectangle())
+
+				assert.Equal(t, ok, expectedOK, fmt.Sprintf("%s → %s: ", s, b))
+				assertHitEqual(t, hit, expected, fmt.Sprintf("%s → %s: ", s, b))
+			}
+		}
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		through := Seg(Pt(-5, 0), Pt(5, 0))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.HitBox(box)
+		}), 0)
+	})
+}
+
 func TestSegment_Equal(t *testing.T) {
 	t.Run("same segment", func(t *testing.T) {
 		assert.True(t, Seg(Pt(1, 2), Pt(3, 5)).Equal(Seg(Pt(1, 2), Pt(3, 5))))
@@ -2299,6 +2551,43 @@ func assertClipped[T Number](t *testing.T, s Segment[T], parts []Segment[T], int
 
 		reached = to
 	}
+}
+
+// assertHitEqual checks a Hit against the one expected of it, field by field within the tolerance.
+func assertHitEqual[T Number](t *testing.T, hit, expected Hit[T], message string) {
+	t.Helper()
+
+	geomtest.AssertPoint(t, hit.Point, expected.Point, message+"Point: ")
+	geomtest.AssertVector(t, hit.Normal, expected.Normal, message+"Normal: ")
+	geomtest.AssertNumber(t, hit.Fraction, expected.Fraction, message+"Fraction: ")
+}
+
+// assertHit checks that a Hit method found the hit expected of it.
+func assertHit[T Number](t *testing.T, hit Hit[T], ok bool, expected Hit[T]) {
+	t.Helper()
+
+	assert.True(t, ok)
+	assertHitEqual(t, hit, expected, "")
+}
+
+// assertSegmentHit checks the Hit a method returns for a segment over the fixtures: there is one
+// exactly where the shape does not contain Start and the segment crosses its boundary, at the
+// first of the crossings, with a unit normal that does not run along the segment and a fraction
+// that PointAt takes back to the point.
+func assertSegmentHit[T Number](t *testing.T, s Segment[T], hit Hit[T], ok, contained bool, crossings []Point[T], message string) {
+	t.Helper()
+
+	assert.Equal(t, ok, !contained && len(crossings) > 0, message)
+	if !ok {
+		assert.Equal(t, hit, Hit[T]{}, message)
+
+		return
+	}
+
+	assert.True(t, hit.Point.Equal(crossings[0]), message+hit.Point.String()+" is the first crossing: ")
+	assert.True(t, hit.Normal.IsNormalized(), message+hit.Normal.String()+" is a unit: ")
+	assert.True(t, LessOrEqual(hit.Normal.Dot(s.Float().Vector().Normalize()), 0), message+hit.Normal.String()+" faces the segment: ")
+	assert.True(t, s.PointAt(hit.Fraction).Equal(hit.Point), message+"PointAt of the fraction: ")
 }
 
 // segmentFixtures span axis-aligned, diagonal, degenerate, and backwards segments.

@@ -141,24 +141,27 @@ func (e *edgeIntersections[T]) sorted() []Point[T] {
 // of the part inside, which is all Segment.clipConvex reads, and the boundary points the
 // Intersection of a convex shape returns, so the two agree and the crossings are never more than
 // two. It holds them in an array of its own rather than a slice, so a shape that only clips
-// allocates nothing.
+// allocates nothing. The edge the first crossing lies on is kept beside it, the boundary a Hit
+// reads its normal from, and the first crossing is the first of any outline, so the Hit of a
+// concave polygon reads the span too.
 type edgeSpan[T Number] struct {
 	segment Segment[T]
 	ends    [2]Point[T]
+	edge    Segment[T]
 	crossed bool
 }
 
 // add folds one edge in, keeping its crossing with the segment where it comes before the first
-// or after the last so far.
+// or after the last so far. A vertex two edges cross at stays with the edge added first.
 func (e *edgeSpan[T]) add(edge Segment[T]) {
 	point, ok := e.segment.IntersectionSegment(edge)
 
 	switch {
 	case !ok:
 	case !e.crossed:
-		e.ends, e.crossed = [2]Point[T]{point, point}, true
+		e.ends, e.edge, e.crossed = [2]Point[T]{point, point}, edge, true
 	case e.segment.compareDistance(point, e.ends[0]) < 0:
-		e.ends[0] = point
+		e.ends[0], e.edge = point, edge
 	case e.segment.compareDistance(point, e.ends[1]) > 0:
 		e.ends[1] = point
 	}
@@ -186,6 +189,16 @@ func (e *edgeSpan[T]) appendCrossings(dst []Point[T]) []Point[T] {
 	default:
 		return append(dst, e.ends[0], e.ends[1])
 	}
+}
+
+// hit returns the first crossing from Start as the Hit of the segment on the edge it lies on,
+// and false where there was none.
+func (e *edgeSpan[T]) hit() (Hit[T], bool) {
+	if !e.crossed {
+		return Hit[T]{}, false
+	}
+
+	return e.segment.hitAt(e.ends[0], e.edge.Float().Normal()), true
 }
 
 // edgeSweep gathers, among the points where a segment crosses the edges of an outline, the next

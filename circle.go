@@ -435,31 +435,9 @@ func (c Circle[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
 // appended ones are ordered from Start. A nil dst is allocated on the first point with room for
 // two, and Segment.ClipCircle passes a buffer of its own.
 func (c Circle[T]) AppendIntersectionSegment(dst []Point[T], segment Segment[T]) []Point[T] {
-	entry, exit, ok := segment.chord(c)
-	start := c.touchesSquared(c.centerDistanceSquared(segment.Start), segment.magnitude())
-	end := c.touchesSquared(c.centerDistanceSquared(segment.End), segment.magnitude())
+	fractions, n := c.fractions(segment)
 
-	switch {
-	case start && end && segment.Vector().hasDirection():
-		return segment.appendPointsAt(dst, 0, 1)
-	case ok && entry < exit:
-		if start {
-			entry, exit = segment.snapToEndpoint(entry, exit, 0)
-		}
-		if end {
-			entry, exit = segment.snapToEndpoint(entry, exit, 1)
-		}
-
-		return segment.appendPointsAt(dst, entry, exit)
-	case start:
-		return segment.appendPointsAt(dst, 0)
-	case end:
-		return segment.appendPointsAt(dst, 1)
-	case ok:
-		return segment.appendPointsAt(dst, entry)
-	default:
-		return dst
-	}
+	return segment.appendPointsAt(dst, fractions[:n]...)
 }
 
 // IntersectsRay reports whether the circle and the ray share a point, as IntersectsSegment
@@ -550,6 +528,39 @@ func (c Circle[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 // the gap beyond it on the two axes with no edge to walk.
 func (c Circle[T]) IntersectsBox(box Box[T]) bool {
 	return c.containsSquared(box.DistanceSquaredTo(c.Center), box.magnitude())
+}
+
+// fractions returns the fractions along the segment at which it crosses the circle boundary, in
+// increasing order, and how many of the two there are: the ends of the chord, an endpoint on the
+// boundary within the tolerance standing in for the end it is by snapToEndpoint, or the one
+// fraction of a tangent. They are not yet held to the segment, which appendPointsAt does, so
+// IntersectionSegment and Segment.HitCircle place their points from the same fractions.
+func (c Circle[T]) fractions(segment Segment[T]) ([2]float64, int) {
+	entry, exit, ok := segment.chord(c)
+	start := c.touchesSquared(c.centerDistanceSquared(segment.Start), segment.magnitude())
+	end := c.touchesSquared(c.centerDistanceSquared(segment.End), segment.magnitude())
+
+	switch {
+	case start && end && segment.Vector().hasDirection():
+		return [2]float64{0, 1}, 2
+	case ok && entry < exit:
+		if start {
+			entry, exit = segment.snapToEndpoint(entry, exit, 0)
+		}
+		if end {
+			entry, exit = segment.snapToEndpoint(entry, exit, 1)
+		}
+
+		return [2]float64{entry, exit}, 2
+	case start:
+		return [2]float64{0}, 1
+	case end:
+		return [2]float64{1}, 1
+	case ok:
+		return [2]float64{entry}, 1
+	default:
+		return [2]float64{}, 0
+	}
 }
 
 // centerDistanceSquared returns the squared distance from the center to the point, in

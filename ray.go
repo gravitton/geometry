@@ -334,6 +334,53 @@ func (r Ray[T]) ClipBox(box Box[T]) (Segment[T], bool) {
 	return r.reach(box.Min, box.Max).ClipBox(box)
 }
 
+// HitCircle returns where the ray first reaches the circle from outside, and false where it does
+// not, as Segment.HitCircle finds it on the reach of the ray past the circle, with the Fraction
+// in units of Direction: the Start of the part ClipCircle gives, with the direction from the
+// center to it as the normal. An Origin the circle contains, boundary included within the
+// tolerance, is already in it and hits nothing. It allocates nothing.
+func (r Ray[T]) HitCircle(circle Circle[T]) (Hit[T], bool) {
+	return r.rescale(r.reach(circle.minMax()).HitCircle(circle))
+}
+
+// HitPolygon returns where the ray first reaches the polygon from outside, and false where it
+// does not, as Segment.HitPolygon finds it on the reach of the ray past the polygon, with the
+// Fraction in units of Direction: the first point IntersectionPolygon returns, with the normal of
+// the edge it lies on turned to face the ray. An Origin the polygon contains, boundary included
+// within the tolerance, is already in it and hits nothing. It allocates nothing.
+func (r Ray[T]) HitPolygon(polygon Polygon[T]) (Hit[T], bool) {
+	return r.rescale(r.reach(polygon.minMax()).HitPolygon(polygon))
+}
+
+// HitRectangle returns where the ray first reaches the rectangle from outside, whatever its
+// angle, and false where it does not, as Segment.HitRectangle finds it on the reach of the ray
+// past the rectangle, with the Fraction in units of Direction: the Start of the part
+// ClipRectangle gives, with the normal of the edge it lies on turned to face the ray. An Origin the rectangle
+// contains, boundary included within the tolerance, is already in it and hits nothing. It
+// allocates nothing.
+func (r Ray[T]) HitRectangle(rectangle Rectangle[T]) (Hit[T], bool) {
+	return r.rescale(r.reach(rectangle.MinMax()).HitRectangle(rectangle))
+}
+
+// HitRegularPolygon returns where the ray first reaches the regular polygon from outside, and
+// false where it does not, as Segment.HitRegularPolygon finds it on the reach of the ray past
+// the polygon, with the Fraction in units of Direction: the Start of the part ClipRegularPolygon
+// gives, with the normal of the edge it lies on turned to face the ray. An Origin the polygon contains, boundary
+// included within the tolerance, is already in it and hits nothing, and an empty polygon is hit
+// nowhere. It allocates nothing.
+func (r Ray[T]) HitRegularPolygon(polygon RegularPolygon[T]) (Hit[T], bool) {
+	return r.rescale(r.reach(polygon.minMax()).HitRegularPolygon(polygon))
+}
+
+// HitBox returns where the ray first reaches the box from outside, and false where it does not,
+// as Segment.HitBox finds it on the reach of the ray past the box, with the Fraction in units of
+// Direction: the Start of the part ClipBox gives, with the normal of the edge it lies on turned
+// to face the ray. An Origin the box contains, boundary included within the tolerance, is already in it and
+// hits nothing. It allocates nothing.
+func (r Ray[T]) HitBox(box Box[T]) (Hit[T], bool) {
+	return r.rescale(r.reach(box.Min, box.Max).HitBox(box))
+}
+
 // reach returns the part of the ray from Origin to where it passes the extent a, b of a shape:
 // to twice the fraction the farthest corner of the extent projects to, or Origin alone where the
 // whole extent lies behind it or the ray has no direction. No point of the extent projects past
@@ -362,6 +409,20 @@ func (r Ray[T]) reach(a, b Point[T]) Segment[T] {
 	}
 
 	return Segment[T]{r.Origin, r.PointAt(t)}
+}
+
+// rescale returns the hit of a reach of the ray as the hit of the ray itself: the point and the
+// normal as they are, and the Fraction, which the reach measures along its own length, as the
+// one the point projects to in units of Direction. No hit stays none.
+func (r Ray[T]) rescale(hit Hit[T], ok bool) (Hit[T], bool) {
+	if !ok {
+		return Hit[T]{}, false
+	}
+
+	direction := r.Direction.Float()
+	fraction := ratio(hit.Point.Float().Subtract(r.Origin.Float()).Dot(direction), direction.LengthSquared())
+
+	return Hit[T]{hit.Point, hit.Normal, fraction}, true
 }
 
 // crosses reports whether the rays properly cross, as crossing decides it: the lines through

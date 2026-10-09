@@ -30,6 +30,9 @@ type Ray = geom.Ray[float64]
 // Line is geom.Line[float64].
 type Line = geom.Line[float64]
 
+// Hit is geom.Hit[float64].
+type Hit = geom.Hit[float64]
+
 // Rectangle is geom.Rectangle[float64].
 type Rectangle = geom.Rectangle[float64]
 

@@ -18,6 +18,8 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 - `Intersects`, `Intersection` and `Clip` on `Line` for every kind, with the `Append` forms of the pairs it holds, decided on the segment tests like the ray's and returned in order along the direction; `IntersectionLine` gives the point where two lines cross, the same whichever asks and false for parallel lines
 - `IntersectsLine` and `IntersectionLine` on `Circle`, `Segment`, `Ray`, `Polygon`, `Rectangle`, `RegularPolygon` and `Box`, with `Circle.AppendIntersectionLine`
 - `Segment.Line` and `Ray.Line` – the line through a segment or a ray
+- `Hit` and `HitCircle`, `HitPolygon`, `HitRectangle`, `HitRegularPolygon` and `HitBox` on `Segment` and `Ray` – where a cast first reaches the boundary of a shape from outside: the point, the first `Intersection<Kind>` returns, the unit normal of the boundary there turned to face the cast, in `float64`, and the fraction of the segment or of `Direction` at which `PointAt` reaches it; a `Start` or `Origin` the shape contains hits nothing, and none allocates
+- `Hit` in `types/ints` and `types/floats`
 - `geomtest.AssertLine`, and `Line` and `Ln` in `types/ints` and `types/floats`
 - `Size.IsPositive` – whether the width and the height are both greater than zero, a size that encloses an area, exactly and with no tolerance, so a size too small for `IsZero` to tell from zero still is and one with a negative or a NaN extent is not
 - `IsFinite` – whether a number is neither NaN nor infinite, the values `Cast` and `Int` take into an integer type without a panic

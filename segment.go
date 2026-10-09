@@ -675,6 +675,113 @@ func (s Segment[T]) ClipBox(box Box[T]) (Segment[T], bool) {
 	return s.clipConvex(span.crossings(), box.Contains(s.Start), box.Contains(s.End))
 }
 
+// HitCircle returns where the segment first reaches the circle from outside, and false where it
+// does not: the first point IntersectionCircle returns, the Start of the part ClipCircle gives,
+// with the direction from the center to it as the normal, read before the point is rounded for
+// an integer T. A Start the circle contains, boundary included within the tolerance, is already
+// in it and hits nothing, so a cast leaving a boundary it was turned back from does not meet it
+// again. A circle of zero radius is a point with no direction from its center, and its normal
+// faces back along the segment. It allocates nothing.
+func (s Segment[T]) HitCircle(circle Circle[T]) (Hit[T], bool) {
+	if circle.Contains(s.Start) {
+		return Hit[T]{}, false
+	}
+
+	fractions, n := circle.fractions(s)
+	for _, t := range fractions[:n] {
+		if !s.containsAt(t) {
+			continue
+		}
+
+		point := s.Float().PointAt(Clamp(t, 0, 1))
+		normal := point.Subtract(circle.Center.Float())
+		if circle.Radius == 0 {
+			normal = Vector[float64]{}
+		}
+
+		return s.hitAt(point.Cast[T](), normal), true
+	}
+
+	return Hit[T]{}, false
+}
+
+// HitPolygon returns where the segment first reaches the polygon from outside, and false where it
+// does not: the first point IntersectionPolygon returns, with the normal of the edge it lies on
+// turned to face the segment, so the polygon may be wound either way. A vertex two edges meet
+// the segment at takes the edge that comes first in Edges. A Start the polygon contains,
+// boundary included within the tolerance, by the even-odd rule of Contains, is already in it and
+// hits nothing, and an empty polygon is hit nowhere. It allocates nothing.
+func (s Segment[T]) HitPolygon(polygon Polygon[T]) (Hit[T], bool) {
+	if polygon.Contains(s.Start) {
+		return Hit[T]{}, false
+	}
+
+	span := edgeSpan[T]{segment: s}
+	for edge := range polygon.Edges() {
+		span.add(edge)
+	}
+
+	return span.hit()
+}
+
+// HitRectangle returns where the segment first reaches the rectangle from outside, whatever its
+// angle, and false where it does not: the first point IntersectionRectangle returns, the Start of
+// the part ClipRectangle gives, with the normal of the edge it lies on turned to face the
+// segment, the outward one wherever the segment goes on into the rectangle. A corner takes the
+// edge that comes first in Edges, so a segment touching a corner in passing can be given the
+// edge behind it, and a segment along an edge takes the edge it meets at the corner it reaches.
+// A Start the rectangle contains, boundary included within the tolerance, is already in it and
+// hits nothing. It allocates nothing.
+func (s Segment[T]) HitRectangle(rectangle Rectangle[T]) (Hit[T], bool) {
+	if rectangle.Contains(s.Start) {
+		return Hit[T]{}, false
+	}
+
+	span := edgeSpan[T]{segment: s}
+	for edge := range rectangle.Edges() {
+		span.add(edge)
+	}
+
+	return span.hit()
+}
+
+// HitRegularPolygon returns where the segment first reaches the regular polygon from outside,
+// and false where it does not: the first point IntersectionRegularPolygon returns, the Start of
+// the part ClipRegularPolygon gives, with the normal of the edge it lies on turned to face the
+// segment, the answer HitPolygon gives on the polygon's Polygon form, without building it. A
+// vertex takes the edge that comes first in Edges. A Start the polygon contains, boundary
+// included within the tolerance, is already in it and hits nothing, and an empty polygon is hit
+// nowhere. It allocates nothing.
+func (s Segment[T]) HitRegularPolygon(polygon RegularPolygon[T]) (Hit[T], bool) {
+	if polygon.Contains(s.Start) {
+		return Hit[T]{}, false
+	}
+
+	span := edgeSpan[T]{segment: s}
+	for edge := range polygon.Edges() {
+		span.add(edge)
+	}
+
+	return span.hit()
+}
+
+// HitBox returns where the segment first reaches the box from outside, as HitRectangle finds it
+// on a rectangle that is not rotated, over the edges between the corners of the box. It
+// allocates nothing.
+func (s Segment[T]) HitBox(box Box[T]) (Hit[T], bool) {
+	if box.Contains(s.Start) {
+		return Hit[T]{}, false
+	}
+
+	span := edgeSpan[T]{segment: s}
+	corners := box.corners()
+	for edge := range edgesOf(corners[:]) {
+		span.add(edge)
+	}
+
+	return span.hit()
+}
+
 // distanceSquaredTo returns the squared distance to the point with no tolerance applied, which
 // DistanceSquaredTo snaps to zero within the tolerance. Beside the segment it is the square of
 // the gap, the cross product divided by the length, rather than the squared cross product
@@ -951,6 +1058,26 @@ func (s Segment[T]) sweep(polygon Polygon[T], reached Point[T]) edgeSweep[T] {
 	}
 
 	return sweep
+}
+
+// hitAt returns the Hit of the segment at the given point of a boundary whose normal there has
+// the given direction, of any length and either sense: the normal is turned against the segment,
+// to the side it comes from, and resized to a unit, and the fraction is the one the point
+// projects to along the segment. A normal with no direction, that of a point or of an edge of
+// zero length, is the direction back along the segment.
+func (s Segment[T]) hitAt(point Point[T], normal Vector[float64]) Hit[T] {
+	start, direction := s.Start.Float(), s.Float().Vector()
+
+	switch {
+	case !normal.hasDirection():
+		normal = direction.Negate()
+	case normal.Dot(direction) > 0:
+		normal = normal.Negate()
+	}
+
+	fraction := ratio(point.Float().Subtract(start).Dot(direction), direction.LengthSquared())
+
+	return Hit[T]{point, normal.Normalize(), fraction}
 }
 
 // crossesRay reports whether a ray cast from the point along +X crosses the segment, counting
