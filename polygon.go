@@ -709,6 +709,24 @@ func (p Polygon[T]) AppendIntersectionRay(dst []Point[T], ray Ray[T]) []Point[T]
 	return ray.AppendIntersectionPolygon(dst, p)
 }
 
+// IntersectsLine reports whether the polygon and the line share a point, as
+// Line.IntersectsPolygon does.
+func (p Polygon[T]) IntersectsLine(line Line[T]) bool {
+	return line.IntersectsPolygon(p)
+}
+
+// IntersectionLine returns the points where the line crosses the polygon boundary, as
+// Line.IntersectionPolygon does.
+func (p Polygon[T]) IntersectionLine(line Line[T]) []Point[T] {
+	return line.IntersectionPolygon(p)
+}
+
+// AppendIntersectionLine appends the points IntersectionLine returns to dst and returns the
+// extended slice, as Line.AppendIntersectionPolygon does.
+func (p Polygon[T]) AppendIntersectionLine(dst []Point[T], line Line[T]) []Point[T] {
+	return line.AppendIntersectionPolygon(dst, p)
+}
+
 // IntersectsPolygon reports whether the polygons share a point: a vertex of one lies within the
 // other, or an edge of one crosses an edge of the other. Touching polygons intersect, within the
 // tolerance, the same closed convention as Contains, and an empty polygon intersects nothing.

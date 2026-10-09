@@ -242,8 +242,8 @@ Every shape has one `Intersects<Kind>` per kind, symmetric and counting a touch;
 `Intersection<Kind>`:
 
 ```go
-a.IntersectsRectangle(b) // IntersectsSegment, IntersectsRay, IntersectsRectangle, IntersectsCircle, IntersectsPolygon,
-r.IntersectsCircle(c)    // IntersectsRegularPolygon and IntersectsBox, on every shape but Ellipse
+a.IntersectsRectangle(b) // IntersectsSegment, IntersectsRay, IntersectsLine, IntersectsRectangle, IntersectsCircle,
+r.IntersectsCircle(c)    // IntersectsPolygon, IntersectsRegularPolygon and IntersectsBox, on every shape but Ellipse
 geom.Intersects(a, c)    // the same answer without knowing either type
 
 point, ok := s.IntersectionSegment(other) // where two segments cross
@@ -269,6 +269,19 @@ ray.IntersectionBox(box)               // the boundary crossings, from Origin on
 if hit, ok := ray.ClipCircle(c); ok { // allocation-free on every convex shape
 	hit.Start // the first point of c on the ray, and hit.End where the ray leaves it
 }
+```
+
+A `Line` runs without end both ways through `Origin` along `Direction`. It tells its two sides apart, and is a
+`Collider` like the ray, with the same `Intersection<Kind>` and `Clip<Kind>` in order along its direction:
+
+```go
+wall := geom.LineThrough(a, b) // through two points; Ln takes a direction, and s.Line() and ray.Line() convert
+wall.Side(p)                   // 1 on the side the normal of the direction points to, -1 on the other, 0 on the line
+wall.Nearest(p)                // the foot of the perpendicular, with DistanceTo and Contains
+wall.Reflect(p)                // p mirrored across the line
+wall.IntersectionLine(other)   // where two lines cross, and false for parallel ones
+wall.IntersectsCircle(c)       // IntersectsLine on every Collider gives the same answer
+wall.ClipBox(view)             // the part of the line a viewport shows, and false where it passes by
 ```
 
 ### Containment

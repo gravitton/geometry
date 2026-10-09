@@ -182,6 +182,23 @@ func AssertRay[T geom.Number](t Testing, actual, expected geom.Ray[T], messages 
 	return ok
 }
 
+// AssertLine asserts that actual equals expected (exactly for an integer T, within
+// [geom.EpsilonRelative] for a float T).
+func AssertLine[T geom.Number](t Testing, actual, expected geom.Line[T], messages ...string) bool {
+	t.Helper()
+
+	ok := true
+
+	if !AssertPoint(t, actual.Origin, expected.Origin, prefixed(messages, "Origin.")...) {
+		ok = false
+	}
+	if !AssertVector(t, actual.Direction, expected.Direction, prefixed(messages, "Direction.")...) {
+		ok = false
+	}
+
+	return ok
+}
+
 // AssertRectangle asserts that actual equals expected (exactly for an integer T, within
 // [geom.EpsilonRelative] for a float T). The angle goes through AssertAngle, so a full turn does
 // not matter, like Rectangle.Equal.

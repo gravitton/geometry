@@ -520,6 +520,74 @@ func FuzzRay_IntersectionRay(f *testing.F) {
 	})
 }
 
+func TestRay_IntersectsLine(t *testing.T) {
+	diagonal := Ry(Pt(0, 0), Vec(1, 1))
+
+	t.Run("crossing ahead of the origin of the ray, on either side of the line's", func(t *testing.T) {
+		assert.True(t, diagonal.IntersectsLine(Ln(Pt(0, 4), Vec(1, -1))))
+		assert.True(t, diagonal.IntersectsLine(Ln(Pt(9, -5), Vec(1, -1))))
+	})
+	t.Run("the lines cross behind the origin of the ray", func(t *testing.T) {
+		assert.False(t, diagonal.IntersectsLine(Ln(Pt(0, -4), Vec(1, -1))))
+	})
+	t.Run("the origin of the ray on the line counts", func(t *testing.T) {
+		assert.True(t, diagonal.IntersectsLine(Ln(Pt(-3, 0), Vec(1, 0))))
+	})
+	t.Run("along the ray counts, beside it does not", func(t *testing.T) {
+		assert.True(t, diagonal.IntersectsLine(Ln(Pt(-5, -5), Vec(-1, -1))))
+		assert.False(t, diagonal.IntersectsLine(Ln(Pt(-5, -4), Vec(1, 1))))
+	})
+	t.Run("holds where the ray meets either ray from the origin of the line", func(t *testing.T) {
+		for _, r := range rayFixtures {
+			for _, l := range lineFixtures {
+				ahead, behind := Ry(l.Origin, l.Direction), Ry(l.Origin, l.Direction.Negate())
+
+				assert.Equal(t, r.IntersectsLine(l), r.IntersectsRay(ahead) || r.IntersectsRay(behind), fmt.Sprintf("%s → %s: ", r, l))
+			}
+		}
+	})
+}
+
+func TestRay_IntersectionLine(t *testing.T) {
+	diagonal := Ry(Pt(0, 0), Vec(1, 1))
+
+	t.Run("crossing, on either side of the origin of the line", func(t *testing.T) {
+		for _, line := range []Line[int]{Ln(Pt(0, 4), Vec(1, -1)), Ln(Pt(9, -5), Vec(1, -1))} {
+			point, ok := diagonal.IntersectionLine(line)
+
+			assert.True(t, ok)
+			geomtest.AssertPoint(t, point, Pt(2, 2))
+		}
+	})
+	t.Run("behind the origin of the ray there is none", func(t *testing.T) {
+		_, ok := diagonal.IntersectionLine(Ln(Pt(0, -4), Vec(1, -1)))
+
+		assert.False(t, ok)
+	})
+	t.Run("along the ray has no single point", func(t *testing.T) {
+		_, ok := diagonal.IntersectionLine(Ln(Pt(-5, -5), Vec(1, 1)))
+
+		assert.False(t, ok)
+	})
+	t.Run("agrees with Intersects on non-parallel fixtures, on both", func(t *testing.T) {
+		for _, r := range rayFixtures {
+			for _, l := range lineFixtures {
+				if r.Direction.Cross(l.Direction) == 0 && r.Direction != (Vector[float64]{}) && l.Direction != (Vector[float64]{}) {
+					continue
+				}
+
+				point, ok := r.IntersectionLine(l)
+				message := fmt.Sprintf("%s → %s: ", r, l)
+
+				assert.Equal(t, ok, r.IntersectsLine(l), message)
+				if ok {
+					assert.True(t, r.Contains(point) && l.Contains(point), message)
+				}
+			}
+		}
+	})
+}
+
 func TestRay_IntersectsPolygon(t *testing.T) {
 	square := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(0, 4)})
 
@@ -1029,6 +1097,21 @@ func TestRay_IsZero(t *testing.T) {
 	})
 	t.Run("within delta", func(t *testing.T) {
 		assert.True(t, Ry(Pt(Delta/2, 0.0), Vec(0.0, -Delta/2)).IsZero())
+	})
+}
+
+func TestRay_Line(t *testing.T) {
+	t.Run("the same origin and direction", func(t *testing.T) {
+		geomtest.AssertLine(t, Ry(Pt(1, -1), Vec(3, 4)).Line(), Ln(Pt(1, -1), Vec(3, 4)))
+	})
+	t.Run("the line contains the ray and the points behind its origin", func(t *testing.T) {
+		for _, r := range rayFixtures {
+			line := r.Line()
+
+			for _, t0 := range []float64{-40, -1, 0, 0.25, 40} {
+				assert.True(t, line.Contains(r.PointAt(t0)), fmt.Sprintf("%s at %v: ", r, t0))
+			}
+		}
 	})
 }
 

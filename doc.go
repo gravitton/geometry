@@ -12,14 +12,14 @@
 //
 // The values are [Point], [Vector], [Size], [Padding] and the affine [Matrix]. The shapes are
 // [Rectangle], which may be turned by an angle, the axis-aligned [Box], [Circle], [Ellipse],
-// [Segment], [Polygon] and [RegularPolygon], and the half-line [Ray]. [Shape], [Collider] and
-// [Body] name what the shapes share, and [Intersects] tests two colliders of any kind.
+// [Segment], [Polygon] and [RegularPolygon], the half-line [Ray] and the infinite [Line]. [Shape],
+// [Collider] and [Body] name what the shapes share, and [Intersects] tests two colliders of any kind.
 // [Direction], [Axis], [Orientation] and [Winding] are enums. Package geomtest holds test
 // assertions, and packages ints and floats alias the int and float64 instantiations.
 //
 // Every value type has Equal, Cast, Int, Float and String; every shape adds Contains, every one but
-// Ray adds Bounds and BoundingCircle, and every one but Ellipse adds the Intersects methods. The enums are compared
-// with == and marshal as their names.
+// Ray and Line adds Bounds and BoundingCircle, and every one but Ellipse adds the Intersects
+// methods. The enums are compared with == and marshal as their names.
 //
 // # Coordinates
 //
@@ -51,13 +51,13 @@
 // The package is tested for float64 at any finite coordinates, for float32 within 1e5 of the
 // origin, and for int, int32 and int64 while coordinate differences stay within 2^26. Within
 // that range no method gives an answer wrong by more than the tolerance, but where two methods
-// place the same point by different roundings, which only a turned shape or a ray does, they
+// place the same point by different roundings, which only a turned shape, a ray or a line does, they
 // can disagree about a point within the tolerance of a boundary, and float32 far from the origin
 // is where that shows. A narrow integer T such as int8 or int16 compiles and never panics or
 // hangs, but its answers carry no promise of precision: a sum or difference near the end of its
 // range may wrap, and a result may be off by more than its rounding. The extent of a shape
-// must itself fit T, a circle's center plus its radius or the point a ray reaches a shape at,
-// and the square of a length must stay finite, so a segment or a ray direction past about 1e150
+// must itself fit T, a circle's center plus its radius or the point a ray or a line reaches a
+// shape at, and the square of a length must stay finite, so a segment or a direction past about 1e150
 // measures nothing.
 //
 // # Equality

@@ -1207,6 +1207,36 @@ func TestRectangle_AppendIntersectionRay(t *testing.T) {
 	})
 }
 
+func TestRectangle_IntersectsLine(t *testing.T) {
+	t.Run("mirrors Line.IntersectsRectangle", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, l := range lineFixtures {
+				assert.Equal(t, r.IntersectsLine(l), l.IntersectsRectangle(r), fmt.Sprintf("%s → %s: ", r, l))
+			}
+		}
+	})
+}
+
+func TestRectangle_IntersectionLine(t *testing.T) {
+	t.Run("matches Line.IntersectionRectangle", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, l := range lineFixtures {
+				geomtest.AssertVertices(t, r.IntersectionLine(l), l.IntersectionRectangle(r), fmt.Sprintf("%s → %s: ", r, l))
+			}
+		}
+	})
+}
+
+func TestRectangle_AppendIntersectionLine(t *testing.T) {
+	t.Run("matches Line.AppendIntersectionRectangle", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, l := range lineFixtures {
+				geomtest.AssertVertices(t, r.AppendIntersectionLine(bufferWith(prefixPoint), l), l.AppendIntersectionRectangle(bufferWith(prefixPoint), r), fmt.Sprintf("%s → %s: ", r, l))
+			}
+		}
+	})
+}
+
 func TestRectangle_IntersectsPolygon(t *testing.T) {
 	t.Run("rotated is tested on its turned edges", func(t *testing.T) {
 		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)

@@ -977,6 +977,88 @@ func TestSegment_IntersectionRay(t *testing.T) {
 	})
 }
 
+func TestSegment_IntersectsLine(t *testing.T) {
+	diagonal := Seg(Pt(0, 0), Pt(4, 4))
+
+	t.Run("crossing, on either side of the origin of the line", func(t *testing.T) {
+		assert.True(t, diagonal.IntersectsLine(Ln(Pt(0, 4), Vec(1, -1))))
+		assert.True(t, diagonal.IntersectsLine(Ln(Pt(3, 1), Vec(1, -1))))
+	})
+	t.Run("the lines cross beyond the segment", func(t *testing.T) {
+		assert.False(t, diagonal.IntersectsLine(Ln(Pt(10, 0), Vec(0, 1))))
+	})
+	t.Run("an endpoint on the line counts", func(t *testing.T) {
+		assert.True(t, diagonal.IntersectsLine(Ln(Pt(9, 4), Vec(1, 0))))
+	})
+	t.Run("along the segment counts, beside it does not", func(t *testing.T) {
+		assert.True(t, diagonal.IntersectsLine(Ln(Pt(9, 9), Vec(1, 1))))
+		assert.False(t, diagonal.IntersectsLine(Ln(Pt(9, 8), Vec(1, 1))))
+	})
+	t.Run("a zero direction is its origin", func(t *testing.T) {
+		assert.True(t, diagonal.IntersectsLine(Ln(Pt(1, 1), Vec(0, 0))))
+		assert.False(t, diagonal.IntersectsLine(Ln(Pt(1, 2), Vec(0, 0))))
+	})
+	t.Run("float is tolerant", func(t *testing.T) {
+		s := Seg(Pt(0.0, 0.0), Pt(1.0, 0.0))
+
+		assert.True(t, s.IntersectsLine(Ln(Pt(5.0, Delta/2), Vec(1.0, 0.0))))
+		assert.False(t, s.IntersectsLine(Ln(Pt(5.0, 2*Delta), Vec(1.0, 0.0))))
+	})
+	t.Run("matches a segment reaching past the segment along the line both ways", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, l := range lineFixtures {
+				assert.Equal(t, s.IntersectsLine(l), s.IntersectsSegment(wide(l)), fmt.Sprintf("%s → %s: ", s, l))
+			}
+		}
+	})
+}
+
+func TestSegment_IntersectionLine(t *testing.T) {
+	diagonal := Seg(Pt(0, 0), Pt(4, 4))
+
+	t.Run("crossing, on either side of the origin of the line", func(t *testing.T) {
+		for _, line := range []Line[int]{Ln(Pt(0, 4), Vec(1, -1)), Ln(Pt(3, 1), Vec(1, -1))} {
+			point, ok := diagonal.IntersectionLine(line)
+
+			assert.True(t, ok)
+			geomtest.AssertPoint(t, point, Pt(2, 2))
+		}
+	})
+	t.Run("apart", func(t *testing.T) {
+		_, ok := diagonal.IntersectionLine(Ln(Pt(10, 0), Vec(0, 1)))
+
+		assert.False(t, ok)
+	})
+	t.Run("along the segment has no single point", func(t *testing.T) {
+		_, ok := diagonal.IntersectionLine(Ln(Pt(9, 9), Vec(-1, -1)))
+
+		assert.False(t, ok)
+	})
+	t.Run("int rounds the crossing", func(t *testing.T) {
+		point, ok := Seg(Pt(0, 0), Pt(3, 0)).IntersectionLine(Ln(Pt(3, 3), Vec(1, 2)))
+
+		assert.True(t, ok)
+		geomtest.AssertPoint(t, point, Pt(2, 0))
+	})
+	t.Run("agrees with Intersects on non-parallel fixtures, on both", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, l := range lineFixtures {
+				if s.Vector().Float().Cross(l.Direction.Float()) == 0 && s.Vector() != (Vector[float64]{}) && l.Direction != (Vector[float64]{}) {
+					continue
+				}
+
+				point, ok := s.IntersectionLine(l)
+				message := fmt.Sprintf("%s → %s: ", s, l)
+
+				assert.Equal(t, ok, s.IntersectsLine(l), message)
+				if ok {
+					assert.True(t, s.Contains(point) && l.Contains(point), message)
+				}
+			}
+		}
+	})
+}
+
 func TestSegment_IntersectsPolygon(t *testing.T) {
 	square := Pol(squareVertices())
 
@@ -1981,6 +2063,24 @@ func TestSegment_IsZero(t *testing.T) {
 	})
 	t.Run("within delta", func(t *testing.T) {
 		assert.True(t, Seg(Pt(0.0, 0.000001), Pt(0.0, 0.0)).IsZero())
+	})
+}
+
+func TestSegment_Line(t *testing.T) {
+	t.Run("from the start along the vector", func(t *testing.T) {
+		geomtest.AssertLine(t, Seg(Pt(1, -1), Pt(4, 3)).Line(), Ln(Pt(1, -1), Vec(3, 4)))
+	})
+	t.Run("a zero-length segment is a line with no direction", func(t *testing.T) {
+		geomtest.AssertLine(t, Seg(Pt(2, 3), Pt(2, 3)).Line(), Line[int]{Origin: Pt(2, 3)})
+	})
+	t.Run("the line contains both ends and the points beyond them", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			line := s.Line()
+
+			for _, t0 := range []float64{-2, 0, 0.5, 1, 3} {
+				assert.True(t, line.Contains(s.PointAt(t0)), fmt.Sprintf("%s at %v: ", s, t0))
+			}
+		}
 	})
 }
 

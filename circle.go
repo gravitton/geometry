@@ -483,6 +483,27 @@ func (c Circle[T]) AppendIntersectionRay(dst []Point[T], ray Ray[T]) []Point[T] 
 	return c.AppendIntersectionSegment(dst, ray.reach(c.minMax()))
 }
 
+// IntersectsLine reports whether the circle and the line share a point, as IntersectsSegment
+// decides it on the span of the line past the circle: the point of the line closest to the
+// center lies within the radius. Touching shapes intersect, within the tolerance.
+func (c Circle[T]) IntersectsLine(line Line[T]) bool {
+	return c.IntersectsSegment(line.span(c.minMax()))
+}
+
+// IntersectionLine returns the points where the line crosses the circle boundary, in order along
+// its Direction, as IntersectionSegment finds them on the span of the line past the circle, so
+// the two agree with IntersectsLine to the last bit: two where it passes through, one where it
+// is tangent, and none where it misses.
+func (c Circle[T]) IntersectionLine(line Line[T]) []Point[T] {
+	return c.AppendIntersectionLine(nil, line)
+}
+
+// AppendIntersectionLine appends the points IntersectionLine returns to dst and returns the
+// extended slice, as AppendIntersectionSegment does on the span of the line past the circle.
+func (c Circle[T]) AppendIntersectionLine(dst []Point[T], line Line[T]) []Point[T] {
+	return c.AppendIntersectionSegment(dst, line.span(c.minMax()))
+}
+
 // IntersectsPolygon reports whether the circle and the polygon share a point: the center lies
 // within the polygon, or an edge passes within the radius. Touching shapes intersect, within
 // the tolerance, by the same comparison Contains makes on the squared distance the polygon's

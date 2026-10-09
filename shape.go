@@ -14,11 +14,11 @@ type Shape[T Number] interface {
 	Nearest(point Point[T]) Point[T]
 }
 
-// Collider is a shape tested against every shape: Circle, Segment, Ray, Polygon, Rectangle,
-// RegularPolygon and Box, each with the seven Intersects methods, its own kind included. Every
+// Collider is a shape tested against every shape: Circle, Segment, Ray, Line, Polygon, Rectangle,
+// RegularPolygon and Box, each with the eight Intersects methods, its own kind included. Every
 // test is symmetric and includes a touch within the tolerance, so a broad collision pass calls
-// the method for the other side's kind and gets the same answer from either. Ray is the one
-// Collider that is no Shape, since it has no Bounds.
+// the method for the other side's kind and gets the same answer from either. Ray and Line are the
+// two Colliders that are no Shape, since they have no Bounds.
 //
 // Ellipse is deliberately not one: two ellipses meet at the roots of a quartic, which none of
 // the closed forms the circle pairs are built on reaches. Test an ellipse as its
@@ -31,6 +31,7 @@ type Collider[T Number] interface {
 	IntersectsCircle(circle Circle[T]) bool
 	IntersectsSegment(segment Segment[T]) bool
 	IntersectsRay(ray Ray[T]) bool
+	IntersectsLine(line Line[T]) bool
 	IntersectsPolygon(polygon Polygon[T]) bool
 	IntersectsRectangle(rectangle Rectangle[T]) bool
 	IntersectsRegularPolygon(polygon RegularPolygon[T]) bool
@@ -71,7 +72,7 @@ func Intersects[T Number](a, b Collider[T]) bool {
 }
 
 // intersectsKind tests a against b by the method of a that names the kind of b, and false where
-// b is none of the seven shapes, which leaves the pair to the call with the arguments swapped.
+// b is none of the eight shapes, which leaves the pair to the call with the arguments swapped.
 func intersectsKind[T Number](a, b Collider[T]) (bool, bool) {
 	switch shape := b.(type) {
 	case Circle[T]:
@@ -80,6 +81,8 @@ func intersectsKind[T Number](a, b Collider[T]) (bool, bool) {
 		return a.IntersectsSegment(shape), true
 	case Ray[T]:
 		return a.IntersectsRay(shape), true
+	case Line[T]:
+		return a.IntersectsLine(shape), true
 	case Polygon[T]:
 		return a.IntersectsPolygon(shape), true
 	case Rectangle[T]:

@@ -567,6 +567,24 @@ func (rp RegularPolygon[T]) AppendIntersectionRay(dst []Point[T], ray Ray[T]) []
 	return ray.AppendIntersectionRegularPolygon(dst, rp)
 }
 
+// IntersectsLine reports whether the regular polygon and the line share a point, as
+// Line.IntersectsRegularPolygon does.
+func (rp RegularPolygon[T]) IntersectsLine(line Line[T]) bool {
+	return line.IntersectsRegularPolygon(rp)
+}
+
+// IntersectionLine returns the points where the line crosses the regular polygon boundary, as
+// Line.IntersectionRegularPolygon does.
+func (rp RegularPolygon[T]) IntersectionLine(line Line[T]) []Point[T] {
+	return line.IntersectionRegularPolygon(rp)
+}
+
+// AppendIntersectionLine appends the points IntersectionLine returns to dst and returns the
+// extended slice, as Line.AppendIntersectionRegularPolygon does.
+func (rp RegularPolygon[T]) AppendIntersectionLine(dst []Point[T], line Line[T]) []Point[T] {
+	return line.AppendIntersectionRegularPolygon(dst, rp)
+}
+
 // IntersectsPolygon reports whether the regular polygon and the polygon share a point, as
 // Polygon.IntersectsRegularPolygon does.
 func (rp RegularPolygon[T]) IntersectsPolygon(polygon Polygon[T]) bool {

@@ -185,6 +185,26 @@ func (r Ray[T]) IntersectionRay(ray Ray[T]) (Point[T], bool) {
 	return r.touch(ray)
 }
 
+// IntersectsLine reports whether the ray and the line share a point, as IntersectsRay decides it
+// on the two rays from the origin of the line, along its Direction and against it.
+func (r Ray[T]) IntersectsLine(line Line[T]) bool {
+	ahead, behind := line.halves()
+
+	return r.IntersectsRay(ahead) || r.IntersectsRay(behind)
+}
+
+// IntersectionLine returns the point where the ray and the line cross, and false when they do
+// not, as IntersectionRay finds it on the two rays from the origin of the line: exactly where
+// IntersectsLine holds, less the parallel case.
+func (r Ray[T]) IntersectionLine(line Line[T]) (Point[T], bool) {
+	ahead, behind := line.halves()
+	if point, ok := r.IntersectionRay(ahead); ok {
+		return point, true
+	}
+
+	return r.IntersectionRay(behind)
+}
+
 // IntersectsPolygon reports whether the ray and the polygon share a point, as
 // Segment.IntersectsPolygon decides it on the reach of the ray past the polygon: the origin
 // lies within the polygon, or the ray crosses one of its edges. Touching shapes intersect,
@@ -426,6 +446,12 @@ func (r Ray[T]) Equal(ray Ray[T]) bool {
 // IsZero checks if the origin and the direction are zero.
 func (r Ray[T]) IsZero() bool {
 	return r.Equal(Ray[T]{})
+}
+
+// Line converts the ray to the Line through it, with the same Origin and Direction: the ray and
+// the half-line behind its origin.
+func (r Ray[T]) Line() Line[T] {
+	return Line[T](r)
 }
 
 // Cast converts the ray to a Ray of another number type, rounding as Cast does, so a direction

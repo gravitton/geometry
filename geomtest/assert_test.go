@@ -146,6 +146,20 @@ func TestAssertRay(t *testing.T) {
 	})
 }
 
+func TestAssertLine(t *testing.T) {
+	l := geom.Ln(geom.Pt(1, 2), geom.Vec(3, 4))
+
+	t.Run("equal", func(t *testing.T) {
+		assertHelper(t, AssertLine, l, geom.Ln(geom.Pt(1, 2), geom.Vec(3, 4)), true)
+	})
+	t.Run("origin differs", func(t *testing.T) {
+		assertHelper(t, AssertLine, l, geom.Ln(geom.Pt(9, 2), geom.Vec(3, 4)), false)
+	})
+	t.Run("direction differs", func(t *testing.T) {
+		assertHelper(t, AssertLine, l, geom.Ln(geom.Pt(1, 2), geom.Vec(3, 9)), false)
+	})
+}
+
 func TestAssertRectangle(t *testing.T) {
 	r := geom.Rect(geom.Pt(1, 2), geom.Sz(3, 4))
 

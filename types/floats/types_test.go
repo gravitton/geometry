@@ -17,6 +17,7 @@ func TestConstructors(t *testing.T) {
 	assert.Equal(t, Ell(geom.Pt(1, 2), geom.Sz(3, 4), 0.5), geom.Ell(geom.Pt(1.0, 2.0), geom.Sz(3.0, 4.0), 0.5))
 	assert.Equal(t, Seg(geom.Pt(1, 2), geom.Pt(3, 4)), geom.Seg(geom.Pt(1.0, 2.0), geom.Pt(3.0, 4.0)))
 	assert.Equal(t, Ry(geom.Pt(1, 2), geom.Vec(3, 4)), geom.Ry(geom.Pt(1.0, 2.0), geom.Vec(3.0, 4.0)))
+	assert.Equal(t, Ln(geom.Pt(1, 2), geom.Vec(3, 4)), geom.Ln(geom.Pt(1.0, 2.0), geom.Vec(3.0, 4.0)))
 	assert.Equal(t, Rect(geom.Pt(1, 2), geom.Sz(3, 4)), geom.Rect(geom.Pt(1.0, 2.0), geom.Sz(3.0, 4.0)))
 	assert.Equal(t, Bx(geom.Pt(3, 4), geom.Pt(1, 2)), geom.Bx(geom.Pt(1.0, 2.0), geom.Pt(3.0, 4.0)))
 

@@ -22,6 +22,7 @@ var (
 	_ Shape[int]    = Box[int]{}
 	_ Collider[int] = Segment[int]{}
 	_ Collider[int] = Ray[int]{}
+	_ Collider[int] = Line[int]{}
 	_ Collider[int] = Rectangle[int]{}
 	_ Collider[int] = Circle[int]{}
 	_ Collider[int] = Polygon[int]{}
@@ -76,14 +77,14 @@ type solid[T Number] interface {
 }
 
 // encloses tests the shape against the container by the method naming its kind, as
-// Intersects dispatches. A ray runs without end, so no container encloses one.
+// Intersects dispatches. A ray and a line run without end, so no container encloses one.
 func encloses[T Number](container encloser[T], shape Collider[T]) bool {
 	switch shape := shape.(type) {
 	case Circle[T]:
 		return container.EnclosesCircle(shape)
 	case Segment[T]:
 		return container.EnclosesSegment(shape)
-	case Ray[T]:
+	case Ray[T], Line[T]:
 		return false
 	case Polygon[T]:
 		return container.EnclosesPolygon(shape)
@@ -270,6 +271,7 @@ func TestCollider(t *testing.T) {
 	colliders := []Collider[float64]{
 		Seg(Pt(0.0, 0.0), Pt(3.0, 4.0)),
 		RayThrough(Pt(-1.0, -1.0), Pt(3.0, 4.0)),
+		LineThrough(Pt(-1.0, -1.0), Pt(3.0, 4.0)),
 		Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi / 6),
 		Circ(Pt(1.0, 1.0), 2.0),
 		Pol(triangleVertices()),
@@ -281,6 +283,9 @@ func TestCollider(t *testing.T) {
 	}
 	for _, r := range rayFixtures {
 		colliders = append(colliders, r)
+	}
+	for _, l := range lineFixtures {
+		colliders = append(colliders, l)
 	}
 	for _, r := range rectFixtures {
 		colliders = append(colliders, r)
@@ -355,6 +360,10 @@ func (s stubCollider) IntersectsRay(Ray[float64]) bool {
 	return s.result
 }
 
+func (s stubCollider) IntersectsLine(Line[float64]) bool {
+	return s.result
+}
+
 func (s stubCollider) IntersectsPolygon(Polygon[float64]) bool {
 	return s.result
 }
@@ -415,6 +424,9 @@ func farColliders(offset Vector[float32]) []Collider[float32] {
 	}
 	for _, r := range rayFixtures {
 		colliders = append(colliders, r.Cast[float32]().Translate(offset))
+	}
+	for _, l := range lineFixtures {
+		colliders = append(colliders, l.Cast[float32]().Translate(offset))
 	}
 
 	return colliders
@@ -497,6 +509,7 @@ func TestTransformable(t *testing.T) {
 	t.Run("every shape moves and scales in its own type", func(t *testing.T) {
 		geomtest.AssertSegment(t, moved(Seg(Pt(0, 0), Pt(2, 2)), Vec(1, 1)), Seg(Pt(1, 1), Pt(3, 3)))
 		geomtest.AssertRay(t, moved(Ry(Pt(0, 0), Vec(2, 2)), Vec(1, 1)), Ry(Pt(1, 1), Vec(2, 2)))
+		geomtest.AssertLine(t, moved(Ln(Pt(0, 0), Vec(2, 2)), Vec(1, 1)), Ln(Pt(1, 1), Vec(2, 2)))
 		geomtest.AssertRectangle(t, moved(Rect(Pt(0, 0), Sz(2, 2)), Vec(1, 1)), Rect(Pt(1, 1), Sz(2, 2)))
 		geomtest.AssertCircle(t, moved(Circ(Pt(0, 0), 2), Vec(1, 1)), Circ(Pt(1, 1), 2))
 		geomtest.AssertPolygon(t, moved(Pol(squareVertices()), Vec(1, 1)), Pol([]Point[int]{Pt(1, 1), Pt(3, 1), Pt(3, 3), Pt(1, 3)}))

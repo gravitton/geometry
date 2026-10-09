@@ -488,6 +488,36 @@ func TestBox_AppendIntersectionRay(t *testing.T) {
 	})
 }
 
+func TestBox_IntersectsLine(t *testing.T) {
+	t.Run("mirrors Line.IntersectsBox", func(t *testing.T) {
+		for _, b := range boxFixtures {
+			for _, l := range lineFixtures {
+				assert.Equal(t, b.IntersectsLine(l), l.IntersectsBox(b), fmt.Sprintf("%s → %s: ", b, l))
+			}
+		}
+	})
+}
+
+func TestBox_IntersectionLine(t *testing.T) {
+	t.Run("matches Line.IntersectionBox", func(t *testing.T) {
+		for _, b := range boxFixtures {
+			for _, l := range lineFixtures {
+				geomtest.AssertVertices(t, b.IntersectionLine(l), l.IntersectionBox(b), fmt.Sprintf("%s → %s: ", b, l))
+			}
+		}
+	})
+}
+
+func TestBox_AppendIntersectionLine(t *testing.T) {
+	t.Run("matches Line.AppendIntersectionBox", func(t *testing.T) {
+		for _, b := range boxFixtures {
+			for _, l := range lineFixtures {
+				geomtest.AssertVertices(t, b.AppendIntersectionLine(bufferWith(prefixPoint), l), l.AppendIntersectionBox(bufferWith(prefixPoint), b), fmt.Sprintf("%s → %s: ", b, l))
+			}
+		}
+	})
+}
+
 func TestBox_IntersectsPolygon(t *testing.T) {
 	t.Run("mirrors Polygon.IntersectsBox", func(t *testing.T) {
 		for _, b := range boxFixtures {

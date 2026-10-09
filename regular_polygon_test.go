@@ -1054,6 +1054,36 @@ func TestRegularPolygon_AppendIntersectionRay(t *testing.T) {
 	})
 }
 
+func TestRegularPolygon_IntersectsLine(t *testing.T) {
+	t.Run("mirrors Line.IntersectsRegularPolygon", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for _, l := range lineFixtures {
+				assert.Equal(t, rp.IntersectsLine(l), l.IntersectsRegularPolygon(rp), fmt.Sprintf("%s → %s: ", rp, l))
+			}
+		}
+	})
+}
+
+func TestRegularPolygon_IntersectionLine(t *testing.T) {
+	t.Run("matches Line.IntersectionRegularPolygon", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for _, l := range lineFixtures {
+				geomtest.AssertVertices(t, rp.IntersectionLine(l), l.IntersectionRegularPolygon(rp), fmt.Sprintf("%s → %s: ", rp, l))
+			}
+		}
+	})
+}
+
+func TestRegularPolygon_AppendIntersectionLine(t *testing.T) {
+	t.Run("matches Line.AppendIntersectionRegularPolygon", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for _, l := range lineFixtures {
+				geomtest.AssertVertices(t, rp.AppendIntersectionLine(bufferWith(prefixPoint), l), l.AppendIntersectionRegularPolygon(bufferWith(prefixPoint), rp), fmt.Sprintf("%s → %s: ", rp, l))
+			}
+		}
+	})
+}
+
 func TestRegularPolygon_IntersectsPolygon(t *testing.T) {
 	t.Run("mirrors Polygon.IntersectsRegularPolygon", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {

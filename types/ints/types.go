@@ -27,6 +27,9 @@ type Segment = geom.Segment[int]
 // Ray is geom.Ray[int].
 type Ray = geom.Ray[int]
 
+// Line is geom.Line[int].
+type Line = geom.Line[int]
+
 // Rectangle is geom.Rectangle[int].
 type Rectangle = geom.Rectangle[int]
 
@@ -78,6 +81,11 @@ func Seg[T geom.Number](start, end geom.Point[T]) Segment {
 // Ry is shorthand for geom.Ry(origin, direction).Int()
 func Ry[T geom.Number](origin geom.Point[T], direction geom.Vector[T]) Ray {
 	return geom.Ry(origin, direction).Int()
+}
+
+// Ln is shorthand for geom.Ln(origin, direction).Int()
+func Ln[T geom.Number](origin geom.Point[T], direction geom.Vector[T]) Line {
+	return geom.Ln(origin, direction).Int()
 }
 
 // Rect is shorthand for geom.Rect(center, size).Int()

@@ -335,6 +335,20 @@ func (s Segment[T]) IntersectionRay(ray Ray[T]) (Point[T], bool) {
 	return s.IntersectionSegment(ray.reach(s.minMax()))
 }
 
+// IntersectsLine reports whether the segment and the line share a point, as IntersectsSegment
+// decides it on the span of the line past the segment. Touching shapes intersect, within the
+// tolerance.
+func (s Segment[T]) IntersectsLine(line Line[T]) bool {
+	return s.IntersectsSegment(line.span(s.minMax()))
+}
+
+// IntersectionLine returns the point where the segment and the line cross, and false when they
+// do not, as IntersectionSegment finds it on the span of the line past the segment: exactly
+// where IntersectsLine holds, less the parallel case.
+func (s Segment[T]) IntersectionLine(line Line[T]) (Point[T], bool) {
+	return s.IntersectionSegment(line.span(s.minMax()))
+}
+
 // IntersectsPolygon reports whether the segment and the polygon share a point: the start lies
 // within the polygon, or the segment crosses one of its edges. Touching shapes intersect,
 // within the tolerance. A segment whose extent lies outside the polygon is rejected before any
@@ -976,6 +990,12 @@ func (s Segment[T]) Equal(segment Segment[T]) bool {
 // IsZero checks if start and end points are zero.
 func (s Segment[T]) IsZero() bool {
 	return s.Equal(Segment[T]{})
+}
+
+// Line converts the segment to the Line through it, from Start as its Origin along Vector. A
+// zero-length segment gives a line that is its origin alone.
+func (s Segment[T]) Line() Line[T] {
+	return Line[T]{s.Start, s.Vector()}
 }
 
 // Cast converts the segment to a Segment of another number type, rounding as Cast does.

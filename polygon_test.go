@@ -1106,6 +1106,36 @@ func TestPolygon_AppendIntersectionRay(t *testing.T) {
 	})
 }
 
+func TestPolygon_IntersectsLine(t *testing.T) {
+	t.Run("mirrors Line.IntersectsPolygon", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			for _, l := range lineFixtures {
+				assert.Equal(t, p.IntersectsLine(l), l.IntersectsPolygon(p), fmt.Sprintf("%s → %s: ", p, l))
+			}
+		}
+	})
+}
+
+func TestPolygon_IntersectionLine(t *testing.T) {
+	t.Run("matches Line.IntersectionPolygon", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			for _, l := range lineFixtures {
+				geomtest.AssertVertices(t, p.IntersectionLine(l), l.IntersectionPolygon(p), fmt.Sprintf("%s → %s: ", p, l))
+			}
+		}
+	})
+}
+
+func TestPolygon_AppendIntersectionLine(t *testing.T) {
+	t.Run("matches Line.AppendIntersectionPolygon", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			for _, l := range lineFixtures {
+				geomtest.AssertVertices(t, p.AppendIntersectionLine(bufferWith(prefixPoint), l), l.AppendIntersectionPolygon(bufferWith(prefixPoint), p), fmt.Sprintf("%s → %s: ", p, l))
+			}
+		}
+	})
+}
+
 func TestPolygon_IntersectsPolygon(t *testing.T) {
 	square := Pol(squareVertices())
 
