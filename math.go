@@ -136,10 +136,11 @@ func Mod[T Integer](n, m T) T {
 //
 // It is not x-x == 0: inlined after a product, the difference is fused with it into one
 // multiply-add, which leaves the rounding residue of the product rather than zero.
+//
+// One comparison decides it, which neither NaN nor an infinity passes, so Cast stays cheap enough
+// to inline where math.Round is an intrinsic.
 func IsFinite[T Number](x T) bool {
-	value := float64(x)
-
-	return !math.IsNaN(value) && !math.IsInf(value, 0)
+	return math.Abs(float64(x)) <= math.MaxFloat64
 }
 
 // Clamp adjusts the given value to be between the given minimum and maximum value.
