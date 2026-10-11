@@ -70,6 +70,21 @@ func ScaleMatrix[T Number](factorX, factorY T) Matrix[T] {
 	}
 }
 
+// TRSMatrix creates a new matrix that scales, then rotates (angle in radians), then translates:
+// the matrix placing something at a position, turned by an angle, at a scale. It is the product
+// TranslationMatrix * RotationMatrix * ScaleMatrix, which TranslationMatrix followed by Rotate
+// and Scale composes, and Translation, Angle and Scaling read the three parts back.
+// For integer T each entry is the product of a factor and the sine or cosine, rounded once, so
+// only multiples of 90° give exact results.
+func TRSMatrix[T Number](deltaX, deltaY T, angle float64, factorX, factorY T) Matrix[T] {
+	sin, cos := math.Sincos(angle)
+
+	return Matrix[T]{
+		Multiply(factorX, cos), Multiply(factorY, -sin), deltaX,
+		Multiply(factorX, sin), Multiply(factorY, cos), deltaY,
+	}
+}
+
 // ShearMatrix creates a new shear matrix: shearX is the contribution of y to x', shearY the
 // contribution of x to y'.
 func ShearMatrix[T Number](shearX, shearY T) Matrix[T] {

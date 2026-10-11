@@ -38,6 +38,28 @@ func TestMatrix_Constructor(t *testing.T) {
 		// the angle is always computed in float64 and narrowed afterwards
 		geomtest.AssertMatrix(t, RotationMatrix[float32](Pi/2), Mat[float32](0, -1, 0, 1, 0, 0))
 	})
+	t.Run("translation, rotation and scale", func(t *testing.T) {
+		geomtest.AssertMatrix(t, TRSMatrix(5.0, 3.0, Pi/2, 2.0, 4.0), Mat(0.0, -4.0, 5.0, 2.0, 0.0, 3.0))
+		geomtest.AssertMatrix(t, TRSMatrix[float32](5, 3, Pi/2, 2, 4), Mat[float32](0, -4, 5, 2, 0, 3))
+		geomtest.AssertMatrix(t, TRSMatrix(5, 3, Pi/2, 2, 4), Mat(0, -4, 5, 2, 0, 3))
+		geomtest.AssertMatrix(t, TRSMatrix(0.0, 0.0, 0, 1.0, 1.0), IdentityMatrix[float64]())
+	})
+	t.Run("translation, rotation and scale scales first and translates last", func(t *testing.T) {
+		geomtest.AssertPoint(t, Pt(1.0, 0.0).Transform(TRSMatrix(10.0, 20.0, Pi/2, 2.0, 3.0)), Pt(10.0, 22.0))
+	})
+	t.Run("translation, rotation and scale is the chain of the three and reads back", func(t *testing.T) {
+		for _, angle := range []float64{0, 0.7, Pi / 2, 2, -1, 5} {
+			m := TRSMatrix(tenth, -7.0, angle, 2.0, 0.5)
+
+			assert.Equal(t, m, TranslationMatrix(tenth, -7.0).Rotate(angle).Scale(2, 0.5), fmt.Sprintf("%v: ", angle))
+			geomtest.AssertVector(t, m.Translation(), Vec(tenth, -7.0), fmt.Sprintf("%v: ", angle))
+			assert.True(t, EqualAngle(m.Angle(), angle), fmt.Sprintf("%v: ", angle))
+			geomtest.AssertVector(t, m.Scaling(), Vec(2.0, 0.5), fmt.Sprintf("%v: ", angle))
+		}
+	})
+	t.Run("integer translation, rotation and scale rounds each entry once", func(t *testing.T) {
+		geomtest.AssertMatrix(t, TRSMatrix(1, 2, Pi/4, 10, 10), Mat(7, -7, 1, 7, 7, 2))
+	})
 	t.Run("shear", func(t *testing.T) {
 		geomtest.AssertMatrix(t, ShearMatrix(2, 3), Mat(1, 2, 0, 3, 1, 0))
 		geomtest.AssertMatrix(t, ShearMatrix(0.5, 0.0), Mat(1.0, 0.5, 0.0, 0.0, 1.0, 0.0))
