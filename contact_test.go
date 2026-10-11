@@ -53,14 +53,14 @@ func TestContact_Separation(t *testing.T) {
 			assert.True(t, separation.LessOrEqual(Delta), fmt.Sprintf("%v → %v: %s", pair[0], pair[1], separation))
 		}
 	})
-	t.Run("a notched polygon is parted as its hull", func(t *testing.T) {
+	t.Run("a shape in the notch of a polygon is parted from a side of the notch, not from its hull", func(t *testing.T) {
 		polygon := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(6.0, 0.0), Pt(6.0, 6.0), Pt(4.0, 6.0), Pt(4.0, 2.0), Pt(2.0, 2.0), Pt(2.0, 6.0), Pt(0.0, 6.0)})
 
 		contact, ok := Collide[float64](Circ(Pt(3.0, 3.0), 1.5), polygon)
 		separation := contact.Separation()
 
 		assert.True(t, ok)
-		geomtest.AssertNumber(t, separation.Length(), 4.5)
+		assert.True(t, EqualDelta(separation.Length(), 0.5, 1e-5), separation.String())
 	})
 	t.Run("moved by it the shapes touch, and no longer intersect a little past it", func(t *testing.T) {
 		for _, a := range convexFixtures() {

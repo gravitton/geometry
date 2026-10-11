@@ -1107,6 +1107,78 @@ func (p Polygon[T]) intersectsSupport(shape Shape[T]) bool {
 	return false
 }
 
+// collideSupport returns how the polygon, one that is not convex, and a shape meet, edge by
+// edge, so a notch of the polygon is not filled in, and false where the shape crosses no edge,
+// one lying wholly within the other. The polygon is the second shape of the contact where
+// second is set, and the first otherwise.
+//
+// Every edge the shape crosses is asked for its own contact with it, and the deepest is kept:
+// a shape pressed into an inside corner meets both of its walls and parts from the deeper
+// first. An edge is a wall with two sides and no inside, so its own contact may part the two
+// the short way, further into the polygon, or along the edge past its end, where the next
+// edge goes on. Such an edge is asked for the way out through its outer side instead, which
+// the winding gives: along its normal, as far as the shape reaches behind its line. Where that
+// is longer than the contact it replaces, the edge is passed over, which leaves a shape
+// reaching through a thin part of the polygon to the side it is mostly on; where every edge
+// crossed is passed over, a shape mostly within the polygon, the shortest of those ways out is
+// returned. An edge of no length has no side and keeps its own contact.
+func (p Polygon[T]) collideSupport(shape Shape[T], second bool) (Contact[T], bool) {
+	deepest, shallowest := Contact[T]{Depth: math.Inf(-1)}, Contact[T]{Depth: math.Inf(1)}
+
+	reversed := p.twiceArea() < 0
+	for edge := range p.Edges() {
+		var a, b Shape[T] = edge, shape
+		if second {
+			a, b = b, a
+		}
+
+		contact, ok := Collide(a, b)
+		if !ok {
+			continue
+		}
+
+		inward := edge.Float().Normal()
+		if reversed {
+			inward = inward.Negate()
+		}
+
+		parting := inward
+		if second {
+			parting = inward.Negate()
+		}
+
+		if inward.hasDirection() && !(contact.Normal.Dot(parting) > 0) {
+			inward, parting = inward.Normalize(), parting.Normalize()
+
+			depth := max(shape.Support(inward).Subtract(edge.Start.Float()).Dot(inward), 0)
+			outward := Contact[T]{parting, depth, minkowski[T]{a: a, b: b}.contact(parting)}
+			if depth > contact.Depth {
+				if depth < shallowest.Depth {
+					shallowest = outward
+				}
+
+				continue
+			}
+
+			contact = outward
+		}
+
+		if contact.Depth > deepest.Depth {
+			deepest = contact
+		}
+	}
+
+	if deepest.Depth >= 0 {
+		return deepest, true
+	}
+
+	if shallowest.Depth < math.Inf(1) {
+		return shallowest, true
+	}
+
+	return Contact[T]{}, false
+}
+
 // containsWithin is Contains for a caller that already holds the extent of the vertices, so the
 // intersection tests walk the vertices once for the box and reuse it for every point they test.
 func (p Polygon[T]) containsWithin(point, a, b Point[T]) bool {

@@ -1,6 +1,9 @@
 package geom
 
-import "math"
+import (
+	"math"
+	"slices"
+)
 
 // Shape is what every shape answers: Circle, Segment, Polygon, Rectangle, RegularPolygon, Box
 // and Ellipse. Bounds is the Box around it, Contains includes the boundary within
@@ -164,8 +167,17 @@ func DistanceSquared[T Number](a, b Shape[T]) float64 {
 // The points are read off the sides the two turn to each other across the normal: where both
 // are flat, a box resting on the ground, the two ends of the stretch they share, so the box
 // does not rock, and one point where either is a corner or round. A side within a thousandth
-// of a radian of facing the normal counts as flat against it. A Polygon with a notch meets as
-// its ConvexHull, so the normal and the depth clear the hull.
+// of a radian of facing the normal counts as flat against it.
+//
+// A Polygon that is not convex meets edge by edge, so a shape in a notch is parted from the
+// sides of the notch and not from the hull: the contact is the deepest of those with the edges
+// the other shape crosses, each taken on the outer side of its edge, so one contact parts the
+// two from one edge and may leave them overlapping at another. A shape pressed into an inside
+// corner parts from the deeper wall, and colliding again once it is moved gives the other. A
+// shape reaching through a thin part of the polygon leaves by the side it is mostly on, one
+// mostly within the polygon by the edge it has the least to pass, and one wholly within it,
+// crossing no edge, parts from the hull. Of two such polygons the one whose vertices come
+// first by Point.Compare is the one walked, and each edge crossed allocates.
 //
 // Given the other way round, the two answer with the opposite normal and the same depth. Where
 // several ways out are as short, a box overlapping the corner of another alike on both axes,
@@ -174,6 +186,26 @@ func DistanceSquared[T Number](a, b Shape[T]) float64 {
 func Collide[T Number](a, b Shape[T]) (Contact[T], bool) {
 	if !Intersects(a, b) {
 		return Contact[T]{}, false
+	}
+
+	first, walkFirst := nonConvex(a)
+	second, walkSecond := nonConvex(b)
+	if walkFirst && walkSecond {
+		walkFirst = slices.CompareFunc(first.Points, second.Points, Point[T].Compare) <= 0
+	}
+
+	var contact Contact[T]
+
+	found := false
+	switch {
+	case walkFirst:
+		contact, found = first.collideSupport(b, false)
+	case walkSecond:
+		contact, found = second.collideSupport(a, true)
+	}
+
+	if found {
+		return contact, true
 	}
 
 	difference := minkowski[T]{a: a, b: b}

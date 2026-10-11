@@ -800,6 +800,102 @@ func TestCollide(t *testing.T) {
 		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
 		geomtest.AssertVector(t, reverse.Normal, Vec(1.0, 0.0))
 	})
+	t.Run("a shape in an inside corner of a polygon parts from the deeper wall, then from the other", func(t *testing.T) {
+		for _, polygon := range []Polygon[float64]{Pol(cornerVertices()), Pol(reverse(cornerVertices()))} {
+			box := BoxFromMinMax(Pt(1.5, 1.8), Pt(4.0, 4.0))
+
+			contact, ok := Collide[float64](box, polygon)
+
+			assert.True(t, ok)
+			geomtest.AssertVector(t, contact.Normal, Vec(1.0, 0.0))
+			geomtest.AssertNumber(t, contact.Depth, 0.5)
+			assertContactPoints(t, contact, Pt(2.0, 2.0), Pt(2.0, 4.0))
+
+			contact, ok = Collide[float64](box.Translate(contact.Separation()), polygon)
+
+			assert.True(t, ok)
+			geomtest.AssertVector(t, contact.Normal, Vec(0.0, 1.0))
+			geomtest.AssertNumber(t, contact.Depth, 0.2)
+		}
+	})
+	t.Run("a shape at a corner of a polygon that is not convex meets the corner", func(t *testing.T) {
+		contact, ok := Collide[float64](Circ(Pt(6.5, 2.5), 1.0), Pol(cornerVertices()))
+
+		assert.True(t, ok)
+		assert.True(t, contact.Normal.Subtract(Vec(1.0, 1.0).Normalize()).LessOrEqual(1e-2), fmt.Sprint(contact))
+		assert.True(t, EqualDelta(contact.Depth, 1-math.Sqrt2/2, 1e-5), fmt.Sprint(contact))
+		assertContactPoints(t, contact, Pt(6.0, 2.0))
+	})
+	t.Run("a shape reaching through a thin part of a polygon leaves by the side it is mostly on", func(t *testing.T) {
+		contact, ok := Collide[float64](BoxFromMinMax(Pt(3.0, -0.5), Pt(4.0, 5.0)), Pol(cornerVertices()))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(0.0, 1.0))
+		geomtest.AssertNumber(t, contact.Depth, 2.5)
+	})
+	t.Run("a shape mostly within a polygon leaves by the edge it crosses", func(t *testing.T) {
+		contact, ok := Collide[float64](BoxFromMinMax(Pt(3.0, 0.5), Pt(4.0, 2.5)), Pol(cornerVertices()))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(0.0, 1.0))
+		geomtest.AssertNumber(t, contact.Depth, 1.5)
+		assertContactPoints(t, contact, Pt(3.0, 2.0), Pt(4.0, 2.0))
+	})
+	t.Run("a shape wholly within a polygon that is not convex parts from its hull", func(t *testing.T) {
+		contact, ok := Collide[float64](BoxFromMinMax(Pt(0.5, 0.5), Pt(1.5, 1.5)), Pol(cornerVertices()))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 1.5)
+	})
+	t.Run("two polygons that are not convex meet edge by edge, whichever is given first", func(t *testing.T) {
+		a := Pol(cornerVertices())
+		b := Pol([]Point[float64]{Pt(3.0, 1.0), Pt(9.0, 1.0), Pt(9.0, 7.0), Pt(3.0, 7.0), Pt(3.0, 5.0), Pt(7.0, 5.0), Pt(7.0, 3.0), Pt(3.0, 3.0)})
+
+		contact, ok := Collide[float64](a, b)
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(0.0, -1.0))
+		geomtest.AssertNumber(t, contact.Depth, 1.0)
+		assertContactPoints(t, contact, Pt(3.0, 1.0), Pt(6.0, 1.0))
+
+		contact, ok = Collide[float64](b, a)
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(0.0, 1.0))
+		geomtest.AssertNumber(t, contact.Depth, 1.0)
+		assertContactPoints(t, contact, Pt(3.0, 2.0), Pt(6.0, 2.0))
+	})
+	t.Run("a polygon that is not convex meets every shape at points of the second, alike the other way round", func(t *testing.T) {
+		for _, a := range shapeFixtures() {
+			for _, b := range shapeFixtures() {
+				contact, ok := Collide(a, b)
+				reverse, _ := Collide(b, a)
+				message := fmt.Sprintf("%v → %v: %v, %v", a, b, contact, reverse)
+
+				assert.Equal(t, ok, Intersects[float64](a, b), message)
+				if !ok {
+					continue
+				}
+
+				geomtest.AssertNumber(t, contact.Depth, reverse.Depth, message)
+				assert.True(t, contact.Normal == reverse.Normal.Negate() || contact.Normal == reverse.Normal, message)
+				assert.True(t, contact.Normal.IsNormalized() || contact.Normal.IsZero(), message)
+				assert.True(t, contact.Points.Count >= 1, message)
+				for point := range contact.Points.All() {
+					assert.True(t, b.Contains(point), message+point.String())
+				}
+			}
+		}
+	})
+	t.Run("int meets a polygon that is not convex at its edge", func(t *testing.T) {
+		contact, ok := Collide[int](BoxFromMinMax(Pt(1, 1), Pt(4, 5)), Pol(cornerVertices()).Int())
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(0.0, 1.0))
+		geomtest.AssertNumber(t, contact.Depth, 1.0)
+		assertContactPoints(t, contact, Pt(2, 2), Pt(4, 2))
+	})
 	t.Run("far from the origin float32 shapes meet where they intersect, at points of the second", func(t *testing.T) {
 		for _, offset := range farOffsets {
 			far := farShapes(offset)
@@ -848,6 +944,19 @@ func assertContactPoints[T Number](t *testing.T, contact Contact[T], expected ..
 	geomtest.AssertVertices(t, points, expected)
 }
 
+// cornerVertices returns the vertices of an L, two arms of width two along the axes from the
+// origin, with an inside corner between them.
+func cornerVertices() []Point[float64] {
+	return []Point[float64]{Pt(0.0, 0.0), Pt(6.0, 0.0), Pt(6.0, 2.0), Pt(2.0, 2.0), Pt(2.0, 6.0), Pt(0.0, 6.0)}
+}
+
+// reverse returns the points in the opposite order.
+func reverse[T Number](points []Point[T]) []Point[T] {
+	slices.Reverse(points)
+
+	return points
+}
+
 func BenchmarkCollide(b *testing.B) {
 	var rectangle, other, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(0.3), Rect(Pt(1.0, 0.0), Sz(3.0, 2.0)), Ell(Pt(3.0, 0.0), Sz(2.0, 1.0), 0.2)
 
@@ -859,6 +968,13 @@ func BenchmarkCollide(b *testing.B) {
 	b.Run("a round shape", func(b *testing.B) {
 		for b.Loop() {
 			_, sinkBool = Collide(rectangle, ellipse)
+		}
+	})
+	b.Run("a polygon that is not convex", func(b *testing.B) {
+		var box, polygon Shape[float64] = BoxFromMinMax(Pt(1.5, 1.8), Pt(4.0, 4.0)), Pol(cornerVertices())
+
+		for b.Loop() {
+			_, sinkBool = Collide(box, polygon)
 		}
 	})
 }
