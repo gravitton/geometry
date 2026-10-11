@@ -103,54 +103,6 @@ type intersector[T Number] interface {
 	IntersectsBox(box Box[T]) bool
 }
 
-// intersectsKind tests a against b by the method of a naming the kind of b, the rays and the
-// lines included, which Intersects does not take.
-func intersectsKind[T Number](a, b intersector[T]) bool {
-	switch kind := b.(type) {
-	case Circle[T]:
-		return a.IntersectsCircle(kind)
-	case Segment[T]:
-		return a.IntersectsSegment(kind)
-	case Ray[T]:
-		return a.IntersectsRay(kind)
-	case Line[T]:
-		return a.IntersectsLine(kind)
-	case Polygon[T]:
-		return a.IntersectsPolygon(kind)
-	case Rectangle[T]:
-		return a.IntersectsRectangle(kind)
-	case RegularPolygon[T]:
-		return a.IntersectsRegularPolygon(kind)
-	case Box[T]:
-		return a.IntersectsBox(kind)
-	default:
-		panic(fmt.Sprintf("intersectsKind: no method for %T", b))
-	}
-}
-
-// containsKind tests the shape against the container by the method naming its kind, as
-// Intersects dispatches. A ray and a line run without end, so no container encloses one.
-func containsKind[T Number](outer container[T], shape intersector[T]) bool {
-	switch kind := shape.(type) {
-	case Circle[T]:
-		return outer.ContainsCircle(kind)
-	case Segment[T]:
-		return outer.ContainsSegment(kind)
-	case Ray[T], Line[T]:
-		return false
-	case Polygon[T]:
-		return outer.ContainsPolygon(kind)
-	case Rectangle[T]:
-		return outer.ContainsRectangle(kind)
-	case RegularPolygon[T]:
-		return outer.ContainsRegularPolygon(kind)
-	case Box[T]:
-		return outer.ContainsBox(kind)
-	default:
-		panic(fmt.Sprintf("containsKind: no method for %T", shape))
-	}
-}
-
 func TestShape(t *testing.T) {
 	shapes := []Shape[float64]{
 		Circ(Pt(1.0, 1.0), 2.0),
@@ -249,141 +201,6 @@ func TestShape(t *testing.T) {
 	})
 }
 
-// assertNearest asserts the properties Nearest has on every shape: the point itself exactly
-// where Contains holds, contained itself, its own nearest point, and at DistanceSquaredTo
-// from the point.
-func assertNearest[T Number](t *testing.T, shape Shape[T], point Point[T]) {
-	t.Helper()
-
-	nearest := shape.Nearest(point)
-	message := fmt.Sprintf("%v → %v: ", shape, point)
-
-	assert.Equal(t, nearest.Equal(point), shape.Contains(point), message)
-	assert.True(t, shape.Contains(nearest), message)
-	assert.True(t, shape.Nearest(nearest).Equal(nearest), message)
-	geomtest.AssertNumber(t, float64(point.DistanceSquaredTo(nearest)), shape.DistanceSquaredTo(point), message)
-}
-
-// assertBoundingCircle asserts that a bounding circle contains every vertex of the shape it
-// was asked of, by the comparison Contains makes.
-func assertBoundingCircle[T Number](t *testing.T, circle Circle[T], vertices iter.Seq[Point[T]], message string) {
-	t.Helper()
-
-	for vertex := range vertices {
-		assert.True(t, circle.Contains(vertex), fmt.Sprintf("%s → %v ∌ %v: ", message, circle, vertex))
-	}
-}
-
-// along returns how far the point lies along the cast from where it starts, the order its
-// crossings and its clipped parts follow: the distance from Start or Origin in the direction the
-// cast runs, negative behind the origin of a line.
-func along[T Number](cast caster[T], point Point[T]) float64 {
-	start := cast.PointAt(0).Float()
-
-	return point.Float().Subtract(start).Dot(cast.PointAt(1).Float().Subtract(start).Normalize())
-}
-
-// assertCrossings asserts the properties the boundary crossings of a segment, a ray or a line
-// have on every outline, given its edges: each point lies on the cast and on an edge by
-// Contains, they follow one another along the cast, and there is one only where the pair
-// intersects.
-func assertCrossings[T Number](t *testing.T, cast caster[T], points []Point[T], intersects bool, edges func() iter.Seq[Segment[T]], message string) {
-	t.Helper()
-
-	reached := math.Inf(-1)
-	for _, point := range points {
-		distance := along(cast, point)
-
-		assert.True(t, cast.Contains(point), message+point.String()+" on the cast: ")
-		assert.True(t, slices.ContainsFunc(slices.Collect(edges()), func(edge Segment[T]) bool {
-			return edge.Contains(point)
-		}), message+point.String()+" on the boundary: ")
-		assert.True(t, LessOrEqual(reached, distance), message+point.String()+" in order: ")
-
-		reached = distance
-	}
-	assert.True(t, len(points) == 0 || intersects, message)
-}
-
-// assertClipped asserts the properties the parts a Clip method returns for a segment, a ray or
-// a line have on every shape: they exist exactly where the cast intersects the shape, each lies
-// on the cast and within the shape, and they follow one another along the cast without
-// overlapping.
-func assertClipped[T Number](t *testing.T, cast caster[T], parts []Segment[T], intersects bool, inside func(Segment[T]) bool, message string) {
-	t.Helper()
-
-	assert.Equal(t, len(parts) > 0, intersects, message)
-
-	reached := math.Inf(-1)
-	for _, part := range parts {
-		from, to := along(cast, part.Start), along(cast, part.End)
-
-		assert.True(t, cast.Contains(part.Start) && cast.Contains(part.End), message+part.String()+" on the cast: ")
-		assert.True(t, inside(part), message+part.String()+" within the shape: ")
-		assert.True(t, LessOrEqual(reached, from) && LessOrEqual(from, to), message+part.String()+" in order: ")
-
-		reached = to
-	}
-}
-
-// assertShapeHit asserts the properties the Hit a method returns for a segment or a ray has on
-// every shape with an inside: there is one exactly where the shape does not contain the start
-// of the cast and the cast crosses its boundary, at the first of the crossings, facing the cast.
-func assertShapeHit[T Number](t *testing.T, cast caster[T], hit Hit[T], ok, contained bool, crossings []Point[T], message string) {
-	t.Helper()
-
-	assert.Equal(t, ok, !contained && len(crossings) > 0, message)
-	if !ok {
-		assert.Equal(t, hit, Hit[T]{}, message)
-
-		return
-	}
-
-	assert.True(t, hit.Point.Equal(crossings[0]), message+hit.Point.String()+" is the first crossing: ")
-	assertFacing(t, cast, hit, message)
-}
-
-// assertWallHit asserts the properties the Hit a method returns for a segment or a ray has
-// against a wall, a segment, a ray or a line: there is one exactly where the wall does not
-// contain the start of the cast and the two intersect, at a point of both, facing the cast.
-func assertWallHit[T Number](t *testing.T, cast caster[T], wall obstacle[T], hit Hit[T], ok, intersects bool, message string) {
-	t.Helper()
-
-	assert.Equal(t, ok, !wall.Contains(cast.PointAt(0)) && intersects, message)
-	if !ok {
-		assert.Equal(t, hit, Hit[T]{}, message)
-
-		return
-	}
-
-	assert.True(t, cast.Contains(hit.Point) && wall.Contains(hit.Point), message+hit.Point.String()+" lies on both: ")
-	assertFacing(t, cast, hit, message)
-}
-
-// assertFacing asserts what every Hit holds of the cast it was found on: a unit normal that
-// does not run along the cast, and a fraction ahead of its start that PointAt takes back to the
-// point.
-func assertFacing[T Number](t *testing.T, cast caster[T], hit Hit[T], message string) {
-	t.Helper()
-
-	direction := cast.PointAt(1).Float().Subtract(cast.PointAt(0).Float())
-
-	assert.True(t, hit.Normal.IsNormalized(), message+hit.Normal.String()+" is a unit: ")
-	assert.True(t, LessOrEqual(hit.Normal.Dot(direction.Normalize()), 0), message+hit.Normal.String()+" faces the cast: ")
-	assert.True(t, hit.Fraction >= 0 && cast.PointAt(hit.Fraction).Equal(hit.Point), message+"PointAt of the fraction: ")
-}
-
-// assertReversed asserts that a segment and its Reverse cross a boundary at the same points,
-// given the crossings of each: those of the one are those of the other in the opposite order.
-func assertReversed[T Number](t *testing.T, points, reversed []Point[T], message string) {
-	t.Helper()
-
-	ordered := slices.Clone(reversed)
-	slices.Reverse(ordered)
-
-	geomtest.AssertVertices(t, ordered, points, message)
-}
-
 func TestPolyline(t *testing.T) {
 	polylines := []polyline[float64]{
 		Seg(Pt(0.0, 0.0), Pt(3.0, 4.0)),
@@ -408,6 +225,22 @@ func TestPolyline(t *testing.T) {
 		assert.True(t, closed[float64](Pol(triangleVertices())))
 		assert.True(t, closed[float64](RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop)))
 	})
+}
+
+// closed reports whether the last edge returns to the first vertex, through the interface as
+// a caller would.
+func closed[T Number](shape polyline[T]) bool {
+	var first, last Point[T]
+	for vertex := range shape.Vertices() {
+		first = vertex
+
+		break
+	}
+	for edge := range shape.Edges() {
+		last = edge.End
+	}
+
+	return first.Equal(last)
 }
 
 func TestIntersector(t *testing.T) {
@@ -485,110 +318,52 @@ func TestIntersector(t *testing.T) {
 	})
 }
 
-// foreignShape is a shape of no kind this package names, as one of another package is: the
-// shape it holds, known to the package by the methods of Shape alone.
-type foreignShape[T Number] struct {
-	Shape[T]
-}
-
-// convexFixtures returns the fixtures of every kind of shape that are convex: the polygons that
-// are, and no empty one.
-func convexFixtures() []Shape[float64] {
-	var shapes []Shape[float64]
-	for _, c := range circleFixtures {
-		shapes = append(shapes, c)
-	}
-	for _, s := range segmentFixtures {
-		shapes = append(shapes, s)
-	}
-	for _, p := range polygonFixtures() {
-		if p.IsConvex() {
-			shapes = append(shapes, p)
-		}
-	}
-	for _, r := range rectFixtures {
-		shapes = append(shapes, r)
-	}
-	for _, rp := range regularPolygonFixtures {
-		shapes = append(shapes, rp)
-	}
-	for _, b := range boxFixtures {
-		shapes = append(shapes, b)
-	}
-	for _, e := range ellipseFixtures {
-		shapes = append(shapes, e)
-	}
-
-	return shapes
-}
-
-// shapeFixtures returns the fixtures of every kind of shape: the convex ones, the polygon
-// fixtures that are not convex, and the notched polygon, the one with an outside between its
-// vertices.
-func shapeFixtures() []Shape[float64] {
-	shapes := convexFixtures()
-	for _, p := range polygonFixtures() {
-		if !p.IsConvex() {
-			shapes = append(shapes, p)
-		}
-	}
-
-	return append(shapes, Pol(notchedVertices()).Float())
-}
-
-// translated returns the convex shape moved by the vector, in its own kind.
-func translated(shape Shape[float64], vector Vector[float64]) Shape[float64] {
-	switch kind := shape.(type) {
-	case Circle[float64]:
-		return kind.Translate(vector)
-	case Segment[float64]:
-		return kind.Translate(vector)
-	case Polygon[float64]:
-		return kind.Translate(vector)
-	case Rectangle[float64]:
-		return kind.Translate(vector)
-	case RegularPolygon[float64]:
-		return kind.Translate(vector)
-	case Box[float64]:
-		return kind.Translate(vector)
-	case Ellipse[float64]:
-		return kind.Translate(vector)
+// intersectsKind tests a against b by the method of a naming the kind of b, the rays and the
+// lines included, which Intersects does not take.
+func intersectsKind[T Number](a, b intersector[T]) bool {
+	switch kind := b.(type) {
+	case Circle[T]:
+		return a.IntersectsCircle(kind)
+	case Segment[T]:
+		return a.IntersectsSegment(kind)
+	case Ray[T]:
+		return a.IntersectsRay(kind)
+	case Line[T]:
+		return a.IntersectsLine(kind)
+	case Polygon[T]:
+		return a.IntersectsPolygon(kind)
+	case Rectangle[T]:
+		return a.IntersectsRectangle(kind)
+	case RegularPolygon[T]:
+		return a.IntersectsRegularPolygon(kind)
+	case Box[T]:
+		return a.IntersectsBox(kind)
 	default:
-		panic(fmt.Sprintf("translated: no method for %T", shape))
+		panic(fmt.Sprintf("intersectsKind: no method for %T", b))
 	}
 }
 
-// farOffsets move the float32 fixtures to where an ulp of float32 exceeds Delta32, so a point
-// rounded into T stays on the boundary it was computed on only by the tolerance epsilonAt
-// widens with the coordinates.
-var farOffsets = []Vector[float32]{Vec[float32](1e4, -5e3), Vec[float32](1e5, -5e4)}
-
-// farShapes returns the shape fixtures of every kind cast to float32 and moved by the offset.
-func farShapes(offset Vector[float32]) []Shape[float32] {
-	var shapes []Shape[float32]
-	for _, c := range circleFixtures {
-		shapes = append(shapes, c.Cast[float32]().Translate(offset))
+// containsKind tests the shape against the container by the method naming its kind, as
+// Intersects dispatches. A ray and a line run without end, so no container encloses one.
+func containsKind[T Number](outer container[T], shape intersector[T]) bool {
+	switch kind := shape.(type) {
+	case Circle[T]:
+		return outer.ContainsCircle(kind)
+	case Segment[T]:
+		return outer.ContainsSegment(kind)
+	case Ray[T], Line[T]:
+		return false
+	case Polygon[T]:
+		return outer.ContainsPolygon(kind)
+	case Rectangle[T]:
+		return outer.ContainsRectangle(kind)
+	case RegularPolygon[T]:
+		return outer.ContainsRegularPolygon(kind)
+	case Box[T]:
+		return outer.ContainsBox(kind)
+	default:
+		panic(fmt.Sprintf("containsKind: no method for %T", shape))
 	}
-	for _, s := range segmentFixtures {
-		shapes = append(shapes, s.Cast[float32]().Translate(offset))
-	}
-	for _, p := range polygonFixtures() {
-		shapes = append(shapes, p.Cast[float32]().Translate(offset))
-	}
-	for _, r := range rectFixtures {
-		shapes = append(shapes, r.Cast[float32]().Translate(offset))
-	}
-	for _, rp := range regularPolygonFixtures {
-		shapes = append(shapes, rp.Cast[float32]().Translate(offset))
-	}
-	for _, b := range boxFixtures {
-		shapes = append(shapes, b.Cast[float32]().Translate(offset))
-	}
-	for _, e := range ellipseFixtures {
-		shapes = append(shapes, e.Cast[float32]().Translate(offset))
-	}
-
-	return shapes
 }
 
 // farIntersectors returns the fixtures of every kind with the Intersects methods, cast to float32
@@ -608,40 +383,6 @@ func farIntersectors(offset Vector[float32]) []intersector[float32] {
 	}
 
 	return shapes
-}
-
-// narrowMatrix stretches the fixtures before they are cast to int16, past the square root of its
-// range, so a squared distance or a difference taken in T rather than float64 overflows where
-// every coordinate still fits.
-var narrowMatrix = ScaleMatrix(40.0, 40.0)
-
-// prefixPoint is the point the Append methods find in dst over the fixtures, so every result is
-// checked to follow it.
-var prefixPoint = Pt(-7.5, 3.25)
-
-// prefixSegment is the segment the Append methods of segments find in dst over the fixtures.
-var prefixSegment = Seg(Pt(-7.5, 3.25), Pt(4.5, -1.75))
-
-// bufferWith returns a slice holding the element with room for more, the dst the Append methods
-// are checked with over the fixtures, so their results are appended in place after it.
-func bufferWith[E any](element E) []E {
-	return append(make([]E, 0, 8), element)
-}
-
-// closed reports whether the last edge returns to the first vertex, through the interface as
-// a caller would.
-func closed[T Number](shape polyline[T]) bool {
-	var first, last Point[T]
-	for vertex := range shape.Vertices() {
-		first = vertex
-
-		break
-	}
-	for edge := range shape.Edges() {
-		last = edge.End
-	}
-
-	return first.Equal(last)
 }
 
 func TestBody(t *testing.T) {
@@ -1498,4 +1239,276 @@ func TestTransformable(t *testing.T) {
 // call a generic tween makes.
 func moved[T Number, S transformable[T, S]](shape S, vector Vector[T]) S {
 	return shape.Translate(vector).Rotate(2 * Pi).Scale(2).Unscale(2)
+}
+
+// assertNearest asserts the properties Nearest has on every shape: the point itself exactly
+// where Contains holds, contained itself, its own nearest point, and at DistanceSquaredTo
+// from the point.
+func assertNearest[T Number](t *testing.T, shape Shape[T], point Point[T]) {
+	t.Helper()
+
+	nearest := shape.Nearest(point)
+	message := fmt.Sprintf("%v → %v: ", shape, point)
+
+	assert.Equal(t, nearest.Equal(point), shape.Contains(point), message)
+	assert.True(t, shape.Contains(nearest), message)
+	assert.True(t, shape.Nearest(nearest).Equal(nearest), message)
+	geomtest.AssertNumber(t, float64(point.DistanceSquaredTo(nearest)), shape.DistanceSquaredTo(point), message)
+}
+
+// assertBoundingCircle asserts that a bounding circle contains every vertex of the shape it
+// was asked of, by the comparison Contains makes.
+func assertBoundingCircle[T Number](t *testing.T, circle Circle[T], vertices iter.Seq[Point[T]], message string) {
+	t.Helper()
+
+	for vertex := range vertices {
+		assert.True(t, circle.Contains(vertex), fmt.Sprintf("%s → %v ∌ %v: ", message, circle, vertex))
+	}
+}
+
+// assertCrossings asserts the properties the boundary crossings of a segment, a ray or a line
+// have on every outline, given its edges: each point lies on the cast and on an edge by
+// Contains, they follow one another along the cast, and there is one only where the pair
+// intersects.
+func assertCrossings[T Number](t *testing.T, cast caster[T], points []Point[T], intersects bool, edges func() iter.Seq[Segment[T]], message string) {
+	t.Helper()
+
+	for _, point := range points {
+		assert.True(t, cast.Contains(point), message+point.String()+" on the cast: ")
+		assert.True(t, slices.ContainsFunc(slices.Collect(edges()), func(edge Segment[T]) bool {
+			return edge.Contains(point)
+		}), message+point.String()+" on the boundary: ")
+	}
+	assertOrdered(t, cast, points, message)
+	assert.True(t, len(points) == 0 || intersects, message)
+}
+
+// assertClipped asserts the properties the parts a Clip method returns for a segment, a ray or
+// a line have on every shape: they exist exactly where the cast intersects the shape, each lies
+// on the cast and within the shape, and they follow one another along the cast without
+// overlapping.
+func assertClipped[T Number](t *testing.T, cast caster[T], parts []Segment[T], intersects bool, inside func(Segment[T]) bool, message string) {
+	t.Helper()
+
+	assert.Equal(t, len(parts) > 0, intersects, message)
+
+	for _, part := range parts {
+		assert.True(t, cast.Contains(part.Start) && cast.Contains(part.End), message+part.String()+" on the cast: ")
+		assert.True(t, inside(part), message+part.String()+" within the shape: ")
+	}
+	assertOrdered(t, cast, endsOf(parts), message)
+}
+
+// assertOrdered asserts that the points follow one another along the cast, the order every
+// crossing and every clipped part is returned in, measured in float64. An integer T rounds
+// them onto the lattice and off the cast, so their order is all that is asserted of them.
+func assertOrdered[T Number](t *testing.T, cast caster[T], points []Point[T], message string) {
+	t.Helper()
+
+	reached := math.Inf(-1)
+	for _, point := range points {
+		distance := along(cast, point)
+
+		assert.True(t, LessOrEqual(reached, distance), message+point.String()+" in order: ")
+
+		reached = distance
+	}
+}
+
+// endsOf returns the ends of the parts in order, the points a clip visits from Start.
+func endsOf[T Number](parts []Segment[T]) []Point[T] {
+	var ends []Point[T]
+	for _, part := range parts {
+		ends = append(ends, part.Start, part.End)
+	}
+
+	return ends
+}
+
+// along returns how far the point lies along the cast from where it starts, the order its
+// crossings and its clipped parts follow: the distance from Start or Origin in the direction the
+// cast runs, negative behind the origin of a line.
+func along[T Number](cast caster[T], point Point[T]) float64 {
+	start := cast.PointAt(0).Float()
+
+	return point.Float().Subtract(start).Dot(cast.PointAt(1).Float().Subtract(start).Normalize())
+}
+
+// assertShapeHit asserts the properties the Hit a method returns for a segment or a ray has on
+// every shape with an inside: there is one exactly where the shape does not contain the start
+// of the cast and the cast crosses its boundary, at the first of the crossings, facing the cast.
+func assertShapeHit[T Number](t *testing.T, cast caster[T], hit Hit[T], ok, contained bool, crossings []Point[T], message string) {
+	t.Helper()
+
+	assert.Equal(t, ok, !contained && len(crossings) > 0, message)
+	if !ok {
+		assert.Equal(t, hit, Hit[T]{}, message)
+
+		return
+	}
+
+	assert.True(t, hit.Point.Equal(crossings[0]), message+hit.Point.String()+" is the first crossing: ")
+	assertFacing(t, cast, hit, message)
+}
+
+// assertWallHit asserts the properties the Hit a method returns for a segment or a ray has
+// against a wall, a segment, a ray or a line: there is one exactly where the wall does not
+// contain the start of the cast and the two intersect, at a point of both, facing the cast.
+func assertWallHit[T Number](t *testing.T, cast caster[T], wall obstacle[T], hit Hit[T], ok, intersects bool, message string) {
+	t.Helper()
+
+	assert.Equal(t, ok, !wall.Contains(cast.PointAt(0)) && intersects, message)
+	if !ok {
+		assert.Equal(t, hit, Hit[T]{}, message)
+
+		return
+	}
+
+	assert.True(t, cast.Contains(hit.Point) && wall.Contains(hit.Point), message+hit.Point.String()+" lies on both: ")
+	assertFacing(t, cast, hit, message)
+}
+
+// assertFacing asserts what every Hit holds of the cast it was found on: a unit normal that
+// does not run along the cast, and a fraction ahead of its start that PointAt takes back to the
+// point.
+func assertFacing[T Number](t *testing.T, cast caster[T], hit Hit[T], message string) {
+	t.Helper()
+
+	direction := cast.PointAt(1).Float().Subtract(cast.PointAt(0).Float())
+
+	assert.True(t, hit.Normal.IsNormalized(), message+hit.Normal.String()+" is a unit: ")
+	assert.True(t, LessOrEqual(hit.Normal.Dot(direction.Normalize()), 0), message+hit.Normal.String()+" faces the cast: ")
+	assert.True(t, hit.Fraction >= 0 && cast.PointAt(hit.Fraction).Equal(hit.Point), message+"PointAt of the fraction: ")
+}
+
+// assertReversed asserts that a segment and its Reverse cross a boundary at the same points,
+// given the crossings of each: those of the one are those of the other in the opposite order.
+func assertReversed[T Number](t *testing.T, points, reversed []Point[T], message string) {
+	t.Helper()
+
+	ordered := slices.Clone(reversed)
+	slices.Reverse(ordered)
+
+	geomtest.AssertVertices(t, ordered, points, message)
+}
+
+// foreignShape is a shape of no kind this package names, as one of another package is: the
+// shape it holds, known to the package by the methods of Shape alone.
+type foreignShape[T Number] struct {
+	Shape[T]
+}
+
+// convexFixtures returns the fixtures of every kind of shape that are convex: the polygons that
+// are, and no empty one.
+func convexFixtures() []Shape[float64] {
+	var shapes []Shape[float64]
+	for _, c := range circleFixtures {
+		shapes = append(shapes, c)
+	}
+	for _, s := range segmentFixtures {
+		shapes = append(shapes, s)
+	}
+	for _, p := range polygonFixtures() {
+		if p.IsConvex() {
+			shapes = append(shapes, p)
+		}
+	}
+	for _, r := range rectFixtures {
+		shapes = append(shapes, r)
+	}
+	for _, rp := range regularPolygonFixtures {
+		shapes = append(shapes, rp)
+	}
+	for _, b := range boxFixtures {
+		shapes = append(shapes, b)
+	}
+	for _, e := range ellipseFixtures {
+		shapes = append(shapes, e)
+	}
+
+	return shapes
+}
+
+// shapeFixtures returns the fixtures of every kind of shape: the convex ones, the polygon
+// fixtures that are not convex, and the notched polygon, the one with an outside between its
+// vertices.
+func shapeFixtures() []Shape[float64] {
+	shapes := convexFixtures()
+	for _, p := range polygonFixtures() {
+		if !p.IsConvex() {
+			shapes = append(shapes, p)
+		}
+	}
+
+	return append(shapes, Pol(notchedVertices()).Float())
+}
+
+// translated returns the convex shape moved by the vector, in its own kind.
+func translated(shape Shape[float64], vector Vector[float64]) Shape[float64] {
+	switch kind := shape.(type) {
+	case Circle[float64]:
+		return kind.Translate(vector)
+	case Segment[float64]:
+		return kind.Translate(vector)
+	case Polygon[float64]:
+		return kind.Translate(vector)
+	case Rectangle[float64]:
+		return kind.Translate(vector)
+	case RegularPolygon[float64]:
+		return kind.Translate(vector)
+	case Box[float64]:
+		return kind.Translate(vector)
+	case Ellipse[float64]:
+		return kind.Translate(vector)
+	default:
+		panic(fmt.Sprintf("translated: no method for %T", shape))
+	}
+}
+
+// farOffsets move the float32 fixtures to where an ulp of float32 exceeds Delta32, so a point
+// rounded into T stays on the boundary it was computed on only by the tolerance epsilonAt
+// widens with the coordinates.
+var farOffsets = []Vector[float32]{Vec[float32](1e4, -5e3), Vec[float32](1e5, -5e4)}
+
+// farShapes returns the shape fixtures of every kind cast to float32 and moved by the offset.
+func farShapes(offset Vector[float32]) []Shape[float32] {
+	var shapes []Shape[float32]
+	for _, c := range circleFixtures {
+		shapes = append(shapes, c.Cast[float32]().Translate(offset))
+	}
+	for _, s := range segmentFixtures {
+		shapes = append(shapes, s.Cast[float32]().Translate(offset))
+	}
+	for _, p := range polygonFixtures() {
+		shapes = append(shapes, p.Cast[float32]().Translate(offset))
+	}
+	for _, r := range rectFixtures {
+		shapes = append(shapes, r.Cast[float32]().Translate(offset))
+	}
+	for _, rp := range regularPolygonFixtures {
+		shapes = append(shapes, rp.Cast[float32]().Translate(offset))
+	}
+	for _, b := range boxFixtures {
+		shapes = append(shapes, b.Cast[float32]().Translate(offset))
+	}
+	for _, e := range ellipseFixtures {
+		shapes = append(shapes, e.Cast[float32]().Translate(offset))
+	}
+
+	return shapes
+}
+
+// narrowMatrix stretches the fixtures before they are cast to int16, past the square root of its
+// range, so a squared distance or a difference taken in T rather than float64 overflows where
+// every coordinate still fits.
+var narrowMatrix = ScaleMatrix(40.0, 40.0)
+
+// prefixPoint is the point the Append methods find in dst over the fixtures, so every result is
+// checked to follow it.
+var prefixPoint = Pt(-7.5, 3.25)
+
+// bufferWith returns a slice holding the element with room for more, the dst the Append methods
+// are checked with over the fixtures, so their results are appended in place after it.
+func bufferWith[E any](element E) []E {
+	return append(make([]E, 0, 8), element)
 }

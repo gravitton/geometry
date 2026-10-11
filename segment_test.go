@@ -1748,6 +1748,17 @@ func TestSegment_ClipPolygon(t *testing.T) {
 	})
 }
 
+// reversedParts returns the parts of a clipped segment as its Reverse would give them: in the
+// opposite order, each running the other way.
+func reversedParts[T Number](parts []Segment[T]) []Segment[T] {
+	reversed := make([]Segment[T], len(parts))
+	for i, part := range parts {
+		reversed[len(parts)-1-i] = part.Reverse()
+	}
+
+	return reversed
+}
+
 func FuzzSegment_ClipPolygon(f *testing.F) {
 	f.Add(0.0, 0.0, 8.0, -1.5e-6)
 	f.Add(-1.0, 3.0, 5.0, 3.0)
@@ -2599,43 +2610,6 @@ func partsOf[T Number](part Segment[T], ok bool) []Segment[T] {
 	}
 
 	return []Segment[T]{part}
-}
-
-// reversedParts returns the parts of a clipped segment as its Reverse would give them: in the
-// opposite order, each running the other way.
-func reversedParts[T Number](parts []Segment[T]) []Segment[T] {
-	reversed := make([]Segment[T], len(parts))
-	for i, part := range parts {
-		reversed[len(parts)-1-i] = part.Reverse()
-	}
-
-	return reversed
-}
-
-// assertOrdered checks that the points follow one another from the segment's Start, the order
-// every crossing and every clipped part is returned in, measured in float64. An integer T
-// rounds them onto the lattice and off the segment, so their order is all that is asserted.
-func assertOrdered[T Number](t *testing.T, s Segment[T], points []Point[T], message string) {
-	t.Helper()
-
-	reached := 0.0
-	for _, p := range points {
-		distance := s.Start.DistanceTo(p)
-
-		assert.True(t, reached <= distance, message+p.String()+" in order: ")
-
-		reached = distance
-	}
-}
-
-// endsOf returns the ends of the parts in order, the points a clip visits from Start.
-func endsOf[T Number](parts []Segment[T]) []Point[T] {
-	var ends []Point[T]
-	for _, part := range parts {
-		ends = append(ends, part.Start, part.End)
-	}
-
-	return ends
 }
 
 // assertHit checks that a Hit method found the hit expected of it.

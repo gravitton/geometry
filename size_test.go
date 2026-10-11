@@ -617,6 +617,19 @@ var sizeFixtures = []Size[float64]{
 	Sz(100.0, -34.25),
 }
 
+// positiveSizeFixtures are the fixtures with no negative extent, the sizes Fit and Fill are defined
+// for.
+func positiveSizeFixtures() []Size[float64] {
+	var sizes []Size[float64]
+	for _, s := range sizeFixtures {
+		if s.Width >= 0 && s.Height >= 0 {
+			sizes = append(sizes, s)
+		}
+	}
+
+	return sizes
+}
+
 func ExampleSz() {
 	fmt.Println(Sz(16, 32))
 	fmt.Println(Sz(1.5, -0.25))
@@ -629,17 +642,4 @@ func ExampleParseSize() {
 	size, err := ParseSize[int]("16x32")
 	fmt.Println(size, err)
 	// Output: 16x32 <nil>
-}
-
-// positiveSizeFixtures are the fixtures with no negative extent, the sizes Fit and Fill are defined
-// for.
-func positiveSizeFixtures() []Size[float64] {
-	var sizes []Size[float64]
-	for _, s := range sizeFixtures {
-		if s.Width >= 0 && s.Height >= 0 {
-			sizes = append(sizes, s)
-		}
-	}
-
-	return sizes
 }

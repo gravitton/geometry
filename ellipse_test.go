@@ -363,11 +363,6 @@ func assertTransformed(t *testing.T, e Ellipse[float64], m Matrix[float64], mess
 	}
 }
 
-// boundaryAt returns the point of the ellipse boundary at the parameter.
-func boundaryAt(e Ellipse[float64], parameter float64) Point[float64] {
-	return e.Center.Add(VectorFromAngleSize(parameter, e.Size).Rotate(e.Angle))
-}
-
 func TestEllipse_Grow(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		geomtest.AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).Grow(2), Ell(Pt(1, 2), Sz(12, 6), 0))
@@ -964,6 +959,11 @@ func TestEllipse_Immutable(t *testing.T) {
 }
 
 // ellipseFixtures span the degenerate, circular, turned and off-origin cases.
+
+// boundaryAt returns the point of the ellipse boundary at the parameter.
+func boundaryAt(e Ellipse[float64], parameter float64) Point[float64] {
+	return e.Center.Add(VectorFromAngleSize(parameter, e.Size).Rotate(e.Angle))
+}
 
 var ellipseFixtures = []Ellipse[float64]{
 	Ell(Pt(0.0, 0.0), Sz(0.0, 0.0), 0),

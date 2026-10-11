@@ -118,17 +118,6 @@ func TestPolygon_Centroid(t *testing.T) {
 	})
 }
 
-// alongLine returns vertices placed on the line y = 2x + 0.1 by float64 arithmetic at run time,
-// each rounded a hair off it, running back and forth along it.
-func alongLine() []Point[float64] {
-	var vertices []Point[float64]
-	for _, x := range []float64{0.1, 1.2, 0.3, 2.6} {
-		vertices = append(vertices, Pt(x, float64(2*x)+0.1))
-	}
-
-	return vertices
-}
-
 func TestPolygon_Area(t *testing.T) {
 	t.Run("square", func(t *testing.T) {
 		geomtest.AssertNumber(t, Pol(squareVertices()).Area(), 4.0)
@@ -2043,6 +2032,17 @@ func notchedVertices() []Point[int] {
 	}
 }
 
+// alongLine returns vertices placed on the line y = 2x + 0.1 by float64 arithmetic at run time,
+// each rounded a hair off it, running back and forth along it.
+func alongLine() []Point[float64] {
+	var vertices []Point[float64]
+	for _, x := range []float64{0.1, 1.2, 0.3, 2.6} {
+		vertices = append(vertices, Pt(x, float64(2*x)+0.1))
+	}
+
+	return vertices
+}
+
 // outlineFixtures returns the polygon fixtures with the polygons of the rectangle and the
 // regular polygon fixtures, every outline the polygon methods are checked over.
 func outlineFixtures() []Polygon[float64] {
@@ -2071,12 +2071,12 @@ func polygonFixtures() []Polygon[float64] {
 	}
 }
 
-func ExamplePol() {
-	fmt.Println(Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(2, 2)}))
-	// Output: Pol((0,0);(2,0);(2,2))
-}
-
 // benchPolygon is a 64-gon, large enough for the edge walk to dominate.
 func benchPolygon() Polygon[float64] {
 	return RegPol(Pt(0.0, 0.0), SzU(100.0), 64, 0, 0).Polygon()
+}
+
+func ExamplePol() {
+	fmt.Println(Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(2, 2)}))
+	// Output: Pol((0,0);(2,0);(2,2))
 }

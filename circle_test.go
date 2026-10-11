@@ -1752,39 +1752,6 @@ func TestCircle_Immutable(t *testing.T) {
 
 // circleFixtures span the degenerate, unit, and off-origin cases.
 
-var circleFixtures = []Circle[float64]{
-	Circ(Pt(0.0, 0.0), 0.0),
-	Circ(Pt(0.0, 0.0), 1.0),
-	Circ(Pt(1.0, 2.0), 10.0),
-	Circ(Pt(0.6, -0.25), 1.2),
-	Circ(Pt(-3.5, 0.25), 7.0),
-	Circ(Pt(12.5, -0.1), 0.5),
-}
-
-func ExampleCirc() {
-	fmt.Println(Circ(Pt(10, 16), 5))
-	// Output: Circ((10,16);5)
-}
-
-// grazingSegments returns the segments a crossing of the circle is decided on within the
-// tolerance: each starts a tenth of Delta inside the boundary, in one of the eight directions
-// from the center, and runs along the tangent there, which puts the start in the middle of a
-// short chord, or to one of the point fixtures.
-func grazingSegments(circle Circle[float64]) []Segment[float64] {
-	var segments []Segment[float64]
-	for _, direction := range Directions() {
-		radius := VectorFromAngle(direction.Angle(), max(circle.Radius-Delta/10, 0))
-		start := circle.Center.Add(radius)
-
-		segments = append(segments, Seg(start, start.Add(radius.Normal())))
-		for _, p := range pointFixtures {
-			segments = append(segments, Seg(start, p))
-		}
-	}
-
-	return segments
-}
-
 // assertTangents asserts the properties the tangents between two circles have, outer and inner
 // alike: at most two, each from the boundary of a to the boundary of b and at a right angle to
 // the radius at both ends, where the circle has one, and the same segments reversed when asked
@@ -1817,4 +1784,37 @@ func assertTangents(t *testing.T, a, b Circle[float64], tangents, reversed []Seg
 // point crosses the boundary exactly there.
 func touches[T Number](circle Circle[T], point Point[T]) bool {
 	return circle.IntersectionSegment(Seg(point, point)).Count == 1
+}
+
+var circleFixtures = []Circle[float64]{
+	Circ(Pt(0.0, 0.0), 0.0),
+	Circ(Pt(0.0, 0.0), 1.0),
+	Circ(Pt(1.0, 2.0), 10.0),
+	Circ(Pt(0.6, -0.25), 1.2),
+	Circ(Pt(-3.5, 0.25), 7.0),
+	Circ(Pt(12.5, -0.1), 0.5),
+}
+
+// grazingSegments returns the segments a crossing of the circle is decided on within the
+// tolerance: each starts a tenth of Delta inside the boundary, in one of the eight directions
+// from the center, and runs along the tangent there, which puts the start in the middle of a
+// short chord, or to one of the point fixtures.
+func grazingSegments(circle Circle[float64]) []Segment[float64] {
+	var segments []Segment[float64]
+	for _, direction := range Directions() {
+		radius := VectorFromAngle(direction.Angle(), max(circle.Radius-Delta/10, 0))
+		start := circle.Center.Add(radius)
+
+		segments = append(segments, Seg(start, start.Add(radius.Normal())))
+		for _, p := range pointFixtures {
+			segments = append(segments, Seg(start, p))
+		}
+	}
+
+	return segments
+}
+
+func ExampleCirc() {
+	fmt.Println(Circ(Pt(10, 16), 5))
+	// Output: Circ((10,16);5)
 }

@@ -86,37 +86,6 @@ func TestRegularPolygonWithOrientation(t *testing.T) {
 	})
 }
 
-// assertOrientation checks the top of a polygon RegularPolygonWithOrientation made: a single
-// vertex above the center for OrientationPointyTop, and two vertices level with each other
-// either side of it for OrientationFlatTop.
-func assertOrientation(t *testing.T, polygon RegularPolygon[float64], orientation Orientation, message string) {
-	t.Helper()
-
-	top := math.Inf(1)
-	for vertex := range polygon.Vertices() {
-		top = min(top, vertex.Y)
-	}
-
-	var highest []Point[float64]
-	for vertex := range polygon.Vertices() {
-		if Equal(vertex.Y, top) {
-			highest = append(highest, vertex)
-		}
-	}
-
-	if orientation == OrientationPointyTop {
-		if assert.Equal(t, len(highest), 1, message+"one vertex at the top: ") {
-			geomtest.AssertNumber(t, highest[0].X, polygon.Center.X, message)
-		}
-
-		return
-	}
-
-	if assert.Equal(t, len(highest), 2, message+"an edge at the top: ") {
-		geomtest.AssertNumber(t, highest[0].Midpoint(highest[1]).X, polygon.Center.X, message)
-	}
-}
-
 // assertSteppedFromTop checks that the polygon has the vertices of the polygon stepped around
 // the axis-aligned ellipse of the size from the angle that places its top, a vertex there for
 // OrientationPointyTop and half a step before it for OrientationFlatTop, in whatever order.
@@ -1505,6 +1474,37 @@ func TestRegularPolygon_Immutable(t *testing.T) {
 	rp.Rotate(Pi / 3)
 
 	geomtest.AssertRegularPolygon(t, rp, RegPol(Pt(0, 1), Sz(2, 3), 4, 0, 0))
+}
+
+// assertOrientation checks the top of a polygon RegularPolygonWithOrientation made: a single
+// vertex above the center for OrientationPointyTop, and two vertices level with each other
+// either side of it for OrientationFlatTop.
+func assertOrientation(t *testing.T, polygon RegularPolygon[float64], orientation Orientation, message string) {
+	t.Helper()
+
+	top := math.Inf(1)
+	for vertex := range polygon.Vertices() {
+		top = min(top, vertex.Y)
+	}
+
+	var highest []Point[float64]
+	for vertex := range polygon.Vertices() {
+		if Equal(vertex.Y, top) {
+			highest = append(highest, vertex)
+		}
+	}
+
+	if orientation == OrientationPointyTop {
+		if assert.Equal(t, len(highest), 1, message+"one vertex at the top: ") {
+			geomtest.AssertNumber(t, highest[0].X, polygon.Center.X, message)
+		}
+
+		return
+	}
+
+	if assert.Equal(t, len(highest), 2, message+"an edge at the top: ") {
+		geomtest.AssertNumber(t, highest[0].Midpoint(highest[1]).X, polygon.Center.X, message)
+	}
 }
 
 // regularPolygonFixtures span the triangle, square, and hexagon at both orientations, and

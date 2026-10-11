@@ -56,6 +56,13 @@ func TestCast(t *testing.T) {
 	})
 }
 
+// assertCast asserts that Cast of the value into T gives the expected one, T named at the call.
+func assertCast[T Number](t *testing.T, value float64, expected T) {
+	t.Helper()
+
+	geomtest.AssertNumber(t, Cast[T](value), expected)
+}
+
 func BenchmarkCast_Int(b *testing.B) {
 	for b.Loop() {
 		Cast[int](1.51)
@@ -115,6 +122,13 @@ func TestString(t *testing.T) {
 			return String(tenth)
 		})
 	})
+}
+
+// assertString asserts that String prints the value as expected.
+func assertString[T Number](t *testing.T, value T, expected string) {
+	t.Helper()
+
+	assert.Equal(t, String(value), expected)
 }
 
 func TestParse(t *testing.T) {
@@ -185,16 +199,4 @@ func TestParse(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, value, float32(1.0000001))
 	})
-}
-
-func assertCast[T Number](t *testing.T, value float64, expected T) {
-	t.Helper()
-
-	geomtest.AssertNumber(t, Cast[T](value), expected)
-}
-
-func assertString[T Number](t *testing.T, value T, expected string) {
-	t.Helper()
-
-	assert.Equal(t, String(value), expected)
 }
