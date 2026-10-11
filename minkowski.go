@@ -19,7 +19,7 @@ const (
 // every vector from a point of the second to a point of the moved first. It holds the origin
 // exactly where the two share a point, its point nearest the origin is the gap between them,
 // and the way out of it from the origin is the way to part them, so Intersects, DistanceSquared,
-// Collide and Sweep of two shapes known only by their Support are read off it. Everything is
+// Nearest, Collide and Sweep of two shapes known only by their Support are read off it. Everything is
 // measured in float64, whatever T is.
 //
 // With no first shape the difference is that of the single point at the offset, the origin of
@@ -273,7 +273,9 @@ func (s *minkowskiSimplex) holds(vertex minkowskiVertex) bool {
 // vertices it lies between: the vertex of a point, the nearest of an edge, and for a triangle
 // the nearest of its three edges, moved to the origin itself where the triangle holds it,
 // which is decided on the exact signs of the cross products of its vertices, a vertex or an
-// edge through the origin included.
+// edge through the origin included. The point of the second shape is then the one the vertices
+// were measured from weighted as the origin lies between them, a point the two shapes share,
+// which an edge through the origin already has.
 func (s *minkowskiSimplex) nearest() minkowskiVertex {
 	if s.count == 1 {
 		return s.vertices[0]
@@ -298,6 +300,9 @@ func (s *minkowskiSimplex) nearest() minkowskiVertex {
 	ab, bc, ca := a.point.Cross(b.point), b.point.Cross(c.point), c.point.Cross(a.point)
 	if (ab >= 0 && bc >= 0 && ca >= 0) || (ab <= 0 && bc <= 0 && ca <= 0) {
 		nearest.point = Vector[float64]{}
+		if area := ab + bc + ca; area != 0 {
+			nearest.from = a.from.Multiply(bc / area).Add(b.from.Multiply(ca / area).Vector()).Add(c.from.Multiply(ab / area).Vector())
+		}
 	}
 
 	return nearest

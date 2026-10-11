@@ -689,6 +689,142 @@ func BenchmarkDistanceSquared(b *testing.B) {
 	})
 }
 
+func TestNearest(t *testing.T) {
+	t.Run("the point of each shape nearest the other", func(t *testing.T) {
+		first, second := Nearest[float64](BoxFromMinMax(Pt(0.0, 0.0), Pt(1.0, 1.0)), BoxFromMinMax(Pt(3.0, 2.0), Pt(4.0, 4.0)))
+
+		geomtest.AssertPoint(t, first, Pt(1.0, 1.0))
+		geomtest.AssertPoint(t, second, Pt(3.0, 2.0))
+	})
+	t.Run("a circle gives the point of its boundary toward the other, on either side", func(t *testing.T) {
+		circle, box := Circ(Pt(0.0, 0.0), 1.0), BoxFromMinMax(Pt(3.0, -1.0), Pt(5.0, 1.0))
+
+		first, second := Nearest[float64](circle, box)
+
+		geomtest.AssertPoint(t, first, Pt(1.0, 0.0))
+		geomtest.AssertPoint(t, second, Pt(3.0, 0.0))
+
+		first, second = Nearest[float64](box, circle)
+
+		geomtest.AssertPoint(t, first, Pt(3.0, 0.0))
+		geomtest.AssertPoint(t, second, Pt(1.0, 0.0))
+
+		first, second = Nearest[float64](circle, Circ(Pt(5.0, 0.0), 1.5))
+
+		geomtest.AssertPoint(t, first, Pt(1.0, 0.0))
+		geomtest.AssertPoint(t, second, Pt(3.5, 0.0))
+	})
+	t.Run("a shape in the notch of a polygon is measured to the notch, on either side", func(t *testing.T) {
+		box, polygon := BoxFromMinMax(Pt(2.5, 3.0), Pt(4.0, 4.0)), Pol(cornerVertices())
+
+		first, second := Nearest[float64](box, polygon)
+
+		geomtest.AssertPoint(t, first, Pt(2.5, 3.0))
+		geomtest.AssertPoint(t, second, Pt(2.0, 3.0))
+
+		first, second = Nearest[float64](polygon, box)
+
+		geomtest.AssertPoint(t, first, Pt(2.0, 3.0))
+		geomtest.AssertPoint(t, second, Pt(2.5, 3.0))
+	})
+	t.Run("shapes that intersect share one point", func(t *testing.T) {
+		first, second := Nearest[float64](BoxFromMinMax(Pt(0.0, 0.0), Pt(2.0, 2.0)), BoxFromMinMax(Pt(2.0, 2.0), Pt(3.0, 3.0)))
+
+		geomtest.AssertPoint(t, first, Pt(2.0, 2.0))
+		geomtest.AssertPoint(t, second, Pt(2.0, 2.0))
+	})
+	t.Run("a shape wholly within a polygon that is not convex shares a point of its own, and the polygon within a shape a point of an edge", func(t *testing.T) {
+		box, polygon := BoxFromMinMax(Pt(0.5, 0.5), Pt(1.5, 1.5)), Pol(cornerVertices())
+
+		first, second := Nearest[float64](box, polygon)
+
+		geomtest.AssertPoint(t, first, Pt(0.5, 0.5))
+		geomtest.AssertPoint(t, second, Pt(0.5, 0.5))
+
+		first, second = Nearest[float64](polygon, BoxFromMinMax(Pt(-1.0, -1.0), Pt(7.0, 7.0)))
+
+		geomtest.AssertPoint(t, first, second)
+		assert.True(t, polygon.Contains(first), first.String())
+	})
+	t.Run("an empty polygon gives the zero point", func(t *testing.T) {
+		first, second := Nearest[float64](Circ(Pt(3.0, 3.0), 1.0), Polygon[float64]{})
+
+		geomtest.AssertPoint(t, first, Pt(0.0, 0.0))
+		geomtest.AssertPoint(t, second, Pt(0.0, 0.0))
+	})
+	t.Run("int rounds the points", func(t *testing.T) {
+		first, second := Nearest[int](BoxFromMinMax(Pt(0, 0), Pt(1, 1)), Ell(Pt(5, 5), Sz(2, 1), 0.5))
+
+		geomtest.AssertPoint(t, first, Pt(1, 1))
+		geomtest.AssertPoint(t, second, Pt(3, 4))
+	})
+	t.Run("over the fixtures the points lie on their shapes, as far apart as Distance, and are one where they intersect", func(t *testing.T) {
+		for _, a := range shapeFixtures() {
+			for _, b := range shapeFixtures() {
+				first, second := Nearest(a, b)
+				message := fmt.Sprintf("%v → %v: %v, %v", a, b, first, second)
+
+				assert.True(t, a.DistanceTo(first) <= 1e-9, message)
+				assert.True(t, b.DistanceTo(second) <= 1e-9, message)
+				assert.True(t, EqualDelta(first.DistanceTo(second), Distance(a, b), 1e-9), message)
+				assert.True(t, !Intersects(a, b) || first == second, message)
+			}
+		}
+	})
+	t.Run("far from the origin float32 points lie on their shapes, as far apart as Distance", func(t *testing.T) {
+		for _, offset := range farOffsets {
+			far := farShapes(offset)
+
+			for _, a := range far {
+				for _, b := range far {
+					first, second := Nearest(a, b)
+					message := fmt.Sprintf("%v → %v: %v, %v", a, b, first, second)
+
+					assert.True(t, a.DistanceTo(first) < 0.5, message)
+					assert.True(t, b.DistanceTo(second) < 0.5, message)
+					assert.True(t, EqualDelta(first.DistanceTo(second), Distance(a, b), 0.5), message)
+				}
+			}
+		}
+	})
+	t.Run("int shapes far from the origin are measured as they are near it", func(t *testing.T) {
+		far := Vec(1<<25, -(1 << 25))
+
+		first, second := Nearest[int](BoxFromMinMax(Pt(0, 0), Pt(1, 1)).Translate(far), BoxFromMinMax(Pt(3, 2), Pt(4, 4)).Translate(far))
+
+		geomtest.AssertPoint(t, first, Pt(1, 1).Add(far))
+		geomtest.AssertPoint(t, second, Pt(3, 2).Add(far))
+	})
+	t.Run("allocates nothing for shapes held as Shape", func(t *testing.T) {
+		var circle, rectangle, ellipse Shape[float64] = Circ(Pt(-4.0, 0.0), 1.0), Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(0.3), Ell(Pt(9.0, 0.0), Sz(2.0, 1.0), 0.2)
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			first, second := Nearest(rectangle, ellipse)
+			sinkBool = first == second
+
+			first, second = Nearest(circle, rectangle)
+			sinkBool = first == second
+		}), 0)
+	})
+}
+
+func BenchmarkNearest(b *testing.B) {
+	var box, other, ellipse Shape[float64] = BoxFromMinMax(Pt(0.0, 0.0), Pt(4.0, 2.0)), BoxFromMinMax(Pt(7.0, 5.0), Pt(9.0, 6.0)), Ell(Pt(9.0, 0.0), Sz(2.0, 1.0), 0.2)
+
+	b.Run("two outlines", func(b *testing.B) {
+		for b.Loop() {
+			first, second := Nearest(box, other)
+			sinkBool = first == second
+		}
+	})
+	b.Run("a round shape", func(b *testing.B) {
+		for b.Loop() {
+			first, second := Nearest(box, ellipse)
+			sinkBool = first == second
+		}
+	})
+}
+
 func TestCollide(t *testing.T) {
 	ground := BoxFromMinMax(Pt(-10.0, 1.5), Pt(10.0, 5.0))
 

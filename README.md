@@ -255,6 +255,7 @@ shape of another package. `Ray` and `Line` run without end and are no `Shape`: t
 Two shapes are parted and moved against each other whatever kind they are:
 
 ```go
+on, at := geom.Nearest(turret, target)    // the point of each nearest the other, one point where they intersect
 contact, ok := geom.Collide(crate, floor) // how they meet: Normal, Depth and one or two Points
 crate.Translate(contact.Separation())     // the shortest move out of the floor, the normal as far as the depth
 hit, ok := geom.Sweep(bullet, step, wall)     // where the bullet first touches the wall while it moves by step:

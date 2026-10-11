@@ -13,7 +13,7 @@ import (
 // of any length, in float64, any one of them where several reach alike.
 //
 // A spatial index, a picking routine or a collision pass holds a Shape and never needs to know
-// which one: Intersects, Distance, Collide, Sweep and Raycast take any two. Two kinds of this
+// which one: Intersects, Distance, Nearest, Collide, Sweep and Raycast take any two. Two kinds of this
 // package with a method for each other are tested by that method. Any other pair, an Ellipse
 // or a shape of another package among them, is known by its Support alone, which describes a
 // shape with no notch: such a pair is measured in float64 and closed on within the tolerance,
@@ -153,6 +153,64 @@ func DistanceSquared[T Number](a, b Shape[T]) float64 {
 	}
 
 	return minkowski[T]{a: a, b: b}.nearest().point.LengthSquared()
+}
+
+// Nearest returns the two points Distance is measured between: the point of the first shape
+// nearest the second and the point of the second nearest the first. Where the two intersect,
+// both are one point they share, any one of them. Where the nearest points are not single,
+// two flat sides facing each other, one pair of them is returned, which may be another with
+// the shapes given the other way round.
+//
+// The pair is found as DistanceSquared measures it. A Circle gives the point of the other
+// nearest its center and its own point nearest that one. A Polygon that is not convex gives
+// the pair of its nearest edge, so a shape in a notch is measured to the notch. Any other two are
+// measured by their supports, in float64: two outlines to the rounding of the arithmetic, and
+// a round shape to within the tolerance of the distance. For integer T the points are rounded
+// once and can land off the shapes. An empty polygon has no point, and both are the zero
+// point.
+//
+// Both arguments escape to the heap, as in Intersects, and a polygon that is not convex
+// allocates for every edge it is measured by.
+func Nearest[T Number](a, b Shape[T]) (Point[T], Point[T]) {
+	if isEmpty(a) || isEmpty(b) {
+		return Point[T]{}, Point[T]{}
+	}
+
+	intersects := Intersects(a, b)
+
+	if circle, other, ok := eitherCircle(a, b); ok {
+		point := other.Nearest(circle.Center)
+
+		own := point
+		if !intersects {
+			own = circle.Nearest(point)
+		}
+
+		if _, first := a.(Circle[T]); first {
+			return own, point
+		}
+
+		return point, own
+	}
+
+	if polygon, ok := nonConvex(a); ok {
+		return polygon.nearestSupport(b, intersects)
+	}
+
+	if polygon, ok := nonConvex(b); ok {
+		second, first := polygon.nearestSupport(a, intersects)
+
+		return first, second
+	}
+
+	nearest := minkowski[T]{a: a, b: b}.nearest()
+	if intersects {
+		point := nearest.from.Cast[T]()
+
+		return point, point
+	}
+
+	return nearest.from.Add(nearest.point).Cast[T](), nearest.from.Cast[T]()
 }
 
 // Collide returns how two overlapping shapes meet, and false where they do not intersect: the

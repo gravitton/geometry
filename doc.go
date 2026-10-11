@@ -13,8 +13,8 @@
 // The values are [Point], [Vector], [Size], [Padding] and the affine [Matrix]. The shapes are
 // [Rectangle], which may be turned by an angle, the axis-aligned [Box], [Circle], [Ellipse],
 // [Segment], [Polygon] and [RegularPolygon], the half-line [Ray] and the infinite [Line]. [Shape]
-// and [Body] name what the shapes share: [Intersects], [Distance], [Collide] and [Sweep] test,
-// measure, part and move two shapes of any kind, and [Raycast] casts a ray at one.
+// and [Body] name what the shapes share: [Intersects], [Distance], [Nearest], [Collide] and [Sweep]
+// test, measure, part and move two shapes of any kind, and [Raycast] casts a ray at one.
 // [Direction], [Axis], [Orientation] and [Winding] are enums. Package geomtest holds test
 // assertions, and packages ints and floats alias the int and float64 instantiations.
 //

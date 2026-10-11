@@ -1107,6 +1107,31 @@ func (p Polygon[T]) intersectsSupport(shape Shape[T]) bool {
 	return false
 }
 
+// nearestSupport returns the point of the polygon, one that is not convex, nearest a shape and
+// the point of the shape nearest the polygon, given whether the two intersect: the pair of the
+// edge DistanceSquared measures the shape from, the first of the least distance, so a notch of
+// the polygon is not filled in. Two that intersect with no edge of the polygon reaching the
+// shape have the shape wholly within the polygon, and share any point of it, the one nearest
+// the first vertex.
+func (p Polygon[T]) nearestSupport(shape Shape[T], intersects bool) (Point[T], Point[T]) {
+	var nearest Segment[T]
+
+	gap := math.Inf(1)
+	for edge := range p.Edges() {
+		if distanceSquared := DistanceSquared[T](edge, shape); distanceSquared < gap {
+			nearest, gap = edge, distanceSquared
+		}
+	}
+
+	if intersects && gap > 0 {
+		point := shape.Nearest(p.Points[0])
+
+		return point, point
+	}
+
+	return Nearest[T](nearest, shape)
+}
+
 // collideSupport returns how the polygon, one that is not convex, and a shape meet, edge by
 // edge, so a notch of the polygon is not filled in, and false where the shape crosses no edge,
 // one lying wholly within the other. The polygon is the second shape of the contact where
