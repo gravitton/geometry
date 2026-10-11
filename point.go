@@ -147,6 +147,18 @@ func (p Point[T]) RotateAround(pivot Point[T], angle float64) Point[T] {
 	return center.Add(p.Float().Subtract(center).Rotate(angle)).Cast[T]()
 }
 
+// MoveToward creates a new Point moved toward the target by at most step along the straight
+// line between them, the move a game loop makes by a speed times the frame time. It never passes
+// the target: where the distance left is no longer than step the result is the target itself,
+// exactly. A negative step moves away from the target along the same line and is not clamped,
+// as an extrapolating Lerp is not; a point already at the target has no line to leave along and
+// stays there. The step is a float64 like the distance DistanceTo returns.
+// For integer T the result is rounded, so a step of less than half a unit can leave the point
+// where it is on every call.
+func (p Point[T]) MoveToward(target Point[T], step float64) Point[T] {
+	return p.Vector().MoveToward(target.Vector(), step).Point()
+}
+
 // AngleTo returns the angle in radians from the current point to the given point.
 func (p Point[T]) AngleTo(point Point[T]) float64 {
 	return point.Float().Subtract(p.Float()).Angle()

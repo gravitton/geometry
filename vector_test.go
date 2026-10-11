@@ -327,7 +327,102 @@ func BenchmarkVector_Rotate(b *testing.B) {
 	}
 }
 
+func TestVector_RotateToward(t *testing.T) {
+	t.Run("turns by the step along the shorter arc", func(t *testing.T) {
+		geomtest.AssertVector(t, Vec(2.0, 0.0).RotateToward(Pi/2, Pi/4), Vec(Sqrt2, Sqrt2))
+		geomtest.AssertVector(t, Vec(0.0, 2.0).RotateToward(0, Pi/4), Vec(Sqrt2, Sqrt2))
+		geomtest.AssertVector(t, Vec(2.0, 0.0).RotateToward(3*Pi/2, Pi/4), Vec(Sqrt2, -Sqrt2))
+	})
+	t.Run("crosses the seam the short way", func(t *testing.T) {
+		geomtest.AssertVector(t, VectorFromAngle(ToRadians(350), 2.0).RotateToward(ToRadians(10), ToRadians(10)), Vec(2.0, 0.0))
+		geomtest.AssertVector(t, VectorFromAngle(ToRadians(10), 2.0).RotateToward(ToRadians(350), ToRadians(10)), Vec(2.0, 0.0))
+	})
+	t.Run("a step reaching the angle stops at it", func(t *testing.T) {
+		geomtest.AssertVector(t, Vec(2.0, 0.0).RotateToward(Pi/2, 100), Vec(0.0, 2.0))
+		geomtest.AssertVector(t, Vec(2.0, 0.0).RotateToward(Pi/2+4*Pi, Pi/2), Vec(0.0, 2.0))
+	})
+	t.Run("a vector exactly opposite turns in the sense of increasing angle", func(t *testing.T) {
+		geomtest.AssertVector(t, Vec(1.0, 0.0).RotateToward(Pi, Pi/2), Vec(0.0, 1.0))
+	})
+	t.Run("a negative step turns away and is not clamped", func(t *testing.T) {
+		geomtest.AssertVector(t, Vec(1.0, 0.0).RotateToward(Pi/2, -Pi/2), Vec(0.0, -1.0))
+		geomtest.AssertVector(t, Vec(1.0, 0.0).RotateToward(Pi/2, -Pi), Vec(-1.0, 0.0))
+	})
+	t.Run("the zero vector is returned unchanged", func(t *testing.T) {
+		geomtest.AssertVector(t, ZeroVector[float64]().RotateToward(1, 1), ZeroVector[float64]())
+	})
+	t.Run("int rounds", func(t *testing.T) {
+		geomtest.AssertVector(t, Vec(10, 0).RotateToward(Pi/2, Pi/4), Vec(7, 7))
+		geomtest.AssertVector(t, Vec(10, 0).RotateToward(Pi/2, Pi), Vec(0, 10))
+	})
+	t.Run("a step of zero gives the receiver back exactly", func(t *testing.T) {
+		for _, from := range []Vector[float64]{Vec(3.0, 4.0), Vec(-0.1, 0.7), Vec(1e-3, -2e5)} {
+			assert.Equal(t, from.RotateToward(1, 0), from)
+		}
+	})
+	t.Run("keeps the length, never passes the angle and arrives over the fixtures", func(t *testing.T) {
+		for _, from := range vectorFixtures {
+			for _, to := range vectorFixtures {
+				if from.IsZero() || to.IsZero() {
+					continue
+				}
+
+				target, between := to.Angle(), from.AngleBetween(to)
+				turned := from.RotateToward(target, between/4)
+
+				geomtest.AssertNumber(t, turned.Length(), from.Length(), fmt.Sprintf("%s → %s: ", from, to))
+				geomtest.AssertNumber(t, turned.AngleBetween(to), between*3/4, fmt.Sprintf("%s → %s: ", from, to))
+				assert.True(t, EqualAngle(turned.RotateToward(target, Pi).Angle(), target), fmt.Sprintf("%s → %s: ", from, to))
+			}
+		}
+	})
+}
+
+func TestVector_MoveToward(t *testing.T) {
+	t.Run("moves by the step along the line", func(t *testing.T) {
+		geomtest.AssertVector(t, Vec(1.0, 2.0).MoveToward(Vec(4.0, 6.0), 2.5), Vec(2.5, 4.0))
+		geomtest.AssertVector(t, Vec(1, 2).MoveToward(Vec(7, 10), 5), Vec(4, 6))
+	})
+	t.Run("changes the length and the direction together", func(t *testing.T) {
+		geomtest.AssertVector(t, Vec(4.0, 0.0).MoveToward(Vec(0.0, 0.0), 1), Vec(3.0, 0.0))
+		geomtest.AssertVector(t, Vec(4.0, 0.0).MoveToward(Vec(-4.0, 0.0), 5), Vec(-1.0, 0.0))
+	})
+	t.Run("a step reaching the target gives the target itself", func(t *testing.T) {
+		assert.Equal(t, Vec(tenth, 0.7).MoveToward(Vec(3.3, 0.3), 100), Vec(3.3, 0.3))
+		assert.Equal(t, Vec(1.0, 2.0).MoveToward(Vec(4.0, 6.0), 5), Vec(4.0, 6.0))
+	})
+	t.Run("a step of zero stays", func(t *testing.T) {
+		assert.Equal(t, Vec(tenth, 0.7).MoveToward(Vec(3.3, 0.3), 0), Vec(tenth, 0.7))
+	})
+	t.Run("a negative step moves away and is not clamped", func(t *testing.T) {
+		geomtest.AssertVector(t, Vec(1.0, 2.0).MoveToward(Vec(4.0, 6.0), -5), Vec(-2.0, -2.0))
+	})
+	t.Run("a vector at the target stays for any step", func(t *testing.T) {
+		assert.Equal(t, Vec(1.0, 2.0).MoveToward(Vec(1.0, 2.0), 3), Vec(1.0, 2.0))
+		assert.Equal(t, Vec(1.0, 2.0).MoveToward(Vec(1.0, 2.0), -3), Vec(1.0, 2.0))
+	})
+	t.Run("int rounds, and a step below half a unit does not move", func(t *testing.T) {
+		geomtest.AssertVector(t, Vec(0, 0).MoveToward(Vec(10, 10), 2), Vec(1, 1))
+		geomtest.AssertVector(t, Vec(0, 0).MoveToward(Vec(10, 0), 0.4), Vec(0, 0))
+	})
+	t.Run("the offset is taken in float64", func(t *testing.T) {
+		geomtest.AssertVector(t, Vec[int8](-100, 0).MoveToward(Vec[int8](100, 0), 50), Vec[int8](-50, 0))
+	})
+	t.Run("never passes the target and arrives in steps over the fixtures", func(t *testing.T) {
+		for _, from := range vectorFixtures {
+			for _, to := range vectorFixtures {
+				distance := to.Subtract(from).Length()
+				moved := from.MoveToward(to, distance/4)
+
+				geomtest.AssertNumber(t, to.Subtract(moved).Length(), distance*3/4, fmt.Sprintf("%s → %s: ", from, to))
+				assert.Equal(t, moved.MoveToward(to, distance), to, fmt.Sprintf("%s → %s: ", from, to))
+			}
+		}
+	})
+}
+
 func TestVector_Resize(t *testing.T) {
+
 	t.Run("int rounds", func(t *testing.T) {
 		geomtest.AssertVector(t, Vec(10, 16).Resize(5), Vec(3, 4))
 		geomtest.AssertVector(t, Vec(3, 4).Resize(Sqrt2), Vec(1, 1))

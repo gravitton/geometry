@@ -177,6 +177,29 @@ func Midpoint[T Number](a, b T) T {
 	return Lerp(a, b, 0.5)
 }
 
+// MoveToward moves value toward target by at most step, the move a game loop makes by a speed
+// times the frame time, where Lerp moves by a fraction. It never passes the target: where the
+// difference left is no more than step the result is target itself, exactly. A negative step
+// moves away from the target and is not clamped, as an extrapolating Lerp is not; a value
+// already at the target has no side to leave on and stays there. The difference is taken in
+// float64 and the step is a float64 like the ratio Lerp takes; for an integer T the result is
+// rounded, so a step of less than half a unit can leave the value where it is on every call.
+func MoveToward[T Number](value, target T, step float64) T {
+	from := float64(value)
+	delta := float64(target) - from
+
+	switch {
+	case step >= math.Abs(delta):
+		return target
+	case delta > 0:
+		return Cast[T](from + step)
+	case delta < 0:
+		return Cast[T](from - step)
+	}
+
+	return target
+}
+
 // Equal reports whether a and b are equal within Epsilon of T: exactly for an integer T,
 // within Delta32 for float32, within Delta for float64.
 //
@@ -349,6 +372,29 @@ func LerpAngle(a, b, t float64) float64 {
 	}
 
 	return a + float64(delta*t)
+}
+
+// MoveTowardAngle turns angle toward target by at most step along the shorter arc between
+// them, MoveToward on that arc. It never passes
+// the target: where the arc left is no longer than step the result is target itself, exactly
+// and as it was given, and otherwise it is measured from angle and not normalized, as LerpAngle
+// measures it. Angles exactly half a turn apart have no shorter arc and turn in the sense of
+// increasing angle. A negative step turns away from the target along the same arc and is not
+// clamped, as an extrapolating LerpAngle is not, so a turn past the angle opposite the target
+// comes back toward it on the far side; an angle already at the target has no arc to leave
+// along and stays there.
+func MoveTowardAngle(angle, target, step float64) float64 {
+	delta := NormalizeAngle(target - angle)
+	if delta > math.Pi {
+		delta -= 2 * math.Pi
+	}
+
+	turn := MoveToward(0, delta, step)
+	if turn == delta {
+		return target
+	}
+
+	return angle + turn
 }
 
 // EqualAngle reports whether a and b are the same angle within Delta, a full turn or the

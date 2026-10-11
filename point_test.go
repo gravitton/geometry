@@ -240,6 +240,46 @@ func TestPoint_RotateAround(t *testing.T) {
 	})
 }
 
+func TestPoint_MoveToward(t *testing.T) {
+	t.Run("moves by the step along the line", func(t *testing.T) {
+		geomtest.AssertPoint(t, Pt(1.0, 2.0).MoveToward(Pt(4.0, 6.0), 2.5), Pt(2.5, 4.0))
+		geomtest.AssertPoint(t, Pt(1, 2).MoveToward(Pt(7, 10), 5), Pt(4, 6))
+	})
+	t.Run("a step reaching the target gives the target itself", func(t *testing.T) {
+		assert.Equal(t, Pt(tenth, 0.7).MoveToward(Pt(3.3, 0.3), 100), Pt(3.3, 0.3))
+		assert.Equal(t, Pt(1.0, 2.0).MoveToward(Pt(4.0, 6.0), 5), Pt(4.0, 6.0))
+	})
+	t.Run("a step of zero stays", func(t *testing.T) {
+		assert.Equal(t, Pt(tenth, 0.7).MoveToward(Pt(3.3, 0.3), 0), Pt(tenth, 0.7))
+	})
+	t.Run("a negative step moves away and is not clamped", func(t *testing.T) {
+		geomtest.AssertPoint(t, Pt(1.0, 2.0).MoveToward(Pt(4.0, 6.0), -5), Pt(-2.0, -2.0))
+	})
+	t.Run("a point at the target stays for any step", func(t *testing.T) {
+		assert.Equal(t, Pt(1.0, 2.0).MoveToward(Pt(1.0, 2.0), 3), Pt(1.0, 2.0))
+		assert.Equal(t, Pt(1.0, 2.0).MoveToward(Pt(1.0, 2.0), -3), Pt(1.0, 2.0))
+	})
+	t.Run("int rounds, and a step below half a unit does not move", func(t *testing.T) {
+		geomtest.AssertPoint(t, Pt(0, 0).MoveToward(Pt(10, 10), 2), Pt(1, 1))
+		geomtest.AssertPoint(t, Pt(0, 0).MoveToward(Pt(10, 0), 0.4), Pt(0, 0))
+	})
+	t.Run("the offset is taken in float64", func(t *testing.T) {
+		geomtest.AssertPoint(t, Pt[int8](-100, 0).MoveToward(Pt[int8](100, 0), 50), Pt[int8](-50, 0))
+	})
+	t.Run("never passes the target and arrives in steps over the fixtures", func(t *testing.T) {
+		for _, from := range pointFixtures {
+			for _, to := range pointFixtures {
+				distance := from.DistanceTo(to)
+				moved := from.MoveToward(to, distance/4)
+
+				geomtest.AssertNumber(t, moved.DistanceTo(to), distance*3/4, fmt.Sprintf("%s → %s: ", from, to))
+				geomtest.AssertNumber(t, from.DistanceTo(moved), distance/4, fmt.Sprintf("%s → %s: ", from, to))
+				assert.Equal(t, moved.MoveToward(to, distance), to, fmt.Sprintf("%s → %s: ", from, to))
+			}
+		}
+	})
+}
+
 func TestPoint_AngleTo(t *testing.T) {
 	t.Run("cardinal directions", func(t *testing.T) {
 		geomtest.AssertNumber(t, Pt(0, 0).AngleTo(Pt(1, 0)), ToRadians(0))

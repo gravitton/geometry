@@ -305,6 +305,43 @@ func TestMidpoint(t *testing.T) {
 	})
 }
 
+func TestMoveToward(t *testing.T) {
+	t.Run("moves by the step", func(t *testing.T) {
+		geomtest.AssertNumber(t, MoveToward(1.0, 4.0, 0.5), 1.5)
+		geomtest.AssertNumber(t, MoveToward(4.0, 1.0, 0.5), 3.5)
+		geomtest.AssertNumber(t, MoveToward(1, 10, 3), 4)
+		geomtest.AssertNumber(t, MoveToward[float32](1, -4, 0.5), 0.5)
+	})
+	t.Run("a step reaching the target gives the target itself", func(t *testing.T) {
+		assert.Equal(t, MoveToward(tenth, 3.3, 3.2), 3.3)
+		assert.Equal(t, MoveToward(tenth, 3.3, 100), 3.3)
+		assert.Equal(t, MoveToward(10, 1, 9), 1)
+	})
+	t.Run("a step of zero stays", func(t *testing.T) {
+		assert.Equal(t, MoveToward(tenth, 3.3, 0), tenth)
+	})
+	t.Run("a negative step moves away and is not clamped", func(t *testing.T) {
+		geomtest.AssertNumber(t, MoveToward(1.0, 4.0, -5), -4.0)
+		geomtest.AssertNumber(t, MoveToward(4.0, 1.0, -5), 9.0)
+	})
+	t.Run("a value at the target stays for any step", func(t *testing.T) {
+		assert.Equal(t, MoveToward(1.0, 1.0, 3), 1.0)
+		assert.Equal(t, MoveToward(1.0, 1.0, -3), 1.0)
+	})
+	t.Run("int rounds, and a step below half a unit does not move", func(t *testing.T) {
+		geomtest.AssertNumber(t, MoveToward(0, 10, 2.5), 3)
+		geomtest.AssertNumber(t, MoveToward(0, -10, 2.5), -3)
+		geomtest.AssertNumber(t, MoveToward(0, 10, 0.4), 0)
+	})
+	t.Run("the difference is taken in float64", func(t *testing.T) {
+		geomtest.AssertNumber(t, MoveToward[int8](-100, 100, 50), int8(-50))
+	})
+	t.Run("a NaN gives NaN", func(t *testing.T) {
+		assert.True(t, math.IsNaN(MoveToward(0.0, math.NaN(), 1)))
+		assert.True(t, math.IsNaN(MoveToward(0.0, 1.0, math.NaN())))
+	})
+}
+
 func TestEqual(t *testing.T) {
 	t.Run("int is exact", func(t *testing.T) {
 		assert.True(t, Equal(1, 1))
@@ -574,6 +611,58 @@ func TestLerpAngle(t *testing.T) {
 			for _, b := range []float64{0, 1, -2, Pi, 5, 2 * Pi, 100} {
 				assert.True(t, math.Abs(LerpAngle(a, b, 1)-a) <= Pi+Delta, fmt.Sprintf("%v → %v: ", a, b))
 				assert.True(t, EqualAngle(LerpAngle(a, b, 1), b), fmt.Sprintf("%v → %v: ", a, b))
+			}
+		}
+	})
+}
+
+func TestMoveTowardAngle(t *testing.T) {
+	t.Run("turns by the step along the shorter arc", func(t *testing.T) {
+		geomtest.AssertNumber(t, MoveTowardAngle(0, Pi/2, 0.25), 0.25)
+		geomtest.AssertNumber(t, MoveTowardAngle(Pi/2, 0, 0.25), Pi/2-0.25)
+		geomtest.AssertNumber(t, MoveTowardAngle(0, 3*Pi/2, 0.25), -0.25)
+	})
+	t.Run("crosses the seam the short way", func(t *testing.T) {
+		geomtest.AssertNumber(t, MoveTowardAngle(ToRadians(350), ToRadians(10), ToRadians(15)), ToRadians(365))
+		geomtest.AssertNumber(t, MoveTowardAngle(ToRadians(10), ToRadians(350), ToRadians(15)), ToRadians(-5))
+	})
+	t.Run("a step reaching the target gives the target itself", func(t *testing.T) {
+		assert.Equal(t, MoveTowardAngle(1, 4, 3), 4.0)
+		assert.Equal(t, MoveTowardAngle(1, 4, 100), 4.0)
+		assert.Equal(t, MoveTowardAngle(tenth, 4+2*Pi, 5), 4+2*Pi)
+	})
+	t.Run("a step of zero stays", func(t *testing.T) {
+		assert.Equal(t, MoveTowardAngle(1, 4, 0), 1.0)
+	})
+	t.Run("half a turn apart turns by increasing angle", func(t *testing.T) {
+		geomtest.AssertNumber(t, MoveTowardAngle(0, Pi, 0.25), 0.25)
+		geomtest.AssertNumber(t, MoveTowardAngle(Pi, 0, 0.25), Pi+0.25)
+	})
+	t.Run("a negative step turns away and is not clamped", func(t *testing.T) {
+		geomtest.AssertNumber(t, MoveTowardAngle(0, Pi/2, -0.25), -0.25)
+		geomtest.AssertNumber(t, MoveTowardAngle(Pi/2, 0, -0.25), Pi/2+0.25)
+		geomtest.AssertNumber(t, MoveTowardAngle(0, Pi/2, -Pi), -Pi)
+	})
+	t.Run("an angle at the target stays for any step", func(t *testing.T) {
+		assert.Equal(t, MoveTowardAngle(1, 1, -0.25), 1.0)
+		assert.Equal(t, MoveTowardAngle(1, 1+2*Pi, -0.25), 1+2*Pi)
+	})
+	t.Run("a NaN gives NaN", func(t *testing.T) {
+		assert.True(t, math.IsNaN(MoveTowardAngle(0, math.NaN(), 1)))
+		assert.True(t, math.IsNaN(MoveTowardAngle(0, 1, math.NaN())))
+	})
+	t.Run("never passes the target and arrives in steps", func(t *testing.T) {
+		for _, a := range []float64{0, 1, -2, Pi, 5, 2 * Pi, 100} {
+			for _, b := range []float64{0, 1, -2, Pi, 5, 2 * Pi, 100} {
+				angle, distance := a, AngleDistance(a, b)
+				for range 8 {
+					angle = MoveTowardAngle(angle, b, 0.5)
+
+					assert.True(t, AngleDistance(angle, b) <= max(distance-0.5, 0)+Delta, fmt.Sprintf("%v → %v: ", a, b))
+					distance = AngleDistance(angle, b)
+				}
+
+				assert.Equal(t, angle, b, fmt.Sprintf("%v → %v: ", a, b))
 			}
 		}
 	})

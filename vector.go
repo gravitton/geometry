@@ -193,6 +193,43 @@ func (v Vector[T]) Rotate(angle float64) Vector[T] {
 	return Vector[T]{Cast[T](float64(x*cos) - float64(y*sin)), Cast[T](float64(x*sin) + float64(y*cos))}
 }
 
+// RotateToward creates a new Vector turned toward the given angle (in radians) by at most step
+// along the shorter arc, keeping its length: the turn MoveTowardAngle makes of the vector's own
+// Angle, so it never passes the angle, a vector exactly opposite it turns in the sense of
+// increasing angle, and a negative step turns away from it without being clamped. The zero
+// vector has no direction to turn and is returned unchanged. The receiver is turned rather than
+// placed again from its angle, so a step of zero gives it back exactly.
+// For integer T, sin/cos components are rounded as with Rotate, so a small step can leave the
+// vector where it is on every call.
+func (v Vector[T]) RotateToward(angle, step float64) Vector[T] {
+	if !v.hasDirection() {
+		return v
+	}
+
+	return v.Rotate(MoveTowardAngle(0, angle-v.Angle(), step))
+}
+
+// MoveToward creates a new Vector moved toward the target by at most step along the straight
+// line between their ends, changing the direction and the length together: a velocity taken
+// toward the wanted one by an acceleration times the frame time. It never passes the target:
+// where the distance left is no longer than step the result is the target itself, exactly. A
+// negative step moves away from the target along the same line and is not clamped, as an
+// extrapolating Lerp is not; a vector already at the target has no line to leave along and
+// stays there. The step is a float64 like the length Length returns.
+// For integer T the result is rounded, so a step of less than half a unit can leave the vector
+// where it is on every call.
+func (v Vector[T]) MoveToward(target Vector[T], step float64) Vector[T] {
+	from := v.Float()
+	offset := target.Float().Subtract(from)
+
+	distance := offset.Length()
+	if distance == 0 || step >= distance {
+		return target
+	}
+
+	return from.Add(offset.Multiply(step / distance)).Cast[T]()
+}
+
 // Resize creates a new Vector resized to the given length. The zero vector has no direction
 // and resizes along +X to (length,0), the same convention Normalize follows. Only the exact
 // zero vector is treated this way: a vector shorter than Epsilon keeps its direction, down to
