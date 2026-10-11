@@ -287,6 +287,74 @@ func TestLerp(t *testing.T) {
 	})
 }
 
+func TestInverseLerp(t *testing.T) {
+	t.Run("the ratio between the ends", func(t *testing.T) {
+		geomtest.AssertNumber(t, InverseLerp(10.0, 20.0, 12.5), 0.25)
+		geomtest.AssertNumber(t, InverseLerp(0, 120, 30), 0.25)
+		geomtest.AssertNumber(t, InverseLerp[float32](-1, 1, 0.5), 0.75)
+	})
+	t.Run("the ends are zero and one", func(t *testing.T) {
+		assert.Equal(t, InverseLerp(tenth, 3.3, tenth), 0.0)
+		assert.Equal(t, InverseLerp(tenth, 3.3, 3.3), 1.0)
+	})
+	t.Run("a range running downward", func(t *testing.T) {
+		geomtest.AssertNumber(t, InverseLerp(20.0, 10.0, 12.5), 0.75)
+	})
+	t.Run("is not clamped outside the range", func(t *testing.T) {
+		geomtest.AssertNumber(t, InverseLerp(10.0, 20.0, 40.0), 3.0)
+		geomtest.AssertNumber(t, InverseLerp(10.0, 20.0, 0.0), -1.0)
+	})
+	t.Run("an empty range gives zero", func(t *testing.T) {
+		assert.Equal(t, InverseLerp(5.0, 5.0, 5.0), 0.0)
+		assert.Equal(t, InverseLerp(5.0, 5.0, 9.0), 0.0)
+		assert.Equal(t, InverseLerp(5, 5, 9), 0.0)
+	})
+	t.Run("the differences are taken in float64", func(t *testing.T) {
+		geomtest.AssertNumber(t, InverseLerp[int8](-100, 100, 50), 0.75)
+	})
+	t.Run("undoes Lerp", func(t *testing.T) {
+		for _, a := range []float64{0, 1, -2.5, 100} {
+			for _, b := range []float64{3, -7, 0.5, 1e3} {
+				for _, ratio := range []float64{0, 0.25, 0.5, 1, -1, 2} {
+					geomtest.AssertNumber(t, InverseLerp(a, b, Lerp(a, b, ratio)), ratio, fmt.Sprintf("%v → %v at %v: ", a, b, ratio))
+				}
+			}
+		}
+	})
+}
+
+func TestRemap(t *testing.T) {
+	t.Run("keeps the ratio between the ranges", func(t *testing.T) {
+		geomtest.AssertNumber(t, Remap(12.5, 10.0, 20.0, 0.0, 100.0), 25.0)
+		geomtest.AssertNumber(t, Remap(0.5, -1.0, 1.0, -30.0, 30.0), 15.0)
+		geomtest.AssertNumber(t, Remap[float32](5, 0, 10, 1, 2), 1.5)
+	})
+	t.Run("the ends map to the ends", func(t *testing.T) {
+		assert.Equal(t, Remap(tenth, tenth, 3.3, 7.0, 9.0), 7.0)
+		assert.Equal(t, Remap(3.3, tenth, 3.3, 7.0, 9.0), 9.0)
+	})
+	t.Run("a range running downward", func(t *testing.T) {
+		geomtest.AssertNumber(t, Remap(400.0, 200.0, 1000.0, 1.0, 0.0), 0.75)
+		geomtest.AssertNumber(t, Remap(12.5, 20.0, 10.0, 0.0, 100.0), 75.0)
+	})
+	t.Run("is not clamped outside the range", func(t *testing.T) {
+		geomtest.AssertNumber(t, Remap(40.0, 10.0, 20.0, 0.0, 100.0), 300.0)
+		geomtest.AssertNumber(t, Remap(0.0, 10.0, 20.0, 0.0, 100.0), -100.0)
+	})
+	t.Run("an empty first range gives the start of the second", func(t *testing.T) {
+		assert.Equal(t, Remap(9.0, 5.0, 5.0, 7.0, 8.0), 7.0)
+	})
+	t.Run("int rounds once", func(t *testing.T) {
+		geomtest.AssertNumber(t, Remap(1, 0, 3, 0, 10), 3)
+		geomtest.AssertNumber(t, Remap(2, 0, 3, 0, 10), 7)
+	})
+	t.Run("back again is the value", func(t *testing.T) {
+		for _, value := range []float64{0, 1, -2.5, 12, 100} {
+			geomtest.AssertNumber(t, Remap(Remap(value, 1.0, 9.0, -4.0, 0.5), -4.0, 0.5, 1.0, 9.0), value, fmt.Sprintf("%v: ", value))
+		}
+	})
+}
+
 func TestMidpoint(t *testing.T) {
 	t.Run("int rounds", func(t *testing.T) {
 		geomtest.AssertNumber(t, Midpoint(1, 3), 2)

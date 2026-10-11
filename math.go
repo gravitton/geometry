@@ -172,6 +172,24 @@ func Lerp[T Number](a, b T, t float64) T {
 	return Cast[T](float64(a) + float64((float64(b)-float64(a))*t))
 }
 
+// InverseLerp returns the ratio at which value lies between a and b, the t for which Lerp of
+// a and b gives it: 0 at a, 1 at b, and outside [0, 1] for a value outside them, since it is
+// not clamped, as Lerp is not. The differences are taken in float64. An empty range, a equal to
+// b, has no ratio for any value and gives 0, so Lerp of it returns a.
+func InverseLerp[T Number](a, b, value T) float64 {
+	from := float64(a)
+
+	return ratio(float64(value)-from, float64(b)-from)
+}
+
+// Remap takes value from the range a1 to b1 into the range a2 to b2, keeping the ratio it lies
+// at: Lerp of a2 and b2 at the InverseLerp of value between a1 and b1. Either range may run
+// downward, and a value outside the first lands outside the second, since nothing is clamped.
+// An empty first range gives a2. For an integer T the result is rounded once.
+func Remap[T Number](value, a1, b1, a2, b2 T) T {
+	return Lerp(a2, b2, InverseLerp(a1, b1, value))
+}
+
 // Midpoint calculates the midpoint between two values. Equivalent to Lerp(a, b, 0.5).
 func Midpoint[T Number](a, b T) T {
 	return Lerp(a, b, 0.5)
