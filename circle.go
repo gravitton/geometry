@@ -216,6 +216,14 @@ func (c Circle[T]) Nearest(point Point[T]) Point[T] {
 	return center.Add(offset).Cast[T]()
 }
 
+// Support returns the point of the circle farthest along the given direction: the center moved
+// by the radius that way, whatever the length of the direction, and along X for a direction of
+// no length. It is a float64 point even for an integer T, since it is no lattice point in
+// general. It is what makes the circle a Convex.
+func (c Circle[T]) Support(direction Vector[float64]) Point[float64] {
+	return c.Center.Float().Add(direction.Normalize().Multiply(float64(c.Radius)))
+}
+
 // Tangents returns the points where the lines through the given point touch the circle: two
 // for a point outside, the point itself for one on the boundary within the tolerance, by the
 // comparison Contains makes, and none for a point inside. The second point is the mirror of

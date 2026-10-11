@@ -499,6 +499,19 @@ func TestSegment_Nearest(t *testing.T) {
 	})
 }
 
+func TestSegment_Support(t *testing.T) {
+	segment := Seg(Pt(0, 0), Pt(4, 2))
+
+	t.Run("the end the direction runs toward", func(t *testing.T) {
+		geomtest.AssertPoint(t, segment.Support(Vec(1.0, 0.0)), Pt(4.0, 2.0))
+		geomtest.AssertPoint(t, segment.Support(Vec(-1.0, 0.0)), Pt(0.0, 0.0))
+	})
+	t.Run("the start for a direction across it or of no length", func(t *testing.T) {
+		geomtest.AssertPoint(t, segment.Support(Vec(-1.0, 2.0)), Pt(0.0, 0.0))
+		geomtest.AssertPoint(t, segment.Support(Vec(0.0, 0.0)), Pt(0.0, 0.0))
+	})
+}
+
 func TestSegment_Contains(t *testing.T) {
 	t.Run("int is exact", func(t *testing.T) {
 		s := Seg(Pt(0, 0), Pt(6, 3))
@@ -1719,7 +1732,7 @@ func TestSegment_ClipPolygon(t *testing.T) {
 			}
 		}
 	})
-	t.Run("a NaN or infinite End ends the sweep", func(t *testing.T) {
+	t.Run("a NaN or infinite End ends the pass", func(t *testing.T) {
 		square := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(10.0, 0.0), Pt(10.0, 10.0), Pt(0.0, 10.0)})
 
 		for _, end := range []Point[float64]{Pt(math.NaN(), 5.0), Pt(math.Inf(1), 5.0)} {
@@ -1777,7 +1790,7 @@ func TestSegment_AppendClipPolygon(t *testing.T) {
 			sinkSegments = through.AppendClipPolygon(buffer[:0], square)
 		}), 0)
 	})
-	t.Run("more crossings than one sweep holds are found by sweeping again, without allocating", func(t *testing.T) {
+	t.Run("more crossings than one pass holds are found by passing again, without allocating", func(t *testing.T) {
 		const teeth = 12
 
 		comb := []Point[int]{Pt(0, 0), Pt(4*teeth-2, 0)}

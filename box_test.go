@@ -266,6 +266,14 @@ func TestBox_Nearest(t *testing.T) {
 	})
 }
 
+func TestBox_Support(t *testing.T) {
+	box := BoxFromMinMax(Pt(0, 0), Pt(4, 2))
+
+	geomtest.AssertPoint(t, box.Support(Vec(1.0, 1.0)), Pt(4.0, 2.0))
+	geomtest.AssertPoint(t, box.Support(Vec(-1.0, -1.0)), Pt(0.0, 0.0))
+	geomtest.AssertPoint(t, box.Support(Vec(-1.0, 3.0)), Pt(0.0, 2.0))
+}
+
 func TestBox_Contains(t *testing.T) {
 	box := BoxFromMinMax(Pt(0, 1), Pt(2, 4))
 

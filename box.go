@@ -192,6 +192,15 @@ func (b Box[T]) Nearest(point Point[T]) Point[T] {
 	return Point[T]{Clamp(point.X, b.Min.X, b.Max.X), Clamp(point.Y, b.Min.Y, b.Max.Y)}
 }
 
+// Support returns the point of the box farthest along the given direction: the corner reaching
+// farthest that way, the first of them from the min corner around where two reach alike. It is
+// what makes the box a Convex.
+func (b Box[T]) Support(direction Vector[float64]) Point[float64] {
+	corners := b.corners()
+
+	return supportOf(corners[:], direction)
+}
+
 // Contains reports whether the given point lies within the box, boundary included within
 // the tolerance: DistanceSquaredTo is zero there.
 func (b Box[T]) Contains(point Point[T]) bool {

@@ -433,6 +433,19 @@ func TestCircle_Nearest(t *testing.T) {
 	})
 }
 
+func TestCircle_Support(t *testing.T) {
+	t.Run("the center moved by the radius along the direction", func(t *testing.T) {
+		geomtest.AssertPoint(t, Circ(Pt(1.0, 2.0), 5.0).Support(Vec(3.0, 4.0)), Pt(4.0, 6.0))
+		geomtest.AssertPoint(t, Circ(Pt(1.0, 2.0), 5.0).Support(Vec(-0.3, -0.4)), Pt(-2.0, -2.0))
+	})
+	t.Run("int is not rounded", func(t *testing.T) {
+		geomtest.AssertPoint(t, Circ(Pt(0, 0), 1).Support(Vec(1.0, 1.0)), Pt(math.Sqrt2/2, math.Sqrt2/2))
+	})
+	t.Run("a direction of no length points along X", func(t *testing.T) {
+		geomtest.AssertPoint(t, Circ(Pt(1.0, 2.0), 5.0).Support(Vec(0.0, 0.0)), Pt(6.0, 2.0))
+	})
+}
+
 func TestCircle_Tangents(t *testing.T) {
 	circle := Circ(Pt(0.0, 0.0), 3.0)
 

@@ -435,6 +435,22 @@ func (rp RegularPolygon[T]) Nearest(point Point[T]) Point[T] {
 	return rp.walk(point).nearest(point)
 }
 
+// Support returns the vertex of the polygon farthest along the given direction, as Vertices
+// places it, the first of them in that order where two reach alike, and the center for an
+// empty polygon. It places every vertex, a sine and cosine each. It is what makes the regular
+// polygon a Convex.
+func (rp RegularPolygon[T]) Support(direction Vector[float64]) Point[float64] {
+	support, reach := rp.Center.Float(), math.Inf(-1)
+	for vertex := range rp.Vertices() {
+		point := vertex.Float()
+		if along := point.Vector().Dot(direction); along > reach {
+			support, reach = point, along
+		}
+	}
+
+	return support
+}
+
 // Contains reports whether the given point lies within the polygon, boundary included within
 // the tolerance, the same closed convention as Polygon.Contains, and exactly what the Polygon
 // of the vertices contains, for an integer T on the rounded vertices. A point outside Bounds

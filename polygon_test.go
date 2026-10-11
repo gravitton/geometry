@@ -537,6 +537,9 @@ func TestPolygon_Shrink(t *testing.T) {
 	t.Run("moves every edge in", func(t *testing.T) {
 		geomtest.AssertPolygon(t, square.Shrink(1), Pol([]Point[int]{Pt(1, 3), Pt(1, 1), Pt(3, 1), Pt(3, 3)}))
 	})
+	t.Run("a polygon wound the other way shrinks alike", func(t *testing.T) {
+		geomtest.AssertBox(t, Pol([]Point[int]{Pt(0, 4), Pt(4, 4), Pt(4, 0), Pt(0, 0)}).Shrink(1).Bounds(), square.Shrink(1).Bounds())
+	})
 	t.Run("drops an edge the others close over", func(t *testing.T) {
 		shrunk := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(8.0, 0.0), Pt(8.0, 2.0), Pt(4.0, 3.0), Pt(0.0, 2.0)}).Shrink(1.2)
 
@@ -970,6 +973,28 @@ func TestPolygon_Nearest(t *testing.T) {
 				assertNearest[float64](t, polygon, p)
 			}
 		}
+	})
+}
+
+func TestPolygon_Support(t *testing.T) {
+	t.Run("the vertex reaching farthest", func(t *testing.T) {
+		polygon := Pol(squareVertices())
+
+		geomtest.AssertPoint(t, polygon.Support(Vec(1.0, 1.0)), Pt(2.0, 2.0))
+		geomtest.AssertPoint(t, polygon.Support(Vec(-1.0, -1.0)), Pt(0.0, 0.0))
+	})
+	t.Run("a notched polygon answers as its hull", func(t *testing.T) {
+		polygon := Pol(notchedVertices())
+
+		for _, direction := range vectorFixtures {
+			geomtest.AssertNumber(t, polygon.Support(direction).Vector().Dot(direction), polygon.ConvexHull().Support(direction).Vector().Dot(direction), direction.String()+": ")
+		}
+	})
+	t.Run("an empty polygon gives the zero point", func(t *testing.T) {
+		geomtest.AssertPoint(t, Polygon[int]{}.Support(Vec(1.0, 1.0)), Pt(0.0, 0.0))
+	})
+	t.Run("a NaN direction gives the zero point", func(t *testing.T) {
+		geomtest.AssertPoint(t, Pol(squareVertices()).Support(Vec(math.NaN(), 1.0)), Pt(0.0, 0.0))
 	})
 }
 

@@ -523,6 +523,41 @@ func TestEllipse_Nearest(t *testing.T) {
 	})
 }
 
+func TestEllipse_Support(t *testing.T) {
+	t.Run("the end of a semi-axis along it", func(t *testing.T) {
+		ellipse := Ell(Pt(1.0, 2.0), Sz(4.0, 2.0), 0)
+
+		geomtest.AssertPoint(t, ellipse.Support(Vec(1.0, 0.0)), Pt(5.0, 2.0))
+		geomtest.AssertPoint(t, ellipse.Support(Vec(0.0, -3.0)), Pt(1.0, 0.0))
+	})
+	t.Run("a turned ellipse turns the point with it", func(t *testing.T) {
+		geomtest.AssertPoint(t, Ell(Pt(1.0, 2.0), Sz(4.0, 2.0), Pi/2).Support(Vec(0.0, 1.0)), Pt(1.0, 6.0))
+	})
+	t.Run("a circle answers as the circle", func(t *testing.T) {
+		geomtest.AssertPoint(t, Ell(Pt(1.0, 2.0), SzU(5.0), 1.0).Support(Vec(3.0, 4.0)), Circ(Pt(1.0, 2.0), 5.0).Support(Vec(3.0, 4.0)))
+	})
+	t.Run("the tangent at the point lies across the direction", func(t *testing.T) {
+		for _, ellipse := range ellipseFixtures {
+			for _, direction := range vectorFixtures {
+				support := ellipse.Support(direction)
+				message := fmt.Sprintf("%s → %s: ", ellipse, direction)
+
+				assert.True(t, ellipse.Contains(support), message)
+				for _, other := range vectorFixtures {
+					assert.True(t, LessOrEqual(ellipse.Support(other).Vector().Dot(direction), support.Vector().Dot(direction)), message)
+				}
+			}
+		}
+	})
+	t.Run("a degenerate ellipse answers with an end of its segment", func(t *testing.T) {
+		geomtest.AssertPoint(t, Ell(Pt(1.0, 2.0), Sz(4.0, 0.0), 0).Support(Vec(1.0, 1.0)), Pt(5.0, 2.0))
+		geomtest.AssertPoint(t, Ell(Pt(1.0, 2.0), Sz(0.0, 4.0), 0).Support(Vec(1.0, -1.0)), Pt(1.0, -2.0))
+	})
+	t.Run("int is not rounded", func(t *testing.T) {
+		geomtest.AssertPoint(t, Ell(Pt(0, 0), Sz(1, 1), 0).Support(Vec(1.0, 1.0)), Pt(math.Sqrt2/2, math.Sqrt2/2))
+	})
+}
+
 func TestEllipse_Contains(t *testing.T) {
 	e := Ell(Pt(0.0, 0.0), Sz(5.0, 3.0), 0)
 

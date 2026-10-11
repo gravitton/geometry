@@ -661,6 +661,15 @@ func (p Polygon[T]) Nearest(point Point[T]) Point[T] {
 	return p.walk(point).nearest(point)
 }
 
+// Support returns the vertex of the polygon farthest along the given direction, the first of
+// them in order where several reach alike, and the zero point for an empty polygon. No vertex
+// of a notch reaches farthest in any direction, so the support of a concave polygon is that of
+// its ConvexHull: a polygon is a Convex as that hull, which is the polygon itself exactly
+// where IsConvex holds.
+func (p Polygon[T]) Support(direction Vector[float64]) Point[float64] {
+	return supportOf(p.Points, direction)
+}
+
 // Contains reports whether the given point lies within the polygon, boundary included within the
 // tolerance. The interior follows the even-odd rule, so a self-intersecting polygon excludes the
 // regions it winds around twice. A point outside the extent of the vertices is rejected before any
@@ -898,6 +907,28 @@ func (p Polygon[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 			if probe.meets(other) {
 				return true
 			}
+		}
+	}
+
+	return false
+}
+
+// intersectsConvex reports whether the polygon and a convex shape no Intersects method names
+// share a point: a vertex of the polygon lies within the shape, a point of the shape lies
+// within the polygon, or an edge of the polygon meets the shape by their supports, so a notch
+// of the polygon is not filled in. An empty polygon intersects nothing.
+func (p Polygon[T]) intersectsConvex(shape Convex[T]) bool {
+	if p.IsEmpty() {
+		return false
+	}
+
+	if shape.Contains(p.Points[0]) || p.Contains(shape.Nearest(p.Points[0])) {
+		return true
+	}
+
+	for edge := range p.Edges() {
+		if (minkowski[T]{a: edge, b: shape}).intersects() {
+			return true
 		}
 	}
 

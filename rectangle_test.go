@@ -966,6 +966,23 @@ func TestRectangle_Nearest(t *testing.T) {
 	})
 }
 
+func TestRectangle_Support(t *testing.T) {
+	t.Run("the corner reaching farthest", func(t *testing.T) {
+		rectangle := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0))
+
+		geomtest.AssertPoint(t, rectangle.Support(Vec(1.0, 1.0)), rectangle.BottomRight())
+		geomtest.AssertPoint(t, rectangle.Support(Vec(-1.0, -1.0)), rectangle.TopLeft())
+	})
+	t.Run("a turned rectangle answers with its turned corner", func(t *testing.T) {
+		geomtest.AssertNumber(t, Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(Pi/2).Support(Vec(0.0, 1.0)).Y, 2.0)
+	})
+	t.Run("int corners are the rounded ones", func(t *testing.T) {
+		rectangle := Rect(Pt(0, 0), Sz(4, 2)).Rotate(Pi / 6)
+
+		assert.True(t, slices.Contains(slices.Collect(rectangle.Vertices()), rectangle.Support(Vec(1.0, 0.0)).Int()))
+	})
+}
+
 func TestRectangle_Contains(t *testing.T) {
 	t.Run("inside", func(t *testing.T) {
 		assert.True(t, Rect(Pt(1, 2), Sz(2, 3)).Contains(Pt(1, 1)))

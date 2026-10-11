@@ -831,6 +831,18 @@ func TestRegularPolygon_Nearest(t *testing.T) {
 	})
 }
 
+func TestRegularPolygon_Support(t *testing.T) {
+	t.Run("the vertex reaching farthest", func(t *testing.T) {
+		polygon := RegPol(Pt(1.0, 2.0), Sz(2.0, 2.0), 4, 0, 0)
+
+		geomtest.AssertPoint(t, polygon.Support(Vec(1.0, 0.0)), Pt(3.0, 2.0))
+		geomtest.AssertPoint(t, polygon.Support(Vec(0.0, -1.0)), Pt(1.0, 0.0))
+	})
+	t.Run("an empty polygon gives its center", func(t *testing.T) {
+		geomtest.AssertPoint(t, RegPol(Pt(1.0, 2.0), Sz(2.0, 2.0), 0, 0, 0).Support(Vec(1.0, 0.0)), Pt(1.0, 2.0))
+	})
+}
+
 func TestRegularPolygon_Contains(t *testing.T) {
 	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0, 0)
 

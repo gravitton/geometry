@@ -252,6 +252,18 @@ func (s Segment[T]) Nearest(point Point[T]) Point[T] {
 	return s.foot(point)
 }
 
+// Support returns the point of the segment farthest along the given direction: End where the
+// segment runs along the direction, and Start where it runs against it or across it. It is what
+// makes the segment a Convex.
+func (s Segment[T]) Support(direction Vector[float64]) Point[float64] {
+	start, end := s.Start.Float(), s.End.Float()
+	if end.Subtract(start).Dot(direction) > 0 {
+		return end
+	}
+
+	return start
+}
+
 // Contains reports whether the given point lies on the segment, within the tolerance: it holds
 // exactly where DistanceTo is zero.
 func (s Segment[T]) Contains(point Point[T]) bool {
@@ -569,20 +581,20 @@ func (s Segment[T]) ClipPolygon(polygon Polygon[T]) []Segment[T] {
 }
 
 // AppendClipPolygon appends the parts ClipPolygon returns to dst and returns the extended slice,
-// so a caller reusing dst allocates nothing once it has room. The sweep ends at End once it has
+// so a caller reusing dst allocates nothing once it has room. The pass ends at End once it has
 // stepped there, even where End compares Equal to nothing, as a NaN or an infinite coordinate
-// does, so every segment is clipped in a bounded number of sweeps.
+// does, so every segment is clipped in a bounded number of passes.
 func (s Segment[T]) AppendClipPolygon(dst []Segment[T], polygon Polygon[T]) []Segment[T] {
 	var from Point[T]
 
 	point, open, ended := s.Start, false, false
-	sweep := s.sweep(polygon, point)
-	contained := polygon.Contains(point) || sweep.touchedAt(point)
+	pass := s.pass(polygon, point)
+	contained := polygon.Contains(point) || pass.touchedAt(point)
 	for {
-		next, found := sweep.next(point)
-		if !found && sweep.spent() {
-			sweep = s.sweep(polygon, point)
-			next, found = sweep.next(point)
+		next, found := pass.next(point)
+		if !found && pass.spent() {
+			pass = s.pass(polygon, point)
+			next, found = pass.next(point)
 		}
 
 		ahead := found && !ended
@@ -1073,15 +1085,15 @@ func (s Segment[T]) clipConvex(crossings []Point[T], start, end bool) (Segment[T
 	return clipped, true
 }
 
-// sweep returns the next points where the segment crosses the polygon boundary beyond the one
-// reached, as edgeSweep gathers them over the polygon's Edges.
-func (s Segment[T]) sweep(polygon Polygon[T], reached Point[T]) edgeSweep[T] {
-	sweep := edgeSweep[T]{segment: s, reached: reached}
+// pass returns the next points where the segment crosses the polygon boundary beyond the one
+// reached, as edgePass gathers them over the polygon's Edges.
+func (s Segment[T]) pass(polygon Polygon[T], reached Point[T]) edgePass[T] {
+	pass := edgePass[T]{segment: s, reached: reached}
 	for edge := range polygon.Edges() {
-		sweep.add(edge)
+		pass.add(edge)
 	}
 
-	return sweep
+	return pass
 }
 
 // hitAt returns the Hit of the segment at the given point of a boundary whose normal there has

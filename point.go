@@ -299,6 +299,23 @@ func minMaxOf[T Number](vertices []Point[T]) (Point[T], Point[T]) {
 	return a, b
 }
 
+// supportOf returns the vertex farthest along the given direction, in float64: the first of
+// them in order where several reach alike, and the zero point where there is none or the
+// direction is NaN. It is the Support of every shape that holds its vertices.
+func supportOf[T Number](vertices []Point[T], direction Vector[float64]) Point[float64] {
+	var support Point[float64]
+
+	reach := math.Inf(-1)
+	for _, vertex := range vertices {
+		point := vertex.Float()
+		if along := point.Vector().Dot(direction); along > reach {
+			support, reach = point, along
+		}
+	}
+
+	return support
+}
+
 // overlaps reports whether the box from a1 to b1 and the box from a2 to b2 share a point, boundary
 // included within the tolerance. It is the check Rectangle.IntersectsRectangle makes on its corners
 // and the rejection every other intersection test makes before examining edges, and like Between it

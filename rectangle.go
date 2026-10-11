@@ -534,6 +534,15 @@ func (r Rectangle[T]) Nearest(point Point[T]) Point[T] {
 	return r.walk(point).nearest(point)
 }
 
+// Support returns the point of the rectangle farthest along the given direction: the corner
+// reaching farthest that way, as Vertices places it, the first of them in that order where two
+// reach alike. It is what makes the rectangle a Convex.
+func (r Rectangle[T]) Support(direction Vector[float64]) Point[float64] {
+	corners := r.corners()
+
+	return supportOf(corners[:], direction)
+}
+
 // Contains reports whether the given point lies within the rectangle, boundary included within
 // the tolerance: strictly inside, or on an edge as Segment.Contains judges it, so the rectangle
 // contains exactly the points its edges contain and the points between them.
