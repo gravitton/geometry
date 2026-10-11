@@ -107,22 +107,38 @@ func TestBox_Translate(t *testing.T) {
 	})
 }
 
-func TestBox_Canonical(t *testing.T) {
-	t.Run("orders the corners", func(t *testing.T) {
-		geomtest.AssertBox(t, Box[int]{Pt(4, 0), Pt(0, 2)}.Canonical(), Box[int]{Pt(0, 0), Pt(4, 2)})
-		geomtest.AssertBox(t, Box[float64]{Pt(4.5, 2.5), Pt(0.5, 0.5)}.Canonical(), Box[float64]{Pt(0.5, 0.5), Pt(4.5, 2.5)})
-	})
-	t.Run("a well-formed box is kept", func(t *testing.T) {
-		for _, box := range boxFixtures {
-			geomtest.AssertBox(t, box.Canonical(), box, box.String())
-		}
-	})
-	t.Run("repairs a decoded box before Contains reads it", func(t *testing.T) {
-		var box Box[int]
-		assert.NoError(t, json.Unmarshal([]byte(`{"a":{"x":4,"y":4},"b":{"x":0,"y":0}}`), &box))
+func TestBox_Clamp(t *testing.T) {
+	container := BoxFromMinMax(Pt(0, 0), Pt(10, 10))
 
-		assert.False(t, box.Contains(Pt(2, 2)))
-		assert.True(t, box.Canonical().Contains(Pt(2, 2)))
+	t.Run("a box within is unchanged", func(t *testing.T) {
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(4, 4), Pt(6, 6)).Clamp(container), BoxFromMinMax(Pt(4, 4), Pt(6, 6)))
+	})
+	t.Run("a box outside moves in by the least", func(t *testing.T) {
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(10, 4), Pt(14, 6)).Clamp(container), BoxFromMinMax(Pt(6, 4), Pt(10, 6)))
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(-4, -4), Pt(-2, -2)).Clamp(container), BoxFromMinMax(Pt(0, 0), Pt(2, 2)))
+	})
+	t.Run("an axis larger than the other is centered", func(t *testing.T) {
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(13, 2), Pt(27, 4)).Clamp(container), BoxFromMinMax(Pt(-2, 2), Pt(12, 4)))
+	})
+	t.Run("float", func(t *testing.T) {
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(9.5, 0.25), Pt(10.5, 1.25)).Clamp(container.Float()), BoxFromMinMax(Pt(9.0, 0.25), Pt(10.0, 1.25)))
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, box := range boxFixtures {
+			for _, other := range boxFixtures {
+				clamped := box.Clamp(other)
+				message := fmt.Sprintf("%s → %s: ", box, other)
+
+				geomtest.AssertSize(t, clamped.Size(), box.Size(), message)
+				geomtest.AssertBox(t, clamped.Clamp(other), clamped, message)
+				if other.Contains(box.Min) && other.Contains(box.Max) {
+					geomtest.AssertBox(t, clamped, box, message)
+				}
+				if box.Width() <= other.Width() && box.Height() <= other.Height() {
+					assert.True(t, other.Contains(clamped.Min) && other.Contains(clamped.Max), message)
+				}
+			}
+		}
 	})
 }
 
@@ -159,97 +175,22 @@ func TestBox_Outset(t *testing.T) {
 	})
 }
 
-func TestBox_Clamp(t *testing.T) {
-	container := BoxFromMinMax(Pt(0, 0), Pt(10, 10))
-
-	t.Run("a box within is unchanged", func(t *testing.T) {
-		geomtest.AssertBox(t, BoxFromMinMax(Pt(4, 4), Pt(6, 6)).Clamp(container), BoxFromMinMax(Pt(4, 4), Pt(6, 6)))
+func TestBox_Canonical(t *testing.T) {
+	t.Run("orders the corners", func(t *testing.T) {
+		geomtest.AssertBox(t, Box[int]{Pt(4, 0), Pt(0, 2)}.Canonical(), Box[int]{Pt(0, 0), Pt(4, 2)})
+		geomtest.AssertBox(t, Box[float64]{Pt(4.5, 2.5), Pt(0.5, 0.5)}.Canonical(), Box[float64]{Pt(0.5, 0.5), Pt(4.5, 2.5)})
 	})
-	t.Run("a box outside moves in by the least", func(t *testing.T) {
-		geomtest.AssertBox(t, BoxFromMinMax(Pt(10, 4), Pt(14, 6)).Clamp(container), BoxFromMinMax(Pt(6, 4), Pt(10, 6)))
-		geomtest.AssertBox(t, BoxFromMinMax(Pt(-4, -4), Pt(-2, -2)).Clamp(container), BoxFromMinMax(Pt(0, 0), Pt(2, 2)))
-	})
-	t.Run("an axis larger than the other is centered", func(t *testing.T) {
-		geomtest.AssertBox(t, BoxFromMinMax(Pt(13, 2), Pt(27, 4)).Clamp(container), BoxFromMinMax(Pt(-2, 2), Pt(12, 4)))
-	})
-	t.Run("float", func(t *testing.T) {
-		geomtest.AssertBox(t, BoxFromMinMax(Pt(9.5, 0.25), Pt(10.5, 1.25)).Clamp(container.Float()), BoxFromMinMax(Pt(9.0, 0.25), Pt(10.0, 1.25)))
-	})
-	t.Run("over the fixtures", func(t *testing.T) {
+	t.Run("a well-formed box is kept", func(t *testing.T) {
 		for _, box := range boxFixtures {
-			for _, other := range boxFixtures {
-				clamped := box.Clamp(other)
-				message := fmt.Sprintf("%s → %s: ", box, other)
-
-				geomtest.AssertSize(t, clamped.Size(), box.Size(), message)
-				geomtest.AssertBox(t, clamped.Clamp(other), clamped, message)
-				if other.Contains(box.Min) && other.Contains(box.Max) {
-					geomtest.AssertBox(t, clamped, box, message)
-				}
-				if box.Width() <= other.Width() && box.Height() <= other.Height() {
-					assert.True(t, other.Contains(clamped.Min) && other.Contains(clamped.Max), message)
-				}
-			}
+			geomtest.AssertBox(t, box.Canonical(), box, box.String())
 		}
 	})
-}
+	t.Run("repairs a decoded box before Contains reads it", func(t *testing.T) {
+		var box Box[int]
+		assert.NoError(t, json.Unmarshal([]byte(`{"a":{"x":4,"y":4},"b":{"x":0,"y":0}}`), &box))
 
-func TestBox_Contains(t *testing.T) {
-	box := BoxFromMinMax(Pt(0, 1), Pt(2, 4))
-
-	t.Run("inside", func(t *testing.T) {
-		assert.True(t, box.Contains(Pt(1, 2)))
-		assert.True(t, BoxFromMinMax(Pt(0.0, -2.05), Pt(1.2, 1.55)).Contains(Pt(0.25, -0.75)))
-	})
-	t.Run("outside", func(t *testing.T) {
-		assert.False(t, box.Contains(Pt(3, 0)))
-		assert.False(t, BoxFromMinMax(Pt(0.0, -2.05), Pt(1.2, 1.55)).Contains(Pt(-0.1, 0.0)))
-	})
-	t.Run("the boundary counts as inside", func(t *testing.T) {
-		assert.True(t, box.Contains(box.Min))
-		assert.True(t, box.Contains(box.Max))
-		assert.True(t, box.Contains(Pt(2, 3)))
-	})
-	t.Run("float within Delta is inside, beyond it outside", func(t *testing.T) {
-		unit := BoxFromMinMax(Pt(0.0, 0.0), Pt(1.0, 1.0))
-
-		assert.True(t, unit.Contains(Pt(1+Delta/2, 0.5)))
-		assert.False(t, unit.Contains(Pt(1+2*Delta, 0.5)))
-	})
-	t.Run("the tolerance is on the distance, not on each coordinate", func(t *testing.T) {
-		unit := BoxFromMinMax(Pt(0.0, 0.0), Pt(1.0, 1.0))
-
-		assert.True(t, unit.Contains(Pt(1+Delta/2, 1+Delta/2)))
-		assert.False(t, unit.Contains(Pt(1+0.8*Delta, 1+0.8*Delta)))
-	})
-	t.Run("a NaN coordinate is contained by no box", func(t *testing.T) {
-		assert.False(t, box.Float().Contains(Pt(math.NaN(), 2.0)))
-		assert.False(t, box.Float().Contains(Pt(1.0, math.NaN())))
-	})
-	t.Run("agrees with the rectangle of the box", func(t *testing.T) {
-		for _, b := range boxFixtures {
-			for _, p := range pointFixtures {
-				assert.Equal(t, b.Contains(p), b.Rectangle().Contains(p), fmt.Sprintf("%s → %s: ", b, p))
-			}
-		}
-	})
-	t.Run("a narrow integer box does not contain a point a wrapped gap away", func(t *testing.T) {
-		assert.False(t, Bx(Pt[int8](-100, 0), Pt[int8](-100, 0)).Contains(Pt[int8](28, 0)))
-	})
-	t.Run("every test of a point on the box agrees with it at the boundary", func(t *testing.T) {
-		boxes := []Box[float32]{Bx(Pt[float32](3.5497787, 1.5453138), Pt[float32](7.1348896, 4.0049815)), Bx(Pt[float32](8.56645, 9.768216), Pt[float32](9.503749, 19.746952))}
-		points := []Point[float32]{Pt[float32](3.5496886, 1.5452706), Pt[float32](8.566437, 9.768117)}
-
-		for i, b := range boxes {
-			p, contains := points[i], boxes[i].Contains(points[i])
-			message := fmt.Sprintf("%s → %s: ", p, b)
-
-			assert.Equal(t, b.IntersectsBox(Bx(p, p)), contains, message)
-			assert.Equal(t, b.IntersectsSegment(Seg(p, p)), contains, message)
-			assert.Equal(t, b.IntersectsRectangle(Rect(p, Sz[float32](0, 0))), contains, message)
-			assert.Equal(t, b.IntersectsPolygon(Pol([]Point[float32]{p})), contains, message)
-			assert.Equal(t, b.EnclosesSegment(Seg(p, p)), contains, message)
-		}
+		assert.False(t, box.Contains(Pt(2, 2)))
+		assert.True(t, box.Canonical().Contains(Pt(2, 2)))
 	})
 }
 
@@ -325,96 +266,155 @@ func TestBox_Nearest(t *testing.T) {
 	})
 }
 
-func TestBox_EnclosesCircle(t *testing.T) {
+func TestBox_Contains(t *testing.T) {
+	box := BoxFromMinMax(Pt(0, 1), Pt(2, 4))
+
+	t.Run("inside", func(t *testing.T) {
+		assert.True(t, box.Contains(Pt(1, 2)))
+		assert.True(t, BoxFromMinMax(Pt(0.0, -2.05), Pt(1.2, 1.55)).Contains(Pt(0.25, -0.75)))
+	})
+	t.Run("outside", func(t *testing.T) {
+		assert.False(t, box.Contains(Pt(3, 0)))
+		assert.False(t, BoxFromMinMax(Pt(0.0, -2.05), Pt(1.2, 1.55)).Contains(Pt(-0.1, 0.0)))
+	})
+	t.Run("the boundary counts as inside", func(t *testing.T) {
+		assert.True(t, box.Contains(box.Min))
+		assert.True(t, box.Contains(box.Max))
+		assert.True(t, box.Contains(Pt(2, 3)))
+	})
+	t.Run("float within Delta is inside, beyond it outside", func(t *testing.T) {
+		unit := BoxFromMinMax(Pt(0.0, 0.0), Pt(1.0, 1.0))
+
+		assert.True(t, unit.Contains(Pt(1+Delta/2, 0.5)))
+		assert.False(t, unit.Contains(Pt(1+2*Delta, 0.5)))
+	})
+	t.Run("the tolerance is on the distance, not on each coordinate", func(t *testing.T) {
+		unit := BoxFromMinMax(Pt(0.0, 0.0), Pt(1.0, 1.0))
+
+		assert.True(t, unit.Contains(Pt(1+Delta/2, 1+Delta/2)))
+		assert.False(t, unit.Contains(Pt(1+0.8*Delta, 1+0.8*Delta)))
+	})
+	t.Run("a NaN coordinate is contained by no box", func(t *testing.T) {
+		assert.False(t, box.Float().Contains(Pt(math.NaN(), 2.0)))
+		assert.False(t, box.Float().Contains(Pt(1.0, math.NaN())))
+	})
+	t.Run("agrees with the rectangle of the box", func(t *testing.T) {
+		for _, b := range boxFixtures {
+			for _, p := range pointFixtures {
+				assert.Equal(t, b.Contains(p), b.Rectangle().Contains(p), fmt.Sprintf("%s → %s: ", b, p))
+			}
+		}
+	})
+	t.Run("a narrow integer box does not contain a point a wrapped gap away", func(t *testing.T) {
+		assert.False(t, Bx(Pt[int8](-100, 0), Pt[int8](-100, 0)).Contains(Pt[int8](28, 0)))
+	})
+	t.Run("every test of a point on the box agrees with it at the boundary", func(t *testing.T) {
+		boxes := []Box[float32]{Bx(Pt[float32](3.5497787, 1.5453138), Pt[float32](7.1348896, 4.0049815)), Bx(Pt[float32](8.56645, 9.768216), Pt[float32](9.503749, 19.746952))}
+		points := []Point[float32]{Pt[float32](3.5496886, 1.5452706), Pt[float32](8.566437, 9.768117)}
+
+		for i, b := range boxes {
+			p, contains := points[i], boxes[i].Contains(points[i])
+			message := fmt.Sprintf("%s → %s: ", p, b)
+
+			assert.Equal(t, b.IntersectsBox(Bx(p, p)), contains, message)
+			assert.Equal(t, b.IntersectsSegment(Seg(p, p)), contains, message)
+			assert.Equal(t, b.IntersectsRectangle(Rect(p, Sz[float32](0, 0))), contains, message)
+			assert.Equal(t, b.IntersectsPolygon(Pol([]Point[float32]{p})), contains, message)
+			assert.Equal(t, b.ContainsSegment(Seg(p, p)), contains, message)
+		}
+	})
+}
+
+func TestBox_ContainsCircle(t *testing.T) {
 	box := BoxFromMinMax(Pt(0, 0), Pt(10, 6))
 
 	t.Run("touching a side from inside counts", func(t *testing.T) {
-		assert.True(t, box.EnclosesCircle(Circ(Pt(3, 3), 3)))
-		assert.False(t, box.EnclosesCircle(Circ(Pt(3, 2), 3)))
+		assert.True(t, box.ContainsCircle(Circ(Pt(3, 3), 3)))
+		assert.False(t, box.ContainsCircle(Circ(Pt(3, 2), 3)))
 	})
 	t.Run("encloses exactly where it encloses the bounds", func(t *testing.T) {
 		for _, b := range boxFixtures {
 			for _, c := range circleFixtures {
-				assert.Equal(t, b.EnclosesCircle(c), b.EnclosesBox(c.Bounds()), fmt.Sprintf("%s → %s: ", b, c))
+				assert.Equal(t, b.ContainsCircle(c), b.ContainsBox(c.Bounds()), fmt.Sprintf("%s → %s: ", b, c))
 			}
 		}
 	})
 	t.Run("a center outside is not enclosed, a point on the boundary only as a point", func(t *testing.T) {
-		assert.False(t, box.EnclosesCircle(Circ(Pt(-1, 3), 0)))
-		assert.True(t, box.EnclosesCircle(Circ(Pt(0, 3), 0)))
-		assert.False(t, box.EnclosesCircle(Circ(Pt(0, 3), 1)))
+		assert.False(t, box.ContainsCircle(Circ(Pt(-1, 3), 0)))
+		assert.True(t, box.ContainsCircle(Circ(Pt(0, 3), 0)))
+		assert.False(t, box.ContainsCircle(Circ(Pt(0, 3), 1)))
 	})
 }
 
-func TestBox_EnclosesSegment(t *testing.T) {
+func TestBox_ContainsSegment(t *testing.T) {
 	t.Run("encloses exactly where it encloses the bounds", func(t *testing.T) {
 		for _, b := range boxFixtures {
 			for _, s := range segmentFixtures {
-				assert.Equal(t, b.EnclosesSegment(s), b.EnclosesBox(s.Bounds()), fmt.Sprintf("%s → %s: ", b, s))
+				assert.Equal(t, b.ContainsSegment(s), b.ContainsBox(s.Bounds()), fmt.Sprintf("%s → %s: ", b, s))
 			}
 		}
 	})
 }
 
-func TestBox_EnclosesPolygon(t *testing.T) {
+func TestBox_ContainsPolygon(t *testing.T) {
 	t.Run("an empty polygon is enclosed by nothing", func(t *testing.T) {
-		assert.False(t, BoxFromMinMax(Pt(0, 0), Pt(4, 4)).EnclosesPolygon(Pol[int](nil)))
+		assert.False(t, BoxFromMinMax(Pt(0, 0), Pt(4, 4)).ContainsPolygon(Pol[int](nil)))
 	})
 	t.Run("encloses exactly where it encloses the bounds", func(t *testing.T) {
 		for _, b := range boxFixtures {
 			for _, p := range polygonFixtures() {
-				assert.Equal(t, b.EnclosesPolygon(p), b.EnclosesBox(p.Bounds()), fmt.Sprintf("%s → %s: ", b, p))
+				assert.Equal(t, b.ContainsPolygon(p), b.ContainsBox(p.Bounds()), fmt.Sprintf("%s → %s: ", b, p))
 			}
 		}
 	})
 }
 
-func TestBox_EnclosesRectangle(t *testing.T) {
+func TestBox_ContainsRectangle(t *testing.T) {
 	t.Run("encloses exactly where it encloses the bounds", func(t *testing.T) {
 		for _, b := range boxFixtures {
 			for _, r := range rectFixtures {
-				assert.Equal(t, b.EnclosesRectangle(r), b.EnclosesBox(r.Bounds()), fmt.Sprintf("%s → %s: ", b, r))
+				assert.Equal(t, b.ContainsRectangle(r), b.ContainsBox(r.Bounds()), fmt.Sprintf("%s → %s: ", b, r))
 			}
 		}
 	})
 }
 
-func TestBox_EnclosesRegularPolygon(t *testing.T) {
+func TestBox_ContainsRegularPolygon(t *testing.T) {
 	t.Run("encloses exactly where it encloses the bounds", func(t *testing.T) {
 		for _, b := range boxFixtures {
 			for _, rp := range regularPolygonFixtures {
-				assert.Equal(t, b.EnclosesRegularPolygon(rp), b.EnclosesBox(rp.Bounds()), fmt.Sprintf("%s → %s: ", b, rp))
+				assert.Equal(t, b.ContainsRegularPolygon(rp), b.ContainsBox(rp.Bounds()), fmt.Sprintf("%s → %s: ", b, rp))
 			}
 		}
 	})
 	t.Run("an empty polygon is enclosed by nothing", func(t *testing.T) {
-		assert.False(t, BoxFromMinMax(Pt(0, 0), Pt(4, 4)).EnclosesRegularPolygon(RegPol(Pt(2, 2), SzU(1), 0, 0, 0)))
+		assert.False(t, BoxFromMinMax(Pt(0, 0), Pt(4, 4)).ContainsRegularPolygon(RegPol(Pt(2, 2), SzU(1), 0, 0, 0)))
 	})
 	t.Run("inside and touching a side", func(t *testing.T) {
 		box := BoxFromMinMax(Pt(0.0, 0.0), Pt(10.0, 10.0))
 
-		assert.True(t, box.EnclosesRegularPolygon(RegPol(Pt(5.0, 5.0), SzU(2.0), 6, 0, 0)))
-		assert.True(t, box.EnclosesRegularPolygon(RegPol(Pt(8.0, 5.0), SzU(2.0), 4, 0, 0)))
-		assert.False(t, box.EnclosesRegularPolygon(RegPol(Pt(9.0, 5.0), SzU(2.0), 4, 0, 0)))
+		assert.True(t, box.ContainsRegularPolygon(RegPol(Pt(5.0, 5.0), SzU(2.0), 6, 0, 0)))
+		assert.True(t, box.ContainsRegularPolygon(RegPol(Pt(8.0, 5.0), SzU(2.0), 4, 0, 0)))
+		assert.False(t, box.ContainsRegularPolygon(RegPol(Pt(9.0, 5.0), SzU(2.0), 4, 0, 0)))
 	})
 }
 
-func TestBox_EnclosesBox(t *testing.T) {
+func TestBox_ContainsBox(t *testing.T) {
 	box := BoxFromMinMax(Pt(0, 0), Pt(4, 4))
 
 	t.Run("inside and sharing an edge", func(t *testing.T) {
-		assert.True(t, box.EnclosesBox(BoxFromMinMax(Pt(1, 1), Pt(2, 2))))
-		assert.True(t, box.EnclosesBox(BoxFromMinMax(Pt(0, 1), Pt(4, 3))))
+		assert.True(t, box.ContainsBox(BoxFromMinMax(Pt(1, 1), Pt(2, 2))))
+		assert.True(t, box.ContainsBox(BoxFromMinMax(Pt(0, 1), Pt(4, 3))))
 	})
 	t.Run("overlapping and apart", func(t *testing.T) {
-		assert.False(t, box.EnclosesBox(BoxFromMinMax(Pt(2, 2), Pt(6, 6))))
-		assert.False(t, box.EnclosesBox(BoxFromMinMax(Pt(5, 5), Pt(6, 6))))
+		assert.False(t, box.ContainsBox(BoxFromMinMax(Pt(2, 2), Pt(6, 6))))
+		assert.False(t, box.ContainsBox(BoxFromMinMax(Pt(5, 5), Pt(6, 6))))
 	})
 	t.Run("float within the tolerance of a corner counts, beyond it not", func(t *testing.T) {
 		unit := BoxFromMinMax(Pt(0.0, 0.0), Pt(1.0, 1.0))
 
-		assert.True(t, unit.EnclosesBox(BoxFromMinMax(Pt(0.5, 0.5), Pt(1+Delta/2, 1+Delta/2))))
-		assert.False(t, unit.EnclosesBox(BoxFromMinMax(Pt(0.5, 0.5), Pt(1+0.8*Delta, 1+0.8*Delta))))
+		assert.True(t, unit.ContainsBox(BoxFromMinMax(Pt(0.5, 0.5), Pt(1+Delta/2, 1+Delta/2))))
+		assert.False(t, unit.ContainsBox(BoxFromMinMax(Pt(0.5, 0.5), Pt(1+0.8*Delta, 1+0.8*Delta))))
 	})
 }
 
@@ -438,16 +438,6 @@ func TestBox_IntersectsSegment(t *testing.T) {
 	})
 }
 
-func TestBox_IntersectionSegment(t *testing.T) {
-	t.Run("matches Segment.IntersectionBox", func(t *testing.T) {
-		for _, b := range boxFixtures {
-			for _, s := range segmentFixtures {
-				geomtest.AssertVertices(t, b.IntersectionSegment(s), s.IntersectionBox(b), fmt.Sprintf("%s → %s: ", b, s))
-			}
-		}
-	})
-}
-
 func TestBox_IntersectsRay(t *testing.T) {
 	t.Run("mirrors Ray.IntersectsBox", func(t *testing.T) {
 		for _, b := range boxFixtures {
@@ -458,31 +448,11 @@ func TestBox_IntersectsRay(t *testing.T) {
 	})
 }
 
-func TestBox_IntersectionRay(t *testing.T) {
-	t.Run("matches Ray.IntersectionBox", func(t *testing.T) {
-		for _, b := range boxFixtures {
-			for _, r := range rayFixtures {
-				geomtest.AssertVertices(t, b.IntersectionRay(r), r.IntersectionBox(b), fmt.Sprintf("%s → %s: ", b, r))
-			}
-		}
-	})
-}
-
 func TestBox_IntersectsLine(t *testing.T) {
 	t.Run("mirrors Line.IntersectsBox", func(t *testing.T) {
 		for _, b := range boxFixtures {
 			for _, l := range lineFixtures {
 				assert.Equal(t, b.IntersectsLine(l), l.IntersectsBox(b), fmt.Sprintf("%s → %s: ", b, l))
-			}
-		}
-	})
-}
-
-func TestBox_IntersectionLine(t *testing.T) {
-	t.Run("matches Line.IntersectionBox", func(t *testing.T) {
-		for _, b := range boxFixtures {
-			for _, l := range lineFixtures {
-				geomtest.AssertVertices(t, b.IntersectionLine(l), l.IntersectionBox(b), fmt.Sprintf("%s → %s: ", b, l))
 			}
 		}
 	})
@@ -550,34 +520,64 @@ func TestBox_IntersectsBox(t *testing.T) {
 	})
 }
 
-func TestBox_IntersectionBox(t *testing.T) {
+func TestBox_IntersectionSegment(t *testing.T) {
+	t.Run("matches Segment.IntersectionBox", func(t *testing.T) {
+		for _, b := range boxFixtures {
+			for _, s := range segmentFixtures {
+				geomtest.AssertVertices(t, items(b.IntersectionSegment(s)), items(s.IntersectionBox(b)), fmt.Sprintf("%s → %s: ", b, s))
+			}
+		}
+	})
+}
+
+func TestBox_IntersectionRay(t *testing.T) {
+	t.Run("matches Ray.IntersectionBox", func(t *testing.T) {
+		for _, b := range boxFixtures {
+			for _, r := range rayFixtures {
+				geomtest.AssertVertices(t, items(b.IntersectionRay(r)), items(r.IntersectionBox(b)), fmt.Sprintf("%s → %s: ", b, r))
+			}
+		}
+	})
+}
+
+func TestBox_IntersectionLine(t *testing.T) {
+	t.Run("matches Line.IntersectionBox", func(t *testing.T) {
+		for _, b := range boxFixtures {
+			for _, l := range lineFixtures {
+				geomtest.AssertVertices(t, items(b.IntersectionLine(l)), items(l.IntersectionBox(b)), fmt.Sprintf("%s → %s: ", b, l))
+			}
+		}
+	})
+}
+
+func TestBox_ClipBox(t *testing.T) {
 	box := BoxFromMinMax(Pt(0, 0), Pt(4, 4))
 
 	t.Run("overlapping", func(t *testing.T) {
-		overlap, ok := box.IntersectionBox(BoxFromMinMax(Pt(2, 1), Pt(6, 3)))
+		overlap, ok := box.ClipBox(BoxFromMinMax(Pt(2, 1), Pt(6, 3)))
 
 		assert.True(t, ok)
 		geomtest.AssertBox(t, overlap, BoxFromMinMax(Pt(2, 1), Pt(4, 3)))
 	})
 	t.Run("apart is false", func(t *testing.T) {
-		_, ok := box.IntersectionBox(BoxFromMinMax(Pt(5, 0), Pt(8, 4)))
+		_, ok := box.ClipBox(BoxFromMinMax(Pt(5, 0), Pt(8, 4)))
 
 		assert.False(t, ok)
 	})
 	t.Run("touching intersect in a zero extent", func(t *testing.T) {
-		overlap, ok := box.IntersectionBox(BoxFromMinMax(Pt(4, 1), Pt(8, 3)))
+		overlap, ok := box.ClipBox(BoxFromMinMax(Pt(4, 1), Pt(8, 3)))
 
 		assert.True(t, ok)
 		geomtest.AssertBox(t, overlap, BoxFromMinMax(Pt(4, 1), Pt(4, 3)))
 	})
 	t.Run("meeting at the origin alone is the zero box, and true", func(t *testing.T) {
-		overlap, ok := BoxFromMinMax(Pt(-2, -2), Pt(0, 0)).IntersectionBox(box)
+		overlap, ok := BoxFromMinMax(Pt(-2, -2), Pt(0, 0)).ClipBox(box)
 
 		assert.True(t, ok)
 		assert.Zero(t, overlap)
 	})
 	t.Run("a corner admitted by the tolerance is placed on the boundary", func(t *testing.T) {
-		overlap, ok := BoxFromMinMax(Pt(0.0, 0.0), Pt(1.0, 1.0)).IntersectionBox(BoxFromMinMax(Pt(1+Delta/2, 0.0), Pt(2.0, 1.0)))
+		overlap, ok := BoxFromMinMax(Pt(0.0, 0.0), Pt(1.0, 1.0)).ClipBox(BoxFromMinMax(Pt(1+Delta/2, 0.0), Pt(2.0, 1.0)))
 
 		assert.True(t, ok)
 		geomtest.AssertBox(t, overlap, BoxFromMinMax(Pt(1+Delta/2, 0.0), Pt(1+Delta/2, 1.0)))
@@ -586,8 +586,8 @@ func TestBox_IntersectionBox(t *testing.T) {
 	t.Run("over the fixtures", func(t *testing.T) {
 		for _, a := range boxFixtures {
 			for _, b := range boxFixtures {
-				overlap, ok := a.IntersectionBox(b)
-				reversed, reversedOk := b.IntersectionBox(a)
+				overlap, ok := a.ClipBox(b)
+				reversed, reversedOk := b.ClipBox(a)
 				message := fmt.Sprintf("%s → %s: ", a, b)
 
 				assert.Equal(t, ok, a.IntersectsBox(b), message)

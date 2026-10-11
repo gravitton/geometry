@@ -245,6 +245,17 @@ func (p Polygon[T]) MoveTo(point Point[T]) Polygon[T] {
 	return p.Translate(point.Subtract(p.Centroid()))
 }
 
+// Rotate creates a new Polygon rotated by the given angle (in radians) about its centroid, in
+// the same sense as Vector.Rotate. For integer T the centroid and every rotated vertex are
+// rounded; only multiples of 90° keep the shape exactly.
+func (p Polygon[T]) Rotate(angle float64) Polygon[T] {
+	pivot := p.Centroid()
+
+	return Polygon[T]{p.mapPoints(func(point Point[T]) Point[T] {
+		return point.RotateAround(pivot, angle)
+	})}
+}
+
 // Scale creates a new Polygon uniformly scaled about its centroid by the factor.
 func (p Polygon[T]) Scale(factor float64) Polygon[T] {
 	center := p.Centroid()
@@ -283,6 +294,56 @@ func (p Polygon[T]) UnscaleXY(factorX, factorY float64) Polygon[T] {
 	})}
 }
 
+// Transform creates a new Polygon by applying the given matrix to every vertex, like
+// Point.Transform.
+func (p Polygon[T]) Transform[M Float](matrix Matrix[M]) Polygon[T] {
+	return Polygon[T]{p.mapPoints(func(point Point[T]) Point[T] {
+		return point.Transform(matrix)
+	})}
+}
+
+// Grow creates a new Polygon with every edge moved out along its normal by the given amount,
+// the neighbours meeting at a sharp corner again. Growing keeps every vertex, a vertex repeating
+// the one before it aside, and moves it along the bisector of its corner, the farther the
+// sharper the corner is; a corner that turns straight back has no bisector and stays where it
+// is, as a polygon of one point does. A negative amount shrinks, as Shrink does. The outline of a polygon that is not convex by
+// IsConvex is moved the same way and is the grown one while the amount is less than its
+// narrowest notch, past which the moved edges cross each other. The amount is a float64 whatever
+// T is, like every distance, and for integer T a moved vertex is rounded once.
+func (p Polygon[T]) Grow(amount float64) Polygon[T] {
+	return Polygon[T]{p.AppendGrow(nil, amount)}
+}
+
+// AppendGrow appends the vertices of the polygon Grow returns to dst and returns the extended
+// slice, so a caller reusing dst allocates nothing once it has room: for every vertex of the
+// polygon, and twice that and two more where a convex polygon shrinks, which is cut within the
+// appended tail. The points already in dst are left as they are.
+func (p Polygon[T]) AppendGrow(dst []Point[T], amount float64) []Point[T] {
+	reversed := p.twiceArea() < 0
+	if amount < 0 && p.IsConvex() {
+		return p.shrink(dst, -amount, reversed)
+	}
+
+	return p.grow(dst, amount, reversed)
+}
+
+// Shrink creates a new Polygon with every edge moved in along its normal by the given amount,
+// Grow by its negative. A convex polygon is cut to the inner side of each edge moved in, so an
+// edge the others close over is dropped and a polygon shrunk past its middle is empty; for
+// integer T each edge is moved by its rounded offset and the corners rounded again. A polygon
+// that is not convex has each vertex moved along the bisector of its corner instead, and is the
+// shrunk one while the amount is less than its narrowest neck, past which the moved edges cross
+// each other.
+func (p Polygon[T]) Shrink(amount float64) Polygon[T] {
+	return p.Grow(-amount)
+}
+
+// AppendShrink appends the vertices of the polygon Shrink returns to dst and returns the
+// extended slice, AppendGrow by the negative amount.
+func (p Polygon[T]) AppendShrink(dst []Point[T], amount float64) []Point[T] {
+	return p.AppendGrow(dst, -amount)
+}
+
 // Lerp creates a new Polygon in linear interpolation towards the given polygon, each vertex
 // moving towards the vertex of the same index like Point.Lerp, extrapolating outside [0, 1]. The
 // vertices pair by index, so two outlines that start at different vertices or run in opposite
@@ -295,49 +356,6 @@ func (p Polygon[T]) Lerp(polygon Polygon[T], t float64) Polygon[T] {
 
 	return Polygon[T]{p.mapPointsIndexed(func(i int, point Point[T]) Point[T] {
 		return point.Lerp(polygon.Points[i], t)
-	})}
-}
-
-// mapPoints applies fn to every vertex in order and returns the results in a new slice, as
-// mapPointsIndexed does for a mapping that needs the index of the vertex.
-func (p Polygon[T]) mapPoints[R any](fn func(Point[T]) R) []R {
-	return p.mapPointsIndexed(func(_ int, point Point[T]) R {
-		return fn(point)
-	})
-}
-
-// mapPointsIndexed applies fn to every vertex and its index in order and returns the results
-// in a new slice, the one allocation of every mapping of the polygon. A nil Points maps to nil,
-// so IsZero holds through every mapping.
-func (p Polygon[T]) mapPointsIndexed[R any](fn func(int, Point[T]) R) []R {
-	if p.Points == nil {
-		return nil
-	}
-
-	mapped := make([]R, len(p.Points))
-	for i, point := range p.Points {
-		mapped[i] = fn(i, point)
-	}
-
-	return mapped
-}
-
-// Transform creates a new Polygon by applying the given matrix to every vertex, like
-// Point.Transform.
-func (p Polygon[T]) Transform[M Float](matrix Matrix[M]) Polygon[T] {
-	return Polygon[T]{p.mapPoints(func(point Point[T]) Point[T] {
-		return point.Transform(matrix)
-	})}
-}
-
-// Rotate creates a new Polygon rotated by the given angle (in radians) about its centroid, in
-// the same sense as Vector.Rotate. For integer T the centroid and every rotated vertex are
-// rounded; only multiples of 90° keep the shape exactly.
-func (p Polygon[T]) Rotate(angle float64) Polygon[T] {
-	pivot := p.Centroid()
-
-	return Polygon[T]{p.mapPoints(func(point Point[T]) Point[T] {
-		return point.RotateAround(pivot, angle)
 	})}
 }
 
@@ -455,6 +473,91 @@ func (p Polygon[T]) AppendSimplify(dst []Point[T], tolerance float64) []Point[T]
 	return dst
 }
 
+// mapPoints applies fn to every vertex in order and returns the results in a new slice, as
+// mapPointsIndexed does for a mapping that needs the index of the vertex.
+func (p Polygon[T]) mapPoints[R any](fn func(Point[T]) R) []R {
+	return p.mapPointsIndexed(func(_ int, point Point[T]) R {
+		return fn(point)
+	})
+}
+
+// mapPointsIndexed applies fn to every vertex and its index in order and returns the results
+// in a new slice, the one allocation of every mapping of the polygon. A nil Points maps to nil,
+// so IsZero holds through every mapping.
+func (p Polygon[T]) mapPointsIndexed[R any](fn func(int, Point[T]) R) []R {
+	if p.Points == nil {
+		return nil
+	}
+
+	mapped := make([]R, len(p.Points))
+	for i, point := range p.Points {
+		mapped[i] = fn(i, point)
+	}
+
+	return mapped
+}
+
+// grow appends the vertices of the polygon with every edge moved out by the amount, in for a
+// negative one: each vertex moved by the sum of the unit normals of the two edges that meet at
+// it, scaled so that it lies on both moved edges, and left where it is at a corner turning
+// straight back, where the normals cancel. Segment.Normal points into a polygon wound as
+// Rectangle.Vertices and out of a reversed one, so the amount is taken against it unless
+// reversed. An edge of zero length has no normal, so the vertex that opens it is skipped and
+// the one repeating it takes the edge before; a polygon of one point has no edge to move and
+// is appended as it is.
+func (p Polygon[T]) grow(dst []Point[T], amount float64, reversed bool) []Point[T] {
+	if !reversed {
+		amount = -amount
+	}
+
+	var previous Vector[float64]
+	for i := len(p.Points) - 1; i >= 0 && !previous.hasDirection(); i-- {
+		previous = p.edge(i).Float().Normal()
+	}
+
+	if !previous.hasDirection() {
+		return append(dst, p.Points...)
+	}
+
+	previous = previous.Normalize()
+	dst = slices.Grow(dst, len(p.Points))
+	for i, point := range p.Points {
+		normal := p.edge(i).Float().Normal()
+		if !normal.hasDirection() {
+			continue
+		}
+
+		normal = normal.Normalize()
+		offset := previous.Add(normal).Multiply(ratio(amount, 1+float64(previous.Dot(normal))))
+		dst = append(dst, point.Float().Add(offset).Cast[T]())
+		previous = normal
+	}
+
+	return dst
+}
+
+// shrink appends the vertices of a convex polygon with every edge moved in by the amount: the
+// polygon cut to the inner side of each edge moved along Segment.Normal, against it for a
+// reversed polygon, as ClipPolygon cuts an outline to a convex region, so an edge the others
+// close over leaves no vertex. A polygon cut away altogether leaves dst as it was given.
+func (p Polygon[T]) shrink(dst []Point[T], amount float64, reversed bool) []Point[T] {
+	if reversed {
+		amount = -amount
+	}
+
+	clip := edgeClip[T]{dst: slices.Grow(dst, 2*len(p.Points)+2), from: len(dst), points: p.Points, reversed: reversed}
+	for edge := range p.Edges() {
+		inward := edge.Float().Normal().Normalize().Multiply(amount)
+		clip.add(edge.Translate(inward.Cast[T]()))
+	}
+
+	if points := clip.result(); len(points) > len(dst) {
+		return points
+	}
+
+	return dst
+}
+
 // compareAround orders two points along the boundary of the hull whose least and greatest
 // vertex the chord joins: the points on the side of the chord a clockwise walk from Start
 // reaches first, or on the chord, by Point.Compare, then the points on the other side in the
@@ -532,20 +635,6 @@ func (p Polygon[T]) appendKept(dst []Point[T], from, to int, tolerance float64) 
 	return dst, before + farthest/n + after
 }
 
-// Contains reports whether the given point lies within the polygon, boundary included within the
-// tolerance. The interior follows the even-odd rule, so a self-intersecting polygon excludes the
-// regions it winds around twice. A point outside the extent of the vertices is rejected before any
-// edge is examined.
-func (p Polygon[T]) Contains(point Point[T]) bool {
-	if p.IsEmpty() {
-		return false
-	}
-
-	a, b := p.minMax()
-
-	return p.containsWithin(point, a, b)
-}
-
 // DistanceTo returns the distance from the given point to the nearest point of the polygon:
 // zero for a point within it, the same closed convention as Contains, and otherwise the
 // distance to the nearest edge. An empty polygon is infinitely far from every point.
@@ -572,15 +661,29 @@ func (p Polygon[T]) Nearest(point Point[T]) Point[T] {
 	return p.walk(point).nearest(point)
 }
 
-// EnclosesCircle reports whether the circle lies within the polygon: its center is contained
+// Contains reports whether the given point lies within the polygon, boundary included within the
+// tolerance. The interior follows the even-odd rule, so a self-intersecting polygon excludes the
+// regions it winds around twice. A point outside the extent of the vertices is rejected before any
+// edge is examined.
+func (p Polygon[T]) Contains(point Point[T]) bool {
+	if p.IsEmpty() {
+		return false
+	}
+
+	a, b := p.minMax()
+
+	return p.containsWithin(point, a, b)
+}
+
+// ContainsCircle reports whether the circle lies within the polygon: its center is contained
 // and every edge is at least the radius away, within the tolerance, read off the walk
 // DistanceSquaredTo makes, so a circle touching an edge from inside is enclosed. A circle clear
 // of every edge cannot reach outside, concave polygon or not. An empty polygon encloses nothing.
-func (p Polygon[T]) EnclosesCircle(circle Circle[T]) bool {
+func (p Polygon[T]) ContainsCircle(circle Circle[T]) bool {
 	return p.walk(circle.Center).clears(circle)
 }
 
-// EnclosesSegment reports whether the segment lies within the polygon: both endpoints are
+// ContainsSegment reports whether the segment lies within the polygon: both endpoints are
 // contained, within the tolerance, and it leaves the polygon nowhere between them, which a
 // concave polygon can let it do. It leaves by properly crossing an edge, decided on exact
 // signs as Segment.IntersectsSegment decides a crossing, by passing a vertex into the outside,
@@ -590,16 +693,16 @@ func (p Polygon[T]) EnclosesCircle(circle Circle[T]) bool {
 // the tolerance runs along it. The polygon is taken to be simple: an edge crossing another edge
 // of a self-intersecting polygon counts as leaving it, so such a polygon does not enclose
 // itself. An empty polygon encloses nothing.
-func (p Polygon[T]) EnclosesSegment(segment Segment[T]) bool {
+func (p Polygon[T]) ContainsSegment(segment Segment[T]) bool {
 	a, b := p.minMax()
 
 	return p.containsWithin(segment.Start, a, b) && p.containsWithin(segment.End, a, b) && p.keeps(segment, p.twiceArea())
 }
 
-// EnclosesPolygon reports whether the given polygon lies within this one: every edge of it is
-// enclosed, as EnclosesSegment decides, and an outline within a simple polygon holds its area
+// ContainsPolygon reports whether the given polygon lies within this one: every edge of it is
+// enclosed, as ContainsSegment decides, and an outline within a simple polygon holds its area
 // within it too. An empty polygon on either side encloses nothing.
-func (p Polygon[T]) EnclosesPolygon(polygon Polygon[T]) bool {
+func (p Polygon[T]) ContainsPolygon(polygon Polygon[T]) bool {
 	if polygon.IsEmpty() {
 		return false
 	}
@@ -616,9 +719,9 @@ func (p Polygon[T]) EnclosesPolygon(polygon Polygon[T]) bool {
 	return true
 }
 
-// EnclosesRectangle reports whether the rectangle lies within the polygon: every edge of it is
-// enclosed, as EnclosesSegment decides, whatever its angle.
-func (p Polygon[T]) EnclosesRectangle(rectangle Rectangle[T]) bool {
+// ContainsRectangle reports whether the rectangle lies within the polygon: every edge of it is
+// enclosed, as ContainsSegment decides, whatever its angle.
+func (p Polygon[T]) ContainsRectangle(rectangle Rectangle[T]) bool {
 	a, b := p.minMax()
 	twiceArea := p.twiceArea()
 
@@ -631,10 +734,10 @@ func (p Polygon[T]) EnclosesRectangle(rectangle Rectangle[T]) bool {
 	return true
 }
 
-// EnclosesRegularPolygon reports whether the regular polygon lies within this one: every edge
-// of it is enclosed, as EnclosesSegment decides. An empty polygon on either side encloses
+// ContainsRegularPolygon reports whether the regular polygon lies within this one: every edge
+// of it is enclosed, as ContainsSegment decides. An empty polygon on either side encloses
 // nothing.
-func (p Polygon[T]) EnclosesRegularPolygon(polygon RegularPolygon[T]) bool {
+func (p Polygon[T]) ContainsRegularPolygon(polygon RegularPolygon[T]) bool {
 	if polygon.IsEmpty() {
 		return false
 	}
@@ -651,9 +754,9 @@ func (p Polygon[T]) EnclosesRegularPolygon(polygon RegularPolygon[T]) bool {
 	return true
 }
 
-// EnclosesBox reports whether the box lies within the polygon: every edge of it, between its
-// corners, is enclosed, as EnclosesSegment decides.
-func (p Polygon[T]) EnclosesBox(box Box[T]) bool {
+// ContainsBox reports whether the box lies within the polygon: every edge of it, between its
+// corners, is enclosed, as ContainsSegment decides.
+func (p Polygon[T]) ContainsBox(box Box[T]) bool {
 	a, b := p.minMax()
 	twiceArea := p.twiceArea()
 
@@ -679,34 +782,16 @@ func (p Polygon[T]) IntersectsSegment(segment Segment[T]) bool {
 	return segment.IntersectsPolygon(p)
 }
 
-// IntersectionSegment returns the points where the segment crosses the polygon boundary, as
-// Segment.IntersectionPolygon does.
-func (p Polygon[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
-	return segment.IntersectionPolygon(p)
-}
-
 // IntersectsRay reports whether the polygon and the ray share a point, as
 // Ray.IntersectsPolygon does.
 func (p Polygon[T]) IntersectsRay(ray Ray[T]) bool {
 	return ray.IntersectsPolygon(p)
 }
 
-// IntersectionRay returns the points where the ray crosses the polygon boundary, as
-// Ray.IntersectionPolygon does.
-func (p Polygon[T]) IntersectionRay(ray Ray[T]) []Point[T] {
-	return ray.IntersectionPolygon(p)
-}
-
 // IntersectsLine reports whether the polygon and the line share a point, as
 // Line.IntersectsPolygon does.
 func (p Polygon[T]) IntersectsLine(line Line[T]) bool {
 	return line.IntersectsPolygon(p)
-}
-
-// IntersectionLine returns the points where the line crosses the polygon boundary, as
-// Line.IntersectionPolygon does.
-func (p Polygon[T]) IntersectionLine(line Line[T]) []Point[T] {
-	return line.IntersectionPolygon(p)
 }
 
 // IntersectsPolygon reports whether the polygons share a point: a vertex of one lies within the
@@ -855,6 +940,147 @@ func (p Polygon[T]) IntersectsBox(box Box[T]) bool {
 	return false
 }
 
+// IntersectionSegment returns the points where the segment crosses the polygon boundary, as
+// Segment.IntersectionPolygon does.
+func (p Polygon[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
+	return segment.IntersectionPolygon(p)
+}
+
+// IntersectionRay returns the points where the ray crosses the polygon boundary, as
+// Ray.IntersectionPolygon does.
+func (p Polygon[T]) IntersectionRay(ray Ray[T]) []Point[T] {
+	return ray.IntersectionPolygon(p)
+}
+
+// IntersectionLine returns the points where the line crosses the polygon boundary, as
+// Line.IntersectionPolygon does.
+func (p Polygon[T]) IntersectionLine(line Line[T]) []Point[T] {
+	return line.IntersectionPolygon(p)
+}
+
+// ClipPolygon returns the part of the polygon inside the given one, the part the two have in
+// common, and false where there is none: where IntersectsPolygon is false, and where both are
+// concave, since one of the two has to be convex by IsConvex. The concave one, or this one where
+// both are convex, is cut to the inner side of each edge of the other in turn, so the result
+// keeps the winding and the vertices of the one that was cut; a common part of several pieces
+// comes back as one outline, joined along the edges that cut it. Polygons that only touch have
+// a point or a stretch in common, and a polygon that encloses no area cuts everything away. The
+// vertices are judged against each edge within the tolerance, and for integer T the crossings
+// are rounded at each cut.
+func (p Polygon[T]) ClipPolygon(polygon Polygon[T]) (Polygon[T], bool) {
+	points := p.AppendClipPolygon(nil, polygon)
+
+	return Polygon[T]{points}, len(points) > 0
+}
+
+// AppendClipPolygon appends the vertices of the polygon ClipPolygon returns to dst and returns
+// the extended slice. The cuts are made within the appended tail, which needs room for twice
+// the vertices of both polygons where the one that is cut is convex, so a caller reusing dst
+// allocates nothing once it has that.
+func (p Polygon[T]) AppendClipPolygon(dst []Point[T], polygon Polygon[T]) []Point[T] {
+	outline, region := p, polygon
+
+	switch {
+	case !p.IntersectsPolygon(polygon):
+		return dst
+	case polygon.IsConvex():
+	case p.IsConvex():
+		outline, region = polygon, p
+	default:
+		return dst
+	}
+
+	clip := edgeClip[T]{
+		dst:      slices.Grow(dst, 2*(len(outline.Points)+len(region.Points))),
+		from:     len(dst),
+		points:   outline.Points,
+		reversed: region.twiceArea() < 0,
+	}
+	for edge := range region.Edges() {
+		clip.add(edge)
+	}
+
+	return clip.result()
+}
+
+// ClipRectangle returns the part of the polygon inside the rectangle, whatever its angle, and
+// false where there is none, as ClipPolygon cuts it to the rectangle's Polygon form, without
+// building it: the polygon may be concave, since the rectangle is the convex one. It is false
+// where IntersectsRectangle is, and for a rectangle of zero width or height, which encloses no
+// area.
+func (p Polygon[T]) ClipRectangle(rectangle Rectangle[T]) (Polygon[T], bool) {
+	points := p.AppendClipRectangle(nil, rectangle)
+
+	return Polygon[T]{points}, len(points) > 0
+}
+
+// AppendClipRectangle appends the vertices of the polygon ClipRectangle returns to dst and
+// returns the extended slice, as AppendClipPolygon does.
+func (p Polygon[T]) AppendClipRectangle(dst []Point[T], rectangle Rectangle[T]) []Point[T] {
+	if !rectangle.Size.IsPositive() || !p.IntersectsRectangle(rectangle) {
+		return dst
+	}
+
+	clip := edgeClip[T]{dst: slices.Grow(dst, 2*(len(p.Points)+4)), from: len(dst), points: p.Points}
+	for edge := range rectangle.Edges() {
+		clip.add(edge)
+	}
+
+	return clip.result()
+}
+
+// ClipRegularPolygon returns the part of the polygon inside the regular polygon, and false
+// where there is none, as ClipPolygon cuts it to the regular polygon's Polygon form, without
+// building it: the polygon may be concave, since the regular one is convex. It is false where
+// IntersectsRegularPolygon is, and for a regular polygon of fewer than three vertices or a zero
+// semi-axis, which encloses no area.
+func (p Polygon[T]) ClipRegularPolygon(polygon RegularPolygon[T]) (Polygon[T], bool) {
+	points := p.AppendClipRegularPolygon(nil, polygon)
+
+	return Polygon[T]{points}, len(points) > 0
+}
+
+// AppendClipRegularPolygon appends the vertices of the polygon ClipRegularPolygon returns to dst
+// and returns the extended slice, as AppendClipPolygon does.
+func (p Polygon[T]) AppendClipRegularPolygon(dst []Point[T], polygon RegularPolygon[T]) []Point[T] {
+	if polygon.N < 3 || !polygon.Size.IsPositive() || !p.IntersectsRegularPolygon(polygon) {
+		return dst
+	}
+
+	clip := edgeClip[T]{dst: slices.Grow(dst, 2*(len(p.Points)+polygon.N)), from: len(dst), points: p.Points}
+	for edge := range polygon.Edges() {
+		clip.add(edge)
+	}
+
+	return clip.result()
+}
+
+// ClipBox returns the part of the polygon inside the box, the polygon as a viewport shows it,
+// and false where there is none, as ClipRectangle cuts it to a rectangle that is not rotated,
+// over the edges between the corners of the box. It is false where IntersectsBox is, and for a
+// box of zero width or height.
+func (p Polygon[T]) ClipBox(box Box[T]) (Polygon[T], bool) {
+	points := p.AppendClipBox(nil, box)
+
+	return Polygon[T]{points}, len(points) > 0
+}
+
+// AppendClipBox appends the vertices of the polygon ClipBox returns to dst and returns the
+// extended slice, as AppendClipPolygon does.
+func (p Polygon[T]) AppendClipBox(dst []Point[T], box Box[T]) []Point[T] {
+	if !box.Size().IsPositive() || !p.IntersectsBox(box) {
+		return dst
+	}
+
+	clip := edgeClip[T]{dst: slices.Grow(dst, 2*(len(p.Points)+4)), from: len(dst), points: p.Points}
+	corners := box.corners()
+	for edge := range edgesOf(corners[:]) {
+		clip.add(edge)
+	}
+
+	return clip.result()
+}
+
 // containsWithin is Contains for a caller that already holds the extent of the vertices, so the
 // intersection tests walk the vertices once for the box and reuse it for every point they test.
 func (p Polygon[T]) containsWithin(point, a, b Point[T]) bool {
@@ -882,7 +1108,7 @@ func (p Polygon[T]) containsMidpoint(a, b Point[T]) bool {
 	return inside
 }
 
-// walk folds every edge into the edgeWalk DistanceSquaredTo, Nearest and EnclosesCircle read,
+// walk folds every edge into the edgeWalk DistanceSquaredTo, Nearest and ContainsCircle read,
 // stopping at an edge the point lies on within the tolerance.
 func (p Polygon[T]) walk(point Point[T]) edgeWalk[T] {
 	w := edgeWalk[T]{distance: math.Inf(1)}
@@ -1039,7 +1265,7 @@ func (p Polygon[T]) IsConvex() bool {
 // by IntersectsSegment and so within the tolerance, other than neighbours at the vertex they
 // share, and no edge doubles back, its far end lying on the edge before it or the far end of
 // that edge on it, as Contains judges a point on a segment. A vertex repeating the one before it
-// is skipped, so the edges either side of it are neighbours. EnclosesSegment and Inertia take
+// is skipped, so the edges either side of it are neighbours. ContainsSegment and Inertia take
 // the polygon to be simple, and a polygon decoded or drawn by a user is the one to ask. An empty polygon is simple and a flat one, which encloses no area,
 // is not; a NaN vertex meets no edge and leaves the answer to the others. It takes every pair of
 // edges whose extents overlap, so its cost grows with the square of the vertex count, and

@@ -49,6 +49,13 @@ func (l Line[T]) MoveTo(point Point[T]) Line[T] {
 	return Line[T]{point, l.Direction}
 }
 
+// Rotate creates a new Line turned by the given angle (in radians) about its origin, in the same
+// sense as Vector.Rotate. For integer T the direction is rounded; only multiples of 90° keep it
+// exactly.
+func (l Line[T]) Rotate(angle float64) Line[T] {
+	return Line[T]{l.Origin, l.Direction.Rotate(angle)}
+}
+
 // Scale creates a new Line with its direction scaled by the factor about the origin: the points
 // of the line stay, and PointAt steps the scaled length. A negative factor turns the direction
 // about, which swaps the sides Side names, and a zero factor collapses the line onto its origin.
@@ -75,14 +82,6 @@ func (l Line[T]) UnscaleXY(factorX, factorY float64) Line[T] {
 	return Line[T]{l.Origin, l.Direction.DivideXY(factorX, factorY)}
 }
 
-// PointAt returns the point t times Direction away from Origin, on the other side of the origin
-// for a negative t. The point is computed in float64 and rounded once for an integer T.
-func (l Line[T]) PointAt(t float64) Point[T] {
-	point := l.Origin.Float().Add(l.Direction.Float().Multiply(t))
-
-	return point.Cast[T]()
-}
-
 // Transform creates a new Line by applying the given matrix to the origin as a point and to the
 // direction as a vector, like Point.Transform and Vector.Transform, so a translation moves the
 // origin alone.
@@ -90,11 +89,12 @@ func (l Line[T]) Transform[M Float](matrix Matrix[M]) Line[T] {
 	return Line[T]{l.Origin.Transform(matrix), l.Direction.Transform(matrix)}
 }
 
-// Rotate creates a new Line turned by the given angle (in radians) about its origin, in the same
-// sense as Vector.Rotate. For integer T the direction is rounded; only multiples of 90° keep it
-// exactly.
-func (l Line[T]) Rotate(angle float64) Line[T] {
-	return Line[T]{l.Origin, l.Direction.Rotate(angle)}
+// PointAt returns the point t times Direction away from Origin, on the other side of the origin
+// for a negative t. The point is computed in float64 and rounded once for an integer T.
+func (l Line[T]) PointAt(t float64) Point[T] {
+	point := l.Origin.Float().Add(l.Direction.Float().Multiply(t))
+
+	return point.Cast[T]()
 }
 
 // Side returns the side of the line the given point lies on, as the sign of the cross product of
@@ -105,15 +105,7 @@ func (l Line[T]) Rotate(angle float64) Line[T] {
 // must agree. A line with a zero Direction has no sides and a NaN coordinate has no sign, and
 // both give 0.
 func (l Line[T]) Side(point Point[T]) int {
-	offset := point.Float().Subtract(l.Origin.Float())
-
-	return int(Sign(l.Direction.Float().Cross(offset)))
-}
-
-// Contains reports whether the given point lies on the line, within the tolerance: it holds
-// exactly where DistanceTo is zero.
-func (l Line[T]) Contains(point Point[T]) bool {
-	return l.DistanceSquaredTo(point) == 0
+	return int(Sign(l.side(point)))
 }
 
 // DistanceTo returns the distance from the given point to the nearest point of the line, the
@@ -155,16 +147,16 @@ func (l Line[T]) Reflect(point Point[T]) Point[T] {
 	return Point[T]{Cast[T](x), Cast[T](y)}
 }
 
+// Contains reports whether the given point lies on the line, within the tolerance: it holds
+// exactly where DistanceTo is zero.
+func (l Line[T]) Contains(point Point[T]) bool {
+	return l.DistanceSquaredTo(point) == 0
+}
+
 // IntersectsCircle reports whether the line and the circle share a point, as
 // Circle.IntersectsLine does.
 func (l Line[T]) IntersectsCircle(circle Circle[T]) bool {
 	return circle.IntersectsLine(l)
-}
-
-// IntersectionCircle returns the points where the line crosses the circle boundary, as
-// Circle.IntersectionLine does.
-func (l Line[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
-	return circle.IntersectionLine(l)
 }
 
 // IntersectsSegment reports whether the line and the segment share a point, as
@@ -173,21 +165,9 @@ func (l Line[T]) IntersectsSegment(segment Segment[T]) bool {
 	return segment.IntersectsLine(l)
 }
 
-// IntersectionSegment returns the point where the line and the segment cross, and false when
-// they do not, as Segment.IntersectionLine does.
-func (l Line[T]) IntersectionSegment(segment Segment[T]) (Point[T], bool) {
-	return segment.IntersectionLine(l)
-}
-
 // IntersectsRay reports whether the line and the ray share a point, as Ray.IntersectsLine does.
 func (l Line[T]) IntersectsRay(ray Ray[T]) bool {
 	return ray.IntersectsLine(l)
-}
-
-// IntersectionRay returns the point where the line and the ray cross, and false when they do
-// not, as Ray.IntersectionLine does.
-func (l Line[T]) IntersectionRay(ray Ray[T]) (Point[T], bool) {
-	return ray.IntersectionLine(l)
 }
 
 // IntersectsLine reports whether the lines share a point: they are not parallel, or the origin
@@ -197,6 +177,54 @@ func (l Line[T]) IntersectsLine(line Line[T]) bool {
 	_, ok := l.crossing(line)
 
 	return ok || l.Contains(line.Origin) || line.Contains(l.Origin)
+}
+
+// IntersectsPolygon reports whether the line and the polygon share a point, as
+// Segment.IntersectsPolygon decides it on the span of the line past the polygon: the line
+// crosses one of its edges. Touching shapes intersect, within the tolerance, and an empty
+// polygon intersects nothing.
+func (l Line[T]) IntersectsPolygon(polygon Polygon[T]) bool {
+	return l.span(polygon.minMax()).IntersectsPolygon(polygon)
+}
+
+// IntersectsRectangle reports whether the line and the rectangle share a point, as
+// Segment.IntersectsRectangle decides it on the span of the line past the rectangle: the line
+// crosses one of its edges. Touching shapes intersect, within the tolerance.
+func (l Line[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
+	return l.span(rectangle.MinMax()).IntersectsRectangle(rectangle)
+}
+
+// IntersectsRegularPolygon reports whether the line and the regular polygon share a point, as
+// Segment.IntersectsRegularPolygon decides it on the span of the line past the polygon: the line
+// crosses one of its edges. Touching shapes intersect, within the tolerance, and an empty
+// polygon intersects nothing.
+func (l Line[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
+	return l.span(polygon.minMax()).IntersectsRegularPolygon(polygon)
+}
+
+// IntersectsBox reports whether the line and the box share a point, as Segment.IntersectsBox
+// decides it on the span of the line past the box: the line crosses one of its edges. Touching
+// shapes intersect, within the tolerance.
+func (l Line[T]) IntersectsBox(box Box[T]) bool {
+	return l.span(box.Min, box.Max).IntersectsBox(box)
+}
+
+// IntersectionCircle returns the points where the line crosses the circle boundary, as
+// Circle.IntersectionLine does.
+func (l Line[T]) IntersectionCircle(circle Circle[T]) Pair[Point[T]] {
+	return circle.IntersectionLine(l)
+}
+
+// IntersectionSegment returns the point where the line and the segment cross, and false when
+// they do not, as Segment.IntersectionLine does.
+func (l Line[T]) IntersectionSegment(segment Segment[T]) (Point[T], bool) {
+	return segment.IntersectionLine(l)
+}
+
+// IntersectionRay returns the point where the line and the ray cross, and false when they do
+// not, as Ray.IntersectionLine does.
+func (l Line[T]) IntersectionRay(ray Ray[T]) (Point[T], bool) {
+	return ray.IntersectionLine(l)
 }
 
 // IntersectionLine returns the point where the lines cross, and false when they do not. It
@@ -219,14 +247,6 @@ func (l Line[T]) IntersectionLine(line Line[T]) (Point[T], bool) {
 	return l.touch(line)
 }
 
-// IntersectsPolygon reports whether the line and the polygon share a point, as
-// Segment.IntersectsPolygon decides it on the span of the line past the polygon: the line
-// crosses one of its edges. Touching shapes intersect, within the tolerance, and an empty
-// polygon intersects nothing.
-func (l Line[T]) IntersectsPolygon(polygon Polygon[T]) bool {
-	return l.span(polygon.minMax()).IntersectsPolygon(polygon)
-}
-
 // IntersectionPolygon returns the points where the line crosses the polygon boundary, in order
 // along Direction, as Segment.IntersectionPolygon finds them on the span of the line past the
 // polygon.
@@ -241,67 +261,24 @@ func (l Line[T]) AppendIntersectionPolygon(dst []Point[T], polygon Polygon[T]) [
 	return l.span(polygon.minMax()).AppendIntersectionPolygon(dst, polygon)
 }
 
-// IntersectsRectangle reports whether the line and the rectangle share a point, as
-// Segment.IntersectsRectangle decides it on the span of the line past the rectangle: the line
-// crosses one of its edges. Touching shapes intersect, within the tolerance.
-func (l Line[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
-	return l.span(rectangle.MinMax()).IntersectsRectangle(rectangle)
-}
-
 // IntersectionRectangle returns the points where the line crosses the rectangle boundary, in
 // order along Direction, as Segment.IntersectionRectangle finds them on the span of the line
 // past the rectangle.
-func (l Line[T]) IntersectionRectangle(rectangle Rectangle[T]) []Point[T] {
-	return l.AppendIntersectionRectangle(nil, rectangle)
-}
-
-// AppendIntersectionRectangle appends the points IntersectionRectangle returns to dst and returns
-// the extended slice, as Segment.AppendIntersectionRectangle does on the span of the line past
-// the rectangle, so a caller reusing dst allocates nothing once it has room.
-func (l Line[T]) AppendIntersectionRectangle(dst []Point[T], rectangle Rectangle[T]) []Point[T] {
-	return l.span(rectangle.MinMax()).AppendIntersectionRectangle(dst, rectangle)
-}
-
-// IntersectsRegularPolygon reports whether the line and the regular polygon share a point, as
-// Segment.IntersectsRegularPolygon decides it on the span of the line past the polygon: the line
-// crosses one of its edges. Touching shapes intersect, within the tolerance, and an empty
-// polygon intersects nothing.
-func (l Line[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
-	return l.span(polygon.minMax()).IntersectsRegularPolygon(polygon)
+func (l Line[T]) IntersectionRectangle(rectangle Rectangle[T]) Pair[Point[T]] {
+	return l.span(rectangle.MinMax()).IntersectionRectangle(rectangle)
 }
 
 // IntersectionRegularPolygon returns the points where the line crosses the regular polygon
 // boundary, in order along Direction, as Segment.IntersectionRegularPolygon finds them on the
 // span of the line past the polygon.
-func (l Line[T]) IntersectionRegularPolygon(polygon RegularPolygon[T]) []Point[T] {
-	return l.AppendIntersectionRegularPolygon(nil, polygon)
-}
-
-// AppendIntersectionRegularPolygon appends the points IntersectionRegularPolygon returns to dst
-// and returns the extended slice, as Segment.AppendIntersectionRegularPolygon does on the span of
-// the line past the regular polygon, so a caller reusing dst allocates nothing once it has room.
-func (l Line[T]) AppendIntersectionRegularPolygon(dst []Point[T], polygon RegularPolygon[T]) []Point[T] {
-	return l.span(polygon.minMax()).AppendIntersectionRegularPolygon(dst, polygon)
-}
-
-// IntersectsBox reports whether the line and the box share a point, as Segment.IntersectsBox
-// decides it on the span of the line past the box: the line crosses one of its edges. Touching
-// shapes intersect, within the tolerance.
-func (l Line[T]) IntersectsBox(box Box[T]) bool {
-	return l.span(box.Min, box.Max).IntersectsBox(box)
+func (l Line[T]) IntersectionRegularPolygon(polygon RegularPolygon[T]) Pair[Point[T]] {
+	return l.span(polygon.minMax()).IntersectionRegularPolygon(polygon)
 }
 
 // IntersectionBox returns the points where the line crosses the box boundary, in order along
 // Direction, as Segment.IntersectionBox finds them on the span of the line past the box.
-func (l Line[T]) IntersectionBox(box Box[T]) []Point[T] {
-	return l.AppendIntersectionBox(nil, box)
-}
-
-// AppendIntersectionBox appends the points IntersectionBox returns to dst and returns the
-// extended slice, as Segment.AppendIntersectionBox does on the span of the line past the box, so
-// a caller reusing dst allocates nothing once it has room.
-func (l Line[T]) AppendIntersectionBox(dst []Point[T], box Box[T]) []Point[T] {
-	return l.span(box.Min, box.Max).AppendIntersectionBox(dst, box)
+func (l Line[T]) IntersectionBox(box Box[T]) Pair[Point[T]] {
+	return l.span(box.Min, box.Max).IntersectionBox(box)
 }
 
 // ClipCircle returns the part of the line inside the circle, boundary included within the
@@ -349,6 +326,14 @@ func (l Line[T]) ClipRegularPolygon(polygon RegularPolygon[T]) (Segment[T], bool
 // box: the line as a viewport shows it, running along Direction. It allocates nothing.
 func (l Line[T]) ClipBox(box Box[T]) (Segment[T], bool) {
 	return l.span(box.Min, box.Max).ClipBox(box)
+}
+
+// side returns the cross product of Direction and the vector from Origin to the point, in
+// float64: the value Side takes the sign of, which a cut along the line places a crossing by.
+func (l Line[T]) side(point Point[T]) float64 {
+	offset := point.Float().Subtract(l.Origin.Float())
+
+	return l.Direction.Float().Cross(offset)
 }
 
 // halves returns the two rays from Origin that make up the line, the one along Direction and the

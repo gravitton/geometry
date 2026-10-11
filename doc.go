@@ -21,6 +21,16 @@
 // Ray and Line adds Bounds and BoundingCircle, and every one but Ellipse adds the Intersects
 // methods. The enums are compared with == and marshal as their names.
 //
+// # Naming
+//
+// [Point] and [Vector] are math objects and their methods take the names of vector algebra:
+// Multiply and Divide scale them, and [Vector.Dot], [Vector.Cross], [Vector.Normal],
+// [Vector.Normalize], [Vector.Project] and [Vector.Reject] mean what they mean there. The shapes,
+// [Axis] and [Direction] take the names of geometry: a shape has Scale and Unscale, turns with
+// Rotate and names its points by where they lie. A word can therefore mean one thing on each
+// side: [Vector.Normal] is the vector at a right angle, of the same length, and [Hit] holds a
+// Normal of unit length.
+//
 // # Coordinates
 //
 // The origin is top-left and +Y points down. Angles follow the mathematical convention, so a

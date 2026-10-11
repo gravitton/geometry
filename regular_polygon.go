@@ -29,7 +29,7 @@ import (
 //
 // For an integer T the vertices are rounded, and where the semi-axes differ or the ring is
 // turned the rounded outline need not be convex. Contains follows that outline exactly, but the
-// Encloses methods test the points of the other shape alone, as for a convex container, so they
+// Contains<Kind> methods test the points of the other shape alone, as for a convex container, so they
 // can admit a shape passing through a dent the rounding made.
 type RegularPolygon[T Number] struct {
 	Center Point[T] `json:",embed"`
@@ -292,6 +292,19 @@ func (rp RegularPolygon[T]) MoveTo(point Point[T]) RegularPolygon[T] {
 	return RegularPolygon[T]{point, rp.Size, rp.N, rp.Angle, rp.Phase}
 }
 
+// AlignTo creates a new RegularPolygon moved so that its Anchor in the given direction lands
+// on the point, the inverse of Anchor: DirectionNone aligns the center, like MoveTo.
+func (rp RegularPolygon[T]) AlignTo(direction Direction, point Point[T]) RegularPolygon[T] {
+	return rp.Translate(point.Subtract(rp.Anchor(direction)))
+}
+
+// Rotate creates a new RegularPolygon turned by the given angle (in radians) about its center,
+// in the same sense as Vector.Rotate.
+// The stored angle is normalized to [0, 2π) to prevent drift from repeated rotations.
+func (rp RegularPolygon[T]) Rotate(angle float64) RegularPolygon[T] {
+	return RegularPolygon[T]{rp.Center, rp.Size, rp.N, NormalizeAngle(rp.Angle + angle), rp.Phase}
+}
+
 // Scale creates a new RegularPolygon with size scaled by the given factor. A negative factor
 // scales by its absolute value, since Size holds semi-axes and negating both would place every
 // vertex half a turn away rather than shrink the polygon; use Rotate for the half turn.
@@ -322,16 +335,23 @@ func (rp RegularPolygon[T]) Resize(size Size[T]) RegularPolygon[T] {
 	return RegularPolygon[T]{rp.Center, size.Abs(), rp.N, rp.Angle, rp.Phase}
 }
 
-// Canonical creates a new RegularPolygon in the form RegPol and Rotate build, with the size taken
-// absolute and the angle and the phase normalized to [0, 2π): a well-formed polygon is returned as
-// it is, up to the full turns Equal already ignores. It takes absolute a negative semi-axis written
-// as a struct literal or decoded from JSON, which mirrors the vertices, or turns them half a turn
-// where both are negative, and brings a decoded angle onto the seam Rotate keeps. An angle within
-// Delta of zero or of a full turn, the residue a chain of Rotate, Lerp and Transform calls can
-// leave, becomes exactly zero, and so does a phase; Rotate itself never snaps. The phase is not
-// reduced to a step around the polygon, which would renumber the vertices.
-func (rp RegularPolygon[T]) Canonical() RegularPolygon[T] {
-	return RegularPolygon[T]{rp.Center, rp.Size.Abs(), rp.N, snapAngle(rp.Angle), snapAngle(rp.Phase)}
+// Transform creates a new RegularPolygon by applying the given matrix, exactly for every
+// matrix: the center moves, and the turn, the semi-axes and the phase are those of the matrix
+// applied to the stretched ring, taken apart again by its singular value decomposition, so a
+// shear or a scale of the axes of a turned polygon gives the polygon the vertices land on
+// rather than the nearest one. A reflection reverses the winding and mirrors the phase. A move,
+// a turn and a scale along the axes of an unturned polygon keep the phase; the decomposition is
+// not unique, and where it reads the semi-axes the other way round, the phase takes the
+// quarter turn. For integer T the center and the semi-axes are each rounded once.
+func (rp RegularPolygon[T]) Transform[M Float](matrix Matrix[M]) RegularPolygon[T] {
+	after, stretch, before, reflected := matrix.mapping(rp.Angle, rp.Size.Float()).decomposition()
+
+	phase := rp.Phase + before
+	if reflected {
+		phase = -phase
+	}
+
+	return RegularPolygon[T]{rp.Center.Transform(matrix), stretch.Size().Cast[T](), rp.N, NormalizeAngle(after), NormalizeAngle(phase)}
 }
 
 // Grow creates a new RegularPolygon with both semi-axes increased by amount, clamped to zero.
@@ -378,50 +398,16 @@ func (rp RegularPolygon[T]) Lerp(polygon RegularPolygon[T], t float64) RegularPo
 	}
 }
 
-// Transform creates a new RegularPolygon by applying the given matrix, exactly for every
-// matrix: the center moves, and the turn, the semi-axes and the phase are those of the matrix
-// applied to the stretched ring, taken apart again by its singular value decomposition, so a
-// shear or a scale of the axes of a turned polygon gives the polygon the vertices land on
-// rather than the nearest one. A reflection reverses the winding and mirrors the phase. A move,
-// a turn and a scale along the axes of an unturned polygon keep the phase; the decomposition is
-// not unique, and where it reads the semi-axes the other way round, the phase takes the
-// quarter turn. For integer T the center and the semi-axes are each rounded once.
-func (rp RegularPolygon[T]) Transform[M Float](matrix Matrix[M]) RegularPolygon[T] {
-	after, stretch, before, reflected := matrix.mapping(rp.Angle, rp.Size.Float()).decomposition()
-
-	phase := rp.Phase + before
-	if reflected {
-		phase = -phase
-	}
-
-	return RegularPolygon[T]{rp.Center.Transform(matrix), stretch.Size().Cast[T](), rp.N, NormalizeAngle(after), NormalizeAngle(phase)}
-}
-
-// Rotate creates a new RegularPolygon turned by the given angle (in radians) about its center,
-// in the same sense as Vector.Rotate.
-// The stored angle is normalized to [0, 2π) to prevent drift from repeated rotations.
-func (rp RegularPolygon[T]) Rotate(angle float64) RegularPolygon[T] {
-	return RegularPolygon[T]{rp.Center, rp.Size, rp.N, NormalizeAngle(rp.Angle + angle), rp.Phase}
-}
-
-// AlignTo creates a new RegularPolygon moved so that its Anchor in the given direction lands
-// on the point, the inverse of Anchor: DirectionNone aligns the center, like MoveTo.
-func (rp RegularPolygon[T]) AlignTo(direction Direction, point Point[T]) RegularPolygon[T] {
-	return rp.Translate(point.Subtract(rp.Anchor(direction)))
-}
-
-// Contains reports whether the given point lies within the polygon, boundary included within
-// the tolerance, the same closed convention as Polygon.Contains, and exactly what the Polygon
-// of the vertices contains, for an integer T on the rounded vertices. A point outside Bounds
-// is rejected before any edge is examined; an empty polygon contains nothing.
-func (rp RegularPolygon[T]) Contains(point Point[T]) bool {
-	if rp.IsEmpty() {
-		return false
-	}
-
-	a, b := rp.minMax()
-
-	return rp.containsWithin(point, a, b)
+// Canonical creates a new RegularPolygon in the form RegPol and Rotate build, with the size taken
+// absolute and the angle and the phase normalized to [0, 2π): a well-formed polygon is returned as
+// it is, up to the full turns Equal already ignores. It takes absolute a negative semi-axis written
+// as a struct literal or decoded from JSON, which mirrors the vertices, or turns them half a turn
+// where both are negative, and brings a decoded angle onto the seam Rotate keeps. An angle within
+// Delta of zero or of a full turn, the residue a chain of Rotate, Lerp and Transform calls can
+// leave, becomes exactly zero, and so does a phase; Rotate itself never snaps. The phase is not
+// reduced to a step around the polygon, which would renumber the vertices.
+func (rp RegularPolygon[T]) Canonical() RegularPolygon[T] {
+	return RegularPolygon[T]{rp.Center, rp.Size.Abs(), rp.N, snapAngle(rp.Angle), snapAngle(rp.Phase)}
 }
 
 // DistanceTo returns the distance from the given point to the nearest point of the polygon:
@@ -449,25 +435,39 @@ func (rp RegularPolygon[T]) Nearest(point Point[T]) Point[T] {
 	return rp.walk(point).nearest(point)
 }
 
-// EnclosesCircle reports whether the circle lies within the regular polygon: its center is
+// Contains reports whether the given point lies within the polygon, boundary included within
+// the tolerance, the same closed convention as Polygon.Contains, and exactly what the Polygon
+// of the vertices contains, for an integer T on the rounded vertices. A point outside Bounds
+// is rejected before any edge is examined; an empty polygon contains nothing.
+func (rp RegularPolygon[T]) Contains(point Point[T]) bool {
+	if rp.IsEmpty() {
+		return false
+	}
+
+	a, b := rp.minMax()
+
+	return rp.containsWithin(point, a, b)
+}
+
+// ContainsCircle reports whether the circle lies within the regular polygon: its center is
 // contained and every edge is at least the radius away, within the tolerance, read off the walk
 // DistanceSquaredTo makes, so a circle touching an edge from inside is enclosed.
-func (rp RegularPolygon[T]) EnclosesCircle(circle Circle[T]) bool {
+func (rp RegularPolygon[T]) ContainsCircle(circle Circle[T]) bool {
 	return rp.walk(circle.Center).clears(circle)
 }
 
-// EnclosesSegment reports whether the segment lies within the regular polygon: both endpoints are
+// ContainsSegment reports whether the segment lies within the regular polygon: both endpoints are
 // contained, within the tolerance, and a convex shape holds every point between two it contains.
-func (rp RegularPolygon[T]) EnclosesSegment(segment Segment[T]) bool {
+func (rp RegularPolygon[T]) ContainsSegment(segment Segment[T]) bool {
 	a, b := rp.minMax()
 
 	return rp.containsWithin(segment.Start, a, b) && rp.containsWithin(segment.End, a, b)
 }
 
-// EnclosesPolygon reports whether the polygon lies within the regular polygon: every vertex is
+// ContainsPolygon reports whether the polygon lies within the regular polygon: every vertex is
 // contained, within the tolerance, and a convex shape holds every point between points it
 // contains. An empty polygon is enclosed by nothing.
-func (rp RegularPolygon[T]) EnclosesPolygon(polygon Polygon[T]) bool {
+func (rp RegularPolygon[T]) ContainsPolygon(polygon Polygon[T]) bool {
 	if polygon.IsEmpty() {
 		return false
 	}
@@ -482,9 +482,9 @@ func (rp RegularPolygon[T]) EnclosesPolygon(polygon Polygon[T]) bool {
 	return true
 }
 
-// EnclosesRectangle reports whether the rectangle lies within the regular polygon: every corner is
+// ContainsRectangle reports whether the rectangle lies within the regular polygon: every corner is
 // contained, within the tolerance, whatever the angles.
-func (rp RegularPolygon[T]) EnclosesRectangle(rectangle Rectangle[T]) bool {
+func (rp RegularPolygon[T]) ContainsRectangle(rectangle Rectangle[T]) bool {
 	a, b := rp.minMax()
 	for vertex := range rectangle.Vertices() {
 		if !rp.containsWithin(vertex, a, b) {
@@ -495,9 +495,9 @@ func (rp RegularPolygon[T]) EnclosesRectangle(rectangle Rectangle[T]) bool {
 	return true
 }
 
-// EnclosesRegularPolygon reports whether the regular polygon lies within the regular polygon: every
+// ContainsRegularPolygon reports whether the regular polygon lies within the regular polygon: every
 // vertex is contained, within the tolerance. An empty polygon is enclosed by nothing.
-func (rp RegularPolygon[T]) EnclosesRegularPolygon(polygon RegularPolygon[T]) bool {
+func (rp RegularPolygon[T]) ContainsRegularPolygon(polygon RegularPolygon[T]) bool {
 	if polygon.IsEmpty() {
 		return false
 	}
@@ -512,9 +512,9 @@ func (rp RegularPolygon[T]) EnclosesRegularPolygon(polygon RegularPolygon[T]) bo
 	return true
 }
 
-// EnclosesBox reports whether the box lies within the regular polygon: every corner of the box is
+// ContainsBox reports whether the box lies within the regular polygon: every corner of the box is
 // contained, within the tolerance.
-func (rp RegularPolygon[T]) EnclosesBox(box Box[T]) bool {
+func (rp RegularPolygon[T]) ContainsBox(box Box[T]) bool {
 	a, b := rp.minMax()
 	for _, corner := range box.corners() {
 		if !rp.containsWithin(corner, a, b) {
@@ -537,34 +537,16 @@ func (rp RegularPolygon[T]) IntersectsSegment(segment Segment[T]) bool {
 	return segment.IntersectsRegularPolygon(rp)
 }
 
-// IntersectionSegment returns the points where the segment crosses the polygon boundary, as
-// Segment.IntersectionRegularPolygon does.
-func (rp RegularPolygon[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
-	return segment.IntersectionRegularPolygon(rp)
-}
-
 // IntersectsRay reports whether the regular polygon and the ray share a point, as
 // Ray.IntersectsRegularPolygon does.
 func (rp RegularPolygon[T]) IntersectsRay(ray Ray[T]) bool {
 	return ray.IntersectsRegularPolygon(rp)
 }
 
-// IntersectionRay returns the points where the ray crosses the regular polygon boundary, as
-// Ray.IntersectionRegularPolygon does.
-func (rp RegularPolygon[T]) IntersectionRay(ray Ray[T]) []Point[T] {
-	return ray.IntersectionRegularPolygon(rp)
-}
-
 // IntersectsLine reports whether the regular polygon and the line share a point, as
 // Line.IntersectsRegularPolygon does.
 func (rp RegularPolygon[T]) IntersectsLine(line Line[T]) bool {
 	return line.IntersectsRegularPolygon(rp)
-}
-
-// IntersectionLine returns the points where the line crosses the regular polygon boundary, as
-// Line.IntersectionRegularPolygon does.
-func (rp RegularPolygon[T]) IntersectionLine(line Line[T]) []Point[T] {
-	return line.IntersectionRegularPolygon(rp)
 }
 
 // IntersectsPolygon reports whether the regular polygon and the polygon share a point, as
@@ -656,13 +638,31 @@ func (rp RegularPolygon[T]) IntersectsBox(box Box[T]) bool {
 	return false
 }
 
+// IntersectionSegment returns the points where the segment crosses the polygon boundary, as
+// Segment.IntersectionRegularPolygon does.
+func (rp RegularPolygon[T]) IntersectionSegment(segment Segment[T]) Pair[Point[T]] {
+	return segment.IntersectionRegularPolygon(rp)
+}
+
+// IntersectionRay returns the points where the ray crosses the regular polygon boundary, as
+// Ray.IntersectionRegularPolygon does.
+func (rp RegularPolygon[T]) IntersectionRay(ray Ray[T]) Pair[Point[T]] {
+	return ray.IntersectionRegularPolygon(rp)
+}
+
+// IntersectionLine returns the points where the line crosses the regular polygon boundary, as
+// Line.IntersectionRegularPolygon does.
+func (rp RegularPolygon[T]) IntersectionLine(line Line[T]) Pair[Point[T]] {
+	return line.IntersectionRegularPolygon(rp)
+}
+
 // containsWithin is Contains for a caller that already holds the corners of Bounds, so the
 // intersection tests place the box once and reuse it for every point they test.
 func (rp RegularPolygon[T]) containsWithin(point, a, b Point[T]) bool {
 	return point.Between(a, b) && rp.DistanceSquaredTo(point) == 0
 }
 
-// walk folds every edge into the edgeWalk DistanceSquaredTo, Nearest and EnclosesCircle read,
+// walk folds every edge into the edgeWalk DistanceSquaredTo, Nearest and ContainsCircle read,
 // stopping at an edge the point lies on within the tolerance.
 func (rp RegularPolygon[T]) walk(point Point[T]) edgeWalk[T] {
 	w := edgeWalk[T]{distance: math.Inf(1)}

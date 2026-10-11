@@ -4,7 +4,9 @@ import (
 	"math"
 )
 
-// Vector is a 2D Vector.
+// Vector is a 2D vector, a displacement or a direction with a length. It is a math object and
+// its methods take the names of vector algebra: Multiply and Divide scale it, and Dot, Cross,
+// Normal, Normalize, Project and Reject mean what they mean there.
 type Vector[T Number] struct {
 	X T `json:"x"`
 	Y T `json:"y"`
@@ -256,7 +258,11 @@ func (v Vector[T]) Normalize() Vector[T] {
 	return v.Resize(1)
 }
 
-// Normal creates a new Vector as normal to current vector. Faster equivalent to Rotate(math.Pi/2).
+// Normal creates a new Vector at a right angle to the current one, turned a quarter turn the way
+// a positive angle turns: counterclockwise in math coordinates, clockwise as drawn on a screen
+// with +Y down. It is exact for every T and the result of Rotate by a quarter turn without the
+// rounding. The length is kept, so the result is a unit vector only where the vector is one:
+// Normalize it for a unit normal, and Negate it for the normal on the other side.
 func (v Vector[T]) Normal() Vector[T] {
 	return Vector[T]{-v.Y, v.X}
 }

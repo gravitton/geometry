@@ -124,6 +124,19 @@ func (c Circle[T]) MoveTo(point Point[T]) Circle[T] {
 	return Circle[T]{point, c.Radius}
 }
 
+// AlignTo creates a new Circle moved so that its Anchor in the given direction lands on the
+// point, the inverse of Anchor: DirectionNone aligns the center, like MoveTo.
+func (c Circle[T]) AlignTo(direction Direction, point Point[T]) Circle[T] {
+	return c.Translate(point.Subtract(c.Anchor(direction)))
+}
+
+// Rotate creates a new Circle turned by the given angle (in radians) about its center, in the
+// same sense as Vector.Rotate, which is the circle itself: a circle is symmetric about its
+// center, so no angle moves it. It is here so every shape turns the same way.
+func (c Circle[T]) Rotate(_ float64) Circle[T] {
+	return c
+}
+
 // Scale creates a new Circle with radius scaled by the given factor. A negative factor scales
 // by its absolute value, since a circle mirrored about its center is the same circle.
 func (c Circle[T]) Scale(factor float64) Circle[T] {
@@ -139,13 +152,6 @@ func (c Circle[T]) Unscale(factor float64) Circle[T] {
 // Resize creates a new Circle with the given radius, taken absolute like Circ.
 func (c Circle[T]) Resize(radius T) Circle[T] {
 	return Circle[T]{c.Center, Abs(radius)}
-}
-
-// Canonical creates a new Circle in the form Circ builds, with the radius taken absolute: a
-// well-formed circle is returned as it is. It repairs a negative radius written as a struct
-// literal or decoded from JSON before Contains, DistanceTo or the Intersects methods read it.
-func (c Circle[T]) Canonical() Circle[T] {
-	return Circle[T]{c.Center, Abs(c.Radius)}
 }
 
 // Grow creates a new Circle with radius increased by amount, clamped to zero.
@@ -165,24 +171,11 @@ func (c Circle[T]) Lerp(circle Circle[T], t float64) Circle[T] {
 	return Circle[T]{c.Center.Lerp(circle.Center, t), Abs(Lerp(c.Radius, circle.Radius, t))}
 }
 
-// Rotate creates a new Circle turned by the given angle (in radians) about its center, in the
-// same sense as Vector.Rotate, which is the circle itself: a circle is symmetric about its
-// center, so no angle moves it. It is here so every shape turns the same way.
-func (c Circle[T]) Rotate(_ float64) Circle[T] {
-	return c
-}
-
-// AlignTo creates a new Circle moved so that its Anchor in the given direction lands on the
-// point, the inverse of Anchor: DirectionNone aligns the center, like MoveTo.
-func (c Circle[T]) AlignTo(direction Direction, point Point[T]) Circle[T] {
-	return c.Translate(point.Subtract(c.Anchor(direction)))
-}
-
-// Contains reports whether the given point lies within the circle, boundary included within
-// the tolerance: a float point a rounding error outside the radius, such as an Anchor, is
-// still contained.
-func (c Circle[T]) Contains(point Point[T]) bool {
-	return c.containsSquared(c.centerDistanceSquared(point), point.magnitude())
+// Canonical creates a new Circle in the form Circ builds, with the radius taken absolute: a
+// well-formed circle is returned as it is. It repairs a negative radius written as a struct
+// literal or decoded from JSON before Contains, DistanceTo or the Intersects methods read it.
+func (c Circle[T]) Canonical() Circle[T] {
+	return Circle[T]{c.Center, Abs(c.Radius)}
 }
 
 // DistanceTo returns the distance from the given point to the nearest point of the circle:
@@ -229,26 +222,22 @@ func (c Circle[T]) Nearest(point Point[T]) Point[T] {
 // the first across the line from the center to the point, the order IntersectionCircle gives
 // its own. For integer T the points are rounded like every other result stored into T, and two
 // rounding to the same point give it once; a circle of zero radius is touched at its center.
-func (c Circle[T]) Tangents(point Point[T]) []Point[T] {
-	return c.AppendTangents(nil, point)
-}
-
-// AppendTangents appends the points Tangents returns to dst and returns the extended slice, so
-// a caller reusing dst allocates nothing once it has room.
-func (c Circle[T]) AppendTangents(dst []Point[T], point Point[T]) []Point[T] {
+//
+// The points are a Pair, which allocates nothing.
+func (c Circle[T]) Tangents(point Point[T]) Pair[Point[T]] {
 	distanceSquared := c.centerDistanceSquared(point)
 	magnitude := point.magnitude()
 
 	if c.touchesSquared(distanceSquared, magnitude) {
-		return append(dst, point)
+		return Pair[Point[T]]{[2]Point[T]{point}, 1}
 	}
 	if c.containsSquared(distanceSquared, magnitude) {
-		return dst
+		return Pair[Point[T]]{}
 	}
 
 	radius := float64(c.Radius)
 
-	return c.appendChordEnds(dst, point.Float().Subtract(c.Center.Float()), radius*radius/math.Sqrt(distanceSquared))
+	return c.chordPoints(point.Float().Subtract(c.Center.Float()), radius*radius/math.Sqrt(distanceSquared))
 }
 
 // OuterTangents returns the segments of the lines that touch both circles from the same side,
@@ -260,14 +249,10 @@ func (c Circle[T]) AppendTangents(dst []Point[T], point Point[T]) []Point[T] {
 // center, so against one the points on this circle are the Tangents of that center. Two
 // circles of zero radius are joined by one segment, and for integer T the points are rounded
 // like every other result stored into T, two segments rounding to the same one given once.
-func (c Circle[T]) OuterTangents(circle Circle[T]) []Segment[T] {
-	return c.AppendOuterTangents(nil, circle)
-}
-
-// AppendOuterTangents appends the segments OuterTangents returns to dst and returns the
-// extended slice, so a caller reusing dst allocates nothing once it has room.
-func (c Circle[T]) AppendOuterTangents(dst []Segment[T], circle Circle[T]) []Segment[T] {
-	return c.appendTangents(dst, circle, float64(circle.Radius))
+//
+// The segments are a Pair, which allocates nothing.
+func (c Circle[T]) OuterTangents(circle Circle[T]) Pair[Segment[T]] {
+	return c.tangents(circle, float64(circle.Radius))
 }
 
 // InnerTangents returns the segments of the lines that touch the circles from opposite sides
@@ -277,35 +262,38 @@ func (c Circle[T]) AppendOuterTangents(dst []Segment[T], circle Circle[T]) []Seg
 // second is the mirror of the first across the line of centers. Two circles of zero radius are
 // joined by one segment, and for integer T the points are rounded like every other result
 // stored into T, two segments rounding to the same one given once.
-func (c Circle[T]) InnerTangents(circle Circle[T]) []Segment[T] {
-	return c.AppendInnerTangents(nil, circle)
+//
+// The segments are a Pair, which allocates nothing.
+func (c Circle[T]) InnerTangents(circle Circle[T]) Pair[Segment[T]] {
+	return c.tangents(circle, -float64(circle.Radius))
 }
 
-// AppendInnerTangents appends the segments InnerTangents returns to dst and returns the
-// extended slice, so a caller reusing dst allocates nothing once it has room.
-func (c Circle[T]) AppendInnerTangents(dst []Segment[T], circle Circle[T]) []Segment[T] {
-	return c.appendTangents(dst, circle, -float64(circle.Radius))
+// Contains reports whether the given point lies within the circle, boundary included within
+// the tolerance: a float point a rounding error outside the radius, such as an Anchor, is
+// still contained.
+func (c Circle[T]) Contains(point Point[T]) bool {
+	return c.containsSquared(c.centerDistanceSquared(point), point.magnitude())
 }
 
-// EnclosesCircle reports whether the given circle lies within this one: its far point, the
+// ContainsCircle reports whether the given circle lies within this one: its far point, the
 // point of it farthest from this center, is contained within the tolerance by the comparison
 // Contains makes, so a circle touching the boundary from inside is enclosed.
-func (c Circle[T]) EnclosesCircle(circle Circle[T]) bool {
+func (c Circle[T]) ContainsCircle(circle Circle[T]) bool {
 	far := math.Sqrt(c.centerDistanceSquared(circle.Center)) + float64(circle.Radius)
 
 	return c.containsSquared(far*far, circle.magnitude())
 }
 
-// EnclosesSegment reports whether the segment lies within the circle: both endpoints are
+// ContainsSegment reports whether the segment lies within the circle: both endpoints are
 // contained, within the tolerance, and a circle holds every point between two it contains.
-func (c Circle[T]) EnclosesSegment(segment Segment[T]) bool {
+func (c Circle[T]) ContainsSegment(segment Segment[T]) bool {
 	return c.Contains(segment.Start) && c.Contains(segment.End)
 }
 
-// EnclosesPolygon reports whether the polygon lies within the circle: every vertex is
+// ContainsPolygon reports whether the polygon lies within the circle: every vertex is
 // contained, within the tolerance, and a circle holds every point between points it contains.
 // An empty polygon is enclosed by nothing.
-func (c Circle[T]) EnclosesPolygon(polygon Polygon[T]) bool {
+func (c Circle[T]) ContainsPolygon(polygon Polygon[T]) bool {
 	if polygon.IsEmpty() {
 		return false
 	}
@@ -319,9 +307,9 @@ func (c Circle[T]) EnclosesPolygon(polygon Polygon[T]) bool {
 	return true
 }
 
-// EnclosesRectangle reports whether the rectangle lies within the circle: every corner is
+// ContainsRectangle reports whether the rectangle lies within the circle: every corner is
 // contained, within the tolerance, whatever the rectangle's angle.
-func (c Circle[T]) EnclosesRectangle(rectangle Rectangle[T]) bool {
+func (c Circle[T]) ContainsRectangle(rectangle Rectangle[T]) bool {
 	for vertex := range rectangle.Vertices() {
 		if !c.Contains(vertex) {
 			return false
@@ -331,9 +319,9 @@ func (c Circle[T]) EnclosesRectangle(rectangle Rectangle[T]) bool {
 	return true
 }
 
-// EnclosesRegularPolygon reports whether the regular polygon lies within the circle: every
+// ContainsRegularPolygon reports whether the regular polygon lies within the circle: every
 // vertex is contained, within the tolerance. An empty polygon is enclosed by nothing.
-func (c Circle[T]) EnclosesRegularPolygon(polygon RegularPolygon[T]) bool {
+func (c Circle[T]) ContainsRegularPolygon(polygon RegularPolygon[T]) bool {
 	if polygon.IsEmpty() {
 		return false
 	}
@@ -347,9 +335,9 @@ func (c Circle[T]) EnclosesRegularPolygon(polygon RegularPolygon[T]) bool {
 	return true
 }
 
-// EnclosesBox reports whether the box lies within the circle: every corner is contained, within
+// ContainsBox reports whether the box lies within the circle: every corner is contained, within
 // the tolerance.
-func (c Circle[T]) EnclosesBox(box Box[T]) bool {
+func (c Circle[T]) ContainsBox(box Box[T]) bool {
 	for _, corner := range box.corners() {
 		if !c.Contains(corner) {
 			return false
@@ -366,78 +354,11 @@ func (c Circle[T]) IntersectsCircle(circle Circle[T]) bool {
 	return lessOrEqualSquared(c.centerDistanceSquared(circle.Center), float64(c.Radius)+float64(circle.Radius), c.epsilonWith(circle.magnitude()))
 }
 
-// IntersectionCircle returns the points where the circles cross: two for overlapping circles, one
-// for tangent ones, within the tolerance like Intersects, and none for circles apart or nested.
-// Coincident circles share every point and also return none, and circles with centers within
-// the tolerance of each other count as coincident. The second point is the mirror of the first
-// across the line of centers. Tangency is judged on the sum and the difference of the radii by
-// the same comparison Intersects makes, so a tangent a rounding error outside its reach gives
-// one point rather than the same point twice; that point is placed halfway between the two
-// boundaries where they meet, since the crossing formula amplifies the tolerance there. For
-// integer T the points are rounded like every other result stored into T, and two crossings
-// rounding to the same point give it once.
-func (c Circle[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
-	return c.AppendIntersectionCircle(nil, circle)
-}
-
-// AppendIntersectionCircle appends the points IntersectionCircle returns to dst and returns the
-// extended slice, so a caller reusing dst allocates nothing once it has room.
-func (c Circle[T]) AppendIntersectionCircle(dst []Point[T], circle Circle[T]) []Point[T] {
-	center := c.Center.Float()
-	direction := circle.Center.Float().Subtract(center)
-	distanceSquared := c.centerDistanceSquared(circle.Center)
-	r1, r2 := float64(c.Radius), float64(circle.Radius)
-	outer, inner := r1+r2, math.Abs(r1-r2)
-	epsilon := c.epsilonWith(circle.magnitude())
-
-	if lessOrEqualSquared(distanceSquared, 0, epsilon) || !lessOrEqualSquared(distanceSquared, outer, epsilon) || !greaterOrEqualSquared(distanceSquared, inner, epsilon) {
-		return dst
-	}
-
-	distance := math.Sqrt(distanceSquared)
-
-	if external, internal := equalSquared(distanceSquared, outer, epsilon), equalSquared(distanceSquared, inner, epsilon); external || internal {
-		point := center.Add(direction.Resize(c.tangent(circle, distance, external)))
-
-		return append(dst, point.Cast[T]())
-	}
-
-	return c.appendChordEnds(dst, direction, (float64(r1*r1)-float64(r2*r2)+distanceSquared)/(2*distance))
-}
-
 // IntersectsSegment reports whether the circle and the segment share a point: the point of the
 // segment closest to the center lies within the radius. Touching shapes intersect, within
 // the tolerance, by the same comparison Contains makes, on the squared distance.
 func (c Circle[T]) IntersectsSegment(segment Segment[T]) bool {
 	return c.containsSquared(segment.DistanceSquaredTo(c.Center), segment.magnitude())
-}
-
-// IntersectionSegment returns the points where the segment crosses the circle boundary, from the
-// segment's Start to its End: two where it passes through, one where it is tangent or ends inside,
-// within the tolerance like IntersectsSegment, and none where it misses or lies entirely inside. A
-// segment inside crosses no boundary, so it returns none while IntersectsSegment still reports it.
-// An endpoint within the tolerance of the boundary is one of the crossings, judged by the same
-// comparison IntersectsSegment makes, so a shallow touch is not lost to the fraction along the
-// chord and the two agree to the last bit: Start is where the segment enters and End where it
-// leaves, unless the chord lies wholly past that endpoint, and two such endpoints are the two
-// crossings, so a segment and its Reverse cross at the same points; where the chord is a tangent
-// the endpoint replaces it. A tangent is placed at the foot on the segment, a fraction along it
-// like every crossing, so it lies within the tolerance of the circle rather than halfway between
-// the two boundaries, and a float32 tangent far from the origin can round just past the tolerance.
-// For integer T the points are rounded like every other result stored into T.
-func (c Circle[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
-	return c.AppendIntersectionSegment(nil, segment)
-}
-
-// AppendIntersectionSegment appends the points IntersectionSegment returns to dst and returns the
-// extended slice, so a caller reusing dst allocates nothing once it has room. The points already
-// in dst are kept as they are: a crossing equal to one of them is still appended, and only the
-// appended ones are ordered from Start. A nil dst is allocated on the first point with room for
-// two, and Segment.ClipCircle passes a buffer of its own.
-func (c Circle[T]) AppendIntersectionSegment(dst []Point[T], segment Segment[T]) []Point[T] {
-	fractions, n := c.fractions(segment)
-
-	return segment.appendPointsAt(dst, fractions[:n]...)
 }
 
 // IntersectsRay reports whether the circle and the ray share a point, as IntersectsSegment
@@ -447,39 +368,11 @@ func (c Circle[T]) IntersectsRay(ray Ray[T]) bool {
 	return c.IntersectsSegment(ray.reach(c.minMax()))
 }
 
-// IntersectionRay returns the points where the ray crosses the circle boundary, from its Origin
-// on, as IntersectionSegment finds them on the reach of the ray past the circle, so the two
-// agree with IntersectsRay to the last bit: two where it passes through, one where it is tangent
-// or starts inside, and none where it misses.
-func (c Circle[T]) IntersectionRay(ray Ray[T]) []Point[T] {
-	return c.AppendIntersectionRay(nil, ray)
-}
-
-// AppendIntersectionRay appends the points IntersectionRay returns to dst and returns the
-// extended slice, as AppendIntersectionSegment does on the reach of the ray past the circle.
-func (c Circle[T]) AppendIntersectionRay(dst []Point[T], ray Ray[T]) []Point[T] {
-	return c.AppendIntersectionSegment(dst, ray.reach(c.minMax()))
-}
-
 // IntersectsLine reports whether the circle and the line share a point, as IntersectsSegment
 // decides it on the span of the line past the circle: the point of the line closest to the
 // center lies within the radius. Touching shapes intersect, within the tolerance.
 func (c Circle[T]) IntersectsLine(line Line[T]) bool {
 	return c.IntersectsSegment(line.span(c.minMax()))
-}
-
-// IntersectionLine returns the points where the line crosses the circle boundary, in order along
-// its Direction, as IntersectionSegment finds them on the span of the line past the circle, so
-// the two agree with IntersectsLine to the last bit: two where it passes through, one where it
-// is tangent, and none where it misses.
-func (c Circle[T]) IntersectionLine(line Line[T]) []Point[T] {
-	return c.AppendIntersectionLine(nil, line)
-}
-
-// AppendIntersectionLine appends the points IntersectionLine returns to dst and returns the
-// extended slice, as AppendIntersectionSegment does on the span of the line past the circle.
-func (c Circle[T]) AppendIntersectionLine(dst []Point[T], line Line[T]) []Point[T] {
-	return c.AppendIntersectionSegment(dst, line.span(c.minMax()))
 }
 
 // IntersectsPolygon reports whether the circle and the polygon share a point: the center lies
@@ -530,10 +423,82 @@ func (c Circle[T]) IntersectsBox(box Box[T]) bool {
 	return c.containsSquared(box.DistanceSquaredTo(c.Center), box.magnitude())
 }
 
+// IntersectionCircle returns the points where the circles cross: two for overlapping circles, one
+// for tangent ones, within the tolerance like Intersects, and none for circles apart or nested.
+// Coincident circles share every point and also return none, and circles with centers within
+// the tolerance of each other count as coincident. The second point is the mirror of the first
+// across the line of centers. Tangency is judged on the sum and the difference of the radii by
+// the same comparison Intersects makes, so a tangent a rounding error outside its reach gives
+// one point rather than the same point twice; that point is placed halfway between the two
+// boundaries where they meet, since the crossing formula amplifies the tolerance there. For
+// integer T the points are rounded like every other result stored into T, and two crossings
+// rounding to the same point give it once.
+//
+// The points are a Pair, which allocates nothing.
+func (c Circle[T]) IntersectionCircle(circle Circle[T]) Pair[Point[T]] {
+	center := c.Center.Float()
+	direction := circle.Center.Float().Subtract(center)
+	distanceSquared := c.centerDistanceSquared(circle.Center)
+	r1, r2 := float64(c.Radius), float64(circle.Radius)
+	outer, inner := r1+r2, math.Abs(r1-r2)
+	epsilon := c.epsilonWith(circle.magnitude())
+
+	if lessOrEqualSquared(distanceSquared, 0, epsilon) || !lessOrEqualSquared(distanceSquared, outer, epsilon) || !greaterOrEqualSquared(distanceSquared, inner, epsilon) {
+		return Pair[Point[T]]{}
+	}
+
+	distance := math.Sqrt(distanceSquared)
+
+	if external, internal := equalSquared(distanceSquared, outer, epsilon), equalSquared(distanceSquared, inner, epsilon); external || internal {
+		point := center.Add(direction.Resize(c.tangent(circle, distance, external)))
+
+		return Pair[Point[T]]{[2]Point[T]{point.Cast[T]()}, 1}
+	}
+
+	return c.chordPoints(direction, (float64(r1*r1)-float64(r2*r2)+distanceSquared)/(2*distance))
+}
+
+// IntersectionSegment returns the points where the segment crosses the circle boundary, from the
+// segment's Start to its End: two where it passes through, one where it is tangent or ends inside,
+// within the tolerance like IntersectsSegment, and none where it misses or lies entirely inside. A
+// segment inside crosses no boundary, so it returns none while IntersectsSegment still reports it.
+// An endpoint within the tolerance of the boundary is one of the crossings, judged by the same
+// comparison IntersectsSegment makes, so a shallow touch is not lost to the fraction along the
+// chord and the two agree to the last bit: Start is where the segment enters and End where it
+// leaves, unless the chord lies wholly past that endpoint, and two such endpoints are the two
+// crossings, so a segment and its Reverse cross at the same points; where the chord is a tangent
+// the endpoint replaces it. A tangent is placed at the foot on the segment, a fraction along it
+// like every crossing, so it lies within the tolerance of the circle rather than halfway between
+// the two boundaries, and a float32 tangent far from the origin can round just past the tolerance.
+// For integer T the points are rounded like every other result stored into T.
+//
+// The points are a Pair, which allocates nothing.
+func (c Circle[T]) IntersectionSegment(segment Segment[T]) Pair[Point[T]] {
+	fractions, n := c.fractions(segment)
+
+	return segment.pointsAt(fractions[:n]...)
+}
+
+// IntersectionRay returns the points where the ray crosses the circle boundary, from its Origin
+// on, as IntersectionSegment finds them on the reach of the ray past the circle, so the two
+// agree with IntersectsRay to the last bit: two where it passes through, one where it is tangent
+// or starts inside, and none where it misses.
+func (c Circle[T]) IntersectionRay(ray Ray[T]) Pair[Point[T]] {
+	return c.IntersectionSegment(ray.reach(c.minMax()))
+}
+
+// IntersectionLine returns the points where the line crosses the circle boundary, in order along
+// its Direction, as IntersectionSegment finds them on the span of the line past the circle, so
+// the two agree with IntersectsLine to the last bit: two where it passes through, one where it
+// is tangent, and none where it misses.
+func (c Circle[T]) IntersectionLine(line Line[T]) Pair[Point[T]] {
+	return c.IntersectionSegment(line.span(c.minMax()))
+}
+
 // fractions returns the fractions along the segment at which it crosses the circle boundary, in
 // increasing order, and how many of the two there are: the ends of the chord, an endpoint on the
 // boundary within the tolerance standing in for the end it is by snapToEndpoint, or the one
-// fraction of a tangent. They are not yet held to the segment, which appendPointsAt does, so
+// fraction of a tangent. They are not yet held to the segment, which pointsAt does, so
 // IntersectionSegment and Segment.HitCircle place their points from the same fractions.
 func (c Circle[T]) fractions(segment Segment[T]) ([2]float64, int) {
 	entry, exit, ok := segment.chord(c)
@@ -611,7 +576,7 @@ func (c Circle[T]) tangent(circle Circle[T], distance float64, external bool) fl
 	}
 }
 
-// appendTangents appends the segments of the lines that touch this circle and the given one,
+// tangents returns the segments of the lines that touch this circle and the given one,
 // whose radius is passed signed: as it is for the outer tangents, and negative for the inner
 // ones, which touch it on the far side. The line lies at a right angle to one direction from
 // both centers, a radius from each, so along the line of centers the two radii differ by the
@@ -619,12 +584,12 @@ func (c Circle[T]) tangent(circle Circle[T], distance float64, external bool) fl
 // placed by, each an end of a chord of its own circle. There is no such direction where the
 // distance is at most the difference of the radii, within the tolerance, which is the test
 // IntersectsCircle makes on their sum for the inner tangents.
-func (c Circle[T]) appendTangents(dst []Segment[T], circle Circle[T], radius float64) []Segment[T] {
+func (c Circle[T]) tangents(circle Circle[T], radius float64) Pair[Segment[T]] {
 	distanceSquared := c.centerDistanceSquared(circle.Center)
 	reach := float64(c.Radius) - radius
 
 	if lessOrEqualSquared(distanceSquared, math.Abs(reach), c.epsilonWith(circle.magnitude())) {
-		return dst
+		return Pair[Segment[T]]{}
 	}
 
 	direction := circle.Center.Float().Subtract(c.Center.Float())
@@ -637,21 +602,21 @@ func (c Circle[T]) appendTangents(dst []Segment[T], circle Circle[T], radius flo
 
 	first, second := Segment[T]{start1, end1}, Segment[T]{start2, end2}
 	if second.Equal(first) {
-		return append(dst, first)
+		return Pair[Segment[T]]{[2]Segment[T]{first}, 1}
 	}
 
-	return append(dst, first, second)
+	return Pair[Segment[T]]{[2]Segment[T]{first, second}, 2}
 }
 
-// appendChordEnds appends the two points chordEnds returns, the points IntersectionCircle and
-// Tangents place, given once where both are stored into T as the same point.
-func (c Circle[T]) appendChordEnds(dst []Point[T], direction Vector[float64], along float64) []Point[T] {
+// chordPoints returns the two points chordEnds returns, the points IntersectionCircle and
+// Tangents place, held once where both are stored into T as the same point.
+func (c Circle[T]) chordPoints(direction Vector[float64], along float64) Pair[Point[T]] {
 	first, second := c.chordEnds(direction, along)
 	if second.Equal(first) {
-		return append(dst, first)
+		return Pair[Point[T]]{[2]Point[T]{first}, 1}
 	}
 
-	return append(dst, first, second)
+	return Pair[Point[T]]{[2]Point[T]{first, second}, 2}
 }
 
 // chordEnds returns the two ends of the chord that crosses the given direction from the center

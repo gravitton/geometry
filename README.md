@@ -132,8 +132,8 @@ view.Inset(geom.PadU(16))                   // (16,16)-(784,584)
 tip := geom.BoxFromMin(geom.Pt(750, 20), geom.Sz(120, 40))
 hud := geom.Bx(geom.Pt(200, 40), geom.Pt(0, 0)) // (0,0)-(200,40), the corners in either order
 
-tip.Clamp(view)           // (680,20)-(800,60), moved by the least that brings it inside
-view.IntersectionBox(tip) // (750,20)-(800,60), true: the part on screen
+tip.Clamp(view)   // (680,20)-(800,60), moved by the least that brings it inside
+view.ClipBox(tip) // (750,20)-(800,60), true: the part on screen
 
 r.Bounds().IntersectsBox(view) // every shape's Bounds is a Box, for the broad pass
 view.IntersectsRectangle(r)    // a Box is a Collider, tested against every shape
@@ -146,7 +146,7 @@ view.IntersectsRectangle(r)    // a Box is a Collider, tested against every shap
 ```go
 c := geom.Circ(geom.Pt(0.0, 0.0), 5.0)
 c.Anchor(geom.Bottom)          // Point{0, 5}
-c.Tangents(geom.Pt(13.0, 0.0)) // the two points a line from there touches the circle at; one on it, none inside
+c.Tangents(geom.Pt(13.0, 0.0)) // a Pair: the two points a line from there touches the circle at; one on it, none inside
 
 wheel := geom.Circ(geom.Pt(20.0, 0.0), 2.0)
 c.OuterTangents(wheel) // the two straight runs of a belt around both, each a Segment from c to wheel
@@ -194,6 +194,7 @@ p.BoundingCircle()        // Circ((2,1);4), about the rounded Centroid to the fa
 
 edged := geom.Pol([]geom.Point[int]{{0, 0}, {2, 0}, {4, 0}, {4, 4}, {0, 4}})
 edged.Simplify(0) // Pol((0,0);(4,0);(4,4);(0,4)), the vertex on an edge dropped; a tolerance drops the ones near it
+edged.Grow(1)     // Pol((-1,-1);(2,-1);(5,-1);(5,5);(-1,5)): every edge moved out; Shrink moves them in
 
 for vertex := range p.Vertices() { // the same loop draws a Segment, Rectangle or RegularPolygon
 	vertex.Float()
@@ -238,8 +239,10 @@ resolution.
 
 ### Intersections
 
-Every shape has one `Intersects<Kind>` per kind, symmetric and counting a touch; where a result exists it is
-`Intersection<Kind>`:
+Every shape has one `Intersects<Kind>` per kind, symmetric and counting a touch. `Intersection<Kind>` gives where the
+two meet: one point with a bool between segments, rays and lines, a `Pair` of at most two points on a circle or a
+convex shape, and a slice on a polygon, which may be concave. `Clip<Kind>` gives the part the two have in common, in
+the type of the receiver: a segment of a segment, a rectangle of a rectangle:
 
 ```go
 a.IntersectsRectangle(b) // IntersectsSegment, IntersectsRay, IntersectsLine, IntersectsRectangle, IntersectsCircle,
@@ -247,14 +250,21 @@ r.IntersectsCircle(c)    // IntersectsPolygon, IntersectsRegularPolygon and Inte
 geom.Intersects(a, c)    // the same answer without knowing either type
 
 point, ok := s.IntersectionSegment(other) // where two segments cross
-overlap, ok := a.IntersectionRectangle(b) // the overlap of two rectangles
-c.IntersectionCircle(other)               // zero, one or two points where two circles cross
-s.IntersectionCircle(c)                   // where a segment crosses a boundary; also of a rectangle or a polygon
+crossings := c.IntersectionCircle(other)  // a Pair: zero, one or two points where two circles cross
+for p := range crossings.All() {          // or crossings.Items[:crossings.Count]; neither allocates
+}
+s.IntersectionCircle(c)                   // where a segment crosses a boundary; also of a rectangle or a box
+s.IntersectionPolygon(p)                  // every crossing of a polygon, as a slice
 s.ClipBox(view)                           // the part of s inside, and false where there is none
 s.ClipPolygon(p)                          // the parts inside a concave polygon, from Start to End
+part, ok := p.ClipBox(view)               // the polygon as a viewport shows it; also ClipRectangle, ClipPolygon
+                                          // and ClipRegularPolygon
+overlap, ok := a.ClipRectangle(b)         // the overlap of two rectangles of one angle; ClipBox of two boxes
+hit, ok := s.HitCircle(c)                 // the first point s reaches from outside, with the normal there
+hit, ok = s.HitSegment(wall)              // or of a wall: HitSegment, HitRay and HitLine
 
 buffer = s.AppendIntersectionPolygon(buffer[:0], p) // a slice result has an Append form, as strconv does, on the
-hull = p.AppendConvexHull(hull[:0])                 // side that holds the pair, so a reused buffer allocates nothing
+hull = p.AppendConvexHull(hull[:0])                 // side that holds it, so a reused buffer allocates nothing
 ```
 
 A `Ray` is a half-line from `Origin` along `Direction`. Its `Clip<Kind>` is the part inside a shape, and its
@@ -291,12 +301,12 @@ wall.ClipBox(view)             // the part of the line a viewport shows, and fal
 
 ### Containment
 
-`Contains` takes a point; `Encloses<Kind>` takes a whole shape, on every shape with an area but `Ellipse`:
+`Contains` takes a point; `Contains<Kind>` takes a whole shape, on every shape with an area but `Ellipse`:
 
 ```go
-view.EnclosesCircle(c) // EnclosesCircle, EnclosesSegment, EnclosesPolygon, EnclosesRectangle,
-r.EnclosesPolygon(p)   // EnclosesRegularPolygon and EnclosesBox
-p.EnclosesSegment(s)   // a concave polygon also checks that s does not leave it between its ends
+view.ContainsCircle(c) // ContainsCircle, ContainsSegment, ContainsPolygon, ContainsRectangle,
+r.ContainsPolygon(p)   // ContainsRegularPolygon and ContainsBox
+p.ContainsSegment(s)   // a concave polygon also checks that s does not leave it between its ends
 ```
 
 ### Directions, axes and orientations

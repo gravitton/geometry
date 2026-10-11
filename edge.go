@@ -177,17 +177,17 @@ func (e *edgeSpan[T]) crossings() []Point[T] {
 	return e.ends[:]
 }
 
-// appendCrossings appends the first and the last crossing from Start to dst, the one point where
-// they compare Equal and none where there was none, the boundary points of a convex outline
-// whose ends clipConvex reads, and returns the extended slice.
-func (e *edgeSpan[T]) appendCrossings(dst []Point[T]) []Point[T] {
+// pair returns the first and the last crossing from Start, the one point where they compare
+// Equal and none where there was none: the boundary points of a convex outline, whose ends
+// clipConvex reads.
+func (e *edgeSpan[T]) pair() Pair[Point[T]] {
 	switch {
 	case !e.crossed:
-		return dst
+		return Pair[Point[T]]{}
 	case e.ends[0].Equal(e.ends[1]):
-		return append(dst, e.ends[0])
+		return Pair[Point[T]]{[2]Point[T]{e.ends[0]}, 1}
 	default:
-		return append(dst, e.ends[0], e.ends[1])
+		return Pair[Point[T]]{e.ends, 2}
 	}
 }
 
@@ -367,4 +367,105 @@ func (c *edgeConvexity) step(direction Vector[float64]) bool {
 // than twice around it.
 func (c *edgeConvexity) result() bool {
 	return c.step(c.first) && c.turned && c.reversals <= 2
+}
+
+// edgeClip cuts an outline to the inner side of one line after another, the steps of
+// Sutherland–Hodgman clipping: the lines through the edges of a convex region, which leave the
+// part of the outline inside it, or a single line. It is started as a literal with the slice
+// to append to, its length as from, and the vertices of the outline, which it reads and never
+// writes; each cut appends the outline it leaves after the one it read and moves it down to
+// from, so the slice needs room for two outlines and holds the last one at the end. A region
+// wound against Rectangle.Vertices is reversed, so the inner side is the same for both.
+type edgeClip[T Number] struct {
+	dst      []Point[T]
+	from     int
+	points   []Point[T]
+	reversed bool
+}
+
+// add cuts the outline to the inner side of the line through one edge of the region, the side
+// Segment.Normal points to on an edge of a Rectangle.
+func (c *edgeClip[T]) add(edge Segment[T]) {
+	if c.reversed {
+		edge = edge.Reverse()
+	}
+
+	c.cut(edge.Line())
+}
+
+// cut keeps the part of the outline on the side of the line Line.Side gives 1 for, the line
+// itself included within the tolerance: every vertex there, and between a vertex strictly on
+// one side and the next strictly on the other the point where the edge crosses the line. A
+// vertex on the line is kept as it is and no crossing is placed beside it, so a point the
+// tolerance admits stays where it was. A line with no direction has no sides and cuts nothing.
+func (c *edgeClip[T]) cut(line Line[T]) {
+	if !line.Direction.hasDirection() || len(c.points) == 0 {
+		return
+	}
+
+	start := len(c.dst)
+	previous := c.points[len(c.points)-1]
+	previousSide := c.side(line, previous)
+	for _, point := range c.points {
+		side := c.side(line, point)
+		if (side < 0 && previousSide > 0) || (side > 0 && previousSide < 0) {
+			c.keep(start, c.crossing(previous, point, previousSide, side))
+		}
+
+		if side >= 0 {
+			c.keep(start, point)
+		}
+
+		previous, previousSide = point, side
+	}
+
+	if n := len(c.dst); n-start > 1 && c.dst[n-1].Equal(c.dst[start]) {
+		c.dst = c.dst[:n-1]
+	}
+
+	c.dst = append(c.dst[:c.from], c.dst[start:]...)
+	c.points = c.dst[c.from:]
+}
+
+// keep appends a vertex to the outline a cut is leaving, the one that began at start, unless it
+// compares Equal to the vertex before it. The first vertex kept makes room for the outline a
+// convex one leaves, one vertex more than it had.
+func (c *edgeClip[T]) keep(start int, point Point[T]) {
+	n := len(c.dst)
+	if n == start {
+		c.dst = slices.Grow(c.dst, len(c.points)+1)
+	}
+
+	if n > start && c.dst[n-1].Equal(point) {
+		return
+	}
+
+	c.dst = append(c.dst, point)
+}
+
+// side returns the side of the line the point lies on as Line.Side reads it, the cross product
+// itself, and zero for a point the line contains within the tolerance. A NaN has no side.
+func (*edgeClip[T]) side(line Line[T], point Point[T]) float64 {
+	if line.Contains(point) {
+		return 0
+	}
+
+	return line.side(point)
+}
+
+// crossing returns the point where the edge from a to b crosses the line, given the sides of
+// the two, of opposite signs: each component of the edge times the side of a, divided once by
+// the difference of the sides, as Segment.crossing places a point, so for an integer T a
+// crossing on a half unit is exactly there before it is rounded.
+func (*edgeClip[T]) crossing(a, b Point[T], sideA, sideB float64) Point[T] {
+	start := a.Float()
+	along := b.Float().Subtract(start)
+	denominator := sideA - sideB
+
+	return Point[T]{Cast[T](start.X + float64(sideA*along.X)/denominator), Cast[T](start.Y + float64(sideA*along.Y)/denominator)}
+}
+
+// result returns the slice with the outline the cuts left appended to it.
+func (c *edgeClip[T]) result() []Point[T] {
+	return c.dst
 }

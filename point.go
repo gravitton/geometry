@@ -7,7 +7,8 @@ import (
 	"strings"
 )
 
-// Point is a 2D point.
+// Point is a 2D point, a position. It is a math object like Vector and its methods take the
+// same names: Multiply and Divide scale its coordinates, where a shape has Scale and Unscale.
 type Point[T Number] struct {
 	X T `json:"x"`
 	Y T `json:"y"`

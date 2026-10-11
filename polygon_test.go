@@ -367,6 +367,33 @@ func TestPolygon_MoveTo(t *testing.T) {
 	})
 }
 
+func TestPolygon_Rotate(t *testing.T) {
+	t.Run("quarter turn about the centroid", func(t *testing.T) {
+		geomtest.AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 2), Pt(0, 2)}).Rotate(Pi/2), Pol([]Point[int]{
+			Pt(3, -1),
+			Pt(3, 3),
+			Pt(1, 3),
+			Pt(1, -1),
+		}))
+	})
+	t.Run("float keeps the centroid, area and perimeter", func(t *testing.T) {
+		p := Pol(triangleVertices())
+		rotated := p.Rotate(0.7)
+
+		geomtest.AssertPoint(t, rotated.Centroid(), p.Centroid())
+		geomtest.AssertNumber(t, rotated.Area(), p.Area())
+		geomtest.AssertNumber(t, rotated.Perimeter(), p.Perimeter())
+	})
+	t.Run("a full turn is identity", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			geomtest.AssertPolygon(t, p.Rotate(2*Pi), p, fmt.Sprintf("%s: ", p))
+		}
+	})
+	t.Run("nil stays nil", func(t *testing.T) {
+		assert.Zero(t, Pol[int](nil).Rotate(1))
+	})
+}
+
 func TestPolygon_Scale(t *testing.T) {
 	t.Run("uniform factor", func(t *testing.T) {
 		geomtest.AssertPolygon(t, Pol(squareVertices()).Scale(2), Pol([]Point[int]{
@@ -407,6 +434,167 @@ func TestPolygon_Unscale(t *testing.T) {
 	})
 }
 
+func TestPolygon_Transform(t *testing.T) {
+	t.Run("applies the matrix to every vertex", func(t *testing.T) {
+		matrix := Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)
+		square := Pol(squareVertices())
+
+		geomtest.AssertPolygon(t, square.Transform(matrix), Pol([]Point[int]{Pt(3, 7), Pt(6, 15), Pt(10, 26), Pt(8, 18)}))
+	})
+	t.Run("nil stays nil", func(t *testing.T) {
+		assert.Zero(t, Pol[int](nil).Transform(IdentityMatrix[float64]()))
+	})
+}
+
+func TestPolygon_Grow(t *testing.T) {
+	square := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(0, 4)})
+	angle := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 2), Pt(2, 2), Pt(2, 4), Pt(0, 4)})
+
+	t.Run("moves every edge out and keeps the corners sharp", func(t *testing.T) {
+		geomtest.AssertPolygon(t, square.Grow(1), Pol([]Point[int]{Pt(-1, -1), Pt(5, -1), Pt(5, 5), Pt(-1, 5)}))
+	})
+	t.Run("either winding grows outward", func(t *testing.T) {
+		grown := Pol([]Point[float64]{Pt(2.0, 6.0), Pt(6.0, 2.0), Pt(2.0, -2.0)}).Grow(1)
+
+		geomtest.AssertPolygon(t, grown, Pol([]Point[float64]{Pt(1.0, 7+Sqrt2), Pt(6+Sqrt2, 2.0), Pt(1.0, -3-Sqrt2)}))
+	})
+	t.Run("a vertex on an edge moves with it and a repeated one is dropped", func(t *testing.T) {
+		grown := Pol([]Point[int]{Pt(0, 0), Pt(0, 0), Pt(2, 0), Pt(4, 0), Pt(4, 4), Pt(0, 4)}).Grow(1)
+
+		geomtest.AssertPolygon(t, grown, Pol([]Point[int]{Pt(-1, -1), Pt(2, -1), Pt(5, -1), Pt(5, 5), Pt(-1, 5)}))
+	})
+	t.Run("a negative amount shrinks", func(t *testing.T) {
+		geomtest.AssertPolygon(t, square.Grow(-1), square.Shrink(1))
+		geomtest.AssertPolygon(t, angle.Grow(-1), angle.Shrink(1))
+	})
+	t.Run("a polygon that is not convex moves the edges of its notch out too", func(t *testing.T) {
+		geomtest.AssertPolygon(t, angle.Grow(1), Pol([]Point[int]{Pt(-1, -1), Pt(5, -1), Pt(5, 3), Pt(3, 3), Pt(3, 5), Pt(-1, 5)}))
+		geomtest.AssertPolygon(t, Pol([]Point[int]{Pt(0, 4), Pt(2, 4), Pt(2, 2), Pt(4, 2), Pt(4, 0), Pt(0, 0)}).Grow(1), Pol([]Point[int]{Pt(-1, 5), Pt(3, 5), Pt(3, 3), Pt(5, 3), Pt(5, -1), Pt(-1, -1)}))
+	})
+	t.Run("a corner turning straight back stays where it is", func(t *testing.T) {
+		stretch := Pol([]Point[int]{Pt(0, 0), Pt(4, 0)})
+
+		geomtest.AssertPolygon(t, stretch.Grow(1), stretch)
+		geomtest.AssertPolygon(t, stretch.Shrink(1), stretch)
+	})
+	t.Run("a polygon with no edge stays as it is", func(t *testing.T) {
+		point := Pol([]Point[int]{Pt(1, 1), Pt(1, 1)})
+
+		assert.Nil(t, Polygon[int]{}.Grow(1).Points)
+		geomtest.AssertPolygon(t, point.Grow(1), point)
+		geomtest.AssertPolygon(t, point.Shrink(1), point)
+	})
+	t.Run("allocates the result alone", func(t *testing.T) {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = square.Grow(1).Points
+		}), 1)
+	})
+	t.Run("over the fixtures every edge of a convex polygon lies the amount farther out", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			grown := p.Grow(0.5)
+
+			assert.Equal(t, grown.IsEmpty(), p.IsEmpty(), p.String())
+			if !p.IsConvex() {
+				continue
+			}
+
+			assert.True(t, grown.IsConvex(), p.String())
+			assert.True(t, grown.ContainsPolygon(p), p.String())
+			for edge := range grown.Edges() {
+				geomtest.AssertNumber(t, math.Sqrt(min(edge.Line().DistanceSquaredTo(p.Points[0]), edge.Line().DistanceSquaredTo(p.Points[1]), edge.Line().DistanceSquaredTo(p.Points[2]))), 0.5, p.String())
+			}
+		}
+	})
+}
+
+func TestPolygon_AppendGrow(t *testing.T) {
+	square := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(0, 4)})
+
+	t.Run("appends the grown polygon after the points in dst", func(t *testing.T) {
+		geomtest.AssertVertices(t, square.AppendGrow([]Point[int]{Pt(9, 9)}, 1), []Point[int]{Pt(9, 9), Pt(-1, -1), Pt(5, -1), Pt(5, 5), Pt(-1, 5)})
+		geomtest.AssertVertices(t, square.AppendGrow([]Point[int]{Pt(9, 9)}, -1), []Point[int]{Pt(9, 9), Pt(1, 3), Pt(1, 1), Pt(3, 1), Pt(3, 3)})
+	})
+	t.Run("an empty polygon leaves dst as it is", func(t *testing.T) {
+		geomtest.AssertVertices(t, Polygon[int]{}.AppendGrow([]Point[int]{Pt(9, 9)}, 1), []Point[int]{Pt(9, 9)})
+	})
+	t.Run("a buffer with room for every vertex allocates nothing", func(t *testing.T) {
+		buffer := make([]Point[int], 0, len(square.Points))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = square.AppendGrow(buffer[:0], 1)
+		}), 0)
+	})
+	t.Run("matches Grow after the points in dst", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			geomtest.AssertVertices(t, p.AppendGrow(bufferWith(prefixPoint), 0.5), append([]Point[float64]{prefixPoint}, p.Grow(0.5).Points...), fmt.Sprintf("%s: ", p))
+		}
+	})
+}
+
+func TestPolygon_Shrink(t *testing.T) {
+	square := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(0, 4)})
+
+	t.Run("moves every edge in", func(t *testing.T) {
+		geomtest.AssertPolygon(t, square.Shrink(1), Pol([]Point[int]{Pt(1, 3), Pt(1, 1), Pt(3, 1), Pt(3, 3)}))
+	})
+	t.Run("drops an edge the others close over", func(t *testing.T) {
+		shrunk := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(8.0, 0.0), Pt(8.0, 2.0), Pt(4.0, 3.0), Pt(0.0, 2.0)}).Shrink(1.2)
+
+		assert.Equal(t, len(shrunk.Points), 3)
+	})
+	t.Run("to its middle is a point and past it empty", func(t *testing.T) {
+		geomtest.AssertPolygon(t, square.Shrink(2), Pol([]Point[int]{Pt(2, 2)}))
+		assert.Nil(t, square.Shrink(3).Points)
+	})
+	t.Run("a polygon that is not convex moves the edges of its notch in too", func(t *testing.T) {
+		angle := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(4.0, 2.0), Pt(2.0, 2.0), Pt(2.0, 4.0), Pt(0.0, 4.0)})
+
+		geomtest.AssertPolygon(t, angle.Shrink(0.5), Pol([]Point[float64]{Pt(0.5, 0.5), Pt(3.5, 0.5), Pt(3.5, 1.5), Pt(1.5, 1.5), Pt(1.5, 3.5), Pt(0.5, 3.5)}))
+	})
+	t.Run("over the fixtures growing a shrunk polygon gives it back", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			shrunk := p.Shrink(0.25)
+			if !p.IsConvex() {
+				assert.Equal(t, shrunk.IsEmpty(), p.IsEmpty(), p.String())
+
+				continue
+			}
+
+			assert.True(t, p.ContainsPolygon(shrunk), p.String())
+
+			back := shrunk.Grow(0.25)
+			assert.Equal(t, len(back.Points), len(p.Points), p.String())
+			for _, vertex := range back.Points {
+				assert.True(t, slices.ContainsFunc(p.Points, vertex.Equal), p.String()+vertex.String())
+			}
+		}
+	})
+}
+
+func TestPolygon_AppendShrink(t *testing.T) {
+	square := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(0, 4)})
+
+	t.Run("appends the shrunk polygon after the points in dst", func(t *testing.T) {
+		geomtest.AssertVertices(t, square.AppendShrink([]Point[int]{Pt(9, 9)}, 1), []Point[int]{Pt(9, 9), Pt(1, 3), Pt(1, 1), Pt(3, 1), Pt(3, 3)})
+	})
+	t.Run("a polygon shrunk away leaves dst as it is", func(t *testing.T) {
+		geomtest.AssertVertices(t, square.AppendShrink([]Point[int]{Pt(9, 9)}, 3), []Point[int]{Pt(9, 9)})
+		assert.Nil(t, square.AppendShrink(nil, 3))
+	})
+	t.Run("a buffer with room for the cuts allocates nothing", func(t *testing.T) {
+		buffer := make([]Point[int], 0, 2*len(square.Points)+2)
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = square.AppendShrink(buffer[:0], 1)
+		}), 0)
+	})
+	t.Run("matches Shrink after the points in dst", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			geomtest.AssertVertices(t, p.AppendShrink(bufferWith(prefixPoint), 0.25), append([]Point[float64]{prefixPoint}, p.Shrink(0.25).Points...), fmt.Sprintf("%s: ", p))
+		}
+	})
+}
+
 func TestPolygon_Lerp(t *testing.T) {
 	a := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(2.0, 0.0), Pt(2.0, 2.0), Pt(0.0, 2.0)})
 	b := Pol([]Point[float64]{Pt(10.0, 0.0), Pt(14.0, 0.0), Pt(14.0, 8.0), Pt(10.0, 8.0)})
@@ -442,45 +630,6 @@ func TestPolygon_Lerp(t *testing.T) {
 				assert.True(t, polygon.Lerp(moved, 0.25).Equal(polygon.Translate(vector.Multiply(0.25))), fmt.Sprintf("%s → %s: ", polygon, vector))
 			}
 		}
-	})
-}
-
-func TestPolygon_Transform(t *testing.T) {
-	t.Run("applies the matrix to every vertex", func(t *testing.T) {
-		matrix := Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6)
-		square := Pol(squareVertices())
-
-		geomtest.AssertPolygon(t, square.Transform(matrix), Pol([]Point[int]{Pt(3, 7), Pt(6, 15), Pt(10, 26), Pt(8, 18)}))
-	})
-	t.Run("nil stays nil", func(t *testing.T) {
-		assert.Zero(t, Pol[int](nil).Transform(IdentityMatrix[float64]()))
-	})
-}
-
-func TestPolygon_Rotate(t *testing.T) {
-	t.Run("quarter turn about the centroid", func(t *testing.T) {
-		geomtest.AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 2), Pt(0, 2)}).Rotate(Pi/2), Pol([]Point[int]{
-			Pt(3, -1),
-			Pt(3, 3),
-			Pt(1, 3),
-			Pt(1, -1),
-		}))
-	})
-	t.Run("float keeps the centroid, area and perimeter", func(t *testing.T) {
-		p := Pol(triangleVertices())
-		rotated := p.Rotate(0.7)
-
-		geomtest.AssertPoint(t, rotated.Centroid(), p.Centroid())
-		geomtest.AssertNumber(t, rotated.Area(), p.Area())
-		geomtest.AssertNumber(t, rotated.Perimeter(), p.Perimeter())
-	})
-	t.Run("a full turn is identity", func(t *testing.T) {
-		for _, p := range polygonFixtures() {
-			geomtest.AssertPolygon(t, p.Rotate(2*Pi), p, fmt.Sprintf("%s: ", p))
-		}
-	})
-	t.Run("nil stays nil", func(t *testing.T) {
-		assert.Zero(t, Pol[int](nil).Rotate(1))
 	})
 }
 
@@ -742,85 +891,6 @@ func TestPolygon_AppendSimplify(t *testing.T) {
 	})
 }
 
-func TestPolygon_Contains(t *testing.T) {
-	square := Pol(squareVertices())
-
-	t.Run("inside", func(t *testing.T) {
-		assert.True(t, square.Contains(Pt(1, 1)))
-	})
-	t.Run("outside on every side", func(t *testing.T) {
-		assert.False(t, square.Contains(Pt(-1, 1)))
-		assert.False(t, square.Contains(Pt(3, 1)))
-		assert.False(t, square.Contains(Pt(1, -1)))
-		assert.False(t, square.Contains(Pt(1, 3)))
-	})
-	t.Run("boundary and vertices are included", func(t *testing.T) {
-		assert.True(t, square.Contains(Pt(2, 1)))
-		assert.True(t, square.Contains(Pt(0, 0)))
-		assert.True(t, square.Contains(Pt(2, 2)))
-	})
-	t.Run("outside the extent is rejected on the point's own row", func(t *testing.T) {
-		assert.False(t, square.Contains(Pt(-1, 0)))
-		assert.False(t, square.Contains(Pt(3, 2)))
-	})
-	t.Run("edges running down and up count alike", func(t *testing.T) {
-		clockwise := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(2.0, 0.0), Pt(2.0, 2.0), Pt(0.0, 2.0)})
-		counter := Pol([]Point[float64]{Pt(0.0, 2.0), Pt(2.0, 2.0), Pt(2.0, 0.0), Pt(0.0, 0.0)})
-
-		for _, point := range []Point[float64]{Pt(1.0, 1.0), Pt(0.5, 1.5), Pt(1.9, 0.1)} {
-			assert.True(t, clockwise.Contains(point), point.String())
-			assert.True(t, counter.Contains(point), point.String())
-		}
-	})
-	t.Run("ray through a vertex is counted once", func(t *testing.T) {
-		diamond := Pol([]Point[int]{Pt(0, -2), Pt(2, 0), Pt(0, 2), Pt(-2, 0)})
-
-		assert.True(t, diamond.Contains(Pt(-1, 0)))
-		assert.False(t, diamond.Contains(Pt(-3, 0)))
-		assert.False(t, diamond.Contains(Pt(3, 0)))
-	})
-	t.Run("concave notch is outside", func(t *testing.T) {
-		notched := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(2, 1), Pt(0, 4)})
-
-		assert.True(t, notched.Contains(Pt(1, 1)))
-		assert.False(t, notched.Contains(Pt(2, 3)))
-	})
-	t.Run("float is tolerant at the boundary", func(t *testing.T) {
-		triangle := Pol(triangleVertices())
-
-		assert.True(t, triangle.Contains(Pt(2.0, 0.5)))
-		assert.True(t, triangle.Contains(Pt(1.25, 0.25-Delta/2)))
-		assert.False(t, triangle.Contains(Pt(1.25, 0.25-2*Delta)))
-	})
-	t.Run("degenerate polygons contain only their points", func(t *testing.T) {
-		assert.False(t, Pol([]Point[int]{}).Contains(Pt(0, 0)))
-		assert.True(t, Pol([]Point[int]{Pt(1, 1)}).Contains(Pt(1, 1)))
-		assert.True(t, Pol([]Point[int]{Pt(0, 0), Pt(4, 0)}).Contains(Pt(2, 0)))
-		assert.False(t, Pol([]Point[int]{Pt(0, 0), Pt(4, 0)}).Contains(Pt(2, 1)))
-	})
-}
-
-func BenchmarkPolygon_Contains(b *testing.B) {
-	polygon := benchPolygon()
-	inside, outside, far := Pt(10.0, 20.0), Pt(99.0, 99.0), Pt(500.0, 500.0)
-
-	b.Run("inside", func(b *testing.B) {
-		for b.Loop() {
-			sinkBool = polygon.Contains(inside)
-		}
-	})
-	b.Run("outside within the extent", func(b *testing.B) {
-		for b.Loop() {
-			sinkBool = polygon.Contains(outside)
-		}
-	})
-	b.Run("outside the extent", func(b *testing.B) {
-		for b.Loop() {
-			sinkBool = polygon.Contains(far)
-		}
-	})
-}
-
 func TestPolygon_DistanceTo(t *testing.T) {
 	square := Pol(squareVertices())
 
@@ -903,60 +973,139 @@ func TestPolygon_Nearest(t *testing.T) {
 	})
 }
 
-func TestPolygon_EnclosesCircle(t *testing.T) {
-	notched := Pol(notchedVertices())
+func TestPolygon_Contains(t *testing.T) {
+	square := Pol(squareVertices())
 
-	t.Run("touching the sides and a reflex vertex from inside counts", func(t *testing.T) {
-		assert.True(t, notched.EnclosesCircle(Circ(Pt(4, 1), 1)))
-		assert.True(t, notched.EnclosesCircle(Circ(Pt(1, 4), 1)))
+	t.Run("inside", func(t *testing.T) {
+		assert.True(t, square.Contains(Pt(1, 1)))
 	})
-	t.Run("reaching into the notch or past a side", func(t *testing.T) {
-		assert.False(t, notched.Float().EnclosesCircle(Circ(Pt(4.0, 1.0), 1.1)))
-		assert.False(t, notched.EnclosesCircle(Circ(Pt(4, 1), 2)))
+	t.Run("outside on every side", func(t *testing.T) {
+		assert.False(t, square.Contains(Pt(-1, 1)))
+		assert.False(t, square.Contains(Pt(3, 1)))
+		assert.False(t, square.Contains(Pt(1, -1)))
+		assert.False(t, square.Contains(Pt(1, 3)))
 	})
-	t.Run("an empty polygon encloses nothing", func(t *testing.T) {
-		assert.False(t, Pol[int](nil).EnclosesCircle(Circ(Pt(0, 0), 0)))
+	t.Run("boundary and vertices are included", func(t *testing.T) {
+		assert.True(t, square.Contains(Pt(2, 1)))
+		assert.True(t, square.Contains(Pt(0, 0)))
+		assert.True(t, square.Contains(Pt(2, 2)))
+	})
+	t.Run("outside the extent is rejected on the point's own row", func(t *testing.T) {
+		assert.False(t, square.Contains(Pt(-1, 0)))
+		assert.False(t, square.Contains(Pt(3, 2)))
+	})
+	t.Run("edges running down and up count alike", func(t *testing.T) {
+		clockwise := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(2.0, 0.0), Pt(2.0, 2.0), Pt(0.0, 2.0)})
+		counter := Pol([]Point[float64]{Pt(0.0, 2.0), Pt(2.0, 2.0), Pt(2.0, 0.0), Pt(0.0, 0.0)})
+
+		for _, point := range []Point[float64]{Pt(1.0, 1.0), Pt(0.5, 1.5), Pt(1.9, 0.1)} {
+			assert.True(t, clockwise.Contains(point), point.String())
+			assert.True(t, counter.Contains(point), point.String())
+		}
+	})
+	t.Run("ray through a vertex is counted once", func(t *testing.T) {
+		diamond := Pol([]Point[int]{Pt(0, -2), Pt(2, 0), Pt(0, 2), Pt(-2, 0)})
+
+		assert.True(t, diamond.Contains(Pt(-1, 0)))
+		assert.False(t, diamond.Contains(Pt(-3, 0)))
+		assert.False(t, diamond.Contains(Pt(3, 0)))
+	})
+	t.Run("concave notch is outside", func(t *testing.T) {
+		notched := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(2, 1), Pt(0, 4)})
+
+		assert.True(t, notched.Contains(Pt(1, 1)))
+		assert.False(t, notched.Contains(Pt(2, 3)))
+	})
+	t.Run("float is tolerant at the boundary", func(t *testing.T) {
+		triangle := Pol(triangleVertices())
+
+		assert.True(t, triangle.Contains(Pt(2.0, 0.5)))
+		assert.True(t, triangle.Contains(Pt(1.25, 0.25-Delta/2)))
+		assert.False(t, triangle.Contains(Pt(1.25, 0.25-2*Delta)))
+	})
+	t.Run("degenerate polygons contain only their points", func(t *testing.T) {
+		assert.False(t, Pol([]Point[int]{}).Contains(Pt(0, 0)))
+		assert.True(t, Pol([]Point[int]{Pt(1, 1)}).Contains(Pt(1, 1)))
+		assert.True(t, Pol([]Point[int]{Pt(0, 0), Pt(4, 0)}).Contains(Pt(2, 0)))
+		assert.False(t, Pol([]Point[int]{Pt(0, 0), Pt(4, 0)}).Contains(Pt(2, 1)))
 	})
 }
 
-func TestPolygon_EnclosesSegment(t *testing.T) {
+func BenchmarkPolygon_Contains(b *testing.B) {
+	polygon := benchPolygon()
+	inside, outside, far := Pt(10.0, 20.0), Pt(99.0, 99.0), Pt(500.0, 500.0)
+
+	b.Run("inside", func(b *testing.B) {
+		for b.Loop() {
+			sinkBool = polygon.Contains(inside)
+		}
+	})
+	b.Run("outside within the extent", func(b *testing.B) {
+		for b.Loop() {
+			sinkBool = polygon.Contains(outside)
+		}
+	})
+	b.Run("outside the extent", func(b *testing.B) {
+		for b.Loop() {
+			sinkBool = polygon.Contains(far)
+		}
+	})
+}
+
+func TestPolygon_ContainsCircle(t *testing.T) {
+	notched := Pol(notchedVertices())
+
+	t.Run("touching the sides and a reflex vertex from inside counts", func(t *testing.T) {
+		assert.True(t, notched.ContainsCircle(Circ(Pt(4, 1), 1)))
+		assert.True(t, notched.ContainsCircle(Circ(Pt(1, 4), 1)))
+	})
+	t.Run("reaching into the notch or past a side", func(t *testing.T) {
+		assert.False(t, notched.Float().ContainsCircle(Circ(Pt(4.0, 1.0), 1.1)))
+		assert.False(t, notched.ContainsCircle(Circ(Pt(4, 1), 2)))
+	})
+	t.Run("an empty polygon encloses nothing", func(t *testing.T) {
+		assert.False(t, Pol[int](nil).ContainsCircle(Circ(Pt(0, 0), 0)))
+	})
+}
+
+func TestPolygon_ContainsSegment(t *testing.T) {
 	backward := notchedVertices()
 	slices.Reverse(backward)
 	notched, reversed := Pol(notchedVertices()), Pol(backward)
 
 	t.Run("inside and along an edge", func(t *testing.T) {
-		assert.True(t, notched.EnclosesSegment(Seg(Pt(1, 1), Pt(7, 1))))
-		assert.True(t, notched.EnclosesSegment(Seg(Pt(0, 0), Pt(8, 0))))
+		assert.True(t, notched.ContainsSegment(Seg(Pt(1, 1), Pt(7, 1))))
+		assert.True(t, notched.ContainsSegment(Seg(Pt(0, 0), Pt(8, 0))))
 	})
 	t.Run("an endpoint in the notch", func(t *testing.T) {
-		assert.False(t, notched.EnclosesSegment(Seg(Pt(1, 7), Pt(4, 7))))
+		assert.False(t, notched.ContainsSegment(Seg(Pt(1, 7), Pt(4, 7))))
 	})
 	t.Run("crossing the edges of the notch", func(t *testing.T) {
-		assert.False(t, notched.EnclosesSegment(Seg(Pt(1, 5), Pt(7, 5))))
+		assert.False(t, notched.ContainsSegment(Seg(Pt(1, 5), Pt(7, 5))))
 	})
 	t.Run("leaving through two reflex vertices without crossing an edge", func(t *testing.T) {
-		assert.False(t, notched.EnclosesSegment(Seg(Pt(1, 4), Pt(7, 4))))
-		assert.False(t, reversed.EnclosesSegment(Seg(Pt(1, 4), Pt(7, 4))))
+		assert.False(t, notched.ContainsSegment(Seg(Pt(1, 4), Pt(7, 4))))
+		assert.False(t, reversed.ContainsSegment(Seg(Pt(1, 4), Pt(7, 4))))
 	})
 	t.Run("a chord across the notch, touching an edge at each end", func(t *testing.T) {
-		assert.False(t, notched.EnclosesSegment(Seg(Pt(3, 3), Pt(5, 3))))
-		assert.False(t, reversed.EnclosesSegment(Seg(Pt(3, 3), Pt(5, 3))))
+		assert.False(t, notched.ContainsSegment(Seg(Pt(3, 3), Pt(5, 3))))
+		assert.False(t, reversed.ContainsSegment(Seg(Pt(3, 3), Pt(5, 3))))
 	})
 	t.Run("passing a reflex vertex without leaving", func(t *testing.T) {
-		assert.True(t, notched.EnclosesSegment(Seg(Pt(1, 2), Pt(7, 2))))
-		assert.True(t, reversed.EnclosesSegment(Seg(Pt(1, 2), Pt(7, 2))))
+		assert.True(t, notched.ContainsSegment(Seg(Pt(1, 2), Pt(7, 2))))
+		assert.True(t, reversed.ContainsSegment(Seg(Pt(1, 2), Pt(7, 2))))
 	})
 	t.Run("ending on a reflex vertex", func(t *testing.T) {
-		assert.True(t, notched.EnclosesSegment(Seg(Pt(1, 4), Pt(2, 4))))
-		assert.True(t, notched.EnclosesSegment(Seg(Pt(4, 0), Pt(4, 2))))
+		assert.True(t, notched.ContainsSegment(Seg(Pt(1, 4), Pt(2, 4))))
+		assert.True(t, notched.ContainsSegment(Seg(Pt(4, 0), Pt(4, 2))))
 	})
 	t.Run("an empty polygon encloses nothing", func(t *testing.T) {
-		assert.False(t, Pol[int](nil).EnclosesSegment(Seg(Pt(0, 0), Pt(0, 0))))
+		assert.False(t, Pol[int](nil).ContainsSegment(Seg(Pt(0, 0), Pt(0, 0))))
 	})
 	t.Run("every point of an enclosed segment is contained", func(t *testing.T) {
 		for _, p := range append(outlineFixtures(), notched.Float()) {
 			for _, s := range segmentFixtures {
-				if !p.EnclosesSegment(s) {
+				if !p.ContainsSegment(s) {
 					continue
 				}
 
@@ -973,66 +1122,66 @@ func TestPolygon_EnclosesSegment(t *testing.T) {
 			{Pt(0, 0), Pt(4, 0), Pt(4, 2), Pt(2, 2), Pt(2, 2), Pt(2, 4), Pt(0, 4)},
 			{Pt(2, 2), Pt(2, 4), Pt(0, 4), Pt(0, 0), Pt(4, 0), Pt(4, 2), Pt(2, 2)},
 		} {
-			assert.True(t, Pol(vertices).EnclosesSegment(through), fmt.Sprintf("%s: ", Pol(vertices)))
+			assert.True(t, Pol(vertices).ContainsSegment(through), fmt.Sprintf("%s: ", Pol(vertices)))
 		}
 	})
 }
 
-func TestPolygon_EnclosesPolygon(t *testing.T) {
+func TestPolygon_ContainsPolygon(t *testing.T) {
 	notched := Pol(notchedVertices())
 
 	t.Run("inside and across the notch", func(t *testing.T) {
-		assert.True(t, notched.EnclosesPolygon(Pol([]Point[int]{Pt(1, 1), Pt(7, 1), Pt(4, 0)})))
-		assert.False(t, notched.EnclosesPolygon(Pol([]Point[int]{Pt(1, 3), Pt(7, 3), Pt(4, 1)})))
+		assert.True(t, notched.ContainsPolygon(Pol([]Point[int]{Pt(1, 1), Pt(7, 1), Pt(4, 0)})))
+		assert.False(t, notched.ContainsPolygon(Pol([]Point[int]{Pt(1, 3), Pt(7, 3), Pt(4, 1)})))
 	})
 	t.Run("an empty polygon on either side encloses nothing", func(t *testing.T) {
-		assert.False(t, notched.EnclosesPolygon(Pol[int](nil)))
-		assert.False(t, Pol[int](nil).EnclosesPolygon(notched))
+		assert.False(t, notched.ContainsPolygon(Pol[int](nil)))
+		assert.False(t, Pol[int](nil).ContainsPolygon(notched))
 	})
 	t.Run("a polygon with repeated vertices encloses itself", func(t *testing.T) {
 		for _, vertices := range [][]Point[int]{
 			{Pt(0, 0), Pt(4, 0), Pt(4, 2), Pt(2, 2), Pt(2, 2), Pt(2, 4), Pt(0, 4)},
 			{Pt(0, 0), Pt(4, 0), Pt(4, 2), Pt(2, 2), Pt(2, 4), Pt(0, 4), Pt(0, 0)},
 		} {
-			assert.True(t, Pol(vertices).EnclosesPolygon(Pol(vertices)), fmt.Sprintf("%s: ", Pol(vertices)))
+			assert.True(t, Pol(vertices).ContainsPolygon(Pol(vertices)), fmt.Sprintf("%s: ", Pol(vertices)))
 		}
 	})
 }
 
-func TestPolygon_EnclosesRectangle(t *testing.T) {
+func TestPolygon_ContainsRectangle(t *testing.T) {
 	notched := Pol(notchedVertices())
 
 	t.Run("an edge along the bottom vertex of the notch stays inside", func(t *testing.T) {
-		assert.True(t, notched.EnclosesRectangle(Rect(Pt(4, 1), Sz(6, 2))))
-		assert.False(t, notched.EnclosesRectangle(Rect(Pt(4, 2), Sz(6, 2))))
+		assert.True(t, notched.ContainsRectangle(Rect(Pt(4, 1), Sz(6, 2))))
+		assert.False(t, notched.ContainsRectangle(Rect(Pt(4, 2), Sz(6, 2))))
 	})
 }
 
-func TestPolygon_EnclosesRegularPolygon(t *testing.T) {
+func TestPolygon_ContainsRegularPolygon(t *testing.T) {
 	notched := Pol(notchedVertices())
 
 	t.Run("beside the notch and reaching into it", func(t *testing.T) {
-		assert.True(t, notched.EnclosesRegularPolygon(RegPol(Pt(2, 2), Sz(1, 1), 4, 0, 0)))
-		assert.False(t, notched.EnclosesRegularPolygon(RegPol(Pt(4, 2), Sz(2, 2), 4, 0, 0)))
+		assert.True(t, notched.ContainsRegularPolygon(RegPol(Pt(2, 2), Sz(1, 1), 4, 0, 0)))
+		assert.False(t, notched.ContainsRegularPolygon(RegPol(Pt(4, 2), Sz(2, 2), 4, 0, 0)))
 	})
 	t.Run("an empty polygon is enclosed by nothing", func(t *testing.T) {
-		assert.False(t, notched.EnclosesRegularPolygon(RegPol(Pt(2, 2), Sz(1, 1), 0, 0, 0)))
+		assert.False(t, notched.ContainsRegularPolygon(RegPol(Pt(2, 2), Sz(1, 1), 0, 0, 0)))
 	})
 	t.Run("allocates nothing", func(t *testing.T) {
 		inside := RegPol(Pt(2, 2), Sz(1, 1), 6, Pi/5, 0)
 
 		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
-			sinkBool = notched.EnclosesRegularPolygon(inside)
+			sinkBool = notched.ContainsRegularPolygon(inside)
 		}), 0)
 	})
 }
 
-func TestPolygon_EnclosesBox(t *testing.T) {
+func TestPolygon_ContainsBox(t *testing.T) {
 	notched := Pol(notchedVertices())
 
 	t.Run("below the notch and across it", func(t *testing.T) {
-		assert.True(t, notched.EnclosesBox(BoxFromMinMax(Pt(1, 0), Pt(7, 2))))
-		assert.False(t, notched.EnclosesBox(BoxFromMinMax(Pt(1, 1), Pt(7, 3))))
+		assert.True(t, notched.ContainsBox(BoxFromMinMax(Pt(1, 0), Pt(7, 2))))
+		assert.False(t, notched.ContainsBox(BoxFromMinMax(Pt(1, 1), Pt(7, 3))))
 	})
 }
 
@@ -1056,16 +1205,6 @@ func TestPolygon_IntersectsSegment(t *testing.T) {
 	})
 }
 
-func TestPolygon_IntersectionSegment(t *testing.T) {
-	t.Run("matches Segment.IntersectionPolygon", func(t *testing.T) {
-		for _, p := range polygonFixtures() {
-			for _, s := range segmentFixtures {
-				geomtest.AssertVertices(t, p.IntersectionSegment(s), s.IntersectionPolygon(p), fmt.Sprintf("%s → %s: ", p, s))
-			}
-		}
-	})
-}
-
 func TestPolygon_IntersectsRay(t *testing.T) {
 	t.Run("mirrors Ray.IntersectsPolygon", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
@@ -1076,31 +1215,11 @@ func TestPolygon_IntersectsRay(t *testing.T) {
 	})
 }
 
-func TestPolygon_IntersectionRay(t *testing.T) {
-	t.Run("matches Ray.IntersectionPolygon", func(t *testing.T) {
-		for _, p := range polygonFixtures() {
-			for _, r := range rayFixtures {
-				geomtest.AssertVertices(t, p.IntersectionRay(r), r.IntersectionPolygon(p), fmt.Sprintf("%s → %s: ", p, r))
-			}
-		}
-	})
-}
-
 func TestPolygon_IntersectsLine(t *testing.T) {
 	t.Run("mirrors Line.IntersectsPolygon", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
 			for _, l := range lineFixtures {
 				assert.Equal(t, p.IntersectsLine(l), l.IntersectsPolygon(p), fmt.Sprintf("%s → %s: ", p, l))
-			}
-		}
-	})
-}
-
-func TestPolygon_IntersectionLine(t *testing.T) {
-	t.Run("matches Line.IntersectionPolygon", func(t *testing.T) {
-		for _, p := range polygonFixtures() {
-			for _, l := range lineFixtures {
-				geomtest.AssertVertices(t, p.IntersectionLine(l), l.IntersectionPolygon(p), fmt.Sprintf("%s → %s: ", p, l))
 			}
 		}
 	})
@@ -1245,6 +1364,286 @@ func TestPolygon_IntersectsBox(t *testing.T) {
 				assert.Equal(t, p.IntersectsBox(b), p.IntersectsPolygon(b.Rectangle().Polygon()), fmt.Sprintf("%s → %s: ", p, b))
 			}
 		}
+	})
+}
+
+func TestPolygon_IntersectionSegment(t *testing.T) {
+	t.Run("matches Segment.IntersectionPolygon", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			for _, s := range segmentFixtures {
+				geomtest.AssertVertices(t, p.IntersectionSegment(s), s.IntersectionPolygon(p), fmt.Sprintf("%s → %s: ", p, s))
+			}
+		}
+	})
+}
+
+func TestPolygon_IntersectionRay(t *testing.T) {
+	t.Run("matches Ray.IntersectionPolygon", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			for _, r := range rayFixtures {
+				geomtest.AssertVertices(t, p.IntersectionRay(r), r.IntersectionPolygon(p), fmt.Sprintf("%s → %s: ", p, r))
+			}
+		}
+	})
+}
+
+func TestPolygon_IntersectionLine(t *testing.T) {
+	t.Run("matches Line.IntersectionPolygon", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			for _, l := range lineFixtures {
+				geomtest.AssertVertices(t, p.IntersectionLine(l), l.IntersectionPolygon(p), fmt.Sprintf("%s → %s: ", p, l))
+			}
+		}
+	})
+}
+
+func TestPolygon_ClipPolygon(t *testing.T) {
+	square := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(0, 4)})
+	notched := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(2, 1), Pt(0, 4)})
+	triangle := Pol([]Point[int]{Pt(2, -2), Pt(6, 2), Pt(2, 6)})
+
+	t.Run("is the part within both, in the winding of the polygon", func(t *testing.T) {
+		part, ok := square.ClipPolygon(triangle)
+
+		assert.True(t, ok)
+		geomtest.AssertPolygon(t, part, Pol([]Point[int]{Pt(2, 0), Pt(4, 0), Pt(4, 4), Pt(2, 4)}))
+	})
+	t.Run("a region wound the other way cuts alike", func(t *testing.T) {
+		part, ok := square.ClipPolygon(Pol([]Point[int]{Pt(2, 6), Pt(6, 2), Pt(2, -2)}))
+
+		assert.True(t, ok)
+		geomtest.AssertPolygon(t, part, Pol([]Point[int]{Pt(2, 0), Pt(4, 0), Pt(4, 4), Pt(2, 4)}))
+	})
+	t.Run("the concave one is cut, whichever asks", func(t *testing.T) {
+		expected := Pol([]Point[int]{Pt(2, 0), Pt(4, 0), Pt(4, 4), Pt(2, 1)})
+
+		part, ok := notched.ClipPolygon(triangle)
+
+		assert.True(t, ok)
+		geomtest.AssertPolygon(t, part, expected)
+
+		part, ok = triangle.ClipPolygon(notched)
+
+		assert.True(t, ok)
+		geomtest.AssertPolygon(t, part, expected)
+	})
+	t.Run("two concave polygons have no part", func(t *testing.T) {
+		part, ok := notched.ClipPolygon(notched)
+
+		assert.False(t, ok)
+		assert.Nil(t, part.Points)
+	})
+	t.Run("a region with a repeated vertex cuts by its other edges", func(t *testing.T) {
+		part, ok := square.ClipPolygon(Pol([]Point[int]{Pt(2, -2), Pt(2, -2), Pt(6, 2), Pt(2, 6)}))
+
+		assert.True(t, ok)
+		geomtest.AssertPolygon(t, part, Pol([]Point[int]{Pt(2, 0), Pt(4, 0), Pt(4, 4), Pt(2, 4)}))
+	})
+	t.Run("polygons apart have no part", func(t *testing.T) {
+		_, ok := square.ClipPolygon(Pol([]Point[int]{Pt(10, 10), Pt(12, 10), Pt(12, 12)}))
+
+		assert.False(t, ok)
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			for _, region := range polygonFixtures() {
+				part, ok := p.ClipPolygon(region)
+				message := fmt.Sprintf("%s → %s: ", p, region)
+
+				assertPolygonClipped(t, p, part, ok, p.IntersectsPolygon(region) && (p.IsConvex() || region.IsConvex()), region.Contains, region.Area(), message)
+			}
+		}
+	})
+}
+
+func TestPolygon_AppendClipPolygon(t *testing.T) {
+	square := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(0, 4)})
+	triangle := Pol([]Point[int]{Pt(2, -2), Pt(6, 2), Pt(2, 6)})
+
+	t.Run("appends the part after the points in dst", func(t *testing.T) {
+		geomtest.AssertVertices(t, square.AppendClipPolygon([]Point[int]{Pt(9, 9)}, triangle), []Point[int]{Pt(9, 9), Pt(2, 0), Pt(4, 0), Pt(4, 4), Pt(2, 4)})
+	})
+	t.Run("no part leaves dst as it is", func(t *testing.T) {
+		assert.Nil(t, square.AppendClipPolygon(nil, Pol([]Point[int]{Pt(10, 10), Pt(12, 10), Pt(12, 12)})))
+	})
+	t.Run("a buffer with room allocates nothing and a convex polygon allocates once", func(t *testing.T) {
+		buffer := make([]Point[int], 0, 2*(len(square.Points)+len(triangle.Points)))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = square.AppendClipPolygon(buffer[:0], triangle)
+		}), 0)
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = square.AppendClipPolygon(nil, triangle)
+		}), 1)
+	})
+}
+
+func TestPolygon_ClipRectangle(t *testing.T) {
+	square := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(4.0, 4.0), Pt(0.0, 4.0)})
+
+	t.Run("is the part inside a turned rectangle", func(t *testing.T) {
+		part, ok := square.ClipRectangle(Rect(Pt(4.0, 2.0), Sz(4.0, 4.0)).Rotate(Pi / 4))
+		reach := 4 - 2*Sqrt2
+
+		assert.True(t, ok)
+		geomtest.AssertPolygon(t, part, Pol([]Point[float64]{Pt(reach, 2.0), Pt(reach+2, 0.0), Pt(4.0, 0.0), Pt(4.0, 4.0), Pt(reach+2, 4.0)}))
+	})
+	t.Run("a rectangle apart or of no area leaves nothing", func(t *testing.T) {
+		part, ok := square.ClipRectangle(Rect(Pt(10.0, 10.0), Sz(2.0, 2.0)))
+
+		assert.False(t, ok)
+		assert.Nil(t, part.Points)
+
+		_, ok = square.ClipRectangle(Rect(Pt(2.0, 2.0), Sz(0.0, 2.0)))
+		assert.False(t, ok)
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			for _, r := range rectFixtures {
+				part, ok := p.ClipRectangle(r)
+
+				assertPolygonClipped(t, p, part, ok, p.IntersectsRectangle(r) && r.Size.IsPositive(), r.Contains, r.Area(), fmt.Sprintf("%s → %s: ", p, r))
+			}
+		}
+	})
+}
+
+func TestPolygon_AppendClipRectangle(t *testing.T) {
+	square := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(0, 4)})
+	rectangle := Rect(Pt(4, 4), Sz(4, 4))
+
+	t.Run("appends the part after the points in dst", func(t *testing.T) {
+		geomtest.AssertVertices(t, square.AppendClipRectangle([]Point[int]{Pt(9, 9)}, rectangle), []Point[int]{Pt(9, 9), Pt(2, 2), Pt(4, 2), Pt(4, 4), Pt(2, 4)})
+	})
+	t.Run("a buffer with room allocates nothing and a convex polygon allocates once", func(t *testing.T) {
+		buffer := make([]Point[int], 0, 16)
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = square.AppendClipRectangle(buffer[:0], rectangle)
+		}), 0)
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = square.AppendClipRectangle(nil, rectangle)
+		}), 1)
+	})
+}
+
+func TestPolygon_ClipRegularPolygon(t *testing.T) {
+	square := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(4.0, 4.0), Pt(0.0, 4.0)})
+
+	t.Run("is the part inside the regular polygon", func(t *testing.T) {
+		part, ok := square.ClipRegularPolygon(RegPol(Pt(0.0, 0.0), SzU(2.0), 4, 0, 0))
+
+		assert.True(t, ok)
+		geomtest.AssertPolygon(t, part, Pol([]Point[float64]{Pt(0.0, 2.0), Pt(0.0, 0.0), Pt(2.0, 0.0)}))
+	})
+	t.Run("a regular polygon apart or of no area leaves nothing", func(t *testing.T) {
+		part, ok := square.ClipRegularPolygon(RegPol(Pt(10.0, 10.0), SzU(2.0), 6, 0, 0))
+
+		assert.False(t, ok)
+		assert.Nil(t, part.Points)
+
+		_, ok = square.ClipRegularPolygon(RegPol(Pt(2.0, 2.0), SzU(2.0), 2, 0, 0))
+		assert.False(t, ok)
+
+		_, ok = square.ClipRegularPolygon(RegPol(Pt(2.0, 2.0), Sz(2.0, 0.0), 6, 0, 0))
+		assert.False(t, ok)
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			for _, rp := range regularPolygonFixtures {
+				part, ok := p.ClipRegularPolygon(rp)
+
+				assertPolygonClipped(t, p, part, ok, p.IntersectsRegularPolygon(rp) && rp.Area() > 0, rp.Contains, rp.Area(), fmt.Sprintf("%s → %s: ", p, rp))
+			}
+		}
+	})
+}
+
+func TestPolygon_AppendClipRegularPolygon(t *testing.T) {
+	square := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(4.0, 4.0), Pt(0.0, 4.0)})
+	diamond := RegPol(Pt(0.0, 0.0), SzU(2.0), 4, 0, 0)
+
+	t.Run("appends the part after the points in dst", func(t *testing.T) {
+		geomtest.AssertVertices(t, square.AppendClipRegularPolygon(bufferWith(prefixPoint), diamond), []Point[float64]{prefixPoint, Pt(0.0, 2.0), Pt(0.0, 0.0), Pt(2.0, 0.0)})
+	})
+	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
+		buffer := make([]Point[float64], 0, 16)
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkBool = len(square.AppendClipRegularPolygon(buffer[:0], diamond)) > 0
+		}), 0)
+	})
+}
+
+func TestPolygon_ClipBox(t *testing.T) {
+	square := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(0, 4)})
+	notched := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(2, 1), Pt(0, 4)})
+
+	t.Run("is the part a viewport shows", func(t *testing.T) {
+		part, ok := square.ClipBox(Bx(Pt(2, 2), Pt(6, 6)))
+
+		assert.True(t, ok)
+		geomtest.AssertPolygon(t, part, Pol([]Point[int]{Pt(2, 2), Pt(4, 2), Pt(4, 4), Pt(2, 4)}))
+	})
+	t.Run("a box within the polygon is the box", func(t *testing.T) {
+		part, ok := square.ClipBox(Bx(Pt(1, 1), Pt(2, 2)))
+
+		assert.True(t, ok)
+		geomtest.AssertPolygon(t, part, Pol([]Point[int]{Pt(1, 2), Pt(1, 1), Pt(2, 1), Pt(2, 2)}))
+	})
+	t.Run("a concave polygon cut in two comes back as one outline", func(t *testing.T) {
+		part, ok := notched.ClipBox(Bx(Pt(-1, 2), Pt(5, 6)))
+
+		assert.True(t, ok)
+		geomtest.AssertPolygon(t, part, Pol([]Point[int]{Pt(0, 2), Pt(4, 2), Pt(4, 4), Pt(3, 2), Pt(1, 2), Pt(0, 4)}))
+	})
+	t.Run("a box touching the polygon leaves the point or the stretch", func(t *testing.T) {
+		part, ok := square.ClipBox(Bx(Pt(4, 4), Pt(6, 6)))
+
+		assert.True(t, ok)
+		geomtest.AssertPolygon(t, part, Pol([]Point[int]{Pt(4, 4)}))
+
+		part, ok = square.ClipBox(Bx(Pt(4, 1), Pt(6, 2)))
+
+		assert.True(t, ok)
+		geomtest.AssertPolygon(t, part, Pol([]Point[int]{Pt(4, 1), Pt(4, 2)}))
+	})
+	t.Run("a box apart or of no area leaves nothing", func(t *testing.T) {
+		part, ok := square.ClipBox(Bx(Pt(5, 1), Pt(6, 2)))
+
+		assert.False(t, ok)
+		assert.Nil(t, part.Points)
+
+		_, ok = square.ClipBox(Bx(Pt(1, 1), Pt(1, 3)))
+		assert.False(t, ok)
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			for _, b := range boxFixtures {
+				part, ok := p.ClipBox(b)
+
+				assertPolygonClipped(t, p, part, ok, p.IntersectsBox(b) && b.Size().IsPositive(), b.Contains, b.Size().Area(), fmt.Sprintf("%s → %s: ", p, b))
+			}
+		}
+	})
+}
+
+func TestPolygon_AppendClipBox(t *testing.T) {
+	square := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(0, 4)})
+	box := Bx(Pt(2, 2), Pt(6, 6))
+
+	t.Run("appends the part after the points in dst", func(t *testing.T) {
+		geomtest.AssertVertices(t, square.AppendClipBox([]Point[int]{Pt(9, 9)}, box), []Point[int]{Pt(9, 9), Pt(2, 2), Pt(4, 2), Pt(4, 4), Pt(2, 4)})
+	})
+	t.Run("a buffer with room allocates nothing and a convex polygon allocates once", func(t *testing.T) {
+		buffer := make([]Point[int], 0, 16)
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = square.AppendClipBox(buffer[:0], box)
+		}), 0)
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = square.AppendClipBox(nil, box)
+		}), 1)
 	})
 }
 
@@ -1582,6 +1981,20 @@ func TestPolygon_Immutable(t *testing.T) {
 	p.ConvexHull()
 
 	geomtest.AssertVertices(t, p.Points, []Point[int]{Pt(0, 0), Pt(2, 0)})
+}
+
+// assertPolygonClipped checks the part a Clip method of Polygon returns over the fixtures: there is one
+// exactly where it is expected, where the polygon and the region intersect and the region can
+// cut, and its vertices lie within both, around no more area than either.
+func assertPolygonClipped(t *testing.T, p, part Polygon[float64], ok, expected bool, within func(Point[float64]) bool, area float64, message string) {
+	t.Helper()
+
+	assert.Equal(t, ok, expected, message)
+	assert.Equal(t, ok, len(part.Points) > 0, message)
+	assert.True(t, LessOrEqual(part.Area(), min(p.Area(), area)), message)
+	for _, vertex := range part.Points {
+		assert.True(t, p.Contains(vertex) && within(vertex), message+vertex.String())
+	}
 }
 
 // squareVertices and triangleVertices build fresh slices, so a test that mutates one

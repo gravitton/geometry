@@ -8,10 +8,10 @@ package geom
 // needs to know which one.
 type Shape[T Number] interface {
 	Bounds() Box[T]
-	Contains(point Point[T]) bool
 	DistanceTo(point Point[T]) float64
 	DistanceSquaredTo(point Point[T]) float64
 	Nearest(point Point[T]) Point[T]
+	Contains(point Point[T]) bool
 }
 
 // Collider is a shape tested against every shape: Circle, Segment, Ray, Line, Polygon, Rectangle,

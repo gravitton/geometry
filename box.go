@@ -105,11 +105,12 @@ func (b Box[T]) Translate(vector Vector[T]) Box[T] {
 	return Box[T]{b.Min.Add(vector), b.Max.Add(vector)}
 }
 
-// Canonical creates a new Box with the corners ordered, Min the lesser on each axis, as the
-// constructors build it: the box itself where it is well formed. It repairs a struct literal or
-// decoded JSON with Min past Max before Contains, Nearest or IntersectsBox read it.
-func (b Box[T]) Canonical() Box[T] {
-	return Box[T]{Point[T]{min(b.Min.X, b.Max.X), min(b.Min.Y, b.Max.Y)}, Point[T]{max(b.Min.X, b.Max.X), max(b.Min.Y, b.Max.Y)}}
+// Clamp creates a new Box moved so that it lies within the given one, keeping its size: the box
+// itself where it already lies exactly within, and otherwise moved by the shortest distance that
+// brings it in, so one enclosed only within the tolerance is moved onto the boundary. On an axis
+// along which it is the larger it is centered on the other instead.
+func (b Box[T]) Clamp(box Box[T]) Box[T] {
+	return b.Translate(b.clampOffset(box))
 }
 
 // Inset creates a new Box inset by the given padding amounts, each edge moved in by its own. An
@@ -129,204 +130,11 @@ func (b Box[T]) Outset(padding Padding[T]) Box[T] {
 	return b.Inset(padding.Negate())
 }
 
-// Clamp creates a new Box moved so that it lies within the given one, keeping its size: the box
-// itself where it already lies exactly within, and otherwise moved by the shortest distance that
-// brings it in, so one enclosed only within the tolerance is moved onto the boundary. On an axis
-// along which it is the larger it is centered on the other instead.
-func (b Box[T]) Clamp(box Box[T]) Box[T] {
-	return b.Translate(b.clampOffset(box))
-}
-
-// Contains reports whether the given point lies within the box, boundary included within
-// the tolerance: DistanceSquaredTo is zero there.
-func (b Box[T]) Contains(point Point[T]) bool {
-	return b.DistanceSquaredTo(point) == 0
-}
-
-// DistanceTo returns the distance from the given point to the nearest point of the box: zero
-// exactly where Contains holds, so a point within the tolerance of the boundary is at distance
-// zero rather than at the rounding error that put it there.
-func (b Box[T]) DistanceTo(point Point[T]) float64 {
-	return math.Sqrt(b.DistanceSquaredTo(point))
-}
-
-// DistanceSquaredTo returns the squared distance DistanceTo takes the root of, faster for
-// comparisons: zero for a point inside, or within the tolerance of the boundary, and otherwise
-// the sum of the squared gaps beyond the box on the two axes, with no edge to walk. It is a
-// float64 even for an integer T, so the box answers as every Shape does.
-func (b Box[T]) DistanceSquaredTo(point Point[T]) float64 {
-	return b.distanceSquaredToBox(Box[T]{point, point})
-}
-
-// Nearest returns the point of the box nearest to the given point: the point itself exactly
-// where Contains holds, and otherwise the point clamped onto the box on each axis, a lattice
-// point for an integer T.
-func (b Box[T]) Nearest(point Point[T]) Point[T] {
-	if b.Contains(point) {
-		return point
-	}
-
-	return Point[T]{Clamp(point.X, b.Min.X, b.Max.X), Clamp(point.Y, b.Min.Y, b.Max.Y)}
-}
-
-// EnclosesCircle reports whether the circle lies within the box: its center is contained and
-// every side is at least the radius away, within the tolerance, the gap from the center to the
-// nearest side taken on the two axes as DistanceSquaredTo takes the gap beyond them, so a circle
-// touching a side from inside is enclosed.
-func (b Box[T]) EnclosesCircle(circle Circle[T]) bool {
-	if !b.Contains(circle.Center) {
-		return false
-	}
-
-	a, c, center := b.Min.Float(), b.Max.Float(), circle.Center.Float()
-	gap := max(min(center.X-a.X, c.X-center.X, center.Y-a.Y, c.Y-center.Y), 0)
-
-	return greaterOrEqualSquared(float64(gap*gap), float64(circle.Radius), circle.epsilonWith(b.magnitude()))
-}
-
-// EnclosesSegment reports whether the segment lies within the box: both endpoints are contained,
-// within the tolerance, and a box holds every point between two it contains.
-func (b Box[T]) EnclosesSegment(segment Segment[T]) bool {
-	return b.Contains(segment.Start) && b.Contains(segment.End)
-}
-
-// EnclosesPolygon reports whether the polygon lies within the box: every vertex is contained,
-// within the tolerance. An empty polygon is enclosed by nothing.
-func (b Box[T]) EnclosesPolygon(polygon Polygon[T]) bool {
-	if polygon.IsEmpty() {
-		return false
-	}
-
-	for vertex := range polygon.Vertices() {
-		if !b.Contains(vertex) {
-			return false
-		}
-	}
-
-	return true
-}
-
-// EnclosesRectangle reports whether the rectangle lies within the box: every corner is
-// contained, within the tolerance, whatever its angle.
-func (b Box[T]) EnclosesRectangle(rectangle Rectangle[T]) bool {
-	for vertex := range rectangle.Vertices() {
-		if !b.Contains(vertex) {
-			return false
-		}
-	}
-
-	return true
-}
-
-// EnclosesRegularPolygon reports whether the regular polygon lies within the box: every vertex is
-// contained, within the tolerance. An empty polygon is enclosed by nothing.
-func (b Box[T]) EnclosesRegularPolygon(polygon RegularPolygon[T]) bool {
-	if polygon.IsEmpty() {
-		return false
-	}
-
-	for vertex := range polygon.Vertices() {
-		if !b.Contains(vertex) {
-			return false
-		}
-	}
-
-	return true
-}
-
-// EnclosesBox reports whether the given box lies within this one: both its corners are
-// contained, within the tolerance.
-func (b Box[T]) EnclosesBox(box Box[T]) bool {
-	return b.Contains(box.Min) && b.Contains(box.Max)
-}
-
-// IntersectsCircle reports whether the box and the circle overlap, as Circle.IntersectsBox does.
-func (b Box[T]) IntersectsCircle(circle Circle[T]) bool {
-	return circle.IntersectsBox(b)
-}
-
-// IntersectsSegment reports whether the box and the segment share a point, as
-// Segment.IntersectsBox does.
-func (b Box[T]) IntersectsSegment(segment Segment[T]) bool {
-	return segment.IntersectsBox(b)
-}
-
-// IntersectionSegment returns the points where the segment crosses the box boundary, as
-// Segment.IntersectionBox does.
-func (b Box[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
-	return segment.IntersectionBox(b)
-}
-
-// IntersectsRay reports whether the box and the ray share a point, as
-// Ray.IntersectsBox does.
-func (b Box[T]) IntersectsRay(ray Ray[T]) bool {
-	return ray.IntersectsBox(b)
-}
-
-// IntersectionRay returns the points where the ray crosses the box boundary, as
-// Ray.IntersectionBox does.
-func (b Box[T]) IntersectionRay(ray Ray[T]) []Point[T] {
-	return ray.IntersectionBox(b)
-}
-
-// IntersectsLine reports whether the box and the line share a point, as
-// Line.IntersectsBox does.
-func (b Box[T]) IntersectsLine(line Line[T]) bool {
-	return line.IntersectsBox(b)
-}
-
-// IntersectionLine returns the points where the line crosses the box boundary, as
-// Line.IntersectionBox does.
-func (b Box[T]) IntersectionLine(line Line[T]) []Point[T] {
-	return line.IntersectionBox(b)
-}
-
-// IntersectsPolygon reports whether the box and the polygon share a point, as
-// Polygon.IntersectsBox does.
-func (b Box[T]) IntersectsPolygon(polygon Polygon[T]) bool {
-	return polygon.IntersectsBox(b)
-}
-
-// IntersectsRectangle reports whether the box and the rectangle share a point, as
-// Rectangle.IntersectsBox does.
-func (b Box[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
-	return rectangle.IntersectsBox(b)
-}
-
-// IntersectsRegularPolygon reports whether the box and the regular polygon share a point, as
-// RegularPolygon.IntersectsBox does.
-func (b Box[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
-	return polygon.IntersectsBox(b)
-}
-
-// IntersectsBox reports whether the boxes share a point: the gap between them on the two axes
-// is zero within the tolerance, the one comparison DistanceSquaredTo makes, so boxes that touch
-// at an edge or a corner intersect, the same closed convention as Contains.
-func (b Box[T]) IntersectsBox(box Box[T]) bool {
-	return b.distanceSquaredToBox(box) == 0
-}
-
-// IntersectionBox returns the box common to both, and false when they do not intersect.
-// Touching boxes intersect in a box of zero width or height, and boxes meeting at a corner in
-// the zero-sized box at that corner, exactly where IntersectsBox holds, which is asked first:
-// a corner admitted by the tolerance is placed on the boundary of the other box, never beyond
-// it.
-func (b Box[T]) IntersectionBox(box Box[T]) (Box[T], bool) {
-	if !b.IntersectsBox(box) {
-		return Box[T]{}, false
-	}
-
-	a := Point[T]{max(b.Min.X, box.Min.X), max(b.Min.Y, box.Min.Y)}
-
-	return Box[T]{a, Point[T]{max(min(b.Max.X, box.Max.X), a.X), max(min(b.Max.Y, box.Max.Y), a.Y)}}, true
-}
-
-// Union returns the smallest box containing both.
-func (b Box[T]) Union(box Box[T]) Box[T] {
-	return Box[T]{
-		Point[T]{min(b.Min.X, box.Min.X), min(b.Min.Y, box.Min.Y)},
-		Point[T]{max(b.Max.X, box.Max.X), max(b.Max.Y, box.Max.Y)},
-	}
+// Canonical creates a new Box with the corners ordered, Min the lesser on each axis, as the
+// constructors build it: the box itself where it is well formed. It repairs a struct literal or
+// decoded JSON with Min past Max before Contains, Nearest or IntersectsBox read it.
+func (b Box[T]) Canonical() Box[T] {
+	return Box[T]{Point[T]{min(b.Min.X, b.Max.X), min(b.Min.Y, b.Max.Y)}, Point[T]{max(b.Min.X, b.Max.X), max(b.Min.Y, b.Max.Y)}}
 }
 
 // clampOffset returns the move Clamp makes, axis by axis, the one Rectangle.Clamp takes for its
@@ -355,6 +163,198 @@ func (Box[T]) clampAxis(a1, b1, c1, a2, b2, c2 T) T {
 		return b2 - b1
 	default:
 		return 0
+	}
+}
+
+// DistanceTo returns the distance from the given point to the nearest point of the box: zero
+// exactly where Contains holds, so a point within the tolerance of the boundary is at distance
+// zero rather than at the rounding error that put it there.
+func (b Box[T]) DistanceTo(point Point[T]) float64 {
+	return math.Sqrt(b.DistanceSquaredTo(point))
+}
+
+// DistanceSquaredTo returns the squared distance DistanceTo takes the root of, faster for
+// comparisons: zero for a point inside, or within the tolerance of the boundary, and otherwise
+// the sum of the squared gaps beyond the box on the two axes, with no edge to walk. It is a
+// float64 even for an integer T, so the box answers as every Shape does.
+func (b Box[T]) DistanceSquaredTo(point Point[T]) float64 {
+	return b.distanceSquaredToBox(Box[T]{point, point})
+}
+
+// Nearest returns the point of the box nearest to the given point: the point itself exactly
+// where Contains holds, and otherwise the point clamped onto the box on each axis, a lattice
+// point for an integer T.
+func (b Box[T]) Nearest(point Point[T]) Point[T] {
+	if b.Contains(point) {
+		return point
+	}
+
+	return Point[T]{Clamp(point.X, b.Min.X, b.Max.X), Clamp(point.Y, b.Min.Y, b.Max.Y)}
+}
+
+// Contains reports whether the given point lies within the box, boundary included within
+// the tolerance: DistanceSquaredTo is zero there.
+func (b Box[T]) Contains(point Point[T]) bool {
+	return b.DistanceSquaredTo(point) == 0
+}
+
+// ContainsCircle reports whether the circle lies within the box: its center is contained and
+// every side is at least the radius away, within the tolerance, the gap from the center to the
+// nearest side taken on the two axes as DistanceSquaredTo takes the gap beyond them, so a circle
+// touching a side from inside is enclosed.
+func (b Box[T]) ContainsCircle(circle Circle[T]) bool {
+	if !b.Contains(circle.Center) {
+		return false
+	}
+
+	a, c, center := b.Min.Float(), b.Max.Float(), circle.Center.Float()
+	gap := max(min(center.X-a.X, c.X-center.X, center.Y-a.Y, c.Y-center.Y), 0)
+
+	return greaterOrEqualSquared(float64(gap*gap), float64(circle.Radius), circle.epsilonWith(b.magnitude()))
+}
+
+// ContainsSegment reports whether the segment lies within the box: both endpoints are contained,
+// within the tolerance, and a box holds every point between two it contains.
+func (b Box[T]) ContainsSegment(segment Segment[T]) bool {
+	return b.Contains(segment.Start) && b.Contains(segment.End)
+}
+
+// ContainsPolygon reports whether the polygon lies within the box: every vertex is contained,
+// within the tolerance. An empty polygon is enclosed by nothing.
+func (b Box[T]) ContainsPolygon(polygon Polygon[T]) bool {
+	if polygon.IsEmpty() {
+		return false
+	}
+
+	for vertex := range polygon.Vertices() {
+		if !b.Contains(vertex) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// ContainsRectangle reports whether the rectangle lies within the box: every corner is
+// contained, within the tolerance, whatever its angle.
+func (b Box[T]) ContainsRectangle(rectangle Rectangle[T]) bool {
+	for vertex := range rectangle.Vertices() {
+		if !b.Contains(vertex) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// ContainsRegularPolygon reports whether the regular polygon lies within the box: every vertex is
+// contained, within the tolerance. An empty polygon is enclosed by nothing.
+func (b Box[T]) ContainsRegularPolygon(polygon RegularPolygon[T]) bool {
+	if polygon.IsEmpty() {
+		return false
+	}
+
+	for vertex := range polygon.Vertices() {
+		if !b.Contains(vertex) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// ContainsBox reports whether the given box lies within this one: both its corners are
+// contained, within the tolerance.
+func (b Box[T]) ContainsBox(box Box[T]) bool {
+	return b.Contains(box.Min) && b.Contains(box.Max)
+}
+
+// IntersectsCircle reports whether the box and the circle overlap, as Circle.IntersectsBox does.
+func (b Box[T]) IntersectsCircle(circle Circle[T]) bool {
+	return circle.IntersectsBox(b)
+}
+
+// IntersectsSegment reports whether the box and the segment share a point, as
+// Segment.IntersectsBox does.
+func (b Box[T]) IntersectsSegment(segment Segment[T]) bool {
+	return segment.IntersectsBox(b)
+}
+
+// IntersectsRay reports whether the box and the ray share a point, as
+// Ray.IntersectsBox does.is
+func (b Box[T]) IntersectsRay(ray Ray[T]) bool {
+	return ray.IntersectsBox(b)
+}
+
+// IntersectsLine reports whether the box and the line share a point, as
+// Line.IntersectsBox does.
+func (b Box[T]) IntersectsLine(line Line[T]) bool {
+	return line.IntersectsBox(b)
+}
+
+// IntersectsPolygon reports whether the box and the polygon share a point, as
+// Polygon.IntersectsBox does.
+func (b Box[T]) IntersectsPolygon(polygon Polygon[T]) bool {
+	return polygon.IntersectsBox(b)
+}
+
+// IntersectsRectangle reports whether the box and the rectangle share a point, as
+// Rectangle.IntersectsBox does.
+func (b Box[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
+	return rectangle.IntersectsBox(b)
+}
+
+// IntersectsRegularPolygon reports whether the box and the regular polygon share a point, as
+// RegularPolygon.IntersectsBox does.
+func (b Box[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
+	return polygon.IntersectsBox(b)
+}
+
+// IntersectsBox reports whether the boxes share a point: the gap between them on the two axes
+// is zero within the tolerance, the one comparison DistanceSquaredTo makes, so boxes that touch
+// at an edge or a corner intersect, the same closed convention as Contains.
+func (b Box[T]) IntersectsBox(box Box[T]) bool {
+	return b.distanceSquaredToBox(box) == 0
+}
+
+// IntersectionSegment returns the points where the segment crosses the box boundary, as
+// Segment.IntersectionBox does.
+func (b Box[T]) IntersectionSegment(segment Segment[T]) Pair[Point[T]] {
+	return segment.IntersectionBox(b)
+}
+
+// IntersectionRay returns the points where the ray crosses the box boundary, as
+// Ray.IntersectionBox does.
+func (b Box[T]) IntersectionRay(ray Ray[T]) Pair[Point[T]] {
+	return ray.IntersectionBox(b)
+}
+
+// IntersectionLine returns the points where the line crosses the box boundary, as
+// Line.IntersectionBox does.
+func (b Box[T]) IntersectionLine(line Line[T]) Pair[Point[T]] {
+	return line.IntersectionBox(b)
+}
+
+// ClipBox returns the box common to both, and false when they do not intersect.
+// Touching boxes intersect in a box of zero width or height, and boxes meeting at a corner in
+// the zero-sized box at that corner, exactly where IntersectsBox holds, which is asked first:
+// a corner admitted by the tolerance is placed on the boundary of the other box, never beyond
+// it.
+func (b Box[T]) ClipBox(box Box[T]) (Box[T], bool) {
+	if !b.IntersectsBox(box) {
+		return Box[T]{}, false
+	}
+
+	a := Point[T]{max(b.Min.X, box.Min.X), max(b.Min.Y, box.Min.Y)}
+
+	return Box[T]{a, Point[T]{max(min(b.Max.X, box.Max.X), a.X), max(min(b.Max.Y, box.Max.Y), a.Y)}}, true
+}
+
+// Union returns the smallest box containing both.
+func (b Box[T]) Union(box Box[T]) Box[T] {
+	return Box[T]{
+		Point[T]{min(b.Min.X, box.Min.X), min(b.Min.Y, box.Min.Y)},
+		Point[T]{max(b.Max.X, box.Max.X), max(b.Max.Y, box.Max.Y)},
 	}
 }
 

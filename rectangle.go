@@ -337,6 +337,49 @@ func (r Rectangle[T]) MoveTo(point Point[T]) Rectangle[T] {
 	return Rectangle[T]{point, r.Size, r.Angle}
 }
 
+// AlignTo creates a new Rectangle moved so that its Anchor in the given direction lands on the
+// point, the inverse of Anchor: DirectionNone aligns the center, like MoveTo.
+func (r Rectangle[T]) AlignTo(direction Direction, point Point[T]) Rectangle[T] {
+	return r.Translate(point.Subtract(r.Anchor(direction)))
+}
+
+// Clamp creates a new Rectangle moved so that it lies within the given one, keeping its size
+// and angle: the rectangle itself where it already lies exactly within, and otherwise moved by
+// the shortest distance that brings it in. On an axis of the other rectangle along which it is the
+// larger it is centered on the other instead. Two rectangles that are not rotated are clamped
+// exactly, as Box.Clamp moves their Bounds; otherwise the corners of this one are taken into
+// the frame of the other, where it is an aligned box and the extent of the corners lies within
+// it exactly where the rectangle does, and the move Box.Clamp finds there is turned back into
+// the world. The frame is the box localMinMax spans, which for an integer T lies a half unit
+// off the center on an odd extent, so a rectangle already within is not moved by that half.
+// For integer T the move is rounded once, so the corners can land a unit past the edges of a
+// rotated rectangle.
+func (r Rectangle[T]) Clamp(rectangle Rectangle[T]) Rectangle[T] {
+	if r.IsAligned() && rectangle.IsAligned() {
+		return r.Translate(r.Bounds().clampOffset(rectangle.Bounds()))
+	}
+
+	var local [4]Point[float64]
+	for i, corner := range r.corners() {
+		local[i] = rectangle.localOffset(corner).Point()
+	}
+
+	a, b := rectangle.localMinMax()
+	extent := BoxFromMinMax(minMaxOf(local[:]))
+	frame := Box[float64]{a.Float().Point(), b.Float().Point()}
+	move := extent.clampOffset(frame)
+
+	return r.Translate(move.Rotate(rectangle.Angle).Cast[T]())
+}
+
+// Rotate creates a new Rectangle turned by the given angle (in radians) about its center, in
+// the same sense as Vector.Rotate. The stored angle is normalized to [0, 2π) to prevent drift
+// from repeated rotations, so a rectangle turned back by its own angle is not rotated at all
+// and its corners are exact again.
+func (r Rectangle[T]) Rotate(angle float64) Rectangle[T] {
+	return Rectangle[T]{r.Center, r.Size, NormalizeAngle(r.Angle + angle)}
+}
+
 // Scale creates a new Rectangle with size uniformly scaled by the factor. A negative factor
 // scales by its absolute value, since a rectangle mirrored about its center is the same rectangle.
 func (r Rectangle[T]) Scale(factor float64) Rectangle[T] {
@@ -367,17 +410,21 @@ func (r Rectangle[T]) Resize(size Size[T]) Rectangle[T] {
 	return Rectangle[T]{r.Center, size.Abs(), r.Angle}
 }
 
-// Canonical creates a new Rectangle in the form Rect and Rotate build, with the size taken
-// absolute and the angle normalized to [0, 2π): a rectangle mirrored about its own center is
-// the same rectangle, so the center is untouched and a well-formed rectangle is returned as it
-// is, up to the full turns Equal already ignores. It repairs a struct literal or decoded JSON
-// with a negative extent before Contains, Nearest or the Intersects methods read it, and brings
-// a decoded angle onto the seam Rotate keeps. An angle within Delta of zero or of a full turn,
-// the residue a chain of Rotate and Lerp calls can leave, becomes exactly zero, so the
-// rectangle IsAligned again and its corners are exact; Rotate itself never snaps, since a turn
-// that small still moves a far corner of a large rectangle by more than Epsilon.
-func (r Rectangle[T]) Canonical() Rectangle[T] {
-	return Rectangle[T]{r.Center, r.Size.Abs(), snapAngle(r.Angle)}
+// Transform creates a new Rectangle by applying the given matrix, like Point.Transform: the center
+// moves, the size scales by the factors the matrix applies along its axes, and the angle turns by
+// the angle of the matrix, or is mirrored about it for a reflection. A move, a turn, a reflection
+// and a uniform scale are exact, and so is a scale of the axes while the rectangle is not turned. A
+// shear, or a scale of the axes of a turned rectangle, maps it onto a parallelogram this type
+// cannot hold, and the result is the nearest rectangle, on the factors and the angle Matrix.Scaling
+// and Matrix.Angle report for such a matrix; take the exact quadrilateral through
+// Polygon().Transform. A matrix that collapses one axis gives the segment the other spans, and the
+// zero matrix the zero size at the point everything maps to. For integer T the center and the size
+// are each rounded once.
+func (r Rectangle[T]) Transform[M Float](matrix Matrix[M]) Rectangle[T] {
+	m := matrix.Float()
+	scaling := m.Scaling()
+
+	return Rectangle[T]{r.Center.Transform(matrix), r.Size.ScaleXY(scaling.X, scaling.Y).Abs(), m.turnedAngle(r.Angle, scaling)}
 }
 
 // Grow creates a new Rectangle with size expanded by the same amount in both dimensions, clamped to
@@ -442,71 +489,17 @@ func (r Rectangle[T]) Lerp(rectangle Rectangle[T], t float64) Rectangle[T] {
 	return Rectangle[T]{r.Center.Lerp(rectangle.Center, t), r.Size.Lerp(rectangle.Size, t).Abs(), NormalizeAngle(LerpAngle(r.Angle, rectangle.Angle, t))}
 }
 
-// Transform creates a new Rectangle by applying the given matrix, like Point.Transform: the center
-// moves, the size scales by the factors the matrix applies along its axes, and the angle turns by
-// the angle of the matrix, or is mirrored about it for a reflection. A move, a turn, a reflection
-// and a uniform scale are exact, and so is a scale of the axes while the rectangle is not turned. A
-// shear, or a scale of the axes of a turned rectangle, maps it onto a parallelogram this type
-// cannot hold, and the result is the nearest rectangle, on the factors and the angle Matrix.Scaling
-// and Matrix.Angle report for such a matrix; take the exact quadrilateral through
-// Polygon().Transform. A matrix that collapses one axis gives the segment the other spans, and the
-// zero matrix the zero size at the point everything maps to. For integer T the center and the size
-// are each rounded once.
-func (r Rectangle[T]) Transform[M Float](matrix Matrix[M]) Rectangle[T] {
-	m := matrix.Float()
-	scaling := m.Scaling()
-
-	return Rectangle[T]{r.Center.Transform(matrix), r.Size.ScaleXY(scaling.X, scaling.Y).Abs(), m.turnedAngle(r.Angle, scaling)}
-}
-
-// Rotate creates a new Rectangle turned by the given angle (in radians) about its center, in
-// the same sense as Vector.Rotate. The stored angle is normalized to [0, 2π) to prevent drift
-// from repeated rotations, so a rectangle turned back by its own angle is not rotated at all
-// and its corners are exact again.
-func (r Rectangle[T]) Rotate(angle float64) Rectangle[T] {
-	return Rectangle[T]{r.Center, r.Size, NormalizeAngle(r.Angle + angle)}
-}
-
-// AlignTo creates a new Rectangle moved so that its Anchor in the given direction lands on the
-// point, the inverse of Anchor: DirectionNone aligns the center, like MoveTo.
-func (r Rectangle[T]) AlignTo(direction Direction, point Point[T]) Rectangle[T] {
-	return r.Translate(point.Subtract(r.Anchor(direction)))
-}
-
-// Clamp creates a new Rectangle moved so that it lies within the given one, keeping its size
-// and angle: the rectangle itself where it already lies exactly within, and otherwise moved by
-// the shortest distance that brings it in. On an axis of the other rectangle along which it is the
-// larger it is centered on the other instead. Two rectangles that are not rotated are clamped
-// exactly, as Box.Clamp moves their Bounds; otherwise the corners of this one are taken into
-// the frame of the other, where it is an aligned box and the extent of the corners lies within
-// it exactly where the rectangle does, and the move Box.Clamp finds there is turned back into
-// the world. The frame is the box localMinMax spans, which for an integer T lies a half unit
-// off the center on an odd extent, so a rectangle already within is not moved by that half.
-// For integer T the move is rounded once, so the corners can land a unit past the edges of a
-// rotated rectangle.
-func (r Rectangle[T]) Clamp(rectangle Rectangle[T]) Rectangle[T] {
-	if r.IsAligned() && rectangle.IsAligned() {
-		return r.Translate(r.Bounds().clampOffset(rectangle.Bounds()))
-	}
-
-	var local [4]Point[float64]
-	for i, corner := range r.corners() {
-		local[i] = rectangle.localOffset(corner).Point()
-	}
-
-	a, b := rectangle.localMinMax()
-	extent := BoxFromMinMax(minMaxOf(local[:]))
-	frame := Box[float64]{a.Float().Point(), b.Float().Point()}
-	move := extent.clampOffset(frame)
-
-	return r.Translate(move.Rotate(rectangle.Angle).Cast[T]())
-}
-
-// Contains reports whether the given point lies within the rectangle, boundary included within
-// the tolerance: strictly inside, or on an edge as Segment.Contains judges it, so the rectangle
-// contains exactly the points its edges contain and the points between them.
-func (r Rectangle[T]) Contains(point Point[T]) bool {
-	return r.DistanceSquaredTo(point) == 0
+// Canonical creates a new Rectangle in the form Rect and Rotate build, with the size taken
+// absolute and the angle normalized to [0, 2π): a rectangle mirrored about its own center is
+// the same rectangle, so the center is untouched and a well-formed rectangle is returned as it
+// is, up to the full turns Equal already ignores. It repairs a struct literal or decoded JSON
+// with a negative extent before Contains, Nearest or the Intersects methods read it, and brings
+// a decoded angle onto the seam Rotate keeps. An angle within Delta of zero or of a full turn,
+// the residue a chain of Rotate and Lerp calls can leave, becomes exactly zero, so the
+// rectangle IsAligned again and its corners are exact; Rotate itself never snaps, since a turn
+// that small still moves a far corner of a large rectangle by more than Epsilon.
+func (r Rectangle[T]) Canonical() Rectangle[T] {
+	return Rectangle[T]{r.Center, r.Size.Abs(), snapAngle(r.Angle)}
 }
 
 // DistanceTo returns the distance from the given point to the nearest point of the rectangle:
@@ -541,31 +534,38 @@ func (r Rectangle[T]) Nearest(point Point[T]) Point[T] {
 	return r.walk(point).nearest(point)
 }
 
-// EnclosesCircle reports whether the circle lies within the rectangle: its center is contained
+// Contains reports whether the given point lies within the rectangle, boundary included within
+// the tolerance: strictly inside, or on an edge as Segment.Contains judges it, so the rectangle
+// contains exactly the points its edges contain and the points between them.
+func (r Rectangle[T]) Contains(point Point[T]) bool {
+	return r.DistanceSquaredTo(point) == 0
+}
+
+// ContainsCircle reports whether the circle lies within the rectangle: its center is contained
 // and every edge is at least the radius away, within the tolerance, read off the walk
 // DistanceSquaredTo makes, so a circle touching an edge from inside is enclosed. A rectangle
 // that is not rotated answers as its Bounds does, on the gap to the nearest side, which can
 // differ within the tolerance from the walk a turned rectangle makes.
-func (r Rectangle[T]) EnclosesCircle(circle Circle[T]) bool {
+func (r Rectangle[T]) ContainsCircle(circle Circle[T]) bool {
 	if r.IsAligned() {
-		return r.Bounds().EnclosesCircle(circle)
+		return r.Bounds().ContainsCircle(circle)
 	}
 
 	return r.walk(circle.Center).clears(circle)
 }
 
-// EnclosesSegment reports whether the segment lies within the rectangle: both endpoints are
+// ContainsSegment reports whether the segment lies within the rectangle: both endpoints are
 // contained, within the tolerance, and a convex shape holds every point between two it contains.
-func (r Rectangle[T]) EnclosesSegment(segment Segment[T]) bool {
+func (r Rectangle[T]) ContainsSegment(segment Segment[T]) bool {
 	a, b := r.MinMax()
 
 	return r.containsWithin(segment.Start, a, b) && r.containsWithin(segment.End, a, b)
 }
 
-// EnclosesPolygon reports whether the polygon lies within the rectangle: every vertex is
+// ContainsPolygon reports whether the polygon lies within the rectangle: every vertex is
 // contained, within the tolerance, and a convex shape holds every point between points it
 // contains. An empty polygon is enclosed by nothing.
-func (r Rectangle[T]) EnclosesPolygon(polygon Polygon[T]) bool {
+func (r Rectangle[T]) ContainsPolygon(polygon Polygon[T]) bool {
 	if polygon.IsEmpty() {
 		return false
 	}
@@ -580,9 +580,9 @@ func (r Rectangle[T]) EnclosesPolygon(polygon Polygon[T]) bool {
 	return true
 }
 
-// EnclosesRectangle reports whether the rectangle lies within the rectangle: every corner is
+// ContainsRectangle reports whether the rectangle lies within the rectangle: every corner is
 // contained, within the tolerance, whatever the angles.
-func (r Rectangle[T]) EnclosesRectangle(rectangle Rectangle[T]) bool {
+func (r Rectangle[T]) ContainsRectangle(rectangle Rectangle[T]) bool {
 	a, b := r.MinMax()
 	for vertex := range rectangle.Vertices() {
 		if !r.containsWithin(vertex, a, b) {
@@ -593,9 +593,9 @@ func (r Rectangle[T]) EnclosesRectangle(rectangle Rectangle[T]) bool {
 	return true
 }
 
-// EnclosesRegularPolygon reports whether the regular polygon lies within the rectangle: every
+// ContainsRegularPolygon reports whether the regular polygon lies within the rectangle: every
 // vertex is contained, within the tolerance. An empty polygon is enclosed by nothing.
-func (r Rectangle[T]) EnclosesRegularPolygon(polygon RegularPolygon[T]) bool {
+func (r Rectangle[T]) ContainsRegularPolygon(polygon RegularPolygon[T]) bool {
 	if polygon.IsEmpty() {
 		return false
 	}
@@ -610,9 +610,9 @@ func (r Rectangle[T]) EnclosesRegularPolygon(polygon RegularPolygon[T]) bool {
 	return true
 }
 
-// EnclosesBox reports whether the box lies within the rectangle: every corner of the box is
+// ContainsBox reports whether the box lies within the rectangle: every corner of the box is
 // contained, within the tolerance, whatever the rectangle's angle.
-func (r Rectangle[T]) EnclosesBox(box Box[T]) bool {
+func (r Rectangle[T]) ContainsBox(box Box[T]) bool {
 	a, b := r.MinMax()
 	for _, corner := range box.corners() {
 		if !r.containsWithin(corner, a, b) {
@@ -635,34 +635,16 @@ func (r Rectangle[T]) IntersectsSegment(segment Segment[T]) bool {
 	return segment.IntersectsRectangle(r)
 }
 
-// IntersectionSegment returns the points where the segment crosses the rectangle boundary, as
-// Segment.IntersectionRectangle does.
-func (r Rectangle[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
-	return segment.IntersectionRectangle(r)
-}
-
 // IntersectsRay reports whether the rectangle and the ray share a point, as
 // Ray.IntersectsRectangle does.
 func (r Rectangle[T]) IntersectsRay(ray Ray[T]) bool {
 	return ray.IntersectsRectangle(r)
 }
 
-// IntersectionRay returns the points where the ray crosses the rectangle boundary, as
-// Ray.IntersectionRectangle does.
-func (r Rectangle[T]) IntersectionRay(ray Ray[T]) []Point[T] {
-	return ray.IntersectionRectangle(r)
-}
-
 // IntersectsLine reports whether the rectangle and the line share a point, as
 // Line.IntersectsRectangle does.
 func (r Rectangle[T]) IntersectsLine(line Line[T]) bool {
 	return line.IntersectsRectangle(r)
-}
-
-// IntersectionLine returns the points where the line crosses the rectangle boundary, as
-// Line.IntersectionRectangle does.
-func (r Rectangle[T]) IntersectionLine(line Line[T]) []Point[T] {
-	return line.IntersectionRectangle(r)
 }
 
 // IntersectsPolygon reports whether the rectangle and the polygon share a point, as
@@ -678,15 +660,15 @@ func (r Rectangle[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 // decided as Box.IntersectsBox decides those. Rectangles whose extents do not overlap are rejected
 // before any edge is examined. Two rectangles of the same angle, or half a turn apart, are tested
 // in their shared frame, the one sharedFrame picks whichever of the two asks, as
-// IntersectionRectangle finds their overlap, once the extents of their vertices overlap. The offset
+// ClipRectangle finds their overlap, once the extents of their vertices overlap. The offset
 // between the centers is turned into that frame, where the vertices were placed in the world, so
 // two rotated rectangles of one angle can answer differently from IntersectsPolygon on the Polygon
 // of their corners: by a unit for an integer T, where both are rounded, and within the tolerance
 // for a float T, where the two placements part by an ulp. The frame also judges at the tolerance of
 // its own coordinates, near its origin, where the edges are judged at the tolerance of the world
 // coordinates they lie at: far from the origin a touch within the wider one is missed, so a
-// rectangle EnclosesRectangle admits on an edge of this one may not intersect it. The frame is what
-// IntersectionRectangle and Union measure in, and the three agree with each other.
+// rectangle ContainsRectangle admits on an edge of this one may not intersect it. The frame is what
+// ClipRectangle and Union measure in, and the three agree with each other.
 func (r Rectangle[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 	if r.IsAligned() && rectangle.IsAligned() {
 		return r.Bounds().IntersectsBox(rectangle.Bounds())
@@ -705,53 +687,6 @@ func (r Rectangle[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 	default:
 		return r.meetsWithin(rectangle, a1, b1, a2, b2)
 	}
-}
-
-// IntersectionRectangle returns the rectangle common to both, and false when they do not intersect.
-// Touching rectangles intersect in a rectangle of zero width or height, within the tolerance,
-// exactly where IntersectsRectangle holds, which is asked first: a corner admitted by the tolerance
-// is placed on the boundary of the other rectangle, never beyond it. Two rectangles of the same
-// angle, or half a turn apart, overlap in a rectangle of that angle, found in their shared frame,
-// the frame of the one with the lesser center, so the answer is the same in either order;
-// rectangles of different angles overlap in a polygon that is not a rectangle and return false even
-// where IntersectsRectangle holds. The shared frame holds an overlap wherever IntersectsRectangle
-// found one there, since it judged the same frame, and two rectangles that are not rotated overlap
-// as Box.IntersectionBox finds it. For integer T the offset between the centers of two rotated
-// rectangles is rounded into the shared frame and the result rounded back.
-func (r Rectangle[T]) IntersectionRectangle(rectangle Rectangle[T]) (Rectangle[T], bool) {
-	if !r.IntersectsRectangle(rectangle) {
-		return Rectangle[T]{}, false
-	}
-
-	switch {
-	case r.IsAligned() && rectangle.IsAligned():
-		overlap, _ := r.Bounds().IntersectionBox(rectangle.Bounds())
-
-		return overlap.Rectangle(), true
-	case r.parallel(rectangle):
-		frame := r.sharedFrame(rectangle)
-		overlap, _ := frame.localRectangle(r).IntersectionRectangle(frame.localRectangle(rectangle))
-
-		return frame.worldRectangle(overlap), true
-	default:
-		return Rectangle[T]{}, false
-	}
-}
-
-// Union returns the smallest rectangle containing both: the Box.Union of their Bounds for two
-// rectangles that are not rotated, of their angle for two rectangles of the same angle or half
-// a turn apart, found in their shared frame, and the same Box.Union for
-// rectangles of other angles. For integer T the offset between the centers of two rotated
-// rectangles is rounded into the shared frame and the result rounded back, so the union need
-// not enclose either rectangle's rounded corners.
-func (r Rectangle[T]) Union(rectangle Rectangle[T]) Rectangle[T] {
-	if !(r.IsAligned() && rectangle.IsAligned()) && r.parallel(rectangle) {
-		frame := r.sharedFrame(rectangle)
-
-		return frame.worldRectangle(frame.localRectangle(r).Union(frame.localRectangle(rectangle)))
-	}
-
-	return r.Bounds().Union(rectangle.Bounds()).Rectangle()
 }
 
 // IntersectsRegularPolygon reports whether the rectangle and the regular polygon share a
@@ -815,10 +750,75 @@ func (r Rectangle[T]) IntersectsBox(box Box[T]) bool {
 	return r.edgesMeet(corners, others, box.Min, box.Max)
 }
 
-// walk folds every edge into the edgeWalk DistanceSquaredTo, Nearest and EnclosesCircle read,
+// IntersectionSegment returns the points where the segment crosses the rectangle boundary, as
+// Segment.IntersectionRectangle does.
+func (r Rectangle[T]) IntersectionSegment(segment Segment[T]) Pair[Point[T]] {
+	return segment.IntersectionRectangle(r)
+}
+
+// IntersectionRay returns the points where the ray crosses the rectangle boundary, as
+// Ray.IntersectionRectangle does.
+func (r Rectangle[T]) IntersectionRay(ray Ray[T]) Pair[Point[T]] {
+	return ray.IntersectionRectangle(r)
+}
+
+// IntersectionLine returns the points where the line crosses the rectangle boundary, as
+// Line.IntersectionRectangle does.
+func (r Rectangle[T]) IntersectionLine(line Line[T]) Pair[Point[T]] {
+	return line.IntersectionRectangle(r)
+}
+
+// ClipRectangle returns the rectangle common to both, and false when they do not intersect.
+// Touching rectangles intersect in a rectangle of zero width or height, within the tolerance,
+// exactly where IntersectsRectangle holds, which is asked first: a corner admitted by the tolerance
+// is placed on the boundary of the other rectangle, never beyond it. Two rectangles of the same
+// angle, or half a turn apart, overlap in a rectangle of that angle, found in their shared frame,
+// the frame of the one with the lesser center, so the answer is the same in either order;
+// rectangles of different angles overlap in a polygon that is not a rectangle and return false even
+// where IntersectsRectangle holds. The shared frame holds an overlap wherever IntersectsRectangle
+// found one there, since it judged the same frame, and two rectangles that are not rotated overlap
+// as Box.ClipBox finds it. For integer T the offset between the centers of two rotated
+// rectangles is rounded into the shared frame and the result rounded back.
+func (r Rectangle[T]) ClipRectangle(rectangle Rectangle[T]) (Rectangle[T], bool) {
+	if !r.IntersectsRectangle(rectangle) {
+		return Rectangle[T]{}, false
+	}
+
+	switch {
+	case r.IsAligned() && rectangle.IsAligned():
+		overlap, _ := r.Bounds().ClipBox(rectangle.Bounds())
+
+		return overlap.Rectangle(), true
+	case r.parallel(rectangle):
+		frame := r.sharedFrame(rectangle)
+		overlap, _ := frame.localRectangle(r).ClipRectangle(frame.localRectangle(rectangle))
+
+		return frame.worldRectangle(overlap), true
+	default:
+		return Rectangle[T]{}, false
+	}
+}
+
+// Union returns the smallest rectangle containing both: the Box.Union of their Bounds for two
+// rectangles that are not rotated, of their angle for two rectangles of the same angle or half
+// a turn apart, found in their shared frame, and the same Box.Union for
+// rectangles of other angles. For integer T the offset between the centers of two rotated
+// rectangles is rounded into the shared frame and the result rounded back, so the union need
+// not enclose either rectangle's rounded corners.
+func (r Rectangle[T]) Union(rectangle Rectangle[T]) Rectangle[T] {
+	if !(r.IsAligned() && rectangle.IsAligned()) && r.parallel(rectangle) {
+		frame := r.sharedFrame(rectangle)
+
+		return frame.worldRectangle(frame.localRectangle(r).Union(frame.localRectangle(rectangle)))
+	}
+
+	return r.Bounds().Union(rectangle.Bounds()).Rectangle()
+}
+
+// walk folds every edge into the edgeWalk DistanceSquaredTo, Nearest and ContainsCircle read,
 // stopping at an edge the point lies on within the tolerance. A rectangle that is not rotated
 // answers a point within its extent, compared exactly, with a walk that is already over: inside,
-// with no edge measured, which is all DistanceSquaredTo and Nearest read; EnclosesCircle, which
+// with no edge measured, which is all DistanceSquaredTo and Nearest read; ContainsCircle, which
 // needs the nearest edge, asks the Bounds of such a rectangle instead.
 func (r Rectangle[T]) walk(point Point[T]) edgeWalk[T] {
 	if r.IsAligned() {

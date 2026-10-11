@@ -42,15 +42,27 @@ type polyline[T Number] interface {
 	Edges() iter.Seq[Segment[T]]
 }
 
-// encloser is a shape other shapes lie within, with the six Encloses methods: Circle, Polygon,
-// Rectangle, RegularPolygon and Box.
-type encloser[T Number] interface {
-	EnclosesCircle(circle Circle[T]) bool
-	EnclosesSegment(segment Segment[T]) bool
-	EnclosesPolygon(polygon Polygon[T]) bool
-	EnclosesRectangle(rectangle Rectangle[T]) bool
-	EnclosesRegularPolygon(polygon RegularPolygon[T]) bool
-	EnclosesBox(box Box[T]) bool
+// caster is a segment or a ray as a cast: the points it holds and the point a fraction of the
+// way along it.
+type caster[T Number] interface {
+	Contains(point Point[T]) bool
+	PointAt(t float64) Point[T]
+}
+
+// obstacle is a segment, a ray or a line as the wall a cast is made at: the points it holds.
+type obstacle[T Number] interface {
+	Contains(point Point[T]) bool
+}
+
+// container is a shape other shapes lie within, with the six Contains<Kind> methods: Circle,
+// Polygon, Rectangle, RegularPolygon and Box.
+type container[T Number] interface {
+	ContainsCircle(circle Circle[T]) bool
+	ContainsSegment(segment Segment[T]) bool
+	ContainsPolygon(polygon Polygon[T]) bool
+	ContainsRectangle(rectangle Rectangle[T]) bool
+	ContainsRegularPolygon(polygon RegularPolygon[T]) bool
+	ContainsBox(box Box[T]) bool
 }
 
 // transformable is a shape that moves, turns and scales in its own type, the constraint a
@@ -76,24 +88,24 @@ type solid[T Number] interface {
 	Body[T]
 }
 
-// encloses tests the shape against the container by the method naming its kind, as
+// containsKind tests the shape against the container by the method naming its kind, as
 // Intersects dispatches. A ray and a line run without end, so no container encloses one.
-func encloses[T Number](container encloser[T], shape Collider[T]) bool {
+func containsKind[T Number](outer container[T], shape Collider[T]) bool {
 	switch shape := shape.(type) {
 	case Circle[T]:
-		return container.EnclosesCircle(shape)
+		return outer.ContainsCircle(shape)
 	case Segment[T]:
-		return container.EnclosesSegment(shape)
+		return outer.ContainsSegment(shape)
 	case Ray[T], Line[T]:
 		return false
 	case Polygon[T]:
-		return container.EnclosesPolygon(shape)
+		return outer.ContainsPolygon(shape)
 	case Rectangle[T]:
-		return container.EnclosesRectangle(shape)
+		return outer.ContainsRectangle(shape)
 	case RegularPolygon[T]:
-		return container.EnclosesRegularPolygon(shape)
+		return outer.ContainsRegularPolygon(shape)
 	default:
-		return container.EnclosesBox(shape.(Box[T]))
+		return outer.ContainsBox(shape.(Box[T]))
 	}
 }
 
@@ -309,17 +321,17 @@ func TestCollider(t *testing.T) {
 	})
 	t.Run("a shape enclosed by another intersects it", func(t *testing.T) {
 		for _, a := range colliders {
-			if container, ok := a.(encloser[float64]); ok {
+			if outer, ok := a.(container[float64]); ok {
 				for _, b := range colliders {
-					assert.True(t, !encloses(container, b) || Intersects(a, b), fmt.Sprintf("%s → %s: ", a, b))
+					assert.True(t, !containsKind(outer, b) || Intersects(a, b), fmt.Sprintf("%s → %s: ", a, b))
 				}
 			}
 		}
 	})
 	t.Run("every shape with an area encloses itself", func(t *testing.T) {
 		for _, a := range colliders {
-			if container, ok := a.(encloser[float64]); ok {
-				assert.True(t, encloses(container, a), fmt.Sprintf("%s: ", a))
+			if outer, ok := a.(container[float64]); ok {
+				assert.True(t, containsKind(outer, a), fmt.Sprintf("%s: ", a))
 			}
 		}
 	})
@@ -331,10 +343,10 @@ func TestCollider(t *testing.T) {
 				for _, b := range far {
 					assert.Equal(t, Intersects(a, b), Intersects(b, a), fmt.Sprintf("%s → %s: ", a, b))
 				}
-				if container, ok := a.(encloser[float32]); ok {
-					assert.True(t, encloses(container, a), fmt.Sprintf("%s: ", a))
+				if outer, ok := a.(container[float32]); ok {
+					assert.True(t, containsKind(outer, a), fmt.Sprintf("%s: ", a))
 					for _, b := range far {
-						assert.True(t, !encloses(container, b) || Intersects(a, b), fmt.Sprintf("%s → %s: ", a, b))
+						assert.True(t, !containsKind(outer, b) || Intersects(a, b), fmt.Sprintf("%s → %s: ", a, b))
 					}
 				}
 			}
@@ -443,6 +455,16 @@ var prefixPoint = Pt(-7.5, 3.25)
 
 // prefixSegment is the segment the Append methods of segments find in dst over the fixtures.
 var prefixSegment = Seg(Pt(-7.5, 3.25), Pt(4.5, -1.75))
+
+// items returns the items a pair holds as a slice, nil where it holds none, for the assertions
+// that compare slices.
+func items[E any](pair Pair[E]) []E {
+	if pair.Count == 0 {
+		return nil
+	}
+
+	return pair.Items[:pair.Count]
+}
 
 // bufferWith returns a slice holding the element with room for more, the dst the Append methods
 // are checked with over the fixtures, so their results are appended in place after it.

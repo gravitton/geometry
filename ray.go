@@ -49,6 +49,13 @@ func (r Ray[T]) MoveTo(point Point[T]) Ray[T] {
 	return Ray[T]{point, r.Direction}
 }
 
+// Rotate creates a new Ray turned by the given angle (in radians) about its origin, in the same
+// sense as Vector.Rotate. For integer T the direction is rounded; only multiples of 90° keep it
+// exactly.
+func (r Ray[T]) Rotate(angle float64) Ray[T] {
+	return Ray[T]{r.Origin, r.Direction.Rotate(angle)}
+}
+
 // Scale creates a new Ray with its direction scaled by the factor about the origin: the points of
 // the ray stay, and PointAt steps the scaled length. A negative factor turns the ray to the other
 // side of its origin, and a zero factor collapses the ray onto its origin. For integer T the
@@ -75,14 +82,6 @@ func (r Ray[T]) UnscaleXY(factorX, factorY float64) Ray[T] {
 	return Ray[T]{r.Origin, r.Direction.DivideXY(factorX, factorY)}
 }
 
-// PointAt returns the point t times Direction away from Origin, behind the origin for a
-// negative t. The point is computed in float64 and rounded once for an integer T.
-func (r Ray[T]) PointAt(t float64) Point[T] {
-	point := r.Origin.Float().Add(r.Direction.Float().Multiply(t))
-
-	return point.Cast[T]()
-}
-
 // Transform creates a new Ray by applying the given matrix to the origin as a point and to the
 // direction as a vector, like Point.Transform and Vector.Transform, so a translation moves the
 // origin alone.
@@ -90,17 +89,12 @@ func (r Ray[T]) Transform[M Float](matrix Matrix[M]) Ray[T] {
 	return Ray[T]{r.Origin.Transform(matrix), r.Direction.Transform(matrix)}
 }
 
-// Rotate creates a new Ray turned by the given angle (in radians) about its origin, in the same
-// sense as Vector.Rotate. For integer T the direction is rounded; only multiples of 90° keep it
-// exactly.
-func (r Ray[T]) Rotate(angle float64) Ray[T] {
-	return Ray[T]{r.Origin, r.Direction.Rotate(angle)}
-}
+// PointAt returns the point t times Direction away from Origin, behind the origin for a
+// negative t. The point is computed in float64 and rounded once for an integer T.
+func (r Ray[T]) PointAt(t float64) Point[T] {
+	point := r.Origin.Float().Add(r.Direction.Float().Multiply(t))
 
-// Contains reports whether the given point lies on the ray, within the tolerance: it holds
-// exactly where DistanceTo is zero.
-func (r Ray[T]) Contains(point Point[T]) bool {
-	return r.DistanceSquaredTo(point) == 0
+	return point.Cast[T]()
 }
 
 // DistanceTo returns the distance from the given point to the nearest point of the ray: the
@@ -127,16 +121,16 @@ func (r Ray[T]) Nearest(point Point[T]) Point[T] {
 	return r.reach(point, point).Nearest(point)
 }
 
+// Contains reports whether the given point lies on the ray, within the tolerance: it holds
+// exactly where DistanceTo is zero.
+func (r Ray[T]) Contains(point Point[T]) bool {
+	return r.DistanceSquaredTo(point) == 0
+}
+
 // IntersectsCircle reports whether the ray and the circle share a point, as
 // Circle.IntersectsRay does.
 func (r Ray[T]) IntersectsCircle(circle Circle[T]) bool {
 	return circle.IntersectsRay(r)
-}
-
-// IntersectionCircle returns the points where the ray crosses the circle boundary, as
-// Circle.IntersectionRay does.
-func (r Ray[T]) IntersectionCircle(circle Circle[T]) []Point[T] {
-	return circle.IntersectionRay(r)
 }
 
 // IntersectsSegment reports whether the ray and the segment share a point, as
@@ -145,18 +139,63 @@ func (r Ray[T]) IntersectsSegment(segment Segment[T]) bool {
 	return segment.IntersectsRay(r)
 }
 
-// IntersectionSegment returns the point where the ray and the segment cross, and false when they
-// do not, as Segment.IntersectionRay does.
-func (r Ray[T]) IntersectionSegment(segment Segment[T]) (Point[T], bool) {
-	return segment.IntersectionRay(r)
-}
-
 // IntersectsRay reports whether the rays share a point, within the tolerance, the same closed
 // convention as Contains: the lines through them meet ahead of both origins, decided on the
 // exact signs of cross products, or the origin of one lies on the other, which covers rays
 // running along each other and rays meeting at an origin.
 func (r Ray[T]) IntersectsRay(ray Ray[T]) bool {
 	return r.crosses(ray) || r.Contains(ray.Origin) || ray.Contains(r.Origin)
+}
+
+// IntersectsLine reports whether the ray and the line share a point, as IntersectsRay decides it
+// on the two rays from the origin of the line, along its Direction and against it.
+func (r Ray[T]) IntersectsLine(line Line[T]) bool {
+	ahead, behind := line.halves()
+
+	return r.IntersectsRay(ahead) || r.IntersectsRay(behind)
+}
+
+// IntersectsPolygon reports whether the ray and the polygon share a point, as
+// Segment.IntersectsPolygon decides it on the reach of the ray past the polygon: the origin
+// lies within the polygon, or the ray crosses one of its edges. Touching shapes intersect,
+// within the tolerance, and an empty polygon intersects nothing.
+func (r Ray[T]) IntersectsPolygon(polygon Polygon[T]) bool {
+	return r.reach(polygon.minMax()).IntersectsPolygon(polygon)
+}
+
+// IntersectsRectangle reports whether the ray and the rectangle share a point, as
+// Segment.IntersectsRectangle decides it on the reach of the ray past the rectangle: the origin
+// lies within the rectangle, or the ray crosses one of its edges. Touching shapes intersect,
+// within the tolerance.
+func (r Ray[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
+	return r.reach(rectangle.MinMax()).IntersectsRectangle(rectangle)
+}
+
+// IntersectsRegularPolygon reports whether the ray and the regular polygon share a point, as
+// Segment.IntersectsRegularPolygon decides it on the reach of the ray past the polygon: the
+// origin lies within the polygon, or the ray crosses one of its edges. Touching shapes
+// intersect, within the tolerance, and an empty polygon intersects nothing.
+func (r Ray[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
+	return r.reach(polygon.minMax()).IntersectsRegularPolygon(polygon)
+}
+
+// IntersectsBox reports whether the ray and the box share a point, as Segment.IntersectsBox
+// decides it on the reach of the ray past the box: the origin lies within the box, or the ray
+// crosses one of its edges. Touching shapes intersect, within the tolerance.
+func (r Ray[T]) IntersectsBox(box Box[T]) bool {
+	return r.reach(box.Min, box.Max).IntersectsBox(box)
+}
+
+// IntersectionCircle returns the points where the ray crosses the circle boundary, as
+// Circle.IntersectionRay does.
+func (r Ray[T]) IntersectionCircle(circle Circle[T]) Pair[Point[T]] {
+	return circle.IntersectionRay(r)
+}
+
+// IntersectionSegment returns the point where the ray and the segment cross, and false when they
+// do not, as Segment.IntersectionRay does.
+func (r Ray[T]) IntersectionSegment(segment Segment[T]) (Point[T], bool) {
+	return segment.IntersectionRay(r)
 }
 
 // IntersectionRay returns the point where the rays cross, and false when they do not. It answers
@@ -179,14 +218,6 @@ func (r Ray[T]) IntersectionRay(ray Ray[T]) (Point[T], bool) {
 	return r.touch(ray)
 }
 
-// IntersectsLine reports whether the ray and the line share a point, as IntersectsRay decides it
-// on the two rays from the origin of the line, along its Direction and against it.
-func (r Ray[T]) IntersectsLine(line Line[T]) bool {
-	ahead, behind := line.halves()
-
-	return r.IntersectsRay(ahead) || r.IntersectsRay(behind)
-}
-
 // IntersectionLine returns the point where the ray and the line cross, and false when they do
 // not, as IntersectionRay finds it on the two rays from the origin of the line: exactly where
 // IntersectsLine holds, less the parallel case.
@@ -197,14 +228,6 @@ func (r Ray[T]) IntersectionLine(line Line[T]) (Point[T], bool) {
 	}
 
 	return r.IntersectionRay(behind)
-}
-
-// IntersectsPolygon reports whether the ray and the polygon share a point, as
-// Segment.IntersectsPolygon decides it on the reach of the ray past the polygon: the origin
-// lies within the polygon, or the ray crosses one of its edges. Touching shapes intersect,
-// within the tolerance, and an empty polygon intersects nothing.
-func (r Ray[T]) IntersectsPolygon(polygon Polygon[T]) bool {
-	return r.reach(polygon.minMax()).IntersectsPolygon(polygon)
 }
 
 // IntersectionPolygon returns the points where the ray crosses the polygon boundary, from Origin
@@ -220,68 +243,24 @@ func (r Ray[T]) AppendIntersectionPolygon(dst []Point[T], polygon Polygon[T]) []
 	return r.reach(polygon.minMax()).AppendIntersectionPolygon(dst, polygon)
 }
 
-// IntersectsRectangle reports whether the ray and the rectangle share a point, as
-// Segment.IntersectsRectangle decides it on the reach of the ray past the rectangle: the origin
-// lies within the rectangle, or the ray crosses one of its edges. Touching shapes intersect,
-// within the tolerance.
-func (r Ray[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
-	return r.reach(rectangle.MinMax()).IntersectsRectangle(rectangle)
-}
-
 // IntersectionRectangle returns the points where the ray crosses the rectangle boundary, from
 // Origin on, as Segment.IntersectionRectangle finds them on the reach of the ray past the
 // rectangle.
-func (r Ray[T]) IntersectionRectangle(rectangle Rectangle[T]) []Point[T] {
-	return r.AppendIntersectionRectangle(nil, rectangle)
-}
-
-// AppendIntersectionRectangle appends the points IntersectionRectangle returns to dst and returns
-// the extended slice, as Segment.AppendIntersectionRectangle does on the reach of the ray past the
-// rectangle, so a caller reusing dst allocates nothing once it has room.
-func (r Ray[T]) AppendIntersectionRectangle(dst []Point[T], rectangle Rectangle[T]) []Point[T] {
-	return r.reach(rectangle.MinMax()).AppendIntersectionRectangle(dst, rectangle)
-}
-
-// IntersectsRegularPolygon reports whether the ray and the regular polygon share a point, as
-// Segment.IntersectsRegularPolygon decides it on the reach of the ray past the polygon: the
-// origin lies within the polygon, or the ray crosses one of its edges. Touching shapes
-// intersect, within the tolerance, and an empty polygon intersects nothing.
-func (r Ray[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
-	return r.reach(polygon.minMax()).IntersectsRegularPolygon(polygon)
+func (r Ray[T]) IntersectionRectangle(rectangle Rectangle[T]) Pair[Point[T]] {
+	return r.reach(rectangle.MinMax()).IntersectionRectangle(rectangle)
 }
 
 // IntersectionRegularPolygon returns the points where the ray crosses the regular polygon
 // boundary, from Origin on, as Segment.IntersectionRegularPolygon finds them on the reach of the
 // ray past the polygon.
-func (r Ray[T]) IntersectionRegularPolygon(polygon RegularPolygon[T]) []Point[T] {
-	return r.AppendIntersectionRegularPolygon(nil, polygon)
-}
-
-// AppendIntersectionRegularPolygon appends the points IntersectionRegularPolygon returns to dst
-// and returns the extended slice, as Segment.AppendIntersectionRegularPolygon does on the reach of
-// the ray past the regular polygon, so a caller reusing dst allocates nothing once it has room.
-func (r Ray[T]) AppendIntersectionRegularPolygon(dst []Point[T], polygon RegularPolygon[T]) []Point[T] {
-	return r.reach(polygon.minMax()).AppendIntersectionRegularPolygon(dst, polygon)
-}
-
-// IntersectsBox reports whether the ray and the box share a point, as Segment.IntersectsBox
-// decides it on the reach of the ray past the box: the origin lies within the box, or the ray
-// crosses one of its edges. Touching shapes intersect, within the tolerance.
-func (r Ray[T]) IntersectsBox(box Box[T]) bool {
-	return r.reach(box.Min, box.Max).IntersectsBox(box)
+func (r Ray[T]) IntersectionRegularPolygon(polygon RegularPolygon[T]) Pair[Point[T]] {
+	return r.reach(polygon.minMax()).IntersectionRegularPolygon(polygon)
 }
 
 // IntersectionBox returns the points where the ray crosses the box boundary, from Origin on, as
 // Segment.IntersectionBox finds them on the reach of the ray past the box.
-func (r Ray[T]) IntersectionBox(box Box[T]) []Point[T] {
-	return r.AppendIntersectionBox(nil, box)
-}
-
-// AppendIntersectionBox appends the points IntersectionBox returns to dst and returns the
-// extended slice, as Segment.AppendIntersectionBox does on the reach of the ray past the box, so
-// a caller reusing dst allocates nothing once it has room.
-func (r Ray[T]) AppendIntersectionBox(dst []Point[T], box Box[T]) []Point[T] {
-	return r.reach(box.Min, box.Max).AppendIntersectionBox(dst, box)
+func (r Ray[T]) IntersectionBox(box Box[T]) Pair[Point[T]] {
+	return r.reach(box.Min, box.Max).IntersectionBox(box)
 }
 
 // ClipCircle returns the part of the ray inside the circle, boundary included within the tolerance,
@@ -341,6 +320,55 @@ func (r Ray[T]) ClipBox(box Box[T]) (Segment[T], bool) {
 // tolerance, is already in it and hits nothing. It allocates nothing.
 func (r Ray[T]) HitCircle(circle Circle[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(circle.minMax()).HitCircle(circle))
+}
+
+// HitSegment returns where the ray first reaches the segment, a wall, and false where it does
+// not, as Segment.HitSegment finds it on the reach of the ray past the segment, with the Fraction
+// in units of Direction: the point IntersectionSegment returns, with the perpendicular of the
+// wall turned to face the ray. An Origin on the wall, within the tolerance, hits nothing. It
+// allocates nothing.
+func (r Ray[T]) HitSegment(segment Segment[T]) (Hit[T], bool) {
+	return r.rescale(r.reach(segment.minMax()).HitSegment(segment))
+}
+
+// HitRay returns where the ray first reaches the given one, a wall running on without end one
+// way, and false where it does not: the point IntersectionRay returns, with the perpendicular of
+// the wall turned to face the ray as the normal and the Fraction in units of Direction. An Origin
+// on the wall, within the tolerance, hits nothing, so a hit exists exactly where IntersectsRay
+// holds from an Origin off the wall. A wall running along the ray is met end on at its origin,
+// and the normal faces back along the ray, as it does for a wall with no direction, a point. It
+// allocates nothing.
+func (r Ray[T]) HitRay(ray Ray[T]) (Hit[T], bool) {
+	if ray.Contains(r.Origin) {
+		return Hit[T]{}, false
+	}
+
+	point, crossed := r.IntersectionRay(ray)
+
+	switch {
+	case crossed:
+		return r.hitAt(point, ray.Direction.Float().Normal()), true
+	case r.Contains(ray.Origin):
+		return r.hitAt(ray.Origin, Vector[float64]{}), true
+	default:
+		return Hit[T]{}, false
+	}
+}
+
+// HitLine returns where the ray first reaches the line, a wall running on without end, and false
+// where it does not, as HitRay finds it on the two rays from the origin of the line. An Origin on
+// the line, within the tolerance, hits nothing. It allocates nothing.
+func (r Ray[T]) HitLine(line Line[T]) (Hit[T], bool) {
+	if line.Contains(r.Origin) {
+		return Hit[T]{}, false
+	}
+
+	ahead, behind := line.halves()
+	if hit, ok := r.HitRay(ahead); ok {
+		return hit, true
+	}
+
+	return r.HitRay(behind)
 }
 
 // HitPolygon returns where the ray first reaches the polygon from outside, and false where it
@@ -423,6 +451,13 @@ func (r Ray[T]) rescale(hit Hit[T], ok bool) (Hit[T], bool) {
 	fraction := ratio(hit.Point.Float().Subtract(r.Origin.Float()).Dot(direction), direction.LengthSquared())
 
 	return Hit[T]{hit.Point, hit.Normal, fraction}, true
+}
+
+// hitAt returns the Hit of the ray at the given point of a boundary whose normal there has the
+// given direction, as Segment.hitAt builds it on the first step of the ray, from Origin along
+// Direction, so the Fraction is in units of Direction.
+func (r Ray[T]) hitAt(point Point[T], normal Vector[float64]) Hit[T] {
+	return Segment[T]{r.Origin, r.Origin.Add(r.Direction)}.hitAt(point, normal)
 }
 
 // crosses reports whether the rays properly cross, as crossing decides it: the lines through

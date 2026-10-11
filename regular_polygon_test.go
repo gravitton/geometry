@@ -482,6 +482,27 @@ func TestRegularPolygon_MoveTo(t *testing.T) {
 	geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0, 0).MoveTo(Pt(-3, 5)), RegPol(Pt(-3, 5), Sz(2, 2), 4, 0, 0))
 }
 
+func TestRegularPolygon_AlignTo(t *testing.T) {
+	hex := RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationPointyTop)
+
+	t.Run("an anchor lands on the point", func(t *testing.T) {
+		geomtest.AssertRegularPolygon(t, hex.AlignTo(Top, Pt(5.0, 5.0)), RegularPolygonWithOrientation(Pt(5.0, 15.0), SzU(10.0), 6, OrientationPointyTop))
+	})
+	t.Run("none aligns the center", func(t *testing.T) {
+		geomtest.AssertRegularPolygon(t, hex.AlignTo(DirectionNone, Pt(5.0, 5.0)), RegularPolygonWithOrientation(Pt(5.0, 5.0), SzU(10.0), 6, OrientationPointyTop))
+	})
+}
+
+func TestRegularPolygon_Rotate(t *testing.T) {
+	t.Run("adds to the stored angle", func(t *testing.T) {
+		geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0, 0).Rotate(Pi), RegPol(Pt(1, 2), Sz(2, 2), 4, Pi, 0))
+	})
+	t.Run("normalizes to the unit turn", func(t *testing.T) {
+		geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0, 0).Rotate(3*Pi), RegPol(Pt(1, 2), Sz(2, 2), 4, Pi, 0))      // 0 + 3π → π
+		geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0, 0).Rotate(-Pi/2), RegPol(Pt(1, 2), Sz(2, 2), 4, 3*Pi/2, 0)) // 0 − π/2 → 3π/2
+	})
+}
+
 func TestRegularPolygon_Scale(t *testing.T) {
 	t.Run("uniform factor", func(t *testing.T) {
 		geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0, 0).Scale(0.5), RegPol(Pt(1, 2), Sz(1, 1), 4, 0, 0))
@@ -529,130 +550,6 @@ func TestRegularPolygon_Resize(t *testing.T) {
 			geomtest.AssertRegularPolygon(t, resized, RegPol(rp.Center, Sz(3.0, 7.0), rp.N, rp.Angle, rp.Phase), rp.String())
 			geomtest.AssertRegularPolygon(t, resized.Resize(rp.Size), rp, rp.String())
 		}
-	})
-}
-
-func TestRegularPolygon_Canonical(t *testing.T) {
-	t.Run("takes a literal negative size absolute and keeps the rest", func(t *testing.T) {
-		geomtest.AssertRegularPolygon(t, RegularPolygon[int]{Pt(1, 2), Sz(-2, 3), 6, Pi / 3, 0}.Canonical(), RegPol(Pt(1, 2), Sz(2, 3), 6, Pi/3, 0))
-	})
-	t.Run("is the polygon RegPol builds", func(t *testing.T) {
-		rp := RegularPolygon[float64]{Pt(0.5, -1.25), Sz(-2.5, -3.75), 5, 1, 0}
-
-		geomtest.AssertRegularPolygon(t, rp.Canonical(), RegPol(rp.Center, rp.Size, rp.N, rp.Angle, 0))
-		geomtest.AssertVertices(t, slices.Collect(rp.Canonical().Vertices()), slices.Collect(RegPol(rp.Center, rp.Size, rp.N, rp.Angle, 0).Vertices()))
-	})
-	t.Run("normalizes the angle the way Rotate stores it", func(t *testing.T) {
-		geomtest.AssertRegularPolygon(t, RegularPolygon[float64]{Pt(0.0, 0.0), SzU(2.0), 4, 7, 0}.Canonical(), RegPol(Pt(0.0, 0.0), SzU(2.0), 4, 7-2*Pi, 0))
-		geomtest.AssertNumber(t, RegularPolygon[float64]{Pt(0.0, 0.0), SzU(2.0), 4, -Pi / 2, 0}.Canonical().Angle, 3*Pi/2)
-	})
-	t.Run("snaps a residue of turning back to exactly zero, where Rotate does not", func(t *testing.T) {
-		drifted := RegPol(Pt(0.0, 0.0), SzU(2.0), 4, 0, 0).Rotate(0.1).Rotate(0.2).Rotate(-0.3)
-
-		assert.True(t, drifted.Angle != 0)
-		assert.Equal(t, drifted.Canonical().Angle, 0.0)
-		assert.Equal(t, RegularPolygon[int]{Pt(0, 0), SzU(2), 4, -Delta / 2, 0}.Canonical().Angle, 0.0)
-		assert.Equal(t, RegularPolygon[int]{Pt(0, 0), SzU(2), 4, 2 * Delta, 0}.Canonical().Angle, 2*Delta)
-	})
-	t.Run("a well-formed polygon is unchanged", func(t *testing.T) {
-		for _, rp := range regularPolygonFixtures {
-			geomtest.AssertRegularPolygon(t, rp.Canonical(), rp, rp.String())
-			geomtest.AssertRegularPolygon(t, rp.Rotate(0).Canonical(), rp.Rotate(0), rp.String())
-		}
-	})
-	t.Run("normalizes and snaps the phase like the angle, without reducing it to a step", func(t *testing.T) {
-		geomtest.AssertNumber(t, RegularPolygon[float64]{Pt(0.0, 0.0), SzU(2.0), 4, 0, -Pi / 2}.Canonical().Phase, 3*Pi/2)
-		assert.Equal(t, RegularPolygon[float64]{Pt(0.0, 0.0), SzU(2.0), 4, 0, -Delta / 2}.Canonical().Phase, 0.0)
-		geomtest.AssertNumber(t, RegularPolygon[float64]{Pt(0.0, 0.0), SzU(2.0), 4, 0, 3 * Pi / 2}.Canonical().Phase, 3*Pi/2)
-	})
-}
-
-func TestRegularPolygon_Grow(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(10, 4), 6, 0, 0).Grow(2), RegPol(Pt(1, 2), Sz(12, 6), 6, 0, 0))
-	})
-	t.Run("clamped at zero", func(t *testing.T) {
-		geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(10, 4), 6, 0, 0).Grow(-6), RegPol(Pt(1, 2), Sz(4, 0), 6, 0, 0))
-	})
-	t.Run("shrink undoes it", func(t *testing.T) {
-		for _, rp := range regularPolygonFixtures {
-			geomtest.AssertRegularPolygon(t, rp.Grow(1.5).Shrink(1.5), rp, rp.String())
-		}
-	})
-}
-
-func TestRegularPolygon_GrowXY(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(10, 4), 6, 0, 0).GrowXY(2, 3), RegPol(Pt(1, 2), Sz(12, 7), 6, 0, 0))
-	})
-	t.Run("clamped at zero", func(t *testing.T) {
-		geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(10, 4), 6, 0, 0).GrowXY(0, -6), RegPol(Pt(1, 2), Sz(10, 0), 6, 0, 0))
-	})
-}
-
-func TestRegularPolygon_Shrink(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(10, 4), 6, 0, 0).Shrink(2), RegPol(Pt(1, 2), Sz(8, 2), 6, 0, 0))
-	})
-	t.Run("clamped at zero", func(t *testing.T) {
-		geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(10, 4), 6, 0, 0).Shrink(6), RegPol(Pt(1, 2), Sz(4, 0), 6, 0, 0))
-	})
-}
-
-func TestRegularPolygon_ShrinkXY(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(10, 4), 6, 0, 0).ShrinkXY(2, 3), RegPol(Pt(1, 2), Sz(8, 1), 6, 0, 0))
-	})
-	t.Run("clamped at zero", func(t *testing.T) {
-		geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(10, 4), 6, 0, 0).ShrinkXY(0, 6), RegPol(Pt(1, 2), Sz(10, 0), 6, 0, 0))
-	})
-}
-
-func TestRegularPolygon_Lerp(t *testing.T) {
-	a, b := RegPol(Pt(0.0, 0.0), SzU(2.0), 6, 0, 0), RegPol(Pt(10.0, 20.0), Sz(8.0, 4.0), 6, Pi/2, 0)
-
-	t.Run("moves the center, the size and the angle together", func(t *testing.T) {
-		geomtest.AssertRegularPolygon(t, a.Lerp(b, 0.5), RegPol(Pt(5.0, 10.0), Sz(5.0, 3.0), 6, Pi/4, 0))
-	})
-	t.Run("turns along the shorter arc across the seam", func(t *testing.T) {
-		from, to := RegPol(Pt(0, 0), SzU(2), 4, ToRadians(350), 0), RegPol(Pt(0, 0), SzU(2), 4, ToRadians(10), 0)
-
-		geomtest.AssertRegularPolygon(t, from.Lerp(to, 0.5), RegPol(Pt(0, 0), SzU(2), 4, 0, 0))
-		geomtest.AssertRegularPolygon(t, to.Lerp(from, 0.5), RegPol(Pt(0, 0), SzU(2), 4, 0, 0))
-	})
-	t.Run("the ends are the polygons themselves", func(t *testing.T) {
-		geomtest.AssertRegularPolygon(t, a.Lerp(b, 0), a)
-		geomtest.AssertRegularPolygon(t, a.Lerp(b, 1), b)
-	})
-	t.Run("extrapolates and keeps the size absolute", func(t *testing.T) {
-		geomtest.AssertRegularPolygon(t, a.Lerp(b, 2), RegPol(Pt(20.0, 40.0), Sz(14.0, 6.0), 6, Pi, 0))
-		geomtest.AssertRegularPolygon(t, b.Lerp(a, 2), RegPol(Pt(-10.0, -20.0), Sz(4.0, 0.0), 6, 3*Pi/2, 0))
-	})
-	t.Run("int rounds the center and the size", func(t *testing.T) {
-		geomtest.AssertRegularPolygon(t, RegPol(Pt(0, 0), SzU(2), 4, 0, 0).Lerp(RegPol(Pt(5, 5), SzU(5), 4, 0, 0), 0.5), RegPol(Pt(3, 3), SzU(4), 4, 0, 0))
-	})
-	t.Run("a different vertex count panics", func(t *testing.T) {
-		assert.PanicsWith(t, func() {
-			a.Lerp(RegPol(Pt(10.0, 20.0), Sz(8.0, 4.0), 5, Pi/2, 0), 0.5)
-		}, "geom: lerp between polygons of 6 and 5 vertices")
-	})
-	t.Run("the ends hold over the fixtures and the angle never turns more than half a turn", func(t *testing.T) {
-		for _, from := range regularPolygonFixtures {
-			for _, to := range regularPolygonFixtures {
-				if from.N != to.N {
-					continue
-				}
-
-				geomtest.AssertRegularPolygon(t, from.Lerp(to, 0), from, fmt.Sprintf("%s → %s: ", from, to))
-				geomtest.AssertRegularPolygon(t, from.Lerp(to, 1), to, fmt.Sprintf("%s → %s: ", from, to))
-				assert.True(t, AngleDistance(from.Lerp(to, 0.5).Angle, from.Angle) <= Pi/2+Delta, fmt.Sprintf("%s → %s: ", from, to))
-			}
-		}
-	})
-	t.Run("moves the phase along the shorter arc", func(t *testing.T) {
-		from, to := RegPol(Pt(0.0, 0.0), Sz(2.0, 1.0), 6, 0, ToRadians(350)), RegPol(Pt(0.0, 0.0), Sz(2.0, 1.0), 6, 0, ToRadians(30))
-
-		geomtest.AssertNumber(t, from.Lerp(to, 0.5).Phase, ToRadians(10))
 	})
 }
 
@@ -746,78 +643,127 @@ func TestRegularPolygon_Transform(t *testing.T) {
 	})
 }
 
-func TestRegularPolygon_Rotate(t *testing.T) {
-	t.Run("adds to the stored angle", func(t *testing.T) {
-		geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0, 0).Rotate(Pi), RegPol(Pt(1, 2), Sz(2, 2), 4, Pi, 0))
+func TestRegularPolygon_Grow(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(10, 4), 6, 0, 0).Grow(2), RegPol(Pt(1, 2), Sz(12, 6), 6, 0, 0))
 	})
-	t.Run("normalizes to the unit turn", func(t *testing.T) {
-		geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0, 0).Rotate(3*Pi), RegPol(Pt(1, 2), Sz(2, 2), 4, Pi, 0))      // 0 + 3π → π
-		geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0, 0).Rotate(-Pi/2), RegPol(Pt(1, 2), Sz(2, 2), 4, 3*Pi/2, 0)) // 0 − π/2 → 3π/2
+	t.Run("clamped at zero", func(t *testing.T) {
+		geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(10, 4), 6, 0, 0).Grow(-6), RegPol(Pt(1, 2), Sz(4, 0), 6, 0, 0))
 	})
-}
-
-func TestRegularPolygon_AlignTo(t *testing.T) {
-	hex := RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationPointyTop)
-
-	t.Run("an anchor lands on the point", func(t *testing.T) {
-		geomtest.AssertRegularPolygon(t, hex.AlignTo(Top, Pt(5.0, 5.0)), RegularPolygonWithOrientation(Pt(5.0, 15.0), SzU(10.0), 6, OrientationPointyTop))
-	})
-	t.Run("none aligns the center", func(t *testing.T) {
-		geomtest.AssertRegularPolygon(t, hex.AlignTo(DirectionNone, Pt(5.0, 5.0)), RegularPolygonWithOrientation(Pt(5.0, 5.0), SzU(10.0), 6, OrientationPointyTop))
-	})
-}
-
-func TestRegularPolygon_Contains(t *testing.T) {
-	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0, 0)
-
-	t.Run("inside", func(t *testing.T) {
-		assert.True(t, diamond.Contains(Pt(0, 0)))
-		assert.True(t, diamond.Contains(Pt(1, 0)))
-	})
-	t.Run("on an edge and on a vertex", func(t *testing.T) {
-		assert.True(t, diamond.Contains(Pt(1, 1)))
-		assert.True(t, diamond.Contains(Pt(2, 0)))
-	})
-	t.Run("outside", func(t *testing.T) {
-		assert.False(t, diamond.Contains(Pt(2, 2)))
-		assert.False(t, diamond.Contains(Pt(3, 0)))
-	})
-	t.Run("within the tolerance of an edge", func(t *testing.T) {
-		assert.True(t, RegPol(Pt(0.0, 0.0), Sz(2.0, 2.0), 4, 0, 0).Contains(Pt(1.0, 1.0+Delta/2)))
-		assert.False(t, RegPol(Pt(0.0, 0.0), Sz(2.0, 2.0), 4, 0, 0).Contains(Pt(1.0, 1.0+2*Delta)))
-	})
-	t.Run("an empty polygon contains nothing", func(t *testing.T) {
-		assert.False(t, RegPol(Pt(0, 0), Sz(2, 2), 0, 0, 0).Contains(Pt(0, 0)))
-	})
-	t.Run("matches the polygon of the vertices", func(t *testing.T) {
+	t.Run("shrink undoes it", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
-			for _, p := range pointFixtures {
-				assert.Equal(t, rp.Contains(p), rp.Polygon().Contains(p), fmt.Sprintf("%s → %s: ", rp, p))
+			geomtest.AssertRegularPolygon(t, rp.Grow(1.5).Shrink(1.5), rp, rp.String())
+		}
+	})
+}
+
+func TestRegularPolygon_GrowXY(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(10, 4), 6, 0, 0).GrowXY(2, 3), RegPol(Pt(1, 2), Sz(12, 7), 6, 0, 0))
+	})
+	t.Run("clamped at zero", func(t *testing.T) {
+		geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(10, 4), 6, 0, 0).GrowXY(0, -6), RegPol(Pt(1, 2), Sz(10, 0), 6, 0, 0))
+	})
+}
+
+func TestRegularPolygon_Shrink(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(10, 4), 6, 0, 0).Shrink(2), RegPol(Pt(1, 2), Sz(8, 2), 6, 0, 0))
+	})
+	t.Run("clamped at zero", func(t *testing.T) {
+		geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(10, 4), 6, 0, 0).Shrink(6), RegPol(Pt(1, 2), Sz(4, 0), 6, 0, 0))
+	})
+}
+
+func TestRegularPolygon_ShrinkXY(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(10, 4), 6, 0, 0).ShrinkXY(2, 3), RegPol(Pt(1, 2), Sz(8, 1), 6, 0, 0))
+	})
+	t.Run("clamped at zero", func(t *testing.T) {
+		geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(10, 4), 6, 0, 0).ShrinkXY(0, 6), RegPol(Pt(1, 2), Sz(10, 0), 6, 0, 0))
+	})
+}
+
+func TestRegularPolygon_Lerp(t *testing.T) {
+	a, b := RegPol(Pt(0.0, 0.0), SzU(2.0), 6, 0, 0), RegPol(Pt(10.0, 20.0), Sz(8.0, 4.0), 6, Pi/2, 0)
+
+	t.Run("moves the center, the size and the angle together", func(t *testing.T) {
+		geomtest.AssertRegularPolygon(t, a.Lerp(b, 0.5), RegPol(Pt(5.0, 10.0), Sz(5.0, 3.0), 6, Pi/4, 0))
+	})
+	t.Run("turns along the shorter arc across the seam", func(t *testing.T) {
+		from, to := RegPol(Pt(0, 0), SzU(2), 4, ToRadians(350), 0), RegPol(Pt(0, 0), SzU(2), 4, ToRadians(10), 0)
+
+		geomtest.AssertRegularPolygon(t, from.Lerp(to, 0.5), RegPol(Pt(0, 0), SzU(2), 4, 0, 0))
+		geomtest.AssertRegularPolygon(t, to.Lerp(from, 0.5), RegPol(Pt(0, 0), SzU(2), 4, 0, 0))
+	})
+	t.Run("the ends are the polygons themselves", func(t *testing.T) {
+		geomtest.AssertRegularPolygon(t, a.Lerp(b, 0), a)
+		geomtest.AssertRegularPolygon(t, a.Lerp(b, 1), b)
+	})
+	t.Run("extrapolates and keeps the size absolute", func(t *testing.T) {
+		geomtest.AssertRegularPolygon(t, a.Lerp(b, 2), RegPol(Pt(20.0, 40.0), Sz(14.0, 6.0), 6, Pi, 0))
+		geomtest.AssertRegularPolygon(t, b.Lerp(a, 2), RegPol(Pt(-10.0, -20.0), Sz(4.0, 0.0), 6, 3*Pi/2, 0))
+	})
+	t.Run("int rounds the center and the size", func(t *testing.T) {
+		geomtest.AssertRegularPolygon(t, RegPol(Pt(0, 0), SzU(2), 4, 0, 0).Lerp(RegPol(Pt(5, 5), SzU(5), 4, 0, 0), 0.5), RegPol(Pt(3, 3), SzU(4), 4, 0, 0))
+	})
+	t.Run("a different vertex count panics", func(t *testing.T) {
+		assert.PanicsWith(t, func() {
+			a.Lerp(RegPol(Pt(10.0, 20.0), Sz(8.0, 4.0), 5, Pi/2, 0), 0.5)
+		}, "geom: lerp between polygons of 6 and 5 vertices")
+	})
+	t.Run("the ends hold over the fixtures and the angle never turns more than half a turn", func(t *testing.T) {
+		for _, from := range regularPolygonFixtures {
+			for _, to := range regularPolygonFixtures {
+				if from.N != to.N {
+					continue
+				}
+
+				geomtest.AssertRegularPolygon(t, from.Lerp(to, 0), from, fmt.Sprintf("%s → %s: ", from, to))
+				geomtest.AssertRegularPolygon(t, from.Lerp(to, 1), to, fmt.Sprintf("%s → %s: ", from, to))
+				assert.True(t, AngleDistance(from.Lerp(to, 0.5).Angle, from.Angle) <= Pi/2+Delta, fmt.Sprintf("%s → %s: ", from, to))
 			}
 		}
 	})
-	t.Run("int matches the polygon of the rounded vertices", func(t *testing.T) {
-		for _, rp := range regularPolygonFixtures {
-			for _, p := range pointFixtures {
-				assert.Equal(t, rp.Int().Contains(p.Int()), rp.Int().Polygon().Contains(p.Int()), fmt.Sprintf("%s → %s: ", rp.Int(), p.Int()))
-			}
-		}
+	t.Run("moves the phase along the shorter arc", func(t *testing.T) {
+		from, to := RegPol(Pt(0.0, 0.0), Sz(2.0, 1.0), 6, 0, ToRadians(350)), RegPol(Pt(0.0, 0.0), Sz(2.0, 1.0), 6, 0, ToRadians(30))
+
+		geomtest.AssertNumber(t, from.Lerp(to, 0.5).Phase, ToRadians(10))
 	})
 }
 
-func BenchmarkRegularPolygon_Contains(b *testing.B) {
-	hexagon := RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop)
-	inside, outside := Pt(1.0, 2.0), Pt(9.0, 9.0)
+func TestRegularPolygon_Canonical(t *testing.T) {
+	t.Run("takes a literal negative size absolute and keeps the rest", func(t *testing.T) {
+		geomtest.AssertRegularPolygon(t, RegularPolygon[int]{Pt(1, 2), Sz(-2, 3), 6, Pi / 3, 0}.Canonical(), RegPol(Pt(1, 2), Sz(2, 3), 6, Pi/3, 0))
+	})
+	t.Run("is the polygon RegPol builds", func(t *testing.T) {
+		rp := RegularPolygon[float64]{Pt(0.5, -1.25), Sz(-2.5, -3.75), 5, 1, 0}
 
-	b.Run("inside", func(b *testing.B) {
-		for b.Loop() {
-			sinkBool = hexagon.Contains(inside)
+		geomtest.AssertRegularPolygon(t, rp.Canonical(), RegPol(rp.Center, rp.Size, rp.N, rp.Angle, 0))
+		geomtest.AssertVertices(t, slices.Collect(rp.Canonical().Vertices()), slices.Collect(RegPol(rp.Center, rp.Size, rp.N, rp.Angle, 0).Vertices()))
+	})
+	t.Run("normalizes the angle the way Rotate stores it", func(t *testing.T) {
+		geomtest.AssertRegularPolygon(t, RegularPolygon[float64]{Pt(0.0, 0.0), SzU(2.0), 4, 7, 0}.Canonical(), RegPol(Pt(0.0, 0.0), SzU(2.0), 4, 7-2*Pi, 0))
+		geomtest.AssertNumber(t, RegularPolygon[float64]{Pt(0.0, 0.0), SzU(2.0), 4, -Pi / 2, 0}.Canonical().Angle, 3*Pi/2)
+	})
+	t.Run("snaps a residue of turning back to exactly zero, where Rotate does not", func(t *testing.T) {
+		drifted := RegPol(Pt(0.0, 0.0), SzU(2.0), 4, 0, 0).Rotate(0.1).Rotate(0.2).Rotate(-0.3)
+
+		assert.True(t, drifted.Angle != 0)
+		assert.Equal(t, drifted.Canonical().Angle, 0.0)
+		assert.Equal(t, RegularPolygon[int]{Pt(0, 0), SzU(2), 4, -Delta / 2, 0}.Canonical().Angle, 0.0)
+		assert.Equal(t, RegularPolygon[int]{Pt(0, 0), SzU(2), 4, 2 * Delta, 0}.Canonical().Angle, 2*Delta)
+	})
+	t.Run("a well-formed polygon is unchanged", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			geomtest.AssertRegularPolygon(t, rp.Canonical(), rp, rp.String())
+			geomtest.AssertRegularPolygon(t, rp.Rotate(0).Canonical(), rp.Rotate(0), rp.String())
 		}
 	})
-	b.Run("outside within the extent", func(b *testing.B) {
-		for b.Loop() {
-			sinkBool = hexagon.Contains(outside)
-		}
+	t.Run("normalizes and snaps the phase like the angle, without reducing it to a step", func(t *testing.T) {
+		geomtest.AssertNumber(t, RegularPolygon[float64]{Pt(0.0, 0.0), SzU(2.0), 4, 0, -Pi / 2}.Canonical().Phase, 3*Pi/2)
+		assert.Equal(t, RegularPolygon[float64]{Pt(0.0, 0.0), SzU(2.0), 4, 0, -Delta / 2}.Canonical().Phase, 0.0)
+		geomtest.AssertNumber(t, RegularPolygon[float64]{Pt(0.0, 0.0), SzU(2.0), 4, 0, 3 * Pi / 2}.Canonical().Phase, 3*Pi/2)
 	})
 }
 
@@ -885,100 +831,154 @@ func TestRegularPolygon_Nearest(t *testing.T) {
 	})
 }
 
-func TestRegularPolygon_EnclosesCircle(t *testing.T) {
+func TestRegularPolygon_Contains(t *testing.T) {
+	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0, 0)
+
+	t.Run("inside", func(t *testing.T) {
+		assert.True(t, diamond.Contains(Pt(0, 0)))
+		assert.True(t, diamond.Contains(Pt(1, 0)))
+	})
+	t.Run("on an edge and on a vertex", func(t *testing.T) {
+		assert.True(t, diamond.Contains(Pt(1, 1)))
+		assert.True(t, diamond.Contains(Pt(2, 0)))
+	})
+	t.Run("outside", func(t *testing.T) {
+		assert.False(t, diamond.Contains(Pt(2, 2)))
+		assert.False(t, diamond.Contains(Pt(3, 0)))
+	})
+	t.Run("within the tolerance of an edge", func(t *testing.T) {
+		assert.True(t, RegPol(Pt(0.0, 0.0), Sz(2.0, 2.0), 4, 0, 0).Contains(Pt(1.0, 1.0+Delta/2)))
+		assert.False(t, RegPol(Pt(0.0, 0.0), Sz(2.0, 2.0), 4, 0, 0).Contains(Pt(1.0, 1.0+2*Delta)))
+	})
+	t.Run("an empty polygon contains nothing", func(t *testing.T) {
+		assert.False(t, RegPol(Pt(0, 0), Sz(2, 2), 0, 0, 0).Contains(Pt(0, 0)))
+	})
+	t.Run("matches the polygon of the vertices", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for _, p := range pointFixtures {
+				assert.Equal(t, rp.Contains(p), rp.Polygon().Contains(p), fmt.Sprintf("%s → %s: ", rp, p))
+			}
+		}
+	})
+	t.Run("int matches the polygon of the rounded vertices", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for _, p := range pointFixtures {
+				assert.Equal(t, rp.Int().Contains(p.Int()), rp.Int().Polygon().Contains(p.Int()), fmt.Sprintf("%s → %s: ", rp.Int(), p.Int()))
+			}
+		}
+	})
+}
+
+func BenchmarkRegularPolygon_Contains(b *testing.B) {
+	hexagon := RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop)
+	inside, outside := Pt(1.0, 2.0), Pt(9.0, 9.0)
+
+	b.Run("inside", func(b *testing.B) {
+		for b.Loop() {
+			sinkBool = hexagon.Contains(inside)
+		}
+	})
+	b.Run("outside within the extent", func(b *testing.B) {
+		for b.Loop() {
+			sinkBool = hexagon.Contains(outside)
+		}
+	})
+}
+
+func TestRegularPolygon_ContainsCircle(t *testing.T) {
 	square := RegPol(Pt(0.0, 0.0), Sz(2.0, 2.0), 4, Pi/4, 0)
 
 	t.Run("the inscribed circle touches every side from inside", func(t *testing.T) {
-		assert.True(t, square.EnclosesCircle(Circ(Pt(0.0, 0.0), math.Sqrt2)))
-		assert.False(t, square.EnclosesCircle(Circ(Pt(0.0, 0.0), 1.5)))
+		assert.True(t, square.ContainsCircle(Circ(Pt(0.0, 0.0), math.Sqrt2)))
+		assert.False(t, square.ContainsCircle(Circ(Pt(0.0, 0.0), 1.5)))
 	})
 	t.Run("an empty polygon encloses nothing", func(t *testing.T) {
-		assert.False(t, RegPol(Pt(0, 0), Sz(2, 2), 0, 0, 0).EnclosesCircle(Circ(Pt(0, 0), 0)))
+		assert.False(t, RegPol(Pt(0, 0), Sz(2, 2), 0, 0, 0).ContainsCircle(Circ(Pt(0, 0), 0)))
 	})
 	t.Run("matches the polygon of the vertices", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
 			for _, c := range circleFixtures {
-				assert.Equal(t, rp.EnclosesCircle(c), rp.Polygon().EnclosesCircle(c), fmt.Sprintf("%s → %s: ", rp, c))
+				assert.Equal(t, rp.ContainsCircle(c), rp.Polygon().ContainsCircle(c), fmt.Sprintf("%s → %s: ", rp, c))
 			}
 		}
 	})
 }
 
-func TestRegularPolygon_EnclosesSegment(t *testing.T) {
+func TestRegularPolygon_ContainsSegment(t *testing.T) {
 	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0, 0)
 
 	t.Run("a diagonal counts, a segment past a vertex not", func(t *testing.T) {
-		assert.True(t, diamond.EnclosesSegment(Seg(Pt(-2, 0), Pt(2, 0))))
-		assert.False(t, diamond.EnclosesSegment(Seg(Pt(-2, 0), Pt(3, 0))))
+		assert.True(t, diamond.ContainsSegment(Seg(Pt(-2, 0), Pt(2, 0))))
+		assert.False(t, diamond.ContainsSegment(Seg(Pt(-2, 0), Pt(3, 0))))
 	})
 	t.Run("matches the polygon of the vertices", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
 			for _, s := range segmentFixtures {
-				assert.Equal(t, rp.EnclosesSegment(s), rp.Polygon().EnclosesSegment(s), fmt.Sprintf("%s → %s: ", rp, s))
+				assert.Equal(t, rp.ContainsSegment(s), rp.Polygon().ContainsSegment(s), fmt.Sprintf("%s → %s: ", rp, s))
 			}
 		}
 	})
 }
 
-func TestRegularPolygon_EnclosesPolygon(t *testing.T) {
+func TestRegularPolygon_ContainsPolygon(t *testing.T) {
 	t.Run("inside, inscribed and outside", func(t *testing.T) {
-		assert.True(t, RegPol(Pt(1, 1), Sz(2, 2), 4, Pi/4, 0).EnclosesPolygon(Pol(squareVertices())))
-		assert.True(t, RegPol(Pt(1, 1), Sz(2, 2), 4, 0, 0).EnclosesPolygon(Pol(squareVertices())))
-		assert.False(t, RegPol(Pt(1, 1), Sz(1, 1), 4, 0, 0).EnclosesPolygon(Pol(squareVertices())))
+		assert.True(t, RegPol(Pt(1, 1), Sz(2, 2), 4, Pi/4, 0).ContainsPolygon(Pol(squareVertices())))
+		assert.True(t, RegPol(Pt(1, 1), Sz(2, 2), 4, 0, 0).ContainsPolygon(Pol(squareVertices())))
+		assert.False(t, RegPol(Pt(1, 1), Sz(1, 1), 4, 0, 0).ContainsPolygon(Pol(squareVertices())))
 	})
 	t.Run("an empty polygon is enclosed by nothing", func(t *testing.T) {
-		assert.False(t, RegPol(Pt(0, 0), Sz(2, 2), 4, 0, 0).EnclosesPolygon(Pol[int](nil)))
+		assert.False(t, RegPol(Pt(0, 0), Sz(2, 2), 4, 0, 0).ContainsPolygon(Pol[int](nil)))
 	})
 	t.Run("matches the polygon of the vertices", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
 			for _, p := range polygonFixtures() {
-				assert.Equal(t, rp.EnclosesPolygon(p), rp.Polygon().EnclosesPolygon(p), fmt.Sprintf("%s → %s: ", rp, p))
+				assert.Equal(t, rp.ContainsPolygon(p), rp.Polygon().ContainsPolygon(p), fmt.Sprintf("%s → %s: ", rp, p))
 			}
 		}
 	})
 }
 
-func TestRegularPolygon_EnclosesRectangle(t *testing.T) {
+func TestRegularPolygon_ContainsRectangle(t *testing.T) {
 	t.Run("a square rotated into a diamond", func(t *testing.T) {
 		diamond := RegPol(Pt(0.0, 0.0), Sz(2.0, 2.0), 4, 0, 0)
 
-		assert.True(t, diamond.EnclosesRectangle(Rect(Pt(0.0, 0.0), Sz(2.0, 2.0))))
-		assert.False(t, diamond.EnclosesRectangle(Rect(Pt(0.0, 0.0), Sz(2.0, 2.2))))
+		assert.True(t, diamond.ContainsRectangle(Rect(Pt(0.0, 0.0), Sz(2.0, 2.0))))
+		assert.False(t, diamond.ContainsRectangle(Rect(Pt(0.0, 0.0), Sz(2.0, 2.2))))
 	})
 	t.Run("matches the polygon of the vertices", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
 			for _, r := range rectFixtures {
-				assert.Equal(t, rp.EnclosesRectangle(r), rp.Polygon().EnclosesRectangle(r), fmt.Sprintf("%s → %s: ", rp, r))
+				assert.Equal(t, rp.ContainsRectangle(r), rp.Polygon().ContainsRectangle(r), fmt.Sprintf("%s → %s: ", rp, r))
 			}
 		}
 	})
 }
 
-func TestRegularPolygon_EnclosesRegularPolygon(t *testing.T) {
+func TestRegularPolygon_ContainsRegularPolygon(t *testing.T) {
 	hexagon := RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop)
 
 	t.Run("a smaller one and a turned one of the same size", func(t *testing.T) {
-		assert.True(t, hexagon.EnclosesRegularPolygon(hexagon.Unscale(2)))
-		assert.False(t, hexagon.EnclosesRegularPolygon(hexagon.Rotate(Pi/6)))
+		assert.True(t, hexagon.ContainsRegularPolygon(hexagon.Unscale(2)))
+		assert.False(t, hexagon.ContainsRegularPolygon(hexagon.Rotate(Pi/6)))
 	})
 	t.Run("an empty polygon on either side encloses nothing", func(t *testing.T) {
-		assert.False(t, hexagon.EnclosesRegularPolygon(RegPol(Pt(0.0, 0.0), Sz(1.0, 1.0), 0, 0, 0)))
-		assert.False(t, RegPol(Pt(0.0, 0.0), Sz(1.0, 1.0), 0, 0, 0).EnclosesRegularPolygon(hexagon))
+		assert.False(t, hexagon.ContainsRegularPolygon(RegPol(Pt(0.0, 0.0), Sz(1.0, 1.0), 0, 0, 0)))
+		assert.False(t, RegPol(Pt(0.0, 0.0), Sz(1.0, 1.0), 0, 0, 0).ContainsRegularPolygon(hexagon))
 	})
 	t.Run("matches the polygon of the vertices", func(t *testing.T) {
 		for _, a := range regularPolygonFixtures {
 			for _, b := range regularPolygonFixtures {
-				assert.Equal(t, a.EnclosesRegularPolygon(b), a.Polygon().EnclosesRegularPolygon(b), fmt.Sprintf("%s → %s: ", a, b))
+				assert.Equal(t, a.ContainsRegularPolygon(b), a.Polygon().ContainsRegularPolygon(b), fmt.Sprintf("%s → %s: ", a, b))
 			}
 		}
 	})
 }
 
-func TestRegularPolygon_EnclosesBox(t *testing.T) {
+func TestRegularPolygon_ContainsBox(t *testing.T) {
 	t.Run("matches the polygon of the vertices", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
 			for _, b := range boxFixtures {
-				assert.Equal(t, rp.EnclosesBox(b), rp.Polygon().EnclosesBox(b), fmt.Sprintf("%s → %s: ", rp, b))
+				assert.Equal(t, rp.ContainsBox(b), rp.Polygon().ContainsBox(b), fmt.Sprintf("%s → %s: ", rp, b))
 			}
 		}
 	})
@@ -1004,16 +1004,6 @@ func TestRegularPolygon_IntersectsSegment(t *testing.T) {
 	})
 }
 
-func TestRegularPolygon_IntersectionSegment(t *testing.T) {
-	t.Run("mirrors Segment.IntersectionRegularPolygon", func(t *testing.T) {
-		for _, rp := range regularPolygonFixtures {
-			for _, s := range segmentFixtures {
-				geomtest.AssertVertices(t, rp.IntersectionSegment(s), s.IntersectionRegularPolygon(rp), fmt.Sprintf("%s → %s: ", rp, s))
-			}
-		}
-	})
-}
-
 func TestRegularPolygon_IntersectsRay(t *testing.T) {
 	t.Run("mirrors Ray.IntersectsRegularPolygon", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
@@ -1024,31 +1014,11 @@ func TestRegularPolygon_IntersectsRay(t *testing.T) {
 	})
 }
 
-func TestRegularPolygon_IntersectionRay(t *testing.T) {
-	t.Run("matches Ray.IntersectionRegularPolygon", func(t *testing.T) {
-		for _, rp := range regularPolygonFixtures {
-			for _, r := range rayFixtures {
-				geomtest.AssertVertices(t, rp.IntersectionRay(r), r.IntersectionRegularPolygon(rp), fmt.Sprintf("%s → %s: ", rp, r))
-			}
-		}
-	})
-}
-
 func TestRegularPolygon_IntersectsLine(t *testing.T) {
 	t.Run("mirrors Line.IntersectsRegularPolygon", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
 			for _, l := range lineFixtures {
 				assert.Equal(t, rp.IntersectsLine(l), l.IntersectsRegularPolygon(rp), fmt.Sprintf("%s → %s: ", rp, l))
-			}
-		}
-	})
-}
-
-func TestRegularPolygon_IntersectionLine(t *testing.T) {
-	t.Run("matches Line.IntersectionRegularPolygon", func(t *testing.T) {
-		for _, rp := range regularPolygonFixtures {
-			for _, l := range lineFixtures {
-				geomtest.AssertVertices(t, rp.IntersectionLine(l), l.IntersectionRegularPolygon(rp), fmt.Sprintf("%s → %s: ", rp, l))
 			}
 		}
 	})
@@ -1130,6 +1100,36 @@ func TestRegularPolygon_IntersectsBox(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
 			for _, b := range boxFixtures {
 				assert.Equal(t, rp.IntersectsBox(b), rp.Polygon().IntersectsBox(b), fmt.Sprintf("%s → %s: ", rp, b))
+			}
+		}
+	})
+}
+
+func TestRegularPolygon_IntersectionSegment(t *testing.T) {
+	t.Run("mirrors Segment.IntersectionRegularPolygon", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for _, s := range segmentFixtures {
+				geomtest.AssertVertices(t, items(rp.IntersectionSegment(s)), items(s.IntersectionRegularPolygon(rp)), fmt.Sprintf("%s → %s: ", rp, s))
+			}
+		}
+	})
+}
+
+func TestRegularPolygon_IntersectionRay(t *testing.T) {
+	t.Run("matches Ray.IntersectionRegularPolygon", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for _, r := range rayFixtures {
+				geomtest.AssertVertices(t, items(rp.IntersectionRay(r)), items(r.IntersectionRegularPolygon(rp)), fmt.Sprintf("%s → %s: ", rp, r))
+			}
+		}
+	})
+}
+
+func TestRegularPolygon_IntersectionLine(t *testing.T) {
+	t.Run("matches Line.IntersectionRegularPolygon", func(t *testing.T) {
+		for _, rp := range regularPolygonFixtures {
+			for _, l := range lineFixtures {
+				geomtest.AssertVertices(t, items(rp.IntersectionLine(l)), items(l.IntersectionRegularPolygon(rp)), fmt.Sprintf("%s → %s: ", rp, l))
 			}
 		}
 	})
