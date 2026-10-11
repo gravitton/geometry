@@ -325,9 +325,9 @@ func Sweep[T Number](a Shape[T], motion Vector[T], b Shape[T]) (Hit[T], bool) {
 // a ray along the Vector of a segment reaches no farther than its End where the fraction is at
 // most one. An Origin the shape contains hits nothing.
 //
-// An Ellipse, and a shape of another package, has no such method and is reached as Sweep
-// reaches a shape, by the origin moved along the ray past the Bounds of the shape, to within
-// the tolerance and with a touch in passing left out. Neither way allocates.
+// A shape of another package has no such method and is reached as Sweep reaches a shape, by the
+// origin moved along the ray past the Bounds of the shape, to within the tolerance and with a
+// touch in passing left out. Neither way allocates.
 func Raycast[T Number](ray Ray[T], shape Shape[T]) (Hit[T], bool) {
 	switch kind := shape.(type) {
 	case Circle[T]:
@@ -342,6 +342,8 @@ func Raycast[T Number](ray Ray[T], shape Shape[T]) (Hit[T], bool) {
 		return ray.HitRegularPolygon(kind)
 	case Box[T]:
 		return ray.HitBox(kind)
+	case Ellipse[T]:
+		return ray.HitEllipse(kind)
 	}
 
 	if shape.Contains(ray.Origin) {

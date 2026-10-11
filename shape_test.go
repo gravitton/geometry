@@ -1380,15 +1380,18 @@ func TestRaycast(t *testing.T) {
 				hit, ok := Raycast[float64](ray, b)
 				assert.True(t, hit == expected && ok == found, fmt.Sprintf("%v → %v: ", ray, b))
 			}
+			for _, e := range ellipseFixtures {
+				expected, found := ray.HitEllipse(e)
+				hit, ok := Raycast[float64](ray, e)
+				assert.True(t, hit == expected && ok == found, fmt.Sprintf("%v → %v: ", ray, e))
+			}
 		}
 	})
 	t.Run("an ellipse is reached at its boundary, the fraction in units of Direction", func(t *testing.T) {
 		hit, ok := Raycast[float64](Ry(Pt(-10.0, 0.0), Vec(2.0, 0.0)), Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0))
 
 		assert.True(t, ok)
-		assert.True(t, EqualDelta(hit.Fraction, 3, 1e-5), fmt.Sprint(hit))
-		assert.True(t, EqualDelta(hit.Point.X, -4, 1e-5) && EqualDelta(hit.Point.Y, 0, 1e-3), fmt.Sprint(hit))
-		geomtest.AssertVector(t, hit.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertHit(t, hit, Hit[float64]{Point: Pt(-4.0, 0.0), Normal: Vec(-1.0, 0.0), Fraction: 3})
 	})
 	t.Run("an ellipse behind the ray, beside it or around its origin is not hit", func(t *testing.T) {
 		ellipse := Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
@@ -1410,6 +1413,11 @@ func TestRaycast(t *testing.T) {
 		assert.True(t, EqualDelta(hit.Fraction, expected.Fraction, 1e-5), fmt.Sprint(hit, expected))
 		assert.True(t, hit.Point.DistanceTo(expected.Point) < 1e-4, fmt.Sprint(hit, expected))
 		assert.True(t, hit.Normal.Subtract(expected.Normal).LessOrEqual(1e-4), fmt.Sprint(hit, expected))
+	})
+	t.Run("a shape known by its support around the origin of the ray is not hit", func(t *testing.T) {
+		_, ok := Raycast[float64](Ry(Pt(1.0, 0.0), Vec(2.0, 0.0)), foreignShape[float64]{Rect(Pt(0.0, 0.0), Sz(4.0, 2.0))})
+
+		assert.False(t, ok)
 	})
 	t.Run("an ellipse is reached between the polygon within it and the polygon about it", func(t *testing.T) {
 		for _, ellipse := range ellipseFixtures {
@@ -1448,6 +1456,7 @@ func TestRaycast(t *testing.T) {
 	})
 	t.Run("allocates nothing for a shape held as Shape", func(t *testing.T) {
 		var rectangle, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(0.3), Ell(Pt(3.0, 0.0), Sz(2.0, 1.0), 0.2)
+		var foreign Shape[float64] = foreignShape[float64]{ellipse}
 		ray := Ry(Pt(-10.0, 0.0), Vec(1.0, 0.0))
 
 		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
@@ -1456,11 +1465,15 @@ func TestRaycast(t *testing.T) {
 		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			_, sinkBool = Raycast(ray, ellipse)
 		}), 0)
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = Raycast(ray, foreign)
+		}), 0)
 	})
 }
 
 func BenchmarkRaycast(b *testing.B) {
 	var rectangle, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(0.3), Ell(Pt(3.0, 0.0), Sz(2.0, 1.0), 0.2)
+	var foreign Shape[float64] = foreignShape[float64]{ellipse}
 	ray := Ry(Pt(-10.0, 0.0), Vec(1.0, 0.0))
 
 	b.Run("by the method naming the kind", func(b *testing.B) {
@@ -1468,9 +1481,14 @@ func BenchmarkRaycast(b *testing.B) {
 			_, sinkBool = Raycast(ray, rectangle)
 		}
 	})
-	b.Run("by supports", func(b *testing.B) {
+	b.Run("an ellipse", func(b *testing.B) {
 		for b.Loop() {
 			_, sinkBool = Raycast(ray, ellipse)
+		}
+	})
+	b.Run("by supports", func(b *testing.B) {
+		for b.Loop() {
+			_, sinkBool = Raycast(ray, foreign)
 		}
 	})
 }

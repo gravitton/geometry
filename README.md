@@ -287,6 +287,7 @@ part, ok := p.ClipBox(view)               // the polygon as a viewport shows it;
 overlap, ok := a.ClipRectangle(b)         // the overlap of two rectangles of one angle; ClipBox of two boxes
 hit, ok := s.HitCircle(c)                 // the first point s reaches from outside, with the normal there
 hit, ok = s.HitSegment(wall)              // or of a wall: HitSegment, HitRay and HitLine
+hit, ok = s.HitEllipse(e)                 // an ellipse has this one method of the family, in closed form
 
 buffer = s.AppendIntersectionPolygon(buffer[:0], p) // a slice result has an Append form, as strconv does, on the
 hull = p.AppendConvexHull(hull[:0])                 // side that holds it, so a reused buffer allocates nothing

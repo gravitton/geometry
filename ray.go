@@ -410,6 +410,16 @@ func (r Ray[T]) HitBox(box Box[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(box.Min, box.Max).HitBox(box))
 }
 
+// HitEllipse returns where the ray first reaches the ellipse from outside, and false where it
+// does not, as Segment.HitEllipse finds it on the reach of the ray past the ellipse, with the
+// Fraction in units of Direction: the nearer root of the quadratic in the frame of the ellipse,
+// with the perpendicular of the boundary there as the normal. An Origin the ellipse contains,
+// boundary included within the tolerance, is already in it and hits nothing. It allocates
+// nothing.
+func (r Ray[T]) HitEllipse(ellipse Ellipse[T]) (Hit[T], bool) {
+	return r.rescale(r.reach(ellipse.minMax()).HitEllipse(ellipse))
+}
+
 // reach returns the part of the ray from Origin to where it passes the extent a, b of a shape:
 // to twice the fraction the farthest corner of the extent projects to, or Origin alone where the
 // whole extent lies behind it or the ray has no direction. No point of the extent projects past

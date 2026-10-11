@@ -2367,6 +2367,120 @@ func TestSegment_HitBox(t *testing.T) {
 	})
 }
 
+func TestSegment_HitEllipse(t *testing.T) {
+	ellipse := Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
+
+	t.Run("from outside is the first crossing, with the perpendicular of the boundary", func(t *testing.T) {
+		hit, ok := Seg(Pt(-8.0, 0.0), Pt(0.0, 0.0)).HitEllipse(ellipse)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(-4.0, 0.0), Normal: Vec(-1.0, 0.0), Fraction: 0.5})
+
+		hit, ok = Seg(Pt(0.0, -6.0), Pt(0.0, 2.0)).HitEllipse(ellipse)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(0.0, -2.0), Normal: Vec(0.0, -1.0), Fraction: 0.5})
+	})
+	t.Run("off the axes the normal is not the direction from the center", func(t *testing.T) {
+		hit, ok := Seg(Pt(8.0, 1.6), Pt(-8.0, 1.6)).HitEllipse(ellipse)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(2.4, 1.6), Normal: Vec(2.4/16, 1.6/4).Normalize(), Fraction: 0.35})
+	})
+	t.Run("a turned ellipse turns the point and the normal with it", func(t *testing.T) {
+		hit, ok := Seg(Pt(-5.0, 2.0), Pt(1.0, 2.0)).HitEllipse(Ell(Pt(1.0, 2.0), Sz(4.0, 2.0), Pi/2))
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(-1.0, 2.0), Normal: Vec(-1.0, 0.0), Fraction: 4.0 / 6})
+	})
+	t.Run("a tangent on exact numbers is the point of contact", func(t *testing.T) {
+		hit, ok := Seg(Pt(-5.0, 2.0), Pt(5.0, 2.0)).HitEllipse(ellipse)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(0.0, 2.0), Normal: Vec(0.0, 1.0), Fraction: 0.5})
+	})
+	t.Run("an End touching from outside is hit there", func(t *testing.T) {
+		hit, ok := Seg(Pt(8.0, 0.0), Pt(4.0, 0.0)).HitEllipse(ellipse)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(4.0, 0.0), Normal: Vec(1.0, 0.0), Fraction: 1})
+	})
+	t.Run("a Start inside or on the boundary hits nothing", func(t *testing.T) {
+		for _, s := range []Segment[float64]{Seg(Pt(1.0, 0.0), Pt(9.0, 0.0)), Seg(Pt(4.0, 0.0), Pt(9.0, 0.0)), Seg(Pt(4.0, 0.0), Pt(-9.0, 0.0))} {
+			_, ok := s.HitEllipse(ellipse)
+			assert.False(t, ok, s.String())
+		}
+	})
+	t.Run("apart, short of the ellipse or of no length hits nothing", func(t *testing.T) {
+		for _, s := range []Segment[float64]{Seg(Pt(-5.0, 3.0), Pt(5.0, 3.0)), Seg(Pt(-8.0, 0.0), Pt(-5.0, 0.0)), Seg(Pt(-8.0, 0.0), Pt(-12.0, 0.0)), Seg(Pt(-8.0, 0.0), Pt(-8.0, 0.0))} {
+			_, ok := s.HitEllipse(ellipse)
+			assert.False(t, ok, s.String())
+		}
+	})
+	t.Run("a degenerate ellipse is hit as the wall it is", func(t *testing.T) {
+		hit, ok := Seg(Pt(0.0, -3.0), Pt(0.0, 3.0)).HitEllipse(Ell(Pt(0.0, 0.0), Sz(4.0, 0.0), 0))
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(0.0, 0.0), Normal: Vec(0.0, -1.0), Fraction: 0.5})
+
+		_, ok = Seg(Pt(5.0, -3.0), Pt(5.0, 3.0)).HitEllipse(Ell(Pt(0.0, 0.0), Sz(4.0, 0.0), 0))
+		assert.False(t, ok)
+	})
+	t.Run("a NaN coordinate hits nothing", func(t *testing.T) {
+		_, ok := Seg(Pt(math.NaN(), 0.0), Pt(0.0, 0.0)).HitEllipse(ellipse)
+		assert.False(t, ok)
+
+		_, ok = Seg(Pt(-8.0, 0.0), Pt(math.NaN(), 0.0)).HitEllipse(ellipse)
+		assert.False(t, ok)
+	})
+	t.Run("int rounds the point and keeps the normal", func(t *testing.T) {
+		hit, ok := Seg(Pt(-10, 0), Pt(10, 0)).HitEllipse(Ell(Pt(0, 0), Sz(4, 2), 0))
+		assertHit(t, hit, ok, Hit[int]{Point: Pt(-4, 0), Normal: Vec(-1.0, 0.0), Fraction: 0.3})
+
+		hit, ok = Seg(Pt(-10, 1), Pt(10, 1)).HitEllipse(Ell(Pt(0, 0), Sz(4, 2), 0))
+		assertHit(t, hit, ok, Hit[int]{Point: Pt(-3, 1), Normal: Vec(-math.Sqrt(12)/16, 0.25).Normalize(), Fraction: 0.35})
+	})
+	t.Run("a circle is hit as the circle of the same radius", func(t *testing.T) {
+		for _, c := range circleFixtures {
+			for _, s := range segmentFixtures {
+				hit, ok := s.HitEllipse(c.Ellipse())
+				expected, found := s.HitCircle(c)
+
+				assert.Equal(t, ok, found, fmt.Sprintf("%s → %s: ", s, c))
+				geomtest.AssertHit(t, hit, expected, fmt.Sprintf("%s → %s: ", s, c))
+			}
+		}
+	})
+	t.Run("the hit lies on the segment and the boundary, facing the segment", func(t *testing.T) {
+		for _, e := range ellipseFixtures {
+			for _, start := range pointFixtures {
+				for _, end := range pointFixtures {
+					s := Seg(start, end)
+					message := fmt.Sprintf("%s → %s: ", s, e)
+
+					hit, ok := s.HitEllipse(e)
+					assert.Equal(t, ok, !e.Contains(start) && Intersects[float64](s, e), message)
+					if !ok {
+						assert.Equal(t, hit, Hit[float64]{}, message)
+
+						continue
+					}
+
+					assert.True(t, s.Contains(hit.Point) && e.Contains(hit.Point), message+hit.Point.String())
+					assert.False(t, e.Contains(s.PointAt(hit.Fraction/2)), message+hit.Point.String())
+					assertFacing(t, s, hit, message)
+				}
+			}
+		}
+	})
+	t.Run("far from the origin the float32 hit lies on the boundary", func(t *testing.T) {
+		for _, offset := range farOffsets {
+			for _, e := range ellipseFixtures {
+				for _, s := range segmentFixtures {
+					ellipse, segment := e.Cast[float32]().Translate(offset), s.Cast[float32]().Translate(offset)
+
+					if hit, ok := segment.HitEllipse(ellipse); ok {
+						assert.True(t, ellipse.Contains(hit.Point), fmt.Sprintf("%s → %s: ", segment, ellipse))
+					}
+				}
+			}
+		}
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		through, turned := Seg(Pt(-10.0, tenth), Pt(10.0, 0.0)), Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0.3)
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.HitEllipse(turned)
+		}), 0)
+	})
+}
+
 func TestSegment_Equal(t *testing.T) {
 	t.Run("same segment", func(t *testing.T) {
 		assert.True(t, Seg(Pt(1, 2), Pt(3, 5)).Equal(Seg(Pt(1, 2), Pt(3, 5))))

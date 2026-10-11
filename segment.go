@@ -825,6 +825,46 @@ func (s Segment[T]) HitBox(box Box[T]) (Hit[T], bool) {
 	return span.hit()
 }
 
+// HitEllipse returns where the segment first reaches the ellipse from outside, and false where
+// it does not: the nearer root of the quadratic the segment makes in the frame of the ellipse,
+// where its semi-axes are the unit, with the perpendicular of the boundary there as the normal,
+// read before the point is rounded for an integer T. A Start the ellipse contains, boundary
+// included within the tolerance, is already in it and hits nothing. A segment that only touches
+// the ellipse in passing is decided on the sign of the discriminant, with no tolerance, so it
+// may answer either way. A degenerate ellipse is the segment its other axis spans and is hit as
+// HitSegment hits that wall. It allocates nothing.
+func (s Segment[T]) HitEllipse(ellipse Ellipse[T]) (Hit[T], bool) {
+	w, h := ellipse.Size.Float().XY()
+	if w == 0 || h == 0 {
+		axis := Vector[float64]{w, h}
+
+		return s.HitSegment(Segment[T]{ellipse.worldPoint(axis.Negate()), ellipse.worldPoint(axis)})
+	}
+
+	if ellipse.Contains(s.Start) {
+		return Hit[T]{}, false
+	}
+
+	offset := ellipse.localOffset(s.Start).DivideXY(w, h)
+	direction := s.Float().Vector().Rotate(-ellipse.Angle).DivideXY(w, h)
+
+	a, b, c := direction.LengthSquared(), offset.Dot(direction), offset.LengthSquared()-1
+	discriminant := float64(b*b) - float64(a*c)
+	if a == 0 || !(discriminant >= 0) {
+		return Hit[T]{}, false
+	}
+
+	t := (-b - math.Sqrt(discriminant)) / a
+	if !s.containsAt(t) {
+		return Hit[T]{}, false
+	}
+
+	t = Clamp(t, 0, 1)
+	normal := offset.Add(direction.Multiply(t)).DivideXY(w, h).Rotate(ellipse.Angle)
+
+	return s.hitAt(s.Float().PointAt(t).Cast[T](), normal), true
+}
+
 // distanceSquaredTo returns the squared distance to the point with no tolerance applied, which
 // DistanceSquaredTo snaps to zero within the tolerance. Beside the segment it is the square of
 // the gap, the cross product divided by the length, rather than the squared cross product

@@ -1282,6 +1282,46 @@ func TestRay_HitBox(t *testing.T) {
 	})
 }
 
+func TestRay_HitEllipse(t *testing.T) {
+	ellipse := Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
+
+	t.Run("from outside is the first crossing, the fraction in units of Direction", func(t *testing.T) {
+		hit, ok := Ry(Pt(-10.0, 0.0), Vec(2.0, 0.0)).HitEllipse(ellipse)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(-4.0, 0.0), Normal: Vec(-1.0, 0.0), Fraction: 3})
+	})
+	t.Run("an Origin inside hits nothing", func(t *testing.T) {
+		_, ok := Ry(Pt(1.0, 0.0), Vec(2.0, 0.0)).HitEllipse(ellipse)
+		assert.False(t, ok)
+	})
+	t.Run("an ellipse behind the ray or beside it is not hit", func(t *testing.T) {
+		_, ok := Ry(Pt(-10.0, 0.0), Vec(-2.0, 0.0)).HitEllipse(ellipse)
+		assert.False(t, ok)
+
+		_, ok = Ry(Pt(-10.0, 5.0), Vec(2.0, 0.0)).HitEllipse(ellipse)
+		assert.False(t, ok)
+	})
+	t.Run("matches HitEllipse of a segment along the ray past the ellipse", func(t *testing.T) {
+		for _, r := range rayFixtures {
+			for _, e := range ellipseFixtures {
+				hit, ok := r.HitEllipse(e)
+				expected, found := Seg(r.Origin, r.PointAt(1000)).HitEllipse(e)
+
+				assert.Equal(t, ok, found, fmt.Sprintf("%s → %s: ", r, e))
+				geomtest.AssertPoint(t, hit.Point, expected.Point, fmt.Sprintf("%s → %s: ", r, e))
+				geomtest.AssertVector(t, hit.Normal, expected.Normal, fmt.Sprintf("%s → %s: ", r, e))
+				geomtest.AssertNumber(t, hit.Fraction, expected.Fraction*1000, fmt.Sprintf("%s → %s: ", r, e))
+			}
+		}
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		through, turned := Ry(Pt(-10.0, tenth), Vec(1.0, 0.0)), Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0.3)
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.HitEllipse(turned)
+		}), 0)
+	})
+}
+
 func TestRay_Equal(t *testing.T) {
 	t.Run("same ray", func(t *testing.T) {
 		assert.True(t, Ry(Pt(1, 2), Vec(3, 4)).Equal(Ry(Pt(1, 2), Vec(3, 4))))

@@ -28,7 +28,8 @@ import (
 //
 // The ellipse is a Shape with none of the Intersects methods: two ellipses meet at the roots
 // of a quartic rather than at anything the circle pairs are built on, so it is tested, parted
-// and moved by its Support, through Intersects, Distance, Collide, Sweep and Raycast. It has no
+// and moved by its Support, through Intersects, Distance, Collide and Sweep. A cast is the
+// exception, a quadratic: Segment.HitEllipse and Ray.HitEllipse, which Raycast reads. It has no
 // vertices either, which are left to RegularPolygon of the same center, semi-axes and angle:
 // RegularPolygon(n) is the polygon of the wanted resolution inscribed in the ellipse, and
 // RegularPolygon.Ellipse converts back.
