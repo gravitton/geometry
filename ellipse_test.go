@@ -556,6 +556,13 @@ func TestEllipse_Support(t *testing.T) {
 	t.Run("int is not rounded", func(t *testing.T) {
 		geomtest.AssertPoint(t, Ell(Pt(0, 0), Sz(1, 1), 0).Support(Vec(1.0, 1.0)), Pt(math.Sqrt2/2, math.Sqrt2/2))
 	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		ellipse, direction := Ell(Pt(1, 2), Sz(4, 2), 0.3), Vec(tenth, 0.7)
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkBool = ellipse.Support(direction).X > 0
+		}), 0)
+	})
 }
 
 func TestEllipse_Contains(t *testing.T) {

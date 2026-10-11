@@ -536,7 +536,7 @@ func (r Rectangle[T]) Nearest(point Point[T]) Point[T] {
 
 // Support returns the point of the rectangle farthest along the given direction: the corner
 // reaching farthest that way, as Vertices places it, the first of them in that order where two
-// reach alike. It is what makes the rectangle a Convex.
+// reach alike.
 func (r Rectangle[T]) Support(direction Vector[float64]) Point[float64] {
 	corners := r.corners()
 

@@ -664,8 +664,7 @@ func (p Polygon[T]) Nearest(point Point[T]) Point[T] {
 // Support returns the vertex of the polygon farthest along the given direction, the first of
 // them in order where several reach alike, and the zero point for an empty polygon. No vertex
 // of a notch reaches farthest in any direction, so the support of a concave polygon is that of
-// its ConvexHull: a polygon is a Convex as that hull, which is the polygon itself exactly
-// where IsConvex holds.
+// its ConvexHull, which is the polygon itself exactly where IsConvex holds.
 func (p Polygon[T]) Support(direction Vector[float64]) Point[float64] {
 	return supportOf(p.Points, direction)
 }
@@ -913,28 +912,6 @@ func (p Polygon[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 	return false
 }
 
-// intersectsConvex reports whether the polygon and a convex shape no Intersects method names
-// share a point: a vertex of the polygon lies within the shape, a point of the shape lies
-// within the polygon, or an edge of the polygon meets the shape by their supports, so a notch
-// of the polygon is not filled in. An empty polygon intersects nothing.
-func (p Polygon[T]) intersectsConvex(shape Convex[T]) bool {
-	if p.IsEmpty() {
-		return false
-	}
-
-	if shape.Contains(p.Points[0]) || p.Contains(shape.Nearest(p.Points[0])) {
-		return true
-	}
-
-	for edge := range p.Edges() {
-		if (minkowski[T]{a: edge, b: shape}).intersects() {
-			return true
-		}
-	}
-
-	return false
-}
-
 // IntersectsBox reports whether the polygon and the box share a point, as IntersectsRectangle
 // decides it against a rectangle that is not rotated: a corner of one lies within the other,
 // or an edge of the box, between its own corners, crosses an edge of the polygon. The box
@@ -1110,6 +1087,24 @@ func (p Polygon[T]) AppendClipBox(dst []Point[T], box Box[T]) []Point[T] {
 	}
 
 	return clip.result()
+}
+
+// intersectsSupport reports whether the polygon, one with a vertex, and a shape no Intersects
+// method names share a point: a vertex of the polygon lies within the shape, a point of the
+// shape lies within the polygon, or an edge of the polygon meets the shape by their supports,
+// so a notch of the polygon is not filled in.
+func (p Polygon[T]) intersectsSupport(shape Shape[T]) bool {
+	if shape.Contains(p.Points[0]) || p.Contains(shape.Nearest(p.Points[0])) {
+		return true
+	}
+
+	for edge := range p.Edges() {
+		if (minkowski[T]{a: edge, b: shape}).intersects() {
+			return true
+		}
+	}
+
+	return false
 }
 
 // containsWithin is Contains for a caller that already holds the extent of the vertices, so the

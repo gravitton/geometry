@@ -160,6 +160,48 @@ func TestAssertLine(t *testing.T) {
 	})
 }
 
+func TestAssertHit(t *testing.T) {
+	h := geom.Hit[int]{Point: geom.Pt(1, 2), Normal: geom.Vec(0.0, -1.0), Fraction: 0.5}
+
+	t.Run("equal", func(t *testing.T) {
+		assertHelper(t, AssertHit, h, geom.Hit[int]{Point: geom.Pt(1, 2), Normal: geom.Vec(0.0, -1.0), Fraction: 0.5}, true)
+	})
+	t.Run("point differs", func(t *testing.T) {
+		assertHelper(t, AssertHit, h, geom.Hit[int]{Point: geom.Pt(9, 2), Normal: geom.Vec(0.0, -1.0), Fraction: 0.5}, false)
+	})
+	t.Run("normal differs", func(t *testing.T) {
+		assertHelper(t, AssertHit, h, geom.Hit[int]{Point: geom.Pt(1, 2), Normal: geom.Vec(1.0, 0.0), Fraction: 0.5}, false)
+	})
+	t.Run("fraction differs", func(t *testing.T) {
+		assertHelper(t, AssertHit, h, geom.Hit[int]{Point: geom.Pt(1, 2), Normal: geom.Vec(0.0, -1.0), Fraction: 0.75}, false)
+	})
+}
+
+func TestAssertContact(t *testing.T) {
+	points := geom.Pair[geom.Point[int]]{Items: [2]geom.Point[int]{geom.Pt(1, 2), geom.Pt(3, 2)}, Count: 2}
+	c := geom.Contact[int]{Normal: geom.Vec(0.0, -1.0), Depth: 0.5, Points: points}
+
+	t.Run("equal", func(t *testing.T) {
+		assertHelper(t, AssertContact, c, geom.Contact[int]{Normal: geom.Vec(0.0, -1.0), Depth: 0.5, Points: points}, true)
+	})
+	t.Run("normal differs", func(t *testing.T) {
+		assertHelper(t, AssertContact, c, geom.Contact[int]{Normal: geom.Vec(1.0, 0.0), Depth: 0.5, Points: points}, false)
+	})
+	t.Run("depth differs", func(t *testing.T) {
+		assertHelper(t, AssertContact, c, geom.Contact[int]{Normal: geom.Vec(0.0, -1.0), Depth: 0.75, Points: points}, false)
+	})
+	t.Run("point differs", func(t *testing.T) {
+		other := geom.Pair[geom.Point[int]]{Items: [2]geom.Point[int]{geom.Pt(1, 2), geom.Pt(9, 2)}, Count: 2}
+
+		assertHelper(t, AssertContact, c, geom.Contact[int]{Normal: geom.Vec(0.0, -1.0), Depth: 0.5, Points: other}, false)
+	})
+	t.Run("count differs", func(t *testing.T) {
+		other := geom.Pair[geom.Point[int]]{Items: [2]geom.Point[int]{geom.Pt(1, 2)}, Count: 1}
+
+		assertHelper(t, AssertContact, c, geom.Contact[int]{Normal: geom.Vec(0.0, -1.0), Depth: 0.5, Points: other}, false)
+	})
+}
+
 func TestAssertRectangle(t *testing.T) {
 	r := geom.Rect(geom.Pt(1, 2), geom.Sz(3, 4))
 

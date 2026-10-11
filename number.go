@@ -109,6 +109,8 @@ func Parse[T Number](s string) (T, error) {
 	return T(v), nil
 }
 
+// rangeError returns the error Parse gives for a value that does not fit T, the one strconv
+// reports for a number out of range.
 func rangeError(s string) error {
 	return &strconv.NumError{Func: "Parse", Num: s, Err: strconv.ErrRange}
 }

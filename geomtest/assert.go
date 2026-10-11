@@ -199,6 +199,48 @@ func AssertLine[T geom.Number](t Testing, actual, expected geom.Line[T], message
 	return ok
 }
 
+// AssertHit asserts that actual equals expected: the Point exactly for an integer T and within
+// [geom.EpsilonRelative] for a float T, the Normal and the Fraction, which are float64 whatever
+// T is, within it.
+func AssertHit[T geom.Number](t Testing, actual, expected geom.Hit[T], messages ...string) bool {
+	t.Helper()
+
+	ok := true
+
+	if !AssertPoint(t, actual.Point, expected.Point, prefixed(messages, "Point.")...) {
+		ok = false
+	}
+	if !AssertVector(t, actual.Normal, expected.Normal, prefixed(messages, "Normal.")...) {
+		ok = false
+	}
+	if !AssertNumber(t, actual.Fraction, expected.Fraction, prefixed(messages, "Fraction: ")...) {
+		ok = false
+	}
+
+	return ok
+}
+
+// AssertContact asserts that actual equals expected: the Normal and the Depth, which are
+// float64 whatever T is, within [geom.EpsilonRelative], and the Points the two hold, as many
+// and each in its place, exactly for an integer T and within it for a float T.
+func AssertContact[T geom.Number](t Testing, actual, expected geom.Contact[T], messages ...string) bool {
+	t.Helper()
+
+	ok := true
+
+	if !AssertVector(t, actual.Normal, expected.Normal, prefixed(messages, "Normal.")...) {
+		ok = false
+	}
+	if !AssertNumber(t, actual.Depth, expected.Depth, prefixed(messages, "Depth: ")...) {
+		ok = false
+	}
+	if !AssertVertices(t, actual.Points.Items[:actual.Points.Count], expected.Points.Items[:expected.Points.Count], prefixed(messages, "Points.")...) {
+		ok = false
+	}
+
+	return ok
+}
+
 // AssertRectangle asserts that actual equals expected (exactly for an integer T, within
 // [geom.EpsilonRelative] for a float T). The angle goes through AssertAngle, so a full turn does
 // not matter, like Rectangle.Equal.

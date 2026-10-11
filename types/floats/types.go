@@ -33,6 +33,9 @@ type Line = geom.Line[float64]
 // Hit is geom.Hit[float64].
 type Hit = geom.Hit[float64]
 
+// Contact is geom.Contact[float64].
+type Contact = geom.Contact[float64]
+
 // Rectangle is geom.Rectangle[float64].
 type Rectangle = geom.Rectangle[float64]
 

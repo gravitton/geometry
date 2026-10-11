@@ -996,6 +996,13 @@ func TestPolygon_Support(t *testing.T) {
 	t.Run("a NaN direction gives the zero point", func(t *testing.T) {
 		geomtest.AssertPoint(t, Pol(squareVertices()).Support(Vec(math.NaN(), 1.0)), Pt(0.0, 0.0))
 	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		polygon, direction := Pol(squareVertices()), Vec(tenth, 0.7)
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkBool = polygon.Support(direction).X > 0
+		}), 0)
+	})
 }
 
 func TestPolygon_Contains(t *testing.T) {

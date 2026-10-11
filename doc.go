@@ -12,14 +12,15 @@
 //
 // The values are [Point], [Vector], [Size], [Padding] and the affine [Matrix]. The shapes are
 // [Rectangle], which may be turned by an angle, the axis-aligned [Box], [Circle], [Ellipse],
-// [Segment], [Polygon] and [RegularPolygon], the half-line [Ray] and the infinite [Line]. [Shape],
-// [Collider] and [Body] name what the shapes share, and [Intersects] tests two colliders of any kind.
+// [Segment], [Polygon] and [RegularPolygon], the half-line [Ray] and the infinite [Line]. [Shape]
+// and [Body] name what the shapes share: [Intersects], [Distance], [Collide] and [Sweep] test,
+// measure, part and move two shapes of any kind, and [Raycast] casts a ray at one.
 // [Direction], [Axis], [Orientation] and [Winding] are enums. Package geomtest holds test
 // assertions, and packages ints and floats alias the int and float64 instantiations.
 //
 // Every value type has Equal, Cast, Int, Float and String; every shape adds Contains, every one but
-// Ray and Line adds Bounds and BoundingCircle, and every one but Ellipse adds the Intersects
-// methods. The enums are compared with == and marshal as their names.
+// Ray and Line adds Bounds, BoundingCircle and Support, and every one but Ellipse adds the
+// Intersects methods. The enums are compared with == and marshal as their names.
 //
 // # Naming
 //
@@ -106,12 +107,10 @@
 // Cast documents. [RegularPolygonOrientationPhase] panics for an [Orientation] that is neither
 // [OrientationFlatTop] nor [OrientationPointyTop], [OrientationNone] included: the absence of an
 // alignment has no phase to give. [Polygon.Lerp] and [RegularPolygon.Lerp] panic for a polygon
-// with a different vertex count, which has no shape between. [Intersects] panics for two colliders
-// of another package, which have no method this package can reach, a pointer to a shape of this
-// package included. An integer [RegularPolygon] with a NaN or infinite Angle or Phase panics
-// wherever it places a vertex, through Cast. These are the only panics:
-// every other guard returns a value the type can express, such as [DirectionNone], an empty
-// polygon, or the 0 that [Size.AspectRatio] gives for a zero height.
+// with a different vertex count, which has no shape between. An integer [RegularPolygon] with a
+// NaN or infinite Angle or Phase panics wherever it places a vertex, through Cast. These are the
+// only panics: every other guard returns a value the type can express, such as [DirectionNone],
+// an empty polygon, or the 0 that [Size.AspectRatio] gives for a zero height.
 //
 // # Reproducibility
 //

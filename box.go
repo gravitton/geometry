@@ -178,7 +178,31 @@ func (b Box[T]) DistanceTo(point Point[T]) float64 {
 // the sum of the squared gaps beyond the box on the two axes, with no edge to walk. It is a
 // float64 even for an integer T, so the box answers as every Shape does.
 func (b Box[T]) DistanceSquaredTo(point Point[T]) float64 {
-	return b.distanceSquaredToBox(Box[T]{point, point})
+	return b.DistanceSquaredToBox(Box[T]{point, point})
+}
+
+// DistanceToBox returns the distance between the nearest points of the two boxes: zero exactly
+// where IntersectsBox holds, and otherwise the gap between them, across a corner where they
+// are apart on both axes.
+func (b Box[T]) DistanceToBox(box Box[T]) float64 {
+	return math.Sqrt(b.DistanceSquaredToBox(box))
+}
+
+// DistanceSquaredToBox returns the squared distance DistanceToBox takes the root of, faster for
+// comparisons, from the gap between the boxes on each axis: zero where they overlap or the gap
+// is within the tolerance, the one comparison Contains and IntersectsBox both read. A NaN
+// coordinate leaves a NaN gap, which the comparison never admits.
+func (b Box[T]) DistanceSquaredToBox(box Box[T]) float64 {
+	a1, b1, a2, b2 := b.Min.Float(), b.Max.Float(), box.Min.Float(), box.Max.Float()
+	dx := max(a2.X-b1.X, a1.X-b2.X, 0)
+	dy := max(a2.Y-b1.Y, a1.Y-b2.Y, 0)
+
+	distance := float64(dx*dx) + float64(dy*dy)
+	if lessOrEqualSquared(distance, 0, epsilonAt[T](max(b.magnitude(), box.magnitude()))) {
+		return 0
+	}
+
+	return distance
 }
 
 // Nearest returns the point of the box nearest to the given point: the point itself exactly
@@ -193,8 +217,7 @@ func (b Box[T]) Nearest(point Point[T]) Point[T] {
 }
 
 // Support returns the point of the box farthest along the given direction: the corner reaching
-// farthest that way, the first of them from the min corner around where two reach alike. It is
-// what makes the box a Convex.
+// farthest that way, the first of them from the min corner around where two reach alike.
 func (b Box[T]) Support(direction Vector[float64]) Point[float64] {
 	corners := b.corners()
 
@@ -323,7 +346,7 @@ func (b Box[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 // is zero within the tolerance, the one comparison DistanceSquaredTo makes, so boxes that touch
 // at an edge or a corner intersect, the same closed convention as Contains.
 func (b Box[T]) IntersectsBox(box Box[T]) bool {
-	return b.distanceSquaredToBox(box) == 0
+	return b.DistanceSquaredToBox(box) == 0
 }
 
 // IntersectionSegment returns the points where the segment crosses the box boundary, as
@@ -365,23 +388,6 @@ func (b Box[T]) Union(box Box[T]) Box[T] {
 		Point[T]{min(b.Min.X, box.Min.X), min(b.Min.Y, box.Min.Y)},
 		Point[T]{max(b.Max.X, box.Max.X), max(b.Max.Y, box.Max.Y)},
 	}
-}
-
-// distanceSquaredToBox returns the squared distance between the nearest points of the two
-// boxes, from the gap between them on each axis: zero where they overlap or the gap is within
-// the tolerance, the one comparison Contains and IntersectsBox both read. A NaN coordinate leaves
-// a NaN gap, which the comparison never admits.
-func (b Box[T]) distanceSquaredToBox(box Box[T]) float64 {
-	a1, b1, a2, b2 := b.Min.Float(), b.Max.Float(), box.Min.Float(), box.Max.Float()
-	dx := max(a2.X-b1.X, a1.X-b2.X, 0)
-	dy := max(a2.Y-b1.Y, a1.Y-b2.Y, 0)
-
-	distance := float64(dx*dx) + float64(dy*dy)
-	if lessOrEqualSquared(distance, 0, epsilonAt[T](max(b.magnitude(), box.magnitude()))) {
-		return 0
-	}
-
-	return distance
 }
 
 // Equal checks for equal corners using tolerant numeric comparison.

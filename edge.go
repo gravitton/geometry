@@ -152,7 +152,8 @@ type edgeSpan[T Number] struct {
 }
 
 // add folds one edge in, keeping its crossing with the segment where it comes before the first
-// or after the last so far. A vertex two edges cross at stays with the edge added first.
+// or after the last so far. A vertex two edges cross at goes to the one that faces Start, and
+// stays with the edge added first where both do or neither does.
 func (e *edgeSpan[T]) add(edge Segment[T]) {
 	point, ok := e.segment.IntersectionSegment(edge)
 
@@ -162,9 +163,22 @@ func (e *edgeSpan[T]) add(edge Segment[T]) {
 		e.ends, e.edge, e.crossed = [2]Point[T]{point, point}, edge, true
 	case e.segment.compareDistance(point, e.ends[0]) < 0:
 		e.ends[0], e.edge = point, edge
+	case point == e.ends[0] && e.faces(edge, e.edge) && !e.faces(e.edge, edge):
+		e.edge = edge
 	case e.segment.compareDistance(point, e.ends[1]) > 0:
 		e.ends[1] = point
 	}
+}
+
+// faces reports whether the edge is turned toward the segment's Start at the vertex it shares
+// with the neighbour: Start lies strictly on the side of its line the neighbour does not run
+// to, on the exact signs Line.side gives, so no winding is asked for. The neighbour is read by
+// both its ends, the shared one adding nothing. At a corner pointing out, that is the outer
+// side of the edge; at a notch neither edge faces, both being seen from within it.
+func (e *edgeSpan[T]) faces(edge, neighbour Segment[T]) bool {
+	line := edge.Line()
+
+	return float64(line.side(e.segment.Start)*(line.side(neighbour.Start)+line.side(neighbour.End))) < 0
 }
 
 // crossings returns the first and the last crossing from Start, the same point twice where
@@ -201,15 +215,15 @@ func (e *edgeSpan[T]) hit() (Hit[T], bool) {
 	return e.segment.hitAt(e.ends[0], e.edge.Float().Normal()), true
 }
 
-// edgeSweep gathers, among the points where a segment crosses the edges of an outline, the next
+// edgePass gathers, among the points where a segment crosses the edges of an outline, the next
 // ones after a point already reached on the way from Start to End: the nearest beyond it, in the
 // order edgeIntersections sorts them with Point.Compare deciding a tie, as many as its array
-// holds. A point that compares Equal to the reached one is that point again, and the sweep
-// notes that the reached point touches the boundary. A shape sweeps its Edges once and reads
-// the points it kept with next, and sweeps again from the last of them only where the array
+// holds. A point that compares Equal to the reached one is that point again, and the pass
+// notes that the reached point touches the boundary. A shape passes over its Edges once and reads
+// the points it kept with next, and passes again from the last of them only where the array
 // came back full and is spent, so the crossings are visited in order without a slice to hold
 // them.
-type edgeSweep[T Number] struct {
+type edgePass[T Number] struct {
 	segment Segment[T]
 	reached Point[T]
 	points  [16]Point[T]
@@ -219,7 +233,7 @@ type edgeSweep[T Number] struct {
 
 // add folds one edge in, keeping its crossing with the segment where it lies beyond the reached
 // point.
-func (e *edgeSweep[T]) add(edge Segment[T]) {
+func (e *edgePass[T]) add(edge Segment[T]) {
 	point, ok := e.segment.IntersectionSegment(edge)
 
 	switch {
@@ -233,7 +247,7 @@ func (e *edgeSweep[T]) add(edge Segment[T]) {
 
 // insert places the point among those kept, in their order from the reached point, dropping
 // the farthest where the array is full, the point itself where it is the farthest.
-func (e *edgeSweep[T]) insert(point Point[T]) {
+func (e *edgePass[T]) insert(point Point[T]) {
 	at := e.n
 	for at > 0 && e.precedes(point, e.points[at-1]) {
 		at--
@@ -251,7 +265,7 @@ func (e *edgeSweep[T]) insert(point Point[T]) {
 // next returns the first point kept that has not been read and lies beyond the given one, and
 // false where none is left: a point that compares Equal to the given one is that point again
 // and is passed over.
-func (e *edgeSweep[T]) next(point Point[T]) (Point[T], bool) {
+func (e *edgePass[T]) next(point Point[T]) (Point[T], bool) {
 	for e.read < e.n && e.points[e.read].Equal(point) {
 		e.read++
 	}
@@ -266,20 +280,20 @@ func (e *edgeSweep[T]) next(point Point[T]) (Point[T], bool) {
 }
 
 // spent reports whether the array came back full and every point of it has been read, so more
-// crossings may lie beyond the last and the shape sweeps again from it.
-func (e *edgeSweep[T]) spent() bool {
+// crossings may lie beyond the last and the shape passes again from it.
+func (e *edgePass[T]) spent() bool {
 	return e.read == len(e.points)
 }
 
-// touchedAt reports whether the outline touches the given point: the one the sweep started
+// touchedAt reports whether the outline touches the given point: the one the pass started
 // from, where a crossing compared Equal to it.
-func (e *edgeSweep[T]) touchedAt(point Point[T]) bool {
+func (e *edgePass[T]) touchedAt(point Point[T]) bool {
 	return e.touched && point == e.reached
 }
 
 // precedes reports whether a comes before b on the way from the segment's Start: nearer to
 // it, or as near and first by Point.Compare.
-func (e *edgeSweep[T]) precedes(a, b Point[T]) bool {
+func (e *edgePass[T]) precedes(a, b Point[T]) bool {
 	return cmp.Or(e.segment.compareDistance(a, b), a.Compare(b)) < 0
 }
 

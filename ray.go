@@ -10,10 +10,11 @@ import (
 // measures in, so a float ray with a normalized Direction measures distances along it. A zero
 // Direction has no way to run, and the ray is its origin alone.
 //
-// A ray has no Bounds, so it is no Shape, but it answers Contains, DistanceTo and Nearest like
-// one and is a Collider. Every pair of a ray with a bounded shape is decided on its reach: the
-// segment from Origin to where the ray passes the extent of the shape, which shares every point
-// of the shape the ray does, so the ray reads the tests of Segment and agrees with them.
+// A ray has no Bounds, so it is no Shape, though it answers Contains, DistanceTo and Nearest
+// like one: it is what a shape is tested by. Every pair of a ray with a bounded shape is
+// decided on its reach: the segment from Origin to where the ray passes the extent of the
+// shape, which shares every point of the shape the ray does, so the ray reads the tests of
+// Segment and agrees with them.
 type Ray[T Number] struct {
 	Origin    Point[T]  `json:"o"`
 	Direction Vector[T] `json:"d"`

@@ -243,6 +243,46 @@ func TestBox_DistanceSquaredTo(t *testing.T) {
 	})
 }
 
+func TestBox_DistanceToBox(t *testing.T) {
+	box := BoxFromMinMax(Pt(0, 0), Pt(2, 2))
+
+	t.Run("the gap along an axis", func(t *testing.T) {
+		geomtest.AssertNumber(t, box.DistanceToBox(BoxFromMinMax(Pt(5, 1), Pt(6, 3))), 3.0)
+	})
+	t.Run("the gap across a corner", func(t *testing.T) {
+		geomtest.AssertNumber(t, box.DistanceToBox(BoxFromMinMax(Pt(5, 6), Pt(7, 8))), 5.0)
+	})
+	t.Run("zero for boxes that overlap or touch", func(t *testing.T) {
+		geomtest.AssertNumber(t, box.DistanceToBox(BoxFromMinMax(Pt(1, 1), Pt(4, 4))), 0.0)
+		geomtest.AssertNumber(t, box.DistanceToBox(BoxFromMinMax(Pt(2, 0), Pt(4, 2))), 0.0)
+	})
+	t.Run("zero exactly where the boxes intersect, and the same from either side", func(t *testing.T) {
+		for _, a := range boxFixtures {
+			for _, b := range boxFixtures {
+				message := fmt.Sprintf("%s → %s: ", a, b)
+
+				assert.Equal(t, a.DistanceToBox(b) == 0, a.IntersectsBox(b), message)
+				assert.Equal(t, a.DistanceToBox(b), b.DistanceToBox(a), message)
+			}
+		}
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		other := BoxFromMinMax(Pt(5, 6), Pt(7, 8))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkBool = box.DistanceToBox(other) > 0
+		}), 0)
+	})
+}
+
+func TestBox_DistanceSquaredToBox(t *testing.T) {
+	box := BoxFromMinMax(Pt(0, 0), Pt(2, 2))
+
+	geomtest.AssertNumber(t, box.DistanceSquaredToBox(BoxFromMinMax(Pt(5, 6), Pt(7, 8))), 25.0)
+	geomtest.AssertNumber(t, box.DistanceSquaredToBox(BoxFromMinMax(Pt(1, 1), Pt(4, 4))), 0.0)
+	assert.True(t, math.IsNaN(BoxFromMinMax(Pt(0.0, 0.0), Pt(2.0, 2.0)).DistanceSquaredToBox(BoxFromMinMax(Pt(math.NaN(), 0.0), Pt(7.0, 8.0)))))
+}
+
 func TestBox_Nearest(t *testing.T) {
 	box := BoxFromMinMax(Pt(0, 1), Pt(2, 4))
 
@@ -269,9 +309,18 @@ func TestBox_Nearest(t *testing.T) {
 func TestBox_Support(t *testing.T) {
 	box := BoxFromMinMax(Pt(0, 0), Pt(4, 2))
 
-	geomtest.AssertPoint(t, box.Support(Vec(1.0, 1.0)), Pt(4.0, 2.0))
-	geomtest.AssertPoint(t, box.Support(Vec(-1.0, -1.0)), Pt(0.0, 0.0))
-	geomtest.AssertPoint(t, box.Support(Vec(-1.0, 3.0)), Pt(0.0, 2.0))
+	t.Run("the corner reaching farthest", func(t *testing.T) {
+		geomtest.AssertPoint(t, box.Support(Vec(1.0, 1.0)), Pt(4.0, 2.0))
+		geomtest.AssertPoint(t, box.Support(Vec(-1.0, -1.0)), Pt(0.0, 0.0))
+		geomtest.AssertPoint(t, box.Support(Vec(-1.0, 3.0)), Pt(0.0, 2.0))
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		direction := Vec(tenth, 0.7)
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkBool = box.Support(direction).X > 0
+		}), 0)
+	})
 }
 
 func TestBox_Contains(t *testing.T) {
@@ -532,7 +581,7 @@ func TestBox_IntersectionSegment(t *testing.T) {
 	t.Run("matches Segment.IntersectionBox", func(t *testing.T) {
 		for _, b := range boxFixtures {
 			for _, s := range segmentFixtures {
-				geomtest.AssertVertices(t, items(b.IntersectionSegment(s)), items(s.IntersectionBox(b)), fmt.Sprintf("%s → %s: ", b, s))
+				geomtest.AssertVertices(t, b.IntersectionSegment(s).AppendTo(nil), s.IntersectionBox(b).AppendTo(nil), fmt.Sprintf("%s → %s: ", b, s))
 			}
 		}
 	})
@@ -542,7 +591,7 @@ func TestBox_IntersectionRay(t *testing.T) {
 	t.Run("matches Ray.IntersectionBox", func(t *testing.T) {
 		for _, b := range boxFixtures {
 			for _, r := range rayFixtures {
-				geomtest.AssertVertices(t, items(b.IntersectionRay(r)), items(r.IntersectionBox(b)), fmt.Sprintf("%s → %s: ", b, r))
+				geomtest.AssertVertices(t, b.IntersectionRay(r).AppendTo(nil), r.IntersectionBox(b).AppendTo(nil), fmt.Sprintf("%s → %s: ", b, r))
 			}
 		}
 	})
@@ -552,7 +601,7 @@ func TestBox_IntersectionLine(t *testing.T) {
 	t.Run("matches Line.IntersectionBox", func(t *testing.T) {
 		for _, b := range boxFixtures {
 			for _, l := range lineFixtures {
-				geomtest.AssertVertices(t, items(b.IntersectionLine(l)), items(l.IntersectionBox(b)), fmt.Sprintf("%s → %s: ", b, l))
+				geomtest.AssertVertices(t, b.IntersectionLine(l).AppendTo(nil), l.IntersectionBox(b).AppendTo(nil), fmt.Sprintf("%s → %s: ", b, l))
 			}
 		}
 	})

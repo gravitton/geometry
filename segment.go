@@ -253,8 +253,7 @@ func (s Segment[T]) Nearest(point Point[T]) Point[T] {
 }
 
 // Support returns the point of the segment farthest along the given direction: End where the
-// segment runs along the direction, and Start where it runs against it or across it. It is what
-// makes the segment a Convex.
+// segment runs along the direction, and Start where it runs against it or across it.
 func (s Segment[T]) Support(direction Vector[float64]) Point[float64] {
 	start, end := s.Start.Float(), s.End.Float()
 	if end.Subtract(start).Dot(direction) > 0 {
@@ -573,7 +572,7 @@ func (s Segment[T]) ClipCircle(circle Circle[T]) (Segment[T], bool) {
 // and an empty polygon clips everything away.
 //
 // The crossings are held in an array, the next few from the point reached, and the edges are
-// swept again only where a segment crosses more often than it holds, so the result is the one
+// passed again only where a segment crosses more often than it holds, so the result is the one
 // allocation, made on the first part with room for the one a convex polygon gives; only a
 // concave polygon grows it.
 func (s Segment[T]) ClipPolygon(polygon Polygon[T]) []Segment[T] {
@@ -750,9 +749,10 @@ func (s Segment[T]) HitLine(line Line[T]) (Hit[T], bool) {
 // HitPolygon returns where the segment first reaches the polygon from outside, and false where it
 // does not: the first point IntersectionPolygon returns, with the normal of the edge it lies on
 // turned to face the segment, so the polygon may be wound either way. A vertex two edges meet
-// the segment at takes the edge that comes first in Edges. A Start the polygon contains,
-// boundary included within the tolerance, by the even-odd rule of Contains, is already in it and
-// hits nothing, and an empty polygon is hit nowhere. It allocates nothing.
+// the segment at takes the edge that faces Start, and the one that comes first in Edges where
+// both do or, in a notch, neither does. A Start the polygon contains, boundary included within
+// the tolerance, by the even-odd rule of Contains, is already in it and hits nothing, and an
+// empty polygon is hit nowhere. It allocates nothing.
 func (s Segment[T]) HitPolygon(polygon Polygon[T]) (Hit[T], bool) {
 	if polygon.Contains(s.Start) {
 		return Hit[T]{}, false
@@ -770,8 +770,9 @@ func (s Segment[T]) HitPolygon(polygon Polygon[T]) (Hit[T], bool) {
 // angle, and false where it does not: the first point IntersectionRectangle returns, the Start of
 // the part ClipRectangle gives, with the normal of the edge it lies on turned to face the
 // segment, the outward one wherever the segment goes on into the rectangle. A corner takes the
-// edge that comes first in Edges, so a segment touching a corner in passing can be given the
-// edge behind it, and a segment along an edge takes the edge it meets at the corner it reaches.
+// edge that faces Start, so a segment touching it in passing is given the edge it passes, and
+// the edge that comes first in Edges where both face it; a segment along an edge takes the edge
+// it meets at the corner it reaches.
 // A Start the rectangle contains, boundary included within the tolerance, is already in it and
 // hits nothing. It allocates nothing.
 func (s Segment[T]) HitRectangle(rectangle Rectangle[T]) (Hit[T], bool) {
@@ -791,9 +792,9 @@ func (s Segment[T]) HitRectangle(rectangle Rectangle[T]) (Hit[T], bool) {
 // and false where it does not: the first point IntersectionRegularPolygon returns, the Start of
 // the part ClipRegularPolygon gives, with the normal of the edge it lies on turned to face the
 // segment, the answer HitPolygon gives on the polygon's Polygon form, without building it. A
-// vertex takes the edge that comes first in Edges. A Start the polygon contains, boundary
-// included within the tolerance, is already in it and hits nothing, and an empty polygon is hit
-// nowhere. It allocates nothing.
+// vertex takes the edge that faces Start, and the one that comes first in Edges where both do.
+// A Start the polygon contains, boundary included within the tolerance, is already in it and
+// hits nothing, and an empty polygon is hit nowhere. It allocates nothing.
 func (s Segment[T]) HitRegularPolygon(polygon RegularPolygon[T]) (Hit[T], bool) {
 	if polygon.Contains(s.Start) {
 		return Hit[T]{}, false

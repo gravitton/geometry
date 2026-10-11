@@ -200,6 +200,26 @@ func (c Circle[T]) DistanceSquaredTo(point Point[T]) float64 {
 	return distance * distance
 }
 
+// DistanceToCircle returns the distance between the nearest points of the two circles: zero
+// exactly where IntersectsCircle holds, by the comparison it makes, and otherwise the distance
+// between the centers less the two radii.
+func (c Circle[T]) DistanceToCircle(circle Circle[T]) float64 {
+	if c.IntersectsCircle(circle) {
+		return 0
+	}
+
+	return math.Sqrt(c.centerDistanceSquared(circle.Center)) - float64(c.Radius) - float64(circle.Radius)
+}
+
+// DistanceSquaredToCircle returns the square of DistanceToCircle, so the pair is offered as
+// every distance is. It saves no square root, since the distance between two circles already
+// needs the root of the distance between their centers.
+func (c Circle[T]) DistanceSquaredToCircle(circle Circle[T]) float64 {
+	distance := c.DistanceToCircle(circle)
+
+	return distance * distance
+}
+
 // Nearest returns the point of the circle nearest to the given point: the point itself
 // exactly where Contains holds, and otherwise the point of the boundary toward it from the
 // center, on the squared distance Contains compares. For integer T it is rounded once and can
@@ -219,7 +239,7 @@ func (c Circle[T]) Nearest(point Point[T]) Point[T] {
 // Support returns the point of the circle farthest along the given direction: the center moved
 // by the radius that way, whatever the length of the direction, and along X for a direction of
 // no length. It is a float64 point even for an integer T, since it is no lattice point in
-// general. It is what makes the circle a Convex.
+// general.
 func (c Circle[T]) Support(direction Vector[float64]) Point[float64] {
 	return c.Center.Float().Add(direction.Normalize().Multiply(float64(c.Radius)))
 }

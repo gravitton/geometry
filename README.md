@@ -26,8 +26,8 @@ Generic, immutable 2D geometry library for game development
 - **Generic** – every type works with any integer or float type, named types included.
 - **Immutable** – every method returns a new value.
 - **Shapes** – rectangle, box, circle, ellipse, segment, ray, polygon and regular polygon.
-- **Collisions** – intersections, containment, ray casts and nearest points.
-- **Interfaces** – `Shape`, `Collider` and `Body` hold a shape without knowing which one.
+- **Collisions** – intersections, containment, ray casts, nearest points, separation and sweeps.
+- **Interfaces** – `Shape` and `Body` hold a shape without knowing which one.
 - **Screen space** – top-left origin, `+Y` down, one winding order everywhere.
 - **Closed boundaries** – the edge counts as inside, within a tolerance matched to `T`.
 - **Reproducible** – the same bits on amd64 and arm64.
@@ -72,6 +72,17 @@ v.Reflect(geom.Vec(0, 1))                 // Vector{3, -4}, bounced off a horizo
 p.RotateAround(geom.Pt(0, 0), math.Pi/2)  // Point{-2, 1}
 p.Lerp(geom.Pt(9, 10), 0.25)              // Point{3, 4}
 geom.Vec(8, 0).Slerp(geom.Vec(0, 8), 0.5) // Vector{6, 6}, turned along the arc, where Lerp gives Vector{4, 4}
+```
+
+`Lerp` and `Slerp` move by a fraction; a game loop moves by a speed times the frame time, a step that never passes
+the target:
+
+```go
+p.MoveToward(geom.Pt(4, 6), 2.5)              // Point{3, 4}, and Point{4, 6} once the step reaches it
+geom.Vec(2.0, 0).RotateToward(math.Pi, 0.1)   // turned by 0.1 along the shorter arc, the length kept
+velocity.MoveToward(wanted, accel*dt)         // a velocity taken toward another by an acceleration
+geom.MoveTowardAngle(angle, target, speed*dt) // the same step on a bare angle
+geom.MoveToward(volume, 1.0, fade*dt)         // and on any number
 ```
 
 Vectors also have `Project`, `Reject`, `AngleBetween`, and `AtMost` and `AtLeast` to cap or floor a length.
@@ -136,7 +147,7 @@ tip.Clamp(view)   // (680,20)-(800,60), moved by the least that brings it inside
 view.ClipBox(tip) // (750,20)-(800,60), true: the part on screen
 
 r.Bounds().IntersectsBox(view) // every shape's Bounds is a Box, for the broad pass
-view.IntersectsRectangle(r)    // a Box is a Collider, tested against every shape
+view.IntersectsRectangle(r)    // a Box is a Shape, tested against every other
 ```
 
 `Rectangle` is the shape that turns; `Box` is the axis-aligned extent, for clipping, viewports, layout and culling.
@@ -220,22 +231,35 @@ hex.Transform(geom.ShearMatrix(1.0, 0.0))                                       
 ### Interfaces
 
 Every shape has `Translate`, `Bounds`, `Contains`, `DistanceTo` and `Nearest`, and all but `Box` also `MoveTo`,
-`Scale`, `Unscale` and `Rotate`. Three interfaces name what they share, so a spatial index or a broad collision pass
+`Scale`, `Unscale` and `Rotate`. Two interfaces name what they share, so a spatial index or a broad collision pass
 holds a shape without knowing which one:
 
 ```go
-var s geom.Shape[float64] = c // Bounds, Contains, DistanceTo, DistanceSquaredTo, Nearest — every shape
+var s geom.Shape[float64] = c // Bounds, Contains, DistanceTo, DistanceSquaredTo, Nearest, Support — every shape
 s.DistanceTo(geom.Pt(10.0, 5.0))
+s.Support(geom.Vec(1.0, 0.0)) // the point of it farthest along a direction
 
-geom.Intersects(d, c) // two shapes held as Collider, dispatched on the kind of the second
+geom.Intersects(s, other) // two shapes of any kind, by the method of one naming the other where there is one
+geom.Distance(s, other)   // the gap between them, zero exactly where they intersect; DistanceSquared to compare
+geom.Raycast(ray, s)      // the Hit of a ray on a shape of any kind
 
 var b geom.Body[float64] = c // Area, Centroid, Inertia — the mass properties at unit density,
 b.Inertia()                  // for a physics body to scale by its density; every shape but Segment and Box
 ```
 
-The interfaces are for the code around a hot loop: a call through one allocates, where the same call on a concrete
-shape does not. `Ellipse` is the one shape that is not a `Collider`: test it as its `RegularPolygon(n)` of the wanted
-resolution.
+The functions take the type argument where a concrete shape is passed, `geom.Intersects[float64](c, r)`, and infer
+it from a value already held as a `Shape`. The interfaces are for the code around a hot loop: a call through one allocates, where the same call on a concrete
+shape does not. `Ellipse` has no `Intersects<Kind>` methods: the functions test it by its `Support`, as they do a
+shape of another package. `Ray` and `Line` run without end and are no `Shape`: they test a shape by their own methods.
+
+Two shapes are parted and moved against each other whatever kind they are:
+
+```go
+contact, ok := geom.Collide(crate, floor) // how they meet: Normal, Depth and one or two Points
+crate.Translate(contact.Separation())     // the shortest move out of the floor, the normal as far as the depth
+hit, ok := geom.Sweep(bullet, step, wall)     // where the bullet first touches the wall while it moves by step:
+bullet.Translate(step.Multiply(hit.Fraction)) // the point, the normal and the fraction of the step made by then
+```
 
 ### Intersections
 
@@ -251,7 +275,7 @@ geom.Intersects(a, c)    // the same answer without knowing either type
 
 point, ok := s.IntersectionSegment(other) // where two segments cross
 crossings := c.IntersectionCircle(other)  // a Pair: zero, one or two points where two circles cross
-for p := range crossings.All() {          // or crossings.Items[:crossings.Count]; neither allocates
+for p := range crossings.All() {          // or crossings.Items[:crossings.Count], or AppendTo(buffer); none allocates
 }
 s.IntersectionCircle(c)                   // where a segment crosses a boundary; also of a rectangle or a box
 s.IntersectionPolygon(p)                  // every crossing of a polygon, as a slice
@@ -272,7 +296,7 @@ A `Ray` is a half-line from `Origin` along `Direction`. Its `Clip<Kind>` is the 
 
 ```go
 ray := geom.RayThrough(camera, cursor) // from the camera through the cursor; Ry takes a direction
-ray.IntersectsRectangle(r)             // IntersectsRay on every Collider gives the same answer
+ray.IntersectsRectangle(r)             // IntersectsRay on the shape gives the same answer
 ray.ClipPolygon(p)                     // the parts inside a concave polygon, from Origin on
 ray.IntersectionBox(box)               // the boundary crossings, from Origin on
 
@@ -286,8 +310,8 @@ if hit, ok := ray.HitRectangle(r); ok { // false from an Origin inside r; Segmen
 }
 ```
 
-A `Line` runs without end both ways through `Origin` along `Direction`. It tells its two sides apart, and is a
-`Collider` like the ray, with the same `Intersection<Kind>` and `Clip<Kind>` in order along its direction:
+A `Line` runs without end both ways through `Origin` along `Direction`. It tells its two sides apart, and tests
+a shape as the ray does, with the same `Intersection<Kind>` and `Clip<Kind>` in order along its direction:
 
 ```go
 wall := geom.LineThrough(a, b) // through two points; Ln takes a direction, and s.Line() and ray.Line() convert
@@ -295,7 +319,7 @@ wall.Side(p)                   // 1 on the side the normal of the direction poin
 wall.Nearest(p)                // the foot of the perpendicular, with DistanceTo and Contains
 wall.Reflect(p)                // p mirrored across the line
 wall.IntersectionLine(other)   // where two lines cross, and false for parallel ones
-wall.IntersectsCircle(c)       // IntersectsLine on every Collider gives the same answer
+wall.IntersectsCircle(c)       // IntersectsLine on the shape gives the same answer
 wall.ClipBox(view)             // the part of the line a viewport shows, and false where it passes by
 ```
 
@@ -337,10 +361,24 @@ m := geom.IdentityMatrix[float64]().Rotate(math.Pi/4).Scale(2, 2)
 geom.Pt(1.0, 0.0).Transform(m) // Point{1.41, 1.41}
 m.Angle()                      // π/4, read back from the matrix
 m.Scaling()                    // Vector{2, 2}
+
+geom.TRSMatrix(10.0, 20.0, math.Pi/2, 2.0, 3.0) // scale, then turn, then move: TranslationMatrix(10, 20).Rotate(π/2).Scale(2, 3)
 ```
 
 `TranslationMatrix`, `RotationMatrix`, `ScaleMatrix`, `ShearMatrix` and `ReflectionMatrix` each have a composing method
 on both sides.
+
+### Numbers
+
+The scalar helpers are exported too, generic like everything else:
+
+```go
+geom.Lerp(10.0, 20.0, 0.25)                                  // 12.5
+geom.InverseLerp(10.0, 20.0, 12.5)                           // 0.25, the ratio Lerp takes
+geom.Remap(0.5, -1.0, 1.0, -30.0, 30.0)                      // 15, a stick axis as a steering angle
+geom.Clamp(15.0, 0.0, 10.0)                                  // 10
+geom.LerpAngle(geom.ToRadians(350), geom.ToRadians(10), 0.5) // across the zero angle, the short way
+```
 
 ### Number types
 

@@ -26,9 +26,9 @@ import (
 // A zero semi-axis is not repaired: it is the degenerate ellipse, the segment the other axis
 // spans, and Contains, DistanceTo and Bounds answer for it as for that segment.
 //
-// The ellipse is a Shape and a Convex, with none of the Intersects methods: two ellipses meet
-// at the roots of a quartic rather than at anything the circle pairs are built on, so it is
-// tested, parted and moved by its Support, through Intersects, Separation and Sweep. It has no
+// The ellipse is a Shape with none of the Intersects methods: two ellipses meet at the roots
+// of a quartic rather than at anything the circle pairs are built on, so it is tested, parted
+// and moved by its Support, through Intersects, Distance, Collide, Sweep and Raycast. It has no
 // vertices either, which are left to RegularPolygon of the same center, semi-axes and angle:
 // RegularPolygon(n) is the polygon of the wanted resolution inscribed in the ellipse, and
 // RegularPolygon.Ellipse converts back.
@@ -354,8 +354,7 @@ func (e Ellipse[T]) Nearest(point Point[T]) Point[T] {
 // where the direction, taken into the frame before the turn and scaled by the semi-axes, names
 // the parameter of that point. It is a float64 point even for an integer T, since it is no
 // lattice point in general. A degenerate ellipse answers with an end of the segment it is, and
-// a direction of no length with the end of the width semi-axis. It is what makes the ellipse a
-// Convex.
+// a direction of no length with the end of the width semi-axis.
 func (e Ellipse[T]) Support(direction Vector[float64]) Point[float64] {
 	w, h := e.Size.Float().XY()
 	local := direction.Rotate(-e.Angle)

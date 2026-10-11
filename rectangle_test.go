@@ -981,6 +981,13 @@ func TestRectangle_Support(t *testing.T) {
 
 		assert.True(t, slices.Contains(slices.Collect(rectangle.Vertices()), rectangle.Support(Vec(1.0, 0.0)).Int()))
 	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		rectangle, direction := Rect(Pt(0, 0), Sz(4, 2)).Rotate(Pi/6), Vec(tenth, 0.7)
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkBool = rectangle.Support(direction).X > 0
+		}), 0)
+	})
 }
 
 func TestRectangle_Contains(t *testing.T) {
@@ -1376,7 +1383,7 @@ func TestRectangle_IntersectionSegment(t *testing.T) {
 	t.Run("matches Segment.IntersectionRectangle", func(t *testing.T) {
 		for _, r := range rectFixtures {
 			for _, s := range segmentFixtures {
-				geomtest.AssertVertices(t, items(r.IntersectionSegment(s)), items(s.IntersectionRectangle(r)), fmt.Sprintf("%s → %s: ", r, s))
+				geomtest.AssertVertices(t, r.IntersectionSegment(s).AppendTo(nil), s.IntersectionRectangle(r).AppendTo(nil), fmt.Sprintf("%s → %s: ", r, s))
 			}
 		}
 	})
@@ -1386,7 +1393,7 @@ func TestRectangle_IntersectionRay(t *testing.T) {
 	t.Run("matches Ray.IntersectionRectangle", func(t *testing.T) {
 		for _, rect := range rectFixtures {
 			for _, r := range rayFixtures {
-				geomtest.AssertVertices(t, items(rect.IntersectionRay(r)), items(r.IntersectionRectangle(rect)), fmt.Sprintf("%s → %s: ", rect, r))
+				geomtest.AssertVertices(t, rect.IntersectionRay(r).AppendTo(nil), r.IntersectionRectangle(rect).AppendTo(nil), fmt.Sprintf("%s → %s: ", rect, r))
 			}
 		}
 	})
@@ -1396,7 +1403,7 @@ func TestRectangle_IntersectionLine(t *testing.T) {
 	t.Run("matches Line.IntersectionRectangle", func(t *testing.T) {
 		for _, r := range rectFixtures {
 			for _, l := range lineFixtures {
-				geomtest.AssertVertices(t, items(r.IntersectionLine(l)), items(l.IntersectionRectangle(r)), fmt.Sprintf("%s → %s: ", r, l))
+				geomtest.AssertVertices(t, r.IntersectionLine(l).AppendTo(nil), l.IntersectionRectangle(r).AppendTo(nil), fmt.Sprintf("%s → %s: ", r, l))
 			}
 		}
 	})

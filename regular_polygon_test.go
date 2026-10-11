@@ -841,6 +841,13 @@ func TestRegularPolygon_Support(t *testing.T) {
 	t.Run("an empty polygon gives its center", func(t *testing.T) {
 		geomtest.AssertPoint(t, RegPol(Pt(1.0, 2.0), Sz(2.0, 2.0), 0, 0, 0).Support(Vec(1.0, 0.0)), Pt(1.0, 2.0))
 	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		polygon, direction := RegPol(Pt(1.0, 2.0), Sz(2.0, 3.0), 7, 0.2, 0.1), Vec(tenth, 0.7)
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkBool = polygon.Support(direction).X > 0
+		}), 0)
+	})
 }
 
 func TestRegularPolygon_Contains(t *testing.T) {
@@ -1121,7 +1128,7 @@ func TestRegularPolygon_IntersectionSegment(t *testing.T) {
 	t.Run("mirrors Segment.IntersectionRegularPolygon", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
 			for _, s := range segmentFixtures {
-				geomtest.AssertVertices(t, items(rp.IntersectionSegment(s)), items(s.IntersectionRegularPolygon(rp)), fmt.Sprintf("%s → %s: ", rp, s))
+				geomtest.AssertVertices(t, rp.IntersectionSegment(s).AppendTo(nil), s.IntersectionRegularPolygon(rp).AppendTo(nil), fmt.Sprintf("%s → %s: ", rp, s))
 			}
 		}
 	})
@@ -1131,7 +1138,7 @@ func TestRegularPolygon_IntersectionRay(t *testing.T) {
 	t.Run("matches Ray.IntersectionRegularPolygon", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
 			for _, r := range rayFixtures {
-				geomtest.AssertVertices(t, items(rp.IntersectionRay(r)), items(r.IntersectionRegularPolygon(rp)), fmt.Sprintf("%s → %s: ", rp, r))
+				geomtest.AssertVertices(t, rp.IntersectionRay(r).AppendTo(nil), r.IntersectionRegularPolygon(rp).AppendTo(nil), fmt.Sprintf("%s → %s: ", rp, r))
 			}
 		}
 	})
@@ -1141,7 +1148,7 @@ func TestRegularPolygon_IntersectionLine(t *testing.T) {
 	t.Run("matches Line.IntersectionRegularPolygon", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
 			for _, l := range lineFixtures {
-				geomtest.AssertVertices(t, items(rp.IntersectionLine(l)), items(l.IntersectionRegularPolygon(rp)), fmt.Sprintf("%s → %s: ", rp, l))
+				geomtest.AssertVertices(t, rp.IntersectionLine(l).AppendTo(nil), l.IntersectionRegularPolygon(rp).AppendTo(nil), fmt.Sprintf("%s → %s: ", rp, l))
 			}
 		}
 	})

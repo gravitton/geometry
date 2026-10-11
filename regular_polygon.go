@@ -437,8 +437,7 @@ func (rp RegularPolygon[T]) Nearest(point Point[T]) Point[T] {
 
 // Support returns the vertex of the polygon farthest along the given direction, as Vertices
 // places it, the first of them in that order where two reach alike, and the center for an
-// empty polygon. It places every vertex, a sine and cosine each. It is what makes the regular
-// polygon a Convex.
+// empty polygon. It places every vertex, a sine and cosine each.
 func (rp RegularPolygon[T]) Support(direction Vector[float64]) Point[float64] {
 	support, reach := rp.Center.Float(), math.Inf(-1)
 	for vertex := range rp.Vertices() {

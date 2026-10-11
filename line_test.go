@@ -3,9 +3,7 @@ package geom_test
 import (
 	"encoding/json"
 	"fmt"
-	"iter"
 	"math"
-	"slices"
 	"testing"
 
 	"github.com/gravitton/assert"
@@ -557,7 +555,7 @@ func TestLine_IntersectionCircle(t *testing.T) {
 	t.Run("matches Circle.IntersectionLine", func(t *testing.T) {
 		for _, l := range lineFixtures {
 			for _, c := range circleFixtures {
-				geomtest.AssertVertices(t, items(l.IntersectionCircle(c)), items(c.IntersectionLine(l)), fmt.Sprintf("%s → %s: ", l, c))
+				geomtest.AssertVertices(t, l.IntersectionCircle(c).AppendTo(nil), c.IntersectionLine(l).AppendTo(nil), fmt.Sprintf("%s → %s: ", l, c))
 			}
 		}
 	})
@@ -705,7 +703,7 @@ func TestLine_IntersectionPolygon(t *testing.T) {
 	t.Run("every point lies on the line and an edge, and exists where IntersectsPolygon holds", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
 			for _, l := range lineFixtures {
-				assertLineCrossings(t, l, l.IntersectionPolygon(p), l.IntersectsPolygon(p), p.Edges, fmt.Sprintf("%s → %s: ", l, p))
+				assertCrossings(t, l, l.IntersectionPolygon(p), l.IntersectsPolygon(p), p.Edges, fmt.Sprintf("%s → %s: ", l, p))
 			}
 		}
 	})
@@ -742,19 +740,19 @@ func TestLine_IntersectionRectangle(t *testing.T) {
 	rectangle := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0))
 
 	t.Run("passing through gives both crossings along the direction", func(t *testing.T) {
-		geomtest.AssertVertices(t, items(Ln(Pt(5.0, 0.0), Vec(1.0, 0.0)).IntersectionRectangle(rectangle)), []Point[float64]{Pt(-2.0, 0.0), Pt(2.0, 0.0)})
-		geomtest.AssertVertices(t, items(Ln(Pt(5.0, 0.0), Vec(1.0, 0.0)).IntersectionRectangle(rectangle.Rotate(Pi/2))), []Point[float64]{Pt(-1.0, 0.0), Pt(1.0, 0.0)})
+		geomtest.AssertVertices(t, Ln(Pt(5.0, 0.0), Vec(1.0, 0.0)).IntersectionRectangle(rectangle).AppendTo(nil), []Point[float64]{Pt(-2.0, 0.0), Pt(2.0, 0.0)})
+		geomtest.AssertVertices(t, Ln(Pt(5.0, 0.0), Vec(1.0, 0.0)).IntersectionRectangle(rectangle.Rotate(Pi/2)).AppendTo(nil), []Point[float64]{Pt(-1.0, 0.0), Pt(1.0, 0.0)})
 	})
 	t.Run("passing by gives none", func(t *testing.T) {
-		assert.Nil(t, items(Ln(Pt(-5.0, 0.0), Vec(0.0, 1.0)).IntersectionRectangle(rectangle)))
+		assert.Nil(t, Ln(Pt(-5.0, 0.0), Vec(0.0, 1.0)).IntersectionRectangle(rectangle).AppendTo(nil))
 	})
 	t.Run("int is exact", func(t *testing.T) {
-		geomtest.AssertVertices(t, items(Ln(Pt(5, 1), Vec(3, 1)).IntersectionRectangle(Rect(Pt(0, 0), Sz(4, 2)))), []Point[int]{Pt(-1, -1), Pt(2, 0)})
+		geomtest.AssertVertices(t, Ln(Pt(5, 1), Vec(3, 1)).IntersectionRectangle(Rect(Pt(0, 0), Sz(4, 2))).AppendTo(nil), []Point[int]{Pt(-1, -1), Pt(2, 0)})
 	})
 	t.Run("every point lies on the line and the boundary, and exists where IntersectsRectangle holds", func(t *testing.T) {
 		for _, rect := range rectFixtures {
 			for _, l := range lineFixtures {
-				assertLineCrossings(t, l, items(l.IntersectionRectangle(rect)), l.IntersectsRectangle(rect), rect.Edges, fmt.Sprintf("%s → %s: ", l, rect))
+				assertCrossings(t, l, l.IntersectionRectangle(rect).AppendTo(nil), l.IntersectsRectangle(rect), rect.Edges, fmt.Sprintf("%s → %s: ", l, rect))
 			}
 		}
 	})
@@ -764,16 +762,16 @@ func TestLine_IntersectionRegularPolygon(t *testing.T) {
 	hexagon := RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop)
 
 	t.Run("passing through gives both crossings along the direction", func(t *testing.T) {
-		geomtest.AssertVertices(t, items(Ln(Pt(20.0, 0.0), Vec(1.0, 0.0)).IntersectionRegularPolygon(hexagon)), []Point[float64]{Pt(-10.0, 0.0), Pt(10.0, 0.0)})
+		geomtest.AssertVertices(t, Ln(Pt(20.0, 0.0), Vec(1.0, 0.0)).IntersectionRegularPolygon(hexagon).AppendTo(nil), []Point[float64]{Pt(-10.0, 0.0), Pt(10.0, 0.0)})
 	})
 	t.Run("passing by and empty give none", func(t *testing.T) {
-		assert.Nil(t, items(Ln(Pt(-20.0, 0.0), Vec(0.0, 1.0)).IntersectionRegularPolygon(hexagon)))
-		assert.Nil(t, items(Ln(Pt(-20.0, 0.0), Vec(1.0, 0.0)).IntersectionRegularPolygon(RegularPolygon[float64]{})))
+		assert.Nil(t, Ln(Pt(-20.0, 0.0), Vec(0.0, 1.0)).IntersectionRegularPolygon(hexagon).AppendTo(nil))
+		assert.Nil(t, Ln(Pt(-20.0, 0.0), Vec(1.0, 0.0)).IntersectionRegularPolygon(RegularPolygon[float64]{}).AppendTo(nil))
 	})
 	t.Run("matches the polygon of the vertices", func(t *testing.T) {
 		for _, l := range lineFixtures {
 			for _, rp := range regularPolygonFixtures {
-				geomtest.AssertVertices(t, items(l.IntersectionRegularPolygon(rp)), l.IntersectionPolygon(rp.Polygon()), fmt.Sprintf("%s → %s: ", l, rp))
+				geomtest.AssertVertices(t, l.IntersectionRegularPolygon(rp).AppendTo(nil), l.IntersectionPolygon(rp.Polygon()), fmt.Sprintf("%s → %s: ", l, rp))
 			}
 		}
 	})
@@ -783,12 +781,12 @@ func TestLine_IntersectionBox(t *testing.T) {
 	box := BoxFromMinMax(Pt(0, 0), Pt(4, 2))
 
 	t.Run("passing through gives both crossings along the direction", func(t *testing.T) {
-		geomtest.AssertVertices(t, items(Ln(Pt(9, 1), Vec(1, 0)).IntersectionBox(box)), []Point[int]{Pt(0, 1), Pt(4, 1)})
+		geomtest.AssertVertices(t, Ln(Pt(9, 1), Vec(1, 0)).IntersectionBox(box).AppendTo(nil), []Point[int]{Pt(0, 1), Pt(4, 1)})
 	})
 	t.Run("every point lies on the line and the boundary, and exists where IntersectsBox holds", func(t *testing.T) {
 		for _, b := range boxFixtures {
 			for _, l := range lineFixtures {
-				assertLineCrossings(t, l, items(l.IntersectionBox(b)), l.IntersectsBox(b), b.Rectangle().Edges, fmt.Sprintf("%s → %s: ", l, b))
+				assertCrossings(t, l, l.IntersectionBox(b).AppendTo(nil), l.IntersectsBox(b), b.Rectangle().Edges, fmt.Sprintf("%s → %s: ", l, b))
 			}
 		}
 	})
@@ -820,7 +818,7 @@ func TestLine_ClipCircle(t *testing.T) {
 	t.Run("over the fixtures", func(t *testing.T) {
 		for _, l := range lineFixtures {
 			for _, c := range circleFixtures {
-				assertLineClipped(t, l, partsOf(l.ClipCircle(c)), l.IntersectsCircle(c), c.ContainsSegment, fmt.Sprintf("%s → %s: ", l, c))
+				assertClipped(t, l, partsOf(l.ClipCircle(c)), l.IntersectsCircle(c), c.ContainsSegment, fmt.Sprintf("%s → %s: ", l, c))
 			}
 		}
 	})
@@ -844,7 +842,7 @@ func TestLine_ClipPolygon(t *testing.T) {
 	t.Run("over the fixtures", func(t *testing.T) {
 		for _, l := range lineFixtures {
 			for _, p := range outlineFixtures() {
-				assertLineClipped(t, l, l.ClipPolygon(p), l.IntersectsPolygon(p), p.ContainsSegment, fmt.Sprintf("%s → %s: ", l, p))
+				assertClipped(t, l, l.ClipPolygon(p), l.IntersectsPolygon(p), p.ContainsSegment, fmt.Sprintf("%s → %s: ", l, p))
 			}
 		}
 	})
@@ -896,7 +894,7 @@ func TestLine_ClipRectangle(t *testing.T) {
 	t.Run("over the fixtures", func(t *testing.T) {
 		for _, l := range lineFixtures {
 			for _, rect := range rectFixtures {
-				assertLineClipped(t, l, partsOf(l.ClipRectangle(rect)), l.IntersectsRectangle(rect), rect.ContainsSegment, fmt.Sprintf("%s → %s: ", l, rect))
+				assertClipped(t, l, partsOf(l.ClipRectangle(rect)), l.IntersectsRectangle(rect), rect.ContainsSegment, fmt.Sprintf("%s → %s: ", l, rect))
 			}
 		}
 	})
@@ -922,7 +920,7 @@ func TestLine_ClipRegularPolygon(t *testing.T) {
 	t.Run("over the fixtures", func(t *testing.T) {
 		for _, l := range lineFixtures {
 			for _, rp := range regularPolygonFixtures {
-				assertLineClipped(t, l, partsOf(l.ClipRegularPolygon(rp)), l.IntersectsRegularPolygon(rp), rp.ContainsSegment, fmt.Sprintf("%s → %s: ", l, rp))
+				assertClipped(t, l, partsOf(l.ClipRegularPolygon(rp)), l.IntersectsRegularPolygon(rp), rp.ContainsSegment, fmt.Sprintf("%s → %s: ", l, rp))
 			}
 		}
 	})
@@ -1089,56 +1087,6 @@ func TestLine_Immutable(t *testing.T) {
 // a caller without one would test it.
 func wide[T Number](l Line[T]) Segment[T] {
 	return Segment[T]{l.PointAt(-10000), l.PointAt(10000)}
-}
-
-// along returns how far the point lies along the direction of the line from its origin, the
-// order the crossings and the parts of a line follow.
-func along[T Number](l Line[T], point Point[T]) float64 {
-	return point.Float().Subtract(l.Origin.Float()).Dot(l.Direction.Float())
-}
-
-// assertLineCrossings checks the boundary crossings of a line over the fixtures: each lies on
-// the line and on an edge, they follow one another along Direction, and there are some only
-// where the line intersects the shape.
-func assertLineCrossings[T Number](t *testing.T, l Line[T], points []Point[T], intersects bool, edges func() iter.Seq[Segment[T]], message string) {
-	t.Helper()
-
-	reached := math.Inf(-1)
-	for _, point := range points {
-		distance := along(l, point)
-
-		assert.True(t, l.Contains(point), message+point.String()+" on the line: ")
-		assert.True(t, slices.ContainsFunc(slices.Collect(edges()), func(edge Segment[T]) bool {
-			return edge.Contains(point)
-		}), message+point.String()+" on the boundary: ")
-		assert.True(t, LessOrEqual(reached, distance), message+point.String()+" in order: ")
-
-		reached = distance
-	}
-	if len(points) > 0 {
-		assert.True(t, intersects, message)
-	}
-}
-
-// assertLineClipped checks the parts a Clip method returns for a line over the fixtures, as
-// assertSegmentClipped checks them for a segment: they exist exactly where the line intersects the
-// shape, each lies on the line and within the shape, and they follow one another along
-// Direction without overlapping.
-func assertLineClipped[T Number](t *testing.T, l Line[T], parts []Segment[T], intersects bool, inside func(Segment[T]) bool, message string) {
-	t.Helper()
-
-	assert.Equal(t, len(parts) > 0, intersects, message)
-
-	reached := math.Inf(-1)
-	for _, part := range parts {
-		from, to := along(l, part.Start), along(l, part.End)
-
-		assert.True(t, l.Contains(part.Start) && l.Contains(part.End), message+part.String()+" on the line: ")
-		assert.True(t, inside(part), message+part.String()+" within the shape: ")
-		assert.True(t, LessOrEqual(reached, from) && LessOrEqual(from, to), message+part.String()+" in order: ")
-
-		reached = to
-	}
 }
 
 // lineFixtures span a zero direction, the axes both ways, diagonals, and short and long
