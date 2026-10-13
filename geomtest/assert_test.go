@@ -101,6 +101,97 @@ func TestAssertEllipse(t *testing.T) {
 	})
 }
 
+func TestAssertArc(t *testing.T) {
+	a := geom.Ac(geom.Pt(1, 2), 3, 0.5, 1.5)
+
+	t.Run("equal", func(t *testing.T) {
+		assertHelper(t, AssertArc, a, geom.Ac(geom.Pt(1, 2), 3, 0.5+2*geom.Pi, 1.5), true)
+	})
+	t.Run("center differs", func(t *testing.T) {
+		assertHelper(t, AssertArc, a, geom.Ac(geom.Pt(9, 2), 3, 0.5, 1.5), false)
+	})
+	t.Run("radius differs", func(t *testing.T) {
+		assertHelper(t, AssertArc, a, geom.Ac(geom.Pt(1, 2), 9, 0.5, 1.5), false)
+	})
+	t.Run("angle differs", func(t *testing.T) {
+		assertHelper(t, AssertArc, a, geom.Ac(geom.Pt(1, 2), 3, 0.9, 1.5), false)
+	})
+	t.Run("sweep differs", func(t *testing.T) {
+		assertHelper(t, AssertArc, a, geom.Ac(geom.Pt(1, 2), 3, 0.5, -1.5), false)
+	})
+}
+
+func TestAssertCapsule(t *testing.T) {
+	c := geom.Cap(geom.Pt(1, 2), geom.Pt(3, 4), 5)
+
+	t.Run("equal", func(t *testing.T) {
+		assertHelper(t, AssertCapsule, c, geom.Cap(geom.Pt(1, 2), geom.Pt(3, 4), 5), true)
+	})
+	t.Run("segment differs", func(t *testing.T) {
+		assertHelper(t, AssertCapsule, c, geom.Cap(geom.Pt(1, 2), geom.Pt(9, 4), 5), false)
+	})
+	t.Run("radius differs", func(t *testing.T) {
+		assertHelper(t, AssertCapsule, c, geom.Cap(geom.Pt(1, 2), geom.Pt(3, 4), 9), false)
+	})
+}
+
+func TestAssertSector(t *testing.T) {
+	a := geom.Sect(geom.Pt(1, 2), 3, 0.5, 1.5)
+
+	t.Run("equal", func(t *testing.T) {
+		assertHelper(t, AssertSector, a, geom.Sect(geom.Pt(1, 2), 3, 0.5+2*geom.Pi, 1.5), true)
+	})
+	t.Run("center differs", func(t *testing.T) {
+		assertHelper(t, AssertSector, a, geom.Sect(geom.Pt(9, 2), 3, 0.5, 1.5), false)
+	})
+	t.Run("radius differs", func(t *testing.T) {
+		assertHelper(t, AssertSector, a, geom.Sect(geom.Pt(1, 2), 9, 0.5, 1.5), false)
+	})
+	t.Run("angle differs", func(t *testing.T) {
+		assertHelper(t, AssertSector, a, geom.Sect(geom.Pt(1, 2), 3, 0.9, 1.5), false)
+	})
+	t.Run("sweep differs", func(t *testing.T) {
+		assertHelper(t, AssertSector, a, geom.Sect(geom.Pt(1, 2), 3, 0.5, -1.5), false)
+	})
+}
+
+func TestAssertQuadraticBezier(t *testing.T) {
+	curve := geom.QuadBez(geom.Pt(1, 2), geom.Pt(3, 4), geom.Pt(5, 6))
+
+	t.Run("equal", func(t *testing.T) {
+		assertHelper(t, AssertQuadraticBezier, curve, geom.QuadBez(geom.Pt(1, 2), geom.Pt(3, 4), geom.Pt(5, 6)), true)
+	})
+	t.Run("start differs", func(t *testing.T) {
+		assertHelper(t, AssertQuadraticBezier, curve, geom.QuadBez(geom.Pt(9, 2), geom.Pt(3, 4), geom.Pt(5, 6)), false)
+	})
+	t.Run("control differs", func(t *testing.T) {
+		assertHelper(t, AssertQuadraticBezier, curve, geom.QuadBez(geom.Pt(1, 2), geom.Pt(9, 4), geom.Pt(5, 6)), false)
+	})
+	t.Run("end differs", func(t *testing.T) {
+		assertHelper(t, AssertQuadraticBezier, curve, geom.QuadBez(geom.Pt(1, 2), geom.Pt(3, 4), geom.Pt(9, 6)), false)
+	})
+}
+
+func TestAssertCubicBezier(t *testing.T) {
+	curve := geom.CubBez(geom.Pt(1, 2), geom.Pt(3, 4), geom.Pt(5, 6), geom.Pt(7, 8))
+
+	t.Run("equal", func(t *testing.T) {
+		assertHelper(t, AssertCubicBezier, curve, geom.CubBez(geom.Pt(1, 2), geom.Pt(3, 4), geom.Pt(5, 6), geom.Pt(7, 8)), true)
+	})
+	t.Run("start differs", func(t *testing.T) {
+		assertHelper(t, AssertCubicBezier, curve, geom.CubBez(geom.Pt(9, 2), geom.Pt(3, 4), geom.Pt(5, 6), geom.Pt(7, 8)), false)
+	})
+	t.Run("control1 differs", func(t *testing.T) {
+		assertHelper(t, AssertCubicBezier, curve, geom.CubBez(geom.Pt(1, 2), geom.Pt(9, 4), geom.Pt(5, 6), geom.Pt(7, 8)), false)
+	})
+	t.Run("control2 differs", func(t *testing.T) {
+		assertHelper(t, AssertCubicBezier, curve, geom.CubBez(geom.Pt(1, 2), geom.Pt(3, 4), geom.Pt(9, 6), geom.Pt(7, 8)), false)
+	})
+	t.Run("end differs", func(t *testing.T) {
+		assertHelper(t, AssertCubicBezier, curve, geom.CubBez(geom.Pt(1, 2), geom.Pt(3, 4), geom.Pt(5, 6), geom.Pt(9, 8)), false)
+	})
+}
+
 func TestAssertSegment(t *testing.T) {
 	s := geom.Seg(geom.Pt(1, 2), geom.Pt(3, 4))
 
@@ -242,6 +333,17 @@ func TestAssertPolygon(t *testing.T) {
 	})
 	t.Run("vertex differs", func(t *testing.T) {
 		assertHelper(t, AssertPolygon, p, geom.Pol([]geom.Point[int]{geom.Pt(1, 2), geom.Pt(9, 4)}), false)
+	})
+}
+
+func TestAssertPolyline(t *testing.T) {
+	p := geom.PolLn([]geom.Point[int]{geom.Pt(1, 2), geom.Pt(3, 4)})
+
+	t.Run("equal", func(t *testing.T) {
+		assertHelper(t, AssertPolyline, p, geom.PolLn([]geom.Point[int]{geom.Pt(1, 2), geom.Pt(3, 4)}), true)
+	})
+	t.Run("point differs", func(t *testing.T) {
+		assertHelper(t, AssertPolyline, p, geom.PolLn([]geom.Point[int]{geom.Pt(1, 2), geom.Pt(9, 4)}), false)
 	})
 }
 

@@ -21,8 +21,23 @@ type Circle = geom.Circle[int]
 // Ellipse is geom.Ellipse[int].
 type Ellipse = geom.Ellipse[int]
 
+// Arc is geom.Arc[int].
+type Arc = geom.Arc[int]
+
+// Sector is geom.Sector[int].
+type Sector = geom.Sector[int]
+
+// Capsule is geom.Capsule[int].
+type Capsule = geom.Capsule[int]
+
 // Segment is geom.Segment[int].
 type Segment = geom.Segment[int]
+
+// QuadraticBezier is geom.QuadraticBezier[int].
+type QuadraticBezier = geom.QuadraticBezier[int]
+
+// CubicBezier is geom.CubicBezier[int].
+type CubicBezier = geom.CubicBezier[int]
 
 // Ray is geom.Ray[int].
 type Ray = geom.Ray[int]
@@ -44,6 +59,9 @@ type Box = geom.Box[int]
 
 // Polygon is geom.Polygon[int].
 type Polygon = geom.Polygon[int]
+
+// Polyline is geom.Polyline[int].
+type Polyline = geom.Polyline[int]
 
 // RegularPolygon is geom.RegularPolygon[int].
 type RegularPolygon = geom.RegularPolygon[int]
@@ -79,9 +97,34 @@ func Ell[T geom.Number](center geom.Point[T], size geom.Size[T], angle float64) 
 	return geom.Ell(center, size, angle).Int()
 }
 
+// Ac is shorthand for geom.Ac(center, radius, angle, sweep).Int()
+func Ac[T geom.Number](center geom.Point[T], radius T, angle, sweep float64) Arc {
+	return geom.Ac(center, radius, angle, sweep).Int()
+}
+
+// Sect is shorthand for geom.Sect(center, radius, angle, sweep).Int()
+func Sect[T geom.Number](center geom.Point[T], radius T, angle, sweep float64) Sector {
+	return geom.Sect(center, radius, angle, sweep).Int()
+}
+
+// Cap is shorthand for geom.Cap(start, end, radius).Int()
+func Cap[T geom.Number](start, end geom.Point[T], radius T) Capsule {
+	return geom.Cap(start, end, radius).Int()
+}
+
 // Seg is shorthand for geom.Seg(start, end).Int()
 func Seg[T geom.Number](start, end geom.Point[T]) Segment {
 	return geom.Seg(start, end).Int()
+}
+
+// QuadBez is shorthand for geom.QuadBez(start, control, end).Int()
+func QuadBez[T geom.Number](start, control, end geom.Point[T]) QuadraticBezier {
+	return geom.QuadBez(start, control, end).Int()
+}
+
+// CubBez is shorthand for geom.CubBez(start, control1, control2, end).Int()
+func CubBez[T geom.Number](start, control1, control2, end geom.Point[T]) CubicBezier {
+	return geom.CubBez(start, control1, control2, end).Int()
 }
 
 // Ry is shorthand for geom.Ry(origin, direction).Int()
@@ -107,6 +150,11 @@ func Bx[T geom.Number](a, b geom.Point[T]) Box {
 // Pol is shorthand for geom.Pol(vertices).Int()
 func Pol[T geom.Number](vertices []geom.Point[T]) Polygon {
 	return geom.Pol(vertices).Int()
+}
+
+// PolLn is shorthand for geom.PolLn(points).Int()
+func PolLn[T geom.Number](points []geom.Point[T]) Polyline {
+	return geom.PolLn(points).Int()
 }
 
 // RegPol is shorthand for geom.RegPol(center, size, n, angle, phase).Int()
