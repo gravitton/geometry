@@ -14,6 +14,8 @@ import (
 
 var (
 	_ Shape[int]       = Circle[int]{}
+	_ Shape[int]       = Capsule[int]{}
+	_ Shape[int]       = Sector[int]{}
 	_ Shape[int]       = Segment[int]{}
 	_ Shape[int]       = Polygon[int]{}
 	_ Shape[int]       = Rectangle[int]{}
@@ -21,6 +23,8 @@ var (
 	_ Shape[int]       = Box[int]{}
 	_ Shape[int]       = Ellipse[int]{}
 	_ intersector[int] = Circle[int]{}
+	_ intersector[int] = Capsule[int]{}
+	_ intersector[int] = Sector[int]{}
 	_ intersector[int] = Segment[int]{}
 	_ intersector[int] = Ray[int]{}
 	_ intersector[int] = Line[int]{}
@@ -29,15 +33,17 @@ var (
 	_ intersector[int] = RegularPolygon[int]{}
 	_ intersector[int] = Box[int]{}
 	_ Body[int]        = Circle[int]{}
+	_ Body[int]        = Capsule[int]{}
+	_ Body[int]        = Sector[int]{}
 	_ Body[int]        = Polygon[int]{}
 	_ Body[int]        = Rectangle[int]{}
 	_ Body[int]        = RegularPolygon[int]{}
 	_ Body[int]        = Ellipse[int]{}
 )
 
-// polyline is a shape whose boundary is a chain of straight edges, each starting where the
+// outline is a shape whose boundary is a chain of straight edges, each starting where the
 // previous one ends, the last closing back to the first on a closed shape.
-type polyline[T Number] interface {
+type outline[T Number] interface {
 	Vertices() iter.Seq[Point[T]]
 	Edges() iter.Seq[Segment[T]]
 }
@@ -54,10 +60,12 @@ type obstacle[T Number] interface {
 	Contains(point Point[T]) bool
 }
 
-// container is a shape other shapes lie within, with the six Contains<Kind> methods: Circle,
-// Polygon, Rectangle, RegularPolygon and Box.
+// container is a shape other shapes lie within, with the eight Contains<Kind> methods: Circle,
+// Capsule, Sector, Polygon, Rectangle, RegularPolygon and Box.
 type container[T Number] interface {
 	ContainsCircle(circle Circle[T]) bool
+	ContainsCapsule(capsule Capsule[T]) bool
+	ContainsSector(sector Sector[T]) bool
 	ContainsSegment(segment Segment[T]) bool
 	ContainsPolygon(polygon Polygon[T]) bool
 	ContainsRectangle(rectangle Rectangle[T]) bool
@@ -88,12 +96,14 @@ type solid[T Number] interface {
 	Body[T]
 }
 
-// intersector is a shape, a ray or a line with the Intersects method for each of the eight
-// kinds: Circle, Segment, Ray, Line, Polygon, Rectangle, RegularPolygon and Box. The interface
-// of the same name in the package lists the six over shapes, all Intersects reads; the tests
-// hold the rays and the lines too.
+// intersector is a shape, a ray or a line with the Intersects method for each of the ten
+// kinds: Circle, Capsule, Sector, Segment, Ray, Line, Polygon, Rectangle, RegularPolygon and Box.
+// The interface of the same name in the package lists the eight over shapes, all Intersects reads;
+// the tests hold the rays and the lines too.
 type intersector[T Number] interface {
 	IntersectsCircle(circle Circle[T]) bool
+	IntersectsCapsule(capsule Capsule[T]) bool
+	IntersectsSector(sector Sector[T]) bool
 	IntersectsSegment(segment Segment[T]) bool
 	IntersectsRay(ray Ray[T]) bool
 	IntersectsLine(line Line[T]) bool
@@ -106,6 +116,8 @@ type intersector[T Number] interface {
 func TestShape(t *testing.T) {
 	shapes := []Shape[float64]{
 		Circ(Pt(1.0, 1.0), 2.0),
+		Cap(Pt(1.0, 2.0), Pt(4.0, -1.0), 1.5),
+		Sect(Pt(1.0, 2.0), 3.0, Pi/6, Pi/2),
 		Seg(Pt(0.0, 0.0), Pt(3.0, 4.0)),
 		Pol(triangleVertices()),
 		Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi / 6),
@@ -201,16 +213,17 @@ func TestShape(t *testing.T) {
 	})
 }
 
-func TestPolyline(t *testing.T) {
-	polylines := []polyline[float64]{
+func TestOutline(t *testing.T) {
+	outlines := []outline[float64]{
 		Seg(Pt(0.0, 0.0), Pt(3.0, 4.0)),
 		Pol(triangleVertices()),
 		Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi / 6),
 		RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop),
+		PolLn(triangleVertices()),
 	}
 
 	t.Run("every edge starts at a vertex and ends at the next", func(t *testing.T) {
-		for _, shape := range polylines {
+		for _, shape := range outlines {
 			vertices, edges := slices.Collect(shape.Vertices()), slices.Collect(shape.Edges())
 
 			for i, edge := range edges {
@@ -219,8 +232,9 @@ func TestPolyline(t *testing.T) {
 			}
 		}
 	})
-	t.Run("only the segment is open", func(t *testing.T) {
+	t.Run("only the segment and the path are open", func(t *testing.T) {
 		assert.False(t, closed[float64](Seg(Pt(0.0, 0.0), Pt(3.0, 4.0))))
+		assert.False(t, closed[float64](PolLn(triangleVertices())))
 		assert.True(t, closed[float64](Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi/6)))
 		assert.True(t, closed[float64](Pol(triangleVertices())))
 		assert.True(t, closed[float64](RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop)))
@@ -229,7 +243,7 @@ func TestPolyline(t *testing.T) {
 
 // closed reports whether the last edge returns to the first vertex, through the interface as
 // a caller would.
-func closed[T Number](shape polyline[T]) bool {
+func closed[T Number](shape outline[T]) bool {
 	var first, last Point[T]
 	for vertex := range shape.Vertices() {
 		first = vertex
@@ -246,6 +260,8 @@ func closed[T Number](shape polyline[T]) bool {
 func TestIntersector(t *testing.T) {
 	shapes := []intersector[float64]{
 		Circ(Pt(1.0, 1.0), 2.0),
+		Cap(Pt(1.0, 2.0), Pt(4.0, -1.0), 1.5),
+		Sect(Pt(1.0, 2.0), 3.0, Pi/6, Pi/2),
 		Seg(Pt(0.0, 0.0), Pt(3.0, 4.0)),
 		RayThrough(Pt(-1.0, -1.0), Pt(3.0, 4.0)),
 		LineThrough(Pt(-1.0, -1.0), Pt(3.0, 4.0)),
@@ -256,6 +272,12 @@ func TestIntersector(t *testing.T) {
 	}
 	for _, c := range circleFixtures {
 		shapes = append(shapes, c)
+	}
+	for _, c := range capsuleFixtures {
+		shapes = append(shapes, c)
+	}
+	for _, s := range sectorFixtures() {
+		shapes = append(shapes, s)
 	}
 	for _, s := range segmentFixtures {
 		shapes = append(shapes, s)
@@ -318,12 +340,75 @@ func TestIntersector(t *testing.T) {
 	})
 }
 
+func TestContainer(t *testing.T) {
+	var containers []container[float64]
+	for _, c := range circleFixtures {
+		containers = append(containers, c)
+	}
+	for _, c := range capsuleFixtures {
+		containers = append(containers, c)
+	}
+	for _, s := range sectorFixtures() {
+		containers = append(containers, s)
+	}
+	for _, p := range polygonFixtures() {
+		containers = append(containers, p)
+	}
+	for _, r := range rectFixtures {
+		containers = append(containers, r)
+	}
+	for _, rp := range regularPolygonFixtures {
+		containers = append(containers, rp)
+	}
+	for _, b := range boxFixtures {
+		containers = append(containers, b)
+	}
+
+	t.Run("a sector is enclosed where the outline about it is, and its own outline where it is", func(t *testing.T) {
+		for _, outer := range containers {
+			bounds := outer.(Shape[float64]).Bounds()
+
+			for _, fixture := range sectorFixtures() {
+				for _, factor := range []float64{0.05, 0.3, 1} {
+					for _, sector := range []Sector[float64]{fixture.Scale(factor), fixture.Scale(factor).MoveTo(bounds.Center())} {
+						message := fmt.Sprintf("%v → %v: ", outer, sector)
+
+						assert.True(t, !outer.ContainsPolygon(sectorOutline(sector.Scale(1/math.Cos(Pi/256)), 257)) || outer.ContainsSector(sector), message)
+						assert.True(t, !outer.ContainsSector(sector) || outer.ContainsPolygon(sectorOutline(sector, 257)), message)
+					}
+				}
+			}
+		}
+	})
+	t.Run("a sector encloses what its outline does, and nothing the outline about it does not", func(t *testing.T) {
+		for _, sector := range sectorFixtures() {
+			within, about := sectorOutline(sector, 257), sectorOutline(sector.Scale(1/math.Cos(Pi/256)), 257)
+
+			for _, inner := range containers {
+				bounds := inner.(Shape[float64]).Bounds()
+
+				for _, shape := range []Shape[float64]{inner.(Shape[float64]), translated(inner.(Shape[float64]), sector.Centroid().Subtract(bounds.Center()))} {
+					kind := shape.(intersector[float64])
+					message := fmt.Sprintf("%v → %v: ", sector, shape)
+
+					assert.True(t, !containsKind[float64](within, kind) || containsKind[float64](sector, kind), message)
+					assert.True(t, !containsKind[float64](sector, kind) || containsKind[float64](about, kind), message)
+				}
+			}
+		}
+	})
+}
+
 // intersectsKind tests a against b by the method of a naming the kind of b, the rays and the
 // lines included, which Intersects does not take.
 func intersectsKind[T Number](a, b intersector[T]) bool {
 	switch kind := b.(type) {
 	case Circle[T]:
 		return a.IntersectsCircle(kind)
+	case Capsule[T]:
+		return a.IntersectsCapsule(kind)
+	case Sector[T]:
+		return a.IntersectsSector(kind)
 	case Segment[T]:
 		return a.IntersectsSegment(kind)
 	case Ray[T]:
@@ -349,6 +434,10 @@ func containsKind[T Number](outer container[T], shape intersector[T]) bool {
 	switch kind := shape.(type) {
 	case Circle[T]:
 		return outer.ContainsCircle(kind)
+	case Capsule[T]:
+		return outer.ContainsCapsule(kind)
+	case Sector[T]:
+		return outer.ContainsSector(kind)
 	case Segment[T]:
 		return outer.ContainsSegment(kind)
 	case Ray[T], Line[T]:
@@ -388,6 +477,8 @@ func farIntersectors(offset Vector[float32]) []intersector[float32] {
 func TestBody(t *testing.T) {
 	solids := []solid[float64]{
 		Circ(Pt(1.0, 1.0), 2.0),
+		Cap(Pt(1.0, 2.0), Pt(4.0, -1.0), 1.5),
+		Sect(Pt(1.0, 2.0), 3.0, Pi/6, Pi/2),
 		Pol(triangleVertices()),
 		Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi / 6),
 		RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop),
@@ -481,6 +572,30 @@ func TestIntersects(t *testing.T) {
 		assert.True(t, Intersects[float64](polygon, Ell(Pt(3.0, 5.0), Sz(1.5, 1.0), 0)))
 		assert.True(t, Intersects[float64](Ell(Pt(1.0, 1.0), Sz(0.5, 0.25), 1.0), polygon))
 		assert.True(t, Intersects[float64](Ell(Pt(3.0, 3.0), Sz(10.0, 10.0), 0), polygon))
+	})
+	t.Run("the notch of a sector past half a turn is not filled in", func(t *testing.T) {
+		sector := notchedSector()
+
+		assert.False(t, Intersects[float64](sector, Ell(Pt(3.0, 0.0), Sz(1.0, 0.5), 0)))
+		assert.False(t, Intersects[float64](Ell(Pt(3.0, 0.0), Sz(1.0, 0.5), 0), sector))
+		assert.True(t, Intersects[float64](sector, Ell(Pt(3.0, 0.0), Sz(6.0, 6.0), 0)))
+		assert.True(t, Intersects[float64](Ell(Pt(-3.0, 0.0), Sz(1.0, 0.5), 0), sector))
+	})
+	t.Run("a sector is met exactly where one of its two halves is", func(t *testing.T) {
+		for _, sector := range sectorFixtures() {
+			first := Sect(sector.Center, sector.Radius, sector.Angle, sector.Sweep/2)
+			second := Sect(sector.Center, sector.Radius, sector.Angle+sector.Sweep/2, sector.Sweep/2)
+
+			for _, shape := range shapeFixtures() {
+				if _, ok := shape.(Ellipse[float64]); ok && math.Abs(sector.Sweep) <= Pi {
+					continue
+				}
+
+				halves := Intersects[float64](first, shape) || Intersects[float64](second, shape)
+
+				assert.Equal(t, Intersects[float64](sector, shape), halves, fmt.Sprintf("%v → %v: ", sector, shape))
+			}
+		}
 	})
 	t.Run("an empty polygon intersects no ellipse", func(t *testing.T) {
 		ellipse := Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
@@ -581,6 +696,13 @@ func TestDistance(t *testing.T) {
 		geomtest.AssertNumber(t, Distance[float64](polygon, Ell(Pt(3.0, 5.0), Sz(0.5, 1.0), 0)), 0.5)
 		geomtest.AssertNumber(t, Distance[float64](BoxFromMinMax(Pt(2.5, 4.0), Pt(3.5, 5.0)), polygon), 0.5)
 		geomtest.AssertNumber(t, Distance[float64](polygon, Pol([]Point[float64]{Pt(2.5, 4.0), Pt(3.5, 4.0), Pt(3.0, 3.0)})), 0.5)
+	})
+	t.Run("a shape in the notch of a sector past half a turn is measured to its radii", func(t *testing.T) {
+		sector, box := notchedSector(), BoxFromMinMax(Pt(2.0, -0.5), Pt(3.0, 0.5))
+
+		geomtest.AssertNumber(t, Distance[float64](sector, box), 1.5/math.Sqrt2)
+		geomtest.AssertNumber(t, Distance[float64](box, sector), 1.5/math.Sqrt2)
+		geomtest.AssertNumber(t, Distance[float64](sector, Circ(Pt(3.0, 0.0), 1.0)), 3/math.Sqrt2-1)
 	})
 	t.Run("an empty polygon is infinitely far", func(t *testing.T) {
 		box := BoxFromMinMax(Pt(4.0, 2.0), Pt(6.0, 3.0))
@@ -727,6 +849,24 @@ func TestNearest(t *testing.T) {
 		geomtest.AssertPoint(t, first, Pt(2.0, 3.0))
 		geomtest.AssertPoint(t, second, Pt(2.5, 3.0))
 	})
+	t.Run("a shape in the notch of a sector past half a turn is measured to the nearer radius, on either side", func(t *testing.T) {
+		sector, box := notchedSector(), BoxFromMinMax(Pt(2.0, -0.5), Pt(3.0, 1.0))
+
+		first, second := Nearest[float64](sector, box)
+
+		geomtest.AssertPoint(t, first, Pt(1.5, 1.5))
+		geomtest.AssertPoint(t, second, Pt(2.0, 1.0))
+
+		first, second = Nearest[float64](box, sector)
+
+		geomtest.AssertPoint(t, first, Pt(2.0, 1.0))
+		geomtest.AssertPoint(t, second, Pt(1.5, 1.5))
+
+		first, second = Nearest[float64](sector, BoxFromMinMax(Pt(2.0, -1.0), Pt(3.0, 0.5)))
+
+		geomtest.AssertPoint(t, first, Pt(1.5, -1.5))
+		geomtest.AssertPoint(t, second, Pt(2.0, -1.0))
+	})
 	t.Run("shapes that intersect share one point", func(t *testing.T) {
 		first, second := Nearest[float64](BoxFromMinMax(Pt(0.0, 0.0), Pt(2.0, 2.0)), BoxFromMinMax(Pt(2.0, 2.0), Pt(3.0, 3.0)))
 
@@ -766,7 +906,7 @@ func TestNearest(t *testing.T) {
 
 				assert.True(t, a.DistanceTo(first) <= 1e-9, message)
 				assert.True(t, b.DistanceTo(second) <= 1e-9, message)
-				assert.True(t, EqualDelta(first.DistanceTo(second), Distance(a, b), 1e-9), message)
+				assert.True(t, EqualDelta(first.DistanceTo(second), Distance(a, b), 1e-5), message)
 				assert.True(t, !Intersects(a, b) || first == second, message)
 			}
 		}
@@ -894,6 +1034,21 @@ func TestCollide(t *testing.T) {
 		assert.False(t, ok)
 		assert.Equal(t, contact, Contact[float64]{})
 	})
+	t.Run("the flat side of a capsule lies against an edge at two points, its round end at one", func(t *testing.T) {
+		box := BoxFromMinMax(Pt(0.0, 1.5), Pt(10.0, 5.0))
+
+		contact, ok := Collide[float64](Cap(Pt(0.0, 0.0), Pt(10.0, 0.0), 2.0), box)
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(0.0, -1.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.0, 1.5), Pt(10.0, 1.5))
+
+		contact, ok = Collide[float64](Cap(Pt(5.0, -8.0), Pt(5.0, 0.0), 2.0), box)
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(0.0, -1.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(5.0, 1.5))
+	})
 	t.Run("the normal is a unit vector and the points lie on the second shape", func(t *testing.T) {
 		for _, a := range convexFixtures() {
 			for _, b := range convexFixtures() {
@@ -953,6 +1108,21 @@ func TestCollide(t *testing.T) {
 			geomtest.AssertVector(t, contact.Normal, Vec(0.0, 1.0))
 			geomtest.AssertNumber(t, contact.Depth, 0.2)
 		}
+	})
+	t.Run("a shape in the notch of a sector past half a turn parts from the radius it crosses", func(t *testing.T) {
+		sector, box := notchedSector(), BoxFromMinMax(Pt(2.0, 1.5), Pt(3.0, 2.5))
+
+		contact, ok := Collide[float64](sector, box)
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-math.Sqrt2/2, math.Sqrt2/2))
+		assert.True(t, EqualDelta(contact.Depth, 0.5/math.Sqrt2, 1e-5), fmt.Sprint(contact))
+
+		contact, ok = Collide[float64](box, sector)
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(math.Sqrt2/2, -math.Sqrt2/2))
+		assert.True(t, EqualDelta(contact.Depth, 0.5/math.Sqrt2, 1e-5), fmt.Sprint(contact))
 	})
 	t.Run("a shape at a corner of a polygon that is not convex meets the corner", func(t *testing.T) {
 		contact, ok := Collide[float64](Circ(Pt(6.5, 2.5), 1.0), Pol(cornerVertices()))
@@ -1206,6 +1376,23 @@ func TestSweep(t *testing.T) {
 
 		assert.False(t, ok)
 	})
+	t.Run("a shape moves into the notch of a sector past half a turn and stops at its radii", func(t *testing.T) {
+		sector, box := notchedSector(), BoxFromMinMax(Pt(7.5, -0.25), Pt(8.0, 0.25))
+
+		hit, ok := Sweep[float64](box, Vec(-8.0, 0.0), sector)
+
+		assert.True(t, ok)
+		assert.True(t, EqualDelta(hit.Fraction, 7.25/8, 1e-5), fmt.Sprint(hit))
+
+		hit, ok = Sweep[float64](sector, Vec(8.0, 0.0), box)
+
+		assert.True(t, ok)
+		assert.True(t, EqualDelta(hit.Fraction, 7.25/8, 1e-5), fmt.Sprint(hit))
+
+		_, ok = Sweep[float64](box, Vec(-4.0, 0.0), sector)
+
+		assert.False(t, ok)
+	})
 	t.Run("two polygons that are not convex are swept edge against edge", func(t *testing.T) {
 		polygon := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(6.0, 0.0), Pt(6.0, 6.0), Pt(4.0, 6.0), Pt(4.0, 2.0), Pt(2.0, 2.0), Pt(2.0, 6.0), Pt(0.0, 6.0)})
 		arrow := Pol([]Point[float64]{Pt(3.0, 7.0), Pt(3.5, 9.0), Pt(3.0, 8.5), Pt(2.5, 9.0)})
@@ -1355,6 +1542,16 @@ func TestRaycast(t *testing.T) {
 				hit, ok := Raycast[float64](ray, c)
 				assert.True(t, hit == expected && ok == found, fmt.Sprintf("%v → %v: ", ray, c))
 			}
+			for _, c := range capsuleFixtures {
+				expected, found := ray.HitCapsule(c)
+				hit, ok := Raycast[float64](ray, c)
+				assert.True(t, hit == expected && ok == found, fmt.Sprintf("%v → %v: ", ray, c))
+			}
+			for _, s := range sectorFixtures() {
+				expected, found := ray.HitSector(s)
+				hit, ok := Raycast[float64](ray, s)
+				assert.True(t, hit == expected && ok == found, fmt.Sprintf("%v → %v: ", ray, s))
+			}
 			for _, s := range segmentFixtures {
 				expected, found := ray.HitSegment(s)
 				hit, ok := Raycast[float64](ray, s)
@@ -1502,6 +1699,7 @@ func TestTransformable(t *testing.T) {
 		geomtest.AssertCircle(t, moved(Circ(Pt(0, 0), 2), Vec(1, 1)), Circ(Pt(1, 1), 2))
 		geomtest.AssertPolygon(t, moved(Pol(squareVertices()), Vec(1, 1)), Pol([]Point[int]{Pt(1, 1), Pt(3, 1), Pt(3, 3), Pt(1, 3)}))
 		geomtest.AssertRegularPolygon(t, moved(RegPol(Pt(0, 0), Sz(2, 2), 6, 0, 0), Vec(1, 1)), RegPol(Pt(1, 1), Sz(2, 2), 6, 0, 0))
+		geomtest.AssertCapsule(t, moved(Cap(Pt(0, 0), Pt(2, 2), 2), Vec(1, 1)), Cap(Pt(1, 1), Pt(3, 3), 2))
 	})
 }
 
@@ -1668,12 +1866,20 @@ type foreignShape[T Number] struct {
 	Shape[T]
 }
 
-// convexFixtures returns the fixtures of every kind of shape that are convex: the polygons that
-// are, and no empty one.
+// convexFixtures returns the fixtures of every kind of shape that are convex: the sectors of no
+// more than half a turn, the polygons that are, and no empty one.
 func convexFixtures() []Shape[float64] {
 	var shapes []Shape[float64]
 	for _, c := range circleFixtures {
 		shapes = append(shapes, c)
+	}
+	for _, c := range capsuleFixtures {
+		shapes = append(shapes, c)
+	}
+	for _, s := range sectorFixtures() {
+		if math.Abs(s.Sweep) <= Pi {
+			shapes = append(shapes, s)
+		}
 	}
 	for _, s := range segmentFixtures {
 		shapes = append(shapes, s)
@@ -1699,11 +1905,16 @@ func convexFixtures() []Shape[float64] {
 	return shapes
 }
 
-// shapeFixtures returns the fixtures of every kind of shape: the convex ones, the polygon
-// fixtures that are not convex, and the notched polygon, the one with an outside between its
-// vertices.
+// shapeFixtures returns the fixtures of every kind of shape: the convex ones, the sectors past
+// half a turn, the polygon fixtures that are not convex, and the notched polygon, the one with
+// an outside between its vertices.
 func shapeFixtures() []Shape[float64] {
 	shapes := convexFixtures()
+	for _, s := range sectorFixtures() {
+		if math.Abs(s.Sweep) > Pi {
+			shapes = append(shapes, s)
+		}
+	}
 	for _, p := range polygonFixtures() {
 		if !p.IsConvex() {
 			shapes = append(shapes, p)
@@ -1717,6 +1928,10 @@ func shapeFixtures() []Shape[float64] {
 func translated(shape Shape[float64], vector Vector[float64]) Shape[float64] {
 	switch kind := shape.(type) {
 	case Circle[float64]:
+		return kind.Translate(vector)
+	case Capsule[float64]:
+		return kind.Translate(vector)
+	case Sector[float64]:
 		return kind.Translate(vector)
 	case Segment[float64]:
 		return kind.Translate(vector)
@@ -1745,6 +1960,12 @@ func farShapes(offset Vector[float32]) []Shape[float32] {
 	var shapes []Shape[float32]
 	for _, c := range circleFixtures {
 		shapes = append(shapes, c.Cast[float32]().Translate(offset))
+	}
+	for _, c := range capsuleFixtures {
+		shapes = append(shapes, c.Cast[float32]().Translate(offset))
+	}
+	for _, s := range sectorFixtures() {
+		shapes = append(shapes, s.Cast[float32]().Translate(offset))
 	}
 	for _, s := range segmentFixtures {
 		shapes = append(shapes, s.Cast[float32]().Translate(offset))

@@ -175,7 +175,21 @@ e.Foci()                                               // the two focal points, 
 e.Circle()                                             // the circle around it, of the major semi-axis
 ```
 
-Neither has vertices: the `RegularPolygon` of the wanted resolution is what draws or
+A `Capsule` is a segment with a radius, the rounded collider of a character:
+
+```go
+body := geom.Cap(geom.Pt(0.0, 0.0), geom.Pt(0.0, 10.0), 2.0) // from Start to End, every point within the radius
+body.Polygon(0.25)                                           // the outline that draws it, within a tolerance
+body.Contains(geom.Pt(1.5, 11.0))                            // true, in the round end
+body.DistanceTo(geom.Pt(6.0, 5.0))                           // 4, to the side
+body.Grow(1.0)                                               // the radius; the segment stays
+body.IntersectsRectangle(r)                                  // a named kind: Intersects<Kind> and Contains<Kind>
+hit, ok := ray.HitCapsule(body)                              // on every side, and a cast at it in closed form
+part, ok := beam.ClipCapsule(body)                           // the part inside, and IntersectionCapsule the two crossings
+geom.Collide[float64](body, r)                               // parted and swept as every Shape is
+```
+
+Neither a circle nor an ellipse has vertices: the `RegularPolygon` of the wanted resolution is what draws or
 walks one, and it converts back exactly.
 
 ```go
@@ -192,6 +206,7 @@ s := geom.Seg(geom.Pt(0, 0), geom.Pt(3, 4))
 s.Length()                  // 5
 s.DistanceTo(geom.Pt(3, 0)) // 2.4, to the nearest point of the segment
 s.Contains(geom.Pt(6, 8))   // false, the segment ends at (3,4)
+s.NearestFraction(geom.Pt(3, 0)) // 0.36, how far along the nearest point lies, the t PointAt takes
 
 p := geom.Pol([]geom.Point[int]{{0, 0}, {4, 0}, {4, 4}, {2, 1}, {0, 4}})
 p.Area()                  // 10
@@ -291,6 +306,58 @@ hit, ok = s.HitEllipse(e)                 // an ellipse has this one method of t
 
 buffer = s.AppendIntersectionPolygon(buffer[:0], p) // a slice result has an Append form, as strconv does, on the
 hull = p.AppendConvexHull(hull[:0])                 // side that holds it, so a reused buffer allocates nothing
+```
+
+An `Arc` is a part of a circle and a `Sector` the slice of the disc it bounds, a vision cone or a pie slice:
+
+```go
+cone := geom.Sect(guard, 8.0, facing-geom.Pi/6, geom.Pi/3) // center, radius, the angle it starts at and its sweep
+cone.Contains(player)                                      // the tolerance is on the distance to its radii, not an angle
+cone.IntersectsCircle(c)                                   // a target with a size, and IntersectsBox and the rest
+cone.ContainsCircle(c)                                     // wholly within it, as room.ContainsSector(cone) is the other way
+hit, ok := ray.HitSector(cone)                             // a cast at it; it is a Shape, so Intersects takes it too
+parts := beam.ClipSector(cone)                             // the parts inside, two through the notch of a wide one
+cone.Rotate(0.1)                                           // about its center; Area, Centroid and Inertia as a Body
+cone.Polygon(0.25)                                         // the outline that draws it, within a tolerance
+cone.DistanceToSector(other)                               // the gap between two, whatever the sweeps
+
+ring := geom.Ac(geom.Pt(0.0, 0.0), 5.0, -geom.Pi/2, 2*geom.Pi*progress) // a signed sweep; a full turn is the circle
+ring.PointAt(0.5)                                                        // also Start, End, Midpoint and Length
+ring.Nearest(cursor)                                                     // DistanceTo and Contains, as on every shape
+ring.Polyline(0.25)                                                      // the path that draws it, within a tolerance
+done, rest := ring.Split(0.5)                                            // two arcs tracing the same points
+bend, ok := geom.ArcThrough(a, b, c)                                     // from a through b to c
+hit, ok = ray.HitArc(ring)                                               // a curved wall, and IntersectionArc its crossings
+```
+
+A `Polyline` is an open path, a road, a patrol route or a stroke drawn by a pointer:
+
+```go
+route := geom.PolLn([]geom.Point[float64]{geom.Pt(0.0, 0.0), geom.Pt(4.0, 0.0), geom.Pt(4.0, 3.0)})
+route.Length()                            // 7
+route.PointAt(0.5)                        // (3.5,0), half the length along; outside [0, 1] it runs on past the ends
+t := route.NearestFraction(player)        // how far along the route the nearest point lies, the t PointAt takes
+route.Nearest(player)                     // that point; DistanceTo and Contains as on every shape
+for p := range route.Every(0.5) {         // a point every half unit of length, in one walk
+}
+route.Simplify(0.25)                      // Ramer–Douglas–Peucker, the ends kept; AppendSimplify into a buffer
+route.Lerp(detour, 0.5)                   // halfway to a path of as many points, each point toward its own
+p.Polyline()                              // the outline of a polygon as a closed path, and Polygon() back
+hit, ok := ray.HitPolyline(route)         // a wall of several edges, and IntersectionPolyline every crossing
+```
+
+A `QuadraticBezier` and a `CubicBezier` are curves of control points, flattened to a `Polyline` to measure them:
+
+```go
+curve := geom.CubBez(geom.Pt(0.0, 0.0), geom.Pt(0.0, 4.0), geom.Pt(8.0, 4.0), geom.Pt(8.0, 0.0))
+curve.PointAt(0.5)                  // (4,3); the parameter is not a fraction of the length
+curve.TangentAt(0.5)                  // the direction it runs in there, in float64
+curve.Bounds()                      // the box of the curve itself, not of its control points
+first, second := curve.Split(0.25)  // two curves tracing the same points
+path := curve.Polyline(0.05)        // a path within the tolerance of the curve, denser where it bends
+path.Length()                       // its length, Nearest and DistanceTo are the curve's to within the tolerance
+hit, ok := ray.HitCubicBezier(curve) // a curved wall, cast at with no tolerance to give, and IntersectionCubicBezier
+geom.QuadBez(a, control, b).Cubic() // a quadratic curve has the same methods, and is a cubic exactly
 ```
 
 A `Ray` is a half-line from `Origin` along `Direction`. Its `Clip<Kind>` is the part inside a shape, and its

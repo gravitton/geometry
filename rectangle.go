@@ -563,6 +563,32 @@ func (r Rectangle[T]) ContainsCircle(circle Circle[T]) bool {
 	return r.walk(circle.Center).clears(circle)
 }
 
+// ContainsCapsule reports whether the given capsule lies within the rectangle: the circles of its
+// radius about both ends of its segment do, as ContainsCircle decides it, and a rectangle holds every point between points it contains.
+func (r Rectangle[T]) ContainsCapsule(capsule Capsule[T]) bool {
+	return r.ContainsCircle(Circle[T]{capsule.Segment.Start, capsule.Radius}) && r.ContainsCircle(Circle[T]{capsule.Segment.End, capsule.Radius})
+}
+
+// ContainsSector reports whether the given sector lies within the rectangle: its center, the
+// two ends of its arc and the points of it reaching farthest toward each side are contained,
+// within the tolerance, and a rectangle holds every point between points it contains.
+func (r Rectangle[T]) ContainsSector(sector Sector[T]) bool {
+	outer, inner := r.Float(), sector.Float()
+	for _, corner := range inner.corners() {
+		if !outer.Contains(corner) {
+			return false
+		}
+	}
+
+	for edge := range outer.Edges() {
+		if normal := edge.Normal(); !outer.Contains(inner.Support(normal)) || !outer.Contains(inner.Support(normal.Negate())) {
+			return false
+		}
+	}
+
+	return true
+}
+
 // ContainsSegment reports whether the segment lies within the rectangle: both endpoints are
 // contained, within the tolerance, and a convex shape holds every point between two it contains.
 func (r Rectangle[T]) ContainsSegment(segment Segment[T]) bool {
@@ -636,6 +662,18 @@ func (r Rectangle[T]) ContainsBox(box Box[T]) bool {
 // Circle.IntersectsRectangle does.
 func (r Rectangle[T]) IntersectsCircle(circle Circle[T]) bool {
 	return circle.IntersectsRectangle(r)
+}
+
+// IntersectsCapsule reports whether the rectangle and the capsule share a point, as
+// Capsule.IntersectsRectangle does.
+func (r Rectangle[T]) IntersectsCapsule(capsule Capsule[T]) bool {
+	return capsule.IntersectsRectangle(r)
+}
+
+// IntersectsSector reports whether the rectangle and the sector share a point, as
+// Sector.IntersectsRectangle does.
+func (r Rectangle[T]) IntersectsSector(sector Sector[T]) bool {
+	return sector.IntersectsRectangle(r)
 }
 
 // IntersectsSegment reports whether the rectangle and the segment share a point, as

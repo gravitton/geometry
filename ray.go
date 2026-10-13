@@ -122,6 +122,17 @@ func (r Ray[T]) Nearest(point Point[T]) Point[T] {
 	return r.reach(point, point).Nearest(point)
 }
 
+// NearestFraction returns how many times Direction the point of the ray nearest to the given
+// point lies from Origin, the t PointAt takes back to it: zero where the foot of the
+// perpendicular falls behind the origin, and with no upper end, as the ray has none. A zero
+// Direction gives zero.
+func (r Ray[T]) NearestFraction(point Point[T]) float64 {
+	direction := r.Direction.Float()
+	offset := point.Float().Subtract(r.Origin.Float())
+
+	return max(ratio(offset.Dot(direction), direction.LengthSquared()), 0)
+}
+
 // Contains reports whether the given point lies on the ray, within the tolerance: it holds
 // exactly where DistanceTo is zero.
 func (r Ray[T]) Contains(point Point[T]) bool {
@@ -132,6 +143,18 @@ func (r Ray[T]) Contains(point Point[T]) bool {
 // Circle.IntersectsRay does.
 func (r Ray[T]) IntersectsCircle(circle Circle[T]) bool {
 	return circle.IntersectsRay(r)
+}
+
+// IntersectsCapsule reports whether the ray and the capsule share a point, as
+// Capsule.IntersectsRay does.
+func (r Ray[T]) IntersectsCapsule(capsule Capsule[T]) bool {
+	return capsule.IntersectsRay(r)
+}
+
+// IntersectsSector reports whether the ray and the sector share a point, as
+// Sector.IntersectsRay does.
+func (r Ray[T]) IntersectsSector(sector Sector[T]) bool {
+	return sector.IntersectsRay(r)
 }
 
 // IntersectsSegment reports whether the ray and the segment share a point, as
@@ -193,6 +216,24 @@ func (r Ray[T]) IntersectionCircle(circle Circle[T]) Pair[Point[T]] {
 	return circle.IntersectionRay(r)
 }
 
+// IntersectionCapsule returns the points where the ray crosses the capsule boundary, as
+// Capsule.IntersectionRay does.
+func (r Ray[T]) IntersectionCapsule(capsule Capsule[T]) Pair[Point[T]] {
+	return capsule.IntersectionRay(r)
+}
+
+// IntersectionSector returns the points where the ray crosses the sector boundary, as
+// Sector.IntersectionRay does, which has the Append form.
+func (r Ray[T]) IntersectionSector(sector Sector[T]) []Point[T] {
+	return sector.IntersectionRay(r)
+}
+
+// IntersectionArc returns the points where the ray crosses the arc, as
+// Arc.IntersectionRay does.
+func (r Ray[T]) IntersectionArc(arc Arc[T]) Pair[Point[T]] {
+	return arc.IntersectionRay(r)
+}
+
 // IntersectionSegment returns the point where the ray and the segment cross, and false when they
 // do not, as Segment.IntersectionRay does.
 func (r Ray[T]) IntersectionSegment(segment Segment[T]) (Point[T], bool) {
@@ -229,6 +270,32 @@ func (r Ray[T]) IntersectionLine(line Line[T]) (Point[T], bool) {
 	}
 
 	return r.IntersectionRay(behind)
+}
+
+// IntersectionPolyline returns the points where the ray crosses the path, in order along
+// it, as Segment.IntersectionPolyline finds them on the reach of the ray past the path.
+func (r Ray[T]) IntersectionPolyline(polyline Polyline[T]) []Point[T] {
+	return r.AppendIntersectionPolyline(nil, polyline)
+}
+
+// AppendIntersectionPolyline appends the points IntersectionPolyline returns to dst and returns
+// the extended slice, so a caller reusing dst allocates nothing once it has room.
+func (r Ray[T]) AppendIntersectionPolyline(dst []Point[T], polyline Polyline[T]) []Point[T] {
+	bounds := polyline.Bounds()
+
+	return r.reach(bounds.Min, bounds.Max).AppendIntersectionPolyline(dst, polyline)
+}
+
+// IntersectionQuadraticBezier returns the points where the ray crosses the curve, as
+// QuadraticBezier.IntersectionRay does.
+func (r Ray[T]) IntersectionQuadraticBezier(curve QuadraticBezier[T]) Pair[Point[T]] {
+	return curve.IntersectionRay(r)
+}
+
+// IntersectionCubicBezier returns the points where the ray crosses the curve, as
+// CubicBezier.IntersectionRay does, which has the Append form.
+func (r Ray[T]) IntersectionCubicBezier(curve CubicBezier[T]) []Point[T] {
+	return curve.IntersectionRay(r)
 }
 
 // IntersectionPolygon returns the points where the ray crosses the polygon boundary, from Origin
@@ -271,6 +338,26 @@ func (r Ray[T]) IntersectionBox(box Box[T]) Pair[Point[T]] {
 // of the circle it reaches. It allocates nothing.
 func (r Ray[T]) ClipCircle(circle Circle[T]) (Segment[T], bool) {
 	return r.reach(circle.minMax()).ClipCircle(circle)
+}
+
+// ClipCapsule returns the part of the ray inside the capsule, boundary included within the
+// tolerance, and false where they share no point, as Segment.ClipCapsule clips the reach of
+// the ray past the capsule. It allocates nothing.
+func (r Ray[T]) ClipCapsule(capsule Capsule[T]) (Segment[T], bool) {
+	return r.reach(capsule.minMax()).ClipCapsule(capsule)
+}
+
+// ClipSector returns the parts of the ray inside the sector, boundary included within the
+// tolerance, in order along it, as Segment.ClipSector clips the reach of the ray past the
+// sector.
+func (r Ray[T]) ClipSector(sector Sector[T]) []Segment[T] {
+	return r.AppendClipSector(nil, sector)
+}
+
+// AppendClipSector appends the parts ClipSector returns to dst and returns the extended slice,
+// so a caller reusing dst allocates nothing once it has room.
+func (r Ray[T]) AppendClipSector(dst []Segment[T], sector Sector[T]) []Segment[T] {
+	return r.reach(sector.minMax()).AppendClipSector(dst, sector)
 }
 
 // ClipPolygon returns the parts of the ray inside the polygon, boundary included within the
@@ -323,6 +410,31 @@ func (r Ray[T]) HitCircle(circle Circle[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(circle.minMax()).HitCircle(circle))
 }
 
+// HitCapsule returns where the ray first reaches the capsule from outside, and false where it
+// does not, as Segment.HitCapsule finds it on the reach of the ray past the capsule, with the
+// Fraction in units of Direction: a point of a round end or of a straight side, with the normal
+// of the boundary there. An Origin the capsule contains, boundary included within the
+// tolerance, is already in it and hits nothing. It allocates nothing.
+func (r Ray[T]) HitCapsule(capsule Capsule[T]) (Hit[T], bool) {
+	return r.rescale(r.reach(capsule.minMax()).HitCapsule(capsule))
+}
+
+// HitSector returns where the ray first reaches the sector from outside, and false where it
+// does not, as Segment.HitSector finds it on the reach of the ray past the sector, with the
+// Fraction in units of Direction: a point of the arc or of a radius, with the normal of the
+// boundary there. An Origin the sector contains, boundary included within the tolerance, is
+// already in it and hits nothing. It allocates nothing.
+func (r Ray[T]) HitSector(sector Sector[T]) (Hit[T], bool) {
+	return r.rescale(r.reach(sector.minMax()).HitSector(sector))
+}
+
+// HitArc returns where the ray first reaches the arc, a curved wall, and false where it does
+// not, as Segment.HitArc finds it on the reach of the ray past the arc, with the Fraction in
+// units of Direction. An Origin on the arc hits nothing. It allocates nothing.
+func (r Ray[T]) HitArc(arc Arc[T]) (Hit[T], bool) {
+	return r.rescale(r.reach(arc.minMax()).HitArc(arc))
+}
+
 // HitSegment returns where the ray first reaches the segment, a wall, and false where it does
 // not, as Segment.HitSegment finds it on the reach of the ray past the segment, with the Fraction
 // in units of Direction: the point IntersectionSegment returns, with the perpendicular of the
@@ -370,6 +482,34 @@ func (r Ray[T]) HitLine(line Line[T]) (Hit[T], bool) {
 	}
 
 	return r.HitRay(behind)
+}
+
+// HitPolyline returns where the ray first reaches the path, a wall of several edges, and false
+// where it does not, as Segment.HitPolyline finds it on the reach of the ray past the path,
+// with the Fraction in units of Direction. An Origin on the path hits nothing. It allocates
+// nothing.
+func (r Ray[T]) HitPolyline(polyline Polyline[T]) (Hit[T], bool) {
+	bounds := polyline.Bounds()
+
+	return r.rescale(r.reach(bounds.Min, bounds.Max).HitPolyline(polyline))
+}
+
+// HitQuadraticBezier returns where the ray first reaches the curve, a curved wall, and false
+// where it does not, as Segment.HitQuadraticBezier finds it on the reach of the ray past the
+// curve, with the Fraction in units of Direction. It allocates nothing.
+func (r Ray[T]) HitQuadraticBezier(curve QuadraticBezier[T]) (Hit[T], bool) {
+	bounds := curve.Bounds()
+
+	return r.rescale(r.reach(bounds.Min, bounds.Max).HitQuadraticBezier(curve))
+}
+
+// HitCubicBezier returns where the ray first reaches the curve, a curved wall, and false where
+// it does not, as Segment.HitCubicBezier finds it on the reach of the ray past the curve, with
+// the Fraction in units of Direction. It allocates nothing.
+func (r Ray[T]) HitCubicBezier(curve CubicBezier[T]) (Hit[T], bool) {
+	bounds := curve.Bounds()
+
+	return r.rescale(r.reach(bounds.Min, bounds.Max).HitCubicBezier(curve))
 }
 
 // HitPolygon returns where the ray first reaches the polygon from outside, and false where it

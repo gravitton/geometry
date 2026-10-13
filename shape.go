@@ -5,9 +5,9 @@ import (
 	"slices"
 )
 
-// Shape is what every shape answers: Circle, Segment, Polygon, Rectangle, RegularPolygon, Box
-// and Ellipse. Bounds is the Box around it, Contains includes the boundary within
-// the tolerance, DistanceTo is zero exactly where Contains holds, DistanceSquaredTo is the
+// Shape is what every shape answers: Circle, Capsule, Sector, Segment, Polygon, Rectangle,
+// RegularPolygon, Box and Ellipse. Bounds is the Box around it, Contains includes the boundary within the
+// tolerance, DistanceTo is zero exactly where Contains holds, DistanceSquaredTo is the
 // value it takes the root of, and Nearest is the point it is measured to, the point itself
 // exactly where Contains holds. Support is the point of the shape farthest along a direction
 // of any length, in float64, any one of them where several reach alike.
@@ -16,7 +16,8 @@ import (
 // which one: Intersects, Distance, Nearest, Collide, Sweep and Raycast take any two. Two kinds of this
 // package with a method for each other are tested by that method. Any other pair, an Ellipse
 // or a shape of another package among them, is known by its Support alone, which describes a
-// shape with no notch: such a pair is measured in float64 and closed on within the tolerance,
+// shape with no notch, so a Polygon that is not convex is taken edge by edge and a Sector past
+// half a turn as its two halves: such a pair is measured in float64 and closed on within the tolerance,
 // so two of them touching within it may answer either way, and for an integer T only outlines
 // meeting on the lattice touch at all.
 //
@@ -32,7 +33,7 @@ type Shape[T Number] interface {
 }
 
 // Body is a shape with an area, the mass properties a physics engine takes from it: Circle,
-// Polygon, Rectangle, RegularPolygon and Ellipse. Area is the mass at unit density, Centroid the
+// Capsule, Sector, Polygon, Rectangle, RegularPolygon and Ellipse. Area is the mass at unit density, Centroid the
 // center of mass and Inertia the polar second moment of area about it, the rotational inertia
 // at unit density; a physics body multiplies Area and Inertia by its density and never asks
 // which shape it holds. Segment is not a Body, since it encloses no area, and Size is not a
@@ -52,8 +53,8 @@ type Body[T Number] interface {
 // pair is tested from what the two are: an empty polygon intersects nothing; a Circle is tested
 // by its radius on the distance of the other to its center, the comparison every circle pair
 // makes; a Polygon that is not convex edge by edge, or one within the other, so a notch is not
-// filled in; and two others by their supports. That is how an Ellipse, and a shape of another
-// package, is tested.
+// filled in; a Sector past half a turn as its two halves, each convex; and two others by their
+// supports. That is how an Ellipse, and a shape of another package, is tested.
 //
 // Both arguments escape to the heap, so a loop that knows its types calls the named method
 // directly and allocates nothing. The shapes of this package are named by value, so a pointer
@@ -63,6 +64,10 @@ func Intersects[T Number](a, b Shape[T]) bool {
 		switch kind := b.(type) {
 		case Circle[T]:
 			return shape.IntersectsCircle(kind)
+		case Capsule[T]:
+			return shape.IntersectsCapsule(kind)
+		case Sector[T]:
+			return shape.IntersectsSector(kind)
 		case Segment[T]:
 			return shape.IntersectsSegment(kind)
 		case Polygon[T]:
@@ -88,6 +93,12 @@ func Intersects[T Number](a, b Shape[T]) bool {
 		return polygon.intersectsSupport(other)
 	}
 
+	if sector, other, ok := eitherReflex(a, b); ok {
+		halves := sector.halves()
+
+		return Intersects[T](halves[0], other) || Intersects[T](halves[1], other)
+	}
+
 	return minkowski[T]{a: a, b: b}.intersects()
 }
 
@@ -103,11 +114,13 @@ func Distance[T Number](a, b Shape[T]) float64 {
 // by what they are.
 //
 // Two kinds with a distance of their own are measured by it, which is zero where they
-// intersect: two circles by Circle.DistanceSquaredToCircle, two segments by
-// Segment.DistanceSquaredToSegment, and two boxes by Box.DistanceSquaredToBox. Any other pair is
+// intersect: two circles by Circle.DistanceSquaredToCircle, two capsules by
+// Capsule.DistanceSquaredToCapsule, two sectors by Sector.DistanceSquaredToSector, two segments by Segment.DistanceSquaredToSegment, and two
+// boxes by Box.DistanceSquaredToBox. Any other pair is
 // asked Intersects first. A Circle is then the distance of the other to its center less its
 // radius. A Polygon that is not convex is the least over its edges, so a shape in a notch is
-// measured to the notch, and an empty polygon is infinitely far from everything. Any other two
+// measured to the notch, and an empty polygon is infinitely far from everything. A Sector past
+// half a turn is the nearer of its two halves. Any other two
 // are measured by their supports, in float64: two outlines to the rounding of the arithmetic,
 // and a round shape to within Delta of the distance.
 //
@@ -118,6 +131,14 @@ func DistanceSquared[T Number](a, b Shape[T]) float64 {
 	case Circle[T]:
 		if other, ok := b.(Circle[T]); ok {
 			return kind.DistanceSquaredToCircle(other)
+		}
+	case Capsule[T]:
+		if other, ok := b.(Capsule[T]); ok {
+			return kind.DistanceSquaredToCapsule(other)
+		}
+	case Sector[T]:
+		if other, ok := b.(Sector[T]); ok {
+			return kind.DistanceSquaredToSector(other)
 		}
 	case Segment[T]:
 		if other, ok := b.(Segment[T]); ok {
@@ -152,6 +173,12 @@ func DistanceSquared[T Number](a, b Shape[T]) float64 {
 		return gap
 	}
 
+	if sector, other, ok := eitherReflex(a, b); ok {
+		halves := sector.halves()
+
+		return min(DistanceSquared[T](halves[0], other), DistanceSquared[T](halves[1], other))
+	}
+
 	return minkowski[T]{a: a, b: b}.nearest().point.LengthSquared()
 }
 
@@ -163,7 +190,8 @@ func DistanceSquared[T Number](a, b Shape[T]) float64 {
 //
 // The pair is found as DistanceSquared measures it. A Circle gives the point of the other
 // nearest its center and its own point nearest that one. A Polygon that is not convex gives
-// the pair of its nearest edge, so a shape in a notch is measured to the notch. Any other two are
+// the pair of its nearest edge, so a shape in a notch is measured to the notch, and a Sector
+// past half a turn that of its nearer half. Any other two are
 // measured by their supports, in float64: two outlines to the rounding of the arithmetic, and
 // a round shape to within the tolerance of the distance. For integer T the points are rounded
 // once and can land off the shapes. An empty polygon has no point, and both are the zero
@@ -203,6 +231,21 @@ func Nearest[T Number](a, b Shape[T]) (Point[T], Point[T]) {
 		return first, second
 	}
 
+	if sector, ok := reflex(a); ok {
+		halves := sector.halves()
+		if DistanceSquared[T](halves[1], b) < DistanceSquared[T](halves[0], b) {
+			return Nearest[T](halves[1], b)
+		}
+
+		return Nearest[T](halves[0], b)
+	}
+
+	if _, ok := reflex(b); ok {
+		second, first := Nearest(b, a)
+
+		return first, second
+	}
+
 	nearest := minkowski[T]{a: a, b: b}.nearest()
 	if intersects {
 		point := nearest.from.Cast[T]()
@@ -237,6 +280,11 @@ func Nearest[T Number](a, b Shape[T]) (Point[T], Point[T]) {
 // crossing no edge, parts from the hull. Of two such polygons the one whose vertices come
 // first by Point.Compare is the one walked, and each edge crossed allocates.
 //
+// A Sector past half a turn meets as its two halves, the deeper contact of the two, so a shape
+// in the notch between its radii is parted from a radius and not from the hull. The halves
+// meet along a cut that is no boundary, so a shape lying across it deep within the sector is
+// parted from one half into the other, and colliding again gives the way on.
+//
 // Given the other way round, the two answer with the opposite normal and the same depth. Where
 // several ways out are as short, a box overlapping the corner of another alike on both axes,
 // the one nearest the X axis is taken; a shape in the very middle of another has two opposite
@@ -266,6 +314,24 @@ func Collide[T Number](a, b Shape[T]) (Contact[T], bool) {
 		return contact, true
 	}
 
+	if sector, ok := reflex(a); ok {
+		for _, half := range sector.halves() {
+			if deeper, ok := Collide[T](half, b); ok && (!found || deeper.Depth > contact.Depth) {
+				contact, found = deeper, true
+			}
+		}
+	} else if sector, ok := reflex(b); ok {
+		for _, half := range sector.halves() {
+			if deeper, ok := Collide[T](a, half); ok && (!found || deeper.Depth > contact.Depth) {
+				contact, found = deeper, true
+			}
+		}
+	}
+
+	if found {
+		return contact, true
+	}
+
 	difference := minkowski[T]{a: a, b: b}
 	normal, depth := difference.depth()
 
@@ -287,7 +353,8 @@ func Collide[T Number](a, b Shape[T]) (Contact[T], bool) {
 // meet flat, the point is one point of the contact. For integer T the point is rounded like
 // every result and the tolerance is that of float64. A Polygon that is not convex is swept
 // edge by edge, so a shape moves into a notch and stops at the first edge it reaches there,
-// and an empty polygon reaches nothing and is reached by nothing.
+// a Sector past half a turn as its two halves, the earlier hit of the two, and an empty polygon
+// reaches nothing and is reached by nothing.
 func Sweep[T Number](a Shape[T], motion Vector[T], b Shape[T]) (Hit[T], bool) {
 	var first Hit[T]
 
@@ -316,6 +383,26 @@ func Sweep[T Number](a Shape[T], motion Vector[T], b Shape[T]) (Hit[T], bool) {
 		return first, found
 	}
 
+	if sector, ok := reflex(a); ok {
+		for _, half := range sector.halves() {
+			if hit, ok := Sweep[T](half, motion, b); ok && (!found || hit.Fraction < first.Fraction) {
+				first, found = hit, true
+			}
+		}
+
+		return first, found
+	}
+
+	if sector, ok := reflex(b); ok {
+		for _, half := range sector.halves() {
+			if hit, ok := Sweep[T](a, motion, half); ok && (!found || hit.Fraction < first.Fraction) {
+				first, found = hit, true
+			}
+		}
+
+		return first, found
+	}
+
 	return minkowski[T]{a: a, b: b}.sweep(motion.Float())
 }
 
@@ -332,6 +419,10 @@ func Raycast[T Number](ray Ray[T], shape Shape[T]) (Hit[T], bool) {
 	switch kind := shape.(type) {
 	case Circle[T]:
 		return ray.HitCircle(kind)
+	case Capsule[T]:
+		return ray.HitCapsule(kind)
+	case Sector[T]:
+		return ray.HitSector(kind)
 	case Segment[T]:
 		return ray.HitSegment(kind)
 	case Polygon[T]:
@@ -356,12 +447,14 @@ func Raycast[T Number](ray Ray[T], shape Shape[T]) (Hit[T], bool) {
 	return ray.rescale(origin.sweep(ray.reach(bounds.Min, bounds.Max).Vector().Float()))
 }
 
-// intersector is a shape with the Intersects method for each of the six kinds of shape the
-// package names: Circle, Segment, Polygon, Rectangle, RegularPolygon and Box, each of which is
-// one. Intersects tests two shapes through it where the first is one; Ellipse is not, and is
+// intersector is a shape with the Intersects method for each of the eight kinds of shape the
+// package names: Circle, Capsule, Sector, Segment, Polygon, Rectangle, RegularPolygon and Box,
+// each of which is one. Intersects tests two shapes through it where the first is one; Ellipse is not, and is
 // tested by its Support.
 type intersector[T Number] interface {
 	IntersectsCircle(circle Circle[T]) bool
+	IntersectsCapsule(capsule Capsule[T]) bool
+	IntersectsSector(sector Sector[T]) bool
 	IntersectsSegment(segment Segment[T]) bool
 	IntersectsPolygon(polygon Polygon[T]) bool
 	IntersectsRectangle(rectangle Rectangle[T]) bool
@@ -414,4 +507,25 @@ func nonConvex[T Number](shape Shape[T]) (Polygon[T], bool) {
 	polygon, ok := shape.(Polygon[T])
 
 	return polygon, ok && !polygon.IsConvex()
+}
+
+// eitherReflex returns whichever of two shapes is a sector past half a turn, the first where
+// both are, with the other one, and false where neither is.
+func eitherReflex[T Number](a, b Shape[T]) (Sector[T], Shape[T], bool) {
+	if sector, ok := reflex(a); ok {
+		return sector, b, true
+	}
+
+	sector, ok := reflex(b)
+
+	return sector, a, ok
+}
+
+// reflex returns the shape as a sector past half a turn, which is not convex, and false where
+// it is anything else: the shape taken as its two halves, where its Support, that of its hull,
+// would fill in the notch between its radii.
+func reflex[T Number](shape Shape[T]) (Sector[T], bool) {
+	sector, ok := shape.(Sector[T])
+
+	return sector, ok && sector.isReflex()
 }

@@ -199,11 +199,15 @@ func (m minkowski[T]) contact(normal Vector[float64]) Pair[Point[T]] {
 // facingEdge returns the edge of a shape turned toward the given direction, of no length for
 // a corner or a round boundary: the supports a little to either side of the direction, which
 // are the two ends of a flat edge that faces it and the same vertex twice at a corner. The
-// boundary is round where the support still moves at half that turn, and is then the one point
-// farthest along the direction.
+// supports at half that turn tell a flat edge from a round boundary: across a flat edge the
+// support jumps from one end to the other between them, farther than it moves outside them,
+// where around a round boundary it moves as far in each half. A flat side between two round
+// ends, that of a Capsule, is therefore an edge, and a round boundary is the one point farthest
+// along the direction.
 func facingEdge[T Number](shape Shape[T], direction Vector[float64]) Segment[float64] {
 	start, end := shape.Support(direction.Rotate(facingAngle)), shape.Support(direction.Rotate(-facingAngle))
-	if start != shape.Support(direction.Rotate(facingAngle/2)) || end != shape.Support(direction.Rotate(-facingAngle/2)) {
+	from, to := shape.Support(direction.Rotate(facingAngle/2)), shape.Support(direction.Rotate(-facingAngle/2))
+	if from.DistanceTo(to) <= 2*(start.DistanceTo(from)+end.DistanceTo(to)) {
 		point := shape.Support(direction)
 
 		return Segment[float64]{point, point}

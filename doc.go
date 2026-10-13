@@ -12,15 +12,20 @@
 //
 // The values are [Point], [Vector], [Size], [Padding] and the affine [Matrix]. The shapes are
 // [Rectangle], which may be turned by an angle, the axis-aligned [Box], [Circle], [Ellipse],
-// [Segment], [Polygon] and [RegularPolygon], the half-line [Ray] and the infinite [Line]. [Shape]
+// [Capsule], [Sector], [Segment], [Polygon] and [RegularPolygon], the open path [Polyline], the
+// circular [Arc], the curves [QuadraticBezier] and [CubicBezier], the half-line [Ray] and the
+// infinite [Line]. [Shape]
 // and [Body] name what the shapes share: [Intersects], [Distance], [Nearest], [Collide] and [Sweep]
 // test, measure, part and move two shapes of any kind, and [Raycast] casts a ray at one.
 // [Direction], [Axis], [Orientation] and [Winding] are enums. Package geomtest holds test
 // assertions, and packages ints and floats alias the int and float64 instantiations.
 //
-// Every value type has Equal, Cast, Int, Float and String; every shape adds Contains, every one but
-// Ray and Line adds Bounds, BoundingCircle and Support, and every one but Ellipse adds the
-// Intersects methods. The enums are compared with == and marshal as their names.
+// Every value type has Equal, Cast, Int, Float and String. Circle, Capsule, Sector, Segment,
+// Polygon, Rectangle, RegularPolygon and Box are tested against each other by their Intersects
+// methods, and with Ellipse they are every [Shape], with Contains, Bounds, BoundingCircle and
+// Support. Polyline and Arc are no Shape, having no inside: they have Bounds and the point
+// queries, Contains, DistanceTo and Nearest, and a Bezier curve is measured through the Polyline
+// it flattens to. The enums are compared with == and marshal as their names.
 //
 // # Naming
 //
@@ -106,8 +111,8 @@
 // value outside the range of an integer T is not checked and stores a platform-dependent value, as
 // Cast documents. [RegularPolygonOrientationPhase] panics for an [Orientation] that is neither
 // [OrientationFlatTop] nor [OrientationPointyTop], [OrientationNone] included: the absence of an
-// alignment has no phase to give. [Polygon.Lerp] and [RegularPolygon.Lerp] panic for a polygon
-// with a different vertex count, which has no shape between. An integer [RegularPolygon] with a
+// alignment has no phase to give. [Polygon.Lerp], [RegularPolygon.Lerp] and [Polyline.Lerp]
+// panic for a polygon or a path with a different vertex count, which has no shape between. An integer [RegularPolygon] with a
 // NaN or infinite Angle or Phase panics wherever it places a vertex, through Cast. These are the
 // only panics: every other guard returns a value the type can express, such as [DirectionNone],
 // an empty polygon, or the 0 that [Size.AspectRatio] gives for a zero height.
@@ -133,7 +138,8 @@
 //
 // # JSON
 //
-// The flat JSON of [Rectangle], [Circle] and [RegularPolygon] relies on the embed struct tag of
+// The flat JSON of every shape with a center or a segment among its fields, [Rectangle], [Circle]
+// and [Capsule] among them, relies on the embed struct tag of
 // the v2-backed encoding/json, the default since Go 1.27; under GOEXPERIMENT=nojsonv2 the nested
 // fields are emitted as objects.
 package geom

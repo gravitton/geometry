@@ -299,6 +299,33 @@ func TestLine_Nearest(t *testing.T) {
 	})
 }
 
+func TestLine_NearestFraction(t *testing.T) {
+	line := Ln(Pt(0.0, 0.0), Vec(2.0, 0.0))
+
+	t.Run("in units of the direction", func(t *testing.T) {
+		geomtest.AssertNumber(t, line.NearestFraction(Pt(7.0, 3.0)), 3.5)
+	})
+	t.Run("negative on the other side of the origin", func(t *testing.T) {
+		geomtest.AssertNumber(t, line.NearestFraction(Pt(-2.0, 3.0)), -1.0)
+	})
+	t.Run("int", func(t *testing.T) {
+		geomtest.AssertNumber(t, Ln(Pt(0, 0), Vec(2, 1)).NearestFraction(Pt(3, 3)), 1.8)
+	})
+	t.Run("a zero direction gives zero", func(t *testing.T) {
+		assert.Equal(t, Ln(Pt(1, 1), Vec(0, 0)).NearestFraction(Pt(4, 5)), 0.0)
+	})
+	t.Run("a NaN coordinate is nearest to nothing", func(t *testing.T) {
+		assert.True(t, math.IsNaN(line.NearestFraction(Pt(math.NaN(), 0.0))))
+	})
+	t.Run("PointAt takes it back to the nearest point over the fixtures", func(t *testing.T) {
+		for _, fixture := range lineFixtures {
+			for _, p := range pointFixtures {
+				geomtest.AssertPoint(t, fixture.PointAt(fixture.NearestFraction(p)), fixture.Nearest(p), fmt.Sprintf("%s → %s: ", fixture, p))
+			}
+		}
+	})
+}
+
 func TestLine_Reflect(t *testing.T) {
 	t.Run("across an axis-parallel line", func(t *testing.T) {
 		geomtest.AssertPoint(t, Ln(Pt(0, 2), Vec(5, 0)).Reflect(Pt(3, 7)), Pt(3, -3))
@@ -389,6 +416,16 @@ func TestLine_IntersectsCircle(t *testing.T) {
 		for _, l := range lineFixtures {
 			for _, c := range circleFixtures {
 				assert.Equal(t, l.IntersectsCircle(c), c.IntersectsLine(l), fmt.Sprintf("%s → %s: ", l, c))
+			}
+		}
+	})
+}
+
+func TestLine_IntersectsCapsule(t *testing.T) {
+	t.Run("mirrors Capsule.IntersectsLine", func(t *testing.T) {
+		for _, shape := range lineFixtures {
+			for _, c := range capsuleFixtures {
+				assert.Equal(t, shape.IntersectsCapsule(c), c.IntersectsLine(shape), fmt.Sprintf("%s → %s: ", shape, c))
 			}
 		}
 	})
@@ -561,6 +598,36 @@ func TestLine_IntersectionCircle(t *testing.T) {
 	})
 }
 
+func TestLine_IntersectionCapsule(t *testing.T) {
+	t.Run("matches Capsule.IntersectionLine", func(t *testing.T) {
+		for _, s := range lineFixtures {
+			for _, c := range capsuleFixtures {
+				geomtest.AssertVertices(t, s.IntersectionCapsule(c).AppendTo(nil), c.IntersectionLine(s).AppendTo(nil), fmt.Sprintf("%s → %s: ", s, c))
+			}
+		}
+	})
+}
+
+func TestLine_IntersectionSector(t *testing.T) {
+	t.Run("matches Sector.IntersectionLine", func(t *testing.T) {
+		for _, s := range lineFixtures {
+			for _, sector := range sectorFixtures() {
+				geomtest.AssertVertices(t, s.IntersectionSector(sector), sector.IntersectionLine(s), fmt.Sprintf("%s → %s: ", s, sector))
+			}
+		}
+	})
+}
+
+func TestLine_IntersectionArc(t *testing.T) {
+	t.Run("matches Arc.IntersectionLine", func(t *testing.T) {
+		for _, s := range lineFixtures {
+			for _, a := range arcFixtures {
+				geomtest.AssertVertices(t, s.IntersectionArc(a).AppendTo(nil), a.IntersectionLine(s).AppendTo(nil), fmt.Sprintf("%s → %s: ", s, a))
+			}
+		}
+	})
+}
+
 func TestLine_IntersectionSegment(t *testing.T) {
 	t.Run("matches Segment.IntersectionLine", func(t *testing.T) {
 		for _, l := range lineFixtures {
@@ -665,6 +732,47 @@ func TestLine_IntersectionLine(t *testing.T) {
 
 		assert.True(t, ok && otherOk)
 		assert.Equal(t, point, other)
+	})
+}
+
+func TestLine_IntersectionPolyline(t *testing.T) {
+	path := PolLn([]Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(4.0, 3.0)})
+
+	t.Run("the crossings of its edges in order, a shared point once", func(t *testing.T) {
+		geomtest.AssertVertices(t, LineThrough(Pt(-1.0, -1.0), Pt(5.0, 2.0)).IntersectionPolyline(path), []Point[float64]{Pt(1.0, 0.0), Pt(4.0, 1.5)})
+		geomtest.AssertVertices(t, LineThrough(Pt(0.0, 2.0), Pt(6.0, -1.0)).IntersectionPolyline(path), []Point[float64]{Pt(4.0, 0.0)})
+		assert.Nil(t, LineThrough(Pt(0.0, 5.0), Pt(-3.0, 5.0)).IntersectionPolyline(path))
+		assert.Nil(t, LineThrough(Pt(0.0, 1.0), Pt(3.0, 1.0)).IntersectionPolyline(Polyline[float64]{}))
+	})
+	t.Run("a closed path is crossed as the polygon of its points", func(t *testing.T) {
+		for _, s := range lineFixtures {
+			for _, p := range polygonFixtures() {
+				geomtest.AssertVertices(t, s.IntersectionPolyline(p.Polyline()), s.IntersectionPolygon(p), fmt.Sprintf("%s → %s: ", s, p))
+			}
+		}
+	})
+	t.Run("appends after what the buffer holds", func(t *testing.T) {
+		geomtest.AssertVertices(t, LineThrough(Pt(-1.0, -1.0), Pt(5.0, 2.0)).AppendIntersectionPolyline(bufferWith(prefixPoint), path), []Point[float64]{prefixPoint, Pt(1.0, 0.0), Pt(4.0, 1.5)})
+	})
+}
+
+func TestLine_IntersectionQuadraticBezier(t *testing.T) {
+	t.Run("matches QuadraticBezier.IntersectionLine", func(t *testing.T) {
+		for _, s := range lineFixtures {
+			for _, q := range quadraticFixtures {
+				geomtest.AssertVertices(t, s.IntersectionQuadraticBezier(q).AppendTo(nil), q.IntersectionLine(s).AppendTo(nil), fmt.Sprintf("%s → %s: ", s, q))
+			}
+		}
+	})
+}
+
+func TestLine_IntersectionCubicBezier(t *testing.T) {
+	t.Run("matches CubicBezier.IntersectionLine", func(t *testing.T) {
+		for _, s := range lineFixtures {
+			for _, c := range cubicFixtures {
+				geomtest.AssertVertices(t, s.IntersectionCubicBezier(c), c.IntersectionLine(s), fmt.Sprintf("%s → %s: ", s, c))
+			}
+		}
 	})
 }
 
@@ -819,6 +927,38 @@ func TestLine_ClipCircle(t *testing.T) {
 		for _, l := range lineFixtures {
 			for _, c := range circleFixtures {
 				assertClipped(t, l, partsOf(l.ClipCircle(c)), l.IntersectsCircle(c), c.ContainsSegment, fmt.Sprintf("%s → %s: ", l, c))
+			}
+		}
+	})
+}
+
+func TestLine_ClipCapsule(t *testing.T) {
+	capsule := Cap(Pt(0.0, 0.0), Pt(10.0, 0.0), 2.0)
+
+	t.Run("passing through gives the part between the crossings", func(t *testing.T) {
+		geomtest.AssertSegments(t, partsOf(Ln(Pt(5.0, 10.0), Vec(0.0, -1.0)).ClipCapsule(capsule)), []Segment[float64]{Seg(Pt(5.0, 2.0), Pt(5.0, -2.0))})
+		assert.Nil(t, partsOf(Ln(Pt(5.0, 10.0), Vec(1.0, 0.0)).ClipCapsule(capsule)))
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, r := range lineFixtures {
+			for _, c := range capsuleFixtures {
+				assertClipped(t, r, partsOf(r.ClipCapsule(c)), r.IntersectsCapsule(c), c.ContainsSegment, fmt.Sprintf("%s → %s: ", r, c))
+			}
+		}
+	})
+}
+
+func TestLine_ClipSector(t *testing.T) {
+	sector := Sect(Pt(0.0, 0.0), 5.0, Pi/4, 3*Pi/2)
+
+	t.Run("through the notch of a sector past half a turn there are two parts", func(t *testing.T) {
+		geomtest.AssertSegments(t, Ln(Pt(3.0, 10.0), Vec(0.0, -1.0)).ClipSector(sector), []Segment[float64]{Seg(Pt(3.0, 4.0), Pt(3.0, 3.0)), Seg(Pt(3.0, -3.0), Pt(3.0, -4.0))})
+		assert.Nil(t, Ln(Pt(9.0, 10.0), Vec(0.0, -1.0)).ClipSector(sector))
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, r := range lineFixtures {
+			for _, s := range sectorFixtures() {
+				assertClipped(t, r, r.ClipSector(s), r.IntersectsSector(s), s.ContainsSegment, fmt.Sprintf("%s → %s: ", r, s))
 			}
 		}
 	})

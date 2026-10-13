@@ -311,6 +311,30 @@ func TestSegment_Transform(t *testing.T) {
 	})
 }
 
+func TestSegment_Lerp(t *testing.T) {
+	a := Seg(Pt(0.0, 0.0), Pt(4.0, 0.0))
+	b := Seg(Pt(10.0, 2.0), Pt(12.0, 8.0))
+
+	t.Run("both ends move towards the ends of the other", func(t *testing.T) {
+		geomtest.AssertSegment(t, a.Lerp(b, 0.5), Seg(Pt(5.0, 1.0), Pt(8.0, 4.0)))
+	})
+	t.Run("the ends are the two segments", func(t *testing.T) {
+		geomtest.AssertSegment(t, a.Lerp(b, 0), a)
+		geomtest.AssertSegment(t, a.Lerp(b, 1), b)
+	})
+	t.Run("extrapolates outside [0, 1]", func(t *testing.T) {
+		geomtest.AssertSegment(t, a.Lerp(b, 2), Seg(Pt(20.0, 4.0), Pt(20.0, 16.0)))
+	})
+	t.Run("int rounds", func(t *testing.T) {
+		geomtest.AssertSegment(t, Seg(Pt(0, 0), Pt(4, 0)).Lerp(Seg(Pt(1, 1), Pt(5, 3)), 0.5), Seg(Pt(1, 1), Pt(5, 2)))
+	})
+	t.Run("towards a translation is a part of it over the fixtures", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			geomtest.AssertSegment(t, s.Lerp(s.Translate(Vec(4.0, -2.0)), 0.25), s.Translate(Vec(1.0, -0.5)), s.String())
+		}
+	})
+}
+
 func TestSegment_Reverse(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		geomtest.AssertSegment(t, Seg(Pt(1, 2), Pt(3, 5)).Reverse(), Seg(Pt(3, 5), Pt(1, 2)))
@@ -499,6 +523,61 @@ func TestSegment_Nearest(t *testing.T) {
 	})
 }
 
+func TestSegment_NearestFraction(t *testing.T) {
+	s := Seg(Pt(0, 0), Pt(4, 0))
+
+	t.Run("how far along the foot of the perpendicular lies", func(t *testing.T) {
+		geomtest.AssertNumber(t, s.NearestFraction(Pt(1, 3)), 0.25)
+		geomtest.AssertNumber(t, s.NearestFraction(Pt(3, 0)), 0.75)
+	})
+	t.Run("zero before the start and one past the end", func(t *testing.T) {
+		assert.Equal(t, s.NearestFraction(Pt(-3, 4)), 0.0)
+		assert.Equal(t, s.NearestFraction(Pt(7, 4)), 1.0)
+		assert.Equal(t, s.NearestFraction(Pt(0, 0)), 0.0)
+		assert.Equal(t, s.NearestFraction(Pt(4, 0)), 1.0)
+	})
+	t.Run("a zero-length segment gives zero", func(t *testing.T) {
+		assert.Equal(t, Seg(Pt(1, 1), Pt(1, 1)).NearestFraction(Pt(5, 4)), 0.0)
+	})
+	t.Run("a NaN coordinate is nearest to nothing", func(t *testing.T) {
+		assert.True(t, math.IsNaN(s.Float().NearestFraction(Pt(math.NaN(), 0.0))))
+	})
+	t.Run("PointAt takes it back to the nearest point, and a point at a fraction has that fraction", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, p := range pointFixtures {
+				fraction := s.NearestFraction(p)
+				message := fmt.Sprintf("%s → %s: ", s, p)
+
+				assert.True(t, fraction >= 0 && fraction <= 1, message)
+				assert.True(t, s.PointAt(fraction).Equal(s.Nearest(p)), message)
+			}
+
+			if s.IsPoint() {
+				continue
+			}
+
+			for _, p := range pointFixtures {
+				geomtest.AssertNumber(t, s.Reverse().NearestFraction(p), 1-s.NearestFraction(p), fmt.Sprintf("%s → %s: ", s, p))
+			}
+
+			for _, fraction := range []float64{0, 0.1, 0.5, 0.8, 1} {
+				geomtest.AssertNumber(t, s.NearestFraction(s.PointAt(fraction)), fraction, fmt.Sprintf("%s @%v: ", s, fraction))
+			}
+		}
+	})
+	t.Run("far from the origin a float32 point at the fraction lies on the segment", func(t *testing.T) {
+		for _, offset := range farOffsets {
+			for _, fixture := range segmentFixtures {
+				s := fixture.Cast[float32]().Translate(offset)
+
+				for _, p := range pointFixtures {
+					assert.True(t, s.Contains(s.PointAt(s.NearestFraction(p.Cast[float32]().Add(offset)))), fmt.Sprintf("%s → %s: ", s, p))
+				}
+			}
+		}
+	})
+}
+
 func TestSegment_Support(t *testing.T) {
 	segment := Seg(Pt(0, 0), Pt(4, 2))
 
@@ -559,6 +638,16 @@ func TestSegment_IntersectsCircle(t *testing.T) {
 		for _, s := range segmentFixtures {
 			for _, c := range circleFixtures {
 				assert.Equal(t, s.IntersectsCircle(c), c.IntersectsSegment(s), fmt.Sprintf("%s → %s: ", s, c))
+			}
+		}
+	})
+}
+
+func TestSegment_IntersectsCapsule(t *testing.T) {
+	t.Run("mirrors Capsule.IntersectsSegment", func(t *testing.T) {
+		for _, shape := range segmentFixtures {
+			for _, c := range capsuleFixtures {
+				assert.Equal(t, shape.IntersectsCapsule(c), c.IntersectsSegment(shape), fmt.Sprintf("%s → %s: ", shape, c))
 			}
 		}
 	})
@@ -840,6 +929,36 @@ func TestSegment_IntersectionCircle(t *testing.T) {
 		for _, s := range segmentFixtures {
 			for _, c := range circleFixtures {
 				geomtest.AssertVertices(t, s.IntersectionCircle(c).AppendTo(nil), c.IntersectionSegment(s).AppendTo(nil), fmt.Sprintf("%s → %s: ", s, c))
+			}
+		}
+	})
+}
+
+func TestSegment_IntersectionCapsule(t *testing.T) {
+	t.Run("matches Capsule.IntersectionSegment", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, c := range capsuleFixtures {
+				geomtest.AssertVertices(t, s.IntersectionCapsule(c).AppendTo(nil), c.IntersectionSegment(s).AppendTo(nil), fmt.Sprintf("%s → %s: ", s, c))
+			}
+		}
+	})
+}
+
+func TestSegment_IntersectionSector(t *testing.T) {
+	t.Run("matches Sector.IntersectionSegment", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, sector := range sectorFixtures() {
+				geomtest.AssertVertices(t, s.IntersectionSector(sector), sector.IntersectionSegment(s), fmt.Sprintf("%s → %s: ", s, sector))
+			}
+		}
+	})
+}
+
+func TestSegment_IntersectionArc(t *testing.T) {
+	t.Run("matches Arc.IntersectionSegment", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, a := range arcFixtures {
+				geomtest.AssertVertices(t, s.IntersectionArc(a).AppendTo(nil), a.IntersectionSegment(s).AppendTo(nil), fmt.Sprintf("%s → %s: ", s, a))
 			}
 		}
 	})
@@ -1202,6 +1321,47 @@ func TestSegment_IntersectionLine(t *testing.T) {
 				if ok {
 					assert.True(t, s.Contains(point) && l.Contains(point), message)
 				}
+			}
+		}
+	})
+}
+
+func TestSegment_IntersectionPolyline(t *testing.T) {
+	path := PolLn([]Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(4.0, 3.0)})
+
+	t.Run("the crossings of its edges in order, a shared point once", func(t *testing.T) {
+		geomtest.AssertVertices(t, Seg(Pt(-1.0, -1.0), Pt(5.0, 2.0)).IntersectionPolyline(path), []Point[float64]{Pt(1.0, 0.0), Pt(4.0, 1.5)})
+		geomtest.AssertVertices(t, Seg(Pt(0.0, 2.0), Pt(6.0, -1.0)).IntersectionPolyline(path), []Point[float64]{Pt(4.0, 0.0)})
+		assert.Nil(t, Seg(Pt(0.0, 5.0), Pt(-3.0, 5.0)).IntersectionPolyline(path))
+		assert.Nil(t, Seg(Pt(0.0, 1.0), Pt(3.0, 1.0)).IntersectionPolyline(Polyline[float64]{}))
+	})
+	t.Run("a closed path is crossed as the polygon of its points", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, p := range polygonFixtures() {
+				geomtest.AssertVertices(t, s.IntersectionPolyline(p.Polyline()), s.IntersectionPolygon(p), fmt.Sprintf("%s → %s: ", s, p))
+			}
+		}
+	})
+	t.Run("appends after what the buffer holds", func(t *testing.T) {
+		geomtest.AssertVertices(t, Seg(Pt(-1.0, -1.0), Pt(5.0, 2.0)).AppendIntersectionPolyline(bufferWith(prefixPoint), path), []Point[float64]{prefixPoint, Pt(1.0, 0.0), Pt(4.0, 1.5)})
+	})
+}
+
+func TestSegment_IntersectionQuadraticBezier(t *testing.T) {
+	t.Run("matches QuadraticBezier.IntersectionSegment", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, q := range quadraticFixtures {
+				geomtest.AssertVertices(t, s.IntersectionQuadraticBezier(q).AppendTo(nil), q.IntersectionSegment(s).AppendTo(nil), fmt.Sprintf("%s → %s: ", s, q))
+			}
+		}
+	})
+}
+
+func TestSegment_IntersectionCubicBezier(t *testing.T) {
+	t.Run("matches CubicBezier.IntersectionSegment", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, c := range cubicFixtures {
+				geomtest.AssertVertices(t, s.IntersectionCubicBezier(c), c.IntersectionSegment(s), fmt.Sprintf("%s → %s: ", s, c))
 			}
 		}
 	})
@@ -1618,6 +1778,82 @@ func TestSegment_ClipCircle(t *testing.T) {
 				}
 
 				geomtest.AssertSegments(t, parts, partsOf(s.ClipCircle(c)), fmt.Sprintf("%s → %s: ", s, c))
+			}
+		}
+	})
+}
+
+func TestSegment_ClipCapsule(t *testing.T) {
+	capsule := Cap(Pt(0.0, 0.0), Pt(10.0, 0.0), 2.0)
+
+	t.Run("passing through gives the part between the crossings", func(t *testing.T) {
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(5.0, 10.0), Pt(5.0, -10.0)).ClipCapsule(capsule)), []Segment[float64]{Seg(Pt(5.0, 2.0), Pt(5.0, -2.0))})
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(-5.0, 0.0), Pt(15.0, 0.0)).ClipCapsule(capsule)), []Segment[float64]{Seg(Pt(-2.0, 0.0), Pt(12.0, 0.0))})
+	})
+	t.Run("an endpoint inside is kept, and inside is the segment itself", func(t *testing.T) {
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(5.0, 0.0), Pt(5.0, 10.0)).ClipCapsule(capsule)), []Segment[float64]{Seg(Pt(5.0, 0.0), Pt(5.0, 2.0))})
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(1.0, 1.0), Pt(9.0, -1.0)).ClipCapsule(capsule)), []Segment[float64]{Seg(Pt(1.0, 1.0), Pt(9.0, -1.0))})
+	})
+	t.Run("a tangent is the point of contact, and apart gives none", func(t *testing.T) {
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(12.0, -5.0), Pt(12.0, 5.0)).ClipCapsule(capsule)), []Segment[float64]{Seg(Pt(12.0, 0.0), Pt(12.0, 0.0))})
+		assert.Nil(t, partsOf(Seg(Pt(-5.0, 3.0), Pt(15.0, 3.0)).ClipCapsule(capsule)))
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		through := Seg(Pt(5.0, 10.0), Pt(tenth, -10.0))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.ClipCapsule(capsule)
+		}), 0)
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, c := range capsuleFixtures {
+			for _, start := range pointFixtures {
+				for _, end := range pointFixtures {
+					s := Seg(start, end)
+
+					assertClipped(t, s, partsOf(s.ClipCapsule(c)), s.IntersectsCapsule(c), c.ContainsSegment, fmt.Sprintf("%s → %s: ", s, c))
+				}
+			}
+		}
+	})
+}
+
+func TestSegment_ClipSector(t *testing.T) {
+	sector := Sect(Pt(0.0, 0.0), 5.0, 0, Pi/2)
+	notched := Sect(Pt(0.0, 0.0), 5.0, Pi/4, 3*Pi/2)
+
+	t.Run("passing through gives the part between the crossings", func(t *testing.T) {
+		geomtest.AssertSegments(t, Seg(Pt(3.0, 10.0), Pt(3.0, -10.0)).ClipSector(sector), []Segment[float64]{Seg(Pt(3.0, 4.0), Pt(3.0, 0.0))})
+	})
+	t.Run("an endpoint inside is kept, and inside is the segment itself", func(t *testing.T) {
+		geomtest.AssertSegments(t, Seg(Pt(3.0, 1.0), Pt(3.0, 10.0)).ClipSector(sector), []Segment[float64]{Seg(Pt(3.0, 1.0), Pt(3.0, 4.0))})
+		geomtest.AssertSegments(t, Seg(Pt(1.0, 1.0), Pt(2.0, 3.0)).ClipSector(sector), []Segment[float64]{Seg(Pt(1.0, 1.0), Pt(2.0, 3.0))})
+	})
+	t.Run("through the notch of a sector past half a turn there are two parts", func(t *testing.T) {
+		geomtest.AssertSegments(t, Seg(Pt(3.0, 10.0), Pt(3.0, -10.0)).ClipSector(notched), []Segment[float64]{Seg(Pt(3.0, 4.0), Pt(3.0, 3.0)), Seg(Pt(3.0, -3.0), Pt(3.0, -4.0))})
+	})
+	t.Run("touching from outside is that point, and apart gives none", func(t *testing.T) {
+		geomtest.AssertSegments(t, Seg(Pt(5.0, -1.0), Pt(5.0, 1.0)).ClipSector(sector), []Segment[float64]{Seg(Pt(5.0, 0.0), Pt(5.0, 0.0))})
+		assert.Nil(t, Seg(Pt(-1.0, -1.0), Pt(-1.0, 9.0)).ClipSector(sector))
+	})
+	t.Run("int rounds the crossings", func(t *testing.T) {
+		geomtest.AssertSegments(t, Seg(Pt(3, 10), Pt(3, -10)).ClipSector(Sect(Pt(0, 0), 5, 0, Pi/2)), []Segment[int]{Seg(Pt(3, 4), Pt(3, 0))})
+	})
+	t.Run("appends to a buffer with room without allocating", func(t *testing.T) {
+		buffer, through := make([]Segment[float64], 0, 4), Seg(Pt(3.0, 10.0), Pt(tenth, -10.0))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkBool = len(through.AppendClipSector(buffer[:0], notched)) > 0
+		}), 0)
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, fixture := range sectorFixtures() {
+			for _, start := range pointFixtures {
+				for _, end := range pointFixtures {
+					s := Seg(start, end)
+
+					assertClipped(t, s, s.ClipSector(fixture), s.IntersectsSector(fixture), fixture.ContainsSegment, fmt.Sprintf("%s → %s: ", s, fixture))
+				}
 			}
 		}
 	})
@@ -2047,6 +2283,220 @@ func TestSegment_HitCircle(t *testing.T) {
 	})
 }
 
+func TestSegment_HitCapsule(t *testing.T) {
+	capsule := Cap(Pt(0.0, 0.0), Pt(10.0, 0.0), 2.0)
+
+	t.Run("a straight side, with its perpendicular", func(t *testing.T) {
+		hit, ok := Seg(Pt(5.0, 10.0), Pt(5.0, 0.0)).HitCapsule(capsule)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(5.0, 2.0), Normal: Vec(0.0, 1.0), Fraction: 0.8})
+
+		hit, ok = Seg(Pt(5.0, -10.0), Pt(5.0, 10.0)).HitCapsule(capsule)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(5.0, -2.0), Normal: Vec(0.0, -1.0), Fraction: 0.4})
+	})
+	t.Run("a round end, with the direction from the end of the segment", func(t *testing.T) {
+		hit, ok := Seg(Pt(20.0, 0.0), Pt(0.0, 0.0)).HitCapsule(capsule)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(12.0, 0.0), Normal: Vec(1.0, 0.0), Fraction: 0.4})
+
+		hit, ok = Seg(Pt(11.2, 10.0), Pt(11.2, 0.0)).HitCapsule(capsule)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(11.2, 1.6), Normal: Vec(0.6, 0.8), Fraction: 0.84})
+	})
+	t.Run("a Start inside or on the boundary hits nothing", func(t *testing.T) {
+		for _, s := range []Segment[float64]{Seg(Pt(5.0, 1.0), Pt(5.0, 9.0)), Seg(Pt(5.0, 2.0), Pt(5.0, 9.0)), Seg(Pt(12.0, 0.0), Pt(0.0, 0.0))} {
+			_, ok := s.HitCapsule(capsule)
+			assert.False(t, ok, s.String())
+		}
+	})
+	t.Run("short of the capsule or beside it hits nothing", func(t *testing.T) {
+		for _, s := range []Segment[float64]{Seg(Pt(5.0, 10.0), Pt(5.0, 3.0)), Seg(Pt(20.0, 5.0), Pt(-10.0, 5.0)), Seg(Pt(13.0, 3.0), Pt(13.0, -3.0))} {
+			_, ok := s.HitCapsule(capsule)
+			assert.False(t, ok, s.String())
+		}
+	})
+	t.Run("int rounds the point and keeps the normal", func(t *testing.T) {
+		hit, ok := Seg(Pt(5, 10), Pt(5, 0)).HitCapsule(Cap(Pt(0, 0), Pt(10, 0), 2))
+		assertHit(t, hit, ok, Hit[int]{Point: Pt(5, 2), Normal: Vec(0.0, 1.0), Fraction: 0.8})
+	})
+	t.Run("a capsule of no radius is hit as its segment and one of no length as a circle", func(t *testing.T) {
+		for _, cast := range segmentFixtures {
+			for _, wall := range segmentFixtures {
+				hit, ok := cast.HitCapsule(Cap(wall.Start, wall.End, 0.0))
+				expected, found := cast.HitSegment(wall)
+
+				assert.True(t, hit == expected && ok == found, fmt.Sprintf("%s → %s: ", cast, wall))
+			}
+			for _, c := range circleFixtures {
+				hit, ok := cast.HitCapsule(Cap(c.Center, c.Center, c.Radius))
+				expected, found := cast.HitCircle(c)
+
+				assert.True(t, hit == expected && ok == found, fmt.Sprintf("%s → %s: ", cast, c))
+			}
+		}
+	})
+	t.Run("the hit lies on the segment and the boundary, facing the segment", func(t *testing.T) {
+		for _, c := range capsuleFixtures {
+			for _, start := range pointFixtures {
+				for _, end := range pointFixtures {
+					s := Seg(start, end)
+					message := fmt.Sprintf("%s → %s: ", s, c)
+
+					hit, ok := s.HitCapsule(c)
+					assert.Equal(t, ok, !c.Contains(start) && c.IntersectsSegment(s), message)
+					if !ok {
+						assert.Equal(t, hit, Hit[float64]{}, message)
+
+						continue
+					}
+
+					assert.True(t, s.Contains(hit.Point) && c.Contains(hit.Point), message+hit.Point.String())
+					assert.False(t, c.Contains(s.PointAt(hit.Fraction/2)), message+hit.Point.String())
+					assertFacing(t, s, hit, message)
+				}
+			}
+		}
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		through := Seg(Pt(5.0, 10.0), Pt(tenth, -10.0))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.HitCapsule(capsule)
+		}), 0)
+	})
+}
+
+func TestSegment_HitSector(t *testing.T) {
+	sector := Sect(Pt(0.0, 0.0), 5.0, 0, Pi/2)
+	notched := Sect(Pt(0.0, 0.0), 5.0, Pi/4, 3*Pi/2)
+
+	t.Run("the arc, with the direction from the center", func(t *testing.T) {
+		hit, ok := Seg(Pt(3.0, 10.0), Pt(3.0, 0.0)).HitSector(sector)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(3.0, 4.0), Normal: Vec(0.6, 0.8), Fraction: 0.6})
+	})
+	t.Run("a radius, with its perpendicular", func(t *testing.T) {
+		hit, ok := Seg(Pt(-2.0, 2.0), Pt(2.0, 2.0)).HitSector(sector)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(0.0, 2.0), Normal: Vec(-1.0, 0.0), Fraction: 0.5})
+
+		hit, ok = Seg(Pt(2.0, -2.0), Pt(2.0, 2.0)).HitSector(sector)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(2.0, 0.0), Normal: Vec(0.0, -1.0), Fraction: 0.5})
+	})
+	t.Run("a Start inside or on the boundary hits nothing", func(t *testing.T) {
+		for _, s := range []Segment[float64]{Seg(Pt(1.0, 1.0), Pt(9.0, 9.0)), Seg(Pt(3.0, 4.0), Pt(9.0, 9.0)), Seg(Pt(0.0, 2.0), Pt(-5.0, 2.0))} {
+			_, ok := s.HitSector(sector)
+			assert.False(t, ok, s.String())
+		}
+	})
+	t.Run("short of the sector or beside it hits nothing", func(t *testing.T) {
+		for _, s := range []Segment[float64]{Seg(Pt(9.0, 9.0), Pt(4.0, 4.0)), Seg(Pt(-1.0, -1.0), Pt(-1.0, 9.0)), Seg(Pt(3.0, -4.0), Pt(-4.0, 3.0))} {
+			_, ok := s.HitSector(sector)
+			assert.False(t, ok, s.String())
+		}
+	})
+	t.Run("from the notch of a sector past half a turn it reaches a radius, and passes out of the notch", func(t *testing.T) {
+		hit, ok := Seg(Pt(3.0, 0.0), Pt(3.0, 4.0)).HitSector(notched)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(3.0, 3.0), Normal: Vec(math.Sqrt2/2, -math.Sqrt2/2), Fraction: 0.75})
+
+		hit, ok = Seg(Pt(8.0, 0.0), Pt(-2.0, 0.0)).HitSector(notched)
+		assert.True(t, ok)
+		geomtest.AssertPoint(t, hit.Point, Pt(0.0, 0.0))
+		geomtest.AssertNumber(t, hit.Fraction, 0.8)
+
+		_, ok = Seg(Pt(1.0, 0.2), Pt(8.0, 1.0)).HitSector(notched)
+		assert.False(t, ok)
+	})
+	t.Run("int rounds the point and keeps the normal", func(t *testing.T) {
+		hit, ok := Seg(Pt(3, 10), Pt(3, 0)).HitSector(Sect(Pt(0, 0), 5, 0, Pi/2))
+		assertHit(t, hit, ok, Hit[int]{Point: Pt(3, 4), Normal: Vec(0.6, 0.8), Fraction: 0.6})
+	})
+	t.Run("the whole disc is hit as its circle", func(t *testing.T) {
+		for _, cast := range segmentFixtures {
+			for _, c := range circleFixtures {
+				hit, ok := cast.HitSector(Sect(c.Center, c.Radius, 1, 2*Pi))
+				expected, found := cast.HitCircle(c)
+				message := fmt.Sprintf("%s → %s: ", cast, c)
+
+				assert.Equal(t, ok, found, message)
+				geomtest.AssertHit(t, hit, expected, message)
+			}
+		}
+	})
+	t.Run("the hit lies on the segment and the boundary, facing the segment", func(t *testing.T) {
+		for _, sector := range sectorFixtures() {
+			for _, start := range pointFixtures {
+				for _, end := range pointFixtures {
+					s := Seg(start, end)
+					message := fmt.Sprintf("%s → %s: ", s, sector)
+
+					hit, ok := s.HitSector(sector)
+					assert.Equal(t, ok, !sector.Contains(start) && sector.IntersectsSegment(s), message)
+					if !ok {
+						assert.Equal(t, hit, Hit[float64]{}, message)
+
+						continue
+					}
+
+					assert.True(t, s.Contains(hit.Point) && sector.Contains(hit.Point), message+hit.Point.String())
+					assert.False(t, sector.Contains(s.PointAt(hit.Fraction/2)), message+hit.Point.String())
+					assertFacing(t, s, hit, message)
+				}
+			}
+		}
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		through := Seg(Pt(3.0, 10.0), Pt(tenth, -10.0))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.HitSector(sector)
+		}), 0)
+	})
+}
+
+func TestSegment_HitArc(t *testing.T) {
+	arc := Ac(Pt(0.0, 0.0), 5.0, 0, Pi/2)
+
+	t.Run("from outside the circle, with the direction from the center", func(t *testing.T) {
+		hit, ok := Seg(Pt(3.0, 10.0), Pt(3.0, 0.0)).HitArc(arc)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(3.0, 4.0), Normal: Vec(0.6, 0.8), Fraction: 0.6})
+	})
+	t.Run("from inside the circle, with the direction toward the center", func(t *testing.T) {
+		hit, ok := Seg(Pt(3.0, 0.0), Pt(3.0, 10.0)).HitArc(arc)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(3.0, 4.0), Normal: Vec(-0.6, -0.8), Fraction: 0.4})
+	})
+	t.Run("a Start on the arc, a cast past the sweep or short of it hits nothing", func(t *testing.T) {
+		for _, s := range []Segment[float64]{Seg(Pt(3.0, 4.0), Pt(3.0, 10.0)), Seg(Pt(-3.0, 10.0), Pt(-3.0, -10.0)), Seg(Pt(3.0, 10.0), Pt(3.0, 5.0))} {
+			_, ok := s.HitArc(arc)
+			assert.False(t, ok, s.String())
+		}
+	})
+	t.Run("int rounds the point and keeps the normal", func(t *testing.T) {
+		hit, ok := Seg(Pt(3, 10), Pt(3, 0)).HitArc(Ac(Pt(0, 0), 5, 0, Pi/2))
+		assertHit(t, hit, ok, Hit[int]{Point: Pt(3, 4), Normal: Vec(0.6, 0.8), Fraction: 0.6})
+	})
+	t.Run("the hit is the first crossing, from a Start off the arc", func(t *testing.T) {
+		for _, a := range arcFixtures {
+			for _, start := range pointFixtures {
+				for _, end := range pointFixtures {
+					s := Seg(start, end)
+					message := fmt.Sprintf("%s → %s: ", s, a)
+
+					hit, ok := s.HitArc(a)
+					crossings := s.IntersectionArc(a).AppendTo(nil)
+					assert.Equal(t, ok, !a.Contains(start) && len(crossings) > 0, message)
+					if ok {
+						geomtest.AssertPoint(t, hit.Point, crossings[0], message)
+						assertFacing(t, s, hit, message)
+					}
+				}
+			}
+		}
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		through := Seg(Pt(3.0, 10.0), Pt(tenth, -10.0))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.HitArc(arc)
+		}), 0)
+	})
+}
+
 func TestSegment_HitSegment(t *testing.T) {
 	through := Seg(Pt(-2.0, 0.0), Pt(2.0, 0.0))
 
@@ -2168,6 +2618,160 @@ func TestSegment_HitLine(t *testing.T) {
 				assertWallHit(t, s, wall, hit, ok, s.IntersectsLine(wall), fmt.Sprintf("%s → %s: ", s, wall))
 			}
 		}
+	})
+}
+
+func TestSegment_HitPolyline(t *testing.T) {
+	path := PolLn([]Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(4.0, 3.0)})
+
+	t.Run("the first edge reached, with its perpendicular", func(t *testing.T) {
+		hit, ok := Seg(Pt(2.0, 5.0), Pt(2.0, -5.0)).HitPolyline(path)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(2.0, 0.0), Normal: Vec(0.0, 1.0), Fraction: 0.5})
+
+		hit, ok = Seg(Pt(6.0, 1.0), Pt(-2.0, 1.0)).HitPolyline(path)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(4.0, 1.0), Normal: Vec(1.0, 0.0), Fraction: 0.25})
+	})
+	t.Run("a corner touched in passing takes the edge that faces Start", func(t *testing.T) {
+		hit, ok := Seg(Pt(5.0, 1.0), Pt(3.0, -1.0)).HitPolyline(path)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(4.0, 0.0), Normal: Vec(1.0, 0.0), Fraction: 0.5})
+
+		hit, ok = Seg(Pt(3.0, -1.0), Pt(5.0, 1.0)).HitPolyline(path)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(4.0, 0.0), Normal: Vec(0.0, -1.0), Fraction: 0.5})
+
+		hit, ok = Seg(Pt(5.0, 1.0), Pt(3.0, -1.0)).HitPolyline(path.Reverse())
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(4.0, 0.0), Normal: Vec(1.0, 0.0), Fraction: 0.5})
+	})
+	t.Run("a Start on the path, a cast beside it or an empty path hits nothing", func(t *testing.T) {
+		_, ok := Seg(Pt(2.0, 0.0), Pt(2.0, 5.0)).HitPolyline(path)
+		assert.False(t, ok)
+
+		_, ok = Seg(Pt(0.0, 1.0), Pt(3.0, 1.0)).HitPolyline(path)
+		assert.False(t, ok)
+
+		_, ok = Seg(Pt(0.0, 1.0), Pt(3.0, 1.0)).HitPolyline(Polyline[float64]{})
+		assert.False(t, ok)
+	})
+	t.Run("a closed path is hit from outside where the polygon of its points is", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			for _, start := range pointFixtures {
+				for _, end := range pointFixtures {
+					s := Seg(start, end)
+					if p.Contains(start) {
+						continue
+					}
+
+					hit, ok := s.HitPolyline(p.Polyline())
+					expected, found := s.HitPolygon(p)
+					message := fmt.Sprintf("%s → %s: ", s, p)
+
+					assert.Equal(t, ok, found, message)
+					geomtest.AssertHit(t, hit, expected, message)
+				}
+			}
+		}
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		through := Seg(Pt(2.0, 5.0), Pt(tenth, -5.0))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.HitPolyline(path)
+		}), 0)
+	})
+}
+
+func TestSegment_HitQuadraticBezier(t *testing.T) {
+	curve := QuadBez(Pt(0.0, 0.0), Pt(2.0, 4.0), Pt(4.0, 0.0))
+
+	t.Run("the first crossing, with the perpendicular of the curve there", func(t *testing.T) {
+		hit, ok := Seg(Pt(2.0, 5.0), Pt(2.0, -1.0)).HitQuadraticBezier(curve)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(2.0, 2.0), Normal: Vec(0.0, 1.0), Fraction: 0.5})
+
+		hit, ok = Seg(Pt(2.0, -1.0), Pt(2.0, 5.0)).HitQuadraticBezier(curve)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(2.0, 2.0), Normal: Vec(0.0, -1.0), Fraction: 0.5})
+	})
+	t.Run("a Start on the curve or a cast short of it hits nothing", func(t *testing.T) {
+		_, ok := Seg(Pt(2.0, 2.0), Pt(2.0, 5.0)).HitQuadraticBezier(curve)
+		assert.False(t, ok)
+
+		_, ok = Seg(Pt(2.0, 5.0), Pt(2.0, 3.0)).HitQuadraticBezier(curve)
+		assert.False(t, ok)
+	})
+	t.Run("matches the hit of the curve raised to a cubic", func(t *testing.T) {
+		for _, q := range quadraticFixtures {
+			for _, s := range segmentFixtures {
+				hit, ok := s.HitQuadraticBezier(q)
+				expected, found := s.HitCubicBezier(q.Cubic())
+
+				assert.True(t, hit == expected && ok == found, fmt.Sprintf("%s → %s: ", s, q))
+			}
+		}
+	})
+}
+
+func TestSegment_HitCubicBezier(t *testing.T) {
+	wave := CubBez(Pt(0.0, 0.0), Pt(2.0, 6.0), Pt(4.0, -6.0), Pt(6.0, 0.0))
+
+	t.Run("the first crossing, with the perpendicular of the curve there", func(t *testing.T) {
+		hit, ok := Seg(Pt(8.0, 0.0), Pt(-2.0, 0.0)).HitCubicBezier(wave)
+		assert.True(t, ok)
+		geomtest.AssertPoint(t, hit.Point, Pt(6.0, 0.0))
+		geomtest.AssertVector(t, hit.Normal, Vec(3.0, -1.0).Normalize(), fmt.Sprint(hit))
+		geomtest.AssertNumber(t, hit.Fraction, 0.2)
+	})
+	t.Run("a Start on the curve or a cast beside it hits nothing", func(t *testing.T) {
+		_, ok := Seg(Pt(3.0, 0.0), Pt(3.0, 5.0)).HitCubicBezier(wave)
+		assert.False(t, ok)
+
+		_, ok = Seg(Pt(-1.0, 3.0), Pt(7.0, 3.0)).HitCubicBezier(wave)
+		assert.False(t, ok)
+	})
+	t.Run("a Start on the curve hits nothing where the cast leaves along it", func(t *testing.T) {
+		curve := CubBez(Pt(-3.0, -3.5), Pt(1.0, -2.0), Pt(1.5, -2.0), Pt(-3.0, -2.0))
+
+		_, ok := Seg(curve.End, Pt(-0.5, -2.0)).HitCubicBezier(curve)
+		assert.False(t, ok)
+
+		for _, c := range cubicFixtures {
+			for _, fraction := range curveFractions {
+				start := c.PointAt(fraction)
+
+				_, ok := Seg(start, start.Add(c.TangentAt(fraction))).HitCubicBezier(c)
+				assert.False(t, ok, fmt.Sprintf("%s @%v: ", c, fraction))
+			}
+		}
+	})
+	t.Run("int rounds the point", func(t *testing.T) {
+		hit, ok := Seg(Pt(30, 50), Pt(30, -50)).HitCubicBezier(CubBez(Pt(0, 0), Pt(20, 60), Pt(40, -60), Pt(60, 0)))
+		assert.True(t, ok)
+		geomtest.AssertPoint(t, hit.Point, Pt(30, 0))
+	})
+	t.Run("the hit is the first crossing, facing the segment", func(t *testing.T) {
+		for _, curve := range cubicFixtures {
+			for _, start := range pointFixtures {
+				for _, end := range pointFixtures {
+					s := Seg(start, end)
+					message := fmt.Sprintf("%s → %s: ", s, curve)
+
+					hit, ok := s.HitCubicBezier(curve)
+					crossings := s.IntersectionCubicBezier(curve)
+					if !ok {
+						assert.True(t, len(crossings) == 0 || crossings[0].Equal(start), message)
+
+						continue
+					}
+
+					geomtest.AssertPoint(t, hit.Point, crossings[0], message)
+					assertFacing(t, s, hit, message)
+				}
+			}
+		}
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		through := Seg(Pt(8.0, tenth), Pt(-2.0, 0.0))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.HitCubicBezier(wave)
+		}), 0)
 	})
 }
 
@@ -2711,6 +3315,7 @@ func TestSegment_Immutable(t *testing.T) {
 
 	s.Translate(Vec(3, -2))
 	s.MoveTo(Pt(4, 3))
+	s.Lerp(Seg(Pt(5, 5), Pt(7, 9)), 0.5)
 	s.Reverse()
 
 	geomtest.AssertSegment(t, s, Seg(Pt(1, 2), Pt(3, 5)))

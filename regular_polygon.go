@@ -471,6 +471,33 @@ func (rp RegularPolygon[T]) ContainsCircle(circle Circle[T]) bool {
 	return rp.walk(circle.Center).clears(circle)
 }
 
+// ContainsCapsule reports whether the given capsule lies within the regular polygon: the circles of its
+// radius about both ends of its segment do, as ContainsCircle decides it, and a convex shape holds every point between points it contains.
+func (rp RegularPolygon[T]) ContainsCapsule(capsule Capsule[T]) bool {
+	return rp.ContainsCircle(Circle[T]{capsule.Segment.Start, capsule.Radius}) && rp.ContainsCircle(Circle[T]{capsule.Segment.End, capsule.Radius})
+}
+
+// ContainsSector reports whether the given sector lies within the regular polygon: its center,
+// the two ends of its arc and the points of it reaching farthest toward each side are
+// contained, within the tolerance, and a convex shape holds every point between points it
+// contains. An empty polygon encloses nothing.
+func (rp RegularPolygon[T]) ContainsSector(sector Sector[T]) bool {
+	outer, inner := rp.Float(), sector.Float()
+	for _, corner := range inner.corners() {
+		if !outer.Contains(corner) {
+			return false
+		}
+	}
+
+	for edge := range outer.Edges() {
+		if normal := edge.Normal(); !outer.Contains(inner.Support(normal)) || !outer.Contains(inner.Support(normal.Negate())) {
+			return false
+		}
+	}
+
+	return true
+}
+
 // ContainsSegment reports whether the segment lies within the regular polygon: both endpoints are
 // contained, within the tolerance, and a convex shape holds every point between two it contains.
 func (rp RegularPolygon[T]) ContainsSegment(segment Segment[T]) bool {
@@ -544,6 +571,18 @@ func (rp RegularPolygon[T]) ContainsBox(box Box[T]) bool {
 // Circle.IntersectsRegularPolygon does.
 func (rp RegularPolygon[T]) IntersectsCircle(circle Circle[T]) bool {
 	return circle.IntersectsRegularPolygon(rp)
+}
+
+// IntersectsCapsule reports whether the polygon and the capsule share a point, as
+// Capsule.IntersectsRegularPolygon does.
+func (rp RegularPolygon[T]) IntersectsCapsule(capsule Capsule[T]) bool {
+	return capsule.IntersectsRegularPolygon(rp)
+}
+
+// IntersectsSector reports whether the polygon and the sector share a point, as
+// Sector.IntersectsRegularPolygon does.
+func (rp RegularPolygon[T]) IntersectsSector(sector Sector[T]) bool {
+	return sector.IntersectsRegularPolygon(rp)
 }
 
 // IntersectsSegment reports whether the polygon and the segment share a point, as

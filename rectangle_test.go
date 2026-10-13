@@ -1007,11 +1007,11 @@ func TestRectangle_Contains(t *testing.T) {
 	})
 	t.Run("a float rectangle contains the corners it was built from", func(t *testing.T) {
 		for _, corners := range [][2]float64{{0.1, 0.7}, {0.2, 0.9}, {5.7, 9.1}, {0.15, 0.45}} {
-			low, high := Pt(corners[0], corners[0]), Pt(corners[1], corners[1])
-			r := RectangleFromMinMax(low, high)
+			a, b := Pt(corners[0], corners[0]), Pt(corners[1], corners[1])
+			r := RectangleFromMinMax(a, b)
 
-			assert.True(t, r.Contains(low), fmt.Sprintf("%v: min", corners))
-			assert.True(t, r.Contains(high), fmt.Sprintf("%v: max", corners))
+			assert.True(t, r.Contains(a), fmt.Sprintf("%v: min", corners))
+			assert.True(t, r.Contains(b), fmt.Sprintf("%v: max", corners))
 		}
 	})
 	t.Run("float beyond Delta is outside", func(t *testing.T) {
@@ -1069,6 +1069,31 @@ func TestRectangle_ContainsCircle(t *testing.T) {
 				assert.Equal(t, r.ContainsCircle(c), r.Polygon().ContainsCircle(c), fmt.Sprintf("%s → %s: ", r, c))
 			}
 		}
+	})
+}
+
+func TestRectangle_ContainsCapsule(t *testing.T) {
+	rectangle := Rect(Pt(0.0, 0.0), Sz(10.0, 4.0))
+
+	t.Run("touching the sides from inside counts", func(t *testing.T) {
+		assert.True(t, rectangle.ContainsCapsule(Cap(Pt(-3.0, 0.0), Pt(3.0, 0.0), 2.0)))
+		assert.False(t, rectangle.ContainsCapsule(Cap(Pt(-3.0, 0.0), Pt(3.0, 0.0), 2.5)))
+	})
+	t.Run("rotated is tested in its own frame", func(t *testing.T) {
+		assert.True(t, rectangle.Rotate(Pi/2).ContainsCapsule(Cap(Pt(0.0, -3.0), Pt(0.0, 3.0), 2.0)))
+		assert.False(t, rectangle.Rotate(Pi/2).ContainsCapsule(Cap(Pt(-3.0, 0.0), Pt(3.0, 0.0), 2.0)))
+	})
+}
+
+func TestRectangle_ContainsSector(t *testing.T) {
+	t.Run("a sector within it, touching its sides from inside", func(t *testing.T) {
+		assert.True(t, Rect(Pt(2.5, 2.5), Sz(5.0, 5.0)).ContainsSector(quarterSector()))
+		assert.True(t, Rect(Pt(0.0, 2.5), Sz(8.0, 5.0)).ContainsSector(Sect(Pt(0.0, 0.0), 5.0, Pi/4, Pi/2)))
+		assert.True(t, Rect(Pt(0.0, 0.0), Sz(12.0, 12.0)).Rotate(Pi/6).ContainsSector(notchedSector()))
+	})
+	t.Run("a sector with a corner outside, or its arc alone", func(t *testing.T) {
+		assert.False(t, Rect(Pt(2.5, 2.5), Sz(4.9, 5.0)).ContainsSector(quarterSector()))
+		assert.False(t, Rect(Pt(0.0, 2.25), Sz(8.0, 4.5)).ContainsSector(Sect(Pt(0.0, 0.0), 5.0, Pi/4, Pi/2)))
 	})
 }
 
@@ -1166,6 +1191,16 @@ func TestRectangle_IntersectsCircle(t *testing.T) {
 		for _, r := range rectFixtures {
 			for _, c := range circleFixtures {
 				assert.Equal(t, r.IntersectsCircle(c), c.IntersectsRectangle(r), fmt.Sprintf("%s → %s: ", r, c))
+			}
+		}
+	})
+}
+
+func TestRectangle_IntersectsCapsule(t *testing.T) {
+	t.Run("mirrors Capsule.IntersectsRectangle", func(t *testing.T) {
+		for _, shape := range rectFixtures {
+			for _, c := range capsuleFixtures {
+				assert.Equal(t, shape.IntersectsCapsule(c), c.IntersectsRectangle(shape), fmt.Sprintf("%s → %s: ", shape, c))
 			}
 		}
 	})

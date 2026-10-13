@@ -312,6 +312,26 @@ func (c Circle[T]) ContainsCircle(circle Circle[T]) bool {
 	return c.containsSquared(far*far, circle.magnitude())
 }
 
+// ContainsCapsule reports whether the given capsule lies within the circle: the circles of its
+// radius about both ends of its segment do, as ContainsCircle decides it, and a circle holds every point between points it contains.
+func (c Circle[T]) ContainsCapsule(capsule Capsule[T]) bool {
+	return c.ContainsCircle(Circle[T]{capsule.Segment.Start, capsule.Radius}) && c.ContainsCircle(Circle[T]{capsule.Segment.End, capsule.Radius})
+}
+
+// ContainsSector reports whether the given sector lies within the circle: its center, the two
+// ends of its arc and the point of it farthest from this center are contained, within the
+// tolerance, and a circle holds every point between points it contains.
+func (c Circle[T]) ContainsSector(sector Sector[T]) bool {
+	outer, inner := c.Float(), sector.Float()
+	for _, corner := range inner.corners() {
+		if !outer.Contains(corner) {
+			return false
+		}
+	}
+
+	return outer.Contains(inner.Support(inner.Center.Subtract(outer.Center)))
+}
+
 // ContainsSegment reports whether the segment lies within the circle: both endpoints are
 // contained, within the tolerance, and a circle holds every point between two it contains.
 func (c Circle[T]) ContainsSegment(segment Segment[T]) bool {
@@ -380,6 +400,21 @@ func (c Circle[T]) ContainsBox(box Box[T]) bool {
 // comparison Contains makes, on the squared distance.
 func (c Circle[T]) IntersectsCircle(circle Circle[T]) bool {
 	return lessOrEqualSquared(c.centerDistanceSquared(circle.Center), float64(c.Radius)+float64(circle.Radius), c.epsilonWith(circle.magnitude()))
+}
+
+// IntersectsCapsule reports whether the circle and the capsule share a point: the segment of
+// the capsule passes within the sum of the two radii of the center. Touching shapes intersect,
+// within the tolerance, by the same comparison IntersectsCircle makes on the squared distance.
+func (c Circle[T]) IntersectsCapsule(capsule Capsule[T]) bool {
+	return lessOrEqualSquared(capsule.Segment.DistanceSquaredTo(c.Center), float64(c.Radius)+float64(capsule.Radius), c.epsilonWith(capsule.magnitude()))
+}
+
+// IntersectsSector reports whether the circle and the sector share a point: the center lies
+// within the sector, or its arc or one of its radii passes within the radius. Touching shapes
+// intersect, within the tolerance, by the same comparison Contains makes on the squared
+// distance the sector's DistanceSquaredTo measures.
+func (c Circle[T]) IntersectsSector(sector Sector[T]) bool {
+	return c.containsSquared(sector.DistanceSquaredTo(c.Center), sector.magnitude())
 }
 
 // IntersectsSegment reports whether the circle and the segment share a point: the point of the
@@ -686,6 +721,13 @@ func (c Circle[T]) Ellipse() Ellipse[T] {
 // OrientationFlatTop nor OrientationPointyTop.
 func (c Circle[T]) RegularPolygon(n int, orientation Orientation) RegularPolygon[T] {
 	return RegularPolygon[T]{c.Center, SzU(c.Radius), n, 0, RegularPolygonOrientationPhase(n, orientation)}
+}
+
+// Arc converts the circle to the Arc that is its whole boundary, from the angle zero through a
+// full turn counterclockwise: the line of the circle without its inside, which contains the
+// points on the boundary alone and is measured to from within.
+func (c Circle[T]) Arc() Arc[T] {
+	return Arc[T]{c.Center, c.Radius, 0, 2 * math.Pi}
 }
 
 // Cast converts the circle to a Circle of another number type, rounding as Cast does.

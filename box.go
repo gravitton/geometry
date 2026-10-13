@@ -245,6 +245,32 @@ func (b Box[T]) ContainsCircle(circle Circle[T]) bool {
 	return greaterOrEqualSquared(float64(gap*gap), float64(circle.Radius), circle.epsilonWith(b.magnitude()))
 }
 
+// ContainsCapsule reports whether the given capsule lies within the box: the circles of its
+// radius about both ends of its segment do, as ContainsCircle decides it, and a box holds every point between points it contains.
+func (b Box[T]) ContainsCapsule(capsule Capsule[T]) bool {
+	return b.ContainsCircle(Circle[T]{capsule.Segment.Start, capsule.Radius}) && b.ContainsCircle(Circle[T]{capsule.Segment.End, capsule.Radius})
+}
+
+// ContainsSector reports whether the given sector lies within the box: its center, the two
+// ends of its arc and the points of it reaching farthest along each axis are contained, within
+// the tolerance, and a box holds every point between points it contains.
+func (b Box[T]) ContainsSector(sector Sector[T]) bool {
+	outer, inner := b.Float(), sector.Float()
+	for _, corner := range inner.corners() {
+		if !outer.Contains(corner) {
+			return false
+		}
+	}
+
+	for _, direction := range CardinalOffsets[float64]() {
+		if !outer.Contains(inner.Support(direction)) {
+			return false
+		}
+	}
+
+	return true
+}
+
 // ContainsSegment reports whether the segment lies within the box: both endpoints are contained,
 // within the tolerance, and a box holds every point between two it contains.
 func (b Box[T]) ContainsSegment(segment Segment[T]) bool {
@@ -304,6 +330,18 @@ func (b Box[T]) ContainsBox(box Box[T]) bool {
 // IntersectsCircle reports whether the box and the circle overlap, as Circle.IntersectsBox does.
 func (b Box[T]) IntersectsCircle(circle Circle[T]) bool {
 	return circle.IntersectsBox(b)
+}
+
+// IntersectsCapsule reports whether the box and the capsule share a point, as
+// Capsule.IntersectsBox does.
+func (b Box[T]) IntersectsCapsule(capsule Capsule[T]) bool {
+	return capsule.IntersectsBox(b)
+}
+
+// IntersectsSector reports whether the box and the sector share a point, as
+// Sector.IntersectsBox does.
+func (b Box[T]) IntersectsSector(sector Sector[T]) bool {
+	return sector.IntersectsBox(b)
 }
 
 // IntersectsSegment reports whether the box and the segment share a point, as

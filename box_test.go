@@ -403,6 +403,30 @@ func TestBox_ContainsCircle(t *testing.T) {
 	})
 }
 
+func TestBox_ContainsCapsule(t *testing.T) {
+	box := BoxFromMinMax(Pt(0, 0), Pt(10, 6))
+
+	t.Run("touching the sides from inside counts", func(t *testing.T) {
+		assert.True(t, box.ContainsCapsule(Cap(Pt(3, 3), Pt(7, 3), 3)))
+		assert.False(t, box.ContainsCapsule(Cap(Pt(3, 3), Pt(8, 3), 3)))
+	})
+}
+
+func TestBox_ContainsSector(t *testing.T) {
+	t.Run("a sector within it, touching its sides from inside", func(t *testing.T) {
+		assert.True(t, Bx(Pt(0.0, 0.0), Pt(5.0, 5.0)).ContainsSector(quarterSector()))
+		assert.True(t, Bx(Pt(-4.0, 0.0), Pt(4.0, 5.0)).ContainsSector(Sect(Pt(0.0, 0.0), 5.0, Pi/4, Pi/2)))
+	})
+	t.Run("a sector with a corner outside, or its arc alone", func(t *testing.T) {
+		assert.False(t, Bx(Pt(0.0, 0.0), Pt(4.9, 5.0)).ContainsSector(quarterSector()))
+		assert.False(t, Bx(Pt(-4.0, 0.0), Pt(4.0, 4.5)).ContainsSector(Sect(Pt(0.0, 0.0), 5.0, Pi/4, Pi/2)))
+	})
+	t.Run("int", func(t *testing.T) {
+		assert.True(t, Bx(Pt(0, 0), Pt(5, 5)).ContainsSector(Sect(Pt(0, 0), 5, 0, Pi/2)))
+		assert.False(t, Bx(Pt(0, 0), Pt(4, 5)).ContainsSector(Sect(Pt(0, 0), 5, 0, Pi/2)))
+	})
+}
+
 func TestBox_ContainsSegment(t *testing.T) {
 	t.Run("encloses exactly where it encloses the bounds", func(t *testing.T) {
 		for _, b := range boxFixtures {
@@ -480,6 +504,16 @@ func TestBox_IntersectsCircle(t *testing.T) {
 		for _, b := range boxFixtures {
 			for _, c := range circleFixtures {
 				assert.Equal(t, b.IntersectsCircle(c), c.IntersectsBox(b), fmt.Sprintf("%s → %s: ", b, c))
+			}
+		}
+	})
+}
+
+func TestBox_IntersectsCapsule(t *testing.T) {
+	t.Run("mirrors Capsule.IntersectsBox", func(t *testing.T) {
+		for _, shape := range boxFixtures {
+			for _, c := range capsuleFixtures {
+				assert.Equal(t, shape.IntersectsCapsule(c), c.IntersectsBox(shape), fmt.Sprintf("%s → %s: ", shape, c))
 			}
 		}
 	})

@@ -892,6 +892,33 @@ func TestRegularPolygon_ContainsCircle(t *testing.T) {
 	})
 }
 
+func TestRegularPolygon_ContainsCapsule(t *testing.T) {
+	diamond := RegPol(Pt(0.0, 0.0), Sz(10.0, 10.0), 4, 0, 0)
+
+	t.Run("clear of every edge", func(t *testing.T) {
+		assert.True(t, diamond.ContainsCapsule(Cap(Pt(-2.0, 0.0), Pt(2.0, 0.0), 3.0)))
+	})
+	t.Run("a round end reaching past an edge", func(t *testing.T) {
+		assert.False(t, diamond.ContainsCapsule(Cap(Pt(-2.0, 0.0), Pt(2.0, 0.0), 6.0)))
+	})
+	t.Run("an empty polygon encloses nothing", func(t *testing.T) {
+		assert.False(t, RegPol(Pt(0.0, 0.0), Sz(10.0, 10.0), 0, 0, 0).ContainsCapsule(Cap(Pt(0.0, 0.0), Pt(0.0, 0.0), 0.0)))
+	})
+}
+
+func TestRegularPolygon_ContainsSector(t *testing.T) {
+	t.Run("a sector within it", func(t *testing.T) {
+		assert.True(t, RegPol(Pt(0.0, 0.0), SzU(10.0), 6, 0, 0).ContainsSector(quarterSector()))
+	})
+	t.Run("a sector whose arc reaches past a side", func(t *testing.T) {
+		assert.False(t, RegPol(Pt(0.0, 0.0), SzU(5.0), 6, 0, 0).ContainsSector(quarterSector()))
+		assert.False(t, RegPol(Pt(9.0, 0.0), SzU(10.0), 6, 0, 0).ContainsSector(quarterSector()))
+	})
+	t.Run("an empty polygon encloses nothing", func(t *testing.T) {
+		assert.False(t, RegPol(Pt(0.0, 0.0), SzU(10.0), 0, 0, 0).ContainsSector(Sect(Pt(0.0, 0.0), 0.0, 0, 0)))
+	})
+}
+
 func TestRegularPolygon_ContainsSegment(t *testing.T) {
 	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0, 0)
 
@@ -977,6 +1004,16 @@ func TestRegularPolygon_IntersectsCircle(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
 			for _, c := range circleFixtures {
 				assert.Equal(t, rp.IntersectsCircle(c), c.IntersectsRegularPolygon(rp), fmt.Sprintf("%s → %s: ", rp, c))
+			}
+		}
+	})
+}
+
+func TestRegularPolygon_IntersectsCapsule(t *testing.T) {
+	t.Run("mirrors Capsule.IntersectsRegularPolygon", func(t *testing.T) {
+		for _, shape := range regularPolygonFixtures {
+			for _, c := range capsuleFixtures {
+				assert.Equal(t, shape.IntersectsCapsule(c), c.IntersectsRegularPolygon(shape), fmt.Sprintf("%s → %s: ", shape, c))
 			}
 		}
 	})

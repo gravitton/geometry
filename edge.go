@@ -163,22 +163,11 @@ func (e *edgeSpan[T]) add(edge Segment[T]) {
 		e.ends, e.edge, e.crossed = [2]Point[T]{point, point}, edge, true
 	case e.segment.compareDistance(point, e.ends[0]) < 0:
 		e.ends[0], e.edge = point, edge
-	case point == e.ends[0] && e.faces(edge, e.edge) && !e.faces(e.edge, edge):
+	case point == e.ends[0] && edge.faces(e.segment.Start, e.edge) && !e.edge.faces(e.segment.Start, edge):
 		e.edge = edge
 	case e.segment.compareDistance(point, e.ends[1]) > 0:
 		e.ends[1] = point
 	}
-}
-
-// faces reports whether the edge is turned toward the segment's Start at the vertex it shares
-// with the neighbour: Start lies strictly on the side of its line the neighbour does not run
-// to, on the exact signs Line.side gives, so no winding is asked for. The neighbour is read by
-// both its ends, the shared one adding nothing. At a corner pointing out, that is the outer
-// side of the edge; at a notch neither edge faces, both being seen from within it.
-func (e *edgeSpan[T]) faces(edge, neighbour Segment[T]) bool {
-	line := edge.Line()
-
-	return float64(line.side(e.segment.Start)*(line.side(neighbour.Start)+line.side(neighbour.End))) < 0
 }
 
 // crossings returns the first and the last crossing from Start, the same point twice where

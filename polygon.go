@@ -459,11 +459,8 @@ func (p Polygon[T]) AppendSimplify(dst []Point[T], tolerance float64) []Point[T]
 	}
 
 	from := len(dst)
-	if cap(dst)-from < n {
-		dst = append(make([]Point[T], 0, from+n), dst...)
-	}
 
-	dst, wrapped := p.appendKept(append(dst, p.Points[least]), least, least+n, math.Abs(tolerance))
+	dst, wrapped := p.appendKept(append(slices.Grow(dst, n), p.Points[least]), least, least+n, math.Abs(tolerance))
 
 	kept := dst[from:]
 	slices.Reverse(kept)
@@ -691,6 +688,45 @@ func (p Polygon[T]) ContainsCircle(circle Circle[T]) bool {
 	return p.walk(circle.Center).clears(circle)
 }
 
+// ContainsCapsule reports whether the capsule lies within the polygon: its segment does, as
+// ContainsSegment decides it, and every edge is at least its radius from that segment, within
+// the tolerance, so a capsule touching an edge from inside is enclosed. A capsule clear of
+// every edge cannot reach outside, concave polygon or not. An empty polygon encloses nothing.
+func (p Polygon[T]) ContainsCapsule(capsule Capsule[T]) bool {
+	if !p.ContainsSegment(capsule.Segment) {
+		return false
+	}
+
+	for edge := range p.Edges() {
+		if !greaterOrEqualSquared(edge.DistanceSquaredToSegment(capsule.Segment), float64(capsule.Radius), epsilonAt[T](max(edge.magnitude(), capsule.magnitude()))) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// ContainsSector reports whether the sector lies within the polygon: the polygon contains its
+// two radii, as ContainsSegment decides it, and its centroid, and no edge passes through the
+// inside of the sector, off its arc and its radii by more than the tolerance, so a sector
+// touching an edge from inside is enclosed. A sector no edge enters cannot reach outside,
+// concave polygon or not. For integer T the ends of the arc and the centroid are rounded once.
+// An empty polygon encloses nothing.
+func (p Polygon[T]) ContainsSector(sector Sector[T]) bool {
+	arc := sector.Arc()
+	if !p.ContainsSegment(Segment[T]{sector.Center, arc.PointAt(0)}) || !p.ContainsSegment(Segment[T]{sector.Center, arc.PointAt(1)}) || !p.Contains(sector.Centroid()) {
+		return false
+	}
+
+	for edge := range p.Edges() {
+		if sector.enters(edge.Float()) {
+			return false
+		}
+	}
+
+	return true
+}
+
 // ContainsSegment reports whether the segment lies within the polygon: both endpoints are
 // contained, within the tolerance, and it leaves the polygon nowhere between them, which a
 // concave polygon can let it do. It leaves by properly crossing an edge, decided on exact
@@ -782,6 +818,18 @@ func (p Polygon[T]) ContainsBox(box Box[T]) bool {
 // Circle.IntersectsPolygon does.
 func (p Polygon[T]) IntersectsCircle(circle Circle[T]) bool {
 	return circle.IntersectsPolygon(p)
+}
+
+// IntersectsCapsule reports whether the polygon and the capsule share a point, as
+// Capsule.IntersectsPolygon does.
+func (p Polygon[T]) IntersectsCapsule(capsule Capsule[T]) bool {
+	return capsule.IntersectsPolygon(p)
+}
+
+// IntersectsSector reports whether the polygon and the sector share a point, as
+// Sector.IntersectsPolygon does.
+func (p Polygon[T]) IntersectsSector(sector Sector[T]) bool {
+	return sector.IntersectsPolygon(p)
 }
 
 // IntersectsSegment reports whether the polygon and the segment share a point, as
@@ -1481,6 +1529,20 @@ func (p Polygon[T]) next(i int) int {
 // next, the last one closing back to the first.
 func (p Polygon[T]) edge(i int) Segment[T] {
 	return Segment[T]{p.Points[i], p.Points[(i+1)%len(p.Points)]}
+}
+
+// Polyline converts the polygon to the Polyline around its outline, from the first vertex
+// through every other and back to the first, which is repeated to close the path, so the path
+// has the edges Edges yields and IsClosed holds for it; Polyline.Polygon takes the repeated
+// point off again. An empty polygon gives an empty path, a nil Points a nil one.
+func (p Polygon[T]) Polyline() Polyline[T] {
+	if p.IsEmpty() {
+		return Polyline[T](p)
+	}
+
+	points := make([]Point[T], 0, len(p.Points)+1)
+
+	return Polyline[T]{append(append(points, p.Points...), p.Points[0])}
 }
 
 // Cast converts the polygon to a Polygon of another number type, rounding as Cast does.

@@ -235,6 +235,33 @@ func TestRay_Nearest(t *testing.T) {
 	})
 }
 
+func TestRay_NearestFraction(t *testing.T) {
+	ray := Ry(Pt(0.0, 0.0), Vec(2.0, 0.0))
+
+	t.Run("in units of the direction", func(t *testing.T) {
+		geomtest.AssertNumber(t, ray.NearestFraction(Pt(7.0, 3.0)), 3.5)
+	})
+	t.Run("zero where the foot falls behind the origin", func(t *testing.T) {
+		geomtest.AssertNumber(t, ray.NearestFraction(Pt(-2.0, 3.0)), 0.0)
+	})
+	t.Run("int", func(t *testing.T) {
+		geomtest.AssertNumber(t, Ry(Pt(0, 0), Vec(2, 1)).NearestFraction(Pt(3, 3)), 1.8)
+	})
+	t.Run("a zero direction gives zero", func(t *testing.T) {
+		assert.Equal(t, Ry(Pt(1, 1), Vec(0, 0)).NearestFraction(Pt(4, 5)), 0.0)
+	})
+	t.Run("a NaN coordinate is nearest to nothing", func(t *testing.T) {
+		assert.True(t, math.IsNaN(ray.NearestFraction(Pt(math.NaN(), 0.0))))
+	})
+	t.Run("PointAt takes it back to the nearest point over the fixtures", func(t *testing.T) {
+		for _, fixture := range rayFixtures {
+			for _, p := range pointFixtures {
+				geomtest.AssertPoint(t, fixture.PointAt(fixture.NearestFraction(p)), fixture.Nearest(p), fmt.Sprintf("%s → %s: ", fixture, p))
+			}
+		}
+	})
+}
+
 func TestRay_Contains(t *testing.T) {
 	ray := Ry(Pt(0, 0), Vec(2, 1))
 
@@ -288,6 +315,16 @@ func TestRay_IntersectsCircle(t *testing.T) {
 		for _, r := range rayFixtures {
 			for _, c := range circleFixtures {
 				assert.Equal(t, r.IntersectsCircle(c), c.IntersectsRay(r), fmt.Sprintf("%s → %s: ", r, c))
+			}
+		}
+	})
+}
+
+func TestRay_IntersectsCapsule(t *testing.T) {
+	t.Run("mirrors Capsule.IntersectsRay", func(t *testing.T) {
+		for _, shape := range rayFixtures {
+			for _, c := range capsuleFixtures {
+				assert.Equal(t, shape.IntersectsCapsule(c), c.IntersectsRay(shape), fmt.Sprintf("%s → %s: ", shape, c))
 			}
 		}
 	})
@@ -487,6 +524,36 @@ func TestRay_IntersectionCircle(t *testing.T) {
 	})
 }
 
+func TestRay_IntersectionCapsule(t *testing.T) {
+	t.Run("matches Capsule.IntersectionRay", func(t *testing.T) {
+		for _, s := range rayFixtures {
+			for _, c := range capsuleFixtures {
+				geomtest.AssertVertices(t, s.IntersectionCapsule(c).AppendTo(nil), c.IntersectionRay(s).AppendTo(nil), fmt.Sprintf("%s → %s: ", s, c))
+			}
+		}
+	})
+}
+
+func TestRay_IntersectionSector(t *testing.T) {
+	t.Run("matches Sector.IntersectionRay", func(t *testing.T) {
+		for _, s := range rayFixtures {
+			for _, sector := range sectorFixtures() {
+				geomtest.AssertVertices(t, s.IntersectionSector(sector), sector.IntersectionRay(s), fmt.Sprintf("%s → %s: ", s, sector))
+			}
+		}
+	})
+}
+
+func TestRay_IntersectionArc(t *testing.T) {
+	t.Run("matches Arc.IntersectionRay", func(t *testing.T) {
+		for _, s := range rayFixtures {
+			for _, a := range arcFixtures {
+				geomtest.AssertVertices(t, s.IntersectionArc(a).AppendTo(nil), a.IntersectionRay(s).AppendTo(nil), fmt.Sprintf("%s → %s: ", s, a))
+			}
+		}
+	})
+}
+
 func TestRay_IntersectionSegment(t *testing.T) {
 	t.Run("matches Segment.IntersectionRay", func(t *testing.T) {
 		for _, r := range rayFixtures {
@@ -680,6 +747,47 @@ func TestRay_IntersectionLine(t *testing.T) {
 	})
 }
 
+func TestRay_IntersectionPolyline(t *testing.T) {
+	path := PolLn([]Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(4.0, 3.0)})
+
+	t.Run("the crossings of its edges in order, a shared point once", func(t *testing.T) {
+		geomtest.AssertVertices(t, RayThrough(Pt(-1.0, -1.0), Pt(5.0, 2.0)).IntersectionPolyline(path), []Point[float64]{Pt(1.0, 0.0), Pt(4.0, 1.5)})
+		geomtest.AssertVertices(t, RayThrough(Pt(0.0, 2.0), Pt(6.0, -1.0)).IntersectionPolyline(path), []Point[float64]{Pt(4.0, 0.0)})
+		assert.Nil(t, RayThrough(Pt(0.0, 5.0), Pt(-3.0, 5.0)).IntersectionPolyline(path))
+		assert.Nil(t, RayThrough(Pt(0.0, 1.0), Pt(3.0, 1.0)).IntersectionPolyline(Polyline[float64]{}))
+	})
+	t.Run("a closed path is crossed as the polygon of its points", func(t *testing.T) {
+		for _, s := range rayFixtures {
+			for _, p := range polygonFixtures() {
+				geomtest.AssertVertices(t, s.IntersectionPolyline(p.Polyline()), s.IntersectionPolygon(p), fmt.Sprintf("%s → %s: ", s, p))
+			}
+		}
+	})
+	t.Run("appends after what the buffer holds", func(t *testing.T) {
+		geomtest.AssertVertices(t, RayThrough(Pt(-1.0, -1.0), Pt(5.0, 2.0)).AppendIntersectionPolyline(bufferWith(prefixPoint), path), []Point[float64]{prefixPoint, Pt(1.0, 0.0), Pt(4.0, 1.5)})
+	})
+}
+
+func TestRay_IntersectionQuadraticBezier(t *testing.T) {
+	t.Run("matches QuadraticBezier.IntersectionRay", func(t *testing.T) {
+		for _, s := range rayFixtures {
+			for _, q := range quadraticFixtures {
+				geomtest.AssertVertices(t, s.IntersectionQuadraticBezier(q).AppendTo(nil), q.IntersectionRay(s).AppendTo(nil), fmt.Sprintf("%s → %s: ", s, q))
+			}
+		}
+	})
+}
+
+func TestRay_IntersectionCubicBezier(t *testing.T) {
+	t.Run("matches CubicBezier.IntersectionRay", func(t *testing.T) {
+		for _, s := range rayFixtures {
+			for _, c := range cubicFixtures {
+				geomtest.AssertVertices(t, s.IntersectionCubicBezier(c), c.IntersectionRay(s), fmt.Sprintf("%s → %s: ", s, c))
+			}
+		}
+	})
+}
+
 func TestRay_IntersectionPolygon(t *testing.T) {
 	square := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(0, 4)})
 	notched := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(4.0, 4.0), Pt(2.0, 1.0), Pt(0.0, 4.0)})
@@ -867,6 +975,38 @@ func TestRay_ClipCircle(t *testing.T) {
 	})
 }
 
+func TestRay_ClipCapsule(t *testing.T) {
+	capsule := Cap(Pt(0.0, 0.0), Pt(10.0, 0.0), 2.0)
+
+	t.Run("passing through gives the part between the crossings", func(t *testing.T) {
+		geomtest.AssertSegments(t, partsOf(Ry(Pt(5.0, 10.0), Vec(0.0, -1.0)).ClipCapsule(capsule)), []Segment[float64]{Seg(Pt(5.0, 2.0), Pt(5.0, -2.0))})
+		assert.Nil(t, partsOf(Ry(Pt(5.0, 10.0), Vec(1.0, 0.0)).ClipCapsule(capsule)))
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, r := range rayFixtures {
+			for _, c := range capsuleFixtures {
+				assertClipped(t, r, partsOf(r.ClipCapsule(c)), r.IntersectsCapsule(c), c.ContainsSegment, fmt.Sprintf("%s → %s: ", r, c))
+			}
+		}
+	})
+}
+
+func TestRay_ClipSector(t *testing.T) {
+	sector := Sect(Pt(0.0, 0.0), 5.0, Pi/4, 3*Pi/2)
+
+	t.Run("through the notch of a sector past half a turn there are two parts", func(t *testing.T) {
+		geomtest.AssertSegments(t, Ry(Pt(3.0, 10.0), Vec(0.0, -1.0)).ClipSector(sector), []Segment[float64]{Seg(Pt(3.0, 4.0), Pt(3.0, 3.0)), Seg(Pt(3.0, -3.0), Pt(3.0, -4.0))})
+		assert.Nil(t, Ry(Pt(9.0, 10.0), Vec(0.0, -1.0)).ClipSector(sector))
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, r := range rayFixtures {
+			for _, s := range sectorFixtures() {
+				assertClipped(t, r, r.ClipSector(s), r.IntersectsSector(s), s.ContainsSegment, fmt.Sprintf("%s → %s: ", r, s))
+			}
+		}
+	})
+}
+
 func TestRay_ClipPolygon(t *testing.T) {
 	notched := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(4.0, 4.0), Pt(2.0, 1.0), Pt(0.0, 4.0)})
 
@@ -1038,6 +1178,88 @@ func TestRay_HitCircle(t *testing.T) {
 	})
 }
 
+func TestRay_HitCapsule(t *testing.T) {
+	capsule := Cap(Pt(0.0, 0.0), Pt(10.0, 0.0), 2.0)
+
+	t.Run("from outside is the first point of the boundary, the fraction in units of Direction", func(t *testing.T) {
+		hit, ok := Ry(Pt(5.0, 10.0), Vec(0.0, -2.0)).HitCapsule(capsule)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(5.0, 2.0), Normal: Vec(0.0, 1.0), Fraction: 4})
+	})
+	t.Run("an Origin inside, or a capsule behind the ray, hits nothing", func(t *testing.T) {
+		_, ok := Ry(Pt(5.0, 1.0), Vec(0.0, -2.0)).HitCapsule(capsule)
+		assert.False(t, ok)
+
+		_, ok = Ry(Pt(5.0, 10.0), Vec(0.0, 2.0)).HitCapsule(capsule)
+		assert.False(t, ok)
+	})
+	t.Run("matches HitCapsule of a segment along the ray past the capsule", func(t *testing.T) {
+		for _, r := range rayFixtures {
+			for _, c := range capsuleFixtures {
+				hit, ok := r.HitCapsule(c)
+				expected, found := Seg(r.Origin, r.PointAt(1000)).HitCapsule(c)
+
+				assert.Equal(t, ok, found, fmt.Sprintf("%s → %s: ", r, c))
+				geomtest.AssertPoint(t, hit.Point, expected.Point, fmt.Sprintf("%s → %s: ", r, c))
+				geomtest.AssertVector(t, hit.Normal, expected.Normal, fmt.Sprintf("%s → %s: ", r, c))
+				geomtest.AssertNumber(t, hit.Fraction, expected.Fraction*1000, fmt.Sprintf("%s → %s: ", r, c))
+			}
+		}
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		through := Ry(Pt(5.0, 10.0), Vec(tenth, -1.0))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.HitCapsule(capsule)
+		}), 0)
+	})
+}
+
+func TestRay_HitSector(t *testing.T) {
+	sector := Sect(Pt(0.0, 0.0), 5.0, 0, Pi/2)
+
+	t.Run("from outside is the first point of the boundary, the fraction in units of Direction", func(t *testing.T) {
+		hit, ok := Ry(Pt(3.0, 10.0), Vec(0.0, -2.0)).HitSector(sector)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(3.0, 4.0), Normal: Vec(0.6, 0.8), Fraction: 3})
+	})
+	t.Run("an Origin inside, or a sector behind the ray, hits nothing", func(t *testing.T) {
+		_, ok := Ry(Pt(1.0, 1.0), Vec(0.0, -2.0)).HitSector(sector)
+		assert.False(t, ok)
+
+		_, ok = Ry(Pt(3.0, 10.0), Vec(0.0, 2.0)).HitSector(sector)
+		assert.False(t, ok)
+	})
+	t.Run("matches HitSector of a segment along the ray past the sector", func(t *testing.T) {
+		for _, r := range rayFixtures {
+			for _, s := range sectorFixtures() {
+				hit, ok := r.HitSector(s)
+				expected, found := Seg(r.Origin, r.PointAt(1000)).HitSector(s)
+
+				assert.Equal(t, ok, found, fmt.Sprintf("%s → %s: ", r, s))
+				geomtest.AssertPoint(t, hit.Point, expected.Point, fmt.Sprintf("%s → %s: ", r, s))
+				geomtest.AssertVector(t, hit.Normal, expected.Normal, fmt.Sprintf("%s → %s: ", r, s))
+				geomtest.AssertNumber(t, hit.Fraction, expected.Fraction*1000, fmt.Sprintf("%s → %s: ", r, s))
+			}
+		}
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		through := Ry(Pt(3.0, 10.0), Vec(tenth, -1.0))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.HitSector(sector)
+		}), 0)
+	})
+}
+
+func TestRay_HitArc(t *testing.T) {
+	arc := Ac(Pt(0.0, 0.0), 5.0, 0, Pi/2)
+
+	hit, ok := Ry(Pt(3.0, 10.0), Vec(0.0, -2.0)).HitArc(arc)
+	assertHit(t, hit, ok, Hit[float64]{Point: Pt(3.0, 4.0), Normal: Vec(0.6, 0.8), Fraction: 3})
+
+	_, ok = Ry(Pt(3.0, 10.0), Vec(0.0, 2.0)).HitArc(arc)
+	assert.False(t, ok)
+}
+
 func TestRay_HitSegment(t *testing.T) {
 	ray := Ry(Pt(-10, 0), Vec(2, 0))
 
@@ -1150,6 +1372,38 @@ func TestRay_HitLine(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestRay_HitPolyline(t *testing.T) {
+	path := PolLn([]Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(4.0, 3.0)})
+
+	hit, ok := Ry(Pt(2.0, 5.0), Vec(0.0, -2.0)).HitPolyline(path)
+	assertHit(t, hit, ok, Hit[float64]{Point: Pt(2.0, 0.0), Normal: Vec(0.0, 1.0), Fraction: 2.5})
+
+	_, ok = Ry(Pt(2.0, 5.0), Vec(0.0, 2.0)).HitPolyline(path)
+	assert.False(t, ok)
+}
+
+func TestRay_HitQuadraticBezier(t *testing.T) {
+	curve := QuadBez(Pt(0.0, 0.0), Pt(2.0, 4.0), Pt(4.0, 0.0))
+
+	hit, ok := Ry(Pt(2.0, 5.0), Vec(0.0, -2.0)).HitQuadraticBezier(curve)
+	assertHit(t, hit, ok, Hit[float64]{Point: Pt(2.0, 2.0), Normal: Vec(0.0, 1.0), Fraction: 1.5})
+
+	_, ok = Ry(Pt(2.0, 5.0), Vec(0.0, 2.0)).HitQuadraticBezier(curve)
+	assert.False(t, ok)
+}
+
+func TestRay_HitCubicBezier(t *testing.T) {
+	wave := CubBez(Pt(0.0, 0.0), Pt(2.0, 6.0), Pt(4.0, -6.0), Pt(6.0, 0.0))
+
+	hit, ok := Ry(Pt(3.0, 5.0), Vec(0.0, -2.0)).HitCubicBezier(wave)
+	assert.True(t, ok)
+	geomtest.AssertPoint(t, hit.Point, Pt(3.0, 0.0))
+	geomtest.AssertNumber(t, hit.Fraction, 2.5)
+
+	_, ok = Ry(Pt(3.0, 5.0), Vec(0.0, 2.0)).HitCubicBezier(wave)
+	assert.False(t, ok)
 }
 
 func TestRay_HitPolygon(t *testing.T) {

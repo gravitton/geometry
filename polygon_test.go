@@ -1089,6 +1089,50 @@ func TestPolygon_ContainsCircle(t *testing.T) {
 	})
 }
 
+func TestPolygon_ContainsCapsule(t *testing.T) {
+	corner := Pol(cornerVertices())
+
+	t.Run("touching the edges from inside counts", func(t *testing.T) {
+		assert.True(t, corner.ContainsCapsule(Cap(Pt(1.0, 1.0), Pt(5.0, 1.0), 1.0)))
+		assert.True(t, corner.ContainsCapsule(Cap(Pt(1.0, 1.0), Pt(1.0, 5.0), 1.0)))
+	})
+	t.Run("a radius reaching past an edge", func(t *testing.T) {
+		assert.False(t, corner.ContainsCapsule(Cap(Pt(1.0, 1.0), Pt(5.0, 1.0), 1.5)))
+	})
+	t.Run("a segment leaving through the notch", func(t *testing.T) {
+		assert.False(t, corner.ContainsCapsule(Cap(Pt(5.0, 1.0), Pt(1.0, 5.0), 0.5)))
+	})
+	t.Run("a capsule of no radius is its segment", func(t *testing.T) {
+		assert.True(t, corner.ContainsCapsule(Cap(Pt(0.0, 0.0), Pt(6.0, 0.0), 0.0)))
+	})
+	t.Run("an empty polygon encloses nothing", func(t *testing.T) {
+		assert.False(t, Pol[float64](nil).ContainsCapsule(Cap(Pt(1.0, 1.0), Pt(1.0, 1.0), 0.0)))
+	})
+}
+
+func TestPolygon_ContainsSector(t *testing.T) {
+	t.Run("a sector within it, touching its edges from inside", func(t *testing.T) {
+		assert.True(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(6.0, 0.0), Pt(6.0, 6.0), Pt(0.0, 6.0)}).ContainsSector(quarterSector()))
+		assert.True(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(5.0, 0.0), Pt(5.0, 5.0), Pt(0.0, 5.0)}).ContainsSector(quarterSector()))
+	})
+	t.Run("an edge cutting the arc off, and a sector turned out of a corner", func(t *testing.T) {
+		assert.False(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(5.0, 0.0), Pt(0.0, 5.0)}).ContainsSector(quarterSector()))
+		assert.False(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(6.0, 0.0), Pt(6.0, 6.0), Pt(0.0, 6.0)}).ContainsSector(Sect(Pt(0.0, 0.0), 5.0, Pi, Pi/2)))
+		assert.False(t, Pol([]Point[float64]{Pt(1.0, 1.0), Pt(6.0, 1.0), Pt(6.0, 6.0), Pt(1.0, 6.0)}).ContainsSector(quarterSector()))
+	})
+	t.Run("a polygon that is not convex reaching into the notch of a sector past half a turn, and past it", func(t *testing.T) {
+		assert.True(t, Pol([]Point[float64]{Pt(-6.0, -6.0), Pt(6.0, -6.0), Pt(3.0, 0.0), Pt(6.0, 6.0), Pt(-6.0, 6.0)}).ContainsSector(notchedSector()))
+		assert.False(t, Pol([]Point[float64]{Pt(-6.0, -6.0), Pt(6.0, -6.0), Pt(-1.0, 0.0), Pt(6.0, 6.0), Pt(-6.0, 6.0)}).ContainsSector(notchedSector()))
+	})
+	t.Run("an empty polygon encloses nothing", func(t *testing.T) {
+		assert.False(t, Pol([]Point[float64]{}).ContainsSector(quarterSector()))
+	})
+	t.Run("int", func(t *testing.T) {
+		assert.True(t, Pol([]Point[int]{Pt(0, 0), Pt(5, 0), Pt(5, 5), Pt(0, 5)}).ContainsSector(Sect(Pt(0, 0), 5, 0, Pi/2)))
+		assert.False(t, Pol([]Point[int]{Pt(0, 0), Pt(5, 0), Pt(0, 5)}).ContainsSector(Sect(Pt(0, 0), 5, 0, Pi/2)))
+	})
+}
+
 func TestPolygon_ContainsSegment(t *testing.T) {
 	backward := notchedVertices()
 	slices.Reverse(backward)
@@ -1211,6 +1255,16 @@ func TestPolygon_IntersectsCircle(t *testing.T) {
 		for _, p := range polygonFixtures() {
 			for _, c := range circleFixtures {
 				assert.Equal(t, p.IntersectsCircle(c), c.IntersectsPolygon(p), fmt.Sprintf("%s → %s: ", p, c))
+			}
+		}
+	})
+}
+
+func TestPolygon_IntersectsCapsule(t *testing.T) {
+	t.Run("mirrors Capsule.IntersectsPolygon", func(t *testing.T) {
+		for _, shape := range polygonFixtures() {
+			for _, c := range capsuleFixtures {
+				assert.Equal(t, shape.IntersectsCapsule(c), c.IntersectsPolygon(shape), fmt.Sprintf("%s → %s: ", shape, c))
 			}
 		}
 	})
@@ -1837,6 +1891,31 @@ func BenchmarkPolygon_IsSimple(b *testing.B) {
 	for b.Loop() {
 		sinkBool = polygon.IsSimple()
 	}
+}
+
+func TestPolygon_Polyline(t *testing.T) {
+	t.Run("the outline as a path back to the first vertex", func(t *testing.T) {
+		geomtest.AssertPolyline(t, Pol(squareVertices()).Polyline(), PolLn([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2), Pt(0, 0)}))
+	})
+	t.Run("the vertices are copied", func(t *testing.T) {
+		vertices := squareVertices()
+		path := Pol(vertices).Polyline()
+		path.Points[0] = Pt(9, 9)
+
+		geomtest.AssertVertices(t, vertices, squareVertices())
+	})
+	t.Run("an empty polygon gives an empty path, nil a nil one", func(t *testing.T) {
+		assert.True(t, Polygon[int]{}.Polyline().IsZero())
+		assert.True(t, Pol([]Point[int]{}).Polyline().IsEmpty())
+		assert.False(t, Pol([]Point[int]{}).Polyline().IsZero())
+	})
+	t.Run("allocates once", func(t *testing.T) {
+		polygon := Pol(squareVertices())
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = polygon.Polyline().Points
+		}), 1)
+	})
 }
 
 func TestPolygon_Cast(t *testing.T) {

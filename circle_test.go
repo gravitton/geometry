@@ -744,6 +744,32 @@ func TestCircle_ContainsCircle(t *testing.T) {
 	})
 }
 
+func TestCircle_ContainsCapsule(t *testing.T) {
+	t.Run("touching the boundary from inside counts", func(t *testing.T) {
+		assert.True(t, Circ(Pt(0, 0), 10).ContainsCapsule(Cap(Pt(-5, 0), Pt(5, 0), 5)))
+		assert.False(t, Circ(Pt(0, 0), 10).ContainsCapsule(Cap(Pt(-5, 0), Pt(5, 0), 6)))
+	})
+	t.Run("an end outside", func(t *testing.T) {
+		assert.False(t, Circ(Pt(0, 0), 10).ContainsCapsule(Cap(Pt(0, 0), Pt(12, 0), 1)))
+	})
+}
+
+func TestCircle_ContainsSector(t *testing.T) {
+	t.Run("a sector of the circle or within it", func(t *testing.T) {
+		assert.True(t, Circ(Pt(0.0, 0.0), 5.0).ContainsSector(quarterSector()))
+		assert.True(t, Circ(Pt(1.0, 1.0), 5.0).ContainsSector(quarterSector()))
+		assert.True(t, Circ(Pt(0.0, -1.0), 6.0).ContainsSector(Sect(Pt(0.0, 0.0), 5.0, Pi/4, Pi/2)))
+	})
+	t.Run("a sector with a corner outside, or its arc alone", func(t *testing.T) {
+		assert.False(t, Circ(Pt(0.0, 0.0), 4.9).ContainsSector(quarterSector()))
+		assert.False(t, Circ(Pt(0.0, -1.0), 5.9).ContainsSector(Sect(Pt(0.0, 0.0), 5.0, Pi/4, Pi/2)))
+	})
+	t.Run("int", func(t *testing.T) {
+		assert.True(t, Circ(Pt(0, 0), 5).ContainsSector(Sect(Pt(0, 0), 5, 0, Pi/2)))
+		assert.False(t, Circ(Pt(0, 0), 5).ContainsSector(Sect(Pt(1, 0), 5, 0, Pi/2)))
+	})
+}
+
 func TestCircle_ContainsSegment(t *testing.T) {
 	circle := Circ(Pt(0, 0), 10)
 
@@ -843,6 +869,41 @@ func TestCircle_IntersectsCircle(t *testing.T) {
 		for _, a := range circleFixtures {
 			for _, b := range circleFixtures {
 				assert.Equal(t, a.IntersectsCircle(b), b.IntersectsCircle(a), fmt.Sprintf("%s → %s: ", a, b))
+			}
+		}
+	})
+}
+
+func TestCircle_IntersectsCapsule(t *testing.T) {
+	capsule := Cap(Pt(0, 0), Pt(10, 0), 2)
+
+	t.Run("touching a side or a round end counts", func(t *testing.T) {
+		assert.True(t, Circ(Pt(5, 5), 3).IntersectsCapsule(capsule))
+		assert.True(t, Circ(Pt(15, 0), 3).IntersectsCapsule(capsule))
+	})
+	t.Run("apart", func(t *testing.T) {
+		assert.False(t, Circ(Pt(5, 6), 3).IntersectsCapsule(capsule))
+		assert.False(t, Circ(Pt(16, 0), 3).IntersectsCapsule(capsule))
+	})
+	t.Run("float within the tolerance counts, beyond it not", func(t *testing.T) {
+		assert.True(t, Circ(Pt(5.0, 5.0+Delta/2), 3.0).IntersectsCapsule(capsule.Float()))
+		assert.False(t, Circ(Pt(5.0, 5.0+2*Delta), 3.0).IntersectsCapsule(capsule.Float()))
+	})
+	t.Run("int is exact near the end of the supported range", func(t *testing.T) {
+		long := Cap(Pt(0, 0), Pt(1<<25, 0), 3)
+
+		assert.True(t, Circ(Pt(1<<24, 5), 2).IntersectsCapsule(long))
+		assert.False(t, Circ(Pt(1<<24, 5), 1).IntersectsCapsule(long))
+	})
+	t.Run("a circle of no radius is its center, a capsule of no length a circle", func(t *testing.T) {
+		for _, c := range capsuleFixtures {
+			for _, p := range pointFixtures {
+				assert.Equal(t, Circ(p, 0.0).IntersectsCapsule(c), c.Contains(p), fmt.Sprintf("%s → %s: ", c, p))
+			}
+		}
+		for _, a := range circleFixtures {
+			for _, b := range circleFixtures {
+				assert.Equal(t, a.IntersectsCapsule(Cap(b.Center, b.Center, b.Radius)), a.IntersectsCircle(b), fmt.Sprintf("%s → %s: ", a, b))
 			}
 		}
 	})
@@ -1094,6 +1155,26 @@ func TestCircle_IntersectsBox(t *testing.T) {
 				assert.Equal(t, c.IntersectsBox(b), c.IntersectsRectangle(b.Rectangle()), fmt.Sprintf("%s → %s: ", c, b))
 			}
 		}
+	})
+}
+
+func TestCircle_IntersectsSector(t *testing.T) {
+	sector := Sect(Pt(0.0, 0.0), 5.0, 0, Pi/2)
+
+	t.Run("touching the arc or a radius counts", func(t *testing.T) {
+		assert.True(t, Circ(Pt(6.0, 8.0), 5.0).IntersectsSector(sector))
+		assert.True(t, Circ(Pt(-1.0, 1.0), 1.0).IntersectsSector(sector))
+	})
+	t.Run("a center within the sector", func(t *testing.T) {
+		assert.True(t, Circ(Pt(2.0, 2.0), 0.0).IntersectsSector(sector))
+	})
+	t.Run("apart", func(t *testing.T) {
+		assert.False(t, Circ(Pt(6.0, 8.0), 4.9).IntersectsSector(sector))
+		assert.False(t, Circ(Pt(2.0, -2.0), 1.0).IntersectsSector(sector))
+	})
+	t.Run("float within the tolerance counts, beyond it not", func(t *testing.T) {
+		assert.True(t, Circ(Pt(2.0, -1.0-Delta/2), 1.0).IntersectsSector(sector))
+		assert.False(t, Circ(Pt(2.0, -1.0-2*Delta), 1.0).IntersectsSector(sector))
 	})
 }
 
@@ -1587,6 +1668,21 @@ func TestCircle_RegularPolygon(t *testing.T) {
 		assert.Panics(t, func() {
 			c.RegularPolygon(6, OrientationNone)
 		})
+	})
+}
+
+func TestCircle_Arc(t *testing.T) {
+	c := Circ(Pt(1.0, 2.0), 5)
+
+	t.Run("the whole boundary", func(t *testing.T) {
+		geomtest.AssertArc(t, c.Arc(), Ac(Pt(1.0, 2.0), 5, 0, 2*math.Pi))
+		geomtest.AssertCircle(t, c.Arc().Circle(), c)
+		geomtest.AssertNumber(t, c.Arc().Length(), c.Perimeter())
+	})
+	t.Run("contains the boundary and not the inside", func(t *testing.T) {
+		assert.True(t, c.Arc().Contains(Pt(1.0, 7.0)))
+		assert.False(t, c.Arc().Contains(c.Center))
+		geomtest.AssertNumber(t, c.Arc().DistanceTo(c.Center), 5)
 	})
 }
 

@@ -176,6 +176,12 @@ func (s Segment[T]) Transform[M Float](matrix Matrix[M]) Segment[T] {
 	return Segment[T]{s.Start.Transform(matrix), s.End.Transform(matrix)}
 }
 
+// Lerp creates a new Segment in linear interpolation towards the given segment, moving the two
+// ends together like Point.Lerp, and extrapolating outside [0, 1].
+func (s Segment[T]) Lerp(segment Segment[T], t float64) Segment[T] {
+	return Segment[T]{s.Start.Lerp(segment.Start, t), s.End.Lerp(segment.End, t)}
+}
+
 // Reverse creates a new Segment with the start and end points swapped.
 func (s Segment[T]) Reverse() Segment[T] {
 	return Segment[T]{s.End, s.Start}
@@ -252,6 +258,27 @@ func (s Segment[T]) Nearest(point Point[T]) Point[T] {
 	return s.foot(point)
 }
 
+// NearestFraction returns the fraction of the way from Start to End at which the point of the
+// segment nearest to the given point lies, the one PointAt takes back to it: zero where the
+// foot of the perpendicular falls before Start, one where it falls beyond End, and the
+// projection DistanceSquaredTo makes between them. A segment of no length gives zero.
+func (s Segment[T]) NearestFraction(point Point[T]) float64 {
+	start, end, p := s.Start.Float(), s.End.Float(), point.Float()
+	direction, offset := end.Subtract(start), p.Subtract(start)
+
+	along := offset.Dot(direction)
+	if along <= 0 {
+		return 0
+	}
+
+	lengthSquared := direction.LengthSquared()
+	if along >= lengthSquared {
+		return 1
+	}
+
+	return along / lengthSquared
+}
+
 // Support returns the point of the segment farthest along the given direction: End where the
 // segment runs along the direction, and Start where it runs against it or across it.
 func (s Segment[T]) Support(direction Vector[float64]) Point[float64] {
@@ -273,6 +300,18 @@ func (s Segment[T]) Contains(point Point[T]) bool {
 // Circle.IntersectsSegment does.
 func (s Segment[T]) IntersectsCircle(circle Circle[T]) bool {
 	return circle.IntersectsSegment(s)
+}
+
+// IntersectsCapsule reports whether the segment and the capsule share a point, as
+// Capsule.IntersectsSegment does.
+func (s Segment[T]) IntersectsCapsule(capsule Capsule[T]) bool {
+	return capsule.IntersectsSegment(s)
+}
+
+// IntersectsSector reports whether the segment and the sector share a point, as
+// Sector.IntersectsSegment does.
+func (s Segment[T]) IntersectsSector(sector Sector[T]) bool {
+	return sector.IntersectsSegment(s)
 }
 
 // IntersectsSegment reports whether the segments share a point, within the tolerance, the same
@@ -412,6 +451,24 @@ func (s Segment[T]) IntersectionCircle(circle Circle[T]) Pair[Point[T]] {
 	return circle.IntersectionSegment(s)
 }
 
+// IntersectionCapsule returns the points where the segment crosses the capsule boundary, as
+// Capsule.IntersectionSegment does.
+func (s Segment[T]) IntersectionCapsule(capsule Capsule[T]) Pair[Point[T]] {
+	return capsule.IntersectionSegment(s)
+}
+
+// IntersectionSector returns the points where the segment crosses the sector boundary, as
+// Sector.IntersectionSegment does, which has the Append form.
+func (s Segment[T]) IntersectionSector(sector Sector[T]) []Point[T] {
+	return sector.IntersectionSegment(s)
+}
+
+// IntersectionArc returns the points where the segment crosses the arc, as
+// Arc.IntersectionSegment does.
+func (s Segment[T]) IntersectionArc(arc Arc[T]) Pair[Point[T]] {
+	return arc.IntersectionSegment(s)
+}
+
 // IntersectionSegment returns the point where the segments cross, and false when they do not. It
 // answers exactly where Intersects holds, less the parallel case: parallel segments have no
 // single crossing point and return false even where they overlap, which Intersects still
@@ -461,6 +518,36 @@ func (s Segment[T]) IntersectionRay(ray Ray[T]) (Point[T], bool) {
 // where IntersectsLine holds, less the parallel case.
 func (s Segment[T]) IntersectionLine(line Line[T]) (Point[T], bool) {
 	return s.IntersectionSegment(line.span(s.minMax()))
+}
+
+// IntersectionPolyline returns the points where the segment crosses the path, from Start to
+// End, as IntersectionPolygon finds them on a closed outline: its crossings with each edge by
+// IntersectionSegment, a point two edges share held once. An empty path has nothing to cross.
+func (s Segment[T]) IntersectionPolyline(polyline Polyline[T]) []Point[T] {
+	return s.AppendIntersectionPolyline(nil, polyline)
+}
+
+// AppendIntersectionPolyline appends the points IntersectionPolyline returns to dst and returns
+// the extended slice, so a caller reusing dst allocates nothing once it has room.
+func (s Segment[T]) AppendIntersectionPolyline(dst []Point[T], polyline Polyline[T]) []Point[T] {
+	e := edgeIntersections[T]{segment: s, points: dst, from: len(dst)}
+	for edge := range polyline.Edges() {
+		e.add(edge)
+	}
+
+	return e.sorted()
+}
+
+// IntersectionQuadraticBezier returns the points where the segment crosses the curve, as
+// QuadraticBezier.IntersectionSegment does.
+func (s Segment[T]) IntersectionQuadraticBezier(curve QuadraticBezier[T]) Pair[Point[T]] {
+	return curve.IntersectionSegment(s)
+}
+
+// IntersectionCubicBezier returns the points where the segment crosses the curve, as
+// CubicBezier.IntersectionSegment does, which has the Append form.
+func (s Segment[T]) IntersectionCubicBezier(curve CubicBezier[T]) []Point[T] {
+	return curve.IntersectionSegment(s)
 }
 
 // IntersectionPolygon returns the points where the segment crosses the polygon boundary, from
@@ -551,6 +638,63 @@ func (s Segment[T]) ClipCircle(circle Circle[T]) (Segment[T], bool) {
 	crossings := circle.IntersectionSegment(s)
 
 	return s.clipConvex(crossings.Items[:crossings.Count], circle.Contains(s.Start), circle.Contains(s.End))
+}
+
+// ClipCapsule returns the part of the segment inside the capsule, boundary included within the
+// tolerance, and false where they share no point: from Start where the capsule contains it, or
+// else from the first point IntersectionCapsule returns, to End where the capsule contains it,
+// or else to the last. A segment tangent to the capsule, or touching it with an endpoint from
+// outside, is clipped to that one point. It allocates nothing.
+func (s Segment[T]) ClipCapsule(capsule Capsule[T]) (Segment[T], bool) {
+	crossings := capsule.IntersectionSegment(s)
+
+	return s.clipConvex(crossings.Items[:crossings.Count], capsule.Contains(s.Start), capsule.Contains(s.End))
+}
+
+// ClipSector returns the parts of the segment inside the sector, boundary included within the
+// tolerance, from Start to End. The points IntersectionSector returns cut the segment into
+// pieces, each wholly inside or outside, and each piece is judged at its midpoint, Start and
+// End by Contains itself. A sector of no more than half a turn gives one part, and one past it
+// two where the segment passes through the notch between its radii. Pieces inside run
+// together across a point where the segment touches the boundary from inside, and a point
+// where it touches the boundary from outside is a part of zero length. The pieces are found in
+// float64 and their ends rounded once for an integer T.
+func (s Segment[T]) ClipSector(sector Sector[T]) []Segment[T] {
+	return s.AppendClipSector(nil, sector)
+}
+
+// AppendClipSector appends the parts ClipSector returns to dst and returns the extended slice,
+// so a caller reusing dst allocates nothing once it has room.
+func (s Segment[T]) AppendClipSector(dst []Segment[T], sector Sector[T]) []Segment[T] {
+	cast := s.Float()
+	crossed, n := sector.crossings(s)
+
+	fractions := [11]float64{}
+	copy(fractions[1:], crossed[:n])
+	fractions[n+1] = 1
+
+	var from Point[T]
+
+	open := false
+	for i, t := range fractions[:n+2] {
+		point, last := cast.PointAt(t).Cast[T](), i == n+1
+		switch {
+		case i == 0:
+			point = s.Start
+		case last:
+			point = s.End
+		}
+
+		if !open && sector.holds(cast.PointAt(t)) {
+			from, open = point, true
+		}
+
+		if open && (last || !sector.holds(cast.PointAt((t+fractions[i+1])/2))) {
+			dst, open = append(dst, Segment[T]{from, point}), false
+		}
+	}
+
+	return dst
 }
 
 // ClipPolygon returns the parts of the segment inside the polygon, boundary included within the
@@ -697,6 +841,77 @@ func (s Segment[T]) HitCircle(circle Circle[T]) (Hit[T], bool) {
 	return Hit[T]{}, false
 }
 
+// HitCapsule returns where the segment first reaches the capsule from outside, and false where
+// it does not: the first point IntersectionCapsule returns, the Start of the part ClipCapsule
+// gives, with the direction from the nearest point of the capsule's segment as the normal, read
+// before the point is rounded for an integer T. A Start the capsule contains, boundary included
+// within the tolerance, is already in it and hits nothing. A capsule of no radius is its
+// segment and one of no length a circle, and each is hit as that. It allocates nothing.
+func (s Segment[T]) HitCapsule(capsule Capsule[T]) (Hit[T], bool) {
+	switch {
+	case capsule.Radius == 0:
+		return s.HitSegment(capsule.Segment)
+	case capsule.Segment.IsPoint():
+		return s.HitCircle(Circle[T]{capsule.Segment.Start, capsule.Radius})
+	case capsule.Contains(s.Start):
+		return Hit[T]{}, false
+	}
+
+	fractions, n := capsule.fractions(s)
+	if n == 0 {
+		return Hit[T]{}, false
+	}
+
+	point := s.Float().PointAt(fractions[0])
+
+	return s.hitAt(point.Cast[T](), point.Subtract(capsule.Segment.Float().foot(point))), true
+}
+
+// HitSector returns where the segment first reaches the sector from outside, and false where
+// it does not: the first point IntersectionSector returns, the Start of the first part
+// ClipSector gives, with the normal of the boundary there, read before the point is rounded
+// for an integer T: the direction from Center on the arc, which is reached from outside the
+// circle, and the perpendicular of a radius on it, the one that faces Start where the two meet
+// at Center. A Start the sector contains, boundary included within the tolerance, is already
+// in it and hits nothing, and one in the notch of a sector past half a turn reaches a radius.
+// It is found in float64 for every T, the ends of the arc being no lattice points, and
+// allocates nothing.
+func (s Segment[T]) HitSector(sector Sector[T]) (Hit[T], bool) {
+	if sector.Contains(s.Start) {
+		return Hit[T]{}, false
+	}
+
+	fractions, n := sector.crossings(s)
+	if n == 0 {
+		return Hit[T]{}, false
+	}
+
+	cast := s.Float()
+	point := cast.PointAt(fractions[0])
+
+	return s.hitAt(point.Cast[T](), sector.normal(point, cast.Start)), true
+}
+
+// HitArc returns where the segment first reaches the arc, a curved wall, and false where it
+// does not: the first point IntersectionArc returns, with the direction from the center turned
+// to face the segment as the normal, read before the point is rounded for an integer T. A wall
+// has no inside, so a Start on the arc, within the tolerance, is already at it and hits
+// nothing. It allocates nothing.
+func (s Segment[T]) HitArc(arc Arc[T]) (Hit[T], bool) {
+	if arc.Contains(s.Start) {
+		return Hit[T]{}, false
+	}
+
+	fractions, n := arc.crossings(s)
+	if n == 0 {
+		return Hit[T]{}, false
+	}
+
+	point := s.Float().PointAt(fractions[0])
+
+	return s.hitAt(point.Cast[T](), point.Subtract(arc.Center.Float())), true
+}
+
 // HitSegment returns where the segment first reaches the given one, a wall, and false where it
 // does not: the point IntersectionSegment returns, with the perpendicular of the wall turned to
 // face the segment as the normal. A wall has no inside, so a Start on it, within the tolerance,
@@ -744,6 +959,50 @@ func (s Segment[T]) HitRay(ray Ray[T]) (Hit[T], bool) {
 // Start on the line, within the tolerance, hits nothing. It allocates nothing.
 func (s Segment[T]) HitLine(line Line[T]) (Hit[T], bool) {
 	return s.HitSegment(line.span(s.minMax()))
+}
+
+// HitPolyline returns where the segment first reaches the path, a wall of several edges, and
+// false where it does not: the earliest of the hits HitSegment finds at its edges. A point two
+// edges meet the segment at takes the edge that faces Start, as a corner of a polygon does, and
+// the one that comes first in Edges where both do or neither does. A Start on the path, within
+// the tolerance, is already at it and hits nothing. It allocates nothing.
+func (s Segment[T]) HitPolyline(polyline Polyline[T]) (Hit[T], bool) {
+	if polyline.Contains(s.Start) {
+		return Hit[T]{}, false
+	}
+
+	var first Hit[T]
+	var wall Segment[T]
+
+	found := false
+	for edge := range polyline.Edges() {
+		hit, ok := s.HitSegment(edge)
+
+		switch {
+		case !ok:
+		case !found || hit.Fraction < first.Fraction:
+			first, wall, found = hit, edge, true
+		case hit.Point == first.Point && edge.faces(s.Start, wall) && !wall.faces(s.Start, edge):
+			first, wall = hit, edge
+		}
+	}
+
+	return first, found
+}
+
+// HitQuadraticBezier returns where the segment first reaches the curve, a curved wall, and
+// false where it does not, as HitCubicBezier finds it on the curve raised to a cubic.
+func (s Segment[T]) HitQuadraticBezier(curve QuadraticBezier[T]) (Hit[T], bool) {
+	return s.hitBezier(curve.Float().Cubic())
+}
+
+// HitCubicBezier returns where the segment first reaches the curve, a curved wall, and false
+// where it does not: the first point IntersectionCubicBezier returns, with the perpendicular of
+// the curve there turned to face the segment as the normal, read before the point is rounded
+// for an integer T. A Start on the curve is already at it and hits nothing. It allocates
+// nothing.
+func (s Segment[T]) HitCubicBezier(curve CubicBezier[T]) (Hit[T], bool) {
+	return s.hitBezier(curve.Float())
 }
 
 // HitPolygon returns where the segment first reaches the polygon from outside, and false where it
@@ -891,24 +1150,19 @@ func (s Segment[T]) distanceSquaredTo(point Point[T]) float64 {
 	return gap * gap
 }
 
-// foot returns the point of the segment nearest to the given point with no tolerance applied:
-// Start or End where the projection distanceSquaredTo makes falls beyond them, on the same
-// comparisons, and the point at that fraction along the segment otherwise.
+// foot returns the point of the segment nearest to the given point with no tolerance applied,
+// the point at its NearestFraction: Start or End themselves where the projection
+// distanceSquaredTo makes falls beyond them, on the same comparisons, and the point at that
+// fraction along the segment otherwise.
 func (s Segment[T]) foot(point Point[T]) Point[T] {
-	start, end, p := s.Start.Float(), s.End.Float(), point.Float()
-	direction, offset := end.Subtract(start), p.Subtract(start)
-
-	along := offset.Dot(direction)
-	if along <= 0 {
+	switch t := s.NearestFraction(point); t {
+	case 0:
 		return s.Start
-	}
-
-	lengthSquared := direction.LengthSquared()
-	if along >= lengthSquared {
+	case 1:
 		return s.End
+	default:
+		return s.PointAt(t)
 	}
-
-	return s.PointAt(along / lengthSquared)
 }
 
 // crosses reports whether the segments properly cross, as crossing decides it: each has its
@@ -1143,7 +1397,7 @@ func (s Segment[T]) pass(polygon Polygon[T], reached Point[T]) edgePass[T] {
 // projects to along the segment. A normal with no direction, that of a point or of an edge of
 // zero length, is the direction back along the segment.
 func (s Segment[T]) hitAt(point Point[T], normal Vector[float64]) Hit[T] {
-	start, direction := s.Start.Float(), s.Float().Vector()
+	direction := s.Float().Vector()
 
 	switch {
 	case !normal.hasDirection():
@@ -1152,9 +1406,52 @@ func (s Segment[T]) hitAt(point Point[T], normal Vector[float64]) Hit[T] {
 		normal = normal.Negate()
 	}
 
-	fraction := ratio(point.Float().Subtract(start).Dot(direction), direction.LengthSquared())
+	return Hit[T]{point, normal.Normalize(), s.fraction(point)}
+}
 
-	return Hit[T]{point, normal.Normalize(), fraction}
+// faces reports whether the segment, an edge of an outline or a path, is turned toward the
+// given point at the vertex it shares with the neighbour: the point lies strictly on the side
+// of its line the neighbour does not run to, on the exact signs Line.side gives, so no winding
+// is asked for. The neighbour is read by both its ends, the shared one adding nothing. At a
+// corner pointing out, that is the outer side of the edge; at a notch neither edge faces, both
+// being seen from within it.
+func (s Segment[T]) faces(point Point[T], neighbour Segment[T]) bool {
+	line := s.Line()
+
+	return float64(line.side(point)*(line.side(neighbour.Start)+line.side(neighbour.End))) < 0
+}
+
+// hitBezier returns the hit of the segment at the given curve, the first of the crossings a
+// bezierCast gathers, and false where there is none or Start lies on the curve: the point Start
+// is cast at the curve first, since a segment leaving along the curve runs beside its chords
+// and crosses none of them there.
+func (s Segment[T]) hitBezier(curve CubicBezier[float64]) (Hit[T], bool) {
+	start := s.Start.Float()
+
+	origin := bezierCast{segment: Segment[float64]{start, start}, curve: curve}
+	origin.step(curve, 0, 1, bezierDepth)
+
+	if origin.count > 0 {
+		return Hit[T]{}, false
+	}
+
+	cast := bezierCast{segment: s.Float(), curve: curve}
+	cast.step(curve, 0, 1, bezierDepth)
+
+	if cast.count == 0 {
+		return Hit[T]{}, false
+	}
+
+	return s.hitAt(cast.hits[0].Point.Cast[T](), cast.hits[0].Normal), true
+}
+
+// fraction returns the fraction of the way along the segment at which the given point projects
+// onto its line, not held to the segment: the one PointAt takes back to a point of it, and zero
+// for a segment of no length.
+func (s Segment[T]) fraction(point Point[T]) float64 {
+	start, direction := s.Start.Float(), s.Float().Vector()
+
+	return ratio(point.Float().Subtract(start).Dot(direction), direction.LengthSquared())
 }
 
 // crossesRay reports whether a ray cast from the point along +X crosses the segment, counting

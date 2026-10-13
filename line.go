@@ -132,6 +132,16 @@ func (l Line[T]) Nearest(point Point[T]) Point[T] {
 	return l.span(point, point).Nearest(point)
 }
 
+// NearestFraction returns how many times Direction the point of the line nearest to the given
+// point lies from Origin, the t PointAt takes back to it, negative on the other side of the
+// origin. A zero Direction gives zero.
+func (l Line[T]) NearestFraction(point Point[T]) float64 {
+	direction := l.Direction.Float()
+	offset := point.Float().Subtract(l.Origin.Float())
+
+	return ratio(offset.Dot(direction), direction.LengthSquared())
+}
+
 // Reflect returns the given point mirrored across the line: as far beyond the foot of its
 // perpendicular as it lies before it. A point on the line is its own mirror image, and a line
 // with a zero Direction is its origin alone, which the point is mirrored through. For integer T
@@ -158,6 +168,18 @@ func (l Line[T]) Contains(point Point[T]) bool {
 // Circle.IntersectsLine does.
 func (l Line[T]) IntersectsCircle(circle Circle[T]) bool {
 	return circle.IntersectsLine(l)
+}
+
+// IntersectsCapsule reports whether the line and the capsule share a point, as
+// Capsule.IntersectsLine does.
+func (l Line[T]) IntersectsCapsule(capsule Capsule[T]) bool {
+	return capsule.IntersectsLine(l)
+}
+
+// IntersectsSector reports whether the line and the sector share a point, as
+// Sector.IntersectsLine does.
+func (l Line[T]) IntersectsSector(sector Sector[T]) bool {
+	return sector.IntersectsLine(l)
 }
 
 // IntersectsSegment reports whether the line and the segment share a point, as
@@ -216,6 +238,24 @@ func (l Line[T]) IntersectionCircle(circle Circle[T]) Pair[Point[T]] {
 	return circle.IntersectionLine(l)
 }
 
+// IntersectionCapsule returns the points where the line crosses the capsule boundary, as
+// Capsule.IntersectionLine does.
+func (l Line[T]) IntersectionCapsule(capsule Capsule[T]) Pair[Point[T]] {
+	return capsule.IntersectionLine(l)
+}
+
+// IntersectionSector returns the points where the line crosses the sector boundary, as
+// Sector.IntersectionLine does, which has the Append form.
+func (l Line[T]) IntersectionSector(sector Sector[T]) []Point[T] {
+	return sector.IntersectionLine(l)
+}
+
+// IntersectionArc returns the points where the line crosses the arc, as
+// Arc.IntersectionLine does.
+func (l Line[T]) IntersectionArc(arc Arc[T]) Pair[Point[T]] {
+	return arc.IntersectionLine(l)
+}
+
 // IntersectionSegment returns the point where the line and the segment cross, and false when
 // they do not, as Segment.IntersectionLine does.
 func (l Line[T]) IntersectionSegment(segment Segment[T]) (Point[T], bool) {
@@ -246,6 +286,32 @@ func (l Line[T]) IntersectionLine(line Line[T]) (Point[T], bool) {
 	}
 
 	return l.touch(line)
+}
+
+// IntersectionPolyline returns the points where the line crosses the path, in order along
+// it, as Segment.IntersectionPolyline finds them on the span of the line past the path.
+func (l Line[T]) IntersectionPolyline(polyline Polyline[T]) []Point[T] {
+	return l.AppendIntersectionPolyline(nil, polyline)
+}
+
+// AppendIntersectionPolyline appends the points IntersectionPolyline returns to dst and returns
+// the extended slice, so a caller reusing dst allocates nothing once it has room.
+func (l Line[T]) AppendIntersectionPolyline(dst []Point[T], polyline Polyline[T]) []Point[T] {
+	bounds := polyline.Bounds()
+
+	return l.span(bounds.Min, bounds.Max).AppendIntersectionPolyline(dst, polyline)
+}
+
+// IntersectionQuadraticBezier returns the points where the line crosses the curve, as
+// QuadraticBezier.IntersectionLine does.
+func (l Line[T]) IntersectionQuadraticBezier(curve QuadraticBezier[T]) Pair[Point[T]] {
+	return curve.IntersectionLine(l)
+}
+
+// IntersectionCubicBezier returns the points where the line crosses the curve, as
+// CubicBezier.IntersectionLine does, which has the Append form.
+func (l Line[T]) IntersectionCubicBezier(curve CubicBezier[T]) []Point[T] {
+	return curve.IntersectionLine(l)
 }
 
 // IntersectionPolygon returns the points where the line crosses the polygon boundary, in order
@@ -288,6 +354,26 @@ func (l Line[T]) IntersectionBox(box Box[T]) Pair[Point[T]] {
 // allocates nothing.
 func (l Line[T]) ClipCircle(circle Circle[T]) (Segment[T], bool) {
 	return l.span(circle.minMax()).ClipCircle(circle)
+}
+
+// ClipCapsule returns the part of the line inside the capsule, boundary included within the
+// tolerance, and false where they share no point, as Segment.ClipCapsule clips the span of
+// the line past the capsule. It allocates nothing.
+func (l Line[T]) ClipCapsule(capsule Capsule[T]) (Segment[T], bool) {
+	return l.span(capsule.minMax()).ClipCapsule(capsule)
+}
+
+// ClipSector returns the parts of the line inside the sector, boundary included within the
+// tolerance, in order along it, as Segment.ClipSector clips the span of the line past the
+// sector.
+func (l Line[T]) ClipSector(sector Sector[T]) []Segment[T] {
+	return l.AppendClipSector(nil, sector)
+}
+
+// AppendClipSector appends the parts ClipSector returns to dst and returns the extended slice,
+// so a caller reusing dst allocates nothing once it has room.
+func (l Line[T]) AppendClipSector(dst []Segment[T], sector Sector[T]) []Segment[T] {
+	return l.span(sector.minMax()).AppendClipSector(dst, sector)
 }
 
 // ClipPolygon returns the parts of the line inside the polygon, boundary included within the
