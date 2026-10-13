@@ -241,42 +241,6 @@ func TestSector_DistanceSquaredToSector(t *testing.T) {
 	assert.Equal(t, quarterSector().DistanceSquaredToSector(Sect(Pt(7.0, 0.0), 2.0, 0, 2*Pi)), 0.0)
 }
 
-func TestSector_DistanceToSegment(t *testing.T) {
-	s := quarterSector()
-
-	t.Run("to the arc and to a radius", func(t *testing.T) {
-		geomtest.AssertNumber(t, s.DistanceToSegment(Seg(Pt(8.0, -5.0), Pt(8.0, 5.0))), 3.0)
-		geomtest.AssertNumber(t, s.DistanceToSegment(Seg(Pt(-9.0, -2.0), Pt(9.0, -2.0))), 2.0)
-	})
-	t.Run("zero for a segment that crosses, touches or lies within", func(t *testing.T) {
-		assert.Equal(t, s.DistanceToSegment(Seg(Pt(-1.0, 2.0), Pt(9.0, 2.0))), 0.0)
-		assert.Equal(t, s.DistanceToSegment(Seg(Pt(5.0, -5.0), Pt(5.0, 5.0))), 0.0)
-		assert.Equal(t, s.DistanceToSegment(Seg(Pt(1.0, 1.0), Pt(2.0, 2.0))), 0.0)
-	})
-	t.Run("int is measured in float64", func(t *testing.T) {
-		geomtest.AssertNumber(t, s.Int().DistanceToSegment(Seg(Pt(8, -5), Pt(8, 5))), 3.0)
-	})
-	t.Run("zero exactly where the two intersect, no farther than the outline", func(t *testing.T) {
-		for _, sector := range sectorFixtures() {
-			outline := sectorOutline(sector, 257)
-
-			for _, segment := range segmentFixtures {
-				message := fmt.Sprintf("%s → %s: ", sector, segment)
-				distance := sector.DistanceToSegment(segment)
-				toOutline := Distance[float64](outline, segment)
-
-				assert.Equal(t, distance == 0, sector.IntersectsSegment(segment), message)
-				assert.True(t, distance <= toOutline+Delta && toOutline <= distance+sagitta(sector, 257)+Delta, message)
-			}
-		}
-	})
-}
-
-func TestSector_DistanceSquaredToSegment(t *testing.T) {
-	geomtest.AssertNumber(t, quarterSector().DistanceSquaredToSegment(Seg(Pt(8.0, -5.0), Pt(8.0, 5.0))), 9.0)
-	assert.Equal(t, quarterSector().DistanceSquaredToSegment(Seg(Pt(5.0, -5.0), Pt(5.0, 5.0))), 0.0)
-}
-
 func TestSector_Nearest(t *testing.T) {
 	s := quarterSector()
 

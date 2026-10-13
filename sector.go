@@ -244,25 +244,6 @@ func (s Sector[T]) DistanceSquaredToSector(sector Sector[T]) float64 {
 	return distanceSquared
 }
 
-// DistanceToSegment returns the distance between the nearest points of the sector and the
-// segment: zero exactly where IntersectsSegment holds, a segment within the sector included,
-// and otherwise the least from the segment to the arc and the two radii.
-func (s Sector[T]) DistanceToSegment(segment Segment[T]) float64 {
-	return math.Sqrt(s.DistanceSquaredToSegment(segment))
-}
-
-// DistanceSquaredToSegment returns the squared distance DistanceToSegment takes the root of,
-// faster for comparisons. A distance within the tolerance is snapped to zero, which is where
-// IntersectsSegment reads it.
-func (s Sector[T]) DistanceSquaredToSegment(segment Segment[T]) float64 {
-	distanceSquared := s.distanceSquaredToSegment(segment.Float())
-	if s.containsSquared(distanceSquared, segment.magnitude()) {
-		return 0
-	}
-
-	return distanceSquared
-}
-
 // Nearest returns the point of the sector nearest to the given point: the point itself exactly
 // where Contains holds, and otherwise the nearest point of its boundary, on the arc or on a
 // radius. For integer T it is rounded once and can land off the sector, where Contains rejects
@@ -424,10 +405,10 @@ func (s Sector[T]) IntersectsSector(sector Sector[T]) bool {
 
 // IntersectsSegment reports whether the sector and the segment share a point: an end of the
 // segment or its point nearest Center lies within the sector, or it reaches one of the two
-// radii. Touching shapes intersect, within the tolerance: it holds exactly where
-// DistanceToSegment is zero, the distance being measured in float64 for every T.
+// radii. Touching shapes intersect, within the tolerance, by the same comparison Contains
+// makes, on the squared distance between the two, which is measured in float64 for every T.
 func (s Sector[T]) IntersectsSegment(segment Segment[T]) bool {
-	return s.DistanceSquaredToSegment(segment) == 0
+	return s.containsSquared(s.distanceSquaredToSegment(segment.Float()), segment.magnitude())
 }
 
 // IntersectsRay reports whether the sector and the ray share a point, as IntersectsSegment
