@@ -217,6 +217,7 @@ p.Winding()               // WindingClockwise, the winding of a Rectangle's corn
 p.IsConvex()              // false, the notch turns the other way
 p.IsSimple()              // true, no two edges meet but neighbours at their vertex
 p.ConvexHull()            // Pol((0,0);(4,0);(4,4);(0,4)), the notch dropped
+p.Triangulate()           // [1 2 3 0 1 3 4 0 3]: three indices into Points per triangle, an index buffer
 p.BoundingCircle()        // Circ((2,1);4), about the rounded Centroid to the farthest vertex, the radius rounded up
 
 edged := geom.Pol([]geom.Point[int]{{0, 0}, {2, 0}, {4, 0}, {4, 4}, {0, 4}})

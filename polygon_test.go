@@ -916,6 +916,118 @@ func TestPolygon_AppendSimplify(t *testing.T) {
 	})
 }
 
+func TestPolygon_Triangulate(t *testing.T) {
+	t.Run("a square is cut into two triangles wound as it is", func(t *testing.T) {
+		assert.Equal(t, Pol(squareVertices()).Triangulate(), []int{3, 0, 1, 2, 3, 1})
+		assert.Equal(t, Pol(reverse(squareVertices())).Triangulate(), []int{3, 0, 1, 2, 3, 1})
+	})
+	t.Run("a notch is not filled in", func(t *testing.T) {
+		notched := Pol(notchedVertices())
+		triangles := notched.Triangulate()
+
+		assert.Length(t, triangles, 3*(len(notched.Points)-2))
+		assertTriangles(t, notched, triangles, "")
+	})
+	t.Run("a vertex the outline goes straight on or turns back at gives no triangle", func(t *testing.T) {
+		straight := Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(4, 0), Pt(4, 4), Pt(0, 4)})
+		repeated := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 0), Pt(4, 4), Pt(0, 4)})
+		spike := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(4, 6), Pt(4, 4), Pt(0, 4)})
+
+		assert.Equal(t, straight.Triangulate(), []int{4, 0, 1, 3, 4, 1, 2, 3, 1})
+		assert.Equal(t, repeated.Triangulate(), []int{4, 0, 1, 3, 4, 1})
+		assert.Equal(t, spike.Triangulate(), []int{5, 0, 1, 4, 5, 1})
+		for _, p := range []Polygon[int]{straight, repeated, spike} {
+			assertTriangles(t, p, p.Triangulate(), fmt.Sprintf("%s: ", p))
+		}
+	})
+	t.Run("a vertex the diagonal of an ear passes through blocks it", func(t *testing.T) {
+		dart := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(2, 1), Pt(4, 4), Pt(0, 4)})
+		triangles := dart.Triangulate()
+
+		assert.Length(t, triangles, 9)
+		assertTriangles(t, dart, triangles, "")
+	})
+	t.Run("fewer than three vertices or no area gives nil", func(t *testing.T) {
+		assert.Nil(t, Polygon[int]{}.Triangulate())
+		assert.Nil(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 2)}).Triangulate())
+		assert.Nil(t, Pol([]Point[int]{Pt(0, 0), Pt(1, 1), Pt(2, 2)}).Triangulate())
+	})
+	t.Run("a self-intersecting polygon stops where no ear is left", func(t *testing.T) {
+		bowtie := Pol([]Point[int]{Pt(0, 0), Pt(6, 6), Pt(6, 0), Pt(0, 2)})
+
+		assert.True(t, len(bowtie.Triangulate()) < 3*(len(bowtie.Points)-2))
+	})
+	t.Run("a NaN vertex ends the clipping", func(t *testing.T) {
+		polygon := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(math.NaN(), 2.0), Pt(4.0, 4.0), Pt(0.0, 4.0)})
+
+		assert.True(t, len(polygon.Triangulate()) < 3*(len(polygon.Points)-2))
+	})
+	t.Run("allocates once", func(t *testing.T) {
+		notched := Pol(notchedVertices())
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkInts = notched.Triangulate()
+		}), 1)
+	})
+	t.Run("over the fixtures the triangles fill the polygon", func(t *testing.T) {
+		for _, p := range append(outlineFixtures(), Pol(notchedVertices()).Float(), Pol(reverse(notchedVertices())).Float(), benchPolygon()) {
+			assertTriangles(t, p, p.Triangulate(), fmt.Sprintf("%s: ", p))
+		}
+	})
+}
+
+// assertTriangles asserts that the triangles fill the simple polygon: each of three indices
+// into its vertices, wound as the polygon is with an area, its centroid within the polygon, and
+// together as large as the polygon.
+func assertTriangles[T Number](t *testing.T, p Polygon[T], triangles []int, message string) {
+	t.Helper()
+
+	assert.Equal(t, len(triangles)%3, 0, message)
+
+	area := 0.0
+	for i := 0; i+2 < len(triangles); i += 3 {
+		a, b, c := p.Points[triangles[i]], p.Points[triangles[i+1]], p.Points[triangles[i+2]]
+		triangle := Pol([]Point[T]{a, b, c})
+
+		assert.Equal(t, triangle.Winding(), p.Winding(), message)
+		assert.True(t, p.Float().Contains(triangle.Float().Centroid()), message)
+		area += triangle.Area()
+	}
+
+	geomtest.AssertNumber(t, area, p.Area(), message)
+}
+
+func BenchmarkPolygon_Triangulate(b *testing.B) {
+	polygon := benchPolygon()
+
+	for b.Loop() {
+		sinkInts = polygon.Triangulate()
+	}
+}
+
+func TestPolygon_AppendTriangulate(t *testing.T) {
+	notched := Pol(notchedVertices())
+
+	t.Run("appends the triangles after the indices in dst", func(t *testing.T) {
+		assert.Equal(t, Pol(squareVertices()).AppendTriangulate([]int{9}), []int{9, 3, 0, 1, 2, 3, 1})
+	})
+	t.Run("fewer than three vertices leaves dst as it is", func(t *testing.T) {
+		assert.Equal(t, Polygon[int]{}.AppendTriangulate([]int{9}), []int{9})
+	})
+	t.Run("a buffer with room for three indices per vertex past the second allocates nothing", func(t *testing.T) {
+		buffer := make([]int, 0, 3*(len(notched.Points)-2))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkInts = notched.AppendTriangulate(buffer[:0])
+		}), 0)
+	})
+	t.Run("matches Triangulate after the indices in dst", func(t *testing.T) {
+		for _, p := range append(outlineFixtures(), Pol(notchedVertices()).Float()) {
+			assert.Equal(t, p.AppendTriangulate([]int{9}), append([]int{9}, p.Triangulate()...), fmt.Sprintf("%s: ", p))
+		}
+	})
+}
+
 func TestPolygon_DistanceTo(t *testing.T) {
 	square := Pol(squareVertices())
 

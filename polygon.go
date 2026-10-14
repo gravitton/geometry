@@ -480,6 +480,77 @@ func (p Polygon[T]) AppendSimplify(dst []Point[T], tolerance float64) []Point[T]
 	return dst
 }
 
+// Triangulate returns triangles that fill the polygon, three indices into Points for each, so a
+// renderer shares the vertices and draws the result as an index buffer: by ear clipping, each
+// triangle a vertex and its two neighbours whose diagonal leaves no other vertex within or on
+// the triangle, cut off until the outline is filled. Each triangle is wound as the polygon is,
+// in either winding. The turns are decided on the exact signs of cross products, exact for an
+// integer type across the supported range, and a vertex the outline goes straight on or turns
+// back at, a repeated one among them, is dropped without a triangle, so no triangle has zero
+// area and there may be fewer triangles than vertices less two. A polygon with fewer than three
+// vertices, or enclosing no area within the tolerance, gives nil. A Rectangle or a
+// RegularPolygon is convex and filled by the fan of its vertices from the first, so they have
+// no method of their own.
+//
+// The polygon is taken to be simple, as IsSimple reports it: a self-intersecting one stops where
+// no vertex left cuts off an ear, leaving part of it unfilled. Each ear is tested against every
+// vertex left, so the cost grows with the square of the vertex count where ears are found at
+// once, and with its cube at worst. The result is the one allocation.
+func (p Polygon[T]) Triangulate() []int {
+	return p.AppendTriangulate(nil)
+}
+
+// AppendTriangulate appends the indices Triangulate returns to dst and returns the extended
+// slice, so a caller reusing dst allocates nothing once it has room for three indices per vertex
+// past the second: the vertices left to clip are kept at the end of that room, behind the
+// triangles written, and the indices already in dst are left as they are.
+func (p Polygon[T]) AppendTriangulate(dst []int) []int {
+	n := len(p.Points)
+
+	twiceArea := p.twiceArea()
+	if n < 3 || twiceArea == 0 {
+		return dst
+	}
+
+	sense := 1.0
+	if twiceArea < 0 {
+		sense = -1
+	}
+
+	from := len(dst)
+	dst = slices.Grow(dst, 3*(n-2))[:from+3*(n-2)]
+	triangles := dst[from:]
+
+	left := triangles[len(triangles)-n:]
+	for i := range left {
+		left[i] = i
+	}
+
+	count := 0
+	for i, misses := 0, 0; len(left) > 2 && misses < len(left); {
+		m := len(left)
+		a, b, c := left[(i+m-1)%m], left[i], left[(i+1)%m]
+
+		turn := float64(sense * p.turn(p.Points[a], p.Points[b], p.Points[c]))
+		if !(turn == 0 || turn > 0 && p.cuts(left, a, b, c, sense)) {
+			i, misses = (i+1)%m, misses+1
+
+			continue
+		}
+
+		copy(left[1:i+1], left[:i])
+		left = left[1:]
+		if turn > 0 {
+			triangles[count], triangles[count+1], triangles[count+2] = a, b, c
+			count += 3
+		}
+
+		i, misses = (i+m-2)%(m-1), 0
+	}
+
+	return dst[:from+count]
+}
+
 // mapPoints applies fn to every vertex in order and returns the results in a new slice, as
 // mapPointsIndexed does for a mapping that needs the index of the vertex.
 func (p Polygon[T]) mapPoints[R any](fn func(Point[T]) R) []R {
@@ -640,6 +711,25 @@ func (p Polygon[T]) appendKept(dst []Point[T], from, to int, tolerance float64) 
 	dst, after := p.appendKept(dst, farthest, to, tolerance)
 
 	return dst, before + farthest/n + after
+}
+
+// cuts reports whether the diagonal from a to c cuts off the ear at b, a vertex the outline
+// turns at in the sense of its winding: no other vertex left, by index and by position, lies
+// within the triangle or on its sides, by the exact signs of the turns from each side to it.
+func (p Polygon[T]) cuts(left []int, a, b, c int, sense float64) bool {
+	pa, pb, pc := p.Points[a], p.Points[b], p.Points[c]
+	for _, i := range left {
+		point := p.Points[i]
+		if i == a || i == b || i == c || point == pa || point == pb || point == pc {
+			continue
+		}
+
+		if sense*p.turn(pa, pb, point) >= 0 && sense*p.turn(pb, pc, point) >= 0 && sense*p.turn(pc, pa, point) >= 0 {
+			return false
+		}
+	}
+
+	return true
 }
 
 // DistanceTo returns the distance from the given point to the nearest point of the polygon:

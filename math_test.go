@@ -25,6 +25,9 @@ var sinkPoints []Point[int]
 // sinkSegments is the sinkPoints of the methods returning segments.
 var sinkSegments []Segment[int]
 
+// sinkInts is the sinkPoints of the methods returning indices.
+var sinkInts []int
+
 // sinkBool is a shared boolean variable used to store results in benchmarking tests.
 var sinkBool bool
 
