@@ -1,37 +1,30 @@
 package geom
 
 const (
-	// simplexSteps bounds the supports nearest asks for. Two outlines end long before it, on a
-	// vertex met twice, and two round shapes are within the tolerance of their distance by then.
+	// simplexSteps bounds the supports nearest asks for. Two outlines end long before it, and two
+	// round shapes are within the tolerance by then.
 	simplexSteps = 64
 
-	// sweepSteps bounds the advances Sweep makes. An advance toward a flat edge lands on it at
-	// once, and one toward a round shape closes most of what is left each time.
+	// sweepSteps bounds the advances of sweep. An advance toward a flat edge lands on it at once,
+	// and one toward a round shape closes most of what is left.
 	sweepSteps = 64
 
-	// facingAngle is how far to either side of a normal the ends of the edge facing it are asked
-	// for: an edge within it of facing the normal counts as flat against it, as a box a little
-	// tilted on the ground does, and gives two points of contact.
+	// facingAngle is how far from facing the normal an edge may turn and still count as flat,
+	// giving two contact points.
 	facingAngle = 1e-3
 )
 
-// minkowski is the difference of two shapes taken as convex, the first moved by an offset:
-// every vector from a point of the second to a point of the moved first. It holds the origin
-// exactly where the two share a point, its point nearest the origin is the gap between them,
-// and the way out of it from the origin is the way to part them, so Intersects, DistanceSquared,
-// Nearest, Collide and Sweep of two shapes known only by their Support are read off it. Everything is
-// measured in float64, whatever T is.
-//
-// With no first shape the difference is that of the single point at the offset, the origin of
-// a ray, which Raycast sweeps without a shape to hold it.
+// minkowski is the difference of two shapes taken as convex, the first moved by the offset. It
+// holds the origin exactly where they share a point, its point nearest the origin is the gap, and
+// the way out from the origin parts them, so every pair known only by Support is decided on it, in
+// float64. With no first shape it is the difference from the point at the offset, the origin of a
+// ray.
 type minkowski[T Number] struct {
 	a, b   Shape[T]
 	offset Vector[float64]
 }
 
-// support returns the point of the difference farthest along the given direction: the support
-// of the first shape that way, or the point at the offset where there is none, less the support
-// of the second the other way.
+// support returns the point of the difference farthest along the direction.
 func (m minkowski[T]) support(direction Vector[float64]) minkowskiVertex {
 	from := m.b.Support(direction.Negate())
 	if m.a == nil {
@@ -41,9 +34,8 @@ func (m minkowski[T]) support(direction Vector[float64]) minkowskiVertex {
 	return minkowskiVertex{m.a.Support(direction).Add(m.offset).Subtract(from), from}
 }
 
-// magnitude returns the largest absolute coordinate of the two shapes, that of a corner of
-// their Bounds, or of the point at the offset where there is no first shape: the size
-// epsilonAt widens the tolerance of the pair by.
+// magnitude returns the largest absolute coordinate of the pair's Bounds, the magnitude the
+// tolerance of the pair is taken from.
 func (m minkowski[T]) magnitude() float64 {
 	if m.a == nil {
 		return max(m.offset.Point().magnitude(), m.b.Bounds().magnitude())
@@ -52,29 +44,23 @@ func (m minkowski[T]) magnitude() float64 {
 	return max(m.a.Bounds().magnitude(), m.b.Bounds().magnitude())
 }
 
-// tolerance returns the distance within which the difference is taken to be closed on: the
-// tolerance of T at the magnitude of the pair, and that of float64 for an integer T, whose own
-// is zero, since a gap measured in float64 never closes exactly.
+// tolerance returns the distance within which the difference counts as closed on: that of T, or of
+// float64 for an integer T, since a gap measured in float64 never closes exactly.
 func (m minkowski[T]) tolerance() float64 {
 	magnitude := m.magnitude()
 
 	return max(epsilonAt[T](magnitude), epsilonAt[float64](magnitude))
 }
 
-// intersects reports whether the two shapes share a point, a touch included within the
-// tolerance of T: lessOrEqualSquared on the gap nearest finds, the comparison every other pair
-// makes. For an integer T the tolerance is zero, so the gap must close exactly, which the
-// outlines of two shapes with vertices do and a round one does not in general.
+// intersects reports whether the shapes share a point within the tolerance of T. For an integer T
+// that is zero, which outlines with vertices reach and a round one in general does not.
 func (m minkowski[T]) intersects() bool {
 	return lessOrEqualSquared(m.nearest().point.LengthSquared(), 0, epsilonAt[T](m.magnitude()))
 }
 
-// nearest returns the point of the difference nearest the origin, the zero vector where it
-// holds the origin, by the Gilbert–Johnson–Keerthi walk: a simplex of supports is moved toward
-// the origin, each new support asked for in the direction from the nearest point of the simplex
-// to the origin, until the support is one it already holds or reaches no nearer than that point
-// within Delta of its distance. A NaN ends it at once, since it reaches no nearer than
-// anything.
+// nearest returns the point of the difference nearest the origin, zero where it holds the origin,
+// by the Gilbert–Johnson–Keerthi walk: it stops on a support already held or one reaching no nearer
+// within Delta. A NaN ends it at once.
 func (m minkowski[T]) nearest() minkowskiVertex {
 	simplex := minkowskiSimplex{}
 	simplex.add(m.support(Vector[float64]{1, 0}))
@@ -95,21 +81,13 @@ func (m minkowski[T]) nearest() minkowskiVertex {
 	return nearest
 }
 
-// depth returns the unit direction that moves the first shape out of the second the shortest
-// way and how far along it, zero where they do not overlap, by the expanding polytope: a
-// polygon inscribed in the difference is grown at the edge nearest the origin by the support
-// along the normal of that edge, until the support reaches no farther than the edge within the
-// tolerance, so the edge lies on the boundary of the difference, or the polytope is full. The
-// way from the origin out along that normal as far as the support reaches leaves the difference
-// whatever the polytope has grown to, so its opposite moves the first shape off the second, and
-// by the least distance once the edge is on the boundary.
+// depth returns the unit direction that moves the first shape out of the second the shortest way,
+// and how far, by the expanding polytope grown at its edge nearest the origin until the support
+// reaches no farther within the tolerance or the polytope is full.
 //
-// The polygon starts from the supports along the four axes, in the order that winds as
-// Vector.Normal turns, which may hold the origin or not: an edge the origin lies beyond has a
-// negative distance, the least of all, so it is grown first, and the polygon holds the origin
-// before any edge of the boundary is reached wherever the difference does. A difference of no
-// area, two parallel segments, grows nowhere and has no depth, and that of two points has no
-// direction either.
+// It starts from the supports along the four axes, wound as Vector.Normal turns. An edge the origin
+// lies beyond has a negative distance and grows first, so the polytope holds the origin before any
+// boundary edge is reached. A difference of no area grows nowhere and has no depth.
 func (m minkowski[T]) depth() (Vector[float64], float64) {
 	tolerance := m.tolerance()
 
@@ -136,12 +114,9 @@ func (m minkowski[T]) depth() (Vector[float64], float64) {
 	return edge.normal.Negate(), max(depth, 0)
 }
 
-// sweep returns where the first shape first touches the second while it moves by the given
-// motion from the offset, where it does not intersect it, and false where it reaches nothing,
-// by conservative advancement: it is moved by the gap between the two over the speed they
-// close at along it, which can never pass the other, and no farther than the whole motion,
-// until the gap is within the tolerance. The normal is that of the last advance, since a closed
-// gap has no direction left.
+// sweep returns where the moving first shape first touches the second, by conservative advancement:
+// each step moves it by the gap over the closing speed, which never passes the other, until the gap
+// is within the tolerance. The normal is that of the last advance, since a closed gap has none.
 func (m minkowski[T]) sweep(motion Vector[float64]) (Hit[T], bool) {
 	tolerance := m.tolerance()
 	start := m.offset
@@ -168,12 +143,9 @@ func (m minkowski[T]) sweep(motion Vector[float64]) (Hit[T], bool) {
 	return Hit[T]{}, false
 }
 
-// contact returns the points of the second shape the two meet at, given the unit normal that
-// parts them, from the second toward the first: the part of the edge the second turns to the
-// first that the edge the first turns to it lies over, both ends of it where two flat edges
-// meet and one point where a corner or a round boundary does. Edges that pass each other
-// without lying over one another, as the corners of two shapes deep in each other can, meet
-// halfway between them.
+// contact returns the points of the second shape the two meet at across the normal: both ends of
+// the overlap where two flat edges face each other, one point at a corner or a round boundary.
+// Edges that do not overlap, as deep corners can, meet halfway between them.
 func (m minkowski[T]) contact(normal Vector[float64]) Pair[Point[T]] {
 	tangent := normal.Normal()
 	facing, faced := facingEdge(m.a, normal.Negate()), facingEdge(m.b, normal)
@@ -196,14 +168,10 @@ func (m minkowski[T]) contact(normal Vector[float64]) Pair[Point[T]] {
 	return Pair[Point[T]]{[2]Point[T]{first, second}, 2}
 }
 
-// facingEdge returns the edge of a shape turned toward the given direction, of no length for
-// a corner or a round boundary: the supports a little to either side of the direction, which
-// are the two ends of a flat edge that faces it and the same vertex twice at a corner. The
-// supports at half that turn tell a flat edge from a round boundary: across a flat edge the
-// support jumps from one end to the other between them, farther than it moves outside them,
-// where around a round boundary it moves as far in each half. A flat side between two round
-// ends, that of a Capsule, is therefore an edge, and a round boundary is the one point farthest
-// along the direction.
+// facingEdge returns the edge of the shape facing the direction, of no length at a corner or a
+// round boundary, from the supports a little to either side. Across a flat edge the support jumps
+// between the halves of that turn farther than it moves outside them, which tells it from a round
+// boundary, so the flat side of a Capsule is an edge.
 func facingEdge[T Number](shape Shape[T], direction Vector[float64]) Segment[float64] {
 	start, end := shape.Support(direction.Rotate(facingAngle)), shape.Support(direction.Rotate(-facingAngle))
 	from, to := shape.Support(direction.Rotate(facingAngle/2)), shape.Support(direction.Rotate(-facingAngle/2))
@@ -216,18 +184,17 @@ func facingEdge[T Number](shape Shape[T], direction Vector[float64]) Segment[flo
 	return Segment[float64]{start, end}
 }
 
-// minkowskiVertex is a point of the difference with the point of the second shape it was
-// measured from, the one a contact is placed at.
+// minkowskiVertex is a point of the difference with the point of the second shape it was measured
+// from, where a contact is placed.
 type minkowskiVertex struct {
 	point Vector[float64]
 	from  Point[float64]
 }
 
-// nearestToward returns the point nearest the origin on the edge from the vertex to the given
-// one, with the simplex of the vertices it lies between: an end where the origin projects past
-// it, and otherwise the foot of the perpendicular from the origin, placed along the normal of
-// the edge by the cross product of its ends, so an edge through the origin is at exactly zero.
-// An edge of no length is its first vertex.
+// nearestToward returns the point nearest the origin on the edge to the given vertex, with the
+// simplex of the vertices it lies between. The foot is placed along the normal by the cross
+// product, so an edge through the origin is at exactly zero; an edge of no length is its first
+// vertex.
 func (v minkowskiVertex) nearestToward(vertex minkowskiVertex) (minkowskiVertex, minkowskiSimplex) {
 	edge := vertex.point.Subtract(v.point)
 	lengthSquared := edge.LengthSquared()
@@ -247,22 +214,21 @@ func (v minkowskiVertex) nearestToward(vertex minkowskiVertex) (minkowskiVertex,
 	return foot, minkowskiSimplex{[3]minkowskiVertex{v, vertex}, 2}
 }
 
-// minkowskiSimplex is the simplex nearest moves toward the origin: a point, an edge or a
-// triangle of the difference, reduced after every step to the vertices its nearest point lies
-// between.
+// minkowskiSimplex is the point, edge or triangle nearest walks toward the origin, reduced after
+// each step to the vertices its nearest point lies between.
 type minkowskiSimplex struct {
 	vertices [3]minkowskiVertex
 	count    int
 }
 
-// add appends a vertex to the simplex, which has room for it after every nearest.
+// add appends a vertex, which nearest always leaves room for.
 func (s *minkowskiSimplex) add(vertex minkowskiVertex) {
 	s.vertices[s.count] = vertex
 	s.count++
 }
 
-// holds reports whether the simplex already has a vertex at the point of the given one: a
-// support met again, past which the simplex moves no nearer.
+// holds reports whether the simplex already has a vertex at the point of the given one, a support
+// met again, past which the walk gets no nearer.
 func (s *minkowskiSimplex) holds(vertex minkowskiVertex) bool {
 	for _, held := range s.vertices[:s.count] {
 		if held.point == vertex.point {
@@ -274,12 +240,9 @@ func (s *minkowskiSimplex) holds(vertex minkowskiVertex) bool {
 }
 
 // nearest returns the point of the simplex nearest the origin and reduces the simplex to the
-// vertices it lies between: the vertex of a point, the nearest of an edge, and for a triangle
-// the nearest of its three edges, moved to the origin itself where the triangle holds it,
-// which is decided on the exact signs of the cross products of its vertices, a vertex or an
-// edge through the origin included. The point of the second shape is then the one the vertices
-// were measured from weighted as the origin lies between them, a point the two shapes share,
-// which an edge through the origin already has.
+// vertices it lies between. A triangle holds the origin on the exact signs of its cross products,
+// its boundary included, and the shared point is then the points measured from, weighted as the
+// origin lies between them.
 func (s *minkowskiSimplex) nearest() minkowskiVertex {
 	if s.count == 1 {
 		return s.vertices[0]
@@ -312,39 +275,36 @@ func (s *minkowskiSimplex) nearest() minkowskiVertex {
 	return nearest
 }
 
-// minkowskiPolytope is the polygon depth grows inside the difference: its vertices in the
-// order that winds as Vector.Normal turns, so the outward side of every edge is the one its
-// direction turned the other way points to.
+// minkowskiPolytope is the polygon depth grows inside the difference, wound as Vector.Normal turns,
+// so every edge's outward side is its direction turned the other way.
 type minkowskiPolytope struct {
 	vertices [64]Vector[float64]
 	count    int
 }
 
-// minkowskiEdge is an edge of the polytope by the index of its first vertex, with its outward
-// unit normal and the distance of its line from the origin along that normal, negative where
-// the origin lies beyond it.
+// minkowskiEdge is a polytope edge by the index of its first vertex, with its outward unit normal
+// and the distance of its line from the origin, negative where the origin lies beyond it.
 type minkowskiEdge struct {
 	index    int
 	normal   Vector[float64]
 	distance float64
 }
 
-// add appends a vertex to the polytope.
+// add appends a vertex.
 func (p *minkowskiPolytope) add(vertex Vector[float64]) {
 	p.vertices[p.count] = vertex
 	p.count++
 }
 
-// insert places a vertex at the given index, moving the ones from there on up by one.
+// insert places a vertex at the index, moving the rest up by one.
 func (p *minkowskiPolytope) insert(index int, vertex Vector[float64]) {
 	copy(p.vertices[index+1:p.count+1], p.vertices[index:p.count])
 	p.vertices[index] = vertex
 	p.count++
 }
 
-// nearest returns the edge whose line is nearest the origin, the one of the least distance
-// along its outward normal, by minkowskiEdge.precedes, and false where no edge has a length to
-// take a normal from, the polytope of a single point.
+// nearest returns the edge whose line is nearest the origin by precedes, and false where no edge
+// has a length, the polytope of a single point.
 func (p *minkowskiPolytope) nearest() (minkowskiEdge, bool) {
 	var nearest minkowskiEdge
 
@@ -364,14 +324,10 @@ func (p *minkowskiPolytope) nearest() (minkowskiEdge, bool) {
 	return nearest, found
 }
 
-// precedes reports whether the edge is the one to keep of the two: the nearer the origin, and
-// of two as near the one whose normal lies closer to the X axis, then the one whose normal
-// points between the axes of one sign. Neither choice changes where the normal is turned
-// about, so the difference of two shapes taken the other way round, which is this one mirrored
-// through the origin, keeps the mirrored edge, and Collide answers with the opposite normal
-// whichever shape is given first. Only two edges facing opposite ways are left to the order
-// they come in, where a shape lies in the middle of the other and both ways out are as short.
-// A NaN distance precedes nothing.
+// precedes reports whether the edge is the one to keep: the nearer, then the one whose normal lies
+// nearer the X axis, then the one pointing between axes of one sign. Each choice is symmetric under
+// mirroring through the origin, so Collide gives the opposite normal with the shapes swapped; only
+// a shape in the very middle of another is left to the order. A NaN distance precedes nothing.
 func (e minkowskiEdge) precedes(edge minkowskiEdge) bool {
 	if e.distance != edge.distance {
 		return e.distance < edge.distance

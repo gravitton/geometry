@@ -5,69 +5,60 @@ import (
 	"math"
 )
 
-// Box is a 2D axis-aligned box represented by its minimum and maximum corners, the box Bounds
-// returns on every shape. It carries no angle, so none of its methods turns it or branches on a
-// turn: it is the form for clip regions, atlas regions, viewports, layout and culling, where
-// Rectangle is the shape that can be turned. Rectangle converts a box into one, and
-// Rectangle.Bounds gives the box back.
+// Box is an axis-aligned box between a minimum and a maximum corner, the box Bounds returns on
+// every shape. It never turns; Rectangle is the shape that can.
 //
-// Min is never past Max on either axis: the constructors order the corners they are given, so a
-// box with Min past Max can only be written as a struct literal or decoded from JSON, and
-// Contains, Nearest and IntersectsBox give no meaningful answer for it; Canonical repairs it.
-//
-// The box is closed: Contains and IntersectsBox include the boundary within the tolerance, one
-// comparison on the squared distance, so a box contains every point of the shape it bounds. For
-// integer T a box of width w spans w+1 lattice columns from Min to Max inclusive; the
-// image.Rectangle of its Rectangle is half-open as the image package requires, and therefore
-// spans exactly w pixels.
+// Min is never past Max on either axis: the constructors order the corners. A box with Min past Max
+// written as a struct literal or decoded from JSON gives no meaningful answers until Canonical
+// repairs it. For integer T a box of width w spans w+1 lattice columns from Min to Max inclusive,
+// while the image.Rectangle of its Rectangle is half-open and spans w pixels.
 type Box[T Number] struct {
 	Min Point[T] `json:"a"`
 	Max Point[T] `json:"b"`
 }
 
-// Bx is shorthand for Box{min, max} between two opposite corners, given in either order: each
-// axis is ordered, so Min is never past Max.
+// Bx is shorthand for Box{min, max} between the opposite corners a and b, in either order, each
+// axis ordered.
 func Bx[T Number](a, b Point[T]) Box[T] {
 	return Box[T]{Point[T]{min(a.X, b.X), min(a.Y, b.Y)}, Point[T]{max(a.X, b.X), max(a.Y, b.Y)}}
 }
 
-// BoxFromMin creates a Box from its min corner a and size. A negative extent measures the other
-// way, so the given point is a corner but no longer the minimum one.
+// BoxFromMin returns the box with its min corner at a and the size. A negative extent measures the
+// other way, so a is then a corner but not the minimum one.
 func BoxFromMin[T Number](a Point[T], size Size[T]) Box[T] {
 	return BoxFromMinMax(a, a.Add(size.Vector()))
 }
 
-// BoxFromMinMax creates a Box from two opposite corners, given in either order, as Bx does.
+// BoxFromMinMax returns the box between the opposite corners a and b, in either order.
 func BoxFromMinMax[T Number](a, b Point[T]) Box[T] {
 	return Bx(a, b)
 }
 
-// BoxFromSize creates a Box from zero point and size. A negative extent measures the other
-// way, so the zero point is a corner but no longer the minimum one.
+// BoxFromSize returns the box with its min corner at the origin and the size. A negative extent
+// measures the other way, so the origin is then a corner but not the minimum one.
 func BoxFromSize[T Number](size Size[T]) Box[T] {
 	w, h := size.XY()
 
 	return Box[T]{Point[T]{min(w, 0), min(h, 0)}, Point[T]{max(w, 0), max(h, 0)}}
 }
 
-// Width returns the box width, the extent from Min to Max along X.
+// Width returns the extent from Min to Max along X.
 func (b Box[T]) Width() T {
 	return b.Max.X - b.Min.X
 }
 
-// Height returns the box height, the extent from Min to Max along Y.
+// Height returns the extent from Min to Max along Y.
 func (b Box[T]) Height() T {
 	return b.Max.Y - b.Min.Y
 }
 
-// Size returns the width and height of the box.
+// Size returns the width and height.
 func (b Box[T]) Size() Size[T] {
 	return Size[T]{b.Width(), b.Height()}
 }
 
-// Vertices iterates the four corners of the box in order starting at Min, by increasing angle,
-// clockwise as drawn on a screen with Y pointing down, without allocating; collect them with
-// slices.Collect where a slice is needed.
+// Vertices returns an iterator over the corners from Min, clockwise as drawn on a screen with Y
+// pointing down.
 func (b Box[T]) Vertices() iter.Seq[Point[T]] {
 	return func(yield func(Point[T]) bool) {
 		for _, corner := range b.corners() {
@@ -78,9 +69,8 @@ func (b Box[T]) Vertices() iter.Seq[Point[T]] {
 	}
 }
 
-// Edges iterates the four edges of the box in the order of Vertices, each from a corner to the
-// next and the last closing back to Min, without allocating; collect them with slices.Collect
-// where a slice is needed. They are the edges every test of the box against an outline reads.
+// Edges returns an iterator over the edges in the order of Vertices, each from a corner to the next
+// and the last closing back to Min.
 func (b Box[T]) Edges() iter.Seq[Segment[T]] {
 	return func(yield func(Segment[T]) bool) {
 		corners := b.corners()
@@ -89,45 +79,43 @@ func (b Box[T]) Edges() iter.Seq[Segment[T]] {
 	}
 }
 
-// Center returns the point halfway from Min to Max. For integer T half the size is truncated
-// toward Min, so the center of an odd span lies nearer Min and the Rectangle of the box keeps
-// its corners.
+// Center returns the point halfway from Min to Max. For integer T half the size truncates toward
+// Min, so the Rectangle of the box keeps its corners.
 func (b Box[T]) Center() Point[T] {
 	return Point[T]{b.Min.X + (b.Max.X-b.Min.X)/2, b.Min.Y + (b.Max.Y-b.Min.Y)/2}
 }
 
-// Centroid returns the center of the enclosed area, the Center of the box.
+// Centroid returns the Center.
 func (b Box[T]) Centroid() Point[T] {
 	return b.Center()
 }
 
-// Area returns the box area (width * height). It is a float64 even for an integer T, like
-// every product, so the box is a Body; Size.Area keeps the exact integer area.
+// Area returns the area (w·h).
 func (b Box[T]) Area() float64 {
 	return float64(b.Width()) * float64(b.Height())
 }
 
-// Perimeter returns the box perimeter. It stays in T like a sum.
+// Perimeter returns the perimeter (2·(w+h)).
 func (b Box[T]) Perimeter() T {
 	return b.Size().Perimeter()
 }
 
-// Inertia returns the polar second moment of area about the center, the rotational inertia
-// of the box at unit density: w * h * (w^2 + h^2) / 12.
+// Inertia returns the polar second moment of area about the center (w·h·(w²+h²)/12), the rotational
+// inertia of the box at unit density.
 func (b Box[T]) Inertia() float64 {
 	w, h := b.Size().Float().XY()
 
 	return w * h * (float64(w*w) + float64(h*h)) / 12
 }
 
-// Bounds returns the box itself, the box around it.
+// Bounds returns the box itself.
 func (b Box[T]) Bounds() Box[T] {
 	return b
 }
 
-// BoundingCircle returns the smallest circle around the box: the circle about Center through
-// the corners. For integer T the center truncates toward Min and the radius is rounded up from
-// it to the farther corner, so the circle still contains all four.
+// BoundingCircle returns the circle about Center through the farthest corner, the smallest
+// enclosing the box. For integer T the radius is rounded up from the truncated center, so it still
+// contains all four corners.
 func (b Box[T]) BoundingCircle() Circle[T] {
 	center := b.Center()
 	midpoint := center.Float()
@@ -136,71 +124,65 @@ func (b Box[T]) BoundingCircle() Circle[T] {
 	return Circle[T]{center, castUp[T](math.Sqrt(reach))}
 }
 
-// magnitude returns the largest absolute coordinate of the box, that of a corner: the size
-// epsilonAt widens the tolerance by for a comparison that reads the box.
+// magnitude returns the largest absolute coordinate of the corners, the magnitude the tolerance of
+// a comparison with the box is taken from.
 func (b Box[T]) magnitude() float64 {
 	return max(b.Min.magnitude(), b.Max.magnitude())
 }
 
-// corners returns the vertices of the box as an array, in the winding of Rectangle.Vertices from
-// Min: the exact corners every outline pair of the box reads, where its Rectangle would place
-// them again from a center and a size, an ulp off for a float T.
+// corners returns the vertices as an array in the order of Vertices: the exact corners every
+// outline pair of the box reads, where its Rectangle would place them an ulp off for float T.
 func (b Box[T]) corners() [4]Point[T] {
 	return [4]Point[T]{b.Min, {b.Max.X, b.Min.Y}, b.Max, {b.Min.X, b.Max.Y}}
 }
 
-// Translate creates a new Box translated by the given vector.
+// Translate returns the box moved by the vector.
 func (b Box[T]) Translate(vector Vector[T]) Box[T] {
 	return Box[T]{b.Min.Add(vector), b.Max.Add(vector)}
 }
 
-// MoveTo creates a new Box of the same size with its Center at point. The corners are moved
-// by the same whole amount, so for integer T an odd extent keeps the center nearer Min.
+// MoveTo returns the box with its Center at the point. For integer T an odd extent keeps the center
+// nearer Min.
 func (b Box[T]) MoveTo(point Point[T]) Box[T] {
 	return b.Translate(point.Subtract(b.Center()))
 }
 
-// Clamp creates a new Box moved so that it lies within the given one, keeping its size: the box
-// itself where it already lies exactly within, and otherwise moved by the shortest distance that
-// brings it in, so one enclosed only within the tolerance is moved onto the boundary. On an axis
-// along which it is the larger it is centered on the other instead.
+// Clamp returns the box moved by the least distance that brings it within the given one, the
+// receiver when it already lies exactly within. On an axis along which it is the larger, it is
+// centered on the given box instead.
 func (b Box[T]) Clamp(box Box[T]) Box[T] {
 	return b.Translate(b.clampOffset(box))
 }
 
-// Inset creates a new Box inset by the given padding amounts, each edge moved in by its own. An
-// edge pushed past its opposite stops there, so a padding larger than the box collapses it to a
-// zero extent on that axis, at the opposite edge rather than at the one that over-ran: too much
-// Left collapses it onto the right edge, too much Right onto the left one. Where both paddings on
-// an axis over-run, Left and Top win, since Min moves first and Max is then stopped at it.
-// A negative padding outsets the box, so Outset undoes Inset as long as nothing was clamped.
+// Inset returns the box with each edge moved in by its padding. An edge pushed past its opposite
+// stops there, so too much Left collapses the box onto its right edge; where both paddings of an
+// axis over-run, Left and Top win. A negative padding moves the edge out.
 func (b Box[T]) Inset(padding Padding[T]) Box[T] {
 	a := Point[T]{min(b.Min.X+padding.Left, b.Max.X), min(b.Min.Y+padding.Top, b.Max.Y)}
 
 	return Box[T]{a, Point[T]{max(b.Max.X-padding.Right, a.X), max(b.Max.Y-padding.Bottom, a.Y)}}
 }
 
-// Outset creates a new Box expanded by the given padding amounts, the inverse of Inset.
+// Outset returns the box with each edge moved out by its padding, the inverse of Inset while
+// nothing was clamped.
 func (b Box[T]) Outset(padding Padding[T]) Box[T] {
 	return b.Inset(padding.Negate())
 }
 
-// Lerp creates a new Box in linear interpolation towards the given box, moving the two corners
-// together, and extrapolating outside [0, 1] like Point.Lerp, with the corners ordered again,
-// so an extrapolation that would turn the box inside out stays a box.
+// Lerp returns the box interpolated toward the given one, both corners together, and extrapolated
+// outside [0, 1]. The corners are ordered again, so an extrapolation never turns the box inside
+// out.
 func (b Box[T]) Lerp(box Box[T], t float64) Box[T] {
 	return Box[T]{b.Min.Lerp(box.Min, t), b.Max.Lerp(box.Max, t)}.Canonical()
 }
 
-// Canonical creates a new Box with the corners ordered, Min the lesser on each axis, as the
-// constructors build it: the box itself where it is well formed. It repairs a struct literal or
-// decoded JSON with Min past Max before Contains, Nearest or IntersectsBox read it.
+// Canonical returns the box with its corners ordered on each axis, the receiver when they already
+// are.
 func (b Box[T]) Canonical() Box[T] {
 	return Box[T]{Point[T]{min(b.Min.X, b.Max.X), min(b.Min.Y, b.Max.Y)}, Point[T]{max(b.Min.X, b.Max.X), max(b.Min.Y, b.Max.Y)}}
 }
 
-// clampOffset returns the move Clamp makes, axis by axis, the one Rectangle.Clamp takes for its
-// boxes.
+// clampOffset returns the move Clamp makes, which Rectangle.Clamp also takes in its own frame.
 func (b Box[T]) clampOffset(box Box[T]) Vector[T] {
 	c1, c2 := b.Center(), box.Center()
 
@@ -210,11 +192,9 @@ func (b Box[T]) clampOffset(box Box[T]) Vector[T] {
 	}
 }
 
-// clampAxis returns the move along one axis that Clamp makes, from the extent a1 to b1 and the
-// center c1 of the box being moved and those of the one it is clamped within: the difference of
-// the centers where the first is the larger, the least move that brings it within otherwise,
-// and zero where it already lies within. It reads no field of the box, only the extents it is
-// given, so the receiver is unnamed.
+// clampAxis returns the move along one axis from the extent a1 to b1 with center c1 into the extent
+// a2 to b2 with center c2: the difference of the centers where the first is the larger, the least
+// move otherwise. It reads only its arguments, so the receiver is unnamed.
 func (Box[T]) clampAxis(a1, b1, c1, a2, b2, c2 T) T {
 	switch {
 	case b1-a1 > b2-a2:
@@ -228,32 +208,23 @@ func (Box[T]) clampAxis(a1, b1, c1, a2, b2, c2 T) T {
 	}
 }
 
-// DistanceTo returns the distance from the given point to the nearest point of the box: zero
-// exactly where Contains holds, so a point within the tolerance of the boundary is at distance
-// zero rather than at the rounding error that put it there.
+// DistanceTo returns the distance from the point to the box, zero inside.
 func (b Box[T]) DistanceTo(point Point[T]) float64 {
 	return math.Sqrt(b.DistanceSquaredTo(point))
 }
 
-// DistanceSquaredTo returns the squared distance DistanceTo takes the root of, faster for
-// comparisons: zero for a point inside, or within the tolerance of the boundary, and otherwise
-// the sum of the squared gaps beyond the box on the two axes, with no edge to walk. It is a
-// float64 even for an integer T, so the box answers as every Shape does.
+// DistanceSquaredTo returns the square of DistanceTo.
 func (b Box[T]) DistanceSquaredTo(point Point[T]) float64 {
 	return b.DistanceSquaredToBox(Box[T]{point, point})
 }
 
-// DistanceToBox returns the distance between the nearest points of the two boxes: zero exactly
-// where IntersectsBox holds, and otherwise the gap between them, across a corner where they
-// are apart on both axes.
+// DistanceToBox returns the distance between the nearest points of the boxes, zero where they share
+// a point.
 func (b Box[T]) DistanceToBox(box Box[T]) float64 {
 	return math.Sqrt(b.DistanceSquaredToBox(box))
 }
 
-// DistanceSquaredToBox returns the squared distance DistanceToBox takes the root of, faster for
-// comparisons, from the gap between the boxes on each axis: zero where they overlap or the gap
-// is within the tolerance, which is where IntersectsBox reads it. A NaN
-// coordinate leaves a NaN gap, which the comparison never admits.
+// DistanceSquaredToBox returns the square of DistanceToBox.
 func (b Box[T]) DistanceSquaredToBox(box Box[T]) float64 {
 	a1, b1, a2, b2 := b.Min.Float(), b.Max.Float(), box.Min.Float(), box.Max.Float()
 	dx := max(a2.X-b1.X, a1.X-b2.X, 0)
@@ -267,9 +238,8 @@ func (b Box[T]) DistanceSquaredToBox(box Box[T]) float64 {
 	return distance
 }
 
-// Nearest returns the point of the box nearest to the given point: the point itself exactly
-// where Contains holds, and otherwise the point clamped onto the box on each axis, a lattice
-// point for an integer T.
+// Nearest returns the point of the box nearest to the given point, the point itself inside and
+// otherwise the point clamped onto the box on each axis.
 func (b Box[T]) Nearest(point Point[T]) Point[T] {
 	if b.Contains(point) {
 		return point
@@ -278,24 +248,20 @@ func (b Box[T]) Nearest(point Point[T]) Point[T] {
 	return Point[T]{Clamp(point.X, b.Min.X, b.Max.X), Clamp(point.Y, b.Min.Y, b.Max.Y)}
 }
 
-// Support returns the point of the box farthest along the given direction: the corner reaching
-// farthest that way, the first of them from the min corner around where two reach alike.
+// Support returns the corner farthest along the direction, the first in the order of Vertices where
+// two reach alike.
 func (b Box[T]) Support(direction Vector[float64]) Point[float64] {
 	corners := b.corners()
 
 	return supportOf(corners[:], direction)
 }
 
-// Contains reports whether the given point lies within the box, boundary included within
-// the tolerance: DistanceSquaredTo is zero there.
+// Contains reports whether the point lies in the box.
 func (b Box[T]) Contains(point Point[T]) bool {
 	return b.DistanceSquaredTo(point) == 0
 }
 
-// ContainsCircle reports whether the circle lies within the box: its center is contained and
-// every side is at least the radius away, within the tolerance, the gap from the center to the
-// nearest side taken on the two axes as DistanceSquaredTo takes the gap beyond them, so a circle
-// touching a side from inside is enclosed.
+// ContainsCircle reports whether the circle lies entirely in the box.
 func (b Box[T]) ContainsCircle(circle Circle[T]) bool {
 	if !b.Contains(circle.Center) {
 		return false
@@ -307,15 +273,12 @@ func (b Box[T]) ContainsCircle(circle Circle[T]) bool {
 	return greaterOrEqualSquared(float64(gap*gap), float64(circle.Radius), circle.epsilonWith(b.magnitude()))
 }
 
-// ContainsCapsule reports whether the given capsule lies within the box: the circles of its
-// radius about both ends of its segment do, as ContainsCircle decides it, and a box holds every point between points it contains.
+// ContainsCapsule reports whether the capsule lies entirely in the box.
 func (b Box[T]) ContainsCapsule(capsule Capsule[T]) bool {
 	return b.ContainsCircle(Circle[T]{capsule.Segment.Start, capsule.Radius}) && b.ContainsCircle(Circle[T]{capsule.Segment.End, capsule.Radius})
 }
 
-// ContainsSector reports whether the given sector lies within the box: its center, the two
-// ends of its arc and the points of it reaching farthest along each axis are contained, within
-// the tolerance, and a box holds every point between points it contains.
+// ContainsSector reports whether the sector lies entirely in the box.
 func (b Box[T]) ContainsSector(sector Sector[T]) bool {
 	outer, inner := b.Float(), sector.Float()
 	for _, corner := range inner.corners() {
@@ -333,14 +296,12 @@ func (b Box[T]) ContainsSector(sector Sector[T]) bool {
 	return true
 }
 
-// ContainsSegment reports whether the segment lies within the box: both endpoints are contained,
-// within the tolerance, and a box holds every point between two it contains.
+// ContainsSegment reports whether the segment lies entirely in the box.
 func (b Box[T]) ContainsSegment(segment Segment[T]) bool {
 	return b.Contains(segment.Start) && b.Contains(segment.End)
 }
 
-// ContainsPolygon reports whether the polygon lies within the box: every vertex is contained,
-// within the tolerance. An empty polygon is enclosed by nothing.
+// ContainsPolygon reports whether the polygon lies entirely in the box.
 func (b Box[T]) ContainsPolygon(polygon Polygon[T]) bool {
 	if polygon.IsEmpty() {
 		return false
@@ -355,8 +316,7 @@ func (b Box[T]) ContainsPolygon(polygon Polygon[T]) bool {
 	return true
 }
 
-// ContainsRectangle reports whether the rectangle lies within the box: every corner is
-// contained, within the tolerance, whatever its angle.
+// ContainsRectangle reports whether the rectangle lies entirely in the box.
 func (b Box[T]) ContainsRectangle(rectangle Rectangle[T]) bool {
 	for vertex := range rectangle.Vertices() {
 		if !b.Contains(vertex) {
@@ -367,8 +327,7 @@ func (b Box[T]) ContainsRectangle(rectangle Rectangle[T]) bool {
 	return true
 }
 
-// ContainsRegularPolygon reports whether the regular polygon lies within the box: every vertex is
-// contained, within the tolerance. An empty polygon is enclosed by nothing.
+// ContainsRegularPolygon reports whether the regular polygon lies entirely in the box.
 func (b Box[T]) ContainsRegularPolygon(polygon RegularPolygon[T]) bool {
 	if polygon.IsEmpty() {
 		return false
@@ -383,95 +342,79 @@ func (b Box[T]) ContainsRegularPolygon(polygon RegularPolygon[T]) bool {
 	return true
 }
 
-// ContainsBox reports whether the given box lies within this one: both its corners are
-// contained, within the tolerance.
+// ContainsBox reports whether the given box lies entirely in this one.
 func (b Box[T]) ContainsBox(box Box[T]) bool {
 	return b.Contains(box.Min) && b.Contains(box.Max)
 }
 
-// IntersectsCircle reports whether the box and the circle overlap, as Circle.IntersectsBox does.
+// IntersectsCircle reports whether the box and the circle share a point.
 func (b Box[T]) IntersectsCircle(circle Circle[T]) bool {
 	return circle.IntersectsBox(b)
 }
 
-// IntersectsCapsule reports whether the box and the capsule share a point, as
-// Capsule.IntersectsBox does.
+// IntersectsCapsule reports whether the box and the capsule share a point.
 func (b Box[T]) IntersectsCapsule(capsule Capsule[T]) bool {
 	return capsule.IntersectsBox(b)
 }
 
-// IntersectsSector reports whether the box and the sector share a point, as
-// Sector.IntersectsBox does.
+// IntersectsSector reports whether the box and the sector share a point.
 func (b Box[T]) IntersectsSector(sector Sector[T]) bool {
 	return sector.IntersectsBox(b)
 }
 
-// IntersectsSegment reports whether the box and the segment share a point, as
-// Segment.IntersectsBox does.
+// IntersectsSegment reports whether the box and the segment share a point.
 func (b Box[T]) IntersectsSegment(segment Segment[T]) bool {
 	return segment.IntersectsBox(b)
 }
 
-// IntersectsRay reports whether the box and the ray share a point, as
-// Ray.IntersectsBox does.
+// IntersectsRay reports whether the box and the ray share a point.
 func (b Box[T]) IntersectsRay(ray Ray[T]) bool {
 	return ray.IntersectsBox(b)
 }
 
-// IntersectsLine reports whether the box and the line share a point, as
-// Line.IntersectsBox does.
+// IntersectsLine reports whether the box and the line share a point.
 func (b Box[T]) IntersectsLine(line Line[T]) bool {
 	return line.IntersectsBox(b)
 }
 
-// IntersectsPolygon reports whether the box and the polygon share a point, as
-// Polygon.IntersectsBox does.
+// IntersectsPolygon reports whether the box and the polygon share a point.
 func (b Box[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 	return polygon.IntersectsBox(b)
 }
 
-// IntersectsRectangle reports whether the box and the rectangle share a point, as
-// Rectangle.IntersectsBox does.
+// IntersectsRectangle reports whether the box and the rectangle share a point.
 func (b Box[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 	return rectangle.IntersectsBox(b)
 }
 
-// IntersectsRegularPolygon reports whether the box and the regular polygon share a point, as
-// RegularPolygon.IntersectsBox does.
+// IntersectsRegularPolygon reports whether the box and the regular polygon share a point.
 func (b Box[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 	return polygon.IntersectsBox(b)
 }
 
-// IntersectsBox reports whether the boxes share a point: the gap between them on the two axes
-// is zero within the tolerance, the one comparison DistanceSquaredToBox makes, so boxes that touch
-// at an edge or a corner intersect, the same closed convention as Contains.
+// IntersectsBox reports whether the boxes share a point.
 func (b Box[T]) IntersectsBox(box Box[T]) bool {
 	return b.DistanceSquaredToBox(box) == 0
 }
 
-// IntersectionSegment returns the points where the segment crosses the box boundary, as
-// Segment.IntersectionBox does.
+// IntersectionSegment returns the points where the segment crosses the boundary, from Start to End.
 func (b Box[T]) IntersectionSegment(segment Segment[T]) Pair[Point[T]] {
 	return segment.IntersectionBox(b)
 }
 
-// IntersectionRay returns the points where the ray crosses the box boundary, as
-// Ray.IntersectionBox does.
+// IntersectionRay returns the points where the ray crosses the boundary, from its Origin on.
 func (b Box[T]) IntersectionRay(ray Ray[T]) Pair[Point[T]] {
 	return ray.IntersectionBox(b)
 }
 
-// IntersectionLine returns the points where the line crosses the box boundary, as
-// Line.IntersectionBox does.
+// IntersectionLine returns the points where the line crosses the boundary, in order along its
+// Direction.
 func (b Box[T]) IntersectionLine(line Line[T]) Pair[Point[T]] {
 	return line.IntersectionBox(b)
 }
 
-// ClipBox returns the box common to both, and false when they do not intersect.
-// Touching boxes intersect in a box of zero width or height, and boxes meeting at a corner in
-// the zero-sized box at that corner, exactly where IntersectsBox holds, which is asked first:
-// a corner admitted by the tolerance is placed on the boundary of the other box, never beyond
-// it.
+// ClipBox returns the box common to both, and false where they share no point. Boxes touching at an
+// edge clip to a zero width or height, and at a corner to the zero-sized box there.
 func (b Box[T]) ClipBox(box Box[T]) (Box[T], bool) {
 	if !b.IntersectsBox(box) {
 		return Box[T]{}, false
@@ -490,28 +433,26 @@ func (b Box[T]) Union(box Box[T]) Box[T] {
 	}
 }
 
-// Equal checks for equal corners using tolerant numeric comparison.
+// Equal reports whether the boxes have equal corners.
 func (b Box[T]) Equal(box Box[T]) bool {
 	return b.Min.Equal(box.Min) && b.Max.Equal(box.Max)
 }
 
-// IsZero checks if both corners are zero.
+// IsZero reports whether the box is the zero value.
 func (b Box[T]) IsZero() bool {
 	return b.Equal(Box[T]{})
 }
 
-// Polygon converts the box into a generic Polygon with the vertices Vertices iterates, in one
-// allocation. A caller reusing a buffer appends them to it with slices.AppendSeq.
+// Polygon returns the box as a polygon of its Vertices.
 func (b Box[T]) Polygon() Polygon[T] {
 	corners := b.corners()
 
 	return Polygon[T]{corners[:]}
 }
 
-// Rectangle converts the box into the Rectangle with the same corners, not rotated, the inverse
-// of Rectangle.Bounds for a rectangle that is not rotated. For a float T the rectangle places
-// its corners again from the center and the size, which can move them by an ulp, so the
-// outline pairs of the box read its own corners rather than this rectangle's.
+// Rectangle returns the box as a rectangle with no angle, the inverse of Rectangle.Bounds for a
+// rectangle that is not rotated. For float T its corners, placed again from the center and the
+// size, can move by an ulp.
 func (b Box[T]) Rectangle() Rectangle[T] {
 	return Rectangle[T]{b.Center(), b.Size(), 0}
 }
@@ -521,9 +462,8 @@ func (b Box[T]) Cast[R Number]() Box[R] {
 	return Box[R]{b.Min.Cast[R](), b.Max.Cast[R]()}
 }
 
-// Int converts the box to a Box[int], rounding each corner on its own, so the size of a float
-// box can change by a unit as it moves through positions no lattice expresses. Round the
-// Rectangle of the box instead where the size must be kept.
+// Int converts the box to a Box[int], rounding each corner on its own, so the size can change by a
+// unit. Round the Rectangle of the box instead where the size must be kept.
 func (b Box[T]) Int() Box[int] {
 	return Box[int]{b.Min.Int(), b.Max.Int()}
 }
@@ -533,8 +473,7 @@ func (b Box[T]) Float() Box[float64] {
 	return Box[float64]{b.Min.Float(), b.Max.Float()}
 }
 
-// String returns the box by its corners: (x,y)-(x,y), Min then Max, the form image.Rectangle
-// prints.
+// String returns the box as (x,y)-(x,y), Min then Max, the form image.Rectangle prints.
 func (b Box[T]) String() string {
 	buf := make([]byte, 0, stringSize)
 	buf = b.Min.appendString(buf)

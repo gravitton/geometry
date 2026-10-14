@@ -721,6 +721,20 @@ func TestLine_IntersectionLine(t *testing.T) {
 		assert.True(t, ok)
 		geomtest.AssertPoint(t, point, Pt(4, 2))
 	})
+	t.Run("a zero direction within the tolerance of the other origin is the answer from either side", func(t *testing.T) {
+		line, dot, near := Ln(Pt(0.0, 0.0), Vec(1.0, 0.0)), Ln(Pt(1e-12, 0.0), Vec(0.0, 0.0)), Ln(Pt(0.0, 0.0), Vec(0.0, 0.0))
+
+		for _, pair := range [][2]Line[float64]{{line, dot}, {dot, line}} {
+			point, ok := pair[0].IntersectionLine(pair[1])
+			assert.True(t, ok)
+			assert.Equal(t, point, dot.Origin)
+		}
+		for _, pair := range [][2]Line[float64]{{near, dot}, {dot, near}} {
+			point, ok := pair[0].IntersectionLine(pair[1])
+			assert.True(t, ok)
+			assert.Equal(t, point, near.Origin)
+		}
+	})
 	t.Run("the same point whichever line asks, on both lines", func(t *testing.T) {
 		for _, a := range lineFixtures {
 			for _, b := range lineFixtures {
@@ -734,9 +748,7 @@ func TestLine_IntersectionLine(t *testing.T) {
 				}
 
 				assert.True(t, a.Contains(point) && b.Contains(point), message)
-				if a.Direction.Cross(b.Direction) != 0 {
-					assert.Equal(t, point, other, message)
-				}
+				assert.Equal(t, point, other, message)
 			}
 		}
 	})

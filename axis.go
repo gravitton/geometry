@@ -13,17 +13,16 @@ const (
 	// AxisVertical is the Y axis.
 	AxisVertical
 
-	// AxisNone is the absence of an axis. Every method treats it as having no extent.
+	// AxisNone is the absence of an axis, with no extent on any method.
 	AxisNone Axis = -1
 )
 
-// Axes lists both axes in order. It returns a fresh array, so a caller cannot alter the list.
+// Axes returns both axes in order.
 func Axes() [2]Axis {
 	return [2]Axis{AxisHorizontal, AxisVertical}
 }
 
-// ParseAxis returns the axis with the given name, as String prints it, and an error for any
-// other string. "None" parses to AxisNone.
+// ParseAxis returns the axis with the name String prints, and an error for any other string.
 func ParseAxis(name string) (Axis, error) {
 	if name == AxisNone.String() {
 		return AxisNone, nil
@@ -50,7 +49,7 @@ func (a Axis) Perpendicular() Axis {
 	}
 }
 
-// Direction returns the axis direction with the given sign: positive is DirectionRight on the
+// Direction returns the direction along the axis with the sign: positive is DirectionRight on the
 // horizontal axis and DirectionDown on the vertical one.
 func (a Axis) Direction(positive bool) Direction {
 	direction := a.direction()
@@ -73,7 +72,7 @@ func (a Axis) direction() Direction {
 	}
 }
 
-// Along returns the extent of the given size on the main axis.
+// Along returns the extent of the size on the axis.
 func (a Axis) Along[T Number](size Size[T]) T {
 	switch a {
 	case AxisHorizontal:
@@ -85,12 +84,12 @@ func (a Axis) Along[T Number](size Size[T]) T {
 	}
 }
 
-// Across returns the extent of the given size on the cross axis.
+// Across returns the extent of the size on the perpendicular axis.
 func (a Axis) Across[T Number](size Size[T]) T {
 	return a.Perpendicular().Along(size)
 }
 
-// Project returns the signed component of the given vector on the main axis.
+// Project returns the signed component of the vector on the axis.
 func (a Axis) Project[T Number](vector Vector[T]) T {
 	switch a {
 	case AxisHorizontal:
@@ -102,8 +101,7 @@ func (a Axis) Project[T Number](vector Vector[T]) T {
 	}
 }
 
-// ScaleAlong creates a new Size scaled by the given factor on the main axis only.
-// AxisNone has no axis to scale along and returns the size unchanged.
+// ScaleAlong returns the size scaled by the factor on the axis only, unchanged for AxisNone.
 func (a Axis) ScaleAlong[T Number](size Size[T], factor float64) Size[T] {
 	if a.IsNone() {
 		return size
@@ -112,20 +110,19 @@ func (a Axis) ScaleAlong[T Number](size Size[T], factor float64) Size[T] {
 	return a.Size(Multiply(a.Along(size), factor), a.Across(size))
 }
 
-// ScaleAcross creates a new Size scaled by the given factor on the cross axis only.
-// AxisNone has no axis to scale across and returns the size unchanged.
+// ScaleAcross returns the size scaled by the factor on the perpendicular axis only, unchanged for
+// AxisNone.
 func (a Axis) ScaleAcross[T Number](size Size[T], factor float64) Size[T] {
 	return a.Perpendicular().ScaleAlong(size, factor)
 }
 
-// IsNone reports whether the axis is neither AxisHorizontal nor AxisVertical. Unlike
-// Direction, which wraps any value into the eight directions, an Axis outside the two
-// constants is not normalized, so every such value counts as AxisNone.
+// IsNone reports whether the axis is neither AxisHorizontal nor AxisVertical, so every other value
+// counts as AxisNone.
 func (a Axis) IsNone() bool {
 	return a != AxisHorizontal && a != AxisVertical
 }
 
-// Vector creates a new Vector displaced by along on the main axis and across on the cross axis.
+// Vector returns the vector of along on the axis and across on the perpendicular one.
 func (a Axis) Vector[T Number](along, across T) Vector[T] {
 	switch a {
 	case AxisHorizontal:
@@ -137,8 +134,7 @@ func (a Axis) Vector[T Number](along, across T) Vector[T] {
 	}
 }
 
-// Size creates a new Size measuring along on the main axis and across on the cross axis.
-// The values are stored as given, like Sz; a negative one is not made absolute.
+// Size returns the size of along on the axis and across on the perpendicular one, stored as given.
 func (a Axis) Size[T Number](along, across T) Size[T] {
 	switch a {
 	case AxisHorizontal:
@@ -162,13 +158,12 @@ func (a Axis) String() string {
 	}
 }
 
-// MarshalText implements encoding.TextMarshaler with the name String prints, so an axis is
-// stored as "Horizontal" in JSON and as a map key rather than as its number.
+// MarshalText implements encoding.TextMarshaler with the name String prints.
 func (a Axis) MarshalText() ([]byte, error) {
 	return []byte(a.String()), nil
 }
 
-// UnmarshalText implements encoding.TextUnmarshaler, the inverse of MarshalText through ParseAxis.
+// UnmarshalText implements encoding.TextUnmarshaler through ParseAxis.
 func (a *Axis) UnmarshalText(text []byte) error {
 	axis, err := ParseAxis(string(text))
 	if err != nil {

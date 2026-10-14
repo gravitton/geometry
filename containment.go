@@ -3,23 +3,21 @@ package geom
 import "math"
 
 const (
-	// containHalvings bounds the arcs containsSupport halves. Two shapes meeting at a few points
-	// halve a few dozen, around each of them; only a shape within one of nearly its own round
-	// form, close to it all the way round, needs more, and is taken not to lie within it.
+	// containHalvings bounds the arcs containsSupport halves. Shapes meeting at a few points need a
+	// few dozen; only a shape close to the other all the way round needs more, and is taken not to
+	// lie in it.
 	containHalvings = 1024
 
-	// containDepth bounds how often one arc is halved, far below the angle at which both shapes
-	// are known to within the tolerance over it, and sizes the stack of arcs left to decide.
+	// containDepth bounds how often one arc is halved, far below the angle at which the corner
+	// loses precision, and sizes the stack of arcs left to decide.
 	containDepth = 32
 )
 
-// containsSupport reports whether the outer shape, taken as convex, holds the inner one, both
-// known by their supports alone, in float64: the inner one reaches no farther than the outer
-// one in every direction, within the tolerance of the pair. The supports along the four axes
-// start four arcs of directions, and an arc the inner one may leave the outer one on is halved
-// until it holds, a support of the inner one reaches past that of the outer one, or both are
-// known over it to within the tolerance, which answers false; so does an arc halved past the
-// bounds, and a NaN at once.
+// containsSupport reports whether the outer shape, taken as convex, holds the inner one, known by
+// their supports alone: the inner one reaches no farther in any direction, within the tolerance.
+// The four axes start four arcs, and an arc the inner shape may leave on is halved until it holds,
+// a support of the inner one reaches past the outer one, or both are settled over it, which answers
+// false, as do the bounds on halving and a NaN.
 func containsSupport[T Number](outer, inner Shape[T]) bool {
 	tolerance := minkowski[T]{a: inner, b: outer}.tolerance()
 
@@ -64,9 +62,8 @@ func containsSupport[T Number](outer, inner Shape[T]) bool {
 	return true
 }
 
-// reachAlong returns the supports of both shapes along a unit direction, and false where the
-// inner one reaches farther along it than the outer one by more than the tolerance, or either
-// is NaN.
+// reachAlong returns the supports of both shapes along the unit direction, and false where the
+// inner one reaches farther than the outer one by more than the tolerance, or either is NaN.
 func reachAlong[T Number](outer, inner Shape[T], direction Vector[float64], tolerance float64) (arcEnd, bool) {
 	end := arcEnd{direction, inner.Support(direction), outer.Support(direction)}
 
@@ -79,20 +76,17 @@ type arcEnd struct {
 	inner, outer Point[float64]
 }
 
-// supportArc is the arc of directions from one end to the other, turning as Vector.Normal
-// turns and never as far as a half turn, with how often it was halved from a quarter turn.
+// supportArc is the arc of directions between two ends, turning as Vector.Normal turns and less
+// than a half turn, with how often it was halved from a quarter turn.
 type supportArc struct {
 	start, end arcEnd
 	depth      int
 }
 
-// exceeds reports whether some direction of the arc may take the inner shape farther than the
-// outer one by more than the tolerance. Over the arc the inner shape lies within the corner its
-// tangent lines at the two ends meet in, and the outer shape reaches at least as far as each of
-// its two supports, so the arc holds unless a direction takes that corner farther than both
-// supports by more than the tolerance. The directions that take it farther than one support
-// are an interval about the way from that support to the corner, and the arc holds where it
-// meets the two only in no direction, decided by angles from the middle of the arc.
+// exceeds reports whether some direction of the arc may take the inner shape past the outer one by
+// more than the tolerance. Over the arc the inner shape lies within the corner of its tangent lines
+// at the ends and the outer one reaches at least its two supports, so the arc holds unless a
+// direction takes that corner past both, decided by angles from the middle of the arc.
 func (a supportArc) exceeds(tolerance float64) bool {
 	corner := a.corner(a.start.inner, a.end.inner)
 	middle := a.start.direction.Add(a.end.direction).Normalize()
@@ -114,10 +108,9 @@ func (a supportArc) exceeds(tolerance float64) bool {
 	return low < high
 }
 
-// settled reports whether both shapes are known over the arc to within the tolerance: the
-// corner of the tangent lines of each at the two ends lies within it of the chord between its
-// two supports, so an arc that still exceeds has the inner shape reaching to within the
-// tolerance of the outer one or beyond it, and halving it further tells nothing more.
+// settled reports whether both shapes are known over the arc within the tolerance, each corner of
+// tangent lines lying within it of the chord between the supports, so halving further tells
+// nothing.
 func (a supportArc) settled(tolerance float64) bool {
 	inner := Segment[float64]{a.start.inner, a.end.inner}
 	outer := Segment[float64]{a.start.outer, a.end.outer}
@@ -126,10 +119,9 @@ func (a supportArc) settled(tolerance float64) bool {
 		lessOrEqualSquared(outer.distanceSquaredTo(a.corner(outer.Start, outer.End)), 0, tolerance)
 }
 
-// corner returns where the lines through the two points square to the two ends of the arc
-// cross, the corner of the tangent lines of a shape with those supports, placed by each
-// numerator divided once by the cross product of the directions, which the bound on halving
-// keeps from vanishing.
+// corner returns where the lines through the points square to the two ends of the arc cross, each
+// numerator divided once by the cross product of the directions, which the bound on halving keeps
+// from vanishing.
 func (a supportArc) corner(from, to Point[float64]) Point[float64] {
 	start, end := a.start.direction, a.end.direction
 	cross := start.Cross(end)

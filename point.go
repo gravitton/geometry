@@ -7,8 +7,7 @@ import (
 	"strings"
 )
 
-// Point is a 2D point, a position. It is a math object like Vector and its methods take the
-// same names: Multiply and Divide scale its coordinates, where a shape has Scale and Unscale.
+// Point is a position in the plane.
 type Point[T Number] struct {
 	X T `json:"x"`
 	Y T `json:"y"`
@@ -19,14 +18,13 @@ func Pt[T Number](x, y T) Point[T] {
 	return Point[T]{x, y}
 }
 
-// ZeroPoint creates a new Point with zero values (0,0).
+// ZeroPoint returns the origin.
 func ZeroPoint[T Number]() Point[T] {
 	return Point[T]{}
 }
 
-// ParsePoint parses a point string in the form "(x,y)", the form String prints, each coordinate a
-// number Parse accepts. For integer T, only integer strings parse; a fractional value is an
-// error, not a rounded point.
+// ParsePoint returns the point in the form String prints, and an error for any other string. Each
+// coordinate is a number Parse accepts; for integer T a fractional one is an error, not rounded.
 func ParsePoint[T Number](s string) (Point[T], error) {
 	coordinates, opened := strings.CutPrefix(s, "(")
 	coordinates, closed := strings.CutSuffix(coordinates, ")")
@@ -47,91 +45,89 @@ func ParsePoint[T Number](s string) (Point[T], error) {
 	return Point[T]{x, y}, nil
 }
 
-// XY returns the point X, Y values in standard order.
+// XY returns X and Y.
 func (p Point[T]) XY() (T, T) {
 	return p.X, p.Y
 }
 
-// magnitude returns the larger absolute coordinate of the point, in float64: the size epsilonAt
-// widens the tolerance by for a comparison that reads it. An infinite coordinate has no ulp to
-// widen it by, and gives a NaN, as a NaN coordinate does, so a point at infinity lies on no
-// boundary rather than within an infinite tolerance of every one.
+// magnitude returns the larger absolute coordinate, the magnitude epsilonAt widens the tolerance
+// by. An infinite coordinate gives NaN, so a point at infinity lies on no boundary rather than
+// within an infinite tolerance of every one.
 func (p Point[T]) magnitude() float64 {
 	magnitude := max(math.Abs(float64(p.X)), math.Abs(float64(p.Y)))
 
 	return magnitude + (magnitude - magnitude)
 }
 
-// Add creates a new Point by adding the given vector to the current point.
+// Add returns the point moved by the vector.
 func (p Point[T]) Add(vector Vector[T]) Point[T] {
 	return Point[T]{p.X + vector.X, p.Y + vector.Y}
 }
 
-// AddXY creates a new Point by adding the given values to the current point.
+// AddXY returns the point moved by the deltas.
 func (p Point[T]) AddXY(deltaX, deltaY T) Point[T] {
 	return Point[T]{p.X + deltaX, p.Y + deltaY}
 }
 
-// Subtract creates a new Vector from a given point to the current point.
+// Subtract returns the vector from the given point to this one.
 func (p Point[T]) Subtract(point Point[T]) Vector[T] {
 	return Vector[T]{p.X - point.X, p.Y - point.Y}
 }
 
-// Multiply creates a new Point by multiplying the given value to the current point.
+// Multiply returns the point with both coordinates multiplied by the factor.
 func (p Point[T]) Multiply(factor float64) Point[T] {
 	return Point[T]{Multiply(p.X, factor), Multiply(p.Y, factor)}
 }
 
-// MultiplyXY creates a new Point by multiplying the given values to the current point.
+// MultiplyXY returns the point with each coordinate multiplied by its own factor.
 func (p Point[T]) MultiplyXY(factorX, factorY float64) Point[T] {
 	return Point[T]{Multiply(p.X, factorX), Multiply(p.Y, factorY)}
 }
 
-// Divide creates a new Point with X and Y divided by the given factor. Like the package
-// Divide it panics for a zero factor.
+// Divide returns the point with both coordinates divided by the factor. It panics for a zero
+// factor.
 func (p Point[T]) Divide(factor float64) Point[T] {
 	return Point[T]{Divide(p.X, factor), Divide(p.Y, factor)}
 }
 
-// DivideXY creates a new Point with X and Y each divided by its own factor. Like the package
-// Divide it panics for a zero factor.
+// DivideXY returns the point with each coordinate divided by its own factor. It panics for a zero
+// factor.
 func (p Point[T]) DivideXY(factorX, factorY float64) Point[T] {
 	return Point[T]{Divide(p.X, factorX), Divide(p.Y, factorY)}
 }
 
-// Abs creates a new Point with absolute X and Y.
+// Abs returns the point with absolute coordinates.
 func (p Point[T]) Abs() Point[T] {
 	return Point[T]{Abs(p.X), Abs(p.Y)}
 }
 
-// Round creates a new Point by rounding X, Y values to the nearest integer.
+// Round returns the point with coordinates rounded to the nearest integer.
 func (p Point[T]) Round() Point[T] {
 	return Point[T]{Round(p.X), Round(p.Y)}
 }
 
-// Floor creates a new Point by rounding down X, Y values to the nearest integer.
+// Floor returns the point with coordinates rounded down.
 func (p Point[T]) Floor() Point[T] {
 	return Point[T]{Floor(p.X), Floor(p.Y)}
 }
 
-// Ceil creates a new Point by rounding up X, Y values to the nearest integer.
+// Ceil returns the point with coordinates rounded up.
 func (p Point[T]) Ceil() Point[T] {
 	return Point[T]{Ceil(p.X), Ceil(p.Y)}
 }
 
-// Lerp creates a new Point in linear interpolation towards given point.
+// Lerp returns the point interpolated toward the given one, extrapolated outside [0, 1].
 func (p Point[T]) Lerp(point Point[T], t float64) Point[T] {
 	return Point[T]{Lerp(p.X, point.X, t), Lerp(p.Y, point.Y, t)}
 }
 
-// Midpoint creates a new Point between current and given points.
+// Midpoint returns the point halfway to the given one.
 func (p Point[T]) Midpoint(point Point[T]) Point[T] {
 	return Point[T]{Midpoint(p.X, point.X), Midpoint(p.Y, point.Y)}
 }
 
-// Transform creates a new Point by applying the given matrix to the current point. The matrix is
-// float-only, like an angle: convert an integer matrix with Matrix.Float first. For integer T, the
-// float64 result of each component is rounded; rotations and non-integer scales lose precision.
+// Transform returns the point mapped by the matrix. The matrix is float-only: convert an integer
+// one with Matrix.Float first.
 func (p Point[T]) Transform[M Float](matrix Matrix[M]) Point[T] {
 	x, y := float64(p.X), float64(p.Y)
 	a, b, c := float64(matrix.A), float64(matrix.B), float64(matrix.C)
@@ -140,36 +136,29 @@ func (p Point[T]) Transform[M Float](matrix Matrix[M]) Point[T] {
 	return Point[T]{Cast[T](float64(a*x) + float64(b*y) + c), Cast[T](float64(d*x) + float64(e*y) + f)}
 }
 
-// RotateAround creates a new Point rotated by the given angle (in radians) about the pivot, in
-// the same sense as Vector.Rotate. For integer T the result is rounded; only multiples of 90°
-// give exact results.
+// RotateAround returns the point rotated by the angle in radians about the pivot, in the sense of
+// Vector.Rotate.
 func (p Point[T]) RotateAround(pivot Point[T], angle float64) Point[T] {
 	center := pivot.Float()
 
 	return center.Add(p.Float().Subtract(center).Rotate(angle)).Cast[T]()
 }
 
-// MoveToward creates a new Point moved toward the target by at most step along the straight
-// line between them, the move a game loop makes by a speed times the frame time. It never passes
-// the target: where the distance left is no longer than step the result is the target itself,
-// exactly. A negative step moves away from the target along the same line and is not clamped,
-// as an extrapolating Lerp is not; a point already at the target has no line to leave along and
-// stays there. The step is a float64 like the distance DistanceTo returns.
-// For integer T the result is rounded, so a step of less than half a unit can leave the point
-// where it is on every call.
+// MoveToward returns the point moved toward the target by at most the step, never past it: where
+// the distance left is at most the step, the result is the target exactly. A negative step moves
+// away and is not clamped, and a point at the target stays there. For integer T a step under half a
+// unit can leave the point in place.
 func (p Point[T]) MoveToward(target Point[T], step float64) Point[T] {
 	return p.Vector().MoveToward(target.Vector(), step).Point()
 }
 
-// AngleTo returns the angle in radians from the current point to the given point.
+// AngleTo returns the angle in radians of the vector from this point to the given one.
 func (p Point[T]) AngleTo(point Point[T]) float64 {
 	return point.Float().Subtract(p.Float()).Angle()
 }
 
-// Between reports whether the point lies within the box from corner a to corner b, boundary
-// included within the tolerance. It is the extent check Polygon.Contains makes before walking
-// the edges, and a must be the lesser corner on each axis: a box given the other way round
-// contains nothing, since the corners are not reordered.
+// Between reports whether the point lies in the axis-aligned box from a to b. The corners are not
+// reordered, so a box with a greater than b on either axis contains nothing.
 func (p Point[T]) Between(a, b Point[T]) bool {
 	epsilon := epsilonAt[T](max(p.magnitude(), a.magnitude(), b.magnitude()))
 
@@ -177,66 +166,57 @@ func (p Point[T]) Between(a, b Point[T]) bool {
 		LessOrEqualDelta(a.Y, p.Y, epsilon) && LessOrEqualDelta(p.Y, b.Y, epsilon)
 }
 
-// DistanceTo returns the Euclidean distance from the current point to the given point.
+// DistanceTo returns the distance to the given point.
 func (p Point[T]) DistanceTo(point Point[T]) float64 {
 	return point.Float().Subtract(p.Float()).Length()
 }
 
-// DistanceSquaredTo returns the squared Euclidean distance to the given point
-// (faster than DistanceTo for comparisons). The differences are taken in float64, as DistanceTo
-// takes them, so a float32 difference is not rounded before it is squared and the two agree; the
-// result is stored back through Cast.
+// DistanceSquaredTo returns the square of DistanceTo.
 func (p Point[T]) DistanceSquaredTo(point Point[T]) T {
 	return Cast[T](point.Float().Subtract(p.Float()).LengthSquared())
 }
 
-// ManhattanDistanceTo returns the Manhattan (taxicab) distance from the current point to the given
-// point.
+// ManhattanDistanceTo returns the taxicab distance to the given point (|dx|+|dy|).
 func (p Point[T]) ManhattanDistanceTo(point Point[T]) T {
 	dx, dy := p.deltas(point)
 
 	return Cast[T](dx + dy)
 }
 
-// ChebyshevDistanceTo returns the Chebyshev distance (chessboard distance) from the current point
-// to the given point. It is the maximum of the absolute differences of the coordinates:
-// max(|dx|, |dy|).
+// ChebyshevDistanceTo returns the chessboard distance to the given point (max(|dx|, |dy|)).
 func (p Point[T]) ChebyshevDistanceTo(point Point[T]) T {
 	dx, dy := p.deltas(point)
 
 	return Cast[T](max(dx, dy))
 }
 
-// OctileDistanceTo returns the Octile distance from the current point to the given point.
-// Used in grid-based pathfinding where cardinal moves cost 1 and diagonal moves cost √2.
-// It is: max(dx, dy) + (√2 - 1) * min(dx, dy).
+// OctileDistanceTo returns the grid distance to the given point where a cardinal move costs one and
+// a diagonal one √2 (max + (√2−1)·min of |dx| and |dy|).
 func (p Point[T]) OctileDistanceTo(point Point[T]) float64 {
 	dx, dy := p.deltas(point)
 
 	return max(dx, dy) + float64((Sqrt2-1)*min(dx, dy))
 }
 
-// deltas returns the absolute coordinate differences to the given point in float64.
+// deltas returns the absolute coordinate differences to the given point.
 func (p Point[T]) deltas(point Point[T]) (float64, float64) {
 	return math.Abs(float64(point.X) - float64(p.X)), math.Abs(float64(point.Y) - float64(p.Y))
 }
 
-// coincides reports whether the points lie within the tolerance of each other, judged on the
-// squared distance as a point on a boundary is, where Equal compares each coordinate on its own.
+// coincides reports whether the points lie within the tolerance of each other on the squared
+// distance, as a point on a boundary is judged, where Equal compares each coordinate on its own.
 func (p Point[T]) coincides(point Point[T]) bool {
 	return lessOrEqualSquared(p.Float().DistanceSquaredTo(point.Float()), 0, epsilonAt[T](max(p.magnitude(), point.magnitude())))
 }
 
-// Equal checks for equal X and Y values with given point.
+// Equal reports whether the points have equal coordinates.
 func (p Point[T]) Equal(point Point[T]) bool {
 	return Equal(p.X, point.X) && Equal(p.Y, point.Y)
 }
 
-// Compare returns -1, 0, or +1 as p sorts before, with, or after point, ordering by
-// X and then by Y. It follows the [cmp.Compare] convention and applies no tolerance, unlike
-// Equal, so two float points that Equal considers the same can still order apart. A NaN
-// coordinate sorts before every other value and with itself, as [cmp.Compare] orders it, so
-// points carrying one still sort into a total order rather than breaking the sort.
+// Compare returns -1, 0 or +1 as the point sorts before, with or after the given one, by X and then
+// by Y, as cmp.Compare does. It applies no tolerance, so points Equal holds for can order apart,
+// and a NaN coordinate sorts first.
 func (p Point[T]) Compare(point Point[T]) int {
 	if c := cmp.Compare(p.X, point.X); c != 0 {
 		return c
@@ -245,14 +225,13 @@ func (p Point[T]) Compare(point Point[T]) int {
 	return cmp.Compare(p.Y, point.Y)
 }
 
-// IsZero checks if X and Y values are zero.
+// IsZero reports whether the point is the origin.
 func (p Point[T]) IsZero() bool {
 	return p.Equal(Point[T]{})
 }
 
-// IsFinite reports whether X and Y are both numbers, neither NaN nor infinite: a point with a
-// place in the plane, which Int and Cast take into an integer type where they panic on any
-// other. A point of integers always is.
+// IsFinite reports whether both coordinates are neither NaN nor infinite, which Cast and Int need
+// for an integer type. An integer point always is.
 func (p Point[T]) IsFinite() bool {
 	return IsFinite(p.X) && IsFinite(p.Y)
 }
@@ -285,7 +264,7 @@ func (p Point[T]) String() string {
 	return string(buf)
 }
 
-// appendString appends the point to buf and returns the extended buffer, as String prints it.
+// appendString appends the point as String prints it to buf and returns the extended buffer.
 func (p Point[T]) appendString(buf []byte) []byte {
 	buf = append(buf, '(')
 	buf = appendString(buf, p.X)
@@ -296,9 +275,7 @@ func (p Point[T]) appendString(buf []byte) []byte {
 	return buf
 }
 
-// minMaxOf returns the minimum and maximum corner of the vertices, the corners of their
-// Bounds: the pair the intersection tests reject shapes by before examining any edge. No
-// vertices have no corners and return two zero points.
+// minMaxOf returns the corners of the Bounds of the vertices, and two zero points for none.
 func minMaxOf[T Number](vertices []Point[T]) (Point[T], Point[T]) {
 	if len(vertices) == 0 {
 		return Point[T]{}, Point[T]{}
@@ -313,9 +290,8 @@ func minMaxOf[T Number](vertices []Point[T]) (Point[T], Point[T]) {
 	return a, b
 }
 
-// supportOf returns the vertex farthest along the given direction, in float64: the first of
-// them in order where several reach alike, and the zero point where there is none or the
-// direction is NaN. It is the Support of every shape that holds its vertices.
+// supportOf returns the vertex farthest along the direction: the first of several that reach alike,
+// and the zero point for no vertices or a NaN direction.
 func supportOf[T Number](vertices []Point[T], direction Vector[float64]) Point[float64] {
 	var support Point[float64]
 
@@ -330,10 +306,8 @@ func supportOf[T Number](vertices []Point[T], direction Vector[float64]) Point[f
 	return support
 }
 
-// overlaps reports whether the box from a1 to b1 and the box from a2 to b2 share a point, boundary
-// included within the tolerance. It is the check Rectangle.IntersectsRectangle makes on its corners
-// and the rejection every other intersection test makes before examining edges, and like Between it
-// expects each a to be the lesser corner on each axis.
+// overlaps reports whether the boxes from a1 to b1 and from a2 to b2 share a point, within the
+// tolerance, each a being the lesser corner on both axes.
 func overlaps[T Number](a1, b1, a2, b2 Point[T]) bool {
 	epsilon := epsilonAt[T](max(a1.magnitude(), b1.magnitude(), a2.magnitude(), b2.magnitude()))
 

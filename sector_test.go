@@ -791,6 +791,14 @@ func TestSector_IntersectionSegment(t *testing.T) {
 	t.Run("int rounds the points", func(t *testing.T) {
 		geomtest.AssertVertices(t, Sect(Pt(0, 0), 5, 0, Pi/2).IntersectionSegment(Seg(Pt(3, 10), Pt(3, -10))), []Point[int]{Pt(3, 4), Pt(3, 0)})
 	})
+	t.Run("a segment along a radius gives the ends of the stretch they share", func(t *testing.T) {
+		geomtest.AssertVertices(t, Sect(Pt(0.0, 0.0), 5.0, Pi/2, Pi/3).IntersectionSegment(Seg(Pt(0.0, -1.0), Pt(0.0, 4.0))), []Point[float64]{Pt(0.0, 0.0), Pt(0.0, 4.0)})
+		geomtest.AssertVertices(t, Sect(Pt(0.0, 0.0), 2.0, 0, Pi).IntersectionSegment(Seg(Pt(-5.5, 0.0), Pt(4.0, 0.0))), []Point[float64]{Pt(-2.0, 0.0), Pt(2.0, 0.0)})
+		geomtest.AssertVertices(t, Sect(Pt(0.0, 0.0), 6.0, Pi/4, Pi/3).IntersectionSegment(Seg(Pt(-0.5, -0.5), Pt(5.0, 5.0))), []Point[float64]{Pt(0.0, 0.0), Pt(3*Sqrt2, 3*Sqrt2)})
+	})
+	t.Run("int gives one crossing once where two places of it round apart", func(t *testing.T) {
+		geomtest.AssertVertices(t, Sect(Pt(0, 0), 7, Pi/4, Pi/2).IntersectionSegment(Seg(Pt(8, -3), Pt(-7, 12))), []Point[int]{Pt(3, 3), Pt(-2, 7)})
+	})
 	t.Run("every point lies on the segment and the sector, where the two intersect", func(t *testing.T) {
 		for _, sector := range sectorFixtures() {
 			for _, start := range pointFixtures {
@@ -803,7 +811,10 @@ func TestSector_IntersectionSegment(t *testing.T) {
 						assert.True(t, segment.Contains(point) && sector.Contains(point), message+point.String())
 					}
 					assertOrdered(t, segment, points, message)
-					assert.True(t, len(points) <= 4, message)
+					assert.True(t, len(points) <= sectorCrossingsAtMost(sector), message)
+					for i := 1; i < len(points); i++ {
+						assert.False(t, points[i].Equal(points[i-1]), message)
+					}
 					assert.True(t, len(points) == 0 || sector.IntersectsSegment(segment), message)
 				}
 			}
@@ -817,6 +828,16 @@ func TestSector_IntersectionSegment(t *testing.T) {
 			assertSectorGrazes(t, offset)
 		}
 	})
+}
+
+// sectorCrossingsAtMost returns how many points a segment can cross the boundary of the sector at:
+// two up to half a turn and for the whole disc, four through the notch between.
+func sectorCrossingsAtMost[T Number](sector Sector[T]) int {
+	if sweep := math.Abs(sector.Sweep); sweep > Pi && sweep < 2*Pi {
+		return 4
+	}
+
+	return 2
 }
 
 // assertSectorGrazes asserts, over the sectors and the segments of a small lattice moved by the

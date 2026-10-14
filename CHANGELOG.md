@@ -65,6 +65,7 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 - **breaking** `EnclosesCircle`, `EnclosesSegment`, `EnclosesPolygon`, `EnclosesRectangle`, `EnclosesRegularPolygon` and `EnclosesBox` on `Circle`, `Polygon`, `Rectangle`, `RegularPolygon` and `Box` renamed to `Contains<Kind>`, so the test of a whole shape reads as `Contains` of a point does
 - **breaking** `PadXY` takes the padding along X, left and right, before the one along Y, top and bottom, the order of every other `XY`; it took them the other way round, as CSS does, so a call compiles unchanged and must be swapped by hand
 - `Vector.IsUp`, `IsDown`, `IsLeft` and `IsRight` are documented as the sign of one component, and the docs of `Point.Divide`, `Vector.Divide` and `Size.Unscale` state the panic for a zero factor
+- Doc comments rewritten shorter and in one vocabulary: the package doc states once the rules every method follows (closed, tolerant boundaries, rounding into an integer type, `Pair` and `Append` allocation), and method docs keep only what a caller could not guess
 
 ### Removed
 - **breaking** `Collider`, for the `Shape` that `Intersects` takes

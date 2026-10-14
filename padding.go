@@ -1,8 +1,7 @@
 package geom
 
-// Padding is the space kept inside the four edges of a box, one amount an edge, in the order
-// CSS lists them: Top, Right, Bottom and Left. Rectangle.Inset and Box.Inset move the edges in
-// by it, and a negative amount moves an edge out.
+// Padding is the space kept inside the four edges of a box, in CSS order: Top, Right, Bottom, Left.
+// A negative amount moves an edge out.
 type Padding[T Number] struct {
 	Top    T `json:"t"`
 	Right  T `json:"r"`
@@ -20,70 +19,69 @@ func PadU[T Number](padding T) Padding[T] {
 	return Padding[T]{padding, padding, padding, padding}
 }
 
-// PadXY is shorthand for Padding{topBottom, leftRight, topBottom, leftRight}: the padding along
-// X, on the left and the right, then the one along Y, on the top and the bottom, the order of
-// every XY in the package and not the one CSS gives its two values in.
+// PadXY is shorthand for Padding{topBottom, leftRight, topBottom, leftRight}. It takes X first, as
+// every XY does, not in the order of the two CSS values.
 func PadXY[T Number](leftRight, topBottom T) Padding[T] {
 	return Padding[T]{topBottom, leftRight, topBottom, leftRight}
 }
 
-// XY returns the width and height of the padding.
+// XY returns the Width and the Height.
 func (p Padding[T]) XY() (T, T) {
 	return p.Width(), p.Height()
 }
 
-// Width returns the width of the padding.
+// Width returns the sum of the left and right amounts.
 func (p Padding[T]) Width() T {
 	return p.Left + p.Right
 }
 
-// Height returns the height of the padding.
+// Height returns the sum of the top and bottom amounts.
 func (p Padding[T]) Height() T {
 	return p.Top + p.Bottom
 }
 
-// Add creates a new Padding by adding the given padding edge by edge.
+// Add returns the sum of the paddings, edge by edge.
 func (p Padding[T]) Add(padding Padding[T]) Padding[T] {
 	return Padding[T]{p.Top + padding.Top, p.Right + padding.Right, p.Bottom + padding.Bottom, p.Left + padding.Left}
 }
 
-// Subtract creates a new Padding by subtracting the given padding edge by edge.
+// Subtract returns the difference of the paddings, edge by edge.
 func (p Padding[T]) Subtract(padding Padding[T]) Padding[T] {
 	return Padding[T]{p.Top - padding.Top, p.Right - padding.Right, p.Bottom - padding.Bottom, p.Left - padding.Left}
 }
 
-// Negate creates a new Padding with every edge negated, so Rectangle.Inset outsets by it.
+// Negate returns the padding with every amount negated.
 func (p Padding[T]) Negate() Padding[T] {
 	return Padding[T]{-p.Top, -p.Right, -p.Bottom, -p.Left}
 }
 
-// Scale creates a new Padding with every edge scaled by the given factor.
+// Scale returns the padding with every amount multiplied by the factor.
 func (p Padding[T]) Scale(factor float64) Padding[T] {
 	return Padding[T]{Multiply(p.Top, factor), Multiply(p.Right, factor), Multiply(p.Bottom, factor), Multiply(p.Left, factor)}
 }
 
-// Unscale creates a new Padding with every edge scaled by the inverse factor, the inverse of
-// Scale. Like Divide it panics for a zero factor.
+// Unscale returns the padding with every amount divided by the factor. It panics for a zero factor.
 func (p Padding[T]) Unscale(factor float64) Padding[T] {
 	return Padding[T]{Divide(p.Top, factor), Divide(p.Right, factor), Divide(p.Bottom, factor), Divide(p.Left, factor)}
 }
 
-// Lerp creates a new Padding in linear interpolation towards the given padding, edge by edge.
+// Lerp returns the padding interpolated toward the given one, edge by edge, extrapolated outside
+// [0, 1].
 func (p Padding[T]) Lerp(padding Padding[T], t float64) Padding[T] {
 	return Padding[T]{Lerp(p.Top, padding.Top, t), Lerp(p.Right, padding.Right, t), Lerp(p.Bottom, padding.Bottom, t), Lerp(p.Left, padding.Left, t)}
 }
 
-// Equal checks for equal edge values with given padding.
+// Equal reports whether the paddings have equal amounts.
 func (p Padding[T]) Equal(padding Padding[T]) bool {
 	return Equal(p.Top, padding.Top) && Equal(p.Right, padding.Right) && Equal(p.Bottom, padding.Bottom) && Equal(p.Left, padding.Left)
 }
 
-// IsZero checks if all edge values are zero.
+// IsZero reports whether every amount is zero.
 func (p Padding[T]) IsZero() bool {
 	return p.Equal(Padding[T]{})
 }
 
-// Size converts the padding to a Size.
+// Size returns the Width and the Height as a Size.
 func (p Padding[T]) Size() Size[T] {
 	return Size[T]{p.Width(), p.Height()}
 }

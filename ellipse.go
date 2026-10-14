@@ -5,36 +5,20 @@ import (
 	"slices"
 )
 
-// Ellipse is a 2D ellipse represented by its center, semi-axes and angle: the ellipse of those
-// semi-axes about the center, turned by Angle radians about it in the same sense as
-// Vector.Rotate. Ell builds one, and Rotate turns it.
+// Ellipse is an ellipse of a center and semi-axes, turned by Angle radians about the center.
 //
-// Size holds the semi-axes, so it is a radius, not an extent, the meaning it has on
-// RegularPolygon and the one Circle.Radius has: an aligned ellipse spans twice its Size, and
-// the circle of radius r is the ellipse of Size r x r. Use Bounds for the extent.
+// Size holds the semi-axes, not the extent, named in the frame before the turn: Size.Width is the
+// semi-axis that pointed along X. Equal compares the angle even where equal semi-axes make it a
+// circle that no angle moves.
 //
-// Angle turns the ellipse about its center: the semi-axes are named in the frame before the
-// turn, so Size.Width is the semi-axis that pointed along X before the ellipse was turned,
-// wherever it now lies. An ellipse of equal semi-axes is a circle and every angle leaves it
-// where it is, though Equal still compares the angle.
+// The size is never negative: constructors and changes take it absolute or clamp it at zero. A
+// negative semi-axis written as a struct literal or decoded from JSON gives no meaningful answers
+// until Canonical repairs it. A zero semi-axis is not repaired: the ellipse is then the segment the
+// other axis spans, and answers as that segment.
 //
-// The size is never negative: Ell and Resize take it absolute, Scale takes a negative factor
-// absolute and Grow and Shrink clamp at zero, since an ellipse mirrored about its center is
-// the same ellipse. A negative semi-axis can only be written as a struct literal or decoded
-// from JSON, and Contains, DistanceTo and Bounds give no meaningful answer for one; Canonical
-// repairs it.
-//
-// A zero semi-axis is not repaired: it is the degenerate ellipse, the segment the other axis
-// spans, and Contains, DistanceTo and Bounds answer for it as for that segment.
-//
-// The ellipse is a Shape with none of the Intersects methods: two ellipses meet at the roots
-// of a quartic rather than at anything the circle pairs are built on, so it is tested, parted
-// and moved by its Support, through Intersects, Distance, Collide and Sweep. A cast is the
-// exception, a quadratic: Segment.HitEllipse and Ray.HitEllipse, which Raycast reads. It has no
-// vertices either, which are left to RegularPolygon of the same center, semi-axes and angle:
-// RegularPolygon(n, orientation) is the polygon of the wanted vertex count inscribed in the
-// ellipse, which RegularPolygon.Ellipse converts back, and Polygon(tolerance) the outline
-// within a tolerance of it.
+// The ellipse has no Intersects methods and no vertices. Intersects, Distance, Collide and Sweep
+// test it by its Support, or by its distance to the center of a Circle, Segment.HitEllipse and
+// Ray.HitEllipse cast against it, and RegularPolygon and Polygon give its outline.
 type Ellipse[T Number] struct {
 	Center Point[T] `json:",embed"`
 	Size   Size[T]  `json:",embed"`
@@ -51,15 +35,13 @@ func (e Ellipse[T]) SemiMajor() T {
 	return max(e.Size.Width, e.Size.Height)
 }
 
-// SemiMinor returns the shorter semi-axis, the one perpendicular to the foci.
+// SemiMinor returns the shorter semi-axis.
 func (e Ellipse[T]) SemiMinor() T {
 	return min(e.Size.Width, e.Size.Height)
 }
 
-// Eccentricity returns how far the ellipse departs from a circle, in [0, 1]: zero for a circle,
-// where the two semi-axes are equal, and one for a degenerate ellipse, where the shorter one is
-// zero and the ellipse is a segment. An ellipse of no extent at all is a point, which is a
-// circle, and gives zero.
+// Eccentricity returns how far the ellipse departs from a circle, in [0, 1]: zero for a circle or a
+// point, one where the shorter semi-axis is zero.
 func (e Ellipse[T]) Eccentricity() float64 {
 	a, b := float64(e.SemiMajor()), float64(e.SemiMinor())
 	if a == 0 {
@@ -69,11 +51,8 @@ func (e Ellipse[T]) Eccentricity() float64 {
 	return math.Sqrt(1 - b*b/(a*a))
 }
 
-// Foci returns the two focal points, the pair whose distances to a point of the boundary sum to
-// twice the major semi-axis: they lie on the major axis, either side of the center and turned by
-// Angle with it, the one on the negative end of the major axis before the turn first. A circle has
-// both at the center. For integer T each focus is rounded like every other point placed from an
-// angle.
+// Foci returns the two focal points on the major axis, the one on its negative end before the turn
+// first. A circle has both at the center.
 func (e Ellipse[T]) Foci() (Point[T], Point[T]) {
 	w, h := e.Size.Float().Abs().XY()
 	a, b := max(w, h), min(w, h)
@@ -86,15 +65,9 @@ func (e Ellipse[T]) Foci() (Point[T], Point[T]) {
 	return e.worldPoint(focal.Negate()), e.worldPoint(focal)
 }
 
-// Anchor returns the point of the boundary that lies in the given direction from the center,
-// named in the frame of the ellipse before its turn, or the center itself for DirectionNone:
-// the end of a semi-axis for a cardinal direction, and the point where the diagonal through
-// the center leaves the ellipse for a diagonal one, rather than an eighth of a turn of the
-// parameter, which lies off the diagonal on every ellipse that is not a circle. For a float T
-// it lies on the boundary at every angle, since the point is placed on the ellipse rather than
-// rounded from a lattice step; for an integer T it is rounded once, which can carry it off the
-// boundary by up to half a diagonal, where Contains rejects it. A degenerate ellipse is a
-// segment and answers with the point of it at that parameter.
+// Anchor returns the point of the boundary in the direction from the center, named in the frame
+// before the turn, or the center for DirectionNone. A diagonal anchor lies where the diagonal
+// leaves the ellipse, and a degenerate ellipse answers with the point of its segment.
 func (e Ellipse[T]) Anchor(direction Direction) Point[T] {
 	if direction.IsNone() {
 		return e.Center
@@ -103,23 +76,18 @@ func (e Ellipse[T]) Anchor(direction Direction) Point[T] {
 	return e.worldPoint(VectorFromAngleSize(e.parametricAngle(direction.Angle()), e.Size.Float()))
 }
 
-// Centroid returns the center of the enclosed area, the Center of the ellipse.
+// Centroid returns the center.
 func (e Ellipse[T]) Centroid() Point[T] {
 	return e.Center
 }
 
-// Area returns the area enclosed by the boundary (π * width * height). It is a float64 even
-// for an integer T, since the factor π leaves no pair of semi-axes with an area T could
-// express.
+// Area returns the area (π·w·h).
 func (e Ellipse[T]) Area() float64 {
 	return Pi * float64(e.Size.Width) * float64(e.Size.Height)
 }
 
-// Perimeter returns the length of the boundary, by Ramanujan's second approximation: the
-// circumference of an ellipse has no closed form, and the approximation is exact for a circle,
-// within a rounding error of the true value for the sizes a shape of a screen has, and
-// loosest, still within a part in a thousand, for the degenerate ellipse, where the true
-// perimeter is four times the major semi-axis. An ellipse of no extent has a perimeter of zero.
+// Perimeter returns the length of the boundary by Ramanujan's second approximation, exact for a
+// circle and within a part in a thousand for a degenerate ellipse.
 func (e Ellipse[T]) Perimeter() float64 {
 	w, h := e.Size.Float().XY()
 
@@ -134,48 +102,41 @@ func (e Ellipse[T]) Perimeter() float64 {
 	return Pi * sum * (1 + t/(10+math.Sqrt(4-t)))
 }
 
-// Inertia returns the polar second moment of area about the center, the rotational inertia
-// of the enclosed area at unit density: π * w * h * (w^2 + h^2) / 4 for the semi-axes w and h,
-// the sum of the moments about each axis, which the turn does not change.
+// Inertia returns the polar second moment of area about the center (π·w·h·(w²+h²)/4), the
+// rotational inertia of the ellipse at unit density.
 func (e Ellipse[T]) Inertia() float64 {
 	w, h := e.Size.Float().XY()
 
 	return Pi * w * h * (float64(w*w) + float64(h*h)) / 4
 }
 
-// Bounds returns the axis-aligned bounding box, which
-// touches the boundary at four points whatever the angle.
+// Bounds returns the axis-aligned bounding box.
 func (e Ellipse[T]) Bounds() Box[T] {
 	a, b := e.minMax()
 
 	return Box[T]{a, b}
 }
 
-// BoundingCircle returns the smallest circle around the ellipse, the one Circle converts it to:
-// it touches the boundary at the two ends of the longer axis and stays the same as the ellipse
-// turns.
+// BoundingCircle returns the smallest circle enclosing the ellipse, the one Circle returns.
 func (e Ellipse[T]) BoundingCircle() Circle[T] {
 	return e.Circle()
 }
 
-// worldPoint returns the point at the given offset from the center in the frame before the
-// turn, turned by Angle: the offset is rotated once and the sum rounded once for an integer T.
+// worldPoint returns the point at the offset from the center in the frame before the turn, rotated
+// once and rounded once.
 func (e Ellipse[T]) worldPoint(offset Vector[float64]) Point[T] {
 	return e.Center.Float().Add(offset.Rotate(e.Angle)).Cast[T]()
 }
 
-// localOffset returns the offset of the point from the center in the frame of the ellipse
-// before its turn, in float64, the inverse of worldPoint: the frame the boundary is a plain
-// ellipse of the semi-axes in, where every distance is measured.
+// localOffset returns the offset of the point from the center in the frame before the turn, the
+// inverse of worldPoint and the frame every distance is measured in.
 func (e Ellipse[T]) localOffset(point Point[T]) Vector[float64] {
 	return point.Float().Subtract(e.Center.Float()).Rotate(-e.Angle)
 }
 
-// parametricAngle returns the parameter of the boundary point that lies in the given direction
-// from the center, in the frame before the turn: the angle VectorFromAngleSize places it from,
-// which is the direction itself only on a circle, since the semi-axes stretch the parameter
-// away from it. A degenerate ellipse has no such point off its one axis and keeps the
-// direction as the parameter, so the point lands on the segment it is.
+// parametricAngle returns the parameter of the boundary point in the direction from the center,
+// which differs from the direction unless the ellipse is a circle. A degenerate ellipse keeps the
+// direction, so the point lands on its segment.
 func (e Ellipse[T]) parametricAngle(direction float64) float64 {
 	w, h := e.Size.Float().XY()
 	if w == 0 || h == 0 {
@@ -187,10 +148,8 @@ func (e Ellipse[T]) parametricAngle(direction float64) float64 {
 	return math.Atan2(w*sin, h*cos)
 }
 
-// extent returns half the axis-aligned extent of the ellipse, in float64: the reach of the
-// turned ellipse along each axis of the world, in closed form, since the boundary touches the
-// box where its tangent is axis-aligned rather than at a vertex. An ellipse that is not turned
-// reaches its own semi-axes.
+// extent returns the half extent of the turned ellipse along each world axis, in closed form, since
+// the boundary touches the box where its tangent is axis-aligned.
 func (e Ellipse[T]) extent() Vector[float64] {
 	w, h := e.Size.Float().XY()
 	sin, cos := math.Sincos(e.Angle)
@@ -198,152 +157,119 @@ func (e Ellipse[T]) extent() Vector[float64] {
 	return Vector[float64]{math.Hypot(w*cos, h*sin), math.Hypot(w*sin, h*cos)}
 }
 
-// minMax returns the minimum and maximum corner of the ellipse, the corners of Bounds: the
-// center less and plus its extent, each rounded once for an integer T.
+// minMax returns the corners of Bounds, the center less and plus its extent.
 func (e Ellipse[T]) minMax() (Point[T], Point[T]) {
 	center, extent := e.Center.Float(), e.extent()
 
 	return center.Add(extent.Negate()).Cast[T](), center.Add(extent).Cast[T]()
 }
 
-// Translate creates a new Ellipse translated by the given vector.
+// Translate returns the ellipse moved by the vector.
 func (e Ellipse[T]) Translate(vector Vector[T]) Ellipse[T] {
 	return Ellipse[T]{e.Center.Add(vector), e.Size, e.Angle}
 }
 
-// MoveTo creates a new Ellipse with the same size and angle centered at point.
+// MoveTo returns the ellipse with its center at the point.
 func (e Ellipse[T]) MoveTo(point Point[T]) Ellipse[T] {
 	return Ellipse[T]{point, e.Size, e.Angle}
 }
 
-// AlignTo creates a new Ellipse moved so that its Anchor in the given direction lands on the
-// point, the inverse of Anchor: DirectionNone aligns the center, like MoveTo.
+// AlignTo returns the ellipse moved so that its Anchor in the direction lies at the point.
 func (e Ellipse[T]) AlignTo(direction Direction, point Point[T]) Ellipse[T] {
 	return e.Translate(point.Subtract(e.Anchor(direction)))
 }
 
-// Rotate creates a new Ellipse turned by the given angle (in radians) about its center, in the same
-// sense as Vector.Rotate. The stored angle is normalized to [0, 2π) to prevent drift from repeated
-// rotations. An ellipse of equal semi-axes is a circle and no angle moves it, though the angle is
-// stored all the same.
+// Rotate returns the ellipse turned by the angle in radians about its center, the stored angle
+// normalized to [0, 2π).
 func (e Ellipse[T]) Rotate(angle float64) Ellipse[T] {
 	return Ellipse[T]{e.Center, e.Size, NormalizeAngle(e.Angle + angle)}
 }
 
-// Scale creates a new Ellipse with both semi-axes scaled by the given factor. A negative
-// factor scales by its absolute value, since an ellipse mirrored about its center is the same
-// ellipse.
+// Scale returns the ellipse with both semi-axes scaled by the factor, taken absolute.
 func (e Ellipse[T]) Scale(factor float64) Ellipse[T] {
 	return Ellipse[T]{e.Center, e.Size.Scale(factor).Abs(), e.Angle}
 }
 
-// ScaleXY creates a new Ellipse with the semi-axes scaled by the given factors along its own
-// axes, negative ones by their absolute value like Scale.
+// ScaleXY returns the ellipse with its semi-axes scaled by the factors along its own axes, taken
+// absolute.
 func (e Ellipse[T]) ScaleXY(factorX, factorY float64) Ellipse[T] {
 	return Ellipse[T]{e.Center, e.Size.ScaleXY(factorX, factorY).Abs(), e.Angle}
 }
 
-// Unscale creates a new Ellipse with both semi-axes scaled by the inverse factor, the inverse
-// of Scale and negative factors taken absolute like it. Like Divide it panics for a zero factor.
+// Unscale returns the ellipse with both semi-axes divided by the factor, taken absolute. It panics
+// for a zero factor.
 func (e Ellipse[T]) Unscale(factor float64) Ellipse[T] {
 	return Ellipse[T]{e.Center, e.Size.Unscale(factor).Abs(), e.Angle}
 }
 
-// UnscaleXY creates a new Ellipse with the semi-axes scaled by the inverse of the given
-// factors, the inverse of ScaleXY. Like Divide it panics for a zero factor.
+// UnscaleXY returns the ellipse with its semi-axes divided by the factors along its own axes, taken
+// absolute. It panics for a zero factor.
 func (e Ellipse[T]) UnscaleXY(factorX, factorY float64) Ellipse[T] {
 	return Ellipse[T]{e.Center, e.Size.UnscaleXY(factorX, factorY).Abs(), e.Angle}
 }
 
-// Resize creates a new Ellipse with the given semi-axes, taken absolute like Ell.
+// Resize returns the ellipse with the semi-axes, taken absolute.
 func (e Ellipse[T]) Resize(size Size[T]) Ellipse[T] {
 	return Ellipse[T]{e.Center, size.Abs(), e.Angle}
 }
 
-// Transform creates a new Ellipse by applying the given matrix, exactly for every matrix: an affine
-// map takes an ellipse onto an ellipse, the center moves, and the angle and the semi-axes are those
-// of the matrix applied to the stretched circle, taken apart again by its singular value
-// decomposition. The turn before the stretch spins the circle onto itself, so the ellipse has no
-// phase to keep, and a reflection mirrors the angle. A move, a turn and a scale along the axes of
-// an unturned ellipse keep the semi-axes as they are; the decomposition is not unique, and where it
-// reads them the other way round, the angle takes the quarter turn. For integer T the center and
-// the semi-axes are each rounded once.
+// Transform returns the ellipse mapped by the matrix, exactly, since an affine map takes an ellipse
+// to an ellipse. A reflection mirrors the angle, and where the semi-axes come out swapped the angle
+// takes a quarter turn.
 func (e Ellipse[T]) Transform[M Float](matrix Matrix[M]) Ellipse[T] {
 	after, stretch, _, _ := matrix.mapping(e.Angle, e.Size.Float()).decomposition()
 
 	return Ellipse[T]{e.Center.Transform(matrix), stretch.Size().Cast[T](), NormalizeAngle(after)}
 }
 
-// Grow creates a new Ellipse with both semi-axes increased by amount, clamped to zero. The
-// amount is added to each semi-axis, so each extent of Bounds grows by twice it.
+// Grow returns the ellipse with both semi-axes increased by the amount, clamped at zero.
 func (e Ellipse[T]) Grow(amount T) Ellipse[T] {
 	return Ellipse[T]{e.Center, e.Size.Grow(amount).AtLeastZero(), e.Angle}
 }
 
-// GrowXY creates a new Ellipse with the semi-axes increased by the given amounts along its own
-// axes, clamped to zero. Each amount is added to that radius, like Grow.
+// GrowXY returns the ellipse with its semi-axes increased by the amounts along its own axes,
+// clamped at zero.
 func (e Ellipse[T]) GrowXY(amountX, amountY T) Ellipse[T] {
 	return Ellipse[T]{e.Center, e.Size.GrowXY(amountX, amountY).AtLeastZero(), e.Angle}
 }
 
-// Shrink creates a new Ellipse with both semi-axes decreased by amount, clamped to zero.
+// Shrink returns the ellipse with both semi-axes decreased by the amount, clamped at zero.
 func (e Ellipse[T]) Shrink(amount T) Ellipse[T] {
 	return Ellipse[T]{e.Center, e.Size.Shrink(amount).AtLeastZero(), e.Angle}
 }
 
-// ShrinkXY creates a new Ellipse with the semi-axes decreased by the given amounts along its
-// own axes, clamped to zero.
+// ShrinkXY returns the ellipse with its semi-axes decreased by the amounts along its own axes,
+// clamped at zero.
 func (e Ellipse[T]) ShrinkXY(amountX, amountY T) Ellipse[T] {
 	return Ellipse[T]{e.Center, e.Size.ShrinkXY(amountX, amountY).AtLeastZero(), e.Angle}
 }
 
-// Lerp creates a new Ellipse in linear interpolation towards the given ellipse, moving the
-// center and the semi-axes together and turning the angle along the shorter arc with
-// LerpAngle, normalized to [0, 2π) like Rotate. It extrapolates outside [0, 1] like
-// Point.Lerp, with the size taken absolute, so an extrapolation past a zero semi-axis grows
-// the ellipse again.
+// Lerp returns the ellipse interpolated toward the given one, center and semi-axes together and the
+// angle along the shorter arc by LerpAngle, normalized to [0, 2π), and extrapolated outside [0, 1].
+// The size is taken absolute, so extrapolating past a zero semi-axis grows the ellipse again.
 func (e Ellipse[T]) Lerp(ellipse Ellipse[T], t float64) Ellipse[T] {
 	return Ellipse[T]{e.Center.Lerp(ellipse.Center, t), e.Size.Lerp(ellipse.Size, t).Abs(), NormalizeAngle(LerpAngle(e.Angle, ellipse.Angle, t))}
 }
 
-// Canonical creates a new Ellipse in the form Ell and Rotate build, with the size taken
-// absolute and the angle normalized to [0, 2π): a well-formed ellipse is returned as it is, up
-// to the full turns Equal already ignores. It takes absolute a negative semi-axis written as a
-// struct literal or decoded from JSON, which draws the same boundary but measures negative,
-// and brings a decoded angle onto the seam Rotate keeps. An angle within Delta of zero or of a
-// full turn, the residue a chain of Rotate and Lerp calls can leave, becomes exactly zero;
-// Rotate itself never snaps.
+// Canonical returns the ellipse with its size taken absolute and its angle normalized to [0, 2π),
+// an angle within Delta of zero or a full turn becoming exactly zero. Rotate and Lerp never snap.
 func (e Ellipse[T]) Canonical() Ellipse[T] {
 	return Ellipse[T]{e.Center, e.Size.Abs(), snapAngle(e.Angle)}
 }
 
-// DistanceTo returns the distance from the given point to the nearest point of the ellipse:
-// zero exactly where Contains holds, so a point within the tolerance of the boundary is at
-// distance zero rather than at the rounding error that put it there, and otherwise the
-// distance to the nearest point of the boundary.
+// DistanceTo returns the distance from the point to the ellipse, zero inside.
 func (e Ellipse[T]) DistanceTo(point Point[T]) float64 {
 	return math.Sqrt(e.DistanceSquaredTo(point))
 }
 
-// DistanceSquaredTo returns the squared distance DistanceTo takes the root of, faster for
-// comparisons: zero for a point within the boundary, or within the tolerance of it, and the
-// squared distance to the foot of the perpendicular otherwise. It is a float64 even for an
-// integer T, since that foot is not a lattice point in general, like every shape with an edge.
-// Contains is built on it.
-//
-// The interior is decided on the quadratic form, multiplied through by the semi-axes so no
-// division rounds it, and only a point outside it pays for the foot, which no closed form gives
-// and a bisection finds.
+// DistanceSquaredTo returns the square of DistanceTo.
 func (e Ellipse[T]) DistanceSquaredTo(point Point[T]) float64 {
 	_, distanceSquared := e.nearestLocal(point)
 
 	return distanceSquared
 }
 
-// Nearest returns the point of the ellipse nearest to the given point: the point itself
-// exactly where Contains holds, and otherwise the foot of the perpendicular on the boundary,
-// the one DistanceSquaredTo measures to. For integer T it is rounded once and can land off the
-// boundary, where Contains rejects it.
+// Nearest returns the point of the ellipse nearest to the given point, the point itself inside.
 func (e Ellipse[T]) Nearest(point Point[T]) Point[T] {
 	foot, distanceSquared := e.nearestLocal(point)
 	if distanceSquared == 0 {
@@ -353,12 +279,9 @@ func (e Ellipse[T]) Nearest(point Point[T]) Point[T] {
 	return e.worldPoint(foot)
 }
 
-// Support returns the point of the ellipse farthest along the given direction, whatever its
-// length: the point of the boundary whose tangent lies across the direction, in closed form,
-// where the direction, taken into the frame before the turn and scaled by the semi-axes, names
-// the parameter of that point. It is a float64 point even for an integer T, since it is no
-// lattice point in general. A degenerate ellipse answers with an end of the segment it is, and
-// a direction of no length with the end of the width semi-axis.
+// Support returns the point of the ellipse farthest along the direction, whatever its length. A
+// degenerate ellipse answers with an end of its segment, or its center for a direction across it,
+// and a zero direction with the end of the width semi-axis.
 func (e Ellipse[T]) Support(direction Vector[float64]) Point[float64] {
 	w, h := e.Size.Float().XY()
 	local := direction.Rotate(-e.Angle)
@@ -367,18 +290,14 @@ func (e Ellipse[T]) Support(direction Vector[float64]) Point[float64] {
 	return e.Center.Float().Add(Vector[float64]{w * unit.X, h * unit.Y}.Rotate(e.Angle))
 }
 
-// Contains reports whether the given point lies within the ellipse, boundary included within the
-// tolerance: it holds exactly where DistanceTo is zero. A degenerate ellipse has no interior and
-// contains the points of the segment it is.
+// Contains reports whether the point lies in the ellipse. A degenerate ellipse contains the points
+// of its segment.
 func (e Ellipse[T]) Contains(point Point[T]) bool {
 	return e.DistanceSquaredTo(point) == 0
 }
 
-// nearestLocal returns the offset of the point of the ellipse nearest to the given point, in
-// the local frame, with the squared distance to it: the offset of the point itself at zero
-// within the boundary or within the tolerance of it, and the foot nearestOffset finds
-// otherwise. DistanceSquaredTo and Nearest both read it, so the one decides zero exactly where
-// the other returns the point.
+// nearestLocal returns the nearest point of the ellipse as an offset in the local frame, with the
+// squared distance to it: the offset itself at zero inside, so DistanceSquaredTo and Nearest agree.
 func (e Ellipse[T]) nearestLocal(point Point[T]) (Vector[float64], float64) {
 	local := e.localOffset(point)
 	if e.containsOffset(local) {
@@ -394,13 +313,9 @@ func (e Ellipse[T]) nearestLocal(point Point[T]) (Vector[float64], float64) {
 	return foot, distanceSquared
 }
 
-// containsOffset reports whether the given offset in the local frame lies within the boundary,
-// on the quadratic form multiplied through by the squared semi-axes, (x·height)² + (y·width)²
-// at most (width·height)², so no division rounds it: for an axis-aligned integer ellipse it is
-// exact while the squared extent stays within the integers float64 holds, and a lattice point
-// on the boundary is inside. A degenerate ellipse has no interior, where the products would
-// put every point on a zero boundary, and every point is left to the distance to its boundary,
-// as a NaN offset is.
+// containsOffset reports whether the local offset lies inside, on the quadratic form multiplied
+// through by the squared semi-axes so no division rounds it. A degenerate ellipse has no inside and
+// leaves every point, NaN included, to the distance.
 func (e Ellipse[T]) containsOffset(local Vector[float64]) bool {
 	w, h := e.Size.Float().XY()
 	if w == 0 || h == 0 {
@@ -412,11 +327,8 @@ func (e Ellipse[T]) containsOffset(local Vector[float64]) bool {
 	return float64(x*x)+float64(y*y) <= extent*extent
 }
 
-// nearestOffset returns the offset of the point of the boundary nearest to the given offset outside
-// it, both in the local frame of the ellipse: the foot of the perpendicular from it, asked by
-// nearestLocal only after the quadratic form puts the offset outside. A degenerate ellipse is the
-// segment its other axis spans, and the foot is the offset clamped to it on each axis, the zero
-// semi-axis clamping its own to zero.
+// nearestOffset returns the foot of the perpendicular from a local offset outside the ellipse. For
+// a degenerate ellipse it is the offset clamped to the segment on each axis.
 func (e Ellipse[T]) nearestOffset(local Vector[float64]) Vector[float64] {
 	w, h := e.Size.Float().Abs().XY()
 	if w == 0 || h == 0 {
@@ -435,15 +347,9 @@ func (e Ellipse[T]) nearestOffset(local Vector[float64]) Vector[float64] {
 	return Vector[float64]{math.Copysign(px, local.X), math.Copysign(py, local.Y)}
 }
 
-// foot returns the foot of the perpendicular from (x, y), a point outside the ellipse of
-// semi-axes a and b, in the quarter the symmetry of the ellipse leaves: both semi-axes positive
-// with the longer first, and both coordinates non-negative. Every other point is one of the
-// four reflections of a point of that quarter, which nearestOffset takes it back to.
-//
-// A point outside on an axis is answered directly, since the perpendicular from it runs along
-// that axis: on the major one it lies beyond the evolute, the curve of the centers of
-// curvature, which ends inside the boundary. Anywhere else the foot is placed from the
-// parameter root bisects for, which no closed form gives.
+// foot returns the foot of the perpendicular from (x, y) outside the ellipse of semi-axes a ≥ b, in
+// the first quadrant, which nearestOffset reflects every point into. A point on an axis is answered
+// directly; elsewhere the foot is placed from the root.
 func (e Ellipse[T]) foot(a, b, x, y float64) (float64, float64) {
 	if y == 0 {
 		return a, 0
@@ -459,21 +365,10 @@ func (e Ellipse[T]) foot(a, b, x, y float64) (float64, float64) {
 	return aspect * x / (s + aspect), y / (s + 1)
 }
 
-// root returns the parameter of the pencil of ellipses at which the boundary meets the
-// perpendicular from the point (x, y), which foot reads the foot off: the point is given in
-// units of the semi-axes, outside the boundary and off both axes, and aspect is the squared
-// ratio of the longer semi-axis to the shorter. The parameter is the sole root of a function
-// falling through zero over the bracket the point itself gives, positive for a point outside;
-// nearestLocal decides the interior on the quadratic form first, so a point reaching it is
-// outside, or an ulp from the boundary where the units of the semi-axes round it, and the
-// bisection closes on either.
-//
-// It is found by bisection, which halves that bracket until the midpoint is one of its ends and no
-// float lies between them, so it ends in the precision of a float64 and no iteration count has to
-// be chosen; a midpoint that lands exactly on the root is kept as the far end and the halving runs
-// down to it. A NaN coordinate gives a bracket with no midpoint at all and is returned as it is, so
-// the loop ends on it too. It reads no field of the ellipse, only the point in the frame of its
-// semi-axes, so the receiver is unnamed.
+// root returns the parameter at which the perpendicular from (x, y), in units of the semi-axes,
+// meets the boundary, aspect being the squared ratio of the semi-axes. It bisects the bracket the
+// point gives until no float lies between its ends, so no iteration count is chosen, and a NaN ends
+// the loop at once.
 func (Ellipse[T]) root(aspect, x, y float64) float64 {
 	gradient := aspect * x
 
@@ -493,78 +388,56 @@ func (Ellipse[T]) root(aspect, x, y float64) float64 {
 	}
 }
 
-// Equal checks for equal center, size and angle values using tolerant numeric comparison.
-// Angles are compared with EqualAngle, so a full turn or the sign of an angle does not matter.
-// The angle is compared even for two circles, which no angle moves: they are different values,
-// not the same ellipse.
+// Equal reports whether the ellipses have equal center and size and an angle equal by EqualAngle.
 func (e Ellipse[T]) Equal(ellipse Ellipse[T]) bool {
 	return e.Center.Equal(ellipse.Center) && e.Size.Equal(ellipse.Size) && EqualAngle(e.Angle, ellipse.Angle)
 }
 
-// IsZero checks if center point, size and angle are zero, comparing the angle like Equal so
-// that a full turn counts as zero.
+// IsZero reports whether the ellipse is the zero value, an angle of a full turn included.
 func (e Ellipse[T]) IsZero() bool {
 	return e.Equal(Ellipse[T]{})
 }
 
-// IsAligned reports whether the ellipse is axis-aligned: its Angle is exactly zero, as Ell
-// with no angle and Rotate by a full turn leave it. No tolerance is applied; Canonical snaps a
-// residue to zero.
+// IsAligned reports whether the angle is exactly zero. Canonical snaps a residue to zero.
 func (e Ellipse[T]) IsAligned() bool {
 	return e.Angle == 0
 }
 
-// IsCircle reports whether the two semi-axes are equal, within the tolerance, so that the
-// ellipse is a circle and no angle moves it, which is where Circle gives the same shape back
-// rather than the circle around it.
+// IsCircle reports whether the semi-axes are equal, where Circle returns the same shape.
 func (e Ellipse[T]) IsCircle() bool {
 	return Equal(e.Size.Width, e.Size.Height)
 }
 
-// Circle converts the ellipse into the circle around it, the one of the major semi-axis: the
-// smallest circle containing the boundary, which touches it at the two ends of that axis
-// whatever the angle, as Bounds is the smallest box around it. An ellipse of equal semi-axes
-// is that circle, so the conversion is exact exactly where IsCircle holds and is the inverse
-// of Circle.Ellipse there; anywhere else it is the round hull, not the same shape.
+// Circle returns the circle of the major semi-axis about the center, the smallest enclosing the
+// ellipse. It is the same shape only where IsCircle holds, and there the inverse of Circle.Ellipse.
 func (e Ellipse[T]) Circle() Circle[T] {
 	return Circle[T]{e.Center, e.SemiMajor()}
 }
 
-// RegularPolygon converts the ellipse into the RegularPolygon of n vertices inscribed in it,
-// on the same center, semi-axes and angle, with the given orientation: every vertex lies on
-// the boundary, and the orientation places the first of them by RegularPolygonOrientationPhase
-// before the semi-axes stretch the ring, so OrientationPointyTop puts a vertex at the end of
-// the height semi-axis and OrientationFlatTop the midpoint of an edge across it. The polygon is
-// the outline a circle and an ellipse do not have, so its Vertices and Edges are what draws or
-// walks one. The resolution is the caller's: the polygon is the ellipse only in the limit, and
-// it is always inside it. A polygon with fewer than one vertex is empty, as RegPol builds it,
-// and like RegularPolygonOrientationPhase it panics for an orientation that is neither
-// OrientationFlatTop nor OrientationPointyTop.
+// RegularPolygon returns the regular polygon of n vertices inscribed in the ellipse, of its center,
+// semi-axes and angle, its first vertex placed by RegularPolygonOrientationPhase before the
+// stretch. It is empty for n below one, and the only polygon that RegularPolygon.Ellipse converts
+// back exactly. It panics for an orientation that is neither OrientationFlatTop nor
+// OrientationPointyTop.
 //
-// It is the polygon within the ellipse, the only one that converts back exactly. For the
-// polygon about it, whose edges touch the boundary at their midpoints, scale the ellipse by
-// the ratio of the circumradius of a regular polygon to its apothem first:
-// e.Scale(1 / math.Cos(Pi / float64(n))).RegularPolygon(n, orientation).
+// For the polygon whose edges touch the ellipse, scale it first by the circumradius over the
+// apothem:
+//
+//	e.Scale(1 / math.Cos(Pi / float64(n))).RegularPolygon(n, orientation)
 func (e Ellipse[T]) RegularPolygon(n int, orientation Orientation) RegularPolygon[T] {
 	return RegularPolygon[T]{e.Center, e.Size, n, e.Angle, RegularPolygonOrientationPhase(n, orientation)}
 }
 
-// Polygon converts the ellipse to a Polygon within the given tolerance of it, the outline that
-// draws or walks one: the points at equal steps of the parameter from the end of the width
-// semi-axis, as many as keep the circle of the major semi-axis within the tolerance of its
-// chords and never fewer than three, which keeps the ellipse, that circle flattened along one
-// axis, within it too, with more vertices than a flat ellipse needs. The vertices lie on the
-// boundary and are wound as the corners of a Rectangle are. A negative tolerance is taken
-// absolute, and the ellipse has at most a thousand chords, which a tolerance of zero gives. An
-// ellipse of no extent gives its center alone. For integer T the vertices are rounded and one
-// rounding onto the vertex before it is left out. RegularPolygon is the outline of a chosen
-// vertex count.
+// Polygon returns the ellipse as a polygon within the tolerance of it: equal steps of the parameter
+// from the end of the width semi-axis, as many as the circle of the major semi-axis needs, at least
+// three and at most 1024, wound like Rectangle.Vertices. A negative tolerance is taken
+// absolute, and an ellipse of no extent gives its center alone. RegularPolygon chooses the vertex
+// count instead.
 func (e Ellipse[T]) Polygon(tolerance float64) Polygon[T] {
 	return Polygon[T]{e.AppendPolygon(nil, tolerance)}
 }
 
-// AppendPolygon appends the vertices of the polygon Polygon returns to dst and returns the
-// extended slice, so a caller reusing dst allocates nothing once it has room for them.
+// AppendPolygon appends the vertices of Polygon(tolerance) to dst and returns the extended slice.
 func (e Ellipse[T]) AppendPolygon(dst []Point[T], tolerance float64) []Point[T] {
 	size := e.Size.Float()
 	pieces := max(Arc[float64]{Radius: max(size.Width, size.Height), Sweep: 2 * math.Pi}.pieces(tolerance), 3)
@@ -585,14 +458,12 @@ func (e Ellipse[T]) AppendPolygon(dst []Point[T], tolerance float64) []Point[T] 
 	return dst
 }
 
-// Cast converts the ellipse to an Ellipse of another number type, rounding as Cast does and
-// keeping the angle.
+// Cast converts the ellipse to an Ellipse of another number type, rounding as Cast does.
 func (e Ellipse[T]) Cast[R Number]() Ellipse[R] {
 	return Ellipse[R]{e.Center.Cast[R](), e.Size.Cast[R](), e.Angle}
 }
 
-// Int converts the ellipse to an Ellipse[int], rounding the center and the semi-axes on their
-// own like every other Int, and keeping the angle.
+// Int converts the ellipse to an Ellipse[int].
 func (e Ellipse[T]) Int() Ellipse[int] {
 	return Ellipse[int]{e.Center.Int(), e.Size.Int(), e.Angle}
 }
@@ -602,9 +473,8 @@ func (e Ellipse[T]) Float() Ellipse[float64] {
 	return Ellipse[float64]{e.Center.Float(), e.Size.Float(), e.Angle}
 }
 
-// String returns the ellipse in the form of its constructor: Ell((x,y);WxH), center then
-// semi-axes, with the angle appended as Ell((x,y);WxH;a) for a turned ellipse, as the JSON
-// carries it only then.
+// String returns the ellipse in the form of its constructor: Ell((x,y);WxH), with ;a before the
+// closing parenthesis for a turned ellipse.
 func (e Ellipse[T]) String() string {
 	buf := make([]byte, 0, stringSize)
 	buf = append(buf, "Ell("...)

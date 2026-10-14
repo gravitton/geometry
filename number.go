@@ -5,13 +5,9 @@ import (
 	"strconv"
 )
 
-// Cast converts a float64 to T, rounding half away from zero for an integer T. NaN and ±Inf
-// have no integer form, so for an integer T Cast panics on them, the same convention Divide
-// follows for a zero factor. A float T keeps them.
-//
-// A finite value outside the range of an integer T is not checked: Go leaves that conversion
-// platform-dependent, so a value beyond the range of T stores an arbitrary one.
-// Keep results within the range of T, or use a wider T.
+// Cast converts a float64 to T, rounding half away from zero for an integer T. It panics for a
+// non-finite value and an integer T; a float T keeps it. A finite value outside the range of an
+// integer T is not checked and stores an arbitrary value.
 func Cast[T Number](a float64) T {
 	if isInt[T]() {
 		if !IsFinite(a) {
@@ -24,9 +20,8 @@ func Cast[T Number](a float64) T {
 	return T(a)
 }
 
-// castUp converts a float64 to T as Cast does, but rounds up for an integer T, where Cast rounds
-// to the nearest: the cast of an extent that must still reach what it was measured to, the
-// radius of a BoundingCircle. A float T keeps the value.
+// castUp converts a float64 to T as Cast does, but rounds up for an integer T: the cast of an
+// extent that must still reach what it was measured to, the radius of a BoundingCircle.
 func castUp[T Number](a float64) T {
 	if isInt[T]() {
 		return Cast[T](math.Ceil(a))
@@ -35,9 +30,8 @@ func castUp[T Number](a float64) T {
 	return Cast[T](a)
 }
 
-// Int converts a Number to int: an integer T by plain conversion, exact wherever int is at
-// least as wide as T and truncated otherwise (int64 on a 32-bit target), and a float T rounded
-// through Cast.
+// Int converts a Number to int: an integer T by plain conversion, truncated where int is narrower
+// than T, and a float T through Cast.
 func Int[T Number](value T) int {
 	if isInt[T]() {
 		return int(value)
@@ -46,9 +40,8 @@ func Int[T Number](value T) int {
 	return Cast[int](float64(value))
 }
 
-// String formats a Number as a numeric string: integer types without a decimal point,
-// float types with two decimals. The formatting follows T, not the value. A value that rounds
-// to zero prints as 0.00 without a sign, whether it is a negative zero or a small negative.
+// String returns the value formatted: an integer T without a decimal point, a float T with two
+// decimals. A value that rounds to zero prints without a sign.
 func String[T Number](value T) string {
 	buf := make([]byte, 0, stringSize)
 	buf = appendString(buf, value)
@@ -56,12 +49,12 @@ func String[T Number](value T) string {
 	return string(buf)
 }
 
-// stringSize is the capacity every String starts its buffer at: it holds each type of fixed
-// size at coordinates of a few digits, so the buffer stays on the stack and the string
-// returned is the one allocation. A longer text grows the buffer like any append.
+// stringSize is the capacity every String starts its buffer at, enough for each fixed-size type at
+// coordinates of a few digits, so the buffer stays on the stack and the result is the one
+// allocation.
 const stringSize = 128
 
-// appendString appends the number to buf and returns the extended buffer, as String prints it.
+// appendString appends the number to buf as String prints it and returns the extended buffer.
 func appendString[T Number](buf []byte, value T) []byte {
 	if isInt[T]() {
 		return strconv.AppendInt(buf, int64(value), 10)
@@ -76,12 +69,10 @@ func appendString[T Number](buf []byte, value T) []byte {
 	return buf
 }
 
-// Parse parses s into T: an integer T with strconv.ParseInt, a float T with strconv.ParseFloat.
-// Parsing is done in int64, float32 or float64 and narrowed to T, so defined types over those
-// kinds (type Coord int) parse like their underlying type, and a float32 T is rounded once,
-// correctly, rather than through float64. A value outside the range of T is an error,
-// never a wrapped integer or an overflowed infinity. The literals strconv.ParseFloat accepts,
-// "NaN" and "Inf" among them, parse into a float T as they would into float64.
+// Parse returns s as T, and an error where it is no number T can hold. An integer T is read with
+// strconv.ParseInt and a float T with strconv.ParseFloat at the width of T, so a float32 is rounded
+// once. Defined types parse like their underlying type, and the literals strconv.ParseFloat
+// accepts, NaN and Inf among them, parse into a float T.
 func Parse[T Number](s string) (T, error) {
 	if isInt[T]() {
 		v, err := strconv.ParseInt(s, 10, 64)
@@ -109,8 +100,8 @@ func Parse[T Number](s string) (T, error) {
 	return T(v), nil
 }
 
-// rangeError returns the error Parse gives for a value that does not fit T, the one strconv
-// reports for a number out of range.
+// rangeError returns the error strconv reports for a number out of range, which Parse gives for a
+// value that does not fit T.
 func rangeError(s string) error {
 	return &strconv.NumError{Func: "Parse", Num: s, Err: strconv.ErrRange}
 }

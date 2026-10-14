@@ -5,136 +5,111 @@ import (
 	"math"
 )
 
-// Line is a 2D infinite line, passing through Origin and running without end both ways along
-// Direction. Only the direction of the vector matters to the points of the line; its length is
-// the unit PointAt measures in, and its sense names the two sides Side tells apart. A zero
-// Direction has no way to run, and the line is its origin alone.
+// Line is an infinite line through Origin along Direction, running without end both ways.
 //
-// A line has no Bounds, so it is no Shape, though it answers Contains, DistanceTo and Nearest
-// like one: it is what a shape is tested by. Every pair of a line with a bounded shape is
-// decided on its span: the segment between the points where the two rays from Origin, along
-// Direction and against it, pass the extent of the shape, which shares every point of the shape
-// the line does, so the line reads the tests of Segment and agrees with them and with a Ray
-// along it.
+// Only the direction of Direction matters to the points of the line; its length is the unit PointAt
+// measures in, and its sense names the sides Side tells apart. A zero Direction gives a line that
+// is its origin alone. A line has no Bounds, so it is no Shape.
 type Line[T Number] struct {
 	Origin    Point[T]  `json:"o"`
 	Direction Vector[T] `json:"d"`
 }
 
-// Ln is shorthand for Line{origin, direction}, the line through the origin running along the
-// direction. A zero direction gives a line that is its origin alone.
+// Ln is shorthand for Line{origin, direction}.
 func Ln[T Number](origin Point[T], direction Vector[T]) Line[T] {
 	return Line[T]{origin, direction}
 }
 
-// LineThrough creates a Line through the two points, with the first as its Origin and running
-// toward the second. Two equal points give a zero Direction, a line that is its origin alone.
+// LineThrough returns the line through the two points, from the first toward the second, a line of
+// zero Direction where they are equal.
 func LineThrough[T Number](origin, point Point[T]) Line[T] {
 	return Line[T]{origin, point.Subtract(origin)}
 }
 
-// Angle returns the angle of the line in radians, the angle of its Direction. A line with a zero
-// Direction runs nowhere and gives 0, the angle Vector.Angle gives it.
+// Angle returns the angle of Direction in radians, zero for a zero Direction.
 func (l Line[T]) Angle() float64 {
 	return l.Direction.Angle()
 }
 
-// Translate creates a new Line with its origin moved by the given vector and the same direction.
+// Translate returns the line with its origin moved by the vector.
 func (l Line[T]) Translate(vector Vector[T]) Line[T] {
 	return Line[T]{l.Origin.Add(vector), l.Direction}
 }
 
-// MoveTo creates a new Line through the point with the same direction: the origin is the point
-// a line is placed by, as the center is on a closed shape.
+// MoveTo returns the line with its origin at the point.
 func (l Line[T]) MoveTo(point Point[T]) Line[T] {
 	return Line[T]{point, l.Direction}
 }
 
-// Rotate creates a new Line turned by the given angle (in radians) about its origin, in the same
-// sense as Vector.Rotate. For integer T the direction is rounded; only multiples of 90° keep it
-// exactly.
+// Rotate returns the line turned by the angle in radians about its origin. For integer T the
+// direction is rounded, exact only for quarter turns.
 func (l Line[T]) Rotate(angle float64) Line[T] {
 	return Line[T]{l.Origin, l.Direction.Rotate(angle)}
 }
 
-// Scale creates a new Line with its direction scaled by the factor about the origin: the points
-// of the line stay, and PointAt steps the scaled length. A negative factor turns the direction
-// about, which swaps the sides Side names, and a zero factor collapses the line onto its origin.
-// For integer T the direction is rounded.
+// Scale returns the line with its Direction scaled by the factor, so PointAt steps the scaled
+// length. A negative factor swaps the sides Side names, and a zero factor collapses the line onto
+// its origin.
 func (l Line[T]) Scale(factor float64) Line[T] {
 	return l.ScaleXY(factor, factor)
 }
 
-// ScaleXY creates a new Line with its direction scaled by the factors along X and Y about the
-// origin, which changes the direction unless the factors are equal.
+// ScaleXY returns the line with its Direction scaled by the factors along X and Y, which can turn
+// it where they differ.
 func (l Line[T]) ScaleXY(factorX, factorY float64) Line[T] {
 	return Line[T]{l.Origin, l.Direction.MultiplyXY(factorX, factorY)}
 }
 
-// Unscale creates a new Line with its direction scaled by the inverse factor about the origin,
-// the inverse of Scale. Like Divide it panics for a zero factor.
+// Unscale returns the line with its Direction divided by the factor. It panics for a zero factor.
 func (l Line[T]) Unscale(factor float64) Line[T] {
 	return l.UnscaleXY(factor, factor)
 }
 
-// UnscaleXY creates a new Line with its direction scaled by the inverse of the given factors
-// about the origin, the inverse of ScaleXY. Like Divide it panics for a zero factor.
+// UnscaleXY returns the line with its Direction divided by the factors along X and Y. It panics for
+// a zero factor.
 func (l Line[T]) UnscaleXY(factorX, factorY float64) Line[T] {
 	return Line[T]{l.Origin, l.Direction.DivideXY(factorX, factorY)}
 }
 
-// Transform creates a new Line by applying the given matrix to the origin as a point and to the
-// direction as a vector, like Point.Transform and Vector.Transform, so a translation moves the
-// origin alone.
+// Transform returns the line with the matrix applied to Origin as a point and to Direction as a
+// vector, so a translation moves the origin alone.
 func (l Line[T]) Transform[M Float](matrix Matrix[M]) Line[T] {
 	return Line[T]{l.Origin.Transform(matrix), l.Direction.Transform(matrix)}
 }
 
-// PointAt returns the point t times Direction away from Origin, on the other side of the origin
-// for a negative t. The point is computed in float64 and rounded once for an integer T.
+// PointAt returns the point t times Direction from Origin, on the other side of it for a negative
+// t.
 func (l Line[T]) PointAt(t float64) Point[T] {
 	point := l.Origin.Float().Add(l.Direction.Float().Multiply(t))
 
 	return point.Cast[T]()
 }
 
-// Side returns the side of the line the given point lies on, as the sign of the cross product of
-// Direction and the vector from Origin to the point: 1 on the side Vector.Normal of the
-// direction points to, the right of the direction as drawn on a screen with Y pointing down, -1
-// on the other, and 0 on the line. The sign is exact, with no tolerance, so for a float T a
-// point Contains admits within the tolerance still has a side; ask Contains first where the two
-// must agree. A line with a zero Direction has no sides and a NaN coordinate has no sign, and
-// both give 0.
+// Side returns the side of the line the point lies on: 1 on the side Vector.Normal of Direction
+// points to, the right of Direction on screen, -1 on the other, and 0 on the line. The sign is
+// exact, with no tolerance, so a point Contains admits can still have a side; ask Contains first
+// where the two must agree. A zero Direction and a NaN coordinate give 0.
 func (l Line[T]) Side(point Point[T]) int {
 	return int(Sign(l.side(point)))
 }
 
-// DistanceTo returns the distance from the given point to the nearest point of the line, the
-// length of the perpendicular. It is zero exactly where Contains holds.
+// DistanceTo returns the distance from the point to the line, zero on it.
 func (l Line[T]) DistanceTo(point Point[T]) float64 {
 	return math.Sqrt(l.DistanceSquaredTo(point))
 }
 
-// DistanceSquaredTo returns the squared distance DistanceTo takes the root of, faster for
-// comparisons, a float64 even for an integer T. It is Segment.DistanceSquaredTo on the span of the
-// line past the point, the segment every pair of the line is decided on, which is the reach of
-// the ray from Origin toward the point, so the line contains every point a ray along it does. A
-// distance within the tolerance is snapped to zero, which is where Contains reads it.
+// DistanceSquaredTo returns the square of DistanceTo.
 func (l Line[T]) DistanceSquaredTo(point Point[T]) float64 {
 	return l.span(point, point).DistanceSquaredTo(point)
 }
 
-// Nearest returns the point of the line nearest to the given point: the point itself exactly
-// where Contains holds, and otherwise the foot of the perpendicular, as Segment.Nearest finds it
-// on the span of the line past the point. For integer T the foot is rounded once and can land
-// off the line, where Contains rejects it.
+// Nearest returns the point of the line nearest to the given point, the point itself on the line.
 func (l Line[T]) Nearest(point Point[T]) Point[T] {
 	return l.span(point, point).Nearest(point)
 }
 
-// NearestFraction returns how many times Direction the point of the line nearest to the given
-// point lies from Origin, the t PointAt takes back to it, negative on the other side of the
-// origin. A zero Direction gives zero.
+// NearestFraction returns the t at which PointAt gives the point of the line nearest to the given
+// point, negative on the other side of the origin, and zero for a zero Direction.
 func (l Line[T]) NearestFraction(point Point[T]) float64 {
 	direction := l.Direction.Float()
 	offset := point.Float().Subtract(l.Origin.Float())
@@ -142,11 +117,8 @@ func (l Line[T]) NearestFraction(point Point[T]) float64 {
 	return ratio(offset.Dot(direction), direction.LengthSquared())
 }
 
-// Reflect returns the given point mirrored across the line: as far beyond the foot of its
-// perpendicular as it lies before it. A point on the line is its own mirror image, and a line
-// with a zero Direction is its origin alone, which the point is mirrored through. For integer T
-// the image is rounded once; across an axis-parallel or a diagonal line it is a lattice point
-// and exact.
+// Reflect returns the point mirrored across the line, and through the origin for a zero Direction.
+// For integer T the image is exact across an axis-parallel or diagonal line.
 func (l Line[T]) Reflect(point Point[T]) Point[T] {
 	origin, direction := l.Origin.Float(), l.Direction.Float()
 	offset := point.Float().Subtract(origin)
@@ -158,131 +130,108 @@ func (l Line[T]) Reflect(point Point[T]) Point[T] {
 	return Point[T]{Cast[T](x), Cast[T](y)}
 }
 
-// Contains reports whether the given point lies on the line, within the tolerance: it holds
-// exactly where DistanceTo is zero.
+// Contains reports whether the point lies on the line.
 func (l Line[T]) Contains(point Point[T]) bool {
 	return l.DistanceSquaredTo(point) == 0
 }
 
-// IntersectsCircle reports whether the line and the circle share a point, as
-// Circle.IntersectsLine does.
+// IntersectsCircle reports whether the line and the circle share a point.
 func (l Line[T]) IntersectsCircle(circle Circle[T]) bool {
 	return circle.IntersectsLine(l)
 }
 
-// IntersectsCapsule reports whether the line and the capsule share a point, as
-// Capsule.IntersectsLine does.
+// IntersectsCapsule reports whether the line and the capsule share a point.
 func (l Line[T]) IntersectsCapsule(capsule Capsule[T]) bool {
 	return capsule.IntersectsLine(l)
 }
 
-// IntersectsSector reports whether the line and the sector share a point, as
-// Sector.IntersectsLine does.
+// IntersectsSector reports whether the line and the sector share a point.
 func (l Line[T]) IntersectsSector(sector Sector[T]) bool {
 	return sector.IntersectsLine(l)
 }
 
-// IntersectsSegment reports whether the line and the segment share a point, as
-// Segment.IntersectsLine does.
+// IntersectsSegment reports whether the line and the segment share a point.
 func (l Line[T]) IntersectsSegment(segment Segment[T]) bool {
 	return segment.IntersectsLine(l)
 }
 
-// IntersectsRay reports whether the line and the ray share a point, as Ray.IntersectsLine does.
+// IntersectsRay reports whether the line and the ray share a point.
 func (l Line[T]) IntersectsRay(ray Ray[T]) bool {
 	return ray.IntersectsLine(l)
 }
 
-// IntersectsLine reports whether the lines share a point: they are not parallel, or the origin
-// of one lies on the other within the tolerance, which covers lines running along each other and
-// a line with a zero Direction, its origin alone.
+// IntersectsLine reports whether the lines share a point.
 func (l Line[T]) IntersectsLine(line Line[T]) bool {
 	_, ok := l.crossing(line)
 
 	return ok || l.Contains(line.Origin) || line.Contains(l.Origin)
 }
 
-// IntersectsPolygon reports whether the line and the polygon share a point, as
-// Segment.IntersectsPolygon decides it on the span of the line past the polygon: the line
-// crosses one of its edges. Touching shapes intersect, within the tolerance, and an empty
-// polygon intersects nothing.
+// IntersectsPolygon reports whether the line and the polygon share a point.
 func (l Line[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 	return l.span(polygon.minMax()).IntersectsPolygon(polygon)
 }
 
-// IntersectsRectangle reports whether the line and the rectangle share a point, as
-// Segment.IntersectsRectangle decides it on the span of the line past the rectangle: the line
-// crosses one of its edges. Touching shapes intersect, within the tolerance.
+// IntersectsRectangle reports whether the line and the rectangle share a point.
 func (l Line[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 	return l.span(rectangle.MinMax()).IntersectsRectangle(rectangle)
 }
 
-// IntersectsRegularPolygon reports whether the line and the regular polygon share a point, as
-// Segment.IntersectsRegularPolygon decides it on the span of the line past the polygon: the line
-// crosses one of its edges. Touching shapes intersect, within the tolerance, and an empty
-// polygon intersects nothing.
+// IntersectsRegularPolygon reports whether the line and the regular polygon share a point.
 func (l Line[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 	return l.span(polygon.minMax()).IntersectsRegularPolygon(polygon)
 }
 
-// IntersectsBox reports whether the line and the box share a point, as Segment.IntersectsBox
-// decides it on the span of the line past the box: the line crosses one of its edges. Touching
-// shapes intersect, within the tolerance.
+// IntersectsBox reports whether the line and the box share a point.
 func (l Line[T]) IntersectsBox(box Box[T]) bool {
 	return l.span(box.Min, box.Max).IntersectsBox(box)
 }
 
-// IntersectionCircle returns the points where the line crosses the circle boundary, as
-// Circle.IntersectionLine does.
+// IntersectionCircle returns the points where the line crosses the boundary of the circle, in order
+// along Direction.
 func (l Line[T]) IntersectionCircle(circle Circle[T]) Pair[Point[T]] {
 	return circle.IntersectionLine(l)
 }
 
-// IntersectionCapsule returns the points where the line crosses the capsule boundary, as
-// Capsule.IntersectionLine does.
+// IntersectionCapsule returns the points where the line crosses the boundary of the capsule, in
+// order along Direction.
 func (l Line[T]) IntersectionCapsule(capsule Capsule[T]) Pair[Point[T]] {
 	return capsule.IntersectionLine(l)
 }
 
-// IntersectionSector returns the points where the line crosses the sector boundary, in order along Direction,
-// as Segment.IntersectionSector finds them on the span of the line past the sector.
+// IntersectionSector returns the points where the line crosses the boundary of the sector, in order
+// along Direction.
 func (l Line[T]) IntersectionSector(sector Sector[T]) []Point[T] {
 	return l.AppendIntersectionSector(nil, sector)
 }
 
-// AppendIntersectionSector appends the points IntersectionSector returns to dst and returns the
-// extended slice, as Segment.AppendIntersectionSector does on the span of the line past the
-// sector, so a caller reusing dst allocates nothing once it has room.
+// AppendIntersectionSector appends the points of IntersectionSector to dst and returns the extended
+// slice.
 func (l Line[T]) AppendIntersectionSector(dst []Point[T], sector Sector[T]) []Point[T] {
 	return l.span(sector.minMax()).AppendIntersectionSector(dst, sector)
 }
 
-// IntersectionArc returns the points where the line crosses the arc, as
-// Arc.IntersectionLine does.
+// IntersectionArc returns the points where the line crosses the arc, in order along Direction.
 func (l Line[T]) IntersectionArc(arc Arc[T]) Pair[Point[T]] {
 	return arc.IntersectionLine(l)
 }
 
-// IntersectionSegment returns the point where the line and the segment cross, and false when
-// they do not, as Segment.IntersectionLine does.
+// IntersectionSegment returns the point where the line and the segment cross, and false where they
+// do not or are parallel.
 func (l Line[T]) IntersectionSegment(segment Segment[T]) (Point[T], bool) {
 	return segment.IntersectionLine(l)
 }
 
-// IntersectionRay returns the point where the line and the ray cross, and false when they do
-// not, as Ray.IntersectionLine does.
+// IntersectionRay returns the point where the line and the ray cross, and false where they do not
+// or are parallel.
 func (l Line[T]) IntersectionRay(ray Ray[T]) (Point[T], bool) {
 	return ray.IntersectionLine(l)
 }
 
-// IntersectionLine returns the point where the lines cross, and false when they do not. It
-// answers exactly where IntersectsLine holds, less the parallel case: parallel lines share no
-// point or every one, and return false even where they run along each other, which
-// IntersectsLine still reports. A line with a zero Direction is its origin, parallel to nothing,
-// and is the answer wherever it lies on the other line. The point is the same whichever line
-// asks. For integer T it is rounded like every other result stored into T, and for a float T
-// the crossing of nearly parallel lines lies far along both and is as accurate as their cross
-// product.
+// IntersectionLine returns the point where the lines cross, the same whichever line asks, and false
+// where they do not. Parallel lines give false even where they run along each other, though
+// IntersectsLine holds. A line of zero Direction is parallel to nothing and is the point wherever
+// it lies on the other.
 func (l Line[T]) IntersectionLine(line Line[T]) (Point[T], bool) {
 	if point, ok := l.crossing(line); ok {
 		return point.Cast[T](), true
@@ -296,177 +245,148 @@ func (l Line[T]) IntersectionLine(line Line[T]) (Point[T], bool) {
 }
 
 // IntersectionPolyline returns the points where the line crosses the path, in order along
-// it, as Segment.IntersectionPolyline finds them on the span of the line past the path.
+// Direction.
 func (l Line[T]) IntersectionPolyline(polyline Polyline[T]) []Point[T] {
 	return l.AppendIntersectionPolyline(nil, polyline)
 }
 
-// AppendIntersectionPolyline appends the points IntersectionPolyline returns to dst and returns
-// the extended slice, so a caller reusing dst allocates nothing once it has room.
+// AppendIntersectionPolyline appends the points of IntersectionPolyline to dst and returns the
+// extended slice.
 func (l Line[T]) AppendIntersectionPolyline(dst []Point[T], polyline Polyline[T]) []Point[T] {
 	bounds := polyline.Bounds()
 
 	return l.span(bounds.Min, bounds.Max).AppendIntersectionPolyline(dst, polyline)
 }
 
-// IntersectionQuadraticBezier returns the points where the line crosses the curve, as
-// QuadraticBezier.IntersectionLine does.
+// IntersectionQuadraticBezier returns the points where the line crosses the curve, in order along
+// Direction.
 func (l Line[T]) IntersectionQuadraticBezier(curve QuadraticBezier[T]) Pair[Point[T]] {
 	return curve.IntersectionLine(l)
 }
 
-// IntersectionCubicBezier returns the points where the line crosses the curve, in order along Direction,
-// as Segment.IntersectionCubicBezier finds them on the span of the line past the curve.
+// IntersectionCubicBezier returns the points where the line crosses the curve, in order along
+// Direction.
 func (l Line[T]) IntersectionCubicBezier(curve CubicBezier[T]) []Point[T] {
 	return l.AppendIntersectionCubicBezier(nil, curve)
 }
 
-// AppendIntersectionCubicBezier appends the points IntersectionCubicBezier returns to dst and
-// returns the extended slice, as Segment.AppendIntersectionCubicBezier does on the span of the
-// line past the curve, so a caller reusing dst allocates nothing once it has room.
+// AppendIntersectionCubicBezier appends the points of IntersectionCubicBezier to dst and returns
+// the extended slice.
 func (l Line[T]) AppendIntersectionCubicBezier(dst []Point[T], curve CubicBezier[T]) []Point[T] {
 	bounds := curve.Bounds()
 
 	return l.span(bounds.Min, bounds.Max).AppendIntersectionCubicBezier(dst, curve)
 }
 
-// IntersectionPolygon returns the points where the line crosses the polygon boundary, in order
-// along Direction, as Segment.IntersectionPolygon finds them on the span of the line past the
-// polygon.
+// IntersectionPolygon returns the points where the line crosses the boundary of the polygon, in
+// order along Direction.
 func (l Line[T]) IntersectionPolygon(polygon Polygon[T]) []Point[T] {
 	return l.AppendIntersectionPolygon(nil, polygon)
 }
 
-// AppendIntersectionPolygon appends the points IntersectionPolygon returns to dst and returns the
-// extended slice, as Segment.AppendIntersectionPolygon does on the span of the line past the
-// polygon, so a caller reusing dst allocates nothing once it has room.
+// AppendIntersectionPolygon appends the points of IntersectionPolygon to dst and returns the
+// extended slice.
 func (l Line[T]) AppendIntersectionPolygon(dst []Point[T], polygon Polygon[T]) []Point[T] {
 	return l.span(polygon.minMax()).AppendIntersectionPolygon(dst, polygon)
 }
 
-// IntersectionRectangle returns the points where the line crosses the rectangle boundary, in
-// order along Direction, as Segment.IntersectionRectangle finds them on the span of the line
-// past the rectangle.
+// IntersectionRectangle returns the points where the line crosses the boundary of the rectangle, in
+// order along Direction.
 func (l Line[T]) IntersectionRectangle(rectangle Rectangle[T]) Pair[Point[T]] {
 	return l.span(rectangle.MinMax()).IntersectionRectangle(rectangle)
 }
 
-// IntersectionRegularPolygon returns the points where the line crosses the regular polygon
-// boundary, in order along Direction, as Segment.IntersectionRegularPolygon finds them on the
-// span of the line past the polygon.
+// IntersectionRegularPolygon returns the points where the line crosses the boundary of the regular
+// polygon, in order along Direction.
 func (l Line[T]) IntersectionRegularPolygon(polygon RegularPolygon[T]) Pair[Point[T]] {
 	return l.span(polygon.minMax()).IntersectionRegularPolygon(polygon)
 }
 
-// IntersectionBox returns the points where the line crosses the box boundary, in order along
-// Direction, as Segment.IntersectionBox finds them on the span of the line past the box.
+// IntersectionBox returns the points where the line crosses the boundary of the box, in order along
+// Direction.
 func (l Line[T]) IntersectionBox(box Box[T]) Pair[Point[T]] {
 	return l.span(box.Min, box.Max).IntersectionBox(box)
 }
 
-// ClipCircle returns the part of the line inside the circle, boundary included within the
-// tolerance, and false where they share no point, as Segment.ClipCircle clips the span of the
-// line past the circle: the chord, running along Direction, or the one point of a tangent. It
-// allocates nothing.
+// ClipCircle returns the chord of the line in the circle, running along Direction, and false where
+// they share no point. A tangent gives its one point.
 func (l Line[T]) ClipCircle(circle Circle[T]) (Segment[T], bool) {
 	return l.span(circle.minMax()).ClipCircle(circle)
 }
 
-// ClipCapsule returns the part of the line inside the capsule, boundary included within the
-// tolerance, and false where they share no point, as Segment.ClipCapsule clips the span of
-// the line past the capsule. It allocates nothing.
+// ClipCapsule returns the part of the line in the capsule, and false where they share no point.
 func (l Line[T]) ClipCapsule(capsule Capsule[T]) (Segment[T], bool) {
 	return l.span(capsule.minMax()).ClipCapsule(capsule)
 }
 
-// ClipSector returns the parts of the line inside the sector, boundary included within the
-// tolerance, in order along it, as Segment.ClipSector clips the span of the line past the
-// sector.
+// ClipSector returns the parts of the line in the sector, in order along Direction.
 func (l Line[T]) ClipSector(sector Sector[T]) []Segment[T] {
 	return l.AppendClipSector(nil, sector)
 }
 
-// AppendClipSector appends the parts ClipSector returns to dst and returns the extended slice,
-// so a caller reusing dst allocates nothing once it has room.
+// AppendClipSector appends the parts of ClipSector to dst and returns the extended slice.
 func (l Line[T]) AppendClipSector(dst []Segment[T], sector Sector[T]) []Segment[T] {
 	return l.span(sector.minMax()).AppendClipSector(dst, sector)
 }
 
-// ClipPolygon returns the parts of the line inside the polygon, boundary included within the
-// tolerance, in order and each running along Direction, as Segment.ClipPolygon clips the span of
-// the line past the polygon. A line along the line of a flat polygon has no part, as
-// Segment.ClipPolygon says. The result is the one allocation, made on the first part.
+// ClipPolygon returns the parts of the line in the polygon, in order and each running along
+// Direction. A line along a flat polygon has none.
 func (l Line[T]) ClipPolygon(polygon Polygon[T]) []Segment[T] {
 	return l.AppendClipPolygon(nil, polygon)
 }
 
-// AppendClipPolygon appends the parts ClipPolygon returns to dst and returns the extended slice,
-// as Segment.AppendClipPolygon does on the span of the line past the polygon, so a caller
-// reusing dst allocates nothing once it has room.
+// AppendClipPolygon appends the parts of ClipPolygon to dst and returns the extended slice.
 func (l Line[T]) AppendClipPolygon(dst []Segment[T], polygon Polygon[T]) []Segment[T] {
 	return l.span(polygon.minMax()).AppendClipPolygon(dst, polygon)
 }
 
-// ClipRectangle returns the part of the line inside the rectangle, boundary included within the
-// tolerance, whatever its angle, and false where they share no point, as Segment.ClipRectangle
-// clips the span of the line past the rectangle. The part runs along Direction. It allocates
-// nothing.
+// ClipRectangle returns the part of the line in the rectangle, running along Direction, and false
+// where they share no point.
 func (l Line[T]) ClipRectangle(rectangle Rectangle[T]) (Segment[T], bool) {
 	return l.span(rectangle.MinMax()).ClipRectangle(rectangle)
 }
 
-// ClipRegularPolygon returns the part of the line inside the regular polygon, boundary included
-// within the tolerance, and false where they share no point, as Segment.ClipRegularPolygon clips
-// the span of the line past the polygon. The part runs along Direction, and an empty polygon
-// clips everything away. A line along the line of a flat polygon has no part, as
-// Segment.ClipRegularPolygon says. It allocates nothing.
+// ClipRegularPolygon returns the part of the line in the regular polygon, running along Direction,
+// and false where they share no point, for an empty polygon, and for a line along a flat one.
 func (l Line[T]) ClipRegularPolygon(polygon RegularPolygon[T]) (Segment[T], bool) {
 	return l.span(polygon.minMax()).ClipRegularPolygon(polygon)
 }
 
-// ClipBox returns the part of the line inside the box, boundary included within the tolerance,
-// and false where they share no point, as Segment.ClipBox clips the span of the line past the
-// box: the line as a viewport shows it, running along Direction. It allocates nothing.
+// ClipBox returns the part of the line in the box, running along Direction, and false where they
+// share no point.
 func (l Line[T]) ClipBox(box Box[T]) (Segment[T], bool) {
 	return l.span(box.Min, box.Max).ClipBox(box)
 }
 
-// side returns the cross product of Direction and the vector from Origin to the point, in
-// float64: the value Side takes the sign of, which a cut along the line places a crossing by.
+// side returns the cross product of Direction and the offset of the point from Origin, in float64:
+// the value Side takes the sign of and a cut along the line places a crossing by.
 func (l Line[T]) side(point Point[T]) float64 {
 	offset := point.Float().Subtract(l.Origin.Float())
 
 	return l.Direction.Float().Cross(offset)
 }
 
-// halves returns the two rays from Origin that make up the line, the one along Direction and the
-// one against it.
+// halves returns the rays from Origin along Direction and against it.
 func (l Line[T]) halves() (Ray[T], Ray[T]) {
 	return Ray[T](l), Ray[T]{l.Origin, l.Direction.Negate()}
 }
 
-// span returns the part of the line past the extent a, b of a shape both ways: from the end of
-// the reach of the ray against Direction to the end of the reach of the ray along it, each
-// Origin where the whole extent lies on the other side. No point of the extent projects past
-// either end, so the segment shares every point of the shape the line does, and a pair of the
-// line is decided by the segment's own tests. Past a single point it is the reach of the ray
-// toward that point, so the line answers a point as that ray does. A line with no direction
-// spans its origin alone.
+// span returns the segment between the ends of the reaches of both halves past the extent a, b, so
+// it shares every point of the shape the line does and pairs read the segment's tests. Past a
+// single point it runs along the reach of the ray toward that point.
 func (l Line[T]) span(a, b Point[T]) Segment[T] {
 	ahead, behind := l.halves()
 
 	return Segment[T]{behind.reach(a, b).End, ahead.reach(a, b).End}
 }
 
-// crossing returns the point where two lines meet, in float64, and false where the cross product
-// of their directions is zero: parallel lines, or a line with no direction.
+// crossing returns where the lines meet, in float64, and false where the cross of their directions
+// is zero.
 //
-// The point is placed from Origin by each component of the direction times the numerator of the
-// fraction, divided by its denominator once, rather than by the rounded fraction: for an integer
-// T the product and the cross products are exact, so a crossing on a half unit is exactly there,
-// while that product stays within the integers float64 holds exactly. Past it the product
-// rounds, so the pair is taken in one order whichever line asks, the lesser by Point.Compare of
-// Origin and then Direction first.
+// The point is placed by each direction component times the numerator, divided once, so an integer
+// crossing on a half unit is exact while the product fits a float64 mantissa. Past that it rounds,
+// so the lines are ordered by Point.Compare of Origin then Direction to give the same bits either
+// way.
 func (l Line[T]) crossing(line Line[T]) (Point[float64], bool) {
 	if cmp.Or(line.Origin.Compare(l.Origin), line.Direction.Point().Compare(l.Direction.Point())) < 0 {
 		l, line = line, l
@@ -484,34 +404,39 @@ func (l Line[T]) crossing(line Line[T]) (Point[float64], bool) {
 	return Point[float64]{origin.X + float64(along*a.X)/denominator, origin.Y + float64(along*a.Y)/denominator}, true
 }
 
-// touch returns the origin of either line that lies on the other, within the tolerance as
-// Contains judges it, and false when there is none: the one point a line with no direction can
-// share with another.
+// touch returns the origin of a line of zero Direction that lies on the other, the one point it can
+// share, and false where there is none. Two of zero Direction give the lesser origin by
+// Point.Compare, so the answer is the same whichever line asks.
 func (l Line[T]) touch(line Line[T]) (Point[T], bool) {
 	switch {
-	case l.Contains(line.Origin):
+	case l.Direction.hasDirection() && l.Contains(line.Origin):
 		return line.Origin, true
-	case line.Contains(l.Origin):
+	case line.Direction.hasDirection() && line.Contains(l.Origin):
+		return l.Origin, true
+	case !l.Direction.hasDirection() && !line.Direction.hasDirection() && l.Contains(line.Origin):
+		if line.Origin.Compare(l.Origin) < 0 {
+			return line.Origin, true
+		}
+
 		return l.Origin, true
 	default:
 		return Point[T]{}, false
 	}
 }
 
-// Equal checks if the origins and the directions of the lines are equal. Two lines through the
-// same points with another origin, or with directions of different lengths, are different
-// values, as a vector is.
+// Equal reports whether the lines have equal origin and direction. Lines of the same points with
+// another origin or a direction of another length are not equal.
 func (l Line[T]) Equal(line Line[T]) bool {
 	return l.Origin.Equal(line.Origin) && l.Direction.Equal(line.Direction)
 }
 
-// IsZero checks if the origin and the direction are zero.
+// IsZero reports whether the line is the zero value.
 func (l Line[T]) IsZero() bool {
 	return l.Equal(Line[T]{})
 }
 
-// Cast converts the line to a Line of another number type, rounding as Cast does, so a direction
-// shorter than a unit can round to zero for an integer R.
+// Cast converts the line to a Line of another number type, rounding as Cast does, so a short
+// direction can round to zero for an integer R.
 func (l Line[T]) Cast[R Number]() Line[R] {
 	return Line[R]{l.Origin.Cast[R](), l.Direction.Cast[R]()}
 }

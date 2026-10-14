@@ -5,13 +5,11 @@ import (
 	"strings"
 )
 
-// Size is a 2D size: a signed pair of extents, not a shape. A negative extent is meaningful
-// where a size measures a displacement, as RectangleFromMin reads it, and arithmetic such as
-// Scale, Lerp and Vector.Size can produce one. A shape that stores a size as its own extent
-// takes it absolute where it enters the shape, so a rectangle or regular polygon never holds a
-// negative one; Abs is the same operation on the size alone. The size itself never clamps or
-// takes an extent absolute, so a struct literal, Grow and Shrink carry a negative extent as it is;
-// AtLeastZero is the clamp a shape applies on request.
+// Size is a pair of extents, not a shape.
+//
+// A size is signed and never clamps or takes an extent absolute: a negative extent measures a
+// displacement the other way. A shape that stores a size takes it absolute, and AtLeastZero and Abs
+// are the two repairs.
 type Size[T Number] struct {
 	Width  T `json:"w"`
 	Height T `json:"h"`
@@ -27,15 +25,14 @@ func SzU[T Number](size T) Size[T] {
 	return Size[T]{size, size}
 }
 
-// ZeroSize creates a new Size with zero values (0x0).
+// ZeroSize returns the size of zero extents.
 func ZeroSize[T Number]() Size[T] {
 	return Size[T]{}
 }
 
-// ParseSize parses a size string in the form "WxH", the form String prints, each side a decimal
-// number Parse accepts: the string is split at its first x, so a hexadecimal float, which Parse
-// takes on its own, cannot stand for the width.
-// For integer T, only integer strings parse; a fractional value is an error, not a rounded size.
+// ParseSize returns the size in the form String prints, split at its first x, and an error for any
+// other string. Each side is a number Parse accepts, so a hexadecimal float can stand for the
+// height but not the width; for integer T a fractional side is an error, not rounded.
 func ParseSize[T Number](s string) (Size[T], error) {
 	width, height, ok := strings.Cut(s, "x")
 	if !ok {
@@ -54,146 +51,129 @@ func ParseSize[T Number](s string) (Size[T], error) {
 	return Size[T]{w, h}, nil
 }
 
-// XY returns the size width, height values in standard order.
+// XY returns the width and the height.
 func (s Size[T]) XY() (T, T) {
 	return s.Width, s.Height
 }
 
-// Area returns the size's area (width * height).
+// Area returns the area (width·height).
 func (s Size[T]) Area() T {
 	return Cast[T](float64(s.Width) * float64(s.Height))
 }
 
-// Perimeter returns the size's perimeter (2 * (width + height)).
+// Perimeter returns the perimeter (2·(width+height)).
 func (s Size[T]) Perimeter() T {
 	return Cast[T](2 * (float64(s.Width) + float64(s.Height)))
 }
 
-// AspectRatio returns (width / height). A zero Height has no usable ratio and returns 0 rather
-// than an Inf or NaN that would poison later arithmetic; the same 0 a zero Width gives, since
-// neither degenerate size has a ratio worth distinguishing.
+// AspectRatio returns the width divided by the height, and zero where either is zero.
 func (s Size[T]) AspectRatio() float64 {
 	return ratio(s.Width, s.Height)
 }
 
-// Scale creates a new Size scaled by the given factor in both dimensions.
+// Scale returns the size with both extents multiplied by the factor.
 func (s Size[T]) Scale(factor float64) Size[T] {
 	return Size[T]{Multiply(s.Width, factor), Multiply(s.Height, factor)}
 }
 
-// ScaleXY creates a new Size scaled by the given factors along X and Y.
+// ScaleXY returns the size with each extent multiplied by its own factor.
 func (s Size[T]) ScaleXY(factorX, factorY float64) Size[T] {
 	return Size[T]{Multiply(s.Width, factorX), Multiply(s.Height, factorY)}
 }
 
-// Unscale creates a new Size scaled with inverse factor in both dimensions, the inverse of
-// Scale. Like Divide it panics for a zero factor.
+// Unscale returns the size with both extents divided by the factor. It panics for a zero factor.
 func (s Size[T]) Unscale(factor float64) Size[T] {
 	return Size[T]{Divide(s.Width, factor), Divide(s.Height, factor)}
 }
 
-// UnscaleXY creates a new Size scaled with inverse factors along X and Y, the inverse of
-// ScaleXY. Like Divide it panics for a zero factor.
+// UnscaleXY returns the size with each extent divided by its own factor. It panics for a zero
+// factor.
 func (s Size[T]) UnscaleXY(factorX, factorY float64) Size[T] {
 	return Size[T]{Divide(s.Width, factorX), Divide(s.Height, factorY)}
 }
 
-// Abs creates a new Size with absolute width and height, the size a Rectangle stores.
+// Abs returns the size with absolute extents.
 func (s Size[T]) Abs() Size[T] {
 	return Size[T]{Abs(s.Width), Abs(s.Height)}
 }
 
-// Transpose creates a new Size with the width and height swapped, the size of the same extent
-// turned a quarter turn, as a rotated tile or sprite has. Axis.Size builds the same pair from
-// an axis in hand.
+// Transpose returns the size with the width and the height swapped, the extent turned a quarter
+// turn.
 func (s Size[T]) Transpose() Size[T] {
 	return Size[T]{s.Height, s.Width}
 }
 
-// Round creates a new Size by rounding width and height to the nearest integer.
+// Round returns the size with extents rounded to the nearest integer.
 func (s Size[T]) Round() Size[T] {
 	return Size[T]{Round(s.Width), Round(s.Height)}
 }
 
-// Floor creates a new Size by rounding width and height down to the nearest integer.
+// Floor returns the size with extents rounded down.
 func (s Size[T]) Floor() Size[T] {
 	return Size[T]{Floor(s.Width), Floor(s.Height)}
 }
 
-// Ceil creates a new Size by rounding width and height up to the nearest integer.
+// Ceil returns the size with extents rounded up.
 func (s Size[T]) Ceil() Size[T] {
 	return Size[T]{Ceil(s.Width), Ceil(s.Height)}
 }
 
-// Grow creates a new Size expanded by the same amount in both dimensions. The amount is the
-// total change of each extent, not an amount per side. A size is signed, so nothing is clamped:
-// a shape that stores a size clamps its own extent at zero, as Rectangle.Grow does.
+// Grow returns the size with both extents increased by the amount, the total change of each extent
+// rather than one per side.
 func (s Size[T]) Grow(amount T) Size[T] {
 	return Size[T]{s.Width + amount, s.Height + amount}
 }
 
-// GrowXY creates a new Size expanded by the given amounts along X and Y.
-// Each amount is the total change of that extent, like Grow.
+// GrowXY returns the size with each extent increased by its own amount.
 func (s Size[T]) GrowXY(amountX, amountY T) Size[T] {
 	return Size[T]{s.Width + amountX, s.Height + amountY}
 }
 
-// Shrink creates a new Size reduced by the same amount in both dimensions, the inverse of Grow.
-// The amount is the total change of each extent, not an amount per side, and a reduction past
-// zero gives a negative size rather than clamping, like Grow.
+// Shrink returns the size with both extents decreased by the amount, the total change of each
+// extent rather than one per side, and negative past zero.
 func (s Size[T]) Shrink(amount T) Size[T] {
 	return Size[T]{s.Width - amount, s.Height - amount}
 }
 
-// ShrinkXY creates a new Size reduced by the given amounts along X and Y.
-// Each amount is the total change of that extent, like Shrink.
+// ShrinkXY returns the size with each extent decreased by its own amount.
 func (s Size[T]) ShrinkXY(amountX, amountY T) Size[T] {
 	return Size[T]{s.Width - amountX, s.Height - amountY}
 }
 
-// Lerp creates a new Size in linear interpolation towards the given size.
+// Lerp returns the size interpolated toward the given one, extrapolated outside [0, 1].
 func (s Size[T]) Lerp(size Size[T], t float64) Size[T] {
 	return Size[T]{Lerp(s.Width, size.Width, t), Lerp(s.Height, size.Height, t)}
 }
 
-// Fit creates a new Size scaled uniformly to the largest that fits within the given size, keeping
-// the aspect ratio: one extent matches the given size and the other is at most it. A size with a
-// zero width or height has no ratio to keep and fits as the zero size. A negative extent
-// measures the other way and fits to a negative one, which no longer bounds anything; take Abs
-// first where a size may carry one.
+// Fit returns the largest size of the same aspect ratio that fits in the given one. A size with a
+// zero extent gives the zero size, and a negative extent gives a negative one: take Abs first.
 func (s Size[T]) Fit(size Size[T]) Size[T] {
 	return s.Scale(min(s.ratios(size)))
 }
 
-// Fill creates a new Size scaled uniformly to the smallest that covers the given size, keeping
-// the aspect ratio: one extent matches the given size and the other is at least it. A size with a
-// zero width or height has no ratio to keep and fills as the zero size. A negative extent
-// measures the other way and fills to a negative one, which no longer covers anything; take Abs
-// first where a size may carry one.
+// Fill returns the smallest size of the same aspect ratio that covers the given one. A size with a
+// zero extent gives the zero size, and a negative extent gives a negative one: take Abs first.
 func (s Size[T]) Fill(size Size[T]) Size[T] {
 	return s.Scale(max(s.ratios(size)))
 }
 
-// AtLeast creates a new Size with at least the given width and height values.
+// AtLeast returns the size with each extent raised to at least the one of the given size.
 func (s Size[T]) AtLeast(size Size[T]) Size[T] {
 	return Size[T]{max(s.Width, size.Width), max(s.Height, size.Height)}
 }
 
-// AtMost creates a new Size with at most the given width and height values.
+// AtMost returns the size with each extent lowered to at most the one of the given size.
 func (s Size[T]) AtMost(size Size[T]) Size[T] {
 	return Size[T]{min(s.Width, size.Width), min(s.Height, size.Height)}
 }
 
-// AtLeastZero creates a new Size with each negative extent raised to zero, AtLeast the zero
-// size: the clamp Rectangle, Ellipse and RegularPolygon apply after Grow and Shrink, so an
-// extent shrunk past zero stops there rather than measuring the other way. Abs is the other
-// repair, which mirrors a negative extent instead of stopping it.
+// AtLeastZero returns the size with each negative extent raised to zero, where Abs mirrors it.
 func (s Size[T]) AtLeastZero() Size[T] {
 	return Size[T]{max(s.Width, 0), max(s.Height, 0)}
 }
 
-// ratios returns the factors that scale the width and the height onto the given size, both
-// zero when either extent of s is zero, so that Fit and Fill agree on the zero size there.
+// ratios returns the factors that scale the width and the height onto the given size, both zero
+// where either extent is zero, so Fit and Fill agree on the zero size.
 func (s Size[T]) ratios(size Size[T]) (float64, float64) {
 	if s.Width == 0 || s.Height == 0 {
 		return 0, 0
@@ -202,27 +182,24 @@ func (s Size[T]) ratios(size Size[T]) (float64, float64) {
 	return ratio(size.Width, s.Width), ratio(size.Height, s.Height)
 }
 
-// Equal checks for equal width and height values with given size.
+// Equal reports whether the sizes have equal width and height.
 func (s Size[T]) Equal(size Size[T]) bool {
 	return Equal(s.Width, size.Width) && Equal(s.Height, size.Height)
 }
 
-// IsZero checks if width and height values are zero.
+// IsZero reports whether both extents are zero.
 func (s Size[T]) IsZero() bool {
 	return s.Equal(Size[T]{})
 }
 
-// IsPositive reports whether the width and the height are both greater than zero: a size that
-// encloses an area, with a ratio to keep and to divide by. It is exact and has no tolerance,
-// so a size too small for IsZero to tell from zero still is, and one with a negative or a NaN
-// extent is not. An infinite extent is positive; IsFinite is the test for that.
+// IsPositive reports whether both extents are greater than zero, exactly and with no tolerance. A
+// NaN extent is not positive and an infinite one is.
 func (s Size[T]) IsPositive() bool {
 	return s.Width > 0 && s.Height > 0
 }
 
-// IsFinite reports whether the width and the height are both numbers, neither NaN nor
-// infinite: a size Int and Cast take into an integer type, where they panic on any other. A
-// size of integers always is.
+// IsFinite reports whether both extents are neither NaN nor infinite, which Cast and Int need for
+// an integer type. An integer size always is.
 func (s Size[T]) IsFinite() bool {
 	return IsFinite(s.Width) && IsFinite(s.Height)
 }
@@ -247,7 +224,7 @@ func (s Size[T]) Float() Size[float64] {
 	return Size[float64]{float64(s.Width), float64(s.Height)}
 }
 
-// String returns a string in the form "WxH" using the underlying number formatting.
+// String returns the size in the form WxH.
 func (s Size[T]) String() string {
 	buf := make([]byte, 0, stringSize)
 	buf = s.appendString(buf)
@@ -255,7 +232,7 @@ func (s Size[T]) String() string {
 	return string(buf)
 }
 
-// appendString appends the size to buf and returns the extended buffer, as String prints it.
+// appendString appends the size as String prints it to buf and returns the extended buffer.
 func (s Size[T]) appendString(buf []byte) []byte {
 	buf = appendString(buf, s.Width)
 	buf = append(buf, 'x')

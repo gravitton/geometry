@@ -7,31 +7,30 @@ import (
 const (
 	// Pi is the ratio of the circumference of a circle to its diameter.
 	Pi = math.Pi
-	// RadToDeg is the multiplier to convert radians to degrees (180/π).
+	// RadToDeg converts radians to degrees (180/π).
 	RadToDeg float64 = 180.0 / math.Pi
-	// DegToRad is the multiplier to convert degrees to radians (π/180).
+	// DegToRad converts degrees to radians (π/180).
 	DegToRad float64 = math.Pi / 180.0
 
-	// Delta is the tolerance used for float64 equality comparisons.
+	// Delta is the equality tolerance of float64.
 	Delta float64 = 1e-6
-	// Delta32 is the tolerance used for float32 equality comparisons.
+	// Delta32 is the equality tolerance of float32.
 	Delta32 float64 = 1e-4
 
 	// Sqrt2 is the square root of 2.
 	Sqrt2 = math.Sqrt2
 	// Sqrt3 is the square root of 3.
 	Sqrt3 = 1.732050807568877293527446341505872367
-	// OneOverSqrt2 is 1/√2, the length of a unit diagonal vector component.
+	// OneOverSqrt2 is 1/√2, each component of a unit diagonal vector.
 	OneOverSqrt2 = 1 / math.Sqrt2
 )
 
-// Multiply multiplies a number by a scale factor.
+// Multiply returns x scaled by the factor.
 func Multiply[T Number](x T, factor float64) T {
 	return Cast[T](float64(x) * factor)
 }
 
-// Divide divides a number by a scale factor. Like the / operator on integers it panics for a
-// zero factor, rather than returning an infinity that an integer T could not hold.
+// Divide returns x divided by the factor. It panics for a zero factor.
 func Divide[T Number](x T, factor float64) T {
 	if factor == 0 {
 		panic("geom: division by zero")
@@ -40,8 +39,8 @@ func Divide[T Number](x T, factor float64) T {
 	return Cast[T](float64(x) / factor)
 }
 
-// ratio returns a divided by b in float64, or 0 for a zero b rather than the Inf or NaN that
-// would poison later arithmetic. Divide is the panicking counterpart for scaling.
+// ratio returns a divided by b in float64, or 0 for a zero b, where an Inf or NaN would poison
+// later arithmetic.
 func ratio[T Number](a, b T) float64 {
 	if b == 0 {
 		return 0
@@ -50,7 +49,8 @@ func ratio[T Number](a, b T) float64 {
 	return float64(a) / float64(b)
 }
 
-// Abs returns the absolute value. It never leaves T, so integers of any width stay exact.
+// Abs returns the absolute value, computed in T, so integers stay exact; the most negative integer
+// of T has no positive counterpart and is returned as it is.
 func Abs[T Number](x T) T {
 	if x < 0 {
 		return -x
@@ -59,7 +59,7 @@ func Abs[T Number](x T) T {
 	return x
 }
 
-// Sign returns the sign of x: 1 if x > 0, -1 if x < 0, or 0 if x == 0.
+// Sign returns 1 for a positive x, -1 for a negative one and 0 for zero.
 func Sign[T Number](x T) T {
 	switch {
 	case x > 0:
@@ -71,7 +71,7 @@ func Sign[T Number](x T) T {
 	}
 }
 
-// Round returns x rounded to the nearest integer. An integer T is returned unchanged.
+// Round returns x rounded to the nearest integer, half away from zero; an integer T is unchanged.
 func Round[T Number](x T) T {
 	if isInt[T]() {
 		return x
@@ -80,11 +80,9 @@ func Round[T Number](x T) T {
 	return T(math.Round(float64(x)))
 }
 
-// RoundHalfUp returns x rounded to the nearest integer, a tie rounded toward positive
-// infinity, where Round rounds it away from zero. A tie then falls the same way on both sides
-// of zero, so rounding a value shifted by an integer is the rounded value shifted by it: the
-// rounding of a lattice, whose cells each own the same edges. An integer T is returned
-// unchanged.
+// RoundHalfUp returns x rounded to the nearest integer, half toward positive infinity, so rounding
+// a value shifted by an integer is the rounded value shifted by it, the rounding of a lattice. An
+// integer T is unchanged.
 func RoundHalfUp[T Number](x T) T {
 	if isInt[T]() {
 		return x
@@ -99,8 +97,7 @@ func RoundHalfUp[T Number](x T) T {
 	return T(rounded)
 }
 
-// Floor returns the largest integer value less than or equal to x. An integer T is returned
-// unchanged.
+// Floor returns the largest integer at most x; an integer T is unchanged.
 func Floor[T Number](x T) T {
 	if isInt[T]() {
 		return x
@@ -109,8 +106,7 @@ func Floor[T Number](x T) T {
 	return T(math.Floor(float64(x)))
 }
 
-// Ceil returns the smallest integer value greater than or equal to x. An integer T is returned
-// unchanged.
+// Ceil returns the smallest integer at least x; an integer T is unchanged.
 func Ceil[T Number](x T) T {
 	if isInt[T]() {
 		return x
@@ -119,9 +115,8 @@ func Ceil[T Number](x T) T {
 	return T(math.Ceil(float64(x)))
 }
 
-// Mod wraps n into [0, m), correctly for negative n, taking the sign of m like a floored
-// division: a negative m wraps into (m, 0]. Like the % operator it panics for m == 0. The
-// remainder is moved by m only where its sign differs, so no intermediate leaves the range of T.
+// Mod returns n wrapped into [0, m), or (m, 0] for a negative m, as a floored division gives it. It
+// panics for a zero m.
 func Mod[T Integer](n, m T) T {
 	remainder := n % m
 	if remainder != 0 && (remainder < 0) != (m < 0) {
@@ -131,19 +126,13 @@ func Mod[T Integer](n, m T) T {
 	return remainder
 }
 
-// IsFinite reports whether x is a number, neither NaN nor infinite: a value Cast and Int take
-// into an integer T, where they panic on any other. An integer always is.
-//
-// It is not x-x == 0: inlined after a product, the difference is fused with it into one
-// multiply-add, which leaves the rounding residue of the product rather than zero.
-//
-// One comparison decides it, which neither NaN nor an infinity passes, so Cast stays cheap enough
-// to inline where math.Round is an intrinsic.
+// IsFinite reports whether x is neither NaN nor infinite, the values Cast and Int take into an
+// integer T. An integer always is.
 func IsFinite[T Number](x T) bool {
 	return math.Abs(float64(x)) <= math.MaxFloat64
 }
 
-// Clamp adjusts the given value to be between the given minimum and maximum value.
+// Clamp returns the value limited to [min, max].
 func Clamp[T Number](value, min, max T) T {
 	if value < min {
 		return min
@@ -155,8 +144,8 @@ func Clamp[T Number](value, min, max T) T {
 	return value
 }
 
-// Sum adds the values, accumulating in float64 and storing the total back through Cast, so a
-// float32 sum is rounded once. An empty or nil slice sums to 0.
+// Sum returns the sum of the values, accumulated in float64 and rounded once into T, and 0 for
+// none.
 func Sum[T Number](values []T) T {
 	var total float64
 	for _, value := range values {
@@ -166,42 +155,33 @@ func Sum[T Number](values []T) T {
 	return Cast[T](total)
 }
 
-// Lerp calculates the linear interpolation between a and b at a ratio t.
-// The difference is taken in float64, so a float32 one is not rounded before it is scaled.
+// Lerp returns the linear interpolation between a and b at t, extrapolated outside [0, 1].
 func Lerp[T Number](a, b T, t float64) T {
 	return Cast[T](float64(a) + float64((float64(b)-float64(a))*t))
 }
 
-// InverseLerp returns the ratio at which value lies between a and b, the t for which Lerp of
-// a and b gives it: 0 at a, 1 at b, and outside [0, 1] for a value outside them, since it is
-// not clamped, as Lerp is not. The differences are taken in float64. An empty range, a equal to
-// b, has no ratio for any value and gives 0, so Lerp of it returns a.
+// InverseLerp returns the t at which Lerp of a and b gives the value, unclamped, and 0 for an empty
+// range where a equals b.
 func InverseLerp[T Number](a, b, value T) float64 {
 	from := float64(a)
 
 	return ratio(float64(value)-from, float64(b)-from)
 }
 
-// Remap takes value from the range a1 to b1 into the range a2 to b2, keeping the ratio it lies
-// at: Lerp of a2 and b2 at the InverseLerp of value between a1 and b1. Either range may run
-// downward, and a value outside the first lands outside the second, since nothing is clamped.
-// An empty first range gives a2. For an integer T the result is rounded once.
+// Remap returns the value moved from the range a1 to b1 to the same ratio of the range a2 to b2,
+// unclamped, and a2 for an empty first range. Either range may run downward.
 func Remap[T Number](value, a1, b1, a2, b2 T) T {
 	return Lerp(a2, b2, InverseLerp(a1, b1, value))
 }
 
-// Midpoint calculates the midpoint between two values. Equivalent to Lerp(a, b, 0.5).
+// Midpoint returns the value halfway between a and b.
 func Midpoint[T Number](a, b T) T {
 	return Lerp(a, b, 0.5)
 }
 
-// MoveToward moves value toward target by at most step, the move a game loop makes by a speed
-// times the frame time, where Lerp moves by a fraction. It never passes the target: where the
-// difference left is no more than step the result is target itself, exactly. A negative step
-// moves away from the target and is not clamped, as an extrapolating Lerp is not; a value
-// already at the target has no side to leave on and stays there. The difference is taken in
-// float64 and the step is a float64 like the ratio Lerp takes; for an integer T the result is
-// rounded, so a step of less than half a unit can leave the value where it is on every call.
+// MoveToward returns the value moved toward the target by at most step, the target itself exactly
+// once it is within reach. A negative step moves away and is not clamped, and a value at the target
+// stays there. For integer T a step below half a unit leaves the value where it is.
 func MoveToward[T Number](value, target T, step float64) T {
 	from := float64(value)
 	delta := float64(target) - from
@@ -218,13 +198,10 @@ func MoveToward[T Number](value, target T, step float64) T {
 	return target
 }
 
-// Equal reports whether a and b are equal within Epsilon of T: exactly for an integer T,
-// within Delta32 for float32, within Delta for float64.
+// Equal reports whether a and b are equal within Epsilon of T, exactly for an integer T.
 //
-// The tolerance is absolute, which keeps the comparison to a subtraction and a compare
-// for hot paths. It therefore falls below one ulp for values far from zero — beyond ~1e3
-// for float32 and ~1e10 for float64 — where it degenerates into exact equality.
-// Use EqualRelative when the magnitude is large or unknown.
+// The tolerance is absolute, so far from zero it falls below one ulp and becomes exact equality.
+// EqualRelative holds at any magnitude.
 func Equal[T Number](a, b T) bool {
 	if isInt[T]() {
 		return a == b
@@ -233,15 +210,14 @@ func Equal[T Number](a, b T) bool {
 	return EqualDelta(a, b, Epsilon[T]())
 }
 
-// EqualDelta reports whether a and b are equal within the given delta, or are the same value,
-// so an infinity equals itself where the difference of two would be NaN.
+// EqualDelta reports whether a and b are equal within the delta, or are the same value, so an
+// infinity equals itself.
 func EqualDelta[T Number](a, b T, delta float64) bool {
 	return a == b || math.Abs(float64(a)-float64(b)) <= delta
 }
 
-// EqualRelative reports whether a and b are equal within a tolerance that scales with
-// their magnitude: Epsilon of T near zero, and Epsilon of T times the larger magnitude
-// above it. Unlike Equal it holds at any scale, at the cost of the extra arithmetic.
+// EqualRelative reports whether a and b are equal within EpsilonRelative, a tolerance that scales
+// with their magnitude, exactly for an integer T.
 func EqualRelative[T Number](a, b T) bool {
 	if isInt[T]() {
 		return a == b
@@ -250,9 +226,7 @@ func EqualRelative[T Number](a, b T) bool {
 	return EqualDelta(a, b, EpsilonRelative(a, b))
 }
 
-// LessOrEqual reports whether a is at most b within Epsilon of T: exactly for an integer T,
-// and with the same tolerance as Equal for a float T, so that a value a rounding error past
-// a boundary still counts as on it.
+// LessOrEqual reports whether a is at most b within Epsilon of T, exactly for an integer T.
 func LessOrEqual[T Number](a, b T) bool {
 	if isInt[T]() {
 		return a <= b
@@ -261,41 +235,37 @@ func LessOrEqual[T Number](a, b T) bool {
 	return LessOrEqualDelta(a, b, Epsilon[T]())
 }
 
-// LessOrEqualDelta reports whether a is at most b within the given delta.
+// LessOrEqualDelta reports whether a is at most b within the delta.
 func LessOrEqualDelta[T Number](a, b T, delta float64) bool {
 	return float64(a) <= float64(b)+delta
 }
 
-// lessOrEqualSquared reports whether a distance is at most b within the given epsilon, given
-// the square of a: the squared form of LessOrEqualDelta, for a distance that is only ever
-// measured squared. It is the one comparison against a radius or a segment in the package:
-// every Contains, DistanceTo and Intersects makes it, with the epsilon epsilonAt gives at the
-// magnitude of what it compares, and a b of zero is the tolerance alone, the snap
-// Segment.DistanceSquaredTo applies to a point on a segment. Made on the square, every test
-// rounds alike at the boundary, and the distance itself is never rooted to be compared.
+// lessOrEqualSquared reports whether a distance, given as its square a2, is at most b within the
+// epsilon. It is the one comparison against a radius or a segment: every Contains, DistanceTo and
+// Intersects makes it at the epsilonAt of what it compares, so every test rounds alike at the
+// boundary and no distance is rooted to be compared. A zero b is the tolerance alone.
 func lessOrEqualSquared(a2, b, epsilon float64) bool {
 	reach := b + epsilon
 
 	return a2 <= reach*reach
 }
 
-// greaterOrEqualSquared reports whether a distance is at least b within the given epsilon,
-// given the square of a: no nearer than the tolerance allows.
+// greaterOrEqualSquared reports whether a distance, given as its square a2, is at least b within
+// the epsilon.
 func greaterOrEqualSquared(a2, b, epsilon float64) bool {
 	reach := max(b-epsilon, 0)
 
 	return a2 >= reach*reach
 }
 
-// equalSquared reports whether a distance equals b within the given epsilon, given the square
-// of a: at most and at least it at once, the squared form of EqualDelta.
+// equalSquared reports whether a distance, given as its square a2, equals b within the epsilon, the
+// squared form of EqualDelta.
 func equalSquared(a2, b, epsilon float64) bool {
 	return lessOrEqualSquared(a2, b, epsilon) && greaterOrEqualSquared(a2, b, epsilon)
 }
 
-// Epsilon returns the equality tolerance for T: zero for an integer T, which is
-// compared exactly, Delta32 for float32, and Delta for float64. It depends only on T,
-// never on the values compared.
+// Epsilon returns the equality tolerance of T: zero for an integer T, Delta32 for float32 and Delta
+// for float64, whatever the values compared.
 func Epsilon[T Number]() float64 {
 	if isInt[T]() {
 		return 0
@@ -308,19 +278,16 @@ func Epsilon[T Number]() float64 {
 	return Delta
 }
 
-// EpsilonRelative returns the tolerance EqualRelative applies to a and b: Epsilon of T
-// scaled by the larger magnitude, and never less than Epsilon of T itself.
+// EpsilonRelative returns the tolerance of EqualRelative: Epsilon of T scaled by the larger
+// magnitude of a and b, and never less than Epsilon of T.
 func EpsilonRelative[T Number](a, b T) float64 {
 	return Epsilon[T]() * max(1, math.Abs(float64(a)), math.Abs(float64(b)))
 }
 
-// epsilonAt returns the boundary tolerance for coordinates of T up to the given magnitude, the
-// largest absolute coordinate a comparison reads: Epsilon of T, or two ulps of T at that
-// magnitude where they are wider, so a point rounded into T far from the origin, a Nearest or
-// an Intersection, is still on the boundary it was computed on. It is zero for an integer T,
-// and Epsilon of T within a few hundred units of the origin for float32 and a few billion for
-// float64. A NaN magnitude, which Point.magnitude gives an infinite coordinate, gives a NaN,
-// which admits nothing.
+// epsilonAt returns the boundary tolerance at the magnitude, the largest absolute coordinate a
+// comparison reads: Epsilon of T, or two ulps of T at that magnitude where wider, so a point
+// rounded into T far from the origin stays on the boundary it was computed on. It is zero for an
+// integer T, and NaN, which admits nothing, for the NaN magnitude of an infinite coordinate.
 func epsilonAt[T Number](magnitude float64) float64 {
 	if isInt[T]() {
 		return 0
@@ -343,7 +310,7 @@ func ToDegrees(radians float64) float64 {
 	return radians * RadToDeg
 }
 
-// NormalizeAngle returns angle normalized to [0, 2π). NaN and ±Inf are returned as NaN.
+// NormalizeAngle returns the angle wrapped into [0, 2π), and NaN for a non-finite angle.
 func NormalizeAngle(angle float64) float64 {
 	a := math.Mod(angle, 2*math.Pi)
 	if a < 0 {
@@ -356,12 +323,9 @@ func NormalizeAngle(angle float64) float64 {
 	return a
 }
 
-// snapAngle returns angle normalized to [0, 2π) with a rounding residue removed: an angle
-// within Delta of zero or of a full turn is exactly zero, the angle EqualAngle already calls
-// the same. It is the repair Canonical applies to a shape's angle, so a shape turned back by
-// what it was turned by is aligned again and its corners exact; Rotate and Lerp do not apply
-// it, since the tolerance is on the angle and a turn below Delta still moves a far corner of
-// a large shape by more than Epsilon.
+// snapAngle returns the angle normalized, and zero within Delta of zero or a full turn: the repair
+// Canonical applies to an angle, so a shape turned back is aligned again. Rotate and Lerp skip it,
+// since a turn below Delta still moves a far corner of a large shape by more than Epsilon.
 func snapAngle(angle float64) float64 {
 	angle = NormalizeAngle(angle)
 	if angle <= Delta || 2*math.Pi-angle <= Delta {
@@ -378,11 +342,9 @@ func AngleDistance(a, b float64) float64 {
 	return min(d, 2*math.Pi-d)
 }
 
-// LerpAngle interpolates from angle a towards angle b at a ratio t along the shorter arc
-// between them, so a turn across the zero angle passes through it rather than the long way round.
-// The result is measured from a, not normalized, and t outside [0, 1] extrapolates along the
-// same arc like Lerp. Angles exactly half a turn apart have no shorter arc and turn in the
-// sense of increasing angle.
+// LerpAngle returns the angle interpolated from a toward b at t along the shorter arc, extrapolated
+// outside [0, 1] and measured from a, not normalized. Angles half a turn apart turn toward
+// increasing angle.
 func LerpAngle(a, b, t float64) float64 {
 	delta := NormalizeAngle(b - a)
 	if delta > math.Pi {
@@ -392,15 +354,10 @@ func LerpAngle(a, b, t float64) float64 {
 	return a + float64(delta*t)
 }
 
-// MoveTowardAngle turns angle toward target by at most step along the shorter arc between
-// them, MoveToward on that arc. It never passes
-// the target: where the arc left is no longer than step the result is target itself, exactly
-// and as it was given, and otherwise it is measured from angle and not normalized, as LerpAngle
-// measures it. Angles exactly half a turn apart have no shorter arc and turn in the sense of
-// increasing angle. A negative step turns away from the target along the same arc and is not
-// clamped, as an extrapolating LerpAngle is not, so a turn past the angle opposite the target
-// comes back toward it on the far side; an angle already at the target has no arc to leave
-// along and stays there.
+// MoveTowardAngle returns the angle turned toward the target by at most step along the shorter arc,
+// the target itself, as given, once it is within reach, and otherwise measured from the angle, not
+// normalized. Angles half a turn apart turn toward increasing angle. A negative step turns away and
+// is not clamped, and an angle at the target stays there.
 func MoveTowardAngle(angle, target, step float64) float64 {
 	delta := NormalizeAngle(target - angle)
 	if delta > math.Pi {
@@ -415,8 +372,8 @@ func MoveTowardAngle(angle, target, step float64) float64 {
 	return angle + turn
 }
 
-// EqualAngle reports whether a and b are the same angle within Delta, a full turn or the
-// sign of an angle aside. Unlike comparing normalized angles it holds across the 0/2π seam.
+// EqualAngle reports whether a and b are the same angle within Delta, whole turns aside, across the
+// seam at zero.
 func EqualAngle(a, b float64) bool {
 	return EqualDelta(AngleDistance(a, b), 0, Delta)
 }

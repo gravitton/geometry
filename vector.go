@@ -4,9 +4,7 @@ import (
 	"math"
 )
 
-// Vector is a 2D vector, a displacement or a direction with a length. It is a math object and
-// its methods take the names of vector algebra: Multiply and Divide scale it, and Dot, Cross,
-// Normal, Normalize, Project and Reject mean what they mean there.
+// Vector is a displacement, or a direction with a length.
 type Vector[T Number] struct {
 	X T `json:"x"`
 	Y T `json:"y"`
@@ -17,51 +15,47 @@ func Vec[T Number](x, y T) Vector[T] {
 	return Vector[T]{x, y}
 }
 
-// ZeroVector creates a new Vector with zero values (0,0).
+// ZeroVector returns the zero vector.
 func ZeroVector[T Number]() Vector[T] {
 	return Vector[T]{}
 }
 
-// OneVector creates a new Vector with both components one (1,1), the factors that scale
-// nothing.
+// OneVector returns the vector of both components one, the factors that scale nothing.
 func OneVector[T Number]() Vector[T] {
 	return Vector[T]{1, 1}
 }
 
-// VectorFromAngle creates a new Vector of the given length pointing at the given angle (in
-// radians), measured in the standard math convention where Y grows upward.
-// For integer T, both components are rounded; only multiples of 90° give exact results.
+// VectorFromAngle returns the vector of the length at the angle in radians.
 func VectorFromAngle[T Number](angle float64, length T) Vector[T] {
 	return VectorFromAngleSize(angle, SzU(length))
 }
 
-// VectorFromAngleSize creates a new Vector at the given angle (in radians) on an ellipse
-// with the given size as its semi-axes: (width*cos(angle), height*sin(angle)).
-// For integer T, both components are rounded; only multiples of 90° give exact results.
+// VectorFromAngleSize returns the vector at the angle in radians on the ellipse with the size as
+// its semi-axes (width·cos, height·sin).
 func VectorFromAngleSize[T Number](angle float64, size Size[T]) Vector[T] {
 	sin, cos := math.Sincos(angle)
 
 	return Vector[T]{Cast[T](float64(size.Width) * cos), Cast[T](float64(size.Height) * sin)}
 }
 
-// XY returns the vector X, Y values in standard order.
+// XY returns X and Y.
 func (v Vector[T]) XY() (T, T) {
 	return v.X, v.Y
 }
 
-// Length returns the Vector's length (magnitude).
+// Length returns the length of the vector.
 func (v Vector[T]) Length() float64 {
 	return math.Hypot(float64(v.X), float64(v.Y))
 }
 
-// LengthSquared returns the Vector's length (magnitude) squared (for faster comparison).
+// LengthSquared returns the square of Length.
 func (v Vector[T]) LengthSquared() T {
 	x, y := float64(v.X), float64(v.Y)
 
 	return Cast[T](float64(x*x) + float64(y*y))
 }
 
-// Angle returns the vector's angle in radians.
+// Angle returns the angle of the vector in radians.
 func (v Vector[T]) Angle() float64 {
 	return math.Atan2(float64(v.Y), float64(v.X))
 }
@@ -76,83 +70,80 @@ func (v Vector[T]) Direction() Direction {
 	return DirectionFromAngle(v.Angle())
 }
 
-// Add creates a new Vector by adding the given vector to the current vector.
+// Add returns the sum of the vectors.
 func (v Vector[T]) Add(vector Vector[T]) Vector[T] {
 	return Vector[T]{v.X + vector.X, v.Y + vector.Y}
 }
 
-// AddXY creates a new Vector by adding the given values to the current vector.
+// AddXY returns the vector with the deltas added.
 func (v Vector[T]) AddXY(deltaX, deltaY T) Vector[T] {
 	return Vector[T]{v.X + deltaX, v.Y + deltaY}
 }
 
-// Subtract creates a new Vector by subtracting the given vector from the current vector.
+// Subtract returns the difference of the vectors.
 func (v Vector[T]) Subtract(vector Vector[T]) Vector[T] {
 	return Vector[T]{v.X - vector.X, v.Y - vector.Y}
 }
 
-// SubtractXY creates a new Vector by subtracting the given values from the current vector.
+// SubtractXY returns the vector with the deltas subtracted.
 func (v Vector[T]) SubtractXY(deltaX, deltaY T) Vector[T] {
 	return Vector[T]{v.X - deltaX, v.Y - deltaY}
 }
 
-// Multiply creates a new Vector by multiplying the given value to the current vector.
+// Multiply returns the vector with both components multiplied by the factor.
 func (v Vector[T]) Multiply(factor float64) Vector[T] {
 	return Vector[T]{Multiply(v.X, factor), Multiply(v.Y, factor)}
 }
 
-// MultiplyXY creates a new Vector by multiplying the given values to the current vector.
+// MultiplyXY returns the vector with each component multiplied by its own factor.
 func (v Vector[T]) MultiplyXY(factorX, factorY float64) Vector[T] {
 	return Vector[T]{Multiply(v.X, factorX), Multiply(v.Y, factorY)}
 }
 
-// Divide creates a new Vector with X and Y divided by the given factor. Like the package
-// Divide it panics for a zero factor.
+// Divide returns the vector with both components divided by the factor. It panics for a zero
+// factor.
 func (v Vector[T]) Divide(factor float64) Vector[T] {
 	return Vector[T]{Divide(v.X, factor), Divide(v.Y, factor)}
 }
 
-// DivideXY creates a new Vector with X and Y each divided by its own factor. Like the package
-// Divide it panics for a zero factor.
+// DivideXY returns the vector with each component divided by its own factor. It panics for a zero
+// factor.
 func (v Vector[T]) DivideXY(factorX, factorY float64) Vector[T] {
 	return Vector[T]{Divide(v.X, factorX), Divide(v.Y, factorY)}
 }
 
-// Negate creates a new Vector with opposite direction.
+// Negate returns the vector pointing the opposite way.
 func (v Vector[T]) Negate() Vector[T] {
 	return Vector[T]{-v.X, -v.Y}
 }
 
-// Abs creates a new Vector with absolute X and Y.
+// Abs returns the vector with absolute components.
 func (v Vector[T]) Abs() Vector[T] {
 	return Vector[T]{Abs(v.X), Abs(v.Y)}
 }
 
-// Round creates a new Vector by rounding X, Y values to the nearest integer.
+// Round returns the vector with components rounded to the nearest integer.
 func (v Vector[T]) Round() Vector[T] {
 	return Vector[T]{Round(v.X), Round(v.Y)}
 }
 
-// Floor creates a new Vector by rounding down X, Y values to the nearest integer.
+// Floor returns the vector with components rounded down.
 func (v Vector[T]) Floor() Vector[T] {
 	return Vector[T]{Floor(v.X), Floor(v.Y)}
 }
 
-// Ceil creates a new Vector by rounding up X, Y values to the nearest integer.
+// Ceil returns the vector with components rounded up.
 func (v Vector[T]) Ceil() Vector[T] {
 	return Vector[T]{Ceil(v.X), Ceil(v.Y)}
 }
 
-// Lerp creates a new Vector in linear interpolation towards given vector.
+// Lerp returns the vector interpolated toward the given one, extrapolated outside [0, 1].
 func (v Vector[T]) Lerp(vector Vector[T], t float64) Vector[T] {
 	return Vector[T]{Lerp(v.X, vector.X, t), Lerp(v.Y, vector.Y, t)}
 }
 
-// AtLeast creates a new Vector of at least the given length: a shorter vector is resized to it
-// along its own direction, judged by Less, and a longer one is returned unchanged. The zero
-// vector has no direction and is resized along +X, as Resize does. Every vector is at least a
-// non-positive length, so that returns the vector unchanged.
-// For integer T the resized vector is rounded, as with Resize.
+// AtLeast returns the vector resized to the length where Less holds for it, and the vector itself
+// otherwise, so a non-positive length changes nothing. The zero vector is resized along +X.
 func (v Vector[T]) AtLeast(length T) Vector[T] {
 	if !v.Less(length) {
 		return v
@@ -161,11 +152,8 @@ func (v Vector[T]) AtLeast(length T) Vector[T] {
 	return v.Resize(float64(length))
 }
 
-// AtMost creates a new Vector of at most the given length: a longer vector is resized to it
-// along its own direction, judged by LessOrEqual, and a shorter one is returned unchanged, so
-// a velocity is capped at a top speed. No vector is at most a negative length, and the only
-// one at most zero is the zero vector, so a non-positive length gives the zero vector.
-// For integer T the resized vector is rounded, as with Resize.
+// AtMost returns the vector resized to the length where LessOrEqual fails for it, and the vector
+// itself otherwise. A non-positive length gives the zero vector.
 func (v Vector[T]) AtMost(length T) Vector[T] {
 	if v.LessOrEqual(length) {
 		return v
@@ -174,9 +162,8 @@ func (v Vector[T]) AtMost(length T) Vector[T] {
 	return v.Resize(float64(max(length, 0)))
 }
 
-// Transform creates a new Vector by applying the given matrix to the current vector. The matrix is
-// float-only, like an angle: convert an integer matrix with Matrix.Float first. For integer T, the
-// float64 result of each component is rounded; rotations and non-integer scales lose precision.
+// Transform returns the vector mapped by the matrix, without its translation. The matrix is
+// float-only: convert an integer one with Matrix.Float first.
 func (v Vector[T]) Transform[M Float](matrix Matrix[M]) Vector[T] {
 	x, y := float64(v.X), float64(v.Y)
 	a, b := float64(matrix.A), float64(matrix.B)
@@ -185,10 +172,7 @@ func (v Vector[T]) Transform[M Float](matrix Matrix[M]) Vector[T] {
 	return Vector[T]{Cast[T](float64(a*x) + float64(b*y)), Cast[T](float64(d*x) + float64(e*y))}
 }
 
-// Rotate creates a new Vector rotated by the given angle (in radians), in the standard math
-// convention where Y grows upward, so a positive angle appears clockwise on a screen with Y
-// pointing down. This is the same sense as a positive Direction.Turn step.
-// For integer T, sin/cos components are rounded; only multiples of 90° give exact results.
+// Rotate returns the vector rotated by the angle in radians.
 func (v Vector[T]) Rotate(angle float64) Vector[T] {
 	sin, cos := math.Sincos(angle)
 	x, y := float64(v.X), float64(v.Y)
@@ -196,31 +180,22 @@ func (v Vector[T]) Rotate(angle float64) Vector[T] {
 	return Vector[T]{Cast[T](float64(x*cos) - float64(y*sin)), Cast[T](float64(x*sin) + float64(y*cos))}
 }
 
-// RotateToward creates a new Vector turned toward the given angle (in radians) by at most step
-// along the shorter arc, keeping its length: the turn MoveTowardAngle makes of the vector's own
-// Angle, so it never passes the angle, a vector exactly opposite it turns in the sense of
-// increasing angle, and a negative step turns away from it without being clamped. The zero
-// vector has no direction to turn and is returned unchanged. The receiver is turned rather than
-// placed again from its angle, so a step of zero gives it back exactly.
-// For integer T, sin/cos components are rounded as with Rotate, so a small step can leave the
-// vector where it is on every call.
+// RotateToward returns the vector turned toward the angle in radians by at most the step along the
+// shorter arc, keeping its length and never passing the angle. A vector exactly opposite turns
+// toward increasing angle, a negative step turns away unclamped, and a zero step or the zero vector
+// returns the receiver. For integer T a small step can leave the vector in place.
 func (v Vector[T]) RotateToward(angle, step float64) Vector[T] {
 	if !v.hasDirection() {
 		return v
 	}
 
-	return v.Rotate(MoveTowardAngle(0, angle-v.Angle(), step))
+	return v.Rotate(MoveTowardAngle(0, NormalizeAngle(angle-v.Angle()), step))
 }
 
-// MoveToward creates a new Vector moved toward the target by at most step along the straight
-// line between their ends, changing the direction and the length together: a velocity taken
-// toward the wanted one by an acceleration times the frame time. It never passes the target:
-// where the distance left is no longer than step the result is the target itself, exactly. A
-// negative step moves away from the target along the same line and is not clamped, as an
-// extrapolating Lerp is not; a vector already at the target has no line to leave along and
-// stays there. The step is a float64 like the length Length returns.
-// For integer T the result is rounded, so a step of less than half a unit can leave the vector
-// where it is on every call.
+// MoveToward returns the vector moved toward the target by at most the step, direction and length
+// together, never past it: where the distance left is at most the step, the result is the target
+// exactly. A negative step moves away and is not clamped, and a vector at the target stays there.
+// For integer T a step under half a unit can leave the vector in place.
 func (v Vector[T]) MoveToward(target Vector[T], step float64) Vector[T] {
 	from := v.Float()
 	offset := target.Float().Subtract(from)
@@ -233,15 +208,9 @@ func (v Vector[T]) MoveToward(target Vector[T], step float64) Vector[T] {
 	return from.Add(offset.Multiply(step / distance)).Cast[T]()
 }
 
-// Resize creates a new Vector resized to the given length. The zero vector has no direction
-// and resizes along +X to (length,0), the same convention Normalize follows. Only the exact
-// zero vector is treated this way: a vector shorter than Epsilon keeps its direction, down to
-// the subnormal range, since each component is divided by the current length before it is
-// scaled; the single factor length/current would overflow to +Inf there.
-// The length is a float64 like the one Length returns, so an integer vector can be resized to
-// a length no integer expresses. A negative length flips the direction: the result points the
-// other way and its Length is the absolute value, as scaling by a negative factor would.
-// For integer T, the result is rounded and the actual length may differ from the requested value.
+// Resize returns the vector of the length in its own direction, the zero vector resized along +X. A
+// vector of any nonzero length keeps its direction, however short. A negative length flips the
+// direction. For integer T the length of the result can differ from the one asked.
 func (v Vector[T]) Resize(length float64) Vector[T] {
 	if !v.hasDirection() {
 		return Vector[T]{Cast[T](length), 0}
@@ -252,16 +221,11 @@ func (v Vector[T]) Resize(length float64) Vector[T] {
 	return Vector[T]{Cast[T](float64(v.X) / current * length), Cast[T](float64(v.Y) / current * length)}
 }
 
-// Slerp creates a new Vector in interpolation towards the given vector along the arc between
-// them: the direction turns along the shorter arc with LerpAngle and the length changes
-// linearly, so a turning velocity keeps its speed where Lerp would cut the corner and slow it.
-// The zero vector has no direction and takes the other's, so a Slerp from or to it runs along
-// the straight line Lerp takes. Vectors pointing exactly opposite have no shorter arc and turn in
-// the sense of increasing angle, as LerpAngle does. It extrapolates outside [0, 1] like Lerp,
-// and a length taken past zero flips the direction, as Resize does for a negative length.
-// The receiver is turned and scaled rather than placed again from its angle, so a t of zero
-// gives it back exactly, as Lerp does. For integer T, sin/cos components are rounded as with
-// Rotate.
+// Slerp returns the vector interpolated toward the given one, the direction along the shorter arc
+// as LerpAngle turns it and the length linearly, extrapolated outside [0, 1]. The zero vector takes
+// the direction of the other, so the result runs as Lerp does, and opposite vectors turn toward
+// increasing angle. A length taken past zero flips the direction, and a t of zero returns the
+// receiver exactly.
 func (v Vector[T]) Slerp(vector Vector[T], t float64) Vector[T] {
 	from, to := v.Float(), vector.Float()
 
@@ -278,10 +242,8 @@ func (v Vector[T]) Slerp(vector Vector[T], t float64) Vector[T] {
 	return turned.Multiply(Lerp(length, to.Length(), t) / length).Cast[T]()
 }
 
-// Normalize creates a new Vector resized to a length of 1.
-// For integer T, the only vectors of length 1 are the four axis-aligned unit vectors, so the
-// result snaps to the longer axis and keeps its sign, X winning a tie; the exact zero vector
-// returns (1,0) by convention.
+// Normalize returns the vector of length one in its own direction, and (1,0) for the zero vector.
+// For integer T it snaps to the axis of the longer component, keeping its sign, X on a tie.
 func (v Vector[T]) Normalize() Vector[T] {
 	if !v.hasDirection() {
 		return Vector[T]{1, 0}
@@ -298,18 +260,14 @@ func (v Vector[T]) Normalize() Vector[T] {
 	return v.Resize(1)
 }
 
-// Normal creates a new Vector at a right angle to the current one, turned a quarter turn the way
-// a positive angle turns: counterclockwise in math coordinates, clockwise as drawn on a screen
-// with +Y down. It is exact for every T and the result of Rotate by a quarter turn without the
-// rounding. The length is kept, so the result is a unit vector only where the vector is one:
-// Normalize it for a unit normal, and Negate it for the normal on the other side.
+// Normal returns the vector a quarter turn in the sense of a positive angle, exactly and of the
+// same length. Normalize it for a unit normal, and Negate it for the other side.
 func (v Vector[T]) Normal() Vector[T] {
 	return Vector[T]{-v.Y, v.X}
 }
 
-// Project creates a new Vector with the component of the current vector along the given one:
-// the given vector scaled by the ratio of the dot product to its squared length. Projecting
-// onto the zero vector gives the zero vector. For integer T the result is rounded.
+// Project returns the component of the vector along the given one, and the zero vector for a zero
+// one.
 func (v Vector[T]) Project(vector Vector[T]) Vector[T] {
 	a, b := v.Float(), vector.Float()
 
@@ -321,17 +279,14 @@ func (v Vector[T]) Project(vector Vector[T]) Vector[T] {
 	return vector.Multiply(a.Dot(b) / length)
 }
 
-// Reject creates a new Vector with the component of the current vector perpendicular to the
-// given one, what Project leaves out: the two sum to the current vector. Rejecting from the
-// zero vector gives the current vector.
+// Reject returns the component of the vector perpendicular to the given one, so Project and Reject
+// sum to the vector. A zero vector rejects nothing and gives the vector itself.
 func (v Vector[T]) Reject(vector Vector[T]) Vector[T] {
 	return v.Subtract(v.Project(vector))
 }
 
-// Reflect creates a new Vector mirrored across the surface with the given normal, which need
-// not be normalized: the component along the normal flips and the rest is kept, as a bounce
-// off a wall. A zero normal reflects nothing and returns the current vector. For integer T the
-// result is rounded once, like Project.
+// Reflect returns the vector mirrored across the surface with the given normal, which need not be
+// unit: the component along the normal flips. A zero normal returns the vector itself.
 func (v Vector[T]) Reflect(normal Vector[T]) Vector[T] {
 	a, b := v.Float(), normal.Float()
 
@@ -343,106 +298,92 @@ func (v Vector[T]) Reflect(normal Vector[T]) Vector[T] {
 	return v.Subtract(normal.Multiply(2 * a.Dot(b) / length))
 }
 
-// Dot returns dot (scalar) product of two vectors.
-// The two products are rounded separately, which keeps a fused multiply-add from turning the
-// dot product of a vector with its own normal into a rounding error: perpendicular vectors give
-// exactly zero.
+// Dot returns the dot product of the vectors, exactly zero for perpendicular ones.
 func (v Vector[T]) Dot(vector Vector[T]) T {
 	a, b := v.Float(), vector.Float()
 
 	return Cast[T](float64(a.X*b.X) + float64(a.Y*b.Y))
 }
 
-// Cross returns cross product of two vectors.
-// The two products are rounded separately, which keeps a fused multiply-add from turning the
-// cross product of a vector with itself into a rounding error: parallel vectors give exactly zero.
+// Cross returns the cross product of the vectors, exactly zero for parallel ones.
 func (v Vector[T]) Cross(vector Vector[T]) T {
 	a, b := v.Float(), vector.Float()
 
 	return Cast[T](float64(a.X*b.Y) - float64(a.Y*b.X))
 }
 
-// AngleBetween returns the unsigned angle between the vectors in radians, in [0, π]. The zero
-// vector has no direction and is at angle 0 to everything. For the signed angle from one to
-// the other, subtract their Angle values.
+// AngleBetween returns the unsigned angle between the vectors in radians, in [0, π], and zero where
+// either is the zero vector.
 func (v Vector[T]) AngleBetween(vector Vector[T]) float64 {
 	a, b := v.Float(), vector.Float()
 
 	return math.Atan2(math.Abs(a.Cross(b)), a.Dot(b))
 }
 
-// Equal checks for equal X and Y values with given vector.
+// Equal reports whether the vectors have equal components.
 func (v Vector[T]) Equal(vector Vector[T]) bool {
 	return Equal(v.X, vector.X) && Equal(v.Y, vector.Y)
 }
 
-// IsZero checks if X and Y values are zero.
+// IsZero reports whether the vector is the zero vector.
 func (v Vector[T]) IsZero() bool {
 	return v.Equal(Vector[T]{})
 }
 
-// IsFinite reports whether X and Y are both numbers, neither NaN nor infinite: a vector Int
-// and Cast take into an integer type, where they panic on any other. A vector of integers
-// always is.
+// IsFinite reports whether both components are neither NaN nor infinite, which Cast and Int need
+// for an integer type. An integer vector always is.
 func (v Vector[T]) IsFinite() bool {
 	return IsFinite(v.X) && IsFinite(v.Y)
 }
 
-// IsOne checks if X and Y values are (1,1).
+// IsOne reports whether both components are one.
 func (v Vector[T]) IsOne() bool {
 	return v.Equal(Vector[T]{1, 1})
 }
 
-// IsUp checks whether the vector runs upward on a screen, its Y negative: the sign of that one
-// component, exact, so a diagonal is up and to a side at once; Direction names the one nearest.
+// IsUp reports whether the vector runs up on screen, its Y negative, exactly. A diagonal is up and
+// to a side at once; Direction names the nearest one.
 func (v Vector[T]) IsUp() bool {
 	return v.Y < 0
 }
 
-// IsDown checks whether the vector runs downward on a screen, its Y positive, the sign of that
-// one component as IsUp reads it.
+// IsDown reports whether the vector runs down on screen, its Y positive.
 func (v Vector[T]) IsDown() bool {
 	return v.Y > 0
 }
 
-// IsLeft checks whether the vector runs leftward, its X negative, the sign of that one
-// component as IsUp reads it.
+// IsLeft reports whether the vector runs left, its X negative.
 func (v Vector[T]) IsLeft() bool {
 	return v.X < 0
 }
 
-// IsRight checks whether the vector runs rightward, its X positive, the sign of that one
-// component as IsUp reads it.
+// IsRight reports whether the vector runs right, its X positive.
 func (v Vector[T]) IsRight() bool {
 	return v.X > 0
 }
 
-// IsNormalized checks if Vector is normalized: its length is 1 within Epsilon of T, judged on
-// the squared length by the same comparison every boundary test in the package makes.
+// IsNormalized reports whether the vector has length one.
 func (v Vector[T]) IsNormalized() bool {
 	return equalSquared(v.Float().LengthSquared(), 1, Epsilon[T]())
 }
 
-// Less reports whether the vector is strictly shorter than the given length, judged on the
-// squared length like LessOrEqual. No tolerance is applied, and no vector is shorter than a
-// non-positive length.
+// Less reports whether the vector is strictly shorter than the length, with no tolerance. No vector
+// is shorter than a non-positive length.
 func (v Vector[T]) Less(length T) bool {
 	reach := float64(length)
 
 	return reach > 0 && v.Float().LengthSquared() < reach*reach
 }
 
-// LessOrEqual reports whether the vector is at most the given length, within the tolerance,
-// so a vector a rounding error longer than length still counts: its end lies within that
-// radius of the origin, judged on the squared length by the same comparison every boundary
-// test in the package makes. No vector is at most a negative length, however small: the
-// tolerance widens the boundary, never the sign.
+// LessOrEqual reports whether the vector is at most the length, so its end lies in the circle of
+// that radius about the origin. No vector is at most a negative length: the tolerance widens the
+// boundary, never the sign.
 func (v Vector[T]) LessOrEqual(length T) bool {
 	return length >= 0 && lessOrEqualSquared(v.Float().LengthSquared(), float64(length), epsilonAt[T](float64(length)))
 }
 
-// hasDirection reports whether the vector points somewhere: only the exact zero vector does not.
-// It deliberately ignores Epsilon, since a vector shorter than the tolerance still has a direction.
+// hasDirection reports whether the vector is not the exact zero vector, ignoring the tolerance,
+// since a vector shorter than it still has a direction.
 func (v Vector[T]) hasDirection() bool {
 	return v.X != 0 || v.Y != 0
 }
@@ -452,11 +393,8 @@ func (v Vector[T]) Point() Point[T] {
 	return Point[T](v)
 }
 
-// Size converts the vector to a Size, the extents it spans, keeping the sign of each
-// component: the inverse of Size.Vector, as Point and Vector convert into each other. A size
-// is signed, so a vector running toward the origin gives a negative extent, which measures
-// the other way; take Abs where an extent must be positive, as every shape does with the size
-// it stores.
+// Size converts the vector to a Size, the inverse of Size.Vector. The sign of each component is
+// kept: take Abs where an extent must not be negative.
 func (v Vector[T]) Size() Size[T] {
 	return Size[T]{v.X, v.Y}
 }
@@ -484,7 +422,7 @@ func (v Vector[T]) String() string {
 	return string(buf)
 }
 
-// appendString appends the vector to buf and returns the extended buffer, as String prints it.
+// appendString appends the vector as String prints it to buf and returns the extended buffer.
 func (v Vector[T]) appendString(buf []byte) []byte {
 	buf = append(buf, "⟨"...)
 	buf = appendString(buf, v.X)

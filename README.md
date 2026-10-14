@@ -163,6 +163,7 @@ c.Tangents(geom.Pt(13.0, 0.0)) // a Pair: the two points a line from there touch
 wheel := geom.Circ(geom.Pt(20.0, 0.0), 2.0)
 c.OuterTangents(wheel) // the two straight runs of a belt around both, each a Segment from c to wheel
 c.InnerTangents(wheel) // the two of a crossed belt; none once the circles touch
+c.Union(wheel)         // Circ((8.5,0);13.5), the smallest circle around both
 
 geom.CircleBetween(geom.Pt(0.0, 0.0), geom.Pt(6.0, 8.0))                   // Circ((3,4);5), the two across a diameter
 geom.CircleThrough(geom.Pt(0.0, 0.0), geom.Pt(6.0, 0.0), geom.Pt(0.0, 8.0)) // Circ((3,4);5), true; false on one line
@@ -302,6 +303,8 @@ s.ClipBox(view)                           // the part of s inside, and false whe
 s.ClipPolygon(p)                          // the parts inside a concave polygon, from Start to End
 part, ok := p.ClipBox(view)               // the polygon as a viewport shows it; also ClipRectangle, ClipPolygon
                                           // and ClipRegularPolygon
+left, right := p.Split(geom.Ln(cut, dir)) // the two parts either side of a line, meeting exactly along it
+both, ok := p.Union(other)                // the outline two overlapping convex polygons cover together
 overlap, ok := a.ClipRectangle(b)         // the overlap of two rectangles of one angle; ClipBox of two boxes
 hit, ok := s.HitCircle(c)                 // the first point s reaches from outside, with the normal there
 hit, ok = s.HitSegment(wall)              // or of a wall: HitSegment, HitRay and HitLine

@@ -5,26 +5,21 @@ import (
 	"slices"
 )
 
-// flattenDepth is how many times a curve is halved at most while it is flattened, so a curve
-// no tolerance can be met on, one with a NaN among its points, still ends: a Polyline of a
-// curve has at most two to that power of edges.
+// flattenDepth bounds how many times a curve is halved while flattened, so a curve no tolerance can
+// be met on, NaN included, still ends.
 const flattenDepth = 10
 
-// bezierDepth is how many times a curve is halved at most while a segment is cast at it: far
-// more than a piece needs to become straight to within Delta, so only a curve of no sensible
-// size is crossed as chords that are not yet straight.
+// bezierDepth bounds how many times a curve is halved while a segment is cast at it, far more than
+// a piece of sensible size needs to be straight within Delta.
 const bezierDepth = 32
 
-// CubicBezier is a 2D cubic Bezier curve: it runs from Start to End, leaving Start toward
-// Control1 and reaching End from Control2, the curve of a path in a vector drawing and of an
-// eased motion. It touches neither control point in general and lies within the hull of the
-// four.
+// CubicBezier is a curve from Start to End, leaving Start toward Control1 and reaching End from
+// Control2. It lies within the hull of the four points and passes through neither control point in
+// general.
 //
-// The curve is no Shape, and has no Length or Nearest of its own, neither of which has a closed
-// form: Polyline flattens it to a path within a tolerance, and that path measures it. A
-// segment, a ray or a line is cast at it as a wall, by their Intersection and Hit methods
-// naming it. It has no center either, so it moves by Translate and turns and scales by
-// Transform alone, which maps the curve by mapping its four points.
+// The curve is no Shape: Polyline flattens it to the path that measures it, and segments, rays and
+// lines are cast at it as a wall. It has no center, so it moves by Translate and turns and scales
+// by Transform alone.
 type CubicBezier[T Number] struct {
 	Start    Point[T] `json:"s"`
 	Control1 Point[T] `json:"c"`
@@ -37,9 +32,8 @@ func CubBez[T Number](start, control1, control2, end Point[T]) CubicBezier[T] {
 	return CubicBezier[T]{start, control1, control2, end}
 }
 
-// Bounds returns the axis-aligned bounding box of the curve itself, not of its control points:
-// the box around its two ends and the points where it turns back along an axis, the roots of
-// its derivative. For integer T the box is rounded outward, so it still holds the curve.
+// Bounds returns the axis-aligned bounding box of the curve, not of its control points. For integer
+// T it is rounded outward, so it still holds the curve.
 func (b CubicBezier[T]) Bounds() Box[T] {
 	points := [6]Point[float64]{b.Start.Float(), b.End.Float()}
 
@@ -56,9 +50,8 @@ func (b CubicBezier[T]) Bounds() Box[T] {
 	return Box[T]{Point[T]{-castUp[T](-a1.X), -castUp[T](-a1.Y)}, Point[T]{castUp[T](b1.X), castUp[T](b1.Y)}}
 }
 
-// extrema returns the fractions at which the curve turns back along X and along Y, two for
-// each axis: the roots of the derivative, a quadratic in each coordinate, wherever they fall,
-// and NaN where there is none. Bounds keeps those within the curve.
+// extrema returns the parameters at which the curve turns back along X and along Y, two per axis,
+// NaN where there is none and unclamped to the curve.
 func (b CubicBezier[T]) extrema() [4]float64 {
 	first, second, third := b.Control1.Float().Subtract(b.Start.Float()), b.Control2.Float().Subtract(b.Control1.Float()), b.End.Float().Subtract(b.Control2.Float())
 
@@ -68,13 +61,9 @@ func (b CubicBezier[T]) extrema() [4]float64 {
 	return [4]float64{x1, x2, y1, y2}
 }
 
-// roots returns the two fractions at which one coordinate of the derivative is zero, given the
-// three differences between the points in that coordinate: the roots of the quadratic they are
-// the Bernstein coefficients of, and a NaN or an infinity where it has fewer. The larger root
-// in magnitude is divided out of the sum that does not cancel and the other out of their
-// product, so a derivative that is linear, or a rounding error from it as that of a quadratic
-// curve raised to a cubic is, still gives its one root. It reads no field of the curve, so the
-// receiver is unnamed.
+// roots returns the two roots of one coordinate of the derivative, given the differences of the
+// points in it, NaN or infinite where there are fewer. Dividing the sum that does not cancel keeps
+// the one root of a nearly linear derivative, as a raised quadratic has.
 func (CubicBezier[T]) roots(first, second, third float64) (float64, float64) {
 	a, b := first-float64(2*second)+third, 2*(second-first)
 	sum := -(b + math.Copysign(math.Sqrt(float64(b*b)-float64(4*a*first)), b)) / 2
@@ -82,10 +71,8 @@ func (CubicBezier[T]) roots(first, second, third float64) (float64, float64) {
 	return sum / a, first / sum
 }
 
-// casteljau returns the points de Casteljau's construction passes through at the fraction t,
-// in float64: the three between neighbouring points of the curve, the two between those, and
-// the point between the two, which is the point of the curve. PointAt, TangentAt and Split are
-// all read off it.
+// casteljau returns the points of de Casteljau's construction at the parameter: the three between
+// neighbouring points, the two between those, and the point of the curve between the two.
 func (b CubicBezier[T]) casteljau(t float64) ([3]Point[float64], [2]Point[float64], Point[float64]) {
 	start, control1, control2, end := b.Start.Float(), b.Control1.Float(), b.Control2.Float(), b.End.Float()
 
@@ -95,52 +82,45 @@ func (b CubicBezier[T]) casteljau(t float64) ([3]Point[float64], [2]Point[float6
 	return first, second, second[0].Lerp(second[1], t)
 }
 
-// Translate creates a new CubicBezier translated by the given vector.
+// Translate returns the curve moved by the vector.
 func (b CubicBezier[T]) Translate(vector Vector[T]) CubicBezier[T] {
 	return CubicBezier[T]{b.Start.Add(vector), b.Control1.Add(vector), b.Control2.Add(vector), b.End.Add(vector)}
 }
 
-// Transform creates a new CubicBezier by applying the given matrix to its four points, like
-// Point.Transform, which is the curve itself transformed: a Bezier curve keeps its form under
-// every affine map.
+// Transform returns the curve mapped by the matrix, exactly, by mapping its four points.
 func (b CubicBezier[T]) Transform[M Float](matrix Matrix[M]) CubicBezier[T] {
 	return CubicBezier[T]{b.Start.Transform(matrix), b.Control1.Transform(matrix), b.Control2.Transform(matrix), b.End.Transform(matrix)}
 }
 
-// Lerp creates a new CubicBezier in linear interpolation towards the given curve, moving the
-// four points together like Point.Lerp, and extrapolating outside [0, 1]: each point of the
-// curve moves straight towards the point of the other at the same parameter.
+// Lerp returns the curve interpolated toward the given one, its four points together, and
+// extrapolated outside [0, 1].
 func (b CubicBezier[T]) Lerp(curve CubicBezier[T], t float64) CubicBezier[T] {
 	return CubicBezier[T]{b.Start.Lerp(curve.Start, t), b.Control1.Lerp(curve.Control1, t), b.Control2.Lerp(curve.Control2, t), b.End.Lerp(curve.End, t)}
 }
 
-// Reverse creates a new CubicBezier over the same points run the other way, from End to Start.
+// Reverse returns the curve run the other way, from End to Start.
 func (b CubicBezier[T]) Reverse() CubicBezier[T] {
 	return CubicBezier[T]{b.End, b.Control2, b.Control1, b.Start}
 }
 
-// PointAt returns the point of the curve at the parameter t, Start at zero and End at one,
-// extrapolating the curve outside [0, 1]. The parameter is not a fraction of the length: equal
-// steps of it are closer together where the control points are. For integer T the point is
-// rounded once.
+// PointAt returns the point of the curve at the parameter, Start at zero and End at one,
+// extrapolated outside [0, 1]. The parameter is no fraction of the length: equal steps of it bunch
+// up near the control points.
 func (b CubicBezier[T]) PointAt(t float64) Point[T] {
 	_, _, point := b.casteljau(t)
 
 	return point.Cast[T]()
 }
 
-// TangentAt returns the derivative of the curve at the parameter t, the direction it runs in
-// there with the speed of the parameter as its length, in float64 whatever T is. It is the
-// zero vector where the curve has no direction: at an end whose control point lies on it, and
-// at a cusp.
+// TangentAt returns the derivative of the curve at the parameter, zero at a cusp and at an end that
+// its control point lies on.
 func (b CubicBezier[T]) TangentAt(t float64) Vector[float64] {
 	_, second, _ := b.casteljau(t)
 
 	return second[1].Subtract(second[0]).Multiply(3)
 }
 
-// Split returns the two curves the curve is cut into at the parameter t, the first from Start
-// to PointAt(t) and the second from there to End, which together trace the same points. For
+// Split returns the curve cut at the parameter, from Start to PointAt(t) and from there to End. For
 // integer T the new points are rounded, so the halves only approximate the curve.
 func (b CubicBezier[T]) Split(t float64) (CubicBezier[T], CubicBezier[T]) {
 	first, second, point := b.casteljau(t)
@@ -149,27 +129,24 @@ func (b CubicBezier[T]) Split(t float64) (CubicBezier[T], CubicBezier[T]) {
 	return CubicBezier[T]{b.Start, first[0].Cast[T](), second[0].Cast[T](), middle}, CubicBezier[T]{middle, second[1].Cast[T](), first[2].Cast[T](), b.End}
 }
 
-// IntersectionSegment returns the points where the segment crosses the curve, as
-// Segment.IntersectionCubicBezier does, which has the Append form.
+// IntersectionSegment returns the points where the segment crosses the curve, from Start to End.
 func (b CubicBezier[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
 	return segment.IntersectionCubicBezier(b)
 }
 
-// IntersectionRay returns the points where the ray crosses the curve, as
-// Ray.IntersectionCubicBezier does, which has the Append form.
+// IntersectionRay returns the points where the ray crosses the curve, from its Origin on.
 func (b CubicBezier[T]) IntersectionRay(ray Ray[T]) []Point[T] {
 	return ray.IntersectionCubicBezier(b)
 }
 
-// IntersectionLine returns the points where the line crosses the curve, as
-// Line.IntersectionCubicBezier does, which has the Append form.
+// IntersectionLine returns the points where the line crosses the curve, in order along its
+// Direction.
 func (b CubicBezier[T]) IntersectionLine(line Line[T]) []Point[T] {
 	return line.IntersectionCubicBezier(b)
 }
 
-// appendIntersectionSegment appends the points where the segment crosses the curve to dst,
-// closed on by bezierCast and rounded once, a point two pieces share held once: the crossings
-// Segment.AppendIntersectionCubicBezier appends, and a ray and a line on their reach and span.
+// appendIntersectionSegment appends the points where the segment crosses the curve to dst, rounded
+// once and a point two pieces share given once; rays and lines call it on their reach and span.
 func (b CubicBezier[T]) appendIntersectionSegment(dst []Point[T], segment Segment[T]) []Point[T] {
 	cast := bezierCast{segment: segment.Float(), curve: b.Float()}
 	cast.step(cast.curve, 0, 1, bezierDepth)
@@ -184,32 +161,26 @@ func (b CubicBezier[T]) appendIntersectionSegment(dst []Point[T], segment Segmen
 	return dst
 }
 
-// Equal checks if the four points of the curves are equal, in their places, so a curve and its
-// Reverse are not.
+// Equal reports whether the curves have equal points in the same places, so a curve and its Reverse
+// differ.
 func (b CubicBezier[T]) Equal(curve CubicBezier[T]) bool {
 	return b.Start.Equal(curve.Start) && b.Control1.Equal(curve.Control1) && b.Control2.Equal(curve.Control2) && b.End.Equal(curve.End)
 }
 
-// IsZero checks if all four points are zero.
+// IsZero reports whether the curve is the zero value.
 func (b CubicBezier[T]) IsZero() bool {
 	return b.Equal(CubicBezier[T]{})
 }
 
-// Polyline converts the curve to a Polyline within the given tolerance of it, from Start to
-// End: the curve is halved until each piece lies within the tolerance of its chord, its control
-// points no farther from it than that, so the path has more points where the curve bends and
-// two where it is straight. It is what measures and tests the curve: its Length, Nearest and
-// DistanceTo are the curve's to within the tolerance. A negative tolerance is taken absolute,
-// and a curve is halved ten times at most, so a tolerance of zero gives a path of a thousand
-// edges. For integer T the points are rounded and one rounding onto the point before it is
-// left out.
+// Polyline returns the curve flattened to a path within the tolerance of it, from Start to End,
+// with more points where it bends, one edge where it is straight and one point where it has no
+// length. A negative tolerance is taken absolute, and the curve is halved at most ten times, so the
+// path has at most 1024 edges.
 func (b CubicBezier[T]) Polyline(tolerance float64) Polyline[T] {
 	return Polyline[T]{b.AppendPolyline(nil, tolerance)}
 }
 
-// AppendPolyline appends the points of the path Polyline returns to dst and returns the
-// extended slice, so a caller reusing dst allocates nothing once it has room for them. The
-// curve is walked twice, once to count the points, so dst grows once.
+// AppendPolyline appends the points of Polyline(tolerance) to dst and returns the extended slice.
 func (b CubicBezier[T]) AppendPolyline(dst []Point[T], tolerance float64) []Point[T] {
 	return b.Float().appendPolyline(dst, tolerance)
 }
@@ -229,17 +200,15 @@ func (b CubicBezier[T]) Float() CubicBezier[float64] {
 	return CubicBezier[float64]{b.Start.Float(), b.Control1.Float(), b.Control2.Float(), b.End.Float()}
 }
 
-// isFlatWithin reports whether the curve lies within the tolerance of the chord from Start to
-// End: both control points do, by the distance Segment.DistanceSquaredTo measures, and the
-// curve lies within their hull.
+// isFlatWithin reports whether both control points lie within the tolerance of the chord, which
+// holds the curve within it too, since the curve lies in their hull.
 func (b CubicBezier[T]) isFlatWithin(tolerance float64) bool {
 	chord := Segment[T]{b.Start, b.End}
 
 	return max(chord.distanceSquaredTo(b.Control1), chord.distanceSquaredTo(b.Control2)) <= tolerance*tolerance
 }
 
-// pieces returns how many chords flatten replaces the curve by at most: one where it is flat
-// within the tolerance or the depth is spent, and those of its two halves otherwise.
+// pieces returns how many chords flatten gives at most, so appendPolyline grows dst once.
 func (b CubicBezier[T]) pieces(tolerance float64, depth int) int {
 	if depth == 0 || b.isFlatWithin(tolerance) {
 		return 1
@@ -250,10 +219,9 @@ func (b CubicBezier[T]) pieces(tolerance float64, depth int) int {
 	return first.pieces(tolerance, depth-1) + second.pieces(tolerance, depth-1)
 }
 
-// appendPolyline appends the points of the path the curve is flattened to within the
-// tolerance, rounded into the type of dst, which grows once to hold them: Start, and the ends
-// flatten gives. It is called on the curve in float64, where Split is exact, so the curve of an
-// integer T is halved as it is, not as its rounded halves.
+// appendPolyline appends Start and the ends flatten gives to dst, rounded into its type. It is
+// called on the float64 curve, where Split is exact, so an integer curve is halved as it is, not as
+// its rounded halves.
 func (b CubicBezier[T]) appendPolyline[R Number](dst []Point[R], tolerance float64) []Point[R] {
 	tolerance = math.Abs(tolerance)
 	dst = append(slices.Grow(dst, b.pieces(tolerance, flattenDepth)+1), b.Start.Cast[R]())
@@ -261,10 +229,9 @@ func (b CubicBezier[T]) appendPolyline[R Number](dst []Point[R], tolerance float
 	return b.flatten(dst, tolerance, flattenDepth)
 }
 
-// flatten appends the ends of the chords the curve is replaced by, less its Start, which the
-// caller has appended: its End where it is flat within the tolerance or the depth is spent,
-// and the ends of its two halves otherwise. An end rounding onto the point before it is left
-// out, so no chord has zero length. Each end is rounded once into the type of dst.
+// flatten appends the ends of the chords replacing the curve, less Start: its End where it is flat
+// or the depth is spent, the ends of its halves otherwise. An end rounding onto the one before is
+// left out, so no chord has zero length.
 func (b CubicBezier[T]) flatten[R Number](dst []Point[R], tolerance float64, depth int) []Point[R] {
 	if depth == 0 || b.isFlatWithin(tolerance) {
 		if end := b.End.Cast[R](); end != dst[len(dst)-1] {
@@ -295,22 +262,20 @@ func (b CubicBezier[T]) String() string {
 	return string(buf)
 }
 
-// bezierCast gathers where a segment crosses a Bezier curve, in order from its Start: the
-// hits of the segment at the chords of the pieces the curve is halved into, each with the
-// perpendicular of the curve at the parameter the point lies at as the normal, a point two
-// pieces share held once. A cubic is crossed three times at most, and the room beyond that is
-// for a crossing found by both of the pieces it lies between.
+// bezierCast gathers the hits of a segment at a Bezier curve in order from its Start, each normal
+// the perpendicular of the curve where it is hit, a point two pieces share held once. A cubic is
+// crossed three times at most; the rest of the room holds a crossing both neighbouring pieces find,
+// and the last slot takes the farthest hit when there is no room, outside count.
 type bezierCast struct {
 	segment Segment[float64]
 	curve   CubicBezier[float64]
-	hits    [6]Hit[float64]
+	hits    [7]Hit[float64]
 	count   int
 }
 
-// step casts the segment at the piece of the curve between the two parameters: nothing where
-// it does not reach the box around the control points, which holds the piece, the crossing of
-// its chord where the piece is straight to within Delta or the depth is spent, and its two
-// halves otherwise.
+// step casts the segment at the piece between the two parameters: nothing where it misses the box
+// of the control points, the crossing of the chord where the piece is straight within Delta or the
+// depth is spent, and its two halves otherwise.
 func (c *bezierCast) step(piece CubicBezier[float64], from, to float64, depth int) {
 	a, b := minMaxOf([]Point[float64]{piece.Start, piece.Control1, piece.Control2, piece.End})
 	if !(Box[float64]{a, b}).IntersectsSegment(c.segment) {
@@ -335,8 +300,8 @@ func (c *bezierCast) step(piece CubicBezier[float64], from, to float64, depth in
 	c.step(second, middle, to, depth-1)
 }
 
-// add holds the hit in its place by Fraction, unless its point is already held. Where there is
-// no room left the farthest gives way, which copy drops off the end.
+// add holds the hit in its place by Fraction unless its point is already held. Where there is no
+// room the farthest of the held hits and the new one gives way.
 func (c *bezierCast) add(hit Hit[float64]) {
 	at := c.count
 	for i, held := range c.hits[:c.count] {
@@ -349,9 +314,7 @@ func (c *bezierCast) add(hit Hit[float64]) {
 		}
 	}
 
-	at = min(at, len(c.hits)-1)
-
 	copy(c.hits[at+1:], c.hits[at:c.count])
 	c.hits[at] = hit
-	c.count = min(c.count+1, len(c.hits))
+	c.count = min(c.count+1, len(c.hits)-1)
 }

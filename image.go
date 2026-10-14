@@ -4,19 +4,19 @@ import (
 	"image"
 )
 
-// PointFromImage converts a Point from an image.Point.
+// PointFromImage returns the point of an image.Point.
 func PointFromImage[T Number](p image.Point) Point[T] {
 	return Point[T]{T(p.X), T(p.Y)}
 }
 
-// SizeFromImage converts a Size from an image.Rectangle.
+// SizeFromImage returns the size of an image.Rectangle.
 func SizeFromImage[T Number](r image.Rectangle) Size[T] {
 	return Size[T]{T(r.Dx()), T(r.Dy())}
 }
 
-// RectangleFromImage converts a Rectangle from an image.Rectangle. For an integer T it is the
-// inverse of Rectangle.Rectangle; a float T centers an odd extent on a half, which Rectangle
-// rounds away from zero through Int, so the box it gives back can lie a pixel off.
+// RectangleFromImage returns the rectangle of an image.Rectangle. For an integer T it inverts
+// Rectangle.Rectangle; a float T centers an odd extent on a half, which Rectangle rounds away from
+// zero, so the box it gives back can lie a pixel off.
 func RectangleFromImage[T Number](r image.Rectangle) Rectangle[T] {
 	return RectangleFromMin(PointFromImage[T](r.Min), SizeFromImage[T](r))
 }
@@ -26,11 +26,9 @@ func (p Point[T]) Point() image.Point {
 	return image.Point(p.Int())
 }
 
-// Rectangle converts the rectangle to a half-open image.Rectangle, the Min and Max of its Int:
-// it spans exactly Size.Int pixels for any T, so a sprite keeps its width as it moves through
-// sub-pixel positions, where rounding the two corners on their own would have it flicker by a
-// pixel. The box is placed where Int places it. A rotated rectangle gives the box around its
-// rounded vertices, since an image.Rectangle has no angle.
+// Rectangle converts the rectangle to the half-open image.Rectangle of the Min and Max of its Int,
+// so it spans exactly Size.Int pixels and keeps its width through sub-pixel positions. A rotated
+// rectangle gives the box around its rounded vertices.
 func (r Rectangle[T]) Rectangle() image.Rectangle {
 	rounded := r.Int()
 

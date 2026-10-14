@@ -360,6 +360,14 @@ func TestVector_RotateToward(t *testing.T) {
 			assert.Equal(t, from.RotateToward(1, 0), from)
 		}
 	})
+	t.Run("a step of zero toward an angle whole turns from its own gives the receiver back exactly", func(t *testing.T) {
+		for _, from := range vectorFixtures {
+			for _, turns := range []float64{-2, -1, 1, 2} {
+				assert.Equal(t, from.RotateToward(from.Angle()+turns*2*Pi, 0), from, from.String())
+				geomtest.AssertVector(t, from.RotateToward(from.Angle()+turns*2*Pi, 1), from, from.String())
+			}
+		}
+	})
 	t.Run("keeps the length, never passes the angle and arrives over the fixtures", func(t *testing.T) {
 		for _, from := range vectorFixtures {
 			for _, to := range vectorFixtures {

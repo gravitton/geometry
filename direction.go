@@ -7,10 +7,8 @@ import (
 
 // Direction is one of the eight neighbor directions on a square lattice.
 //
-// Directions are numbered by increasing normalized angle, matching Angle and Vector.Angle:
-// counterclockwise in the standard math convention where Y grows upward, which appears clockwise as
-// drawn on a screen with Y pointing down. A negative step or angle is therefore counterclockwise on
-// screen.
+// Directions are numbered by increasing angle, counterclockwise in math coordinates, which is
+// clockwise as drawn on a screen with Y pointing down.
 type Direction int
 
 const (
@@ -59,27 +57,23 @@ const (
 	BottomRight = DirectionDownRight
 )
 
-// Directions lists all eight directions ordered by increasing angle from DirectionRight.
-// It returns a fresh array, so a caller cannot alter the list.
+// Directions returns all eight directions by increasing angle from DirectionRight.
 func Directions() [8]Direction {
 	return [8]Direction{DirectionRight, DirectionDownRight, DirectionDown, DirectionDownLeft, DirectionLeft, DirectionUpLeft, DirectionUp, DirectionUpRight}
 }
 
-// CardinalDirections lists the four cardinal directions ordered by increasing angle from
-// DirectionRight. It returns a fresh array, so a caller cannot alter the list.
+// CardinalDirections returns the four cardinal directions by increasing angle from DirectionRight.
 func CardinalDirections() [4]Direction {
 	return [4]Direction{DirectionRight, DirectionDown, DirectionLeft, DirectionUp}
 }
 
-// DiagonalDirections lists the four diagonal directions ordered by increasing angle from
-// DirectionDownRight. It returns a fresh array, so a caller cannot alter the list.
+// DiagonalDirections returns the four diagonal directions by increasing angle from
+// DirectionDownRight.
 func DiagonalDirections() [4]Direction {
 	return [4]Direction{DirectionDownRight, DirectionDownLeft, DirectionUpLeft, DirectionUpRight}
 }
 
-// DirectionOffsets lists the lattice step of all eight directions in the order of Directions, so
-// the step at an index is the Offset of the direction at that index. It returns a fresh array, so
-// a caller cannot alter the list.
+// DirectionOffsets returns the Offset of each direction in the order of Directions.
 func DirectionOffsets[T Number]() [8]Vector[T] {
 	var offsets [8]Vector[T]
 	for i, direction := range Directions() {
@@ -89,9 +83,7 @@ func DirectionOffsets[T Number]() [8]Vector[T] {
 	return offsets
 }
 
-// CardinalOffsets lists the lattice step of the four cardinal directions in the order of
-// CardinalDirections, so the step at an index is the Offset of the direction at that index. It
-// returns a fresh array, so a caller cannot alter the list.
+// CardinalOffsets returns the Offset of each direction in the order of CardinalDirections.
 func CardinalOffsets[T Number]() [4]Vector[T] {
 	var offsets [4]Vector[T]
 	for i, direction := range CardinalDirections() {
@@ -101,9 +93,7 @@ func CardinalOffsets[T Number]() [4]Vector[T] {
 	return offsets
 }
 
-// DiagonalOffsets lists the lattice step of the four diagonal directions in the order of
-// DiagonalDirections, so the step at an index is the Offset of the direction at that index. It
-// returns a fresh array, so a caller cannot alter the list.
+// DiagonalOffsets returns the Offset of each direction in the order of DiagonalDirections.
 func DiagonalOffsets[T Number]() [4]Vector[T] {
 	var offsets [4]Vector[T]
 	for i, direction := range DiagonalDirections() {
@@ -113,8 +103,8 @@ func DiagonalOffsets[T Number]() [4]Vector[T] {
 	return offsets
 }
 
-// DirectionFromAngle returns the direction nearest to the given angle in radians,
-// or DirectionNone for NaN and ±Inf.
+// DirectionFromAngle returns the direction nearest to the angle in radians, or DirectionNone for a
+// non-finite angle.
 func DirectionFromAngle(angle float64) Direction {
 	if !IsFinite(angle) {
 		return DirectionNone
@@ -123,8 +113,8 @@ func DirectionFromAngle(angle float64) Direction {
 	return Mod(Direction(math.Round(NormalizeAngle(angle)/(Pi/4))), 8)
 }
 
-// DirectionFromAxes returns the direction for the given axis inputs, canceling opposite
-// directions (e.g. left+right = DirectionNone).
+// DirectionFromAxes returns the direction of the pressed axis inputs, opposite inputs canceling
+// each other.
 func DirectionFromAxes(up, down, left, right bool) Direction {
 	if left && right {
 		left, right = false, false
@@ -155,8 +145,8 @@ func DirectionFromAxes(up, down, left, right bool) Direction {
 	}
 }
 
-// ParseDirection returns the direction with the given name, as String prints it, and an error
-// for any other string. "None" parses to DirectionNone.
+// ParseDirection returns the direction with the name String prints, and an error for any other
+// string.
 func ParseDirection(name string) (Direction, error) {
 	if name == DirectionNone.String() {
 		return DirectionNone, nil
@@ -171,10 +161,9 @@ func ParseDirection(name string) (Direction, error) {
 	return DirectionNone, fmt.Errorf("geom: unknown direction %q", name)
 }
 
-// Angle returns the angle of the direction in radians, measured in the standard math
-// convention where Y grows upward — so DirectionUp is -Pi/2, not +Pi/2, and NaN for
-// DirectionNone, which has no angle. Direction ordering follows this angle normalized to
-// [0, 2π), so DirectionFromAngle and Angle round-trip for every direction, DirectionNone included.
+// Angle returns the angle of the direction in radians, in math coordinates, so DirectionUp is -π/2,
+// and NaN for DirectionNone. DirectionFromAngle inverts it for every direction, DirectionNone
+// included.
 func (d Direction) Angle() float64 {
 	if d.IsNone() {
 		return math.NaN()
@@ -195,8 +184,7 @@ func (d Direction) Axis() Axis {
 	}
 }
 
-// normalize returns the direction wrapped into [DirectionRight, DirectionUpRight],
-// preserving DirectionNone.
+// normalize returns the direction wrapped into the eight constants, DirectionNone kept.
 func (d Direction) normalize() Direction {
 	if d.IsNone() {
 		return DirectionNone
@@ -205,14 +193,13 @@ func (d Direction) normalize() Direction {
 	return Mod(d, 8)
 }
 
-// Opposite returns the opposite direction, rotated 180°.
+// Opposite returns the direction turned by half a turn.
 func (d Direction) Opposite() Direction {
 	return d.Turn(4)
 }
 
-// Turn advances the direction by steps eighth-turns of increasing angle, the same sense as a
-// positive Vector.Rotate angle: counterclockwise in math coordinates, clockwise as drawn on a
-// screen with Y pointing down. Negative steps go the other way.
+// Turn returns the direction advanced by steps eighth-turns of increasing angle, the sense of a
+// positive Vector.Rotate; negative steps go the other way.
 func (d Direction) Turn(steps int) Direction {
 	if d.IsNone() {
 		return DirectionNone
@@ -226,8 +213,7 @@ func (d Direction) IsNone() bool {
 	return d == DirectionNone
 }
 
-// IsCardinal reports whether the direction is one of DirectionRight, DirectionUp, DirectionLeft, or
-// DirectionDown.
+// IsCardinal reports whether the direction runs along an axis.
 func (d Direction) IsCardinal() bool {
 	switch d.normalize() {
 	case DirectionRight, DirectionUp, DirectionLeft, DirectionDown:
@@ -237,8 +223,7 @@ func (d Direction) IsCardinal() bool {
 	}
 }
 
-// IsDiagonal reports whether the direction is one of DirectionUpRight, DirectionUpLeft,
-// DirectionDownLeft, or DirectionDownRight.
+// IsDiagonal reports whether the direction runs between the axes.
 func (d Direction) IsDiagonal() bool {
 	switch d.normalize() {
 	case DirectionUpRight, DirectionUpLeft, DirectionDownLeft, DirectionDownRight:
@@ -249,8 +234,7 @@ func (d Direction) IsDiagonal() bool {
 }
 
 // IsPositive reports whether the direction runs toward growing coordinates on its axis:
-// DirectionRight and DirectionDown, since Y grows downward.
-// It is false for DirectionNone and for diagonals, which run on neither axis.
+// DirectionRight and DirectionDown. It is false for diagonals and DirectionNone.
 func (d Direction) IsPositive() bool {
 	switch d.normalize() {
 	case DirectionRight, DirectionDown:
@@ -260,7 +244,7 @@ func (d Direction) IsPositive() bool {
 	}
 }
 
-// Offset creates a new non-normalized Vector with the lattice step of the direction, and the zero
+// Offset returns the lattice step of the direction, with components of -1, 0 or 1, and the zero
 // vector for DirectionNone.
 func (d Direction) Offset[T Number]() Vector[T] {
 	offset := d.offset()
@@ -268,9 +252,8 @@ func (d Direction) Offset[T Number]() Vector[T] {
 	return Vector[T]{T(offset.X), T(offset.Y)}
 }
 
-// Unit creates a new normalized Vector in the direction, and the zero vector for DirectionNone.
-// For integer T, only the four axis-aligned vectors have length 1, so a diagonal collapses onto
-// one of them; use Offset for the lattice step (±1,±1) that keeps the diagonal.
+// Unit returns the unit vector in the direction, and the zero vector for DirectionNone. For integer
+// T a diagonal collapses onto an axis; Offset keeps it.
 func (d Direction) Unit[T Number]() Vector[T] {
 	if d.IsNone() {
 		return Vector[T]{}
@@ -279,12 +262,9 @@ func (d Direction) Unit[T Number]() Vector[T] {
 	return d.Offset[T]().Normalize()
 }
 
-// Vector creates a new Vector of the given length pointing in the direction, and the zero vector
-// for DirectionNone. A negative length points the other way, as Vector.Resize gives it, so the
-// result runs along the opposite direction with the absolute length. For integer T, a diagonal has
-// both components rounded, so its actual length is only approximate. The diagonal is kept, unlike
-// Unit, which snaps to an axis: a diagonal of unit length is the lattice step of the direction, not
-// the axis vector Unit gives.
+// Vector returns the vector of the length in the direction, and the zero vector for DirectionNone.
+// A negative length points the other way. For integer T a diagonal is rounded per component, so its
+// length is approximate.
 func (d Direction) Vector[T Number](length T) Vector[T] {
 	if d.IsNone() {
 		return Vector[T]{}
@@ -338,14 +318,12 @@ func (d Direction) String() string {
 	}
 }
 
-// MarshalText implements encoding.TextMarshaler with the name String prints, so a direction
-// is stored as "UpRight" in JSON and as a map key rather than as its number.
+// MarshalText implements encoding.TextMarshaler with the name String prints.
 func (d Direction) MarshalText() ([]byte, error) {
 	return []byte(d.String()), nil
 }
 
-// UnmarshalText implements encoding.TextUnmarshaler, the inverse of MarshalText through
-// ParseDirection.
+// UnmarshalText implements encoding.TextUnmarshaler through ParseDirection.
 func (d *Direction) UnmarshalText(text []byte) error {
 	direction, err := ParseDirection(string(text))
 	if err != nil {

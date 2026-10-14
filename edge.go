@@ -6,10 +6,8 @@ import (
 	"slices"
 )
 
-// edgesOf iterates the edges joining the vertices in order, the last one closing back to the
-// first: the one iterator Polygon.Edges and Rectangle.Edges walk, so the edges a segment
-// crosses are the edges the walk reads. The slice is read as the edges are
-// yielded and never retained, so a caller may pass a slice of a local array.
+// edgesOf returns an iterator over the edges joining the vertices in order, the last closing back
+// to the first. The slice is never retained, so a caller may pass a slice of a local array.
 func edgesOf[T Number](vertices []Point[T]) iter.Seq[Segment[T]] {
 	return func(yield func(Segment[T]) bool) {
 		n := len(vertices)
@@ -21,23 +19,18 @@ func edgesOf[T Number](vertices []Point[T]) iter.Seq[Segment[T]] {
 	}
 }
 
-// edgeWalk folds the edges of a closed outline one at a time into the even-odd walk every
-// shape's walk makes: the squared distance to the nearest edge so far, starting infinitely
-// far, the edge it was measured to, and whether a ray from the point has crossed an odd number
-// of edges. A shape starts it as a literal, ranges its own Edges and calls step on each, so the
-// walk shares its rule without an iterator crossing a function boundary, which would allocate
-// it. The distance and the nearest point are both read off the one walk, so Nearest returns
-// the point itself exactly where DistanceSquaredTo is zero. The readers take the walk by
-// value, so a shape reads them straight off the walk it returns.
+// edgeWalk folds the edges of a closed outline into the walk of a shape: the squared distance to
+// the nearest edge, starting infinite, that edge, unless the point lies on one, which stops the
+// walk at zero, and the even-odd parity of a ray from the point. A shape starts it as a literal and
+// steps its own Edges, since an iterator passed in would allocate.
 type edgeWalk[T Number] struct {
 	inside   bool
 	distance float64
 	edge     Segment[T]
 }
 
-// step folds one edge in and reports whether the point lies on it within the tolerance, as
-// Segment.DistanceSquaredTo snaps it, where the walk is over: the point is on the boundary at
-// distance zero whatever the remaining edges say.
+// step folds one edge in and reports whether the point lies on it, which ends the walk at distance
+// zero whatever the remaining edges say.
 func (w *edgeWalk[T]) step(edge Segment[T], point Point[T]) bool {
 	distance := edge.distanceSquaredTo(point)
 	if lessOrEqualSquared(distance, 0, epsilonAt[T](max(edge.magnitude(), point.magnitude()))) {
@@ -59,8 +52,7 @@ func (w *edgeWalk[T]) step(edge Segment[T], point Point[T]) bool {
 	return false
 }
 
-// result returns the squared distance from the point to the outline after every edge: zero
-// inside by the even-odd rule, the distance to the nearest edge otherwise, and infinity where
+// result returns the squared distance from the point to the outline: zero inside, infinite where
 // there was no edge.
 func (w edgeWalk[T]) result() float64 {
 	if w.inside {
@@ -70,9 +62,8 @@ func (w edgeWalk[T]) result() float64 {
 	return w.distance
 }
 
-// nearest returns the point of the outline nearest to the point after every edge: the point
-// itself where result is zero, and the foot on the nearest edge otherwise, which is the zero
-// point where there was no edge.
+// nearest returns the point itself where result is zero, and otherwise its foot on the nearest
+// edge, the zero point where there was no edge.
 func (w edgeWalk[T]) nearest(point Point[T]) Point[T] {
 	if w.result() == 0 {
 		return point
@@ -81,38 +72,29 @@ func (w edgeWalk[T]) nearest(point Point[T]) Point[T] {
 	return w.edge.foot(point)
 }
 
-// clears reports whether a circle of the given radius about the point lies within the outline
-// after every edge: the point inside or on it, where result is zero, and the nearest edge no
-// nearer than the radius within the tolerance, so a circle touching an edge from inside is
-// enclosed. A point on the boundary is at distance zero and clears only a radius within the
-// tolerance.
+// clears reports whether the circle about the point lies within the outline: the point inside and
+// the nearest edge no nearer than the radius.
 func (w edgeWalk[T]) clears(circle Circle[T]) bool {
 	return w.result() == 0 && greaterOrEqualSquared(w.distance, float64(circle.Radius), circle.epsilonWith(w.edge.magnitude()))
 }
 
-// reaches reports whether a circle about the point shares a point with the outline after every
-// edge: the point inside or on it, where result is zero, or the nearest edge within the radius,
-// by the comparison Circle.Contains makes, at the tolerance of the circle and that edge, the
-// one Circle.IntersectsSegment applies to it.
+// reaches reports whether the circle about the point shares a point with the outline, at the
+// tolerance Circle.IntersectsSegment applies to the nearest edge.
 func (w edgeWalk[T]) reaches(circle Circle[T]) bool {
 	return circle.containsSquared(w.result(), w.edge.magnitude())
 }
 
-// edgeIntersections collects the points where a segment crosses the edges of a polygon, fed
-// one at a time by the polygon ranging its own Edges, as edgeWalk folds a walk: each crossing by
-// Segment.IntersectionSegment, a vertex hit by two edges counted once. It is started with the
-// slice the crossings are appended to and the length it had, so the points already there are
-// neither compared nor sorted; a nil slice is allocated on the first crossing with room for the
-// two a convex outline can have. Only a concave outline grows it, and the convex shapes keep
-// their two outermost crossings in edgeSpan instead.
+// edgeIntersections collects the points where a segment crosses the edges of an outline, giving a
+// vertex two edges cross once. Points before from are neither compared nor sorted; a nil slice is
+// allocated on the first crossing with room for the two of a convex outline.
 type edgeIntersections[T Number] struct {
 	segment Segment[T]
 	points  []Point[T]
 	from    int
 }
 
-// add folds one edge in, keeping its crossing with the segment unless a previous edge gave
-// a point that compares Equal to it.
+// add folds one edge in, keeping its crossing with the segment unless an earlier edge gave an Equal
+// point.
 func (e *edgeIntersections[T]) add(edge Segment[T]) {
 	point, ok := e.segment.IntersectionSegment(edge)
 	if !ok || slices.ContainsFunc(e.points[e.from:], point.Equal) {
@@ -126,8 +108,8 @@ func (e *edgeIntersections[T]) add(edge Segment[T]) {
 	e.points = append(e.points, point)
 }
 
-// sorted returns the slice with the crossings ordered from the segment's Start after the points
-// it was started with, and the slice as it was where there was none.
+// sorted returns the slice with the crossings ordered from the segment's Start after the points it
+// was started with.
 func (e *edgeIntersections[T]) sorted() []Point[T] {
 	slices.SortFunc(e.points[e.from:], func(a, b Point[T]) int {
 		return e.segment.compareDistance(a, b)
@@ -136,14 +118,9 @@ func (e *edgeIntersections[T]) sorted() []Point[T] {
 	return e.points
 }
 
-// edgeSpan folds the points where a segment crosses the edges of a convex outline into the
-// first and the last from the segment's Start, as edgeIntersections collects them all: the ends
-// of the part inside, which is all Segment.clipConvex reads, and the boundary points the
-// Intersection of a convex shape returns, so the two agree and the crossings are never more than
-// two. It holds them in an array of its own rather than a slice, so a shape that only clips
-// allocates nothing. The edge the first crossing lies on is kept beside it, the boundary a Hit
-// reads its normal from, and the first crossing is the first of any outline, so the Hit of a
-// concave polygon reads the span too.
+// edgeSpan keeps only the first and the last crossing of a segment with the edges of an outline,
+// and the edge of the first, so clipping, Intersection and Hit of a convex shape agree and allocate
+// nothing. The first crossing is the first of any outline, so a concave Hit reads it too.
 type edgeSpan[T Number] struct {
 	segment Segment[T]
 	ends    [2]Point[T]
@@ -151,9 +128,9 @@ type edgeSpan[T Number] struct {
 	crossed bool
 }
 
-// add folds one edge in, keeping its crossing with the segment where it comes before the first
-// or after the last so far. A vertex two edges cross at goes to the one that faces Start, and
-// stays with the edge added first where both do or neither does.
+// add folds one edge in, keeping its crossing where it comes before the first or after the last. A
+// vertex crossed by two edges goes to the edge that faces Start, the earlier one where both or
+// neither do.
 func (e *edgeSpan[T]) add(edge Segment[T]) {
 	point, ok := e.segment.IntersectionSegment(edge)
 
@@ -170,8 +147,8 @@ func (e *edgeSpan[T]) add(edge Segment[T]) {
 	}
 }
 
-// crossings returns the first and the last crossing from Start, the same point twice where
-// there was one, and nil where there was none.
+// crossings returns the first and the last crossing, the same point twice where there was one, and
+// nil where there was none.
 func (e *edgeSpan[T]) crossings() []Point[T] {
 	if !e.crossed {
 		return nil
@@ -180,9 +157,8 @@ func (e *edgeSpan[T]) crossings() []Point[T] {
 	return e.ends[:]
 }
 
-// pair returns the first and the last crossing from Start, the one point where they compare
-// Equal and none where there was none: the boundary points of a convex outline, whose ends
-// clipConvex reads.
+// pair returns the first and the last crossing, one point where they are Equal and none where there
+// was none.
 func (e *edgeSpan[T]) pair() Pair[Point[T]] {
 	switch {
 	case !e.crossed:
@@ -194,8 +170,8 @@ func (e *edgeSpan[T]) pair() Pair[Point[T]] {
 	}
 }
 
-// hit returns the first crossing from Start as the Hit of the segment on the edge it lies on,
-// and false where there was none.
+// hit returns the Hit of the segment at the first crossing, with the normal of its edge, and false
+// where there was none.
 func (e *edgeSpan[T]) hit() (Hit[T], bool) {
 	if !e.crossed {
 		return Hit[T]{}, false
@@ -204,14 +180,10 @@ func (e *edgeSpan[T]) hit() (Hit[T], bool) {
 	return e.segment.hitAt(e.ends[0], e.edge.Float().Normal()), true
 }
 
-// edgePass gathers, among the points where a segment crosses the edges of an outline, the next
-// ones after a point already reached on the way from Start to End: the nearest beyond it, in the
-// order edgeIntersections sorts them with Point.Compare deciding a tie, as many as its array
-// holds. A point that compares Equal to the reached one is that point again, and the pass
-// notes that the reached point touches the boundary. A shape passes over its Edges once and reads
-// the points it kept with next, and passes again from the last of them only where the array
-// came back full and is spent, so the crossings are visited in order without a slice to hold
-// them.
+// edgePass keeps, in order from Start, the next crossings of a segment with the edges of an outline
+// beyond a reached point, as many as its array holds, Point.Compare breaking ties. A shape passes
+// again from the last one only where the array is spent, so it visits every crossing without a
+// slice.
 type edgePass[T Number] struct {
 	segment Segment[T]
 	reached Point[T]
@@ -220,8 +192,8 @@ type edgePass[T Number] struct {
 	touched bool
 }
 
-// add folds one edge in, keeping its crossing with the segment where it lies beyond the reached
-// point.
+// add folds one edge in, keeping its crossing where it lies beyond the reached point and noting a
+// touch where it is Equal to it.
 func (e *edgePass[T]) add(edge Segment[T]) {
 	point, ok := e.segment.IntersectionSegment(edge)
 
@@ -234,8 +206,7 @@ func (e *edgePass[T]) add(edge Segment[T]) {
 	}
 }
 
-// insert places the point among those kept, in their order from the reached point, dropping
-// the farthest where the array is full, the point itself where it is the farthest.
+// insert places the point in order, dropping the farthest where the array is full.
 func (e *edgePass[T]) insert(point Point[T]) {
 	at := e.n
 	for at > 0 && e.precedes(point, e.points[at-1]) {
@@ -251,9 +222,8 @@ func (e *edgePass[T]) insert(point Point[T]) {
 	e.points[at] = point
 }
 
-// next returns the first point kept that has not been read and lies beyond the given one, and
-// false where none is left: a point that compares Equal to the given one is that point again
-// and is passed over.
+// next returns the first unread point beyond the given one, skipping those Equal to it, and false
+// where none is left.
 func (e *edgePass[T]) next(point Point[T]) (Point[T], bool) {
 	for e.read < e.n && e.points[e.read].Equal(point) {
 		e.read++
@@ -268,38 +238,33 @@ func (e *edgePass[T]) next(point Point[T]) (Point[T], bool) {
 	return e.points[e.read-1], true
 }
 
-// spent reports whether the array came back full and every point of it has been read, so more
-// crossings may lie beyond the last and the shape passes again from it.
+// spent reports whether the array came back full and has all been read, so more crossings may lie
+// beyond the last.
 func (e *edgePass[T]) spent() bool {
 	return e.read == len(e.points)
 }
 
-// touchedAt reports whether the outline touches the given point: the one the pass started
-// from, where a crossing compared Equal to it.
+// touchedAt reports whether the point is the reached one and a crossing was Equal to it.
 func (e *edgePass[T]) touchedAt(point Point[T]) bool {
 	return e.touched && point == e.reached
 }
 
-// precedes reports whether a comes before b on the way from the segment's Start: nearer to
-// it, or as near and first by Point.Compare.
+// precedes reports whether a comes before b from the segment's Start: nearer, or as near and first
+// by Point.Compare.
 func (e *edgePass[T]) precedes(a, b Point[T]) bool {
 	return cmp.Or(e.segment.compareDistance(a, b), a.Compare(b)) < 0
 }
 
-// edgeProbe tests the edges of two outlines against each other one pair at a time, the inner
-// loop of every test of an outline against an outline: it is started as a literal with the
-// extent a, b of the outline being probed, aimed at a segment, and asked whether each edge of
-// that outline meets the segment. A shape ranges the Edges of both sides itself, so the loop
-// shares its two prefilters without an iterator crossing a function boundary, which would
-// allocate it.
+// edgeProbe tests the edges of an outline, of extent a, b, against one aimed segment at a time,
+// with an extent prefilter on each. A shape ranges the Edges of both sides itself, since an
+// iterator passed in would allocate.
 type edgeProbe[T Number] struct {
 	a, b    Point[T]
 	segment Segment[T]
 	c, d    Point[T]
 }
 
-// aim points the probe at the segment and reports whether the segment's extent overlaps the
-// outline's, so a segment that cannot reach the outline is rejected before any edge is examined.
+// aim points the probe at the segment and reports whether its extent overlaps that of the outline.
 func (p *edgeProbe[T]) aim(segment Segment[T]) bool {
 	p.segment = segment
 	p.c, p.d = segment.minMax()
@@ -307,18 +272,16 @@ func (p *edgeProbe[T]) aim(segment Segment[T]) bool {
 	return overlaps(p.a, p.b, p.c, p.d)
 }
 
-// meets reports whether the edge shares a point with the aimed segment, by
-// Segment.IntersectsSegment, run only where the extents of the two can share a point.
+// meets reports whether the edge shares a point with the aimed segment.
 func (p *edgeProbe[T]) meets(edge Segment[T]) bool {
 	e, f := edge.minMax()
 
 	return overlaps(p.c, p.d, e, f) && p.segment.IntersectsSegment(edge)
 }
 
-// edgeConvexity folds the edge directions of an outline one at a time into the test IsConvex
-// makes, as edgeWalk folds a walk: the first and the previous direction, the sense of the
-// turns so far, and how often the X component of the direction has changed sign. The turns of
-// an outline that goes around once in one sense change it exactly twice.
+// edgeConvexity folds the edge directions of an outline into the test IsConvex makes: the sense of
+// the turns so far and how often the X component has changed sign, which an outline going around
+// once does exactly twice.
 type edgeConvexity struct {
 	first, previous Vector[float64]
 	turned          bool
@@ -327,9 +290,8 @@ type edgeConvexity struct {
 	reversals       int
 }
 
-// step folds one edge direction in and reports whether the outline can still be convex: false
-// where it turns against the turns before it or doubles back. A zero direction, the edge of a
-// repeated vertex, is skipped. A NaN turn is neither sense, so it never settles one.
+// step folds one direction in and reports whether the outline can still be convex. A zero
+// direction, from a repeated vertex, is skipped; a NaN turn has no sense, so it never settles one.
 func (c *edgeConvexity) step(direction Vector[float64]) bool {
 	if !direction.hasDirection() {
 		return true
@@ -365,20 +327,14 @@ func (c *edgeConvexity) step(direction Vector[float64]) bool {
 	return true
 }
 
-// result closes the outline with the turn from the last direction back to the first and
-// reports whether it is convex: it turned at all, and the X component changed sign no more
-// than twice around it.
+// result closes the outline back to the first direction and reports whether it is convex.
 func (c *edgeConvexity) result() bool {
 	return c.step(c.first) && c.turned && c.reversals <= 2
 }
 
-// edgeClip cuts an outline to the inner side of one line after another, the steps of
-// Sutherland–Hodgman clipping: the lines through the edges of a convex region, which leave the
-// part of the outline inside it, or a single line. It is started as a literal with the slice
-// to append to, its length as from, and the vertices of the outline, which it reads and never
-// writes; each cut appends the outline it leaves after the one it read and moves it down to
-// from, so the slice needs room for two outlines and holds the last one at the end. A region
-// wound against Rectangle.Vertices is reversed, so the inner side is the same for both.
+// edgeClip cuts an outline to the inner side of one line after another, Sutherland–Hodgman style.
+// The vertices are read and never written; each cut appends its outline and moves it down to from,
+// so dst needs room for two outlines. A region wound against Rectangle.Vertices is reversed.
 type edgeClip[T Number] struct {
 	dst      []Point[T]
 	from     int
@@ -386,31 +342,30 @@ type edgeClip[T Number] struct {
 	reversed bool
 }
 
-// add cuts the outline to the inner side of the line through one edge of the region, the side
-// Segment.Normal points to on an edge of a Rectangle.
+// add cuts the outline to the side of the line through the edge that Segment.Normal points to on an
+// edge of a Rectangle.
 func (c *edgeClip[T]) add(edge Segment[T]) {
 	if c.reversed {
 		edge = edge.Reverse()
 	}
 
-	c.cut(edge.Line())
+	c.cut(edge.Line(), 1)
 }
 
-// cut keeps the part of the outline on the side of the line Line.Side gives 1 for, the line
-// itself included within the tolerance: every vertex there, and between a vertex strictly on
-// one side and the next strictly on the other the point where the edge crosses the line. A
-// vertex on the line is kept as it is and no crossing is placed beside it, so a point the
-// tolerance admits stays where it was. A line with no direction has no sides and cuts nothing.
-func (c *edgeClip[T]) cut(line Line[T]) {
+// cut keeps the part of the outline on the side the sense signs, the line included. A vertex on the
+// line is kept and no crossing is placed beside it, and both senses read the same sides, so the two
+// cuts of one line agree. A line with no direction cuts nothing, and a clip of no real cut leaves
+// dst without the outline.
+func (c *edgeClip[T]) cut(line Line[T], sense float64) {
 	if !line.Direction.hasDirection() || len(c.points) == 0 {
 		return
 	}
 
 	start := len(c.dst)
 	previous := c.points[len(c.points)-1]
-	previousSide := c.side(line, previous)
+	previousSide := sense * c.side(line, previous)
 	for _, point := range c.points {
-		side := c.side(line, point)
+		side := sense * c.side(line, point)
 		if (side < 0 && previousSide > 0) || (side > 0 && previousSide < 0) {
 			c.keep(start, c.crossing(previous, point, previousSide, side))
 		}
@@ -430,9 +385,8 @@ func (c *edgeClip[T]) cut(line Line[T]) {
 	c.points = c.dst[c.from:]
 }
 
-// keep appends a vertex to the outline a cut is leaving, the one that began at start, unless it
-// compares Equal to the vertex before it. The first vertex kept makes room for the outline a
-// convex one leaves, one vertex more than it had.
+// keep appends the point to the outline begun at start unless it is Equal to the last, making room
+// on the first for one vertex more than the outline had.
 func (c *edgeClip[T]) keep(start int, point Point[T]) {
 	n := len(c.dst)
 	if n == start {
@@ -446,8 +400,7 @@ func (c *edgeClip[T]) keep(start int, point Point[T]) {
 	c.dst = append(c.dst, point)
 }
 
-// side returns the side of the line the point lies on as Line.Side reads it, the cross product
-// itself, and zero for a point the line contains within the tolerance. A NaN has no side.
+// side returns the cross product Line.Side reads, and zero for a point the line contains.
 func (*edgeClip[T]) side(line Line[T], point Point[T]) float64 {
 	if line.Contains(point) {
 		return 0
@@ -456,10 +409,8 @@ func (*edgeClip[T]) side(line Line[T], point Point[T]) float64 {
 	return line.side(point)
 }
 
-// crossing returns the point where the edge from a to b crosses the line, given the sides of
-// the two, of opposite signs: each component of the edge times the side of a, divided once by
-// the difference of the sides, as Segment.crossing places a point, so for an integer T a
-// crossing on a half unit is exactly there before it is rounded.
+// crossing returns where the edge from a to b crosses the line, given their sides of opposite
+// signs, divided once so a crossing on a half unit is exact before rounding.
 func (*edgeClip[T]) crossing(a, b Point[T], sideA, sideB float64) Point[T] {
 	start := a.Float()
 	along := b.Float().Subtract(start)
@@ -471,4 +422,100 @@ func (*edgeClip[T]) crossing(a, b Point[T], sideA, sideB float64) Point[T] {
 // result returns the slice with the outline the cuts left appended to it.
 func (c *edgeClip[T]) result() []Point[T] {
 	return c.dst
+}
+
+// unionOutline gathers the outline of the union of two convex polygons, appended to dst after from:
+// the vertices of each outside the other and the crossings of their edges. It also averages the
+// points both share, a point inside both about which the outline is sorted by angle.
+type unionOutline[T Number] struct {
+	dst            []Point[T]
+	from           int
+	sumX, sumY     float64
+	count          int
+	first, other   Point[T]
+	paired, spread bool
+}
+
+// add takes a vertex of one polygon: onto the outline outside the other, among the shared points
+// inside it.
+func (u *unionOutline[T]) add(point Point[T], inside bool) {
+	if inside {
+		u.share(point)
+	} else {
+		u.dst = append(u.dst, point)
+	}
+}
+
+// cross takes a crossing of the edges, on the outline and shared by both.
+func (u *unionOutline[T]) cross(point Point[T]) {
+	u.dst = append(u.dst, point)
+	u.share(point)
+}
+
+// share adds a point both polygons hold to the average, and notes on exact signs whether the shared
+// points so far enclose an area.
+func (u *unionOutline[T]) share(point Point[T]) {
+	u.sumX += float64(point.X)
+	u.sumY += float64(point.Y)
+	u.count++
+
+	switch {
+	case u.count == 1:
+		u.first = point
+	case !u.paired && !point.Equal(u.first):
+		u.other, u.paired = point, true
+	case u.paired && !u.spread:
+		u.spread = u.other.Subtract(u.first).Cross(point.Subtract(u.first)) != 0
+	}
+}
+
+// result sorts the outline by angle about the shared average in the winding of the first polygon,
+// drops a point Equal to the one before, and starts it at the first point appended. Shared points
+// that enclose no area leave dst as it was given.
+func (u *unionOutline[T]) result(reversed bool) []Point[T] {
+	if !u.spread || len(u.dst) == u.from {
+		return u.dst[:u.from]
+	}
+
+	start := u.dst[u.from]
+	center := Point[float64]{u.sumX / float64(u.count), u.sumY / float64(u.count)}
+	outline := u.dst[u.from:]
+	slices.SortFunc(outline, func(a, b Point[T]) int {
+		return compareAngles(a.Float().Subtract(center), b.Float().Subtract(center))
+	})
+	if reversed {
+		slices.Reverse(outline)
+	}
+
+	outline = slices.CompactFunc(outline, Point[T].Equal)
+	if i := slices.IndexFunc(outline, start.Equal); i > 0 {
+		slices.Reverse(outline[:i])
+		slices.Reverse(outline[i:])
+		slices.Reverse(outline)
+	}
+
+	return u.dst[:u.from+len(outline)]
+}
+
+// compareAngles orders two vectors by Vector.Angle without trigonometry: by the half plane each
+// lies in, then by the sign of their cross product.
+func compareAngles(a, b Vector[float64]) int {
+	if halfA, halfB := angleHalf(a), angleHalf(b); halfA != halfB {
+		return halfA - halfB
+	}
+
+	return -int(Sign(a.Cross(b)))
+}
+
+// angleHalf returns 0 below the X axis, 1 above or along it, and 2 against it or for the zero
+// vector.
+func angleHalf(v Vector[float64]) int {
+	switch {
+	case v.Y < 0:
+		return 0
+	case v.Y > 0 || v.X > 0:
+		return 1
+	default:
+		return 2
+	}
 }

@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-// Orientation defines the rotational alignment of a regular polygon.
+// Orientation is the rotational alignment of a regular polygon.
 type Orientation int
 
 const (
@@ -13,19 +13,18 @@ const (
 	// OrientationPointyTop places a vertex at the top of the polygon.
 	OrientationPointyTop
 
-	// OrientationNone is the absence of an orientation. It names no alignment, so
-	// RegularPolygonOrientationPhase has no phase to give for it and panics.
+	// OrientationNone is the absence of an orientation, for which RegularPolygonOrientationPhase
+	// panics.
 	OrientationNone Orientation = -1
 )
 
-// Orientations lists both orientations in order. It returns a fresh array, so a caller cannot
-// alter the list.
+// Orientations returns both orientations in order.
 func Orientations() [2]Orientation {
 	return [2]Orientation{OrientationFlatTop, OrientationPointyTop}
 }
 
-// ParseOrientation returns the orientation with the given name, as String prints it, and an
-// error for any other string. "None" parses to OrientationNone.
+// ParseOrientation returns the orientation with the name String prints, and an error for any other
+// string.
 func ParseOrientation(name string) (Orientation, error) {
 	if name == OrientationNone.String() {
 		return OrientationNone, nil
@@ -40,9 +39,8 @@ func ParseOrientation(name string) (Orientation, error) {
 	return OrientationNone, fmt.Errorf("geom: unknown orientation %q", name)
 }
 
-// IsNone reports whether the orientation is neither OrientationFlatTop nor OrientationPointyTop.
-// Like Axis, an Orientation outside the constants is not normalized, so every such value counts as
-// OrientationNone.
+// IsNone reports whether the orientation is neither OrientationFlatTop nor OrientationPointyTop, so
+// every other value counts as OrientationNone.
 func (o Orientation) IsNone() bool {
 	return o != OrientationFlatTop && o != OrientationPointyTop
 }
@@ -59,14 +57,12 @@ func (o Orientation) String() string {
 	}
 }
 
-// MarshalText implements encoding.TextMarshaler with the name String prints, so an orientation
-// is stored as "FlatTop" in JSON and as a map key rather than as its number.
+// MarshalText implements encoding.TextMarshaler with the name String prints.
 func (o Orientation) MarshalText() ([]byte, error) {
 	return []byte(o.String()), nil
 }
 
-// UnmarshalText implements encoding.TextUnmarshaler, the inverse of MarshalText through
-// ParseOrientation.
+// UnmarshalText implements encoding.TextUnmarshaler through ParseOrientation.
 func (o *Orientation) UnmarshalText(text []byte) error {
 	orientation, err := ParseOrientation(string(text))
 	if err != nil {
