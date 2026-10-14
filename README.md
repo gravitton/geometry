@@ -256,6 +256,7 @@ s.DistanceTo(geom.Pt(10.0, 5.0))
 s.Support(geom.Vec(1.0, 0.0)) // the point of it farthest along a direction
 
 geom.Intersects(s, other) // two shapes of any kind, by the method of one naming the other where there is one
+geom.Contains(s, other)   // the second within the first, a selection over a mixed list
 geom.Distance(s, other)   // the gap between them, zero exactly where they intersect; DistanceSquared to compare
 geom.Raycast(ray, s)      // the Hit of a ray on a shape of any kind
 

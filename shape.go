@@ -13,7 +13,7 @@ import (
 // of any length, in float64, any one of them where several reach alike.
 //
 // A spatial index, a picking routine or a collision pass holds a Shape and never needs to know
-// which one: Intersects, Distance, Nearest, Collide and Sweep take any two, and Raycast a ray and one. Two kinds of this
+// which one: Contains, Intersects, Distance, Nearest, Collide and Sweep take any two, and Raycast a ray and one. Two kinds of this
 // package with a method for each other are tested by that method. Any other pair, an Ellipse
 // or a shape of another package among them, is known by its Support alone, which describes a
 // shape with no notch, so a Polygon that is not convex is taken edge by edge and a Sector past
@@ -42,64 +42,6 @@ type Body[T Number] interface {
 	Area() float64
 	Centroid() Point[T]
 	Inertia() float64
-}
-
-// Intersects reports whether two shapes share a point: the one call a broad collision pass
-// makes over a mixed list, where the concrete types are not known until it runs. It is
-// symmetric and includes a touch within the tolerance.
-//
-// Two kinds with an Intersects method for each other are tested by that method, the one of the
-// first naming the kind of the second, so the answer is the one the method gives. Any other
-// pair is tested from what the two are: an empty polygon intersects nothing; a Circle is tested
-// by its radius on the distance of the other to its center, the comparison every circle pair
-// makes; a Polygon that is not convex edge by edge, or one within the other, so a notch is not
-// filled in; a Sector past half a turn as its two halves, each convex; and two others by their
-// supports. That is how an Ellipse, and a shape of another package, is tested.
-//
-// Both arguments escape to the heap, so a loop that knows its types calls the named method
-// directly and allocates nothing. The shapes of this package are named by value, so a pointer
-// to one is a shape of another package here.
-func Intersects[T Number](a, b Shape[T]) bool {
-	if shape, ok := a.(intersector[T]); ok {
-		switch kind := b.(type) {
-		case Circle[T]:
-			return shape.IntersectsCircle(kind)
-		case Capsule[T]:
-			return shape.IntersectsCapsule(kind)
-		case Sector[T]:
-			return shape.IntersectsSector(kind)
-		case Segment[T]:
-			return shape.IntersectsSegment(kind)
-		case Polygon[T]:
-			return shape.IntersectsPolygon(kind)
-		case Rectangle[T]:
-			return shape.IntersectsRectangle(kind)
-		case RegularPolygon[T]:
-			return shape.IntersectsRegularPolygon(kind)
-		case Box[T]:
-			return shape.IntersectsBox(kind)
-		}
-	}
-
-	if isEmpty(a) || isEmpty(b) {
-		return false
-	}
-
-	if circle, other, ok := eitherCircle(a, b); ok {
-		return circle.containsSquared(other.DistanceSquaredTo(circle.Center), other.Bounds().magnitude())
-	}
-
-	if polygon, other, ok := eitherNonConvex(a, b); ok {
-		return polygon.intersectsSupport(other)
-	}
-
-	if sector, other, ok := eitherReflex(a, b); ok {
-		halves := sector.halves()
-
-		return Intersects[T](halves[0], other) || Intersects[T](halves[1], other)
-	}
-
-	return minkowski[T]{a: a, b: b}.intersects()
 }
 
 // Distance returns the distance between the nearest points of two shapes: zero exactly where
@@ -254,6 +196,116 @@ func Nearest[T Number](a, b Shape[T]) (Point[T], Point[T]) {
 	}
 
 	return nearest.from.Add(nearest.point).Cast[T](), nearest.from.Cast[T]()
+}
+
+// Contains reports whether the inner shape lies within the outer one, its boundary included
+// within the tolerance: the one call a selection or a region query makes over a mixed list, as
+// Intersects is for a test. An empty polygon on either side holds nothing and lies within
+// nothing.
+//
+// Where the outer shape has a Contains method naming the kind of the inner one, the answer is
+// the one the method gives. Any other pair, an Ellipse or a shape of another package on either
+// side, is tested by the supports of the two, in float64: the inner shape lies within where it
+// reaches no farther than the outer one in any direction. That is closed on within the
+// tolerance, so a shape touching the other from inside within it may answer either way, and
+// a shape within one of nearly its own round form, close to it all the way round, is taken
+// not to lie within it. A Polygon that is not convex and a Sector past half a turn hold no shape
+// this way, since their supports fill in a notch.
+//
+// Both arguments escape to the heap, as in Intersects.
+func Contains[T Number](outer, inner Shape[T]) bool {
+	if shape, ok := outer.(container[T]); ok {
+		switch kind := inner.(type) {
+		case Circle[T]:
+			return shape.ContainsCircle(kind)
+		case Capsule[T]:
+			return shape.ContainsCapsule(kind)
+		case Sector[T]:
+			return shape.ContainsSector(kind)
+		case Segment[T]:
+			return shape.ContainsSegment(kind)
+		case Polygon[T]:
+			return shape.ContainsPolygon(kind)
+		case Rectangle[T]:
+			return shape.ContainsRectangle(kind)
+		case RegularPolygon[T]:
+			return shape.ContainsRegularPolygon(kind)
+		case Box[T]:
+			return shape.ContainsBox(kind)
+		}
+	}
+
+	if isEmpty(outer) || isEmpty(inner) {
+		return false
+	}
+
+	if _, ok := nonConvex(outer); ok {
+		return false
+	}
+
+	if _, ok := reflex(outer); ok {
+		return false
+	}
+
+	return containsSupport(outer, inner)
+}
+
+// Intersects reports whether two shapes share a point: the one call a broad collision pass
+// makes over a mixed list, where the concrete types are not known until it runs. It is
+// symmetric and includes a touch within the tolerance.
+//
+// Two kinds with an Intersects method for each other are tested by that method, the one of the
+// first naming the kind of the second, so the answer is the one the method gives. Any other
+// pair is tested from what the two are: an empty polygon intersects nothing; a Circle is tested
+// by its radius on the distance of the other to its center, the comparison every circle pair
+// makes; a Polygon that is not convex edge by edge, or one within the other, so a notch is not
+// filled in; a Sector past half a turn as its two halves, each convex; and two others by their
+// supports. That is how an Ellipse, and a shape of another package, is tested.
+//
+// Both arguments escape to the heap, so a loop that knows its types calls the named method
+// directly and allocates nothing. The shapes of this package are named by value, so a pointer
+// to one is a shape of another package here.
+func Intersects[T Number](a, b Shape[T]) bool {
+	if shape, ok := a.(intersector[T]); ok {
+		switch kind := b.(type) {
+		case Circle[T]:
+			return shape.IntersectsCircle(kind)
+		case Capsule[T]:
+			return shape.IntersectsCapsule(kind)
+		case Sector[T]:
+			return shape.IntersectsSector(kind)
+		case Segment[T]:
+			return shape.IntersectsSegment(kind)
+		case Polygon[T]:
+			return shape.IntersectsPolygon(kind)
+		case Rectangle[T]:
+			return shape.IntersectsRectangle(kind)
+		case RegularPolygon[T]:
+			return shape.IntersectsRegularPolygon(kind)
+		case Box[T]:
+			return shape.IntersectsBox(kind)
+		}
+	}
+
+	if isEmpty(a) || isEmpty(b) {
+		return false
+	}
+
+	if circle, other, ok := eitherCircle(a, b); ok {
+		return circle.containsSquared(other.DistanceSquaredTo(circle.Center), other.Bounds().magnitude())
+	}
+
+	if polygon, other, ok := eitherNonConvex(a, b); ok {
+		return polygon.intersectsSupport(other)
+	}
+
+	if sector, other, ok := eitherReflex(a, b); ok {
+		halves := sector.halves()
+
+		return Intersects[T](halves[0], other) || Intersects[T](halves[1], other)
+	}
+
+	return minkowski[T]{a: a, b: b}.intersects()
 }
 
 // Collide returns how two overlapping shapes meet, and false where they do not intersect: the
@@ -460,6 +512,21 @@ type intersector[T Number] interface {
 	IntersectsRectangle(rectangle Rectangle[T]) bool
 	IntersectsRegularPolygon(polygon RegularPolygon[T]) bool
 	IntersectsBox(box Box[T]) bool
+}
+
+// container is a shape with the Contains method for each of the eight kinds of shape the
+// package names: Circle, Capsule, Sector, Polygon, Rectangle, RegularPolygon and Box, every
+// shape with an area but Ellipse. Contains tests two shapes through it where the outer is one;
+// Ellipse is not, and holds a shape by its Support.
+type container[T Number] interface {
+	ContainsCircle(circle Circle[T]) bool
+	ContainsCapsule(capsule Capsule[T]) bool
+	ContainsSector(sector Sector[T]) bool
+	ContainsSegment(segment Segment[T]) bool
+	ContainsPolygon(polygon Polygon[T]) bool
+	ContainsRectangle(rectangle Rectangle[T]) bool
+	ContainsRegularPolygon(polygon RegularPolygon[T]) bool
+	ContainsBox(box Box[T]) bool
 }
 
 // isEmpty reports whether the shape is a polygon or a regular polygon of no vertices, which

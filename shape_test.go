@@ -310,17 +310,19 @@ func TestIntersector(t *testing.T) {
 	})
 	t.Run("a shape enclosed by another intersects it", func(t *testing.T) {
 		for _, a := range shapes {
-			if outer, ok := a.(container[float64]); ok {
+			if _, ok := a.(container[float64]); ok {
 				for _, b := range shapes {
-					assert.True(t, !containsKind(outer, b) || intersectsKind(a, b), fmt.Sprintf("%s → %s: ", a, b))
+					if inner, ok := b.(Shape[float64]); ok {
+						assert.True(t, !Contains(a.(Shape[float64]), inner) || intersectsKind(a, b), fmt.Sprintf("%s → %s: ", a, b))
+					}
 				}
 			}
 		}
 	})
 	t.Run("every shape with an area encloses itself", func(t *testing.T) {
 		for _, a := range shapes {
-			if outer, ok := a.(container[float64]); ok {
-				assert.True(t, containsKind(outer, a), fmt.Sprintf("%s: ", a))
+			if _, ok := a.(container[float64]); ok {
+				assert.True(t, Contains(a.(Shape[float64]), a.(Shape[float64])), fmt.Sprintf("%s: ", a))
 			}
 		}
 	})
@@ -332,10 +334,12 @@ func TestIntersector(t *testing.T) {
 				for _, b := range far {
 					assert.Equal(t, intersectsKind(a, b), intersectsKind(b, a), fmt.Sprintf("%s → %s: ", a, b))
 				}
-				if outer, ok := a.(container[float32]); ok {
-					assert.True(t, containsKind(outer, a), fmt.Sprintf("%s: ", a))
+				if _, ok := a.(container[float32]); ok {
+					assert.True(t, Contains(a.(Shape[float32]), a.(Shape[float32])), fmt.Sprintf("%s: ", a))
 					for _, b := range far {
-						assert.True(t, !containsKind(outer, b) || intersectsKind(a, b), fmt.Sprintf("%s → %s: ", a, b))
+						if inner, ok := b.(Shape[float32]); ok {
+							assert.True(t, !Contains(a.(Shape[float32]), inner) || intersectsKind(a, b), fmt.Sprintf("%s → %s: ", a, b))
+						}
 					}
 				}
 			}
@@ -391,11 +395,10 @@ func TestContainer(t *testing.T) {
 				bounds := inner.(Shape[float64]).Bounds()
 
 				for _, shape := range []Shape[float64]{inner.(Shape[float64]), translated(inner.(Shape[float64]), sector.Centroid().Subtract(bounds.Center()))} {
-					kind := shape.(intersector[float64])
 					message := fmt.Sprintf("%v → %v: ", sector, shape)
 
-					assert.True(t, !containsKind[float64](within, kind) || containsKind[float64](sector, kind), message)
-					assert.True(t, !containsKind[float64](sector, kind) || containsKind[float64](about, kind), message)
+					assert.True(t, !Contains[float64](within, shape) || Contains[float64](sector, shape), message)
+					assert.True(t, !Contains[float64](sector, shape) || Contains[float64](about, shape), message)
 				}
 			}
 		}
@@ -428,33 +431,6 @@ func intersectsKind[T Number](a, b intersector[T]) bool {
 		return a.IntersectsBox(kind)
 	default:
 		panic(fmt.Sprintf("intersectsKind: no method for %T", b))
-	}
-}
-
-// containsKind tests the shape against the container by the method naming its kind, as
-// Intersects dispatches. A ray and a line run without end, so no container encloses one.
-func containsKind[T Number](outer container[T], shape intersector[T]) bool {
-	switch kind := shape.(type) {
-	case Circle[T]:
-		return outer.ContainsCircle(kind)
-	case Capsule[T]:
-		return outer.ContainsCapsule(kind)
-	case Sector[T]:
-		return outer.ContainsSector(kind)
-	case Segment[T]:
-		return outer.ContainsSegment(kind)
-	case Ray[T], Line[T]:
-		return false
-	case Polygon[T]:
-		return outer.ContainsPolygon(kind)
-	case Rectangle[T]:
-		return outer.ContainsRectangle(kind)
-	case RegularPolygon[T]:
-		return outer.ContainsRegularPolygon(kind)
-	case Box[T]:
-		return outer.ContainsBox(kind)
-	default:
-		panic(fmt.Sprintf("containsKind: no method for %T", shape))
 	}
 }
 
@@ -501,159 +477,6 @@ func TestBody(t *testing.T) {
 
 			assert.True(t, s.Inertia() > 0, fmt.Sprintf("%v: ", s))
 			assert.True(t, s.Inertia() < s.Area()*reach, fmt.Sprintf("%v: ", s))
-		}
-	})
-}
-
-func TestIntersects(t *testing.T) {
-	t.Run("a circle is tested against any shape by its radius", func(t *testing.T) {
-		shape := foreignShape[float64]{Rect(Pt(0.0, 0.0), Sz(2.0, 2.0))}
-
-		assert.True(t, Intersects[float64](shape, Circ(Pt(2.0, 0.0), 1.0)))
-		assert.True(t, Intersects[float64](Circ(Pt(2.0, 0.0), 1.0), shape))
-		assert.False(t, Intersects[float64](Circ(Pt(2.5, 0.0), 1.0), shape))
-	})
-	t.Run("convex shapes known by their support answer as the named methods do", func(t *testing.T) {
-		for _, a := range convexFixtures() {
-			for _, b := range convexFixtures() {
-				if _, ok := a.(Ellipse[float64]); ok {
-					continue
-				}
-				if _, ok := b.(Ellipse[float64]); ok {
-					continue
-				}
-
-				message := fmt.Sprintf("%v → %v: ", a, b)
-
-				assert.Equal(t, Intersects[float64](foreignShape[float64]{a}, foreignShape[float64]{b}), Intersects[float64](a, b), message)
-				assert.Equal(t, Intersects[float64](foreignShape[float64]{a}, b), Intersects[float64](a, b), message)
-			}
-		}
-	})
-	t.Run("an ellipse touching a shape intersects it, and not a tolerance apart", func(t *testing.T) {
-		ellipse := Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
-
-		assert.True(t, Intersects[float64](ellipse, Ell(Pt(6.0, 0.0), Sz(2.0, 3.0), 0)))
-		assert.False(t, Intersects[float64](ellipse, Ell(Pt(6.0+1e-4, 0.0), Sz(2.0, 3.0), 0)))
-		assert.True(t, Intersects[float64](ellipse, BoxFromMinMax(Pt(4.0, -1.0), Pt(6.0, 1.0))))
-		assert.False(t, Intersects[float64](ellipse, BoxFromMinMax(Pt(4.0+1e-4, -1.0), Pt(6.0, 1.0))))
-		assert.True(t, Intersects[float64](ellipse, Seg(Pt(-5.0, 2.0), Pt(5.0, 2.0))))
-		assert.True(t, Intersects[float64](ellipse, Circ(Pt(0.0, 3.0), 1.0)))
-		assert.False(t, Intersects[float64](ellipse, Circ(Pt(0.0, 3.0+1e-4), 1.0)))
-	})
-	t.Run("an int ellipse touches an outline on the lattice", func(t *testing.T) {
-		ellipse := Ell(Pt(0, 0), Sz(4, 2), 0)
-
-		assert.True(t, Intersects[int](ellipse, BoxFromMinMax(Pt(4, -1), Pt(6, 1))))
-		assert.False(t, Intersects[int](ellipse, BoxFromMinMax(Pt(5, -1), Pt(6, 1))))
-		assert.True(t, Intersects[int](ellipse, Ell(Pt(1, 1), Sz(1, 1), 0)))
-	})
-	t.Run("an ellipse lies between the polygon within it and the polygon about it", func(t *testing.T) {
-		shapes := append(shapeFixtures(), Polygon[float64]{}, RegularPolygon[float64]{})
-
-		for _, ellipse := range ellipseFixtures {
-			inner := ellipse.RegularPolygon(64, OrientationPointyTop)
-			outer := ellipse.Scale(1/math.Cos(Pi/64)).RegularPolygon(64, OrientationPointyTop)
-
-			for _, other := range shapes {
-				message := fmt.Sprintf("%v → %v: ", ellipse, other)
-				intersects := Intersects[float64](ellipse, other)
-
-				assert.Equal(t, Intersects[float64](other, ellipse), intersects, message)
-				if !ellipse.Size.IsPositive() {
-					continue
-				}
-
-				assert.True(t, !Intersects[float64](inner, other) || intersects, message+"within: ")
-				assert.True(t, !intersects || Intersects[float64](outer, other), message+"about: ")
-			}
-		}
-	})
-	t.Run("a notch of a polygon is not filled in", func(t *testing.T) {
-		polygon := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(6.0, 0.0), Pt(6.0, 6.0), Pt(4.0, 6.0), Pt(4.0, 2.0), Pt(2.0, 2.0), Pt(2.0, 6.0), Pt(0.0, 6.0)})
-
-		assert.False(t, Intersects[float64](polygon, Ell(Pt(3.0, 5.0), Sz(0.5, 1.0), 0)))
-		assert.True(t, Intersects[float64](polygon, Ell(Pt(3.0, 5.0), Sz(1.5, 1.0), 0)))
-		assert.True(t, Intersects[float64](Ell(Pt(1.0, 1.0), Sz(0.5, 0.25), 1.0), polygon))
-		assert.True(t, Intersects[float64](Ell(Pt(3.0, 3.0), Sz(10.0, 10.0), 0), polygon))
-	})
-	t.Run("the notch of a sector past half a turn is not filled in", func(t *testing.T) {
-		sector := notchedSector()
-
-		assert.False(t, Intersects[float64](sector, Ell(Pt(3.0, 0.0), Sz(1.0, 0.5), 0)))
-		assert.False(t, Intersects[float64](Ell(Pt(3.0, 0.0), Sz(1.0, 0.5), 0), sector))
-		assert.True(t, Intersects[float64](sector, Ell(Pt(3.0, 0.0), Sz(6.0, 6.0), 0)))
-		assert.True(t, Intersects[float64](Ell(Pt(-3.0, 0.0), Sz(1.0, 0.5), 0), sector))
-	})
-	t.Run("a sector is met exactly where one of its two halves is", func(t *testing.T) {
-		for _, sector := range sectorFixtures() {
-			first := Sect(sector.Center, sector.Radius, sector.Angle, sector.Sweep/2)
-			second := Sect(sector.Center, sector.Radius, sector.Angle+sector.Sweep/2, sector.Sweep/2)
-
-			for _, shape := range shapeFixtures() {
-				if _, ok := shape.(Ellipse[float64]); ok && math.Abs(sector.Sweep) <= Pi {
-					continue
-				}
-
-				halves := Intersects[float64](first, shape) || Intersects[float64](second, shape)
-
-				assert.Equal(t, Intersects[float64](sector, shape), halves, fmt.Sprintf("%v → %v: ", sector, shape))
-			}
-		}
-	})
-	t.Run("an empty polygon intersects no ellipse", func(t *testing.T) {
-		ellipse := Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
-
-		assert.False(t, Intersects[float64](ellipse, Polygon[float64]{}))
-		assert.False(t, Intersects[float64](RegularPolygon[float64]{}, ellipse))
-	})
-	t.Run("a NaN coordinate intersects nothing", func(t *testing.T) {
-		ellipse := Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
-
-		assert.False(t, Intersects[float64](ellipse, Ell(Pt(math.NaN(), 0.0), Sz(4.0, 2.0), 0)))
-		assert.False(t, Intersects[float64](ellipse, Seg(Pt(math.NaN(), 0.0), Pt(1.0, 1.0))))
-	})
-	t.Run("far from the origin float32 shapes answer alike from either side", func(t *testing.T) {
-		for _, offset := range farOffsets {
-			far := farShapes(offset)
-
-			for _, a := range far {
-				for _, b := range far {
-					assert.Equal(t, Intersects(a, b), Intersects(b, a), fmt.Sprintf("%v → %v: ", a, b))
-				}
-			}
-		}
-	})
-	t.Run("int shapes far from the origin answer as they do near it", func(t *testing.T) {
-		far := Vec(1<<25, -(1 << 25))
-		ellipse := Ell(Pt(0, 0), Sz(4, 2), 0).Translate(far)
-
-		assert.True(t, Intersects[int](ellipse, BoxFromMinMax(Pt(4, -1), Pt(6, 1)).Translate(far)))
-		assert.False(t, Intersects[int](ellipse, BoxFromMinMax(Pt(5, -1), Pt(6, 1)).Translate(far)))
-	})
-	t.Run("allocates nothing for shapes held as Shape", func(t *testing.T) {
-		var rectangle, other, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(0.3), Rect(Pt(1.0, 0.0), Sz(3.0, 2.0)), Ell(Pt(3.0, 0.0), Sz(2.0, 1.0), 0.2)
-
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
-			sinkBool = Intersects(rectangle, other)
-		}), 0)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
-			sinkBool = Intersects(rectangle, ellipse)
-		}), 0)
-	})
-}
-
-func BenchmarkIntersects(b *testing.B) {
-	var rectangle, other, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(0.3), Rect(Pt(1.0, 0.0), Sz(3.0, 2.0)), Ell(Pt(3.0, 0.0), Sz(2.0, 1.0), 0.2)
-
-	b.Run("by the method naming the kind", func(b *testing.B) {
-		for b.Loop() {
-			sinkBool = Intersects(rectangle, other)
-		}
-	})
-	b.Run("by supports", func(b *testing.B) {
-		for b.Loop() {
-			sinkBool = Intersects(rectangle, ellipse)
 		}
 	})
 }
@@ -965,6 +788,297 @@ func BenchmarkNearest(b *testing.B) {
 		for b.Loop() {
 			first, second := Nearest(box, ellipse)
 			sinkBool = first == second
+		}
+	})
+}
+
+func TestContains(t *testing.T) {
+	t.Run("a pair with a named method answers as the method does", func(t *testing.T) {
+		box := BoxFromMinMax(Pt(0.0, 0.0), Pt(10.0, 10.0))
+
+		assert.True(t, Contains[float64](box, Circ(Pt(5.0, 5.0), 5.0)))
+		assert.False(t, Contains[float64](box, Circ(Pt(5.0, 5.0), 5.5)))
+		assert.True(t, Contains[float64](Circ(Pt(5.0, 5.0), 8.0), box))
+		assert.False(t, Contains[float64](Seg(Pt(0.0, 0.0), Pt(10.0, 0.0)), box))
+	})
+	t.Run("convex shapes known by their support hold none the named methods do not, and every one shrunk", func(t *testing.T) {
+		for _, a := range convexFixtures() {
+			if _, ok := a.(container[float64]); !ok {
+				continue
+			}
+
+			for _, b := range convexFixtures() {
+				if _, ok := b.(Ellipse[float64]); ok {
+					continue
+				}
+
+				message := fmt.Sprintf("%v → %v: ", a, b)
+				contains := Contains(a, b)
+
+				assert.True(t, !Contains[float64](foreignShape[float64]{a}, b) || contains, message)
+				assert.True(t, !Contains[float64](a, foreignShape[float64]{b}) || contains, message)
+				assert.True(t, !contains || Contains[float64](foreignShape[float64]{a}, scaled(b, 0.99)), message)
+				assert.True(t, !contains || Contains[float64](a, foreignShape[float64]{scaled(b, 0.99)}), message)
+			}
+		}
+	})
+	t.Run("an ellipse lies between the polygon within it and the polygon about it", func(t *testing.T) {
+		for _, ellipse := range ellipseFixtures {
+			if !ellipse.Size.IsPositive() {
+				continue
+			}
+
+			within := ellipse.RegularPolygon(64, OrientationPointyTop)
+			about := ellipse.Scale(1/math.Cos(Pi/64)).RegularPolygon(64, OrientationPointyTop)
+
+			for _, other := range convexFixtures() {
+				message := fmt.Sprintf("%v → %v: ", ellipse, other)
+
+				assert.True(t, !Contains(within, other) || Contains[float64](ellipse, other), message+"holds: ")
+				assert.True(t, !Contains[float64](ellipse, other) || Contains(about, other), message+"holds: ")
+				assert.True(t, !Contains[float64](other, about) || Contains[float64](other, ellipse), message+"lies within: ")
+				assert.True(t, !Contains[float64](other, ellipse) || Contains[float64](other, within), message+"lies within: ")
+			}
+		}
+	})
+	t.Run("an ellipse touching a shape from inside lies within it, and not a tolerance out", func(t *testing.T) {
+		box := BoxFromMinMax(Pt(-4.0, -2.0), Pt(4.0, 2.0))
+
+		assert.True(t, Contains[float64](box, Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)))
+		assert.False(t, Contains[float64](box, Ell(Pt(1e-4, 0.0), Sz(4.0, 2.0), 0)))
+		assert.True(t, Contains[float64](Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0), Circ(Pt(0.0, 0.0), 2.0)))
+		assert.False(t, Contains[float64](Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0), Circ(Pt(0.0, 0.0), 2.0+1e-4)))
+		assert.True(t, Contains[float64](Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0), Seg(Pt(-4.0, 0.0), Pt(4.0, 0.0))))
+		assert.False(t, Contains[float64](Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0), Seg(Pt(-4.0, 0.0), Pt(4.0+1e-4, 0.0))))
+	})
+	t.Run("a segment holds the part of itself and nothing with an area", func(t *testing.T) {
+		segment := Seg(Pt(0.0, 0.0), Pt(3.0, 4.0))
+
+		assert.True(t, Contains[float64](segment, foreignShape[float64]{Seg(Pt(0.6, 0.8), Pt(2.4, 3.2))}))
+		assert.False(t, Contains[float64](segment, foreignShape[float64]{Seg(Pt(0.6, 0.8), Pt(3.6, 4.8))}))
+		assert.False(t, Contains[float64](segment, Ell(Pt(1.5, 2.0), Sz(0.5, 0.25), 0)))
+	})
+	t.Run("a round shape within one of nearly its own form is not taken to lie within it", func(t *testing.T) {
+		ellipse := Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0.3)
+
+		assert.True(t, Contains[float64](ellipse.Scale(1.01), ellipse))
+		assert.False(t, Contains[float64](ellipse.Scale(1+1e-6), ellipse))
+	})
+	t.Run("a notch is not filled in, so a shape that is not convex holds nothing by supports", func(t *testing.T) {
+		polygon := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(6.0, 0.0), Pt(6.0, 6.0), Pt(4.0, 6.0), Pt(4.0, 2.0), Pt(2.0, 2.0), Pt(2.0, 6.0), Pt(0.0, 6.0)})
+
+		assert.False(t, Contains[float64](polygon, Ell(Pt(3.0, 5.0), Sz(0.5, 0.5), 0)))
+		assert.False(t, Contains[float64](polygon, Ell(Pt(1.0, 1.0), Sz(0.5, 0.25), 0)))
+		assert.False(t, Contains[float64](notchedSector(), Ell(Pt(3.0, 0.0), Sz(1.0, 0.5), 0)))
+		assert.False(t, Contains[float64](notchedSector(), Ell(Pt(-3.0, 0.0), Sz(1.0, 0.5), 0)))
+		assert.True(t, Contains[float64](Ell(Pt(3.0, 3.0), Sz(10.0, 10.0), 0), polygon))
+	})
+	t.Run("an empty polygon holds nothing and lies within nothing", func(t *testing.T) {
+		ellipse := Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
+
+		assert.False(t, Contains[float64](ellipse, Polygon[float64]{}))
+		assert.False(t, Contains[float64](ellipse, RegularPolygon[float64]{}))
+		assert.False(t, Contains[float64](Polygon[float64]{}, ellipse))
+		assert.False(t, Contains[float64](RegularPolygon[float64]{}, ellipse))
+	})
+	t.Run("a NaN coordinate lies within nothing and holds nothing", func(t *testing.T) {
+		ellipse := Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
+
+		assert.False(t, Contains[float64](ellipse, Ell(Pt(math.NaN(), 0.0), Sz(1.0, 1.0), 0)))
+		assert.False(t, Contains[float64](Ell(Pt(math.NaN(), 0.0), Sz(4.0, 2.0), 0), Circ(Pt(0.0, 0.0), 1.0)))
+	})
+	t.Run("an int ellipse lies within an outline it touches on the lattice", func(t *testing.T) {
+		far := Vec(1<<25, -(1 << 25))
+
+		for _, offset := range []Vector[int]{{}, far} {
+			assert.True(t, Contains[int](BoxFromMinMax(Pt(-4, -2), Pt(4, 2)).Translate(offset), Ell(Pt(0, 0), Sz(4, 2), 0).Translate(offset)))
+			assert.False(t, Contains[int](BoxFromMinMax(Pt(-3, -2), Pt(4, 2)).Translate(offset), Ell(Pt(0, 0), Sz(4, 2), 0).Translate(offset)))
+		}
+	})
+	t.Run("far from the origin a float32 ellipse lies within the box about it", func(t *testing.T) {
+		for _, offset := range farOffsets {
+			ellipse := Ell[float32](Pt[float32](0, 0), Sz[float32](4, 2), 0).Translate(offset)
+
+			assert.True(t, Contains[float32](ellipse.Bounds(), ellipse))
+			assert.False(t, Contains[float32](ellipse.Bounds().Translate(Vec[float32](1, 0)), ellipse))
+		}
+	})
+	t.Run("allocates nothing for shapes held as Shape", func(t *testing.T) {
+		var box, circle, ellipse Shape[float64] = BoxFromMinMax(Pt(0.0, 0.0), Pt(10.0, 10.0)), Circ(Pt(5.0, 5.0), 2.0), Ell(Pt(5.0, 5.0), Sz(3.0, 2.0), 0.2)
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkBool = Contains(box, circle)
+		}), 0)
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkBool = Contains(box, ellipse)
+		}), 0)
+	})
+}
+
+func BenchmarkContains(b *testing.B) {
+	var box, circle, ellipse Shape[float64] = BoxFromMinMax(Pt(0.0, 0.0), Pt(10.0, 10.0)), Circ(Pt(5.0, 5.0), 2.0), Ell(Pt(5.0, 5.0), Sz(3.0, 2.0), 0.2)
+
+	b.Run("by the method naming the kind", func(b *testing.B) {
+		for b.Loop() {
+			sinkBool = Contains(box, circle)
+		}
+	})
+	b.Run("by supports", func(b *testing.B) {
+		for b.Loop() {
+			sinkBool = Contains(box, ellipse)
+		}
+	})
+}
+
+func TestIntersects(t *testing.T) {
+	t.Run("a circle is tested against any shape by its radius", func(t *testing.T) {
+		shape := foreignShape[float64]{Rect(Pt(0.0, 0.0), Sz(2.0, 2.0))}
+
+		assert.True(t, Intersects[float64](shape, Circ(Pt(2.0, 0.0), 1.0)))
+		assert.True(t, Intersects[float64](Circ(Pt(2.0, 0.0), 1.0), shape))
+		assert.False(t, Intersects[float64](Circ(Pt(2.5, 0.0), 1.0), shape))
+	})
+	t.Run("convex shapes known by their support answer as the named methods do", func(t *testing.T) {
+		for _, a := range convexFixtures() {
+			for _, b := range convexFixtures() {
+				if _, ok := a.(Ellipse[float64]); ok {
+					continue
+				}
+				if _, ok := b.(Ellipse[float64]); ok {
+					continue
+				}
+
+				message := fmt.Sprintf("%v → %v: ", a, b)
+
+				assert.Equal(t, Intersects[float64](foreignShape[float64]{a}, foreignShape[float64]{b}), Intersects[float64](a, b), message)
+				assert.Equal(t, Intersects[float64](foreignShape[float64]{a}, b), Intersects[float64](a, b), message)
+			}
+		}
+	})
+	t.Run("an ellipse touching a shape intersects it, and not a tolerance apart", func(t *testing.T) {
+		ellipse := Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
+
+		assert.True(t, Intersects[float64](ellipse, Ell(Pt(6.0, 0.0), Sz(2.0, 3.0), 0)))
+		assert.False(t, Intersects[float64](ellipse, Ell(Pt(6.0+1e-4, 0.0), Sz(2.0, 3.0), 0)))
+		assert.True(t, Intersects[float64](ellipse, BoxFromMinMax(Pt(4.0, -1.0), Pt(6.0, 1.0))))
+		assert.False(t, Intersects[float64](ellipse, BoxFromMinMax(Pt(4.0+1e-4, -1.0), Pt(6.0, 1.0))))
+		assert.True(t, Intersects[float64](ellipse, Seg(Pt(-5.0, 2.0), Pt(5.0, 2.0))))
+		assert.True(t, Intersects[float64](ellipse, Circ(Pt(0.0, 3.0), 1.0)))
+		assert.False(t, Intersects[float64](ellipse, Circ(Pt(0.0, 3.0+1e-4), 1.0)))
+	})
+	t.Run("an int ellipse touches an outline on the lattice", func(t *testing.T) {
+		ellipse := Ell(Pt(0, 0), Sz(4, 2), 0)
+
+		assert.True(t, Intersects[int](ellipse, BoxFromMinMax(Pt(4, -1), Pt(6, 1))))
+		assert.False(t, Intersects[int](ellipse, BoxFromMinMax(Pt(5, -1), Pt(6, 1))))
+		assert.True(t, Intersects[int](ellipse, Ell(Pt(1, 1), Sz(1, 1), 0)))
+	})
+	t.Run("an ellipse lies between the polygon within it and the polygon about it", func(t *testing.T) {
+		shapes := append(shapeFixtures(), Polygon[float64]{}, RegularPolygon[float64]{})
+
+		for _, ellipse := range ellipseFixtures {
+			inner := ellipse.RegularPolygon(64, OrientationPointyTop)
+			outer := ellipse.Scale(1/math.Cos(Pi/64)).RegularPolygon(64, OrientationPointyTop)
+
+			for _, other := range shapes {
+				message := fmt.Sprintf("%v → %v: ", ellipse, other)
+				intersects := Intersects[float64](ellipse, other)
+
+				assert.Equal(t, Intersects[float64](other, ellipse), intersects, message)
+				if !ellipse.Size.IsPositive() {
+					continue
+				}
+
+				assert.True(t, !Intersects[float64](inner, other) || intersects, message+"within: ")
+				assert.True(t, !intersects || Intersects[float64](outer, other), message+"about: ")
+			}
+		}
+	})
+	t.Run("a notch of a polygon is not filled in", func(t *testing.T) {
+		polygon := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(6.0, 0.0), Pt(6.0, 6.0), Pt(4.0, 6.0), Pt(4.0, 2.0), Pt(2.0, 2.0), Pt(2.0, 6.0), Pt(0.0, 6.0)})
+
+		assert.False(t, Intersects[float64](polygon, Ell(Pt(3.0, 5.0), Sz(0.5, 1.0), 0)))
+		assert.True(t, Intersects[float64](polygon, Ell(Pt(3.0, 5.0), Sz(1.5, 1.0), 0)))
+		assert.True(t, Intersects[float64](Ell(Pt(1.0, 1.0), Sz(0.5, 0.25), 1.0), polygon))
+		assert.True(t, Intersects[float64](Ell(Pt(3.0, 3.0), Sz(10.0, 10.0), 0), polygon))
+	})
+	t.Run("the notch of a sector past half a turn is not filled in", func(t *testing.T) {
+		sector := notchedSector()
+
+		assert.False(t, Intersects[float64](sector, Ell(Pt(3.0, 0.0), Sz(1.0, 0.5), 0)))
+		assert.False(t, Intersects[float64](Ell(Pt(3.0, 0.0), Sz(1.0, 0.5), 0), sector))
+		assert.True(t, Intersects[float64](sector, Ell(Pt(3.0, 0.0), Sz(6.0, 6.0), 0)))
+		assert.True(t, Intersects[float64](Ell(Pt(-3.0, 0.0), Sz(1.0, 0.5), 0), sector))
+	})
+	t.Run("a sector is met exactly where one of its two halves is", func(t *testing.T) {
+		for _, sector := range sectorFixtures() {
+			first := Sect(sector.Center, sector.Radius, sector.Angle, sector.Sweep/2)
+			second := Sect(sector.Center, sector.Radius, sector.Angle+sector.Sweep/2, sector.Sweep/2)
+
+			for _, shape := range shapeFixtures() {
+				if _, ok := shape.(Ellipse[float64]); ok && math.Abs(sector.Sweep) <= Pi {
+					continue
+				}
+
+				halves := Intersects[float64](first, shape) || Intersects[float64](second, shape)
+
+				assert.Equal(t, Intersects[float64](sector, shape), halves, fmt.Sprintf("%v → %v: ", sector, shape))
+			}
+		}
+	})
+	t.Run("an empty polygon intersects no ellipse", func(t *testing.T) {
+		ellipse := Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
+
+		assert.False(t, Intersects[float64](ellipse, Polygon[float64]{}))
+		assert.False(t, Intersects[float64](RegularPolygon[float64]{}, ellipse))
+	})
+	t.Run("a NaN coordinate intersects nothing", func(t *testing.T) {
+		ellipse := Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
+
+		assert.False(t, Intersects[float64](ellipse, Ell(Pt(math.NaN(), 0.0), Sz(4.0, 2.0), 0)))
+		assert.False(t, Intersects[float64](ellipse, Seg(Pt(math.NaN(), 0.0), Pt(1.0, 1.0))))
+	})
+	t.Run("far from the origin float32 shapes answer alike from either side", func(t *testing.T) {
+		for _, offset := range farOffsets {
+			far := farShapes(offset)
+
+			for _, a := range far {
+				for _, b := range far {
+					assert.Equal(t, Intersects(a, b), Intersects(b, a), fmt.Sprintf("%v → %v: ", a, b))
+				}
+			}
+		}
+	})
+	t.Run("int shapes far from the origin answer as they do near it", func(t *testing.T) {
+		far := Vec(1<<25, -(1 << 25))
+		ellipse := Ell(Pt(0, 0), Sz(4, 2), 0).Translate(far)
+
+		assert.True(t, Intersects[int](ellipse, BoxFromMinMax(Pt(4, -1), Pt(6, 1)).Translate(far)))
+		assert.False(t, Intersects[int](ellipse, BoxFromMinMax(Pt(5, -1), Pt(6, 1)).Translate(far)))
+	})
+	t.Run("allocates nothing for shapes held as Shape", func(t *testing.T) {
+		var rectangle, other, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(0.3), Rect(Pt(1.0, 0.0), Sz(3.0, 2.0)), Ell(Pt(3.0, 0.0), Sz(2.0, 1.0), 0.2)
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkBool = Intersects(rectangle, other)
+		}), 0)
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkBool = Intersects(rectangle, ellipse)
+		}), 0)
+	})
+}
+
+func BenchmarkIntersects(b *testing.B) {
+	var rectangle, other, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(0.3), Rect(Pt(1.0, 0.0), Sz(3.0, 2.0)), Ell(Pt(3.0, 0.0), Sz(2.0, 1.0), 0.2)
+
+	b.Run("by the method naming the kind", func(b *testing.B) {
+		for b.Loop() {
+			sinkBool = Intersects(rectangle, other)
+		}
+	})
+	b.Run("by supports", func(b *testing.B) {
+		for b.Loop() {
+			sinkBool = Intersects(rectangle, ellipse)
 		}
 	})
 }
@@ -1951,6 +2065,33 @@ func translated(shape Shape[float64], vector Vector[float64]) Shape[float64] {
 		return kind.Translate(vector)
 	default:
 		panic(fmt.Sprintf("translated: no method for %T", shape))
+	}
+}
+
+// scaled returns the convex shape scaled by the factor about a point within it, in its own kind,
+// a box inset to that size about its center.
+func scaled(shape Shape[float64], factor float64) Shape[float64] {
+	switch kind := shape.(type) {
+	case Circle[float64]:
+		return kind.Scale(factor)
+	case Capsule[float64]:
+		return kind.Scale(factor)
+	case Sector[float64]:
+		return kind.Scale(factor)
+	case Segment[float64]:
+		return kind.Scale(factor)
+	case Polygon[float64]:
+		return kind.Scale(factor)
+	case Rectangle[float64]:
+		return kind.Scale(factor)
+	case RegularPolygon[float64]:
+		return kind.Scale(factor)
+	case Box[float64]:
+		return kind.Inset(PadXY(kind.Width()*(1-factor)/2, kind.Height()*(1-factor)/2))
+	case Ellipse[float64]:
+		return kind.Scale(factor)
+	default:
+		panic(fmt.Sprintf("scaled: no method for %T", shape))
 	}
 }
 
