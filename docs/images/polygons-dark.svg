@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="472" height="133" viewBox="0 0 472 133" role="img">
+<g transform="translate(52.0 54.3)">
+<polygon points="-40.0,-30.0 40.0,-30.0 40.0,30.0 0.0,-2.0 -40.0,30.0" fill="#234a66" stroke="#6bb4e3" stroke-width="1.5" stroke-linejoin="round"/>
+<polygon points="-40.0,-30.0 40.0,-30.0 40.0,30.0 -40.0,30.0" fill="none" stroke="#e8883a" stroke-width="1" stroke-dasharray="4 4" stroke-linejoin="round"/>
+</g>
+<text x="52.0" y="116.6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" text-anchor="middle" fill="#a39a90">ConvexHull</text>
+<g transform="translate(168.0 54.3)">
+<polygon points="40.0,-30.0 40.0,30.0 0.0,-2.0" fill="#234a66" stroke="#6bb4e3" stroke-width="1" stroke-linejoin="round"/>
+<polygon points="-40.0,-30.0 40.0,-30.0 0.0,-2.0" fill="#234a66" stroke="#6bb4e3" stroke-width="1" stroke-linejoin="round"/>
+<polygon points="-40.0,30.0 -40.0,-30.0 0.0,-2.0" fill="#234a66" stroke="#6bb4e3" stroke-width="1" stroke-linejoin="round"/>
+</g>
+<text x="168.0" y="116.6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" text-anchor="middle" fill="#a39a90">Triangulate</text>
+<g transform="translate(294.2 50.0)">
+<polygon points="-48.0,-38.0 48.0,-38.0 48.0,46.6 0.0,8.2 -48.0,46.6" fill="none" stroke="#7cc46a" stroke-width="1.5" stroke-linejoin="round"/>
+<polygon points="-40.0,-30.0 40.0,-30.0 40.0,30.0 0.0,-2.0 -40.0,30.0" fill="#234a66" stroke="#6bb4e3" stroke-width="1.5" stroke-linejoin="round"/>
+<polygon points="-34.0,-24.0 34.0,-24.0 34.0,17.5 0.0,-9.7 -34.0,17.5" fill="none" stroke="#e8883a" stroke-width="1.5" stroke-linejoin="round"/>
+</g>
+<text x="294.2" y="116.6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" text-anchor="middle" fill="#a39a90">Grow and Shrink</text>
+<g transform="translate(420.5 54.3)">
+<polygon points="-40.0,-30.0 -5.0,-30.0 15.0,10.0 0.0,-2.0 -40.0,30.0" fill="#234a66" stroke="#6bb4e3" stroke-width="1.5" stroke-linejoin="round"/>
+<polygon points="-5.0,-30.0 40.0,-30.0 40.0,30.0 15.0,10.0" fill="#2f4f27" stroke="#7cc46a" stroke-width="1.5" stroke-linejoin="round"/>
+<line x1="-10.0" y1="-40.0" x2="30.0" y2="40.0" stroke="#e8883a" stroke-width="1.5" stroke-dasharray="4 4" stroke-linecap="round"/>
+</g>
+<text x="420.5" y="116.6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" text-anchor="middle" fill="#a39a90">Split</text>
+</svg>

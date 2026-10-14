@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="637" height="147" viewBox="0 0 637 147" role="img">
+<g transform="translate(135.2 59.4)">
+<polygon points="-45.1,-34.4 45.1,-34.4 45.1,34.4 -45.1,34.4" fill="none" stroke="#a39a90" stroke-width="1" stroke-dasharray="4 4" stroke-linejoin="round"/>
+<polygon points="45.7,0.0 44.7,9.2 42.0,18.0 37.5,26.1 31.5,33.1 24.1,38.7 15.9,42.8 6.9,45.1 -2.3,45.6 -11.4,44.2 -20.1,41.0 -27.9,36.1 -34.6,29.7 -39.9,22.2 -43.6,13.7 -45.4,4.6 -45.4,-4.6 -43.6,-13.7 -39.9,-22.2 -34.6,-29.7 -27.9,-36.1 -20.1,-41.0 -11.4,-44.2 -2.3,-45.6 6.9,-45.1 15.9,-42.8 24.1,-38.7 31.5,-33.1 37.5,-26.1 42.0,-18.0 44.7,-9.2" fill="none" stroke="#5a524b" stroke-width="1" stroke-dasharray="4 4" stroke-linejoin="round"/>
+<polygon points="-30.0,-34.4 45.1,-7.0 30.0,34.4 -45.1,7.0" fill="#234a66" stroke="#6bb4e3" stroke-width="1.5" stroke-linejoin="round"/>
+<circle cx="-30.0" cy="-34.4" r="3.5" fill="#6bb4e3"/>
+<text x="-36.6" y="-38.1" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" text-anchor="end" fill="#f0e9e2">TopLeft</text>
+<circle cx="45.1" cy="-7.0" r="3.5" fill="#6bb4e3"/>
+<text x="55.0" y="-4.6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" text-anchor="start" fill="#f0e9e2">TopRight</text>
+<circle cx="30.0" cy="34.4" r="3.5" fill="#6bb4e3"/>
+<text x="36.6" y="45.8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" text-anchor="start" fill="#f0e9e2">BottomRight</text>
+<circle cx="-45.1" cy="7.0" r="3.5" fill="#6bb4e3"/>
+<text x="-55.0" y="12.3" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" text-anchor="end" fill="#f0e9e2">BottomLeft</text>
+<text x="-45.1" y="50.2" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" text-anchor="start" fill="#a39a90">Bounds</text>
+</g>
+<text x="129.4" y="131.3" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" text-anchor="middle" fill="#a39a90">Rotate keeps the corner names</text>
+<g transform="translate(366.6 61.6)">
+<polygon points="-40.0,-22.0 40.0,-22.0 40.0,22.0 -40.0,22.0" fill="#234a66" stroke="#6bb4e3" stroke-width="1.5" stroke-linejoin="round"/>
+<circle cx="40.0" cy="0.0" r="3.5" fill="#e8883a"/>
+<circle cx="40.0" cy="22.0" r="3.5" fill="#e8883a"/>
+<circle cx="0.0" cy="22.0" r="3.5" fill="#e8883a"/>
+<circle cx="-40.0" cy="22.0" r="3.5" fill="#e8883a"/>
+<circle cx="-40.0" cy="0.0" r="3.5" fill="#e8883a"/>
+<circle cx="-40.0" cy="-22.0" r="3.5" fill="#e8883a"/>
+<circle cx="0.0" cy="-22.0" r="3.5" fill="#e8883a"/>
+<circle cx="40.0" cy="-22.0" r="3.5" fill="#e8883a"/>
+<circle cx="0.0" cy="0.0" r="3.5" fill="#e8883a"/>
+</g>
+<text x="366.6" y="131.3" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" text-anchor="middle" fill="#a39a90">Anchor of every Direction</text>
+<g transform="translate(541.3 68.1)">
+<polygon points="-55.0,-35.0 55.0,-35.0 55.0,35.0 -55.0,35.0" fill="#221d19" stroke="#a39a90" stroke-width="1.5" stroke-linejoin="round"/>
+<polygon points="40.0,-48.0 84.0,-48.0 84.0,-20.0 40.0,-20.0" fill="none" stroke="#a39a90" stroke-width="1" stroke-dasharray="4 4" stroke-linejoin="round"/>
+<polygon points="11.0,-35.0 55.0,-35.0 55.0,-7.0 11.0,-7.0" fill="#70451f" stroke="#e8883a" stroke-width="1.5" stroke-linejoin="round"/>
+<line x1="62.0" y1="-34.0" x2="40.3" y2="-24.3" stroke="#e8883a" stroke-width="2" stroke-linecap="round"/>
+<polygon points="33.0,-21.0 38.7,-27.9 41.9,-20.6" fill="#e8883a"/>
+</g>
+<text x="555.8" y="131.3" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" text-anchor="middle" fill="#a39a90">Clamp into another</text>
+</svg>

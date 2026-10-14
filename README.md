@@ -34,7 +34,8 @@ Generic, immutable 2D geometry library for game development
 - **Reproducible** – the same bits on amd64 and arm64, trigonometry aside.
 - **Extras** – direction enums, `image` interop, JSON, parsing and `geomtest` assertions.
 
-The rules behind them are in the [package documentation][link-go-dev-reference].
+The rules behind them are in the [package documentation][link-go-dev-reference]. Every figure below is drawn from
+the results of the calls it shows.
 
 ## Installation
 
@@ -56,7 +57,45 @@ ship.IntersectsRegularPolygon(rock)                                // false
 ship.Translate(geom.Vec(25.0, 0.0)).IntersectsRegularPolygon(rock) // true, after the move
 
 laser := geom.Ry(ship.Center, geom.Vec(1.0, 0.0))
-hit, ok := laser.ClipRegularPolygon(rock) // Seg((32.24,0.00);(67.76,0.00)), true; hit.Start is the first point hit
+part, ok := laser.ClipRegularPolygon(rock) // Seg((32.24,0.00);(67.76,0.00)), true: part.Start is the first point hit
+```
+
+### Shapes and paths
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/shapes-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/shapes-light.svg">
+  <img alt="The nine shapes, each labelled with its shorthand constructor: Circ, Cap, Sect, Seg, Pol, Rect, RegPol, Bx and Ell" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/shapes-light.svg">
+</picture>
+
+Every kind has a shorthand constructor in its own letters, and named constructors that read as phrases
+(`CircleThrough`, `RectangleFromMinMax`, `RegularPolygonWithOrientation`):
+
+```go
+geom.Circ(center, radius)
+geom.Cap(start, end, radius)            // every point within the radius of a segment
+geom.Sect(center, radius, angle, sweep) // a slice of a disc, angles in radians
+geom.Seg(start, end)
+geom.Pol(vertices)                         // closed, convex or not
+geom.Rect(center, size, angle)             // turned about its center; RectangleFromCenter has no angle
+geom.RegPol(center, size, n, angle, phase) // n vertices on the ellipse of the semi-axes
+geom.Bx(a, b)                              // axis-aligned, the corners in either order
+geom.Ell(center, size, angle)              // the semi-axes, turned about the center
+```
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/paths-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/paths-light.svg">
+  <img alt="The paths, each labelled with its shorthand constructor: Ry, Ln, PolLn, Ac, QuadBez and CubBez" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/paths-light.svg">
+</picture>
+
+```go
+geom.Ry(origin, direction)            // from Origin without end
+geom.Ln(origin, direction)            // without end both ways
+geom.PolLn(points)                    // an open path
+geom.Ac(center, radius, angle, sweep) // a part of a circle, the sweep signed
+geom.QuadBez(start, control, end)     // Bezier curves, flattened by Polyline(tolerance)
+geom.CubBez(start, control1, control2, end)
 ```
 
 ### Points and vectors
@@ -86,8 +125,6 @@ geom.MoveTowardAngle(angle, target, speed*dt) // the same step on a bare angle
 geom.MoveToward(volume, 1.0, fade*dt)         // and on any number
 ```
 
-Vectors also have `Project`, `Reject`, `AngleBetween`, and `AtMost` and `AtLeast` to cap or floor a length.
-
 ### Sizes and padding
 
 ```go
@@ -101,337 +138,275 @@ s.Fill(geom.SzU(800))        // 1422x800, smallest with the same ratio around
 geom.PadXY(8, 4).Size() // 16x8, horizontal and vertical total
 ```
 
-### Rectangles
+### Rectangles and boxes
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/rectangle-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/rectangle-light.svg">
+  <img alt="A turned rectangle with its corner names, its Bounds and its BoundingCircle; the anchor of every direction on a rectangle; a rectangle clamped into another" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/rectangle-light.svg">
+</picture>
+
+A `Rectangle` is a center, a size and an angle. Turned, it keeps its center, size and corner names, and `Min`, `Max`
+and `Bounds` become the box around its vertices:
 
 ```go
-r := geom.Rect(geom.Pt(50, 50), geom.Sz(20, 10)) // center and size
+r := geom.RectangleFromCenter(geom.Pt(50, 50), geom.Sz(20, 10))
 
 r.Contains(geom.Pt(55, 52))                 // true
 r.Nearest(geom.Pt(80, 0))                   // (60,45), the nearest point, on every shape
 r.Inset(geom.PadU(2)).Anchor(geom.TopRight) // (58,47)
 r.AlignTo(geom.TopLeft, geom.Pt(0, 0))      // Rect((10,5);20x10), its Min at the origin
+r.Clamp(screen)                             // moved by the least that brings it inside
 
-screen := geom.RectangleFromMinMax(geom.Pt(0, 0), geom.Pt(55, 100))
-r.Clamp(screen) // Rect((45,50);20x10), moved by the least that brings it inside
+d := geom.Rect(geom.Pt(0.0, 0.0), geom.Sz(2.0, 2.0), geom.Pi/4) // a diamond
+d.Contains(geom.Pt(0.9, 0.9))                                   // false, outside the turned edges
+d.TopLeft()                                                     // the corner that was top-left before the turn
+d.Transform(geom.ShearMatrix(1.0, 0.0))                         // the nearest rectangle; Polygon() holds the parallelogram
 
-b := geom.RectangleFromMinMax(geom.Pt(0, 0), geom.Pt(8, 6))
-b.Scale(2)                    // Rect((4,3);16x12), scaled around the center
-for edge := range b.Edges() { // clockwise from the top edge, Seg((0,0);(8,0)), without allocating
+for edge := range d.Edges() { // clockwise from TopLeft, without allocating
 	edge.Midpoint()
 }
-slices.Collect(b.Vertices()) // the four corners as a slice, clockwise from the top-left
-
-d := geom.Rect(geom.Pt(0.0, 0.0), geom.Sz(2.0, 2.0)).Rotate(geom.Pi / 4) // a diamond
-d.Contains(geom.Pt(0.9, 0.9))                                            // false, outside the turned edges
-d.Bounds()                                                               // the Box around it
-d.BoundingCircle()                                                       // the Circle around it, the same at any angle
-d.TopLeft()                                                              // the corner that was top-left before the turn
-
-d.Transform(geom.RotationMatrix[float64](geom.Pi / 2)) // a turn is exact, and so is a move, a reflection or a scale
-d.Transform(geom.ShearMatrix(1.0, 0.0))                // the nearest rectangle; Polygon() holds the parallelogram
 ```
 
-A rectangle turned by `Rotate` keeps its center, size and corner names; `Min`, `Max` and `Bounds` become the box
-around its vertices. Two rectangles of the same angle intersect and unite in a rectangle of that angle.
-
-### Boxes
+A `Box` is the axis-aligned extent, for clipping, viewports, layout and culling, and the `Bounds` of every shape:
 
 ```go
-view := geom.BoxFromSize(geom.Sz(800, 600)) // Min and Max, no angle: (0,0)-(800,600)
+view := geom.BoxFromSize(geom.Sz(800, 600)) // (0,0)-(800,600)
 view.Contains(geom.Pt(800, 600))            // true, closed like every shape
 view.Inset(geom.PadU(16))                   // (16,16)-(784,584)
 
+hud := geom.Bx(geom.Pt(200, 40), geom.Pt(0, 0))        // (0,0)-(200,40), the corners in either order
+hud.AlignTo(geom.TopRight, view.Anchor(geom.TopRight)) // (600,0)-(800,40), pinned to the corner of the view
+
 tip := geom.BoxFromMin(geom.Pt(750, 20), geom.Sz(120, 40))
-hud := geom.Bx(geom.Pt(200, 40), geom.Pt(0, 0)) // (0,0)-(200,40), the corners in either order
+tip.Clamp(view)   // (680,20)-(800,60)
+view.ClipBox(tip) // (750,20)-(800,60), true: the part on screen
 
-tip.Clamp(view)           // (680,20)-(800,60), moved by the least that brings it inside
-view.ClipBox(tip)         // (750,20)-(800,60), true: the part on screen
-tip.MoveTo(view.Center()) // the same size about another center; Vertices, Edges and Polygon walk it
-
-r.Bounds().IntersectsBox(view) // every shape's Bounds is a Box, for the broad pass
-view.IntersectsRectangle(r)    // a Box is a Shape, tested against every other
+r.Bounds().IntersectsBox(view) // the broad pass
+view.IntersectsRectangle(r)    // and a Box is a Shape like every other
 ```
 
-`Rectangle` is the shape that turns; `Box` is the axis-aligned extent, for clipping, viewports, layout and culling.
+### Circles, capsules and ellipses
 
-### Circles and ellipses
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/tangents-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/tangents-light.svg">
+  <img alt="The tangents from a point to a circle, the outer and the inner tangents of two circles, and the smallest circle around both" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/tangents-light.svg">
+</picture>
 
 ```go
 c := geom.Circ(geom.Pt(0.0, 0.0), 5.0)
 c.Anchor(geom.Bottom)          // (0,5)
-c.Tangents(geom.Pt(13.0, 0.0)) // a Pair: the two points a line from there touches the circle at; one on it, none inside
+c.Tangents(geom.Pt(13.0, 0.0)) // a Pair of the points the lines from there touch
 
 wheel := geom.Circ(geom.Pt(20.0, 0.0), 2.0)
-c.OuterTangents(wheel) // the two straight runs of a belt around both, each a Segment from c to wheel
-c.InnerTangents(wheel) // the two of a crossed belt; none once the circles touch
+c.OuterTangents(wheel) // a belt around both, each a Segment from c to wheel
+c.InnerTangents(wheel) // a crossed belt; none once the circles touch
 c.Union(wheel)         // Circ((8.5,0);13.5), the smallest circle around both
 
-geom.CircleBetween(geom.Pt(0.0, 0.0), geom.Pt(6.0, 8.0))                    // Circ((3,4);5), the two across a diameter
 geom.CircleThrough(geom.Pt(0.0, 0.0), geom.Pt(6.0, 0.0), geom.Pt(0.0, 8.0)) // Circ((3,4);5), true; false on one line
+```
 
-// a circle has no Transform of its own: an affine matrix takes it to an ellipse
+A circle has no `Transform` of its own, since a matrix takes it to an ellipse:
+
+```go
 e := c.Ellipse().Transform(geom.ScaleMatrix(2.0, 1.0)) // Ell((0,0);10x5), exact for every matrix
 e.Contains(geom.Pt(9.0, 0.0))                          // true
 e.DistanceTo(geom.Pt(0.0, 9.0))                        // 4, to the nearest point of the boundary
-e.Rotate(geom.Pi / 2).Bounds()                         // (-5,-10)-(5,10), the box around the turned ellipse
 e.Foci()                                               // the two focal points, on the major axis
-e.Circle()                                             // the circle around it, of the major semi-axis
+e.RegularPolygon(64, geom.OrientationPointyTop)        // the outline that draws it, every vertex on the boundary
 ```
 
-A `Capsule` is a segment with a radius, the rounded collider of a character:
+A `Capsule` is the rounded collider of a character:
 
 ```go
-body := geom.Cap(geom.Pt(0.0, 0.0), geom.Pt(0.0, 10.0), 2.0) // from Start to End, every point within the radius
-body.Polygon(0.25)                                           // the outline that draws it, within a tolerance
-body.Contains(geom.Pt(1.5, 11.0))                            // true, in the round end
-body.DistanceTo(geom.Pt(6.0, 5.0))                           // 4, to the side
-body.Grow(1.0)                                               // the radius; the segment stays
-body.IntersectsRectangle(r)                                  // a named kind: Intersects<Kind> and Contains<Kind>
-hit, ok := ray.HitCapsule(body)                              // on every side, and a cast at it in closed form
-part, ok := beam.ClipCapsule(body)                           // the part inside, and IntersectionCapsule the two crossings
-geom.Collide[float64](body, r)                               // parted and swept as every Shape is
+body := geom.Cap(geom.Pt(0.0, 0.0), geom.Pt(0.0, 10.0), 2.0)
+body.Contains(geom.Pt(1.5, 11.0))  // true, in the round end
+body.DistanceTo(geom.Pt(6.0, 5.0)) // 4, to the side
+body.Polygon(0.25)                 // the outline that draws it, within a tolerance
 ```
 
-Neither a circle nor an ellipse has vertices: the `RegularPolygon` of the wanted resolution is what draws or
-walks one, and it converts back exactly.
+### Polygons
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/polygons-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/polygons-light.svg">
+  <img alt="A notched polygon with its ConvexHull, its Triangulate triangles, its Grow and Shrink outlines, and its two parts after a Split" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/polygons-light.svg">
+</picture>
 
 ```go
-e.RegularPolygon(64, geom.OrientationPointyTop) // every vertex on the boundary, and Ellipse() converts back
-c.RegularPolygon(6, geom.OrientationFlatTop)    // the orientation places the first vertex before the stretch
-
-slices.Collect(c.RegularPolygon(64, geom.OrientationFlatTop).Vertices()) // the points that draw the circle
-```
-
-### Segments and polygons
-
-```go
-s := geom.Seg(geom.Pt(0, 0), geom.Pt(3, 4))
-s.Length()                       // 5
-s.DistanceTo(geom.Pt(3, 0))      // 2.4, to the nearest point of the segment
-s.Contains(geom.Pt(6, 8))        // false, the segment ends at (3,4)
-s.NearestFraction(geom.Pt(3, 0)) // 0.36, how far along the nearest point lies, the t PointAt takes
-
 p := geom.Pol([]geom.Point[int]{{0, 0}, {4, 0}, {4, 4}, {2, 1}, {0, 4}})
 p.Area()                  // 10
 p.Contains(geom.Pt(2, 3)) // false, inside the notch
-p.Points[3]               // (2,1), the notch
 p.Winding()               // WindingClockwise, the winding of a Rectangle's corners
-p.IsConvex()              // false, the notch turns the other way
-p.IsSimple()              // true, no two edges meet but neighbours at their vertex
+p.IsConvex()              // false
 p.ConvexHull()            // Pol((0,0);(4,0);(4,4);(0,4)), the notch dropped
 p.Triangulate()           // [1 2 3 0 1 3 4 0 3]: three indices into Points per triangle, an index buffer
-p.BoundingCircle()        // Circ((2,1);4), about the rounded Centroid to the farthest vertex, the radius rounded up
+p.Grow(1)                 // every edge moved out along its normal; Shrink moves them in
 
-edged := geom.Pol([]geom.Point[int]{{0, 0}, {2, 0}, {4, 0}, {4, 4}, {0, 4}})
-edged.Simplify(0) // Pol((0,0);(4,0);(4,4);(0,4)), the vertex on an edge dropped; a tolerance drops the ones near it
-edged.Grow(1)     // Pol((-1,-1);(2,-1);(5,-1);(5,5);(-1,5)): every edge moved out; Shrink moves them in
+front, back := p.Split(geom.Ln(cut, dir)) // the two parts either side of a line, meeting exactly along it
+both, ok := p.Union(other)                // the outline two overlapping convex polygons cover together
 
-for vertex := range p.Vertices() { // the same loop draws a Segment, Rectangle or RegularPolygon
+for vertex := range p.Vertices() { // the same loop walks a Rectangle, RegularPolygon or Box
 	vertex.Float()
 }
 ```
 
 ### Regular polygons
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/regular-polygons-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/regular-polygons-light.svg">
+  <img alt="Flat-top and pointy-top hexagons with their vertices numbered and their top anchor; a stretched hexagon on its ellipse; a phase that slides the vertices and an angle that turns the ellipse" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/regular-polygons-light.svg">
+</picture>
+
 ```go
 hex := geom.RegularPolygonWithOrientation(geom.Pt(0, 0), geom.SzU(20), 6, geom.OrientationFlatTop)
-hex.Anchor(geom.Top)                 // (0,-17), the midpoint of the top edge; a pointy-top one gives its top vertex
-hex.AlignTo(geom.Top, geom.Pt(0, 0)) // the hexagon moved so that anchor is at the origin
-hex.Bounds()                         // (-20,-17)-(20,17)
-hex.Area()                           // 1039, 3√3/2 · r²
-hex.Contains(geom.Pt(10, 5))         // true, walked on the edges without building the vertices
-hex.Ellipse()                        // the ellipse its vertices lie on, exactly
+hex.Anchor(geom.Top)         // (0,-17), the midpoint of the top edge; a pointy-top one gives its top vertex
+hex.Bounds()                 // (-20,-17)-(20,17)
+hex.Area()                   // 1039.23, 3√3/2 · r²
+hex.Contains(geom.Pt(10, 5)) // true, walked on the edges without building the vertices
+hex.Ellipse()                // the ellipse its vertices lie on
 
-geom.RegularPolygonWithOrientation(geom.Pt(0, 0), geom.Sz(20, 10), 4, geom.OrientationFlatTop) // stretched across its edges: a 28x14 rectangle
-geom.RegPol(geom.Pt(0, 0), geom.Sz(20, 10), 8, 0, geom.Pi/8)                                   // n, angle and phase: the phase places the vertices, the angle turns the shape
-hex.Transform(geom.ShearMatrix(1.0, 0.0))                                                      // exact for every matrix, shears included
-```
-
-### Interfaces
-
-Every shape has `Translate`, `MoveTo`, `Bounds`, `Contains`, `DistanceTo` and `Nearest`, and all but `Box` also
-`Scale`, `Unscale` and `Rotate`. Two interfaces name what they share, so a spatial index or a broad collision pass
-holds a shape without knowing which one:
-
-```go
-var s geom.Shape[float64] = c // Bounds, Contains, DistanceTo, DistanceSquaredTo, Nearest, Support — every shape
-s.DistanceTo(geom.Pt(10.0, 5.0))
-s.Support(geom.Vec(1.0, 0.0)) // the point of it farthest along a direction
-
-geom.Intersects(s, other) // two shapes of any kind, by the method of one naming the other where there is one
-geom.Contains(s, other)   // the second within the first, a selection over a mixed list
-geom.Distance(s, other)   // the gap between them, zero exactly where they intersect; DistanceSquared to compare
-geom.Raycast(ray, s)      // the Hit of a ray on a shape of any kind
-
-var b geom.Body[float64] = c // Area, Centroid, Inertia — the mass properties at unit density,
-b.Inertia()                  // for a physics body to scale by its density; every shape but Segment
-```
-
-The functions take the type argument where a concrete shape is passed, `geom.Intersects[float64](c, r)`, and infer it
-from a value already held as a `Shape`. The interfaces are for the code around a hot loop: a call through one
-allocates, where the same call on a concrete shape does not. `Ellipse` has no `Intersects<Kind>` methods: the
-functions test it by its `Support`, as they do a shape of another package, or against a circle by its distance to the
-center. `Ray` and `Line` run without end and are no `Shape`: they test a shape by their own methods.
-
-Two shapes are parted and moved against each other whatever kind they are:
-
-```go
-on, at := geom.Nearest(turret, target)        // the point of each nearest the other, one point where they intersect
-contact, ok := geom.Collide(crate, floor)     // how they meet: Normal, Depth and one or two Points
-crate.Translate(contact.Separation())         // the shortest move out of the floor, the normal as far as the depth
-hit, ok := geom.Sweep(bullet, step, wall)     // where the bullet first touches the wall while it moves by step:
-bullet.Translate(step.Multiply(hit.Fraction)) // the point, the normal and the fraction of the step made by then
+geom.RegPol(geom.Pt(0, 0), geom.Sz(20, 10), 8, 0, geom.Pi/8) // n, angle and phase
+hex.Transform(geom.ShearMatrix(1.0, 0.0))                    // exact for every matrix, shears included
 ```
 
 ### Intersections
 
-Every shape has one `Intersects<Kind>` per kind, symmetric and counting a touch. `Intersection<Kind>` gives where the
-two meet: one point with a bool between segments, rays and lines, a `Pair` of at most two points on a circle or a
-convex shape, and a slice where there can be more: a polygon, which may be concave, a sector, a path or a cubic.
-`Clip<Kind>` gives the part the two have in common, in the type of the receiver: a segment of a segment, a rectangle
-of a rectangle:
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/intersections-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/intersections-light.svg">
+  <img alt="The crossing points of two circles; the parts of a segment inside a notched polygon; the two parts of a segment through the notch of a wide sector; the rectangle two turned rectangles share" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/intersections-light.svg">
+</picture>
+
+Every shape has `Intersects<Kind>`, `Contains<Kind>` and `Intersection<Kind>` for each kind, symmetric and counting a
+touch. `Intersection<Kind>` gives the boundary points: one with a bool between segments, rays and lines, a `Pair` of
+at most two on a convex shape, and a slice where there can be more. `Clip<Kind>` gives the part in common, in the
+type of the receiver:
 
 ```go
-a.IntersectsRectangle(b) // IntersectsCircle, IntersectsCapsule, IntersectsSector, IntersectsSegment, IntersectsRay,
-r.IntersectsCircle(c)    // IntersectsLine, IntersectsPolygon, IntersectsRectangle, IntersectsRegularPolygon and
-                         // IntersectsBox, on every shape but Ellipse
-geom.Intersects(a, c)    // the same answer without knowing either type
+a.IntersectsRectangle(b) // on every kind of a, for every kind of b
+view.ContainsCircle(c)   // the whole circle inside
+geom.Intersects(a, c)    // the same answers for two shapes of any kind
 
-point, ok := s.IntersectionSegment(other) // where two segments cross
-crossings := c.IntersectionCircle(other)  // a Pair: zero, one or two points where two circles cross
-for p := range crossings.All() {          // or crossings.Items[:crossings.Count], or AppendTo(buffer); none allocates
-}
-s.IntersectionCircle(c)                   // where a segment crosses a boundary; also of a rectangle or a box
-s.IntersectionPolygon(p)                  // every crossing of a polygon, as a slice
-s.ClipBox(view)                           // the part of s inside, and false where there is none
-s.ClipPolygon(p)                          // the parts inside a concave polygon, from Start to End
-part, ok := p.ClipBox(view)               // the polygon as a viewport shows it; also ClipRectangle, ClipPolygon
-                                          // and ClipRegularPolygon
-left, right := p.Split(geom.Ln(cut, dir)) // the two parts either side of a line, meeting exactly along it
-both, ok := p.Union(other)                // the outline two overlapping convex polygons cover together
-overlap, ok := a.ClipRectangle(b)         // the overlap of two rectangles of one angle; ClipBox of two boxes
-hit, ok := s.HitCircle(c)                 // the first point s reaches from outside, with the normal there
-hit, ok = s.HitSegment(wall)              // or of a wall: HitSegment, HitRay and HitLine
-hit, ok = s.HitEllipse(e)                 // an ellipse has this one method of the family, in closed form
+c.IntersectionCircle(other)       // a Pair, which allocates nothing
+s.IntersectionPolygon(p)          // every crossing, as a slice
+s.ClipPolygon(p)                  // the parts inside a concave polygon, from Start to End
+beam.ClipSector(cone)             // two parts through the notch of a sector past half a turn
+overlap, ok := a.ClipRectangle(b) // the overlap of two rectangles of one angle
+part, ok := p.ClipBox(view)       // the polygon as a viewport shows it
 
-buffer = s.AppendIntersectionPolygon(buffer[:0], p) // a slice result has an Append form, as strconv does, on the
-hull = p.AppendConvexHull(hull[:0])                 // side that holds it, so a reused buffer allocates nothing
+buffer = s.AppendIntersectionPolygon(buffer[:0], p) // a slice result has an Append form for a reused buffer
 ```
 
-An `Arc` is a part of a circle and a `Sector` the slice of the disc it bounds, a vision cone or a pie slice:
+### Casts
 
-```go
-cone := geom.Sect(guard, 8.0, facing-geom.Pi/6, geom.Pi/3) // center, radius, the angle it starts at and its sweep
-cone.Contains(player)                                      // the tolerance is on the distance to its radii, not an angle
-cone.IntersectsCircle(c)                                   // a target with a size, and IntersectsBox and the rest
-cone.ContainsCircle(c)                                     // wholly within it, as room.ContainsSector(cone) is the other way
-hit, ok := ray.HitSector(cone)                             // a cast at it; it is a Shape, so Intersects takes it too
-parts := beam.ClipSector(cone)                             // the parts inside, two through the notch of a wide one
-cone.Rotate(0.1)                                           // about its center; Area, Centroid and Inertia as a Body
-cone.Polygon(0.25)                                         // the outline that draws it, within a tolerance
-c.Sector(0, geom.Pi/2), c.Arc(0, geom.Pi/2)                // the slice of a circle and the part of its boundary
-c.Polygon(0.25)                                            // a circle and an ellipse flatten the same way
-cone.DistanceToSector(other)                               // the gap between two, whatever the sweeps
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/casts-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/casts-light.svg">
+  <img alt="A ray reaching a turned rectangle, with the normal and the bounce; a circle swept into a box, stopped at the fraction of the motion; a segment hitting a circle" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/casts-light.svg">
+</picture>
 
-ring := geom.Ac(geom.Pt(0.0, 0.0), 5.0, -geom.Pi/2, 2*geom.Pi*progress) // a signed sweep; a full turn is the circle
-ring.PointAt(0.5)                                                       // also Start, End, Midpoint and Length
-ring.Nearest(cursor)                                                    // DistanceTo and Contains, as on every shape
-ring.Polyline(0.25)                                                     // the path that draws it, within a tolerance
-done, rest := ring.Split(0.5)                                           // two arcs tracing the same points
-bend, ok := geom.ArcThrough(a, b, c)                                    // from a through b to c
-hit, ok = ray.HitArc(ring)                                              // a curved wall, and IntersectionArc its crossings
-```
-
-A `Polyline` is an open path, a road, a patrol route or a stroke drawn by a pointer:
-
-```go
-route := geom.PolLn([]geom.Point[float64]{geom.Pt(0.0, 0.0), geom.Pt(4.0, 0.0), geom.Pt(4.0, 3.0)})
-route.Length()                     // 7
-route.PointAt(0.5)                 // (3.5,0), half the length along; outside [0, 1] it runs on past the ends
-t := route.NearestFraction(player) // how far along the route the nearest point lies, the t PointAt takes
-route.Nearest(player)              // that point; DistanceTo and Contains as on every shape
-for p := range route.Every(0.5) {  // a point every half unit of length, in one walk
-}
-route.Simplify(0.25)              // Ramer–Douglas–Peucker, the ends kept; AppendSimplify into a buffer
-route.Lerp(detour, 0.5)           // halfway to a path of as many points, each point toward its own
-p.Polyline()                      // the outline of a polygon as a closed path, and Polygon() back
-hit, ok := ray.HitPolyline(route) // a wall of several edges, and IntersectionPolyline every crossing
-```
-
-A `QuadraticBezier` and a `CubicBezier` are curves of control points, flattened to a `Polyline` to measure them:
-
-```go
-curve := geom.CubBez(geom.Pt(0.0, 0.0), geom.Pt(0.0, 4.0), geom.Pt(8.0, 4.0), geom.Pt(8.0, 0.0))
-curve.PointAt(0.5)                        // (4,3); the parameter is not a fraction of the length
-curve.TangentAt(0.5)                      // the direction it runs in there, in float64
-curve.Bounds()                            // the box of the curve itself, not of its control points
-first, second := curve.Split(0.25)        // two curves tracing the same points
-path := curve.Polyline(0.05)              // a path within the tolerance of the curve, denser where it bends
-path.Length()                             // its length, Nearest and DistanceTo are the curve's to within the tolerance
-hit, ok := ray.HitCubicBezier(curve)      // a curved wall, cast at with no tolerance to give, and IntersectionCubicBezier
-geom.QuadBez(a, control, b).CubicBezier() // a quadratic curve has the same methods, and is a cubic exactly
-```
-
-A `Ray` is a half-line from `Origin` along `Direction`. Its `Clip<Kind>` is the part inside a shape, and its
-`Hit<Kind>` the first point of the boundary it reaches from outside, with the normal there:
+`Hit<Kind>` on a segment or a ray is the first point of the boundary reached from outside, with the unit normal there
+and the fraction of the cast; `Raycast` and `Sweep` take a shape of any kind:
 
 ```go
 ray := geom.RayThrough(camera, cursor) // from the camera through the cursor; Ry takes a direction
-ray.IntersectsRectangle(r)             // IntersectsRay on the shape gives the same answer
-ray.ClipPolygon(p)                     // the parts inside a concave polygon, from Origin on
-ray.IntersectionBox(box)               // the boundary crossings, from Origin on
 
-if part, ok := ray.ClipCircle(c); ok { // allocation-free on every convex shape
-	part.Start                            // the first point of c on the ray, and part.End where the ray leaves it
+if hit, ok := ray.HitRectangle(r); ok { // false from an Origin inside r
+	hit.Point                              // ray.PointAt(hit.Fraction)
+	ray.Vector.Reflect(hit.Normal)         // the normal faces the ray, so this is the bounce
 }
 
-if hit, ok := ray.HitRectangle(r); ok { // false from an Origin inside r; Segment has the same family
-	hit.Point                              // where the ray reaches r, ray.PointAt(hit.Fraction)
-	ray.Direction.Reflect(hit.Normal)      // the unit normal there faces the ray, so this is the bounce
-}
+hit, ok := geom.Raycast(ray, shape)                  // the same for a Shape of any kind
+hit, ok = geom.Sweep(ball, motion, wall)             // where ball first touches wall while it moves:
+ball = ball.Translate(motion.Multiply(hit.Fraction)) // the point, the normal and the fraction of the motion
 ```
 
-A `Line` runs without end both ways through `Origin` along `Direction`. It tells its two sides apart, and tests
-a shape as the ray does, with the same `Intersection<Kind>` and `Clip<Kind>` in order along its direction:
+A `Line` runs both ways and tells its sides apart:
 
 ```go
-wall := geom.LineThrough(a, b) // through two points; Ln takes a direction, and s.Line() and ray.Line() convert
-wall.Side(p)                   // 1 on the side the normal of the direction points to, -1 on the other, 0 on the line
-wall.Nearest(p)                // the foot of the perpendicular, with DistanceTo and Contains
+wall := geom.LineThrough(a, b) // Ln takes a direction; s.Line() and ray.Line() convert
+wall.Side(p)                   // 1 on the side the normal points to, -1 on the other, 0 on the line
 wall.Reflect(p)                // p mirrored across the line
-wall.IntersectionLine(other)   // where two lines cross, and false for parallel ones
-wall.IntersectsCircle(c)       // IntersectsLine on the shape gives the same answer
-wall.ClipBox(view)             // the part of the line a viewport shows, and false where it passes by
+wall.ClipBox(view)             // the part a viewport shows
 ```
 
-### Containment
+### Collisions
 
-`Contains` takes a point; `Contains<Kind>` takes a whole shape, on every shape with an area but `Ellipse`:
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/collisions-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/collisions-light.svg">
+  <img alt="A circle and a crate overlapping a floor, with their contact points, normals and the separated position; the nearest points of two shapes and the distance between them" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/collisions-light.svg">
+</picture>
 
 ```go
-view.ContainsCircle(c) // ContainsCircle, ContainsCapsule, ContainsSector, ContainsSegment, ContainsPolygon,
-r.ContainsPolygon(p)   // ContainsRectangle, ContainsRegularPolygon and ContainsBox
-p.ContainsSegment(s)   // a concave polygon also checks that s does not leave it between its ends
+contact, ok := geom.Collide(crate, floor) // Normal, Depth and one or two Points
+crate.Translate(contact.Separation())     // the shortest move out of the floor
+on, at := geom.Nearest(turret, target)    // the point of each nearest the other
+geom.Distance(turret, target)             // zero exactly where they intersect
 ```
 
-### Directions, axes and orientations
+`Shape` and `Body` hold a shape without knowing which one, for a spatial index or a broad pass:
+
+```go
+var s geom.Shape[float64] = c // Bounds, Contains, DistanceTo, DistanceSquaredTo, Nearest, Support
+s.Support(geom.Vec(1.0, 0.0)) // the point farthest along a direction, what the functions part shapes by
+
+var b geom.Body[float64] = c // Area, Centroid and Inertia at unit density; every shape but Segment
+b.Inertia()
+```
+
+The functions take the type argument where a concrete shape is passed, `geom.Collide[float64](c, r)`, and infer it
+from a value held as a `Shape`. A call through an interface allocates where the same named method does not, so a hot
+loop that knows its types calls the method.
+
+### Arcs, sectors and curves
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/curves-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/curves-light.svg">
+  <img alt="An arc as a progress ring; points inside and outside a sector; a cubic Bezier flattened to a polyline; points at an even step along a polyline" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/curves-light.svg">
+</picture>
+
+```go
+ring := geom.Ac(geom.Pt(0.0, 0.0), 5.0, -geom.Pi/2, 2*geom.Pi*progress) // a full turn is the circle
+ring.PointAt(0.5)                                                       // also Start, End, Midpoint and Length
+
+cone := geom.Sect(guard, 8.0, facing-geom.Pi/6, geom.Pi/3) // a vision cone
+cone.Contains(player)                                      // the tolerance is on the distance, never an angle
+
+route := geom.PolLn([]geom.Point[float64]{geom.Pt(0.0, 0.0), geom.Pt(4.0, 0.0), geom.Pt(4.0, 3.0)})
+route.Length()                    // 7
+route.PointAt(0.5)                // (3.5,0), half the length along
+for p := range route.Every(0.5) { // a point every half unit of length, in one walk
+}
+
+curve := geom.CubBez(geom.Pt(0.0, 0.0), geom.Pt(0.0, 4.0), geom.Pt(8.0, 4.0), geom.Pt(8.0, 0.0))
+curve.PointAt(0.5)   // (4,3); the parameter is not a fraction of the length
+curve.Polyline(0.05) // a path within the tolerance, denser where it bends, to measure the curve by
+```
+
+### Coordinates and directions
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/coordinates-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/coordinates-light.svg">
+  <img alt="The screen axes with +Y down and the sense of a positive angle; the eight directions; the clockwise winding of a rectangle's vertices" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/coordinates-light.svg">
+</picture>
 
 ```go
 dir := geom.DirectionUp
-dir.Turn(2)     // DirectionRight, two 45° steps
-dir.Vector(5.0) // ⟨0,-5⟩
+dir.Turn(2)                 // DirectionRight, two 45° steps
+dir.Vector(5.0)             // ⟨0,-5⟩
+geom.Vec(3, -7).Direction() // DirectionUpRight, nearest of the eight
 
 geom.DirectionFromAxes(up, down, left, right) // keyboard input to an 8-way direction
-geom.Vec(3, -7).Direction()                   // DirectionUpRight, nearest of the eight
-geom.CardinalDirections()                     // Right, Down, Left, Up
-geom.CardinalOffsets[int]()                   // their lattice steps, in the same order
+geom.CardinalOffsets[int]()                   // the lattice steps of Right, Down, Left and Up
 
 axis := geom.AxisVertical
-axis.Along(size)             // Height, because the axis is vertical
-axis.Size(length, thickness) // Sz(thickness, length)
-
-geom.RegularPolygonWithOrientation(center, size, 6, geom.OrientationPointyTop) // orientation places a vertex or an edge at the top
-geom.ParseOrientation("FlatTop")                                               // the name back to the constant, "None" to OrientationNone
+axis.Along(size) // Height, because the axis is vertical
 ```
 
 ### Matrices
@@ -443,17 +418,15 @@ geom.Pt(1.0, 0.0).Transform(m) // (1.41,1.41)
 m.Angle()                      // π/4, read back from the matrix
 m.Scaling()                    // ⟨2,2⟩
 
-geom.TRSMatrix(10.0, 20.0, math.Pi/2, 2.0, 3.0)  // scale, then turn, then move: TranslationMatrix(10, 20).Rotate(π/2).Scale(2, 3)
-geom.RotationMatrixAround(10.0, 20.0, math.Pi/2) // turn about a pivot: TranslationMatrix(10, 20).Rotate(π/2).Translate(-10, -20)
+geom.TRSMatrix(10.0, 20.0, math.Pi/2, 2.0, 3.0)  // scale, then turn, then move
+geom.RotationMatrixAround(10.0, 20.0, math.Pi/2) // turn about a pivot
 geom.ScaleMatrixAround(10.0, 20.0, 2.0, 3.0)     // scale about a pivot, which stays where it is
 ```
 
-`TranslationMatrix`, `RotationMatrix`, `RotationMatrixAround`, `ScaleMatrix`, `ShearMatrix` and `ReflectionMatrix` each
-have a composing method on both sides; `ScaleMatrixAround` has none.
+`Translate`, `Rotate`, `RotateAround`, `Scale`, `ScaleAround`, `Shear` and `Reflect` compose with their constructor on
+the right, applied first, and their `Pre` forms on the left, applied last.
 
 ### Numbers
-
-The scalar helpers are exported too, generic like everything else:
 
 ```go
 geom.Lerp(10.0, 20.0, 0.25)                                  // 12.5
@@ -463,16 +436,14 @@ geom.Clamp(15.0, 0.0, 10.0)                                  // 10
 geom.LerpAngle(geom.ToRadians(350), geom.ToRadians(10), 0.5) // across the zero angle, the short way
 ```
 
-### Number types
-
-Any type satisfying `Number` works, including named types, and `Int()` and `Float()` convert between instantiations.
-The `ints` and `floats` packages alias the two common ones:
+Any type satisfying `Number` works, named types included, and `Int()` and `Float()` convert between them. The
+`ints` and `floats` packages alias the two common ones:
 
 ```go
 type Tile int32
 
 geom.Pt[Tile](3, 4).Add(geom.DirectionRight.Unit[Tile]()) // (4,4)
-geom.Pt(1.4, 2.6).Int()                                   // (1,3), a Point[int], rounded
+geom.Pt(1.4, 2.6).Int()                                   // (1,3), rounded
 ints.Pt(1.4, 2.6)                                         // the same, from github.com/gravitton/geometry/types/ints
 ```
 
@@ -480,19 +451,19 @@ ints.Pt(1.4, 2.6)                                         // the same, from gith
 
 ```go
 geom.RectangleFromImage[int](img.Bounds())
+geom.BoxFromImage[int](img.Bounds())                            // Min and Max as they are, an odd extent kept
 geom.RectangleFromMin(geom.Pt(0, 0), geom.Sz(4, 2)).Rectangle() // image.Rectangle
 
-json.Marshal(geom.Rect(geom.Pt(1, 2), geom.Sz(3, 4))) // {"x":1,"y":2,"w":3,"h":4}
-json.Marshal(geom.DirectionUp)                        // "Up"
-json.Marshal(geom.OrientationPointyTop)               // "PointyTop"
-geom.ParseSize[int]("4x2")                            // 4x2
-geom.ParsePoint[int]("(1,2)")                         // (1,2)
+json.Marshal(geom.Rect(geom.Pt(1, 2), geom.Sz(3, 4), 0)) // {"x":1,"y":2,"w":3,"h":4}
+json.Marshal(geom.DirectionUp)                           // "Up"
+geom.ParseSize[int]("4x2")                               // 4x2
+geom.ParsePoint[int]("(1,2)")                            // (1,2)
 ```
 
 ### Testing
 
-The `geomtest` package holds one assertion per shape, comparing with the tolerance of the asserted type, so the
-main package imports no test library:
+The `geomtest` package holds one assertion per type, with the tolerance of the asserted type, so the main package
+imports no test library:
 
 ```go
 geomtest.AssertPoint(t, got, geom.Pt(1.0, 2.0))
