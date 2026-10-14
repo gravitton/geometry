@@ -1592,6 +1592,41 @@ func TestCircle_IntersectionLine(t *testing.T) {
 	})
 }
 
+func TestCircle_Union(t *testing.T) {
+	t.Run("spans both circles along the line of centers", func(t *testing.T) {
+		geomtest.AssertCircle(t, Circ(Pt(0, 0), 1).Union(Circ(Pt(10, 0), 1)), Circ(Pt(5, 0), 6))
+		geomtest.AssertCircle(t, Circ(Pt(0.0, 0.0), 1.0).Union(Circ(Pt(0.0, 6.0), 3.0)), Circ(Pt(0.0, 4.0), 5.0))
+	})
+	t.Run("a circle containing the other is the union", func(t *testing.T) {
+		geomtest.AssertCircle(t, Circ(Pt(0, 0), 5).Union(Circ(Pt(1, 1), 2)), Circ(Pt(0, 0), 5))
+		geomtest.AssertCircle(t, Circ(Pt(1, 1), 2).Union(Circ(Pt(0, 0), 5)), Circ(Pt(0, 0), 5))
+		geomtest.AssertCircle(t, Circ(Pt(0, 0), 5).Union(Circ(Pt(0, 0), 5)), Circ(Pt(0, 0), 5))
+	})
+	t.Run("an integer union is rounded to still contain both", func(t *testing.T) {
+		union := Circ(Pt(0, 0), 1).Union(Circ(Pt(3, 0), 1))
+
+		geomtest.AssertCircle(t, union, Circ(Pt(2, 0), 3))
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		a, b := Circ(Pt(0, 0), 1), Circ(Pt(10, 0), 1)
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkBool = a.Union(b).Radius > 0
+		}), 0)
+	})
+	t.Run("contains both, the same whichever asks", func(t *testing.T) {
+		for _, a := range circleFixtures {
+			for _, b := range circleFixtures {
+				union := a.Union(b)
+				message := fmt.Sprintf("%s ∪ %s: ", a, b)
+
+				assert.True(t, union.ContainsCircle(a) && union.ContainsCircle(b), message)
+				geomtest.AssertCircle(t, b.Union(a), union, message)
+			}
+		}
+	})
+}
+
 func TestCircle_Equal(t *testing.T) {
 	t.Run("same circle", func(t *testing.T) {
 		assert.True(t, Circ(Pt(1, 2), 10).Equal(Circ(Pt(1, 2), 10)))

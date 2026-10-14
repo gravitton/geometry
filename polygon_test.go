@@ -1867,6 +1867,230 @@ func TestPolygon_AppendClipBox(t *testing.T) {
 	})
 }
 
+func TestPolygon_Split(t *testing.T) {
+	square := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(0, 4)})
+	notched := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(2, 1), Pt(0, 4)})
+
+	t.Run("is the two parts either side of the line, in the winding of the polygon", func(t *testing.T) {
+		front, back := square.Split(Ln(Pt(2, 0), Vec(0, 1)))
+
+		geomtest.AssertPolygon(t, front, Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(2, 4), Pt(0, 4)}))
+		geomtest.AssertPolygon(t, back, Pol([]Point[int]{Pt(2, 0), Pt(4, 0), Pt(4, 4), Pt(2, 4)}))
+	})
+	t.Run("nil stays nil", func(t *testing.T) {
+		for _, line := range []Line[int]{Ln(Pt(2, 0), Vec(0, 1)), Ln(Pt(2, 0), Vec(0, 0))} {
+			front, back := Pol[int](nil).Split(line)
+
+			assert.True(t, front.IsZero())
+			assert.True(t, back.IsZero())
+		}
+
+		front, back := Pol([]Point[int]{}).Split(Ln(Pt(2, 0), Vec(0, 1)))
+
+		assert.False(t, front.IsZero())
+		assert.False(t, back.IsZero())
+	})
+	t.Run("a vertex on the line belongs to both parts", func(t *testing.T) {
+		front, back := square.Split(Ln(Pt(0, 0), Vec(1, 1)))
+
+		geomtest.AssertPolygon(t, front, Pol([]Point[int]{Pt(0, 0), Pt(4, 4), Pt(0, 4)}))
+		geomtest.AssertPolygon(t, back, Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4)}))
+	})
+	t.Run("a concave part of several pieces comes back as one outline", func(t *testing.T) {
+		front, back := notched.Split(Ln(Pt(0, 2), Vec(1, 0)))
+
+		geomtest.AssertPolygon(t, front, Pol([]Point[int]{Pt(0, 2), Pt(4, 2), Pt(4, 4), Pt(3, 2), Pt(1, 2), Pt(0, 4)}))
+		geomtest.AssertPolygon(t, back, Pol([]Point[int]{Pt(0, 2), Pt(0, 0), Pt(4, 0), Pt(4, 2), Pt(3, 2), Pt(2, 1), Pt(1, 2)}))
+	})
+	t.Run("a polygon on one side leaves the other part empty or with what touches the line", func(t *testing.T) {
+		front, back := square.Split(Ln(Pt(10, 0), Vec(0, 1)))
+
+		geomtest.AssertPolygon(t, front, square)
+		assert.True(t, back.IsEmpty())
+
+		front, back = square.Split(Ln(Pt(4, 0), Vec(0, 1)))
+
+		geomtest.AssertPolygon(t, front, square)
+		geomtest.AssertPolygon(t, back, Pol([]Point[int]{Pt(4, 0), Pt(4, 4)}))
+	})
+	t.Run("a line with no direction leaves the polygon whole in the first part", func(t *testing.T) {
+		front, back := square.Split(Ln(Pt(2, 2), Vec(0, 0)))
+
+		geomtest.AssertPolygon(t, front, square)
+		assert.True(t, back.IsEmpty())
+	})
+	t.Run("an empty polygon has two empty parts", func(t *testing.T) {
+		front, back := Polygon[int]{}.Split(Ln(Pt(0, 0), Vec(1, 0)))
+
+		assert.True(t, front.IsEmpty())
+		assert.True(t, back.IsEmpty())
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, p := range polygonFixtures() {
+			for _, l := range lineFixtures {
+				front, back := p.Split(l)
+				message := fmt.Sprintf("%s → %s: ", p, l)
+
+				if !l.Direction.IsZero() {
+					reversedFront, reversedBack := p.Split(Ln(l.Origin, l.Direction.Negate()))
+					geomtest.AssertPolygon(t, reversedFront, back, message)
+					geomtest.AssertPolygon(t, reversedBack, front, message)
+				}
+
+				assertPolygonSplit(t, p, front, l, 1, message)
+				assertPolygonSplit(t, p, back, l, -1, message)
+			}
+		}
+	})
+}
+
+// assertPolygonSplit checks a part Split gives: no larger than the polygon, every vertex within
+// it and on the line or on the side of it the part was kept on.
+func assertPolygonSplit(t *testing.T, p, part Polygon[float64], line Line[float64], side int, message string) {
+	t.Helper()
+
+	assert.True(t, LessOrEqual(part.Area(), p.Area()), message)
+	for _, vertex := range part.Points {
+		assert.True(t, p.Contains(vertex), message+vertex.String())
+		assert.True(t, line.Direction.IsZero() || line.Contains(vertex) || line.Side(vertex) == side, message+vertex.String())
+	}
+}
+
+func TestPolygon_AppendSplit(t *testing.T) {
+	square := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(0, 4)})
+	line := Ln(Pt(2, 0), Vec(0, 1))
+
+	t.Run("appends each part after the points in its slice", func(t *testing.T) {
+		front, back := square.AppendSplit([]Point[int]{Pt(9, 9)}, []Point[int]{Pt(8, 8)}, line)
+
+		geomtest.AssertVertices(t, front, []Point[int]{Pt(9, 9), Pt(0, 0), Pt(2, 0), Pt(2, 4), Pt(0, 4)})
+		geomtest.AssertVertices(t, back, []Point[int]{Pt(8, 8), Pt(2, 0), Pt(4, 0), Pt(4, 4), Pt(2, 4)})
+	})
+	t.Run("buffers with room allocate nothing and Split allocates once", func(t *testing.T) {
+		front, back := make([]Point[int], 0, 8), make([]Point[int], 0, 8)
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints, sinkPoints = square.AppendSplit(front[:0], back[:0], line)
+		}), 0)
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			front, back := square.Split(line)
+			sinkPoints, sinkPoints = front.Points, back.Points
+		}), 1)
+	})
+}
+
+func TestPolygon_Union(t *testing.T) {
+	square := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(0, 4)})
+	shifted := Pol([]Point[int]{Pt(2, 2), Pt(6, 2), Pt(6, 6), Pt(2, 6)})
+
+	t.Run("is the outline both cover, from the first vertex outside the other", func(t *testing.T) {
+		union, ok := square.Union(shifted)
+
+		assert.True(t, ok)
+		geomtest.AssertPolygon(t, union, Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 2), Pt(6, 2), Pt(6, 6), Pt(2, 6), Pt(2, 4), Pt(0, 4)}))
+	})
+	t.Run("two crossing bars give a cross, not their hull", func(t *testing.T) {
+		across := Pol([]Point[int]{Pt(0, 2), Pt(6, 2), Pt(6, 4), Pt(0, 4)})
+		down := Pol([]Point[int]{Pt(2, 0), Pt(4, 0), Pt(4, 6), Pt(2, 6)})
+
+		union, ok := across.Union(down)
+
+		assert.True(t, ok)
+		geomtest.AssertPolygon(t, union, Pol([]Point[int]{
+			Pt(0, 2), Pt(2, 2), Pt(2, 0), Pt(4, 0), Pt(4, 2), Pt(6, 2), Pt(6, 4), Pt(4, 4), Pt(4, 6), Pt(2, 6), Pt(2, 4), Pt(0, 4),
+		}))
+	})
+	t.Run("a vertex straight against X from the shared part closes the outline", func(t *testing.T) {
+		union, ok := Pol([]Point[int]{Pt(-2, 3), Pt(2, 1), Pt(2, 5)}).Union(Pol([]Point[int]{Pt(0, 0), Pt(6, 0), Pt(6, 6), Pt(0, 6)}))
+
+		assert.True(t, ok)
+		geomtest.AssertPolygon(t, union, Pol([]Point[int]{Pt(-2, 3), Pt(0, 2), Pt(0, 0), Pt(6, 0), Pt(6, 6), Pt(0, 6), Pt(0, 4)}))
+	})
+	t.Run("keeps the winding of the polygon", func(t *testing.T) {
+		union, ok := Pol([]Point[int]{Pt(0, 0), Pt(0, 4), Pt(4, 4), Pt(4, 0)}).Union(shifted)
+
+		assert.True(t, ok)
+		geomtest.AssertPolygon(t, union, Pol([]Point[int]{Pt(0, 0), Pt(0, 4), Pt(2, 4), Pt(2, 6), Pt(6, 6), Pt(6, 2), Pt(4, 2), Pt(4, 0)}))
+	})
+	t.Run("a polygon containing the other is the union", func(t *testing.T) {
+		inner := Pol([]Point[int]{Pt(1, 1), Pt(3, 1), Pt(3, 3)})
+
+		union, ok := square.Union(inner)
+
+		assert.True(t, ok)
+		geomtest.AssertPolygon(t, union, square)
+
+		union, ok = inner.Union(square)
+
+		assert.True(t, ok)
+		geomtest.AssertPolygon(t, union, square)
+	})
+	t.Run("polygons sharing no area or not convex have no union", func(t *testing.T) {
+		_, ok := square.Union(Pol([]Point[int]{Pt(10, 10), Pt(12, 10), Pt(12, 12)}))
+		assert.False(t, ok)
+
+		_, ok = square.Union(Pol([]Point[int]{Pt(4, 0), Pt(8, 0), Pt(8, 4), Pt(4, 4)}))
+		assert.False(t, ok)
+
+		_, ok = square.Union(Pol([]Point[int]{Pt(4, 4), Pt(8, 4), Pt(8, 8), Pt(4, 8)}))
+		assert.False(t, ok)
+
+		union, ok := square.Union(Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(2, 1), Pt(0, 4)}))
+		assert.False(t, ok)
+		assert.Nil(t, union.Points)
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, a := range outlineFixtures() {
+			for _, b := range outlineFixtures() {
+				union, ok := a.Union(b)
+				message := fmt.Sprintf("%s ∪ %s: ", a, b)
+
+				reverse, reverseOk := b.Union(a)
+				assert.Equal(t, ok, reverseOk, message)
+				shared, _ := a.ClipPolygon(b)
+				assert.Equal(t, ok, a.IsConvex() && b.IsConvex() && !LessOrEqual(shared.Area(), 0), message)
+				if !ok {
+					continue
+				}
+
+				geomtest.AssertNumber(t, union.Area(), reverse.Area(), message)
+				assert.True(t, LessOrEqual(max(a.Area(), b.Area()), union.Area()) && LessOrEqual(union.Area(), a.Area()+b.Area()), message)
+				for _, vertex := range union.Points {
+					assert.True(t, a.Contains(vertex) || b.Contains(vertex), message+vertex.String())
+				}
+				for _, vertex := range slices.Concat(a.Points, b.Points) {
+					assert.True(t, union.Contains(vertex), message+vertex.String())
+				}
+			}
+		}
+	})
+}
+
+func TestPolygon_AppendUnion(t *testing.T) {
+	square := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(0, 4)})
+	shifted := Pol([]Point[int]{Pt(2, 2), Pt(6, 2), Pt(6, 6), Pt(2, 6)})
+
+	t.Run("appends the union after the points in dst", func(t *testing.T) {
+		geomtest.AssertVertices(t, square.AppendUnion([]Point[int]{Pt(9, 9)}, shifted), []Point[int]{
+			Pt(9, 9), Pt(0, 0), Pt(4, 0), Pt(4, 2), Pt(6, 2), Pt(6, 6), Pt(2, 6), Pt(2, 4), Pt(0, 4),
+		})
+	})
+	t.Run("no union leaves dst as it is", func(t *testing.T) {
+		assert.Nil(t, square.AppendUnion(nil, Pol([]Point[int]{Pt(10, 10), Pt(12, 10), Pt(12, 12)})))
+	})
+	t.Run("a buffer with room allocates nothing and Union allocates once", func(t *testing.T) {
+		buffer := make([]Point[int], 0, 2*(len(square.Points)+len(shifted.Points)))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = square.AppendUnion(buffer[:0], shifted)
+		}), 0)
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			union, _ := square.Union(shifted)
+			sinkPoints = union.Points
+		}), 1)
+	})
+}
+
 func TestPolygon_Equal(t *testing.T) {
 	square := Pol(squareVertices())
 

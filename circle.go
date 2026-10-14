@@ -560,11 +560,35 @@ func (c Circle[T]) IntersectionLine(line Line[T]) Pair[Point[T]] {
 	return c.IntersectionSegment(line.span(c.minMax()))
 }
 
-// fractions returns the fractions along the segment at which it crosses the circle boundary, in
-// increasing order, and how many of the two there are: the ends of the chord, an endpoint on the
-// boundary within the tolerance standing in for the end it is by snapToEndpoint, or the one
-// fraction of a tangent. They are not yet held to the segment, which pointsAt does, so
-// IntersectionSegment and Segment.HitCircle place their points from the same fractions.
+// Union returns the smallest circle containing both, the one that contains the other where there is
+// one, the receiver first. For integer T the radius is rounded up, so the union still contains
+// both.
+func (c Circle[T]) Union(circle Circle[T]) Circle[T] {
+	switch {
+	case c.ContainsCircle(circle):
+		return c
+	case circle.ContainsCircle(c):
+		return circle
+	}
+
+	a, b := c, circle
+	if b.Center.Compare(a.Center) < 0 {
+		a, b = b, a
+	}
+
+	from, to := a.Center.Float(), b.Center.Float()
+	offset := to.Subtract(from)
+	distance := offset.Length()
+	along := (distance + float64(b.Radius) - float64(a.Radius)) / 2
+	center := Point[float64]{from.X + float64(offset.X*along)/distance, from.Y + float64(offset.Y*along)/distance}.Cast[T]()
+	reach := max(center.Float().DistanceTo(from)+float64(a.Radius), center.Float().DistanceTo(to)+float64(b.Radius))
+
+	return Circle[T]{center, castUp[T](reach)}
+}
+
+// fractions returns the fractions along the segment, ascending and not yet clamped to it, at which
+// it crosses the boundary, and how many there are. An endpoint on the boundary stands in for the
+// crossing it is, so IntersectionSegment and Segment.HitCircle place points from the same values.
 func (c Circle[T]) fractions(segment Segment[T]) ([2]float64, int) {
 	entry, exit, ok := segment.chord(c)
 	start := c.touchesSquared(c.centerDistanceSquared(segment.Start), segment.magnitude())

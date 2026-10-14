@@ -1237,15 +1237,80 @@ func (p Polygon[T]) AppendClipBox(dst []Point[T], box Box[T]) []Point[T] {
 	return clip.result()
 }
 
-// containsSupport reports whether the polygon, one that is not convex, holds a shape no
-// Contains method names: no edge the shape meets, by their supports, has it reaching past the
-// line of the edge on the outer side by more than the tolerance, which the winding gives, so the
-// shape lies wholly within the polygon or wholly outside it, and the polygon contains a point of
-// it, the middle of its supports along the X axis, off the boundary wherever the shape does not
-// lie along an edge. A shape across a notch is not held, however thin. A shape touching a vertex
-// where the outline turns inward reaches past the line of the edges there from inside, and
-// within the tolerance may answer either way; so does one touching a repeated vertex, an edge
-// of no length, whose outer side is taken along the X axis.
+// Split returns the two parts the line cuts the polygon into, the first on the side Line.Side gives
+// 1 for, each keeping the winding and vertices of the polygon. A vertex on the line belongs to
+// both, so the parts meet exactly along it. A polygon wholly on one side leaves the other part
+// empty, or the point or stretch where it touches the line. A part of several pieces comes back as
+// one outline joined along the line, and a line with no direction leaves the whole polygon in the
+// first part.
+func (p Polygon[T]) Split(line Line[T]) (Polygon[T], Polygon[T]) {
+	if p.Points == nil {
+		return p, p
+	}
+
+	n := 2 * len(p.Points)
+	buffer := make([]Point[T], 0, 2*n)
+	front, back := p.AppendSplit(buffer[:0:n], buffer[n:n], line)
+
+	return Polygon[T]{front}, Polygon[T]{back}
+}
+
+// AppendSplit appends the vertices of the two parts of Split(line) to front and back and returns
+// the extended slices.
+func (p Polygon[T]) AppendSplit(front, back []Point[T], line Line[T]) ([]Point[T], []Point[T]) {
+	if !line.Direction.hasDirection() {
+		return append(front, p.Points...), back
+	}
+
+	ahead := edgeClip[T]{dst: front, from: len(front), points: p.Points}
+	ahead.cut(line, 1)
+
+	behind := edgeClip[T]{dst: back, from: len(back), points: p.Points}
+	behind.cut(line, -1)
+
+	return ahead.result(), behind.result()
+}
+
+// Union returns the outline of the area the polygons cover together, and false where either is not
+// convex or they share no area, touching included. The outline keeps the winding of this polygon
+// and starts at its first vertex outside the given one; where one contains the other it has that
+// one's vertices, in this winding. A vertex on the boundary of the other polygon gives way to the
+// crossing beside it.
+func (p Polygon[T]) Union(polygon Polygon[T]) (Polygon[T], bool) {
+	points := p.AppendUnion(nil, polygon)
+
+	return Polygon[T]{points}, len(points) > 0
+}
+
+// AppendUnion appends the vertices of Union(polygon) to dst and returns the extended slice.
+func (p Polygon[T]) AppendUnion(dst []Point[T], polygon Polygon[T]) []Point[T] {
+	if !p.Bounds().IntersectsBox(polygon.Bounds()) || !p.IsConvex() || !polygon.IsConvex() {
+		return dst
+	}
+
+	outline := unionOutline[T]{dst: slices.Grow(dst, 2*(len(p.Points)+len(polygon.Points))), from: len(dst)}
+	for _, point := range p.Points {
+		outline.add(point, polygon.Contains(point))
+	}
+	for _, point := range polygon.Points {
+		outline.add(point, p.Contains(point))
+	}
+	for edge := range p.Edges() {
+		for other := range polygon.Edges() {
+			if point, ok := edge.IntersectionSegment(other); ok {
+				outline.cross(point)
+			}
+		}
+	}
+
+	return outline.result(p.twiceArea() < 0)
+}
+
+// containsSupport reports whether the polygon, one that is not convex, holds a shape no Contains
+// method names: no edge the shape meets has it reaching past the edge's outer side by more than the
+// tolerance, and the polygon contains the middle of its supports along X. A shape across a notch is
+// not held, however thin, and one touching a reflex or repeated vertex may answer either way within
+// the tolerance.
 func (p Polygon[T]) containsSupport(shape Shape[T]) bool {
 	reversed := p.twiceArea() < 0
 	bounds := shape.Bounds()
