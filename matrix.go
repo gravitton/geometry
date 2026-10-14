@@ -6,12 +6,13 @@ import (
 
 // Matrix is a 2D affine matrix.
 //
-// Translate, Rotate, Scale, Shear and Reflect compose the matrix with the constructor of the
-// same name, TranslationMatrix, RotationMatrix, ScaleMatrix, ShearMatrix and ReflectionMatrix,
-// and the Pre variants compose on the other side. Translate, Rotate, Shear and Reflect take the
-// arguments of their constructor. Scale and Unscale take float64 factors like every other
-// Scale in the package, where ScaleMatrix takes them in T, so an integer matrix can be scaled
-// by a half; each scaled component is rounded, following Multiply.
+// Translate, Rotate, RotateAround, Scale, Shear and Reflect compose the matrix with the
+// constructor of the same name, TranslationMatrix, RotationMatrix, RotationMatrixAround,
+// ScaleMatrix, ShearMatrix and ReflectionMatrix, and the Pre variants compose on the other side.
+// Translate, Rotate, RotateAround, Shear and Reflect take the arguments of their constructor.
+// Scale and Unscale take float64 factors like every other Scale in the package, where
+// ScaleMatrix takes them in T, so an integer matrix can be scaled by a half; each scaled
+// component is rounded, following Multiply. ScaleMatrixAround has no composing method.
 //
 // For integer T, the matrix stores and composes lattice transforms – translation, integer scaling,
 // reflection, quarter turns – exactly. The rest are not closed over the integers and round into a
@@ -62,12 +63,28 @@ func RotationMatrix[T Number](angle float64) Matrix[T] {
 	}
 }
 
+// RotationMatrixAround creates a new matrix rotating about the pivot (angle in radians): the
+// product TranslationMatrix * RotationMatrix * TranslationMatrix that moves the pivot to the
+// origin, turns and moves it back, equal to that chain to the bit for every T. The translation is
+// computed from the rotation entries as stored, so the pivot maps onto itself, exactly for
+// integer T. For integer T, see RotationMatrix: only multiples of 90° give exact results.
+func RotationMatrixAround[T Number](pivotX, pivotY T, angle float64) Matrix[T] {
+	return RotationMatrix[T](angle).around(pivotX, pivotY)
+}
+
 // ScaleMatrix creates a new scale matrix.
 func ScaleMatrix[T Number](factorX, factorY T) Matrix[T] {
 	return Matrix[T]{
 		factorX, 0, 0,
 		0, factorY, 0,
 	}
+}
+
+// ScaleMatrixAround creates a new matrix scaling about the pivot: the product TranslationMatrix *
+// ScaleMatrix * TranslationMatrix that moves the pivot to the origin, scales and moves it back,
+// equal to that chain to the bit for every T. The pivot maps onto itself.
+func ScaleMatrixAround[T Number](pivotX, pivotY, factorX, factorY T) Matrix[T] {
+	return ScaleMatrix(factorX, factorY).around(pivotX, pivotY)
 }
 
 // TRSMatrix creates a new matrix that scales, then rotates (angle in radians), then translates:
@@ -108,9 +125,14 @@ func ReflectionMatrix[T Number](axis Axis) Matrix[T] {
 	}
 }
 
-// Determinant calculates the determinant of the 2x2 matrix.
-func (m Matrix[T]) Determinant() T {
-	return Cast[T](m.determinant())
+func (m Matrix[T]) around(pivotX, pivotY T) Matrix[T] {
+	f := m.Float()
+	x, y := float64(pivotX), float64(pivotY)
+
+	return Matrix[T]{
+		m.A, m.B, Cast[T](float64(f.A*-x) + float64(f.B*-y) + x),
+		m.D, m.E, Cast[T](float64(f.D*-x) + float64(f.E*-y) + y),
+	}
 }
 
 // Translation returns the translation the matrix applies, its C and F components.
@@ -149,14 +171,9 @@ func (m Matrix[T]) Scaling() Vector[T] {
 	return Vector[T]{Cast[T](x), Cast[T](f.determinant() / x)}
 }
 
-// determinant calculates the determinant in float64, the form Inverse and IsInvertible use
-// so that an integer matrix is judged on its exact determinant, not a rounded one.
-// The two products are rounded separately, which keeps a fused multiply-add from turning the
-// determinant of a singular matrix into a rounding residue: it is exactly zero on every platform.
-func (m Matrix[T]) determinant() float64 {
-	f := m.Float()
-
-	return float64(f.A*f.E) - float64(f.B*f.D)
+// Determinant calculates the determinant of the 2x2 matrix.
+func (m Matrix[T]) Determinant() T {
+	return Cast[T](m.determinant())
 }
 
 // turnedAngle returns the angle a shape at the given angle takes under the matrix: its own
@@ -171,6 +188,18 @@ func (m Matrix[T]) turnedAngle(angle float64, scaling Vector[T]) float64 {
 	}
 
 	return NormalizeAngle(angle + m.Angle())
+}
+
+// mapping returns the linear part of the matrix applied to the frame of an oriented shape, the
+// unit circle stretched by the size and turned by the angle: the map whose decomposition gives
+// the turn, the semi-axes and, for a regular polygon, the phase the shape takes under the matrix,
+// so Ellipse.Transform and RegularPolygon.Transform read the one expression.
+func (m Matrix[T]) mapping(angle float64, size Size[float64]) Matrix[float64] {
+	f := m.Float()
+	sin, cos := math.Sincos(angle)
+	w, h := size.XY()
+
+	return Matrix[float64]{f.A, f.B, 0, f.D, f.E, 0}.Multiply(Matrix[float64]{cos * w, -sin * h, 0, sin * w, cos * h, 0})
 }
 
 // decomposition returns the linear part of the matrix as a turn after, a stretch along the axes
@@ -216,55 +245,14 @@ func (m Matrix[T]) decomposition() (float64, Vector[float64], float64, bool) {
 	return after, stretch, before, reflected
 }
 
-// mapping returns the linear part of the matrix applied to the frame of an oriented shape, the
-// unit circle stretched by the size and turned by the angle: the map whose decomposition gives
-// the turn, the semi-axes and, for a regular polygon, the phase the shape takes under the matrix,
-// so Ellipse.Transform and RegularPolygon.Transform read the one expression.
-func (m Matrix[T]) mapping(angle float64, size Size[float64]) Matrix[float64] {
+// determinant calculates the determinant in float64, the form Inverse and IsInvertible use
+// so that an integer matrix is judged on its exact determinant, not a rounded one.
+// The two products are rounded separately, which keeps a fused multiply-add from turning the
+// determinant of a singular matrix into a rounding residue: it is exactly zero on every platform.
+func (m Matrix[T]) determinant() float64 {
 	f := m.Float()
-	sin, cos := math.Sincos(angle)
-	w, h := size.XY()
 
-	return Matrix[float64]{f.A, f.B, 0, f.D, f.E, 0}.Multiply(Matrix[float64]{cos * w, -sin * h, 0, sin * w, cos * h, 0})
-}
-
-// Multiply creates a new matrix by multiplying the current matrix with given matrix.
-func (m Matrix[T]) Multiply(matrix Matrix[T]) Matrix[T] {
-	l, r := m.Float(), matrix.Float()
-
-	return Matrix[T]{
-		Cast[T](float64(l.A*r.A) + float64(l.B*r.D)),
-		Cast[T](float64(l.A*r.B) + float64(l.B*r.E)),
-		Cast[T](float64(l.A*r.C) + float64(l.B*r.F) + l.C),
-		Cast[T](float64(l.D*r.A) + float64(l.E*r.D)),
-		Cast[T](float64(l.D*r.B) + float64(l.E*r.E)),
-		Cast[T](float64(l.D*r.C) + float64(l.E*r.F) + l.F),
-	}
-}
-
-// Inverse creates a new inverse affine matrix. A singular matrix has no inverse and Inverse
-// panics for one, the same convention Divide follows for a zero factor; check IsInvertible first
-// when the matrix may be singular.
-// For integer T, all six components are rounded; only |det| = 1 gives exact results, which covers
-// translations, reflections and quarter turns. Otherwise the inverse does not undo the matrix:
-// the inverse of an integer scale rounds its fractional factor to a whole one.
-func (m Matrix[T]) Inverse() Matrix[T] {
-	det := m.determinant()
-	if det == 0 {
-		panic("geom: inverse of a singular matrix")
-	}
-
-	f := m.Float()
-	invDet := 1 / det
-
-	return Matrix[T]{
-		Cast[T](f.E * invDet),
-		Cast[T](-f.B * invDet),
-		Cast[T]((float64(f.B*f.F) - float64(f.C*f.E)) * invDet),
-		Cast[T](-f.D * invDet),
-		Cast[T](f.A * invDet),
-		Cast[T]((float64(f.C*f.D) - float64(f.A*f.F)) * invDet),
-	}
+	return float64(f.A*f.E) - float64(f.B*f.D)
 }
 
 // Translate creates a new matrix by right-multiplying a translation matrix.
@@ -292,11 +280,27 @@ func (m Matrix[T]) Rotate(angle float64) Matrix[T] {
 	return m.Multiply(RotationMatrix[T](angle))
 }
 
+// RotateAround creates a new matrix by right-multiplying a rotation matrix about the pivot
+// (angle in radians).
+// Composition order: result = m * m_R(pivotX,pivotY,angle).
+// For integer T, see RotationMatrix: only multiples of 90° give exact results.
+func (m Matrix[T]) RotateAround(pivotX, pivotY T, angle float64) Matrix[T] {
+	return m.Multiply(RotationMatrixAround(pivotX, pivotY, angle))
+}
+
 // PreRotate creates a new matrix by left-multiplying a rotation matrix (angle in radians).
 // Composition order: result = m_R(angle) * m.
 // For integer T, see RotationMatrix: only multiples of 90° give exact results.
 func (m Matrix[T]) PreRotate(angle float64) Matrix[T] {
 	return RotationMatrix[T](angle).Multiply(m)
+}
+
+// PreRotateAround creates a new matrix by left-multiplying a rotation matrix about the pivot
+// (angle in radians).
+// Composition order: result = m_R(pivotX,pivotY,angle) * m.
+// For integer T, see RotationMatrix: only multiples of 90° give exact results.
+func (m Matrix[T]) PreRotateAround(pivotX, pivotY T, angle float64) Matrix[T] {
+	return RotationMatrixAround(pivotX, pivotY, angle).Multiply(m)
 }
 
 // Scale creates a new matrix equal to right-multiplying a scale matrix.
@@ -332,6 +336,20 @@ func (m Matrix[T]) PreScale(factorX, factorY float64) Matrix[T] {
 	}
 }
 
+// Multiply creates a new matrix by multiplying the current matrix with given matrix.
+func (m Matrix[T]) Multiply(matrix Matrix[T]) Matrix[T] {
+	l, r := m.Float(), matrix.Float()
+
+	return Matrix[T]{
+		Cast[T](float64(l.A*r.A) + float64(l.B*r.D)),
+		Cast[T](float64(l.A*r.B) + float64(l.B*r.E)),
+		Cast[T](float64(l.A*r.C) + float64(l.B*r.F) + l.C),
+		Cast[T](float64(l.D*r.A) + float64(l.E*r.D)),
+		Cast[T](float64(l.D*r.B) + float64(l.E*r.E)),
+		Cast[T](float64(l.D*r.C) + float64(l.E*r.F) + l.F),
+	}
+}
+
 // Shear creates a new matrix by right-multiplying a shear matrix.
 // Composition order: result = m * m_H(shearX,shearY).
 func (m Matrix[T]) Shear(shearX, shearY T) Matrix[T] {
@@ -355,6 +373,31 @@ func (m Matrix[T]) Reflect(axis Axis) Matrix[T] {
 // Composition order: result = m_F(axis) * m.
 func (m Matrix[T]) PreReflect(axis Axis) Matrix[T] {
 	return ReflectionMatrix[T](axis).Multiply(m)
+}
+
+// Inverse creates a new inverse affine matrix. A singular matrix has no inverse and Inverse
+// panics for one, the same convention Divide follows for a zero factor; check IsInvertible first
+// when the matrix may be singular.
+// For integer T, all six components are rounded; only |det| = 1 gives exact results, which covers
+// translations, reflections and quarter turns. Otherwise the inverse does not undo the matrix:
+// the inverse of an integer scale rounds its fractional factor to a whole one.
+func (m Matrix[T]) Inverse() Matrix[T] {
+	det := m.determinant()
+	if det == 0 {
+		panic("geom: inverse of a singular matrix")
+	}
+
+	f := m.Float()
+	invDet := 1 / det
+
+	return Matrix[T]{
+		Cast[T](f.E * invDet),
+		Cast[T](-f.B * invDet),
+		Cast[T]((float64(f.B*f.F) - float64(f.C*f.E)) * invDet),
+		Cast[T](-f.D * invDet),
+		Cast[T](f.A * invDet),
+		Cast[T]((float64(f.C*f.D) - float64(f.A*f.F)) * invDet),
+	}
 }
 
 // Equal checks for equal values.
