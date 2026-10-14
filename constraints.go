@@ -17,15 +17,3 @@ type Float interface {
 type Number interface {
 	Integer | Float
 }
-
-// isInt reports whether T is an integer type.
-func isInt[T Number]() bool {
-	return T(1)/T(2) == 0
-}
-
-// isFloat32 reports whether a float T is 32-bit: a third taken in T is the float64 third only in
-// float64. It is asked only after isInt, since an integer third is zero, and avoids unsafe.Sizeof
-// to keep the package free of the unsafe import.
-func isFloat32[T Number]() bool {
-	return float64(T(1)/T(3)) != 1.0/3
-}

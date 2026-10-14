@@ -377,3 +377,26 @@ func MoveTowardAngle(angle, target, step float64) float64 {
 func EqualAngle(a, b float64) bool {
 	return EqualDelta(AngleDistance(a, b), 0, Delta)
 }
+
+// compareAngles orders two vectors by Vector.Angle without trigonometry: by the half plane each
+// lies in, then by the sign of their cross product.
+func compareAngles(a, b Vector[float64]) int {
+	if halfA, halfB := angleHalf(a), angleHalf(b); halfA != halfB {
+		return halfA - halfB
+	}
+
+	return -int(Sign(a.Cross(b)))
+}
+
+// angleHalf returns 0 below the X axis, 1 above or along it, and 2 against it or for the zero
+// vector.
+func angleHalf(v Vector[float64]) int {
+	switch {
+	case v.Y < 0:
+		return 0
+	case v.Y > 0 || v.X > 0:
+		return 1
+	default:
+		return 2
+	}
+}
