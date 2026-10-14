@@ -113,3 +113,27 @@ func (p *Pair[E]) UnmarshalJSON(bytes []byte) error {
 
 	return nil
 }
+
+// mapPair returns the pair of the items converted one by one, in their places, an item held
+// once where the two convert to the same one, as two points rounding onto one lattice point do.
+func mapPair[E interface {
+	Equal(E) bool
+	String() string
+}, R interface {
+	Equal(R) bool
+	String() string
+}](pair Pair[E], convert func(E) R) Pair[R] {
+	mapped := Pair[R]{Count: pair.Count}
+	for i := range pair.Count {
+		mapped.Items[i] = convert(pair.Items[i])
+	}
+
+	if mapped.Count == 2 && mapped.Items[0].Equal(mapped.Items[1]) {
+		var none R
+
+		mapped.Items[1] = none
+		mapped.Count = 1
+	}
+
+	return mapped
+}

@@ -625,6 +625,39 @@ func TestPolygon_Lerp(t *testing.T) {
 	})
 }
 
+func TestPolygon_Reverse(t *testing.T) {
+	t.Run("the vertices in the opposite order", func(t *testing.T) {
+		geomtest.AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 3)}).Reverse(), Pol([]Point[int]{Pt(4, 3), Pt(4, 0), Pt(0, 0)}))
+	})
+	t.Run("the other winding over the same area", func(t *testing.T) {
+		for _, polygon := range polygonFixtures() {
+			reversed := polygon.Reverse()
+
+			geomtest.AssertNumber(t, reversed.Area(), polygon.Area(), polygon.String())
+			geomtest.AssertPolygon(t, reversed.Reverse(), polygon)
+
+			switch polygon.Winding() {
+			case WindingClockwise:
+				assert.Equal(t, reversed.Winding(), WindingCounterClockwise, polygon.String())
+			case WindingCounterClockwise:
+				assert.Equal(t, reversed.Winding(), WindingClockwise, polygon.String())
+			default:
+				assert.Equal(t, reversed.Winding(), WindingNone, polygon.String())
+			}
+		}
+	})
+	t.Run("the receiver keeps its order", func(t *testing.T) {
+		polygon := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 3)})
+		polygon.Reverse()
+
+		geomtest.AssertPolygon(t, polygon, Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 3)}))
+	})
+	t.Run("nil stays nil", func(t *testing.T) {
+		assert.True(t, Polygon[int]{}.Reverse().IsZero())
+		assert.False(t, Pol([]Point[int]{}).Reverse().IsZero())
+	})
+}
+
 func TestPolygon_ConvexHull(t *testing.T) {
 	dart := Pol([]Point[int]{Pt(0, 0), Pt(4, 2), Pt(0, 4), Pt(1, 2)})
 

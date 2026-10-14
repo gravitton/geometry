@@ -12,8 +12,8 @@ import (
 // zero the single point at Angle. It is a curve with no inside; Sector is the area it bounds
 // with the two radii to its ends.
 //
-// The radius is never negative: Ac takes it absolute and Scale takes a negative factor
-// absolute. A negative radius can only be written as a struct literal or decoded from JSON, and
+// The radius is never negative: Ac, Resize and Lerp take it absolute, Scale takes a negative
+// factor absolute, and Grow and Shrink clamp at zero. A negative radius can only be written as a struct literal or decoded from JSON, and
 // Contains, DistanceTo and Bounds give no meaningful answer for it; Canonical repairs it.
 //
 // The angles place the points of the arc off the lattice, so for an integer T every distance to
@@ -58,7 +58,8 @@ func ArcThrough[T Number](a, b, c Point[T]) (Arc[T], bool) {
 	return Arc[T]{circle.Center, circle.Radius, NormalizeAngle(angle), sweep}, true
 }
 
-// Length returns the length of the arc, the radius times the sweep, at most the circumference.
+// Length returns the length of the arc, the radius times the absolute sweep, at most the
+// circumference.
 func (a Arc[T]) Length() float64 {
 	return float64(a.Radius) * math.Abs(a.turn())
 }
@@ -433,16 +434,7 @@ func (a Arc[T]) Polyline(tolerance float64) Polyline[T] {
 // AppendPolyline appends the points of the path Polyline returns to dst and returns the
 // extended slice, so a caller reusing dst allocates nothing once it has room for them.
 func (a Arc[T]) AppendPolyline(dst []Point[T], tolerance float64) []Point[T] {
-	pieces := a.pieces(tolerance)
-
-	dst = append(slices.Grow(dst, int(pieces)+1), a.PointAt(0))
-	for i := 1.0; i <= pieces; i++ {
-		if point := a.PointAt(i / pieces); point != dst[len(dst)-1] {
-			dst = append(dst, point)
-		}
-	}
-
-	return dst
+	return a.appendPieces(dst, a.pieces(tolerance))
 }
 
 // Sector converts the arc to the Sector it bounds with the radii to its two ends.
@@ -466,6 +458,20 @@ func (a Arc[T]) Float() Arc[float64] {
 	return Arc[float64]{a.Center.Float(), float64(a.Radius), a.Angle, a.Sweep}
 }
 
+// appendPieces appends the ends of the given number of equal chords of the arc, from Start to
+// End, a point rounding onto the one before it left out: AppendPolyline with the count already
+// taken, which a Sector raises where the tolerance alone would leave it flat.
+func (a Arc[T]) appendPieces(dst []Point[T], pieces float64) []Point[T] {
+	dst = append(slices.Grow(dst, int(pieces)+1), a.PointAt(0))
+	for i := 1.0; i <= pieces; i++ {
+		if point := a.PointAt(i / pieces); point != dst[len(dst)-1] {
+			dst = append(dst, point)
+		}
+	}
+
+	return dst
+}
+
 // pieces returns how many equal chords the arc is flattened to within the given tolerance: as
 // few as keep it within the tolerance of each, at least one and at most two to the
 // flattenDepth, which a tolerance of zero and one that is no number give.
@@ -480,10 +486,10 @@ func (a Arc[T]) pieces(tolerance float64) float64 {
 	return pieces
 }
 
-// String returns the arc in the form of its constructor: Ac((x,y);r;a;s).
+// String returns the arc by its center, radius, angle and sweep: Arc((x,y);r;a;s).
 func (a Arc[T]) String() string {
 	buf := make([]byte, 0, stringSize)
-	buf = append(buf, "Ac("...)
+	buf = append(buf, "Arc("...)
 	buf = a.Center.appendString(buf)
 	buf = append(buf, ';')
 	buf = appendString(buf, a.Radius)

@@ -1,6 +1,7 @@
 package geom
 
 import (
+	"iter"
 	"math"
 )
 
@@ -64,11 +65,59 @@ func (b Box[T]) Size() Size[T] {
 	return Size[T]{b.Width(), b.Height()}
 }
 
+// Vertices iterates the four corners of the box in order starting at Min, by increasing angle,
+// clockwise as drawn on a screen with Y pointing down, without allocating; collect them with
+// slices.Collect where a slice is needed.
+func (b Box[T]) Vertices() iter.Seq[Point[T]] {
+	return func(yield func(Point[T]) bool) {
+		for _, corner := range b.corners() {
+			if !yield(corner) {
+				return
+			}
+		}
+	}
+}
+
+// Edges iterates the four edges of the box in the order of Vertices, each from a corner to the
+// next and the last closing back to Min, without allocating; collect them with slices.Collect
+// where a slice is needed. They are the edges every test of the box against an outline reads.
+func (b Box[T]) Edges() iter.Seq[Segment[T]] {
+	return func(yield func(Segment[T]) bool) {
+		corners := b.corners()
+
+		edgesOf(corners[:])(yield)
+	}
+}
+
 // Center returns the point halfway from Min to Max. For integer T half the size is truncated
 // toward Min, so the center of an odd span lies nearer Min and the Rectangle of the box keeps
 // its corners.
 func (b Box[T]) Center() Point[T] {
 	return Point[T]{b.Min.X + (b.Max.X-b.Min.X)/2, b.Min.Y + (b.Max.Y-b.Min.Y)/2}
+}
+
+// Centroid returns the center of the enclosed area, the Center of the box.
+func (b Box[T]) Centroid() Point[T] {
+	return b.Center()
+}
+
+// Area returns the box area (width * height). It is a float64 even for an integer T, like
+// every product, so the box is a Body; Size.Area keeps the exact integer area.
+func (b Box[T]) Area() float64 {
+	return float64(b.Width()) * float64(b.Height())
+}
+
+// Perimeter returns the box perimeter. It stays in T like a sum.
+func (b Box[T]) Perimeter() T {
+	return b.Size().Perimeter()
+}
+
+// Inertia returns the polar second moment of area about the center, the rotational inertia
+// of the box at unit density: w * h * (w^2 + h^2) / 12.
+func (b Box[T]) Inertia() float64 {
+	w, h := b.Size().Float().XY()
+
+	return w * h * (float64(w*w) + float64(h*h)) / 12
 }
 
 // Bounds returns the box itself, the box around it.
@@ -105,6 +154,12 @@ func (b Box[T]) Translate(vector Vector[T]) Box[T] {
 	return Box[T]{b.Min.Add(vector), b.Max.Add(vector)}
 }
 
+// MoveTo creates a new Box of the same size with its Center at point. The corners are moved
+// by the same whole amount, so for integer T an odd extent keeps the center nearer Min.
+func (b Box[T]) MoveTo(point Point[T]) Box[T] {
+	return b.Translate(point.Subtract(b.Center()))
+}
+
 // Clamp creates a new Box moved so that it lies within the given one, keeping its size: the box
 // itself where it already lies exactly within, and otherwise moved by the shortest distance that
 // brings it in, so one enclosed only within the tolerance is moved onto the boundary. On an axis
@@ -128,6 +183,13 @@ func (b Box[T]) Inset(padding Padding[T]) Box[T] {
 // Outset creates a new Box expanded by the given padding amounts, the inverse of Inset.
 func (b Box[T]) Outset(padding Padding[T]) Box[T] {
 	return b.Inset(padding.Negate())
+}
+
+// Lerp creates a new Box in linear interpolation towards the given box, moving the two corners
+// together, and extrapolating outside [0, 1] like Point.Lerp, with the corners ordered again,
+// so an extrapolation that would turn the box inside out stays a box.
+func (b Box[T]) Lerp(box Box[T], t float64) Box[T] {
+	return Box[T]{b.Min.Lerp(box.Min, t), b.Max.Lerp(box.Max, t)}.Canonical()
 }
 
 // Canonical creates a new Box with the corners ordered, Min the lesser on each axis, as the
@@ -190,7 +252,7 @@ func (b Box[T]) DistanceToBox(box Box[T]) float64 {
 
 // DistanceSquaredToBox returns the squared distance DistanceToBox takes the root of, faster for
 // comparisons, from the gap between the boxes on each axis: zero where they overlap or the gap
-// is within the tolerance, the one comparison Contains and IntersectsBox both read. A NaN
+// is within the tolerance, which is where IntersectsBox reads it. A NaN
 // coordinate leaves a NaN gap, which the comparison never admits.
 func (b Box[T]) DistanceSquaredToBox(box Box[T]) float64 {
 	a1, b1, a2, b2 := b.Min.Float(), b.Max.Float(), box.Min.Float(), box.Max.Float()
@@ -351,7 +413,7 @@ func (b Box[T]) IntersectsSegment(segment Segment[T]) bool {
 }
 
 // IntersectsRay reports whether the box and the ray share a point, as
-// Ray.IntersectsBox does.is
+// Ray.IntersectsBox does.
 func (b Box[T]) IntersectsRay(ray Ray[T]) bool {
 	return ray.IntersectsBox(b)
 }
@@ -381,7 +443,7 @@ func (b Box[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 }
 
 // IntersectsBox reports whether the boxes share a point: the gap between them on the two axes
-// is zero within the tolerance, the one comparison DistanceSquaredTo makes, so boxes that touch
+// is zero within the tolerance, the one comparison DistanceSquaredToBox makes, so boxes that touch
 // at an edge or a corner intersect, the same closed convention as Contains.
 func (b Box[T]) IntersectsBox(box Box[T]) bool {
 	return b.DistanceSquaredToBox(box) == 0
@@ -436,6 +498,14 @@ func (b Box[T]) Equal(box Box[T]) bool {
 // IsZero checks if both corners are zero.
 func (b Box[T]) IsZero() bool {
 	return b.Equal(Box[T]{})
+}
+
+// Polygon converts the box into a generic Polygon with the vertices Vertices iterates, in one
+// allocation. A caller reusing a buffer appends them to it with slices.AppendSeq.
+func (b Box[T]) Polygon() Polygon[T] {
+	corners := b.corners()
+
+	return Polygon[T]{corners[:]}
 }
 
 // Rectangle converts the box into the Rectangle with the same corners, not rotated, the inverse

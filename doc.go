@@ -20,7 +20,8 @@
 // [Direction], [Axis], [Orientation] and [Winding] are enums. Package geomtest holds test
 // assertions, and packages ints and floats alias the int and float64 instantiations.
 //
-// Every value type has Equal, Cast, Int, Float and String. Circle, Capsule, Sector, Segment,
+// Every value type has Equal, Cast, Int, Float and String, the results [Hit] and [Contact]
+// among them; a [Pair] has Equal and String and no Cast, its items converting on their own. Circle, Capsule, Sector, Segment,
 // Polygon, Rectangle, RegularPolygon and Box are tested against each other by their Intersects
 // methods, and with Ellipse they are every [Shape], with Contains, Bounds, BoundingCircle and
 // Support. Polyline and Arc are no Shape, having no inside: they have Bounds and the point
@@ -90,7 +91,7 @@
 // near the origin, widens to two ulps of T far from it, and is zero for an integer T. Every such
 // test is one comparison on a squared distance, so DistanceTo is zero exactly where Contains
 // holds, and each Intersection method answers exactly where its Intersects holds, apart from
-// parallel and coincident segments, rectangles of different angles, and a segment entirely
+// parallel and coincident segments and a segment entirely
 // inside a shape, which crosses no boundary. The logic of each pair is written once and the other
 // side delegates to it, so both sides give the same answer. [Vector.Less] is strict.
 //
@@ -103,7 +104,7 @@
 // # Panics
 //
 // [Divide], and every method built on it ([Point.Divide], [Padding.Unscale], and the Unscale of
-// every shape but [Box], which has none, and of [Matrix]), panics for a zero factor, and
+// every shape that has one, and of [Matrix]), panics for a zero factor, and
 // [Matrix.Inverse] panics for a singular matrix, the same way the integer / operator and [Mod] do.
 // Check [Matrix.IsInvertible] before inverting a matrix that may be singular. [Cast] panics when a
 // NaN or ±Inf would be stored into an integer T: Multiply, Lerp, Rotate, Transform and Int on an

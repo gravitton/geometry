@@ -544,6 +544,21 @@ func TestRay_IntersectionSector(t *testing.T) {
 	})
 }
 
+func TestRay_AppendIntersectionSector(t *testing.T) {
+	sector, through := quarterSector(), RayThrough(Pt(-1.0, 1.0), Pt(5.0, 1.0+tenth))
+
+	t.Run("appends after the points already there", func(t *testing.T) {
+		geomtest.AssertVertices(t, through.AppendIntersectionSector(bufferWith(prefixPoint), sector), append([]Point[float64]{prefixPoint}, through.IntersectionSector(sector)...))
+	})
+	t.Run("appends to a buffer with room without allocating", func(t *testing.T) {
+		buffer := make([]Point[float64], 0, 4)
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkBool = len(through.AppendIntersectionSector(buffer[:0], sector)) > 0
+		}), 0)
+	})
+}
+
 func TestRay_IntersectionArc(t *testing.T) {
 	t.Run("matches Arc.IntersectionRay", func(t *testing.T) {
 		for _, s := range rayFixtures {
@@ -785,6 +800,21 @@ func TestRay_IntersectionCubicBezier(t *testing.T) {
 				geomtest.AssertVertices(t, s.IntersectionCubicBezier(c), c.IntersectionRay(s), fmt.Sprintf("%s → %s: ", s, c))
 			}
 		}
+	})
+}
+
+func TestRay_AppendIntersectionCubicBezier(t *testing.T) {
+	curve, through := CubBez(Pt(0.0, 0.0), Pt(2.0, 6.0), Pt(4.0, -6.0), Pt(6.0, 0.0)), RayThrough(Pt(-1.0, 1.0), Pt(5.0, 1.0+tenth))
+
+	t.Run("appends after the points already there", func(t *testing.T) {
+		geomtest.AssertVertices(t, through.AppendIntersectionCubicBezier(bufferWith(prefixPoint), curve), append([]Point[float64]{prefixPoint}, through.IntersectionCubicBezier(curve)...))
+	})
+	t.Run("appends to a buffer with room without allocating", func(t *testing.T) {
+		buffer := make([]Point[float64], 0, 4)
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkBool = len(through.AppendIntersectionCubicBezier(buffer[:0], curve)) > 0
+		}), 0)
 	})
 }
 

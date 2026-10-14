@@ -722,6 +722,76 @@ func TestEllipse_RegularPolygon(t *testing.T) {
 	})
 }
 
+func TestEllipse_Polygon(t *testing.T) {
+	t.Run("equal steps of the parameter from the end of the width semi-axis", func(t *testing.T) {
+		geomtest.AssertPolygon(t, Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Polygon(1.5), Pol([]Point[float64]{Pt(4.0, 0.0), Pt(0.0, 2.0), Pt(-4.0, 0.0), Pt(0.0, -2.0)}))
+		geomtest.AssertPolygon(t, Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Polygon(-1.5), Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Polygon(1.5))
+	})
+	t.Run("turned with the ellipse", func(t *testing.T) {
+		geomtest.AssertPolygon(t, Ell(Pt(1.0, 1.0), Sz(4.0, 2.0), Pi/2).Polygon(1.5), Pol([]Point[float64]{Pt(1.0, 5.0), Pt(-1.0, 1.0), Pt(1.0, -3.0), Pt(3.0, 1.0)}))
+	})
+	t.Run("a circle is flattened as the circle", func(t *testing.T) {
+		geomtest.AssertPolygon(t, Circ(Pt(1.0, 2.0), 5.0).Ellipse().Polygon(0.1), Circ(Pt(1.0, 2.0), 5.0).Polygon(0.1))
+	})
+	t.Run("never fewer than three, a thousand at most", func(t *testing.T) {
+		assert.Length(t, Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Polygon(100).Points, 3)
+		assert.Length(t, Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Polygon(0).Points, 1024)
+	})
+	t.Run("int rounds the vertices, and no extent gives the center", func(t *testing.T) {
+		geomtest.AssertPolygon(t, Ell(Pt(1, 2), Sz(4, 2), 0).Polygon(1.5), Pol([]Point[int]{Pt(5, 2), Pt(1, 4), Pt(-3, 2), Pt(1, 0)}))
+		geomtest.AssertPolygon(t, Ell(Pt(1, 2), Sz(0, 0), 0).Polygon(1), Pol([]Point[int]{Pt(1, 2)}))
+	})
+	t.Run("the vertices lie on the boundary, the edges within the tolerance of it, wound as a rectangle", func(t *testing.T) {
+		for _, e := range ellipseFixtures {
+			for _, tolerance := range []float64{0.01, 0.25} {
+				polygon := e.Polygon(tolerance)
+				message := fmt.Sprintf("%s ±%v: ", e, tolerance)
+
+				if e.Size.Area() == 0 {
+					continue
+				}
+
+				for vertex := range polygon.Vertices() {
+					assert.True(t, e.Contains(vertex), message+vertex.String())
+					assert.True(t, EqualDelta(boundaryGap(e, vertex), 0, 1e-9), message+vertex.String())
+				}
+
+				for edge := range polygon.Edges() {
+					assert.True(t, LessOrEqual(boundaryGap(e, edge.Midpoint()), tolerance), message+edge.String())
+				}
+
+				assert.Equal(t, polygon.Winding(), WindingClockwise, message)
+			}
+		}
+	})
+}
+
+// boundaryGap returns how far the point lies from the boundary of the ellipse along the ray
+// from its center, which is no less than its distance to the boundary.
+func boundaryGap(e Ellipse[float64], point Point[float64]) float64 {
+	offset := point.Subtract(e.Center).Rotate(-e.Angle)
+	scaled := Vec(offset.X/e.Size.Width, offset.Y/e.Size.Height)
+
+	return math.Abs(offset.Length() * (1/scaled.Length() - 1))
+}
+
+func TestEllipse_AppendPolygon(t *testing.T) {
+	t.Run("appends after the points already there", func(t *testing.T) {
+		geomtest.AssertVertices(t, Ell(Pt(0, 0), Sz(4, 2), 0).AppendPolygon([]Point[int]{Pt(9, 9)}, 1.5), []Point[int]{Pt(9, 9), Pt(4, 0), Pt(0, 2), Pt(-4, 0), Pt(0, -2)})
+	})
+	t.Run("allocates once, and nothing into a buffer with room", func(t *testing.T) {
+		ellipse := Ell(Pt(0, 0), Sz(50, 30), 0.5)
+		buffer := make([]Point[int], 0, 64)
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = ellipse.Polygon(1).Points
+		}), 1)
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = ellipse.AppendPolygon(buffer[:0], 1)
+		}), 0)
+	})
+}
+
 func TestEllipse_Cast(t *testing.T) {
 	e := Ell(Pt(1.5, -2.5), Sz(3.5, 1.5), 1.0)
 

@@ -20,8 +20,8 @@ func TestPadding_Constructor(t *testing.T) {
 		geomtest.AssertPadding(t, PadU(20.0), Pad(20.0, 20.0, 20.0, 20.0))
 	})
 	t.Run("per-axis", func(t *testing.T) {
-		geomtest.AssertPadding(t, PadXY(10, 20), Pad(10, 20, 10, 20))
-		geomtest.AssertPadding(t, PadXY(10.0, 20.0), Pad(10.0, 20.0, 10.0, 20.0))
+		geomtest.AssertPadding(t, PadXY(20, 10), Pad(10, 20, 10, 20))
+		geomtest.AssertPadding(t, PadXY(20.0, 10.0), Pad(10.0, 20.0, 10.0, 20.0))
 	})
 }
 
@@ -271,7 +271,7 @@ var paddingFixtures = []Padding[float64]{
 	Pad(0.1, 3.0, 0.6, 2.4),
 	Pad(2.0, 4.0, 3.0, 5.0),
 	PadU(20.0),
-	PadXY(10.0, 20.0),
+	PadXY(20.0, 10.0),
 	Pad(-1.5, 0.25, -0.5, 12.75),
 }
 

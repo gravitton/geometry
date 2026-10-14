@@ -22,7 +22,8 @@ func ZeroVector[T Number]() Vector[T] {
 	return Vector[T]{}
 }
 
-// OneVector creates a new Vector with identity values (+1,+1).
+// OneVector creates a new Vector with both components one (1,1), the factors that scale
+// nothing.
 func OneVector[T Number]() Vector[T] {
 	return Vector[T]{1, 1}
 }
@@ -105,12 +106,14 @@ func (v Vector[T]) MultiplyXY(factorX, factorY float64) Vector[T] {
 	return Vector[T]{Multiply(v.X, factorX), Multiply(v.Y, factorY)}
 }
 
-// Divide creates a new Vector by dividing the given value to the current vector.
+// Divide creates a new Vector with X and Y divided by the given factor. Like the package
+// Divide it panics for a zero factor.
 func (v Vector[T]) Divide(factor float64) Vector[T] {
 	return Vector[T]{Divide(v.X, factor), Divide(v.Y, factor)}
 }
 
-// DivideXY creates a new Vector by dividing the given values to the current vector.
+// DivideXY creates a new Vector with X and Y each divided by its own factor. Like the package
+// Divide it panics for a zero factor.
 func (v Vector[T]) DivideXY(factorX, factorY float64) Vector[T] {
 	return Vector[T]{Divide(v.X, factorX), Divide(v.Y, factorY)}
 }
@@ -390,22 +393,26 @@ func (v Vector[T]) IsOne() bool {
 	return v.Equal(Vector[T]{1, 1})
 }
 
-// IsUp checks whether the vector points upward (-Y).
+// IsUp checks whether the vector runs upward on a screen, its Y negative: the sign of that one
+// component, exact, so a diagonal is up and to a side at once; Direction names the one nearest.
 func (v Vector[T]) IsUp() bool {
 	return v.Y < 0
 }
 
-// IsDown checks whether the vector points downward (+Y).
+// IsDown checks whether the vector runs downward on a screen, its Y positive, the sign of that
+// one component as IsUp reads it.
 func (v Vector[T]) IsDown() bool {
 	return v.Y > 0
 }
 
-// IsLeft checks whether the vector points leftward (-X).
+// IsLeft checks whether the vector runs leftward, its X negative, the sign of that one
+// component as IsUp reads it.
 func (v Vector[T]) IsLeft() bool {
 	return v.X < 0
 }
 
-// IsRight checks whether the vector points rightward (+X).
+// IsRight checks whether the vector runs rightward, its X positive, the sign of that one
+// component as IsUp reads it.
 func (v Vector[T]) IsRight() bool {
 	return v.X > 0
 }
@@ -469,7 +476,7 @@ func (v Vector[T]) Float() Vector[float64] {
 	return Vector[float64]{float64(v.X), float64(v.Y)}
 }
 
-// String returns a string representing the vector.
+// String returns the vector as its components in angle brackets, with no type name: ⟨x,y⟩.
 func (v Vector[T]) String() string {
 	buf := make([]byte, 0, stringSize)
 	buf = v.appendString(buf)

@@ -176,7 +176,7 @@ func TestQuadraticBezier_IntersectionSegment(t *testing.T) {
 	t.Run("the points are those of the curve raised to a cubic", func(t *testing.T) {
 		for _, q := range quadraticFixtures {
 			for _, s := range segmentFixtures {
-				geomtest.AssertVertices(t, q.IntersectionSegment(s).AppendTo(nil), q.Cubic().IntersectionSegment(s), fmt.Sprintf("%s → %s: ", q, s))
+				geomtest.AssertVertices(t, q.IntersectionSegment(s).AppendTo(nil), q.CubicBezier().IntersectionSegment(s), fmt.Sprintf("%s → %s: ", q, s))
 			}
 		}
 	})
@@ -220,14 +220,14 @@ func TestQuadraticBezier_IsZero(t *testing.T) {
 	assert.False(t, QuadBez(Pt(0, 0), Pt(0, 1), Pt(0, 0)).IsZero())
 }
 
-func TestQuadraticBezier_Cubic(t *testing.T) {
+func TestQuadraticBezier_CubicBezier(t *testing.T) {
 	t.Run("the control points two thirds of the way to the one", func(t *testing.T) {
-		geomtest.AssertCubicBezier(t, QuadBez(Pt(0.0, 0.0), Pt(3.0, 6.0), Pt(9.0, 0.0)).Cubic(), CubBez(Pt(0.0, 0.0), Pt(2.0, 4.0), Pt(5.0, 4.0), Pt(9.0, 0.0)))
+		geomtest.AssertCubicBezier(t, QuadBez(Pt(0.0, 0.0), Pt(3.0, 6.0), Pt(9.0, 0.0)).CubicBezier(), CubBez(Pt(0.0, 0.0), Pt(2.0, 4.0), Pt(5.0, 4.0), Pt(9.0, 0.0)))
 	})
 	t.Run("the cubic traces the curve", func(t *testing.T) {
 		for _, curve := range quadraticFixtures {
 			for _, fraction := range curveFractions {
-				geomtest.AssertPoint(t, curve.Cubic().PointAt(fraction), curve.PointAt(fraction), fmt.Sprintf("%s @%v: ", curve, fraction))
+				geomtest.AssertPoint(t, curve.CubicBezier().PointAt(fraction), curve.PointAt(fraction), fmt.Sprintf("%s @%v: ", curve, fraction))
 			}
 		}
 	})
@@ -346,7 +346,7 @@ func TestQuadraticBezier_Properties(t *testing.T) {
 	})
 	t.Run("the bounds are those of the cubic over the same points", func(t *testing.T) {
 		for _, curve := range quadraticFixtures {
-			geomtest.AssertBox(t, curve.Bounds(), curve.Cubic().Bounds(), curve.String())
+			geomtest.AssertBox(t, curve.Bounds(), curve.CubicBezier().Bounds(), curve.String())
 		}
 	})
 }

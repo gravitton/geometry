@@ -372,6 +372,35 @@ func TestSegment_PointAt(t *testing.T) {
 	})
 }
 
+func TestSegment_Split(t *testing.T) {
+	t.Run("two segments meeting at the fraction", func(t *testing.T) {
+		first, second := Seg(Pt(0, 0), Pt(8, 4)).Split(0.25)
+
+		geomtest.AssertSegment(t, first, Seg(Pt(0, 0), Pt(2, 1)))
+		geomtest.AssertSegment(t, second, Seg(Pt(2, 1), Pt(8, 4)))
+	})
+	t.Run("outside the ends one runs past and the other back", func(t *testing.T) {
+		first, second := Seg(Pt(0.0, 0.0), Pt(4.0, 0.0)).Split(1.5)
+
+		geomtest.AssertSegment(t, first, Seg(Pt(0.0, 0.0), Pt(6.0, 0.0)))
+		geomtest.AssertSegment(t, second, Seg(Pt(6.0, 0.0), Pt(4.0, 0.0)))
+	})
+	t.Run("the two meet at PointAt and keep the ends and the length", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, fraction := range []float64{0, 0.3, 0.5, 1} {
+				first, second := s.Split(fraction)
+				message := fmt.Sprintf("%s @%v: ", s, fraction)
+
+				geomtest.AssertPoint(t, first.Start, s.Start, message)
+				geomtest.AssertPoint(t, first.End, s.PointAt(fraction), message)
+				geomtest.AssertPoint(t, second.Start, first.End, message)
+				geomtest.AssertPoint(t, second.End, s.End, message)
+				geomtest.AssertNumber(t, first.Length()+second.Length(), s.Length(), message)
+			}
+		}
+	})
+}
+
 func TestSegment_Normal(t *testing.T) {
 	t.Run("a quarter turn of the vector, with its length", func(t *testing.T) {
 		geomtest.AssertVector(t, Seg(Pt(1, 1), Pt(4, 1)).Normal(), Vec(0, 3))
@@ -954,6 +983,21 @@ func TestSegment_IntersectionSector(t *testing.T) {
 	})
 }
 
+func TestSegment_AppendIntersectionSector(t *testing.T) {
+	sector, through := quarterSector(), Seg(Pt(3.0, 10.0), Pt(tenth, -10.0))
+
+	t.Run("appends after the points already there", func(t *testing.T) {
+		geomtest.AssertVertices(t, through.AppendIntersectionSector(bufferWith(prefixPoint), sector), append([]Point[float64]{prefixPoint}, through.IntersectionSector(sector)...))
+	})
+	t.Run("appends to a buffer with room without allocating", func(t *testing.T) {
+		buffer := make([]Point[float64], 0, 4)
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkBool = len(through.AppendIntersectionSector(buffer[:0], sector)) > 0
+		}), 0)
+	})
+}
+
 func TestSegment_IntersectionArc(t *testing.T) {
 	t.Run("matches Arc.IntersectionSegment", func(t *testing.T) {
 		for _, s := range segmentFixtures {
@@ -1364,6 +1408,21 @@ func TestSegment_IntersectionCubicBezier(t *testing.T) {
 				geomtest.AssertVertices(t, s.IntersectionCubicBezier(c), c.IntersectionSegment(s), fmt.Sprintf("%s → %s: ", s, c))
 			}
 		}
+	})
+}
+
+func TestSegment_AppendIntersectionCubicBezier(t *testing.T) {
+	wave, through := CubBez(Pt(0.0, 0.0), Pt(2.0, 6.0), Pt(4.0, -6.0), Pt(6.0, 0.0)), Seg(Pt(-1.0, tenth), Pt(7.0, 0.0))
+
+	t.Run("appends after the points already there", func(t *testing.T) {
+		geomtest.AssertVertices(t, through.AppendIntersectionCubicBezier(bufferWith(prefixPoint), wave), append([]Point[float64]{prefixPoint}, through.IntersectionCubicBezier(wave)...))
+	})
+	t.Run("appends to a buffer with room without allocating", func(t *testing.T) {
+		buffer := make([]Point[float64], 0, 4)
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkBool = len(through.AppendIntersectionCubicBezier(buffer[:0], wave)) > 0
+		}), 0)
 	})
 }
 
@@ -2700,7 +2759,7 @@ func TestSegment_HitQuadraticBezier(t *testing.T) {
 		for _, q := range quadraticFixtures {
 			for _, s := range segmentFixtures {
 				hit, ok := s.HitQuadraticBezier(q)
-				expected, found := s.HitCubicBezier(q.Cubic())
+				expected, found := s.HitCubicBezier(q.CubicBezier())
 
 				assert.True(t, hit == expected && ok == found, fmt.Sprintf("%s → %s: ", s, q))
 			}

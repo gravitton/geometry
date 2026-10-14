@@ -87,12 +87,14 @@ func (p Point[T]) MultiplyXY(factorX, factorY float64) Point[T] {
 	return Point[T]{Multiply(p.X, factorX), Multiply(p.Y, factorY)}
 }
 
-// Divide creates a new Point by dividing the given value to the current point.
+// Divide creates a new Point with X and Y divided by the given factor. Like the package
+// Divide it panics for a zero factor.
 func (p Point[T]) Divide(factor float64) Point[T] {
 	return Point[T]{Divide(p.X, factor), Divide(p.Y, factor)}
 }
 
-// DivideXY creates a new Point by dividing the given values to the current point.
+// DivideXY creates a new Point with X and Y each divided by its own factor. Like the package
+// Divide it panics for a zero factor.
 func (p Point[T]) DivideXY(factorX, factorY float64) Point[T] {
 	return Point[T]{Divide(p.X, factorX), Divide(p.Y, factorY)}
 }
@@ -275,7 +277,7 @@ func (p Point[T]) Float() Point[float64] {
 	return Point[float64]{float64(p.X), float64(p.Y)}
 }
 
-// String returns a string representing the point.
+// String returns the point as its coordinates, with no type name: (x,y).
 func (p Point[T]) String() string {
 	buf := make([]byte, 0, stringSize)
 	buf = p.appendString(buf)

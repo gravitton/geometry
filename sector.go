@@ -11,8 +11,8 @@ import (
 // radians and the sweep is signed, as on Arc; a sweep of a full turn or more is the whole disc
 // and a sweep of zero the single radius at Angle.
 //
-// The radius is never negative: Sect takes it absolute and Scale takes a negative factor
-// absolute. A negative radius can only be written as a struct literal or decoded from JSON, and
+// The radius is never negative: Sect, Resize and Lerp take it absolute, Scale takes a negative
+// factor absolute, and Grow and Shrink clamp at zero. A negative radius can only be written as a struct literal or decoded from JSON, and
 // Contains, DistanceTo and Bounds give no meaningful answer for it; Canonical repairs it.
 //
 // The angles place the ends of the arc off the lattice, so for an integer T every distance to
@@ -44,7 +44,8 @@ func (s Sector[T]) Centroid() Point[T] {
 	return s.Center.Float().Add(VectorFromAngle(s.Angle+float64(s.turn()/2), s.reach())).Cast[T]()
 }
 
-// Area returns the enclosed area, half the squared radius times the sweep. It is a float64
+// Area returns the enclosed area, half the squared radius times the absolute sweep, at most
+// that of the disc. It is a float64
 // even for an integer T, like the area of a Circle.
 func (s Sector[T]) Area() float64 {
 	radius := float64(s.Radius)
@@ -517,21 +518,29 @@ func (s Sector[T]) IntersectsBox(box Box[T]) bool {
 	return false
 }
 
-// IntersectionSegment returns the points where the segment crosses the sector boundary, from
-// its Start to its End: where it meets the arc and the two radii, a point two of them share
-// held once. A sector of no more than half a turn is crossed at most twice, and one past it up
-// to four times, by a segment through the notch between its radii. A segment inside crosses
-// no boundary and returns none, which IntersectsSegment still reports. A point admitted by the
-// tolerance is placed on the boundary: an end of the segment within it of the boundary is a
-// crossing, so a segment running along a radius gives the ends of the stretch the two share.
-// They are found in float64 and rounded once for an integer T.
+// IntersectionSegment returns the points where the segment crosses the sector boundary,
+// as Segment.IntersectionSector does, which has the Append form.
 func (s Sector[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
-	return s.AppendIntersectionSegment(nil, segment)
+	return segment.IntersectionSector(s)
 }
 
-// AppendIntersectionSegment appends the points IntersectionSegment returns to dst and returns
-// the extended slice, so a caller reusing dst allocates nothing once it has room for four.
-func (s Sector[T]) AppendIntersectionSegment(dst []Point[T], segment Segment[T]) []Point[T] {
+// IntersectionRay returns the points where the ray crosses the sector boundary, as
+// Ray.IntersectionSector does, which has the Append form.
+func (s Sector[T]) IntersectionRay(ray Ray[T]) []Point[T] {
+	return ray.IntersectionSector(s)
+}
+
+// IntersectionLine returns the points where the line crosses the sector boundary, as
+// Line.IntersectionSector does, which has the Append form.
+func (s Sector[T]) IntersectionLine(line Line[T]) []Point[T] {
+	return line.IntersectionSector(s)
+}
+
+// appendIntersectionSegment appends the points where the segment crosses the sector boundary
+// to dst, placed at the fractions crossings gives and rounded once, a point two of them share
+// held once: the crossings Segment.AppendIntersectionSector appends, and a ray and a line on
+// their reach and span.
+func (s Sector[T]) appendIntersectionSegment(dst []Point[T], segment Segment[T]) []Point[T] {
 	cast := segment.Float()
 	fractions, n := s.crossings(segment)
 
@@ -546,31 +555,6 @@ func (s Sector[T]) AppendIntersectionSegment(dst []Point[T], segment Segment[T])
 	}
 
 	return dst
-}
-
-// IntersectionRay returns the points where the ray crosses the sector boundary, from its Origin
-// on, as IntersectionSegment finds them on the reach of the ray past the sector.
-func (s Sector[T]) IntersectionRay(ray Ray[T]) []Point[T] {
-	return s.AppendIntersectionRay(nil, ray)
-}
-
-// AppendIntersectionRay appends the points IntersectionRay returns to dst and returns the
-// extended slice.
-func (s Sector[T]) AppendIntersectionRay(dst []Point[T], ray Ray[T]) []Point[T] {
-	return s.AppendIntersectionSegment(dst, ray.reach(s.minMax()))
-}
-
-// IntersectionLine returns the points where the line crosses the sector boundary, in order
-// along its Direction, as IntersectionSegment finds them on the span of the line past the
-// sector.
-func (s Sector[T]) IntersectionLine(line Line[T]) []Point[T] {
-	return s.AppendIntersectionLine(nil, line)
-}
-
-// AppendIntersectionLine appends the points IntersectionLine returns to dst and returns the
-// extended slice.
-func (s Sector[T]) AppendIntersectionLine(dst []Point[T], line Line[T]) []Point[T] {
-	return s.AppendIntersectionSegment(dst, line.span(s.minMax()))
 }
 
 // nearest returns the point of the sector nearest to the given point, in float64, with the
@@ -911,7 +895,8 @@ func (s Sector[T]) Circle() Circle[T] {
 // tolerance of each, with its vertices on the boundary and wound as the corners of a Rectangle
 // are, whichever way the sector sweeps. The whole disc has no Center among them. A negative
 // tolerance is taken absolute, and the arc has at most a thousand chords, which a tolerance of
-// zero gives. For integer T the vertices are rounded and one rounding onto the vertex before
+// zero gives, and never fewer than three a full turn, so a tolerance past the radius still
+// leaves an outline that encloses an area. For integer T the vertices are rounded and one rounding onto the vertex before
 // it is left out.
 func (s Sector[T]) Polygon(tolerance float64) Polygon[T] {
 	return Polygon[T]{s.AppendPolygon(nil, tolerance)}
@@ -925,17 +910,18 @@ func (s Sector[T]) AppendPolygon(dst []Point[T], tolerance float64) []Point[T] {
 		arc = arc.Reverse()
 	}
 
+	pieces := max(arc.pieces(tolerance), math.Ceil(arc.turn()/(2*math.Pi)*3))
 	from := len(dst)
 
-	dst = slices.Grow(dst, int(arc.pieces(tolerance))+2)
+	dst = slices.Grow(dst, int(pieces)+2)
 	if !s.isWhole() {
 		dst = append(dst, s.Center)
 	}
 
-	dst = arc.AppendPolyline(dst, tolerance)
+	dst = arc.appendPieces(dst, pieces)
 	dst = dst[:from+len(slices.Compact(dst[from:]))]
 
-	if last := len(dst) - 1; last > from && dst[last] == dst[from] {
+	if last := len(dst) - 1; last > from && dst[last].Equal(dst[from]) {
 		dst = dst[:last]
 	}
 

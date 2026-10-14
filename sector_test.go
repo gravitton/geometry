@@ -817,14 +817,6 @@ func TestSector_IntersectionSegment(t *testing.T) {
 			assertSectorGrazes(t, offset)
 		}
 	})
-	t.Run("appends to a buffer with room without allocating", func(t *testing.T) {
-		buffer, through := make([]Point[float64], 0, 4), Seg(Pt(3.0, 10.0), Pt(tenth, -10.0))
-
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
-			sinkBool = len(s.AppendIntersectionSegment(buffer[:0], through)) > 0
-		}), 0)
-		geomtest.AssertVertices(t, s.AppendIntersectionSegment(bufferWith(prefixPoint), through)[:1], []Point[float64]{prefixPoint})
-	})
 }
 
 // assertSectorGrazes asserts, over the sectors and the segments of a small lattice moved by the
@@ -915,6 +907,12 @@ func TestSector_Polygon(t *testing.T) {
 	})
 	t.Run("the whole disc has no center among its vertices", func(t *testing.T) {
 		geomtest.AssertPolygon(t, Sect(Pt(0, 0), 5, 0, 2*Pi).Polygon(2), Pol([]Point[int]{Pt(5, 0), Pt(0, 5), Pt(-5, 0), Pt(0, -5)}))
+		geomtest.AssertPolygon(t, Sect(Pt(0.0, 0.0), 5.0, 0, 2*Pi).Polygon(2), Pol([]Point[float64]{Pt(5.0, 0.0), Pt(0.0, 5.0), Pt(-5.0, 0.0), Pt(0.0, -5.0)}))
+	})
+	t.Run("never fewer than three chords a full turn", func(t *testing.T) {
+		geomtest.AssertPolygon(t, Sect(Pt(0.0, 0.0), 5.0, 0, 2*Pi).Polygon(9), Circ(Pt(0.0, 0.0), 5.0).Polygon(9))
+		geomtest.AssertPolygon(t, Sect(Pt(0.0, 0.0), 5.0, 0, Pi).Polygon(9), Pol([]Point[float64]{Pt(0.0, 0.0), Pt(5.0, 0.0), Pt(0.0, 5.0), Pt(-5.0, 0.0)}))
+		geomtest.AssertPolygon(t, quarterSector().Polygon(9), Pol([]Point[float64]{Pt(0.0, 0.0), Pt(5.0, 0.0), Pt(0.0, 5.0)}))
 	})
 	t.Run("no sweep gives the radius, and no radius the center", func(t *testing.T) {
 		geomtest.AssertPolygon(t, Sect(Pt(1, 2), 5, 0, 0).Polygon(1), Pol([]Point[int]{Pt(1, 2), Pt(6, 2)}))

@@ -1,6 +1,8 @@
 package geom
 
-// Padding represents a 2D padding.
+// Padding is the space kept inside the four edges of a box, one amount an edge, in the order
+// CSS lists them: Top, Right, Bottom and Left. Rectangle.Inset and Box.Inset move the edges in
+// by it, and a negative amount moves an edge out.
 type Padding[T Number] struct {
 	Top    T `json:"t"`
 	Right  T `json:"r"`
@@ -18,8 +20,10 @@ func PadU[T Number](padding T) Padding[T] {
 	return Padding[T]{padding, padding, padding, padding}
 }
 
-// PadXY is shorthand for Padding{topBottom, leftRight, topBottom, leftRight}.
-func PadXY[T Number](topBottom, leftRight T) Padding[T] {
+// PadXY is shorthand for Padding{topBottom, leftRight, topBottom, leftRight}: the padding along
+// X, on the left and the right, then the one along Y, on the top and the bottom, the order of
+// every XY in the package and not the one CSS gives its two values in.
+func PadXY[T Number](leftRight, topBottom T) Padding[T] {
 	return Padding[T]{topBottom, leftRight, topBottom, leftRight}
 }
 
@@ -99,7 +103,7 @@ func (p Padding[T]) Float() Padding[float64] {
 	return Padding[float64]{float64(p.Top), float64(p.Right), float64(p.Bottom), float64(p.Left)}
 }
 
-// String returns a string representation of the Padding.
+// String returns the padding in the form of its constructor: Pad(t;r;b;l).
 func (p Padding[T]) String() string {
 	buf := make([]byte, 0, stringSize)
 	buf = append(buf, "Pad("...)

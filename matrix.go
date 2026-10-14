@@ -404,7 +404,7 @@ func (m Matrix[T]) Float() Matrix[float64] {
 	}
 }
 
-// String returns a string representation of the Matrix[T].
+// String returns the matrix as its two rows, with no type name: [[a, b, c], [d, e, f]].
 func (m Matrix[T]) String() string {
 	buf := make([]byte, 0, stringSize)
 	buf = append(buf, "[["...)

@@ -149,22 +149,28 @@ func (b CubicBezier[T]) Split(t float64) (CubicBezier[T], CubicBezier[T]) {
 	return CubicBezier[T]{b.Start, first[0].Cast[T](), second[0].Cast[T](), middle}, CubicBezier[T]{middle, second[1].Cast[T](), first[2].Cast[T](), b.End}
 }
 
-// IntersectionSegment returns the points where the segment crosses the curve, from its Start to
-// its End, three at most. They are closed on, not solved for: the curve is halved where the
-// segment passes its control points, until each piece is straight to within Delta and crossed
-// as its chord, so a point is within that of the curve, a segment touching the curve within the
-// tolerance meets it, and no tolerance is asked of the caller as Polyline asks one. A segment
-// running along a straight curve shares a stretch with it and returns an end of the stretch or
-// none, and one that touches a bend within the tolerance over a stretch, without crossing it,
-// can meet it at two points of that stretch where there is one touch. For integer T the points
-// are rounded once.
+// IntersectionSegment returns the points where the segment crosses the curve, as
+// Segment.IntersectionCubicBezier does, which has the Append form.
 func (b CubicBezier[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
-	return b.AppendIntersectionSegment(nil, segment)
+	return segment.IntersectionCubicBezier(b)
 }
 
-// AppendIntersectionSegment appends the points IntersectionSegment returns to dst and returns
-// the extended slice, so a caller reusing dst allocates nothing once it has room for three.
-func (b CubicBezier[T]) AppendIntersectionSegment(dst []Point[T], segment Segment[T]) []Point[T] {
+// IntersectionRay returns the points where the ray crosses the curve, as
+// Ray.IntersectionCubicBezier does, which has the Append form.
+func (b CubicBezier[T]) IntersectionRay(ray Ray[T]) []Point[T] {
+	return ray.IntersectionCubicBezier(b)
+}
+
+// IntersectionLine returns the points where the line crosses the curve, as
+// Line.IntersectionCubicBezier does, which has the Append form.
+func (b CubicBezier[T]) IntersectionLine(line Line[T]) []Point[T] {
+	return line.IntersectionCubicBezier(b)
+}
+
+// appendIntersectionSegment appends the points where the segment crosses the curve to dst,
+// closed on by bezierCast and rounded once, a point two pieces share held once: the crossings
+// Segment.AppendIntersectionCubicBezier appends, and a ray and a line on their reach and span.
+func (b CubicBezier[T]) appendIntersectionSegment(dst []Point[T], segment Segment[T]) []Point[T] {
 	cast := bezierCast{segment: segment.Float(), curve: b.Float()}
 	cast.step(cast.curve, 0, 1, bezierDepth)
 
@@ -176,34 +182,6 @@ func (b CubicBezier[T]) AppendIntersectionSegment(dst []Point[T], segment Segmen
 	}
 
 	return dst
-}
-
-// IntersectionRay returns the points where the ray crosses the curve, from its Origin on, as
-// IntersectionSegment finds them on the reach of the ray past the curve.
-func (b CubicBezier[T]) IntersectionRay(ray Ray[T]) []Point[T] {
-	return b.AppendIntersectionRay(nil, ray)
-}
-
-// AppendIntersectionRay appends the points IntersectionRay returns to dst and returns the
-// extended slice.
-func (b CubicBezier[T]) AppendIntersectionRay(dst []Point[T], ray Ray[T]) []Point[T] {
-	bounds := b.Bounds()
-
-	return b.AppendIntersectionSegment(dst, ray.reach(bounds.Min, bounds.Max))
-}
-
-// IntersectionLine returns the points where the line crosses the curve, in order along its
-// Direction, as IntersectionSegment finds them on the span of the line past the curve.
-func (b CubicBezier[T]) IntersectionLine(line Line[T]) []Point[T] {
-	return b.AppendIntersectionLine(nil, line)
-}
-
-// AppendIntersectionLine appends the points IntersectionLine returns to dst and returns the
-// extended slice.
-func (b CubicBezier[T]) AppendIntersectionLine(dst []Point[T], line Line[T]) []Point[T] {
-	bounds := b.Bounds()
-
-	return b.AppendIntersectionSegment(dst, line.span(bounds.Min, bounds.Max))
 }
 
 // Equal checks if the four points of the curves are equal, in their places, so a curve and its

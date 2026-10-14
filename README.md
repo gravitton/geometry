@@ -97,7 +97,7 @@ s.Shrink(2000).AtLeastZero() // Size{0, 0}, the clamp every shape applies to its
 s.Fit(geom.SzU(800))         // Size{800, 450}, largest with the same ratio inside
 s.Fill(geom.SzU(800))        // Size{1422, 800}, smallest with the same ratio around
 
-geom.PadXY(4, 8).Size() // Size{16, 8}, horizontal and vertical total
+geom.PadXY(8, 4).Size() // Size{16, 8}, horizontal and vertical total
 ```
 
 ### Rectangles
@@ -145,6 +145,7 @@ hud := geom.Bx(geom.Pt(200, 40), geom.Pt(0, 0)) // (0,0)-(200,40), the corners i
 
 tip.Clamp(view)   // (680,20)-(800,60), moved by the least that brings it inside
 view.ClipBox(tip) // (750,20)-(800,60), true: the part on screen
+tip.MoveTo(view.Center()) // the same size about another center; Vertices, Edges and Polygon walk it
 
 r.Bounds().IntersectsBox(view) // every shape's Bounds is a Box, for the broad pass
 view.IntersectsRectangle(r)    // a Box is a Shape, tested against every other
@@ -259,7 +260,7 @@ geom.Distance(s, other)   // the gap between them, zero exactly where they inter
 geom.Raycast(ray, s)      // the Hit of a ray on a shape of any kind
 
 var b geom.Body[float64] = c // Area, Centroid, Inertia — the mass properties at unit density,
-b.Inertia()                  // for a physics body to scale by its density; every shape but Segment and Box
+b.Inertia()                  // for a physics body to scale by its density; every shape but Segment
 ```
 
 The functions take the type argument where a concrete shape is passed, `geom.Intersects[float64](c, r)`, and infer
@@ -319,6 +320,8 @@ hit, ok := ray.HitSector(cone)                             // a cast at it; it i
 parts := beam.ClipSector(cone)                             // the parts inside, two through the notch of a wide one
 cone.Rotate(0.1)                                           // about its center; Area, Centroid and Inertia as a Body
 cone.Polygon(0.25)                                         // the outline that draws it, within a tolerance
+c.Sector(0, geom.Pi/2), c.Arc(0, geom.Pi/2)                // the slice of a circle and the part of its boundary
+c.Polygon(0.25)                                            // a circle and an ellipse flatten the same way
 cone.DistanceToSector(other)                               // the gap between two, whatever the sweeps
 
 ring := geom.Ac(geom.Pt(0.0, 0.0), 5.0, -geom.Pi/2, 2*geom.Pi*progress) // a signed sweep; a full turn is the circle
@@ -357,7 +360,7 @@ first, second := curve.Split(0.25)  // two curves tracing the same points
 path := curve.Polyline(0.05)        // a path within the tolerance of the curve, denser where it bends
 path.Length()                       // its length, Nearest and DistanceTo are the curve's to within the tolerance
 hit, ok := ray.HitCubicBezier(curve) // a curved wall, cast at with no tolerance to give, and IntersectionCubicBezier
-geom.QuadBez(a, control, b).Cubic() // a quadratic curve has the same methods, and is a cubic exactly
+geom.QuadBez(a, control, b).CubicBezier() // a quadratic curve has the same methods, and is a cubic exactly
 ```
 
 A `Ray` is a half-line from `Origin` along `Direction`. Its `Clip<Kind>` is the part inside a shape, and its

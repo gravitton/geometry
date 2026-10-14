@@ -848,6 +848,8 @@ func TestCapsule_Polygon(t *testing.T) {
 		geomtest.AssertPolygon(t, Cap(Pt(0, 0), Pt(10, 0), 0).Polygon(1), Pol([]Point[int]{Pt(10, 0), Pt(0, 0)}))
 		geomtest.AssertPolygon(t, Cap(Pt(1, 2), Pt(1, 2), 0).Polygon(1), Pol([]Point[int]{Pt(1, 2)}))
 		geomtest.AssertPolygon(t, Cap(Pt(1, 2), Pt(1, 2), 2).Polygon(0.9), Pol([]Point[int]{Pt(1, 0), Pt(3, 2), Pt(1, 4), Pt(-1, 2)}))
+		geomtest.AssertPolygon(t, Cap(Pt(1.0, 2.0), Pt(1.0, 2.0), 2.0).Polygon(0.9), Pol([]Point[float64]{Pt(1.0, 0.0), Pt(3.0, 2.0), Pt(1.0, 4.0), Pt(-1.0, 2.0)}))
+		geomtest.AssertPolygon(t, Cap(Pt(1.0, 2.0), Pt(1.0, 2.0), 2.0).Polygon(9), Pol([]Point[float64]{Pt(1.0, 0.0), Pt(3.0, 2.0), Pt(1.0, 4.0), Pt(-1.0, 2.0)}))
 	})
 	t.Run("the vertices lie on the boundary, the edges within the tolerance of it, wound as a rectangle", func(t *testing.T) {
 		for _, c := range capsuleFixtures {

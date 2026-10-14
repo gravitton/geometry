@@ -359,6 +359,16 @@ func (p Polygon[T]) Lerp(polygon Polygon[T], t float64) Polygon[T] {
 	})}
 }
 
+// Reverse creates a new Polygon with the vertices in the opposite order: the same outline
+// wound the other way, so its Winding is the other one and the Normal of each edge points to
+// the other side. The area, the centroid and every test of a point stay as they are.
+func (p Polygon[T]) Reverse() Polygon[T] {
+	points := slices.Clone(p.Points)
+	slices.Reverse(points)
+
+	return Polygon[T]{points}
+}
+
 // ConvexHull returns the smallest convex polygon containing every vertex, wound clockwise as drawn
 // on a screen with Y pointing down and starting at the least vertex by Point.Compare: the vertices
 // it keeps are vertices of the polygon, and one lying on an edge of the hull or repeating another
@@ -419,7 +429,7 @@ func (p Polygon[T]) AppendConvexHull(dst []Point[T]) []Point[T] {
 }
 
 // Simplify returns the polygon without the vertices the outline does not need to stay within
-// the tolerance, by the Douglas–Peucker algorithm: every dropped vertex lies within the
+// the tolerance, by the Ramer–Douglas–Peucker algorithm: every dropped vertex lies within the
 // tolerance of the edge that replaces it, by Segment.DistanceTo, boundary included within
 // the tolerance. At a tolerance of zero it drops a vertex repeating a neighbour or on the
 // straight line between the vertices kept either side, a fold running back along that line
@@ -640,7 +650,7 @@ func (p Polygon[T]) DistanceTo(point Point[T]) float64 {
 }
 
 // DistanceSquaredTo returns the squared distance DistanceTo takes the root of, faster for
-// comparisons, in one pass over the edges, the edgeWalk every closed shape makes: zero for a
+// comparisons, in one pass over the edges, the walk every closed shape makes: zero for a
 // point on an edge within the tolerance, snapped the way Segment.DistanceSquaredTo snaps it, or
 // inside by the even-odd rule, the squared distance to the nearest edge otherwise, and
 // infinity for an empty polygon. It is a float64 even for an integer T, since the nearest

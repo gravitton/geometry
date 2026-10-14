@@ -21,6 +21,10 @@ func TestSize_Constructor(t *testing.T) {
 		geomtest.AssertSize(t, SzU(2), Sz(2, 2))
 		geomtest.AssertSize(t, SzU(0.2), Sz(0.2, 0.2))
 	})
+	t.Run("zero", func(t *testing.T) {
+		geomtest.AssertSize(t, ZeroSize[int](), Size[int]{})
+		assert.True(t, ZeroSize[float64]().IsZero())
+	})
 }
 
 func TestParseSize(t *testing.T) {

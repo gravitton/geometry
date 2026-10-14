@@ -6,7 +6,14 @@ import (
 	"math"
 )
 
-// Segment is a 2D line segment, bounded by Start and End.
+// Segment is a 2D line segment, bounded by Start and End, which it runs from and to: the
+// order names its direction, so a segment and its Reverse are different values over the same
+// points. A segment of no length is the point both ends are.
+//
+// It is a Shape with no inside, containing the points on it alone, and one of the kinds the
+// package names: every other has an Intersects method for it. It is also what is cast at a
+// shape, with the Intersection, Clip and Hit methods naming each kind, and the edge every
+// outline is walked by. It moves, turns and scales about its Midpoint.
 type Segment[T Number] struct {
 	Start Point[T] `json:"s"`
 	End   Point[T] `json:"e"`
@@ -193,6 +200,16 @@ func (s Segment[T]) PointAt(t float64) Point[T] {
 	return s.Start.Lerp(s.End, t)
 }
 
+// Split returns the two segments the segment is cut into at the fraction t, the first from
+// Start to PointAt(t) and the second from there to End, which together cover the same points.
+// Outside [0, 1] one of the two runs past an end and the other back over it. For integer T the
+// point is rounded once, so the two can turn a little off the line of the segment.
+func (s Segment[T]) Split(t float64) (Segment[T], Segment[T]) {
+	point := s.PointAt(t)
+
+	return Segment[T]{s.Start, point}, Segment[T]{point, s.End}
+}
+
 // Normal returns the perpendicular of the segment, Vector.Normal of its vector: the direction
 // from Start to End turned a quarter turn in the sense of Vector.Rotate, clockwise as drawn on
 // a screen with Y pointing down, with the length of the segment. On an edge of a Rectangle, or
@@ -226,8 +243,8 @@ func (s Segment[T]) DistanceSquaredTo(point Point[T]) float64 {
 }
 
 // DistanceToSegment returns the distance between the nearest points of the two segments: zero
-// exactly where Intersects holds, and otherwise the smallest distance from an endpoint of one
-// to the other.
+// exactly where IntersectsSegment holds, and otherwise the smallest distance from an endpoint
+// of one to the other.
 func (s Segment[T]) DistanceToSegment(segment Segment[T]) float64 {
 	return math.Sqrt(s.DistanceSquaredToSegment(segment))
 }
@@ -457,10 +474,22 @@ func (s Segment[T]) IntersectionCapsule(capsule Capsule[T]) Pair[Point[T]] {
 	return capsule.IntersectionSegment(s)
 }
 
-// IntersectionSector returns the points where the segment crosses the sector boundary, as
-// Sector.IntersectionSegment does, which has the Append form.
+// IntersectionSector returns the points where the segment crosses the sector boundary, from
+// Start to End: where it meets the arc and the two radii, a point two of them share
+// held once. A sector of no more than half a turn is crossed at most twice, and one past it up
+// to four times, by a segment through the notch between its radii. A segment inside crosses
+// no boundary and returns none, which IntersectsSector still reports. A point admitted by the
+// tolerance is placed on the boundary: an end of the segment within it of the boundary is a
+// crossing, so a segment running along a radius gives the ends of the stretch the two share.
+// They are found in float64 and rounded once for an integer T.
 func (s Segment[T]) IntersectionSector(sector Sector[T]) []Point[T] {
-	return sector.IntersectionSegment(s)
+	return s.AppendIntersectionSector(nil, sector)
+}
+
+// AppendIntersectionSector appends the points IntersectionSector returns to dst and returns the
+// extended slice, so a caller reusing dst allocates nothing once it has room for four.
+func (s Segment[T]) AppendIntersectionSector(dst []Point[T], sector Sector[T]) []Point[T] {
+	return sector.appendIntersectionSegment(dst, s)
 }
 
 // IntersectionArc returns the points where the segment crosses the arc, as
@@ -470,13 +499,13 @@ func (s Segment[T]) IntersectionArc(arc Arc[T]) Pair[Point[T]] {
 }
 
 // IntersectionSegment returns the point where the segments cross, and false when they do not. It
-// answers exactly where Intersects holds, less the parallel case: parallel segments have no
-// single crossing point and return false even where they overlap, which Intersects still
-// reports. A zero-length segment is a point, parallel to nothing, and is the answer wherever it
+// answers exactly where IntersectsSegment holds, less the parallel case: parallel segments have
+// no single crossing point and return false even where they overlap, which IntersectsSegment
+// still reports. A zero-length segment is a point, parallel to nothing, and is the answer wherever it
 // lies on the other segment. For integer T the crossing is rounded like every other result
 // stored into T.
 //
-// The segments cross where Intersects says they do: either they properly cross, decided on
+// The segments cross where IntersectsSegment says they do: either they properly cross, decided on
 // cross products that are exact for an integer T, and the point is where the lines through
 // them meet, within both; or an endpoint of one lies on the other within the tolerance, and that
 // endpoint is the point, which is also the answer for nearly collinear float segments whose
@@ -544,10 +573,24 @@ func (s Segment[T]) IntersectionQuadraticBezier(curve QuadraticBezier[T]) Pair[P
 	return curve.IntersectionSegment(s)
 }
 
-// IntersectionCubicBezier returns the points where the segment crosses the curve, as
-// CubicBezier.IntersectionSegment does, which has the Append form.
+// IntersectionCubicBezier returns the points where the segment crosses the curve, from Start to
+// End, three at most. They are closed on, not solved for: the curve is halved where the
+// segment passes its control points, until each piece is straight to within Delta and crossed
+// as its chord, so a point is within that of the curve, a segment touching the curve within the
+// tolerance meets it, and no tolerance is asked of the caller as Polyline asks one. A segment
+// running along a straight curve shares a stretch with it and returns an end of the stretch or
+// none, and one that touches a bend within the tolerance over a stretch, without crossing it,
+// can meet it at two points of that stretch where there is one touch. For integer T the points
+// are rounded once.
 func (s Segment[T]) IntersectionCubicBezier(curve CubicBezier[T]) []Point[T] {
-	return curve.IntersectionSegment(s)
+	return s.AppendIntersectionCubicBezier(nil, curve)
+}
+
+// AppendIntersectionCubicBezier appends the points IntersectionCubicBezier returns to dst and
+// returns the extended slice, so a caller reusing dst allocates nothing once it has room for
+// three.
+func (s Segment[T]) AppendIntersectionCubicBezier(dst []Point[T], curve CubicBezier[T]) []Point[T] {
+	return curve.appendIntersectionSegment(dst, s)
 }
 
 // IntersectionPolygon returns the points where the segment crosses the polygon boundary, from
@@ -993,7 +1036,7 @@ func (s Segment[T]) HitPolyline(polyline Polyline[T]) (Hit[T], bool) {
 // HitQuadraticBezier returns where the segment first reaches the curve, a curved wall, and
 // false where it does not, as HitCubicBezier finds it on the curve raised to a cubic.
 func (s Segment[T]) HitQuadraticBezier(curve QuadraticBezier[T]) (Hit[T], bool) {
-	return s.hitBezier(curve.Float().Cubic())
+	return s.hitBezier(curve.Float().CubicBezier())
 }
 
 // HitCubicBezier returns where the segment first reaches the curve, a curved wall, and false

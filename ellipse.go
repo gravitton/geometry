@@ -2,6 +2,7 @@ package geom
 
 import (
 	"math"
+	"slices"
 )
 
 // Ellipse is a 2D ellipse represented by its center, semi-axes and angle: the ellipse of those
@@ -31,8 +32,9 @@ import (
 // and moved by its Support, through Intersects, Distance, Collide and Sweep. A cast is the
 // exception, a quadratic: Segment.HitEllipse and Ray.HitEllipse, which Raycast reads. It has no
 // vertices either, which are left to RegularPolygon of the same center, semi-axes and angle:
-// RegularPolygon(n) is the polygon of the wanted resolution inscribed in the ellipse, and
-// RegularPolygon.Ellipse converts back.
+// RegularPolygon(n, orientation) is the polygon of the wanted vertex count inscribed in the
+// ellipse, which RegularPolygon.Ellipse converts back, and Polygon(tolerance) the outline
+// within a tolerance of it.
 type Ellipse[T Number] struct {
 	Center Point[T] `json:",embed"`
 	Size   Size[T]  `json:",embed"`
@@ -141,7 +143,7 @@ func (e Ellipse[T]) Inertia() float64 {
 	return Pi * w * h * (float64(w*w) + float64(h*h)) / 4
 }
 
-// Bounds returns the axis-aligned bounding box: the box on the corners minMax finds, which
+// Bounds returns the axis-aligned bounding box, which
 // touches the boundary at four points whatever the angle.
 func (e Ellipse[T]) Bounds() Box[T] {
 	a, b := e.minMax()
@@ -330,7 +332,8 @@ func (e Ellipse[T]) DistanceTo(point Point[T]) float64 {
 // Contains is built on it.
 //
 // The interior is decided on the quadratic form, multiplied through by the semi-axes so no
-// division rounds it, and only a point outside it pays for the foot, which no closed form gives and nearestOffset finds by bisection.
+// division rounds it, and only a point outside it pays for the foot, which no closed form gives
+// and a bisection finds.
 func (e Ellipse[T]) DistanceSquaredTo(point Point[T]) float64 {
 	_, distanceSquared := e.nearestLocal(point)
 
@@ -544,6 +547,42 @@ func (e Ellipse[T]) Circle() Circle[T] {
 // e.Scale(1 / math.Cos(Pi / float64(n))).RegularPolygon(n, orientation).
 func (e Ellipse[T]) RegularPolygon(n int, orientation Orientation) RegularPolygon[T] {
 	return RegularPolygon[T]{e.Center, e.Size, n, e.Angle, RegularPolygonOrientationPhase(n, orientation)}
+}
+
+// Polygon converts the ellipse to a Polygon within the given tolerance of it, the outline that
+// draws or walks one: the points at equal steps of the parameter from the end of the width
+// semi-axis, as many as keep the circle of the major semi-axis within the tolerance of its
+// chords and never fewer than three, which keeps the ellipse, that circle flattened along one
+// axis, within it too, with more vertices than a flat ellipse needs. The vertices lie on the
+// boundary and are wound as the corners of a Rectangle are. A negative tolerance is taken
+// absolute, and the ellipse has at most a thousand chords, which a tolerance of zero gives. An
+// ellipse of no extent gives its center alone. For integer T the vertices are rounded and one
+// rounding onto the vertex before it is left out. RegularPolygon is the outline of a chosen
+// vertex count.
+func (e Ellipse[T]) Polygon(tolerance float64) Polygon[T] {
+	return Polygon[T]{e.AppendPolygon(nil, tolerance)}
+}
+
+// AppendPolygon appends the vertices of the polygon Polygon returns to dst and returns the
+// extended slice, so a caller reusing dst allocates nothing once it has room for them.
+func (e Ellipse[T]) AppendPolygon(dst []Point[T], tolerance float64) []Point[T] {
+	size := e.Size.Float()
+	pieces := max(Arc[float64]{Radius: max(size.Width, size.Height), Sweep: 2 * math.Pi}.pieces(tolerance), 3)
+
+	from := len(dst)
+	dst = slices.Grow(dst, int(pieces))
+
+	for i := 0.0; i < pieces; i++ {
+		if point := e.worldPoint(VectorFromAngleSize(2*math.Pi*i/pieces, size)); len(dst) == from || point != dst[len(dst)-1] {
+			dst = append(dst, point)
+		}
+	}
+
+	if last := len(dst) - 1; last > from && dst[last].Equal(dst[from]) {
+		dst = dst[:last]
+	}
+
+	return dst
 }
 
 // Cast converts the ellipse to an Ellipse of another number type, rounding as Cast does and

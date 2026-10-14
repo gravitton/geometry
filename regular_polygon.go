@@ -185,7 +185,7 @@ func (rp RegularPolygon[T]) Inertia() float64 {
 }
 
 // Bounds returns the axis-aligned bounding box of the vertices without building them, or the
-// zero box for a polygon without vertices: the box on the corners minMax finds.
+// zero box for a polygon without vertices.
 func (rp RegularPolygon[T]) Bounds() Box[T] {
 	a, b := rp.minMax()
 
@@ -419,7 +419,7 @@ func (rp RegularPolygon[T]) DistanceTo(point Point[T]) float64 {
 
 // DistanceSquaredTo returns the squared distance DistanceTo takes the root of, faster for
 // comparisons, in one pass over the edges Edges iterates without building the vertices, the
-// edgeWalk every closed shape makes: zero for a point on an edge within the tolerance or
+// walk every closed shape makes: zero for a point on an edge within the tolerance or
 // inside by the even-odd rule, the squared distance to the nearest edge otherwise, and
 // infinity for an empty polygon. It is a float64 even for an integer T, like
 // Polygon.DistanceSquaredTo. Contains and IntersectsCircle are built on it.

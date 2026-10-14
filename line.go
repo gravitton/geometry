@@ -244,10 +244,17 @@ func (l Line[T]) IntersectionCapsule(capsule Capsule[T]) Pair[Point[T]] {
 	return capsule.IntersectionLine(l)
 }
 
-// IntersectionSector returns the points where the line crosses the sector boundary, as
-// Sector.IntersectionLine does, which has the Append form.
+// IntersectionSector returns the points where the line crosses the sector boundary, in order along Direction,
+// as Segment.IntersectionSector finds them on the span of the line past the sector.
 func (l Line[T]) IntersectionSector(sector Sector[T]) []Point[T] {
-	return sector.IntersectionLine(l)
+	return l.AppendIntersectionSector(nil, sector)
+}
+
+// AppendIntersectionSector appends the points IntersectionSector returns to dst and returns the
+// extended slice, as Segment.AppendIntersectionSector does on the span of the line past the
+// sector, so a caller reusing dst allocates nothing once it has room.
+func (l Line[T]) AppendIntersectionSector(dst []Point[T], sector Sector[T]) []Point[T] {
+	return l.span(sector.minMax()).AppendIntersectionSector(dst, sector)
 }
 
 // IntersectionArc returns the points where the line crosses the arc, as
@@ -308,10 +315,19 @@ func (l Line[T]) IntersectionQuadraticBezier(curve QuadraticBezier[T]) Pair[Poin
 	return curve.IntersectionLine(l)
 }
 
-// IntersectionCubicBezier returns the points where the line crosses the curve, as
-// CubicBezier.IntersectionLine does, which has the Append form.
+// IntersectionCubicBezier returns the points where the line crosses the curve, in order along Direction,
+// as Segment.IntersectionCubicBezier finds them on the span of the line past the curve.
 func (l Line[T]) IntersectionCubicBezier(curve CubicBezier[T]) []Point[T] {
-	return curve.IntersectionLine(l)
+	return l.AppendIntersectionCubicBezier(nil, curve)
+}
+
+// AppendIntersectionCubicBezier appends the points IntersectionCubicBezier returns to dst and
+// returns the extended slice, as Segment.AppendIntersectionCubicBezier does on the span of the
+// line past the curve, so a caller reusing dst allocates nothing once it has room.
+func (l Line[T]) AppendIntersectionCubicBezier(dst []Point[T], curve CubicBezier[T]) []Point[T] {
+	bounds := curve.Bounds()
+
+	return l.span(bounds.Min, bounds.Max).AppendIntersectionCubicBezier(dst, curve)
 }
 
 // IntersectionPolygon returns the points where the line crosses the polygon boundary, in order
@@ -510,10 +526,10 @@ func (l Line[T]) Float() Line[float64] {
 	return Line[float64]{l.Origin.Float(), l.Direction.Float()}
 }
 
-// String returns the line by its origin and direction: Line((x,y);⟨x,y⟩).
+// String returns the line in the form of its constructor: Ln((x,y);⟨x,y⟩).
 func (l Line[T]) String() string {
 	buf := make([]byte, 0, stringSize)
-	buf = append(buf, "Line("...)
+	buf = append(buf, "Ln("...)
 	buf = l.Origin.appendString(buf)
 	buf = append(buf, ';')
 	buf = l.Direction.appendString(buf)

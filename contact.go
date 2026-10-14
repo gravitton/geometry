@@ -23,3 +23,51 @@ type Contact[T Number] struct {
 func (c Contact[T]) Separation() Vector[float64] {
 	return c.Normal.Multiply(c.Depth)
 }
+
+// Equal checks for equal normal, depth and points with given contact, the points as many and
+// each in its place, as Pair.Equal compares them.
+func (c Contact[T]) Equal(contact Contact[T]) bool {
+	return c.Normal.Equal(contact.Normal) && Equal(c.Depth, contact.Depth) && c.Points.Equal(contact.Points)
+}
+
+// IsZero checks if the normal and the depth are zero and the contact holds no point, the
+// contact Collide returns beside its false.
+func (c Contact[T]) IsZero() bool {
+	return c.Equal(Contact[T]{})
+}
+
+// Cast converts the contact to a Contact of another number type, rounding the points as Cast
+// does and keeping the normal and the depth, which are float64 whatever T is. Two points
+// rounding to the same one are held once.
+func (c Contact[T]) Cast[R Number]() Contact[R] {
+	return Contact[R]{c.Normal, c.Depth, mapPair(c.Points, Point[T].Cast[R])}
+}
+
+// Int converts the contact to a Contact[int], two points rounding to the same one held once.
+func (c Contact[T]) Int() Contact[int] {
+	return Contact[int]{c.Normal, c.Depth, mapPair(c.Points, Point[T].Int)}
+}
+
+// Float converts the contact to a Contact[float64].
+func (c Contact[T]) Float() Contact[float64] {
+	return Contact[float64]{c.Normal, c.Depth, mapPair(c.Points, Point[T].Float)}
+}
+
+// String returns the contact by its normal, depth and points: Contact(⟨x,y⟩;d), with each
+// point it holds after them as Contact(⟨x,y⟩;d;(x,y);(x,y)).
+func (c Contact[T]) String() string {
+	buf := make([]byte, 0, stringSize)
+	buf = append(buf, "Contact("...)
+	buf = c.Normal.appendString(buf)
+	buf = append(buf, ';')
+	buf = appendString(buf, c.Depth)
+
+	for i := range c.Points.Count {
+		buf = append(buf, ';')
+		buf = c.Points.Items[i].appendString(buf)
+	}
+
+	buf = append(buf, ')')
+
+	return string(buf)
+}

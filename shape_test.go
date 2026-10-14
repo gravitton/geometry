@@ -38,6 +38,7 @@ var (
 	_ Body[int]        = Polygon[int]{}
 	_ Body[int]        = Rectangle[int]{}
 	_ Body[int]        = RegularPolygon[int]{}
+	_ Body[int]        = Box[int]{}
 	_ Body[int]        = Ellipse[int]{}
 )
 
@@ -219,6 +220,7 @@ func TestOutline(t *testing.T) {
 		Pol(triangleVertices()),
 		Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi / 6),
 		RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop),
+		BoxFromMinMax(Pt(-1.0, 1.0), Pt(3.0, 3.0)),
 		PolLn(triangleVertices()),
 	}
 
@@ -238,6 +240,7 @@ func TestOutline(t *testing.T) {
 		assert.True(t, closed[float64](Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi/6)))
 		assert.True(t, closed[float64](Pol(triangleVertices())))
 		assert.True(t, closed[float64](RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop)))
+		assert.True(t, closed[float64](BoxFromMinMax(Pt(-1.0, 1.0), Pt(3.0, 3.0))))
 	})
 }
 
@@ -482,6 +485,7 @@ func TestBody(t *testing.T) {
 		Pol(triangleVertices()),
 		Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi / 6),
 		RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop),
+		BoxFromMinMax(Pt(-1.0, 1.0), Pt(3.0, 3.0)),
 		Ell(Pt(1.0, 2.0), Sz(4.0, 2.0), Pi/6),
 	}
 

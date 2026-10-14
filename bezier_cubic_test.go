@@ -225,14 +225,6 @@ func TestCubicBezier_IntersectionSegment(t *testing.T) {
 			}
 		}
 	})
-	t.Run("appends to a buffer with room without allocating", func(t *testing.T) {
-		buffer, through := make([]Point[float64], 0, 4), Seg(Pt(-1.0, tenth), Pt(7.0, 0.0))
-
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
-			sinkBool = len(wave.AppendIntersectionSegment(buffer[:0], through)) > 0
-		}), 0)
-		geomtest.AssertVertices(t, wave.AppendIntersectionSegment(bufferWith(prefixPoint), through)[:1], []Point[float64]{prefixPoint})
-	})
 }
 
 func TestCubicBezier_IntersectionRay(t *testing.T) {

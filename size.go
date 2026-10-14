@@ -27,6 +27,11 @@ func SzU[T Number](size T) Size[T] {
 	return Size[T]{size, size}
 }
 
+// ZeroSize creates a new Size with zero values (0x0).
+func ZeroSize[T Number]() Size[T] {
+	return Size[T]{}
+}
+
 // ParseSize parses a size string in the form "WxH", the form String prints, each side a decimal
 // number Parse accepts: the string is split at its first x, so a hexadecimal float, which Parse
 // takes on its own, cannot stand for the width.
@@ -81,12 +86,14 @@ func (s Size[T]) ScaleXY(factorX, factorY float64) Size[T] {
 	return Size[T]{Multiply(s.Width, factorX), Multiply(s.Height, factorY)}
 }
 
-// Unscale creates a new Size scaled with inverse factor in both dimensions.
+// Unscale creates a new Size scaled with inverse factor in both dimensions, the inverse of
+// Scale. Like Divide it panics for a zero factor.
 func (s Size[T]) Unscale(factor float64) Size[T] {
 	return Size[T]{Divide(s.Width, factor), Divide(s.Height, factor)}
 }
 
-// UnscaleXY creates a new Size scaled with inverse factors along X and Y.
+// UnscaleXY creates a new Size scaled with inverse factors along X and Y, the inverse of
+// ScaleXY. Like Divide it panics for a zero factor.
 func (s Size[T]) UnscaleXY(factorX, factorY float64) Size[T] {
 	return Size[T]{Divide(s.Width, factorX), Divide(s.Height, factorY)}
 }

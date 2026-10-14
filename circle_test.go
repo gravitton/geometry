@@ -1674,15 +1674,94 @@ func TestCircle_RegularPolygon(t *testing.T) {
 func TestCircle_Arc(t *testing.T) {
 	c := Circ(Pt(1.0, 2.0), 5)
 
+	t.Run("a part of the boundary", func(t *testing.T) {
+		geomtest.AssertArc(t, c.Arc(Pi/2, -Pi), Ac(Pt(1.0, 2.0), 5, Pi/2, -Pi))
+		geomtest.AssertCircle(t, c.Arc(Pi/2, -Pi).Circle(), c)
+	})
 	t.Run("the whole boundary", func(t *testing.T) {
-		geomtest.AssertArc(t, c.Arc(), Ac(Pt(1.0, 2.0), 5, 0, 2*math.Pi))
-		geomtest.AssertCircle(t, c.Arc().Circle(), c)
-		geomtest.AssertNumber(t, c.Arc().Length(), c.Perimeter())
+		geomtest.AssertNumber(t, c.Arc(0, 2*Pi).Length(), c.Perimeter())
 	})
 	t.Run("contains the boundary and not the inside", func(t *testing.T) {
-		assert.True(t, c.Arc().Contains(Pt(1.0, 7.0)))
-		assert.False(t, c.Arc().Contains(c.Center))
-		geomtest.AssertNumber(t, c.Arc().DistanceTo(c.Center), 5)
+		assert.True(t, c.Arc(0, 2*Pi).Contains(Pt(1.0, 7.0)))
+		assert.False(t, c.Arc(0, 2*Pi).Contains(c.Center))
+		geomtest.AssertNumber(t, c.Arc(0, 2*Pi).DistanceTo(c.Center), 5)
+	})
+}
+
+func TestCircle_Sector(t *testing.T) {
+	c := Circ(Pt(1.0, 2.0), 5)
+
+	t.Run("a slice of the disc", func(t *testing.T) {
+		geomtest.AssertSector(t, c.Sector(Pi/2, -Pi), Sect(Pt(1.0, 2.0), 5, Pi/2, -Pi))
+		geomtest.AssertCircle(t, c.Sector(Pi/2, -Pi).Circle(), c)
+		geomtest.AssertArc(t, c.Sector(Pi/2, -Pi).Arc(), c.Arc(Pi/2, -Pi))
+	})
+	t.Run("the whole disc", func(t *testing.T) {
+		geomtest.AssertNumber(t, c.Sector(0, 2*Pi).Area(), c.Area())
+	})
+}
+
+func TestCircle_Polygon(t *testing.T) {
+	c := Circ(Pt(0.0, 0.0), 5.0)
+
+	t.Run("equal chords from the angle zero", func(t *testing.T) {
+		geomtest.AssertPolygon(t, c.Polygon(2), Pol([]Point[float64]{Pt(5.0, 0.0), Pt(0.0, 5.0), Pt(-5.0, 0.0), Pt(0.0, -5.0)}))
+		geomtest.AssertPolygon(t, c.Polygon(-2), c.Polygon(2))
+	})
+	t.Run("never fewer than three", func(t *testing.T) {
+		assert.Length(t, c.Polygon(100).Points, 3)
+	})
+	t.Run("a thousand chords at most", func(t *testing.T) {
+		assert.Length(t, c.Polygon(0).Points, 1024)
+		assert.Length(t, c.Polygon(math.NaN()).Points, 1024)
+	})
+	t.Run("int rounds the vertices", func(t *testing.T) {
+		geomtest.AssertPolygon(t, Circ(Pt(1, 2), 5).Polygon(2), Pol([]Point[int]{Pt(6, 2), Pt(1, 7), Pt(-4, 2), Pt(1, -3)}))
+		geomtest.AssertPolygon(t, Circ(Pt(1, 2), 1).Polygon(0), Pol([]Point[int]{Pt(2, 2), Pt(2, 3), Pt(1, 3), Pt(0, 3), Pt(0, 2), Pt(0, 1), Pt(1, 1), Pt(2, 1)}))
+	})
+	t.Run("no radius gives the center", func(t *testing.T) {
+		geomtest.AssertPolygon(t, Circ(Pt(1, 2), 0).Polygon(1), Pol([]Point[int]{Pt(1, 2)}))
+		geomtest.AssertPolygon(t, Circ(Pt(1.0, 2.0), 0.0).Polygon(1), Pol([]Point[float64]{Pt(1.0, 2.0)}))
+	})
+	t.Run("the vertices lie on the boundary, the edges within the tolerance of it, wound as a rectangle", func(t *testing.T) {
+		for _, circle := range circleFixtures {
+			for _, tolerance := range []float64{0.01, 0.25} {
+				polygon := circle.Polygon(tolerance)
+				message := fmt.Sprintf("%s ±%v: ", circle, tolerance)
+
+				for vertex := range polygon.Vertices() {
+					assert.True(t, circle.Arc(0, 2*Pi).Contains(vertex), message+vertex.String())
+				}
+
+				if circle.Radius == 0 {
+					continue
+				}
+
+				for edge := range polygon.Edges() {
+					assert.True(t, LessOrEqual(circle.Arc(0, 2*Pi).DistanceTo(edge.Midpoint()), tolerance), message+edge.String())
+				}
+
+				assert.True(t, polygon.IsConvex(), message)
+				assert.Equal(t, polygon.Winding(), WindingClockwise, message)
+			}
+		}
+	})
+}
+
+func TestCircle_AppendPolygon(t *testing.T) {
+	t.Run("appends after the points already there", func(t *testing.T) {
+		geomtest.AssertVertices(t, Circ(Pt(0, 0), 5).AppendPolygon([]Point[int]{Pt(9, 9)}, 2), []Point[int]{Pt(9, 9), Pt(5, 0), Pt(0, 5), Pt(-5, 0), Pt(0, -5)})
+	})
+	t.Run("allocates once, and nothing into a buffer with room", func(t *testing.T) {
+		circle := Circ(Pt(0, 0), 50)
+		buffer := make([]Point[int], 0, 64)
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = circle.Polygon(1).Points
+		}), 1)
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = circle.AppendPolygon(buffer[:0], 1)
+		}), 0)
 	})
 }
 

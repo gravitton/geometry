@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"slices"
 	"testing"
 
 	"github.com/gravitton/assert"
@@ -64,6 +65,55 @@ func TestBox_Size(t *testing.T) {
 	})
 }
 
+func TestBox_Vertices(t *testing.T) {
+	box := BoxFromMinMax(Pt(1, 2), Pt(4, 7))
+
+	t.Run("the corners from Min, clockwise on screen", func(t *testing.T) {
+		geomtest.AssertVertices(t, slices.Collect(box.Vertices()), []Point[int]{Pt(1, 2), Pt(4, 2), Pt(4, 7), Pt(1, 7)})
+	})
+	t.Run("are the vertices of its rectangle", func(t *testing.T) {
+		geomtest.AssertVertices(t, slices.Collect(box.Vertices()), slices.Collect(box.Rectangle().Vertices()))
+	})
+	t.Run("stops early", func(t *testing.T) {
+		for vertex := range box.Vertices() {
+			geomtest.AssertPoint(t, vertex, Pt(1, 2))
+
+			break
+		}
+	})
+	t.Run("ranging allocates nothing", func(t *testing.T) {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			for vertex := range box.Vertices() {
+				sinkBool = vertex.IsZero()
+			}
+		}), 0)
+	})
+}
+
+func TestBox_Edges(t *testing.T) {
+	box := BoxFromMinMax(Pt(1, 2), Pt(4, 7))
+
+	t.Run("each from a corner to the next, closing back to Min", func(t *testing.T) {
+		geomtest.AssertSegments(t, slices.Collect(box.Edges()), []Segment[int]{
+			Seg(Pt(1, 2), Pt(4, 2)), Seg(Pt(4, 2), Pt(4, 7)), Seg(Pt(4, 7), Pt(1, 7)), Seg(Pt(1, 7), Pt(1, 2)),
+		})
+	})
+	t.Run("stops early", func(t *testing.T) {
+		for edge := range box.Edges() {
+			geomtest.AssertSegment(t, edge, Seg(Pt(1, 2), Pt(4, 2)))
+
+			break
+		}
+	})
+	t.Run("ranging allocates nothing", func(t *testing.T) {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			for edge := range box.Edges() {
+				sinkBool = edge.IsZero()
+			}
+		}), 0)
+	})
+}
+
 func TestBox_Center(t *testing.T) {
 	t.Run("int truncates toward min", func(t *testing.T) {
 		geomtest.AssertPoint(t, BoxFromMinMax(Pt(1, 2), Pt(4, 7)).Center(), Pt(2, 4))
@@ -71,6 +121,54 @@ func TestBox_Center(t *testing.T) {
 	})
 	t.Run("float", func(t *testing.T) {
 		geomtest.AssertPoint(t, BoxFromMinMax(Pt(0.6, -0.25), Pt(1.8, 3.35)).Center(), Pt(1.2, 1.55))
+	})
+}
+
+func TestBox_Centroid(t *testing.T) {
+	t.Run("is the center", func(t *testing.T) {
+		geomtest.AssertPoint(t, BoxFromMinMax(Pt(1, 2), Pt(4, 7)).Centroid(), Pt(2, 4))
+
+		for _, box := range boxFixtures {
+			geomtest.AssertPoint(t, box.Centroid(), box.Center(), box.String())
+		}
+	})
+}
+
+func TestBox_Area(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		geomtest.AssertNumber(t, BoxFromMinMax(Pt(1, 2), Pt(4, 7)).Area(), 15.0)
+	})
+	t.Run("float", func(t *testing.T) {
+		geomtest.AssertNumber(t, BoxFromMinMax(Pt(0.5, 1.0), Pt(2.0, 3.0)).Area(), 3.0)
+	})
+	t.Run("is the area of its rectangle", func(t *testing.T) {
+		for _, box := range boxFixtures {
+			geomtest.AssertNumber(t, box.Area(), box.Rectangle().Area(), box.String())
+		}
+	})
+}
+
+func TestBox_Perimeter(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		geomtest.AssertNumber(t, BoxFromMinMax(Pt(1, 2), Pt(4, 7)).Perimeter(), 16)
+	})
+	t.Run("float", func(t *testing.T) {
+		geomtest.AssertNumber(t, BoxFromMinMax(Pt(0.5, 1.0), Pt(2.0, 3.0)).Perimeter(), 7.0)
+	})
+}
+
+func TestBox_Inertia(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		geomtest.AssertNumber(t, BoxFromMinMax(Pt(0, 0), Pt(4, 2)).Inertia(), 40.0/3)
+	})
+	t.Run("is the inertia of its rectangle", func(t *testing.T) {
+		for _, box := range boxFixtures {
+			geomtest.AssertNumber(t, box.Inertia(), box.Rectangle().Inertia(), box.String())
+		}
+	})
+	t.Run("the products are rounded before they are added", func(t *testing.T) {
+		w, h := tenth*3, tenth*7
+		assert.Equal(t, BoxFromMinMax(Pt(0.0, 0.0), Pt(w, h)).Inertia(), w*h*(float64(w*w)+float64(h*h))/12)
 	})
 }
 
@@ -104,6 +202,25 @@ func TestBox_Translate(t *testing.T) {
 	})
 	t.Run("float", func(t *testing.T) {
 		geomtest.AssertBox(t, BoxFromMinMax(Pt(0.6, -0.25), Pt(1.8, 3.35)).Translate(Vec(100.1, -0.1)), BoxFromMinMax(Pt(100.7, -0.35), Pt(101.9, 3.25)))
+	})
+}
+
+func TestBox_MoveTo(t *testing.T) {
+	t.Run("int keeps the size and puts the center at the point", func(t *testing.T) {
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(1, 2), Pt(4, 7)).MoveTo(Pt(10, 10)), BoxFromMinMax(Pt(9, 8), Pt(12, 13)))
+	})
+	t.Run("float", func(t *testing.T) {
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0.0, 0.0), Pt(2.0, 4.0)).MoveTo(Pt(-1.0, 0.5)), BoxFromMinMax(Pt(-2.0, -1.5), Pt(0.0, 2.5)))
+	})
+	t.Run("the center lands on the point and the size stays", func(t *testing.T) {
+		for _, box := range boxFixtures {
+			for _, point := range pointFixtures {
+				moved := box.MoveTo(point)
+
+				geomtest.AssertPoint(t, moved.Center(), point, box.String())
+				geomtest.AssertSize(t, moved.Size(), box.Size(), box.String())
+			}
+		}
 	})
 }
 
@@ -172,6 +289,22 @@ func TestBox_Outset(t *testing.T) {
 
 		geomtest.AssertBox(t, box.Inset(padding).Outset(padding), box)
 		geomtest.AssertBox(t, box.Outset(padding).Inset(padding), box)
+	})
+}
+
+func TestBox_Lerp(t *testing.T) {
+	a, b := BoxFromMinMax(Pt(0, 0), Pt(4, 2)), BoxFromMinMax(Pt(10, 10), Pt(12, 20))
+
+	t.Run("the ends and the middle", func(t *testing.T) {
+		geomtest.AssertBox(t, a.Lerp(b, 0), a)
+		geomtest.AssertBox(t, a.Lerp(b, 1), b)
+		geomtest.AssertBox(t, a.Lerp(b, 0.5), BoxFromMinMax(Pt(5, 5), Pt(8, 11)))
+	})
+	t.Run("float", func(t *testing.T) {
+		geomtest.AssertBox(t, a.Float().Lerp(b.Float(), 0.25), BoxFromMinMax(Pt(2.5, 2.5), Pt(6.0, 6.5)))
+	})
+	t.Run("an extrapolation that turns the box inside out stays a box", func(t *testing.T) {
+		geomtest.AssertBox(t, a.Lerp(b, 3), BoxFromMinMax(Pt(28, 30), Pt(30, 56)))
 	})
 }
 
@@ -743,6 +876,20 @@ func TestBox_IsZero(t *testing.T) {
 	t.Run("not zero", func(t *testing.T) {
 		assert.False(t, BoxFromSize(Sz(1, 0)).IsZero())
 		assert.False(t, BoxFromMinMax(Pt(1, 1), Pt(1, 1)).IsZero())
+	})
+}
+
+func TestBox_Polygon(t *testing.T) {
+	box := BoxFromMinMax(Pt(1, 2), Pt(4, 7))
+
+	t.Run("the corners in the order of Vertices", func(t *testing.T) {
+		geomtest.AssertPolygon(t, box.Polygon(), Pol([]Point[int]{Pt(1, 2), Pt(4, 2), Pt(4, 7), Pt(1, 7)}))
+		geomtest.AssertPolygon(t, box.Polygon(), box.Rectangle().Polygon())
+	})
+	t.Run("allocates once", func(t *testing.T) {
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = box.Polygon().Points
+		}), 1)
 	})
 }
 

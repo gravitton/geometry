@@ -110,7 +110,7 @@ func (b QuadraticBezier[T]) Split(t float64) (QuadraticBezier[T], QuadraticBezie
 //
 // The points are a Pair, which allocates nothing.
 func (b QuadraticBezier[T]) IntersectionSegment(segment Segment[T]) Pair[Point[T]] {
-	cast := bezierCast{segment: segment.Float(), curve: b.Float().Cubic()}
+	cast := bezierCast{segment: segment.Float(), curve: b.Float().CubicBezier()}
 	cast.step(cast.curve, 0, 1, bezierDepth)
 
 	var points Pair[Point[T]]
@@ -151,10 +151,10 @@ func (b QuadraticBezier[T]) IsZero() bool {
 	return b.Equal(QuadraticBezier[T]{})
 }
 
-// Cubic converts the curve to the CubicBezier over the same points, its two control points two
+// CubicBezier converts the curve to the CubicBezier over the same points, its two control points two
 // thirds of the way from each end to Control. For integer T they are rounded, so the cubic only
 // approximates the curve.
-func (b QuadraticBezier[T]) Cubic() CubicBezier[T] {
+func (b QuadraticBezier[T]) CubicBezier() CubicBezier[T] {
 	return CubicBezier[T]{b.Start, b.Start.Lerp(b.Control, 2.0/3), b.End.Lerp(b.Control, 2.0/3), b.End}
 }
 
@@ -170,7 +170,7 @@ func (b QuadraticBezier[T]) Polyline(tolerance float64) Polyline[T] {
 // AppendPolyline appends the points of the path Polyline returns to dst and returns the
 // extended slice, so a caller reusing dst allocates nothing once it has room for them.
 func (b QuadraticBezier[T]) AppendPolyline(dst []Point[T], tolerance float64) []Point[T] {
-	return b.Float().Cubic().appendPolyline(dst, tolerance)
+	return b.Float().CubicBezier().appendPolyline(dst, tolerance)
 }
 
 // Cast converts the curve to a QuadraticBezier of another number type, rounding as Cast does.

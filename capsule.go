@@ -9,8 +9,8 @@ import (
 // closed by half a disc at each end, the rounded collider of a character. A segment of no
 // length makes it the circle about that point, and a radius of zero the segment itself.
 //
-// The radius is never negative: Cap takes it absolute, Scale takes a negative factor absolute,
-// and Grow and Shrink clamp at zero. A negative radius can only be written as a struct literal
+// The radius is never negative: Cap and Lerp take it absolute, Scale takes a negative factor
+// absolute, and Grow and Shrink clamp at zero. A negative radius can only be written as a struct literal
 // or decoded from JSON, and Contains, DistanceTo and Bounds give no meaningful answer for it;
 // Canonical repairs it.
 //
@@ -586,7 +586,8 @@ func (c Capsule[T]) IsZero() bool {
 // and wound as the corners of a Rectangle are. A negative tolerance is taken absolute, and each
 // half circle has at most a thousand chords, which a tolerance of zero gives; a tolerance of
 // the radius or more leaves the four corners of the sides. A capsule of no radius gives its two
-// ends, and one of no length the circle about its point. For integer T the vertices are rounded
+// ends, and one of no length the circle about its point, never fewer than four chords around
+// it. For integer T the vertices are rounded
 // and one rounding onto the vertex before it is left out.
 func (c Capsule[T]) Polygon(tolerance float64) Polygon[T] {
 	return Polygon[T]{c.AppendPolygon(nil, tolerance)}
@@ -598,6 +599,9 @@ func (c Capsule[T]) AppendPolygon(dst []Point[T], tolerance float64) []Point[T] 
 	angle := c.Segment.Angle()
 	ends := [2]Arc[T]{{c.Segment.End, c.Radius, angle - math.Pi/2, math.Pi}, {c.Segment.Start, c.Radius, angle + math.Pi/2, math.Pi}}
 	pieces := ends[0].pieces(tolerance)
+	if c.Segment.IsPoint() {
+		pieces = max(pieces, 2)
+	}
 
 	from := len(dst)
 	dst = slices.Grow(dst, 2*(int(pieces)+1))
@@ -610,7 +614,7 @@ func (c Capsule[T]) AppendPolygon(dst []Point[T], tolerance float64) []Point[T] 
 		}
 	}
 
-	if last := len(dst) - 1; last > from && dst[last] == dst[from] {
+	if last := len(dst) - 1; last > from && dst[last].Equal(dst[from]) {
 		dst = dst[:last]
 	}
 

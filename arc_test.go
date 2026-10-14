@@ -588,10 +588,10 @@ func TestArc_Float(t *testing.T) {
 
 func TestArc_String(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		assert.Equal(t, Ac(Pt(1, 2), 5, 0.5, -1.5).String(), "Ac((1,2);5;0.50;-1.50)")
+		assert.Equal(t, Ac(Pt(1, 2), 5, 0.5, -1.5).String(), "Arc((1,2);5;0.50;-1.50)")
 	})
 	t.Run("float", func(t *testing.T) {
-		assert.Equal(t, Ac(Pt(1.5, 2), 0.25, 0, 3).String(), "Ac((1.50,2.00);0.25;0.00;3.00)")
+		assert.Equal(t, Ac(Pt(1.5, 2), 0.25, 0, 3).String(), "Arc((1.50,2.00);0.25;0.00;3.00)")
 	})
 	t.Run("allocates the string alone", func(t *testing.T) {
 		assertStringAllocation(t, Ac(Pt(1, 2), 5, 0.5, -1.5).String)
@@ -740,5 +740,5 @@ var arcFixtures = []Arc[float64]{
 
 func ExampleAc() {
 	fmt.Println(Ac(Pt(1, 2), 5, 0, 1.5))
-	// Output: Ac((1,2);5;0.00;1.50)
+	// Output: Arc((1,2);5;0.00;1.50)
 }

@@ -222,10 +222,17 @@ func (r Ray[T]) IntersectionCapsule(capsule Capsule[T]) Pair[Point[T]] {
 	return capsule.IntersectionRay(r)
 }
 
-// IntersectionSector returns the points where the ray crosses the sector boundary, as
-// Sector.IntersectionRay does, which has the Append form.
+// IntersectionSector returns the points where the ray crosses the sector boundary, from Origin on,
+// as Segment.IntersectionSector finds them on the reach of the ray past the sector.
 func (r Ray[T]) IntersectionSector(sector Sector[T]) []Point[T] {
-	return sector.IntersectionRay(r)
+	return r.AppendIntersectionSector(nil, sector)
+}
+
+// AppendIntersectionSector appends the points IntersectionSector returns to dst and returns the
+// extended slice, as Segment.AppendIntersectionSector does on the reach of the ray past the
+// sector, so a caller reusing dst allocates nothing once it has room.
+func (r Ray[T]) AppendIntersectionSector(dst []Point[T], sector Sector[T]) []Point[T] {
+	return r.reach(sector.minMax()).AppendIntersectionSector(dst, sector)
 }
 
 // IntersectionArc returns the points where the ray crosses the arc, as
@@ -292,10 +299,19 @@ func (r Ray[T]) IntersectionQuadraticBezier(curve QuadraticBezier[T]) Pair[Point
 	return curve.IntersectionRay(r)
 }
 
-// IntersectionCubicBezier returns the points where the ray crosses the curve, as
-// CubicBezier.IntersectionRay does, which has the Append form.
+// IntersectionCubicBezier returns the points where the ray crosses the curve, from Origin on,
+// as Segment.IntersectionCubicBezier finds them on the reach of the ray past the curve.
 func (r Ray[T]) IntersectionCubicBezier(curve CubicBezier[T]) []Point[T] {
-	return curve.IntersectionRay(r)
+	return r.AppendIntersectionCubicBezier(nil, curve)
+}
+
+// AppendIntersectionCubicBezier appends the points IntersectionCubicBezier returns to dst and
+// returns the extended slice, as Segment.AppendIntersectionCubicBezier does on the reach of the
+// ray past the curve, so a caller reusing dst allocates nothing once it has room.
+func (r Ray[T]) AppendIntersectionCubicBezier(dst []Point[T], curve CubicBezier[T]) []Point[T] {
+	bounds := curve.Bounds()
+
+	return r.reach(bounds.Min, bounds.Max).AppendIntersectionCubicBezier(dst, curve)
 }
 
 // IntersectionPolygon returns the points where the ray crosses the polygon boundary, from Origin

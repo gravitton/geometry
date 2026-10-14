@@ -618,6 +618,21 @@ func TestLine_IntersectionSector(t *testing.T) {
 	})
 }
 
+func TestLine_AppendIntersectionSector(t *testing.T) {
+	sector, through := quarterSector(), LineThrough(Pt(-1.0, 1.0), Pt(5.0, 1.0+tenth))
+
+	t.Run("appends after the points already there", func(t *testing.T) {
+		geomtest.AssertVertices(t, through.AppendIntersectionSector(bufferWith(prefixPoint), sector), append([]Point[float64]{prefixPoint}, through.IntersectionSector(sector)...))
+	})
+	t.Run("appends to a buffer with room without allocating", func(t *testing.T) {
+		buffer := make([]Point[float64], 0, 4)
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkBool = len(through.AppendIntersectionSector(buffer[:0], sector)) > 0
+		}), 0)
+	})
+}
+
 func TestLine_IntersectionArc(t *testing.T) {
 	t.Run("matches Arc.IntersectionLine", func(t *testing.T) {
 		for _, s := range lineFixtures {
@@ -773,6 +788,21 @@ func TestLine_IntersectionCubicBezier(t *testing.T) {
 				geomtest.AssertVertices(t, s.IntersectionCubicBezier(c), c.IntersectionLine(s), fmt.Sprintf("%s → %s: ", s, c))
 			}
 		}
+	})
+}
+
+func TestLine_AppendIntersectionCubicBezier(t *testing.T) {
+	curve, through := CubBez(Pt(0.0, 0.0), Pt(2.0, 6.0), Pt(4.0, -6.0), Pt(6.0, 0.0)), LineThrough(Pt(-1.0, 1.0), Pt(5.0, 1.0+tenth))
+
+	t.Run("appends after the points already there", func(t *testing.T) {
+		geomtest.AssertVertices(t, through.AppendIntersectionCubicBezier(bufferWith(prefixPoint), curve), append([]Point[float64]{prefixPoint}, through.IntersectionCubicBezier(curve)...))
+	})
+	t.Run("appends to a buffer with room without allocating", func(t *testing.T) {
+		buffer := make([]Point[float64], 0, 4)
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkBool = len(through.AppendIntersectionCubicBezier(buffer[:0], curve)) > 0
+		}), 0)
 	})
 }
 
@@ -1150,10 +1180,10 @@ func TestLine_Float(t *testing.T) {
 
 func TestLine_String(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		assert.Equal(t, Ln(Pt(10, 16), Vec(1, -2)).String(), "Line((10,16);⟨1,-2⟩)")
+		assert.Equal(t, Ln(Pt(10, 16), Vec(1, -2)).String(), "Ln((10,16);⟨1,-2⟩)")
 	})
 	t.Run("float", func(t *testing.T) {
-		assert.Equal(t, Ln(Pt(100, -34.0000115), Vec(0.2, 0.4)).String(), "Line((100.00,-34.00);⟨0.20,0.40⟩)")
+		assert.Equal(t, Ln(Pt(100, -34.0000115), Vec(0.2, 0.4)).String(), "Ln((100.00,-34.00);⟨0.20,0.40⟩)")
 	})
 	t.Run("allocates the string alone", func(t *testing.T) {
 		assertStringAllocation(t, Ln(Pt(100, -34.0000115), Vec(0.2, 0.4)).String)
@@ -1244,10 +1274,10 @@ var lineFixtures = []Line[float64]{
 
 func ExampleLn() {
 	fmt.Println(Ln(Pt(1, 2), Vec(3, 4)))
-	// Output: Line((1,2);⟨3,4⟩)
+	// Output: Ln((1,2);⟨3,4⟩)
 }
 
 func ExampleLineThrough() {
 	fmt.Println(LineThrough(Pt(1, 2), Pt(4, 6)))
-	// Output: Line((1,2);⟨3,4⟩)
+	// Output: Ln((1,2);⟨3,4⟩)
 }

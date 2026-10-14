@@ -13,7 +13,7 @@ import (
 // of any length, in float64, any one of them where several reach alike.
 //
 // A spatial index, a picking routine or a collision pass holds a Shape and never needs to know
-// which one: Intersects, Distance, Nearest, Collide, Sweep and Raycast take any two. Two kinds of this
+// which one: Intersects, Distance, Nearest, Collide and Sweep take any two, and Raycast a ray and one. Two kinds of this
 // package with a method for each other are tested by that method. Any other pair, an Ellipse
 // or a shape of another package among them, is known by its Support alone, which describes a
 // shape with no notch, so a Polygon that is not convex is taken edge by edge and a Sector past
@@ -33,7 +33,7 @@ type Shape[T Number] interface {
 }
 
 // Body is a shape with an area, the mass properties a physics engine takes from it: Circle,
-// Capsule, Sector, Polygon, Rectangle, RegularPolygon and Ellipse. Area is the mass at unit density, Centroid the
+// Capsule, Sector, Polygon, Rectangle, RegularPolygon, Box and Ellipse. Area is the mass at unit density, Centroid the
 // center of mass and Inertia the polar second moment of area about it, the rotational inertia
 // at unit density; a physics body multiplies Area and Inertia by its density and never asks
 // which shape it holds. Segment is not a Body, since it encloses no area, and Size is not a

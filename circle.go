@@ -2,6 +2,7 @@ package geom
 
 import (
 	"math"
+	"slices"
 )
 
 // Circle is a 2D circle.
@@ -487,11 +488,12 @@ func (c Circle[T]) IntersectsBox(box Box[T]) bool {
 }
 
 // IntersectionCircle returns the points where the circles cross: two for overlapping circles, one
-// for tangent ones, within the tolerance like Intersects, and none for circles apart or nested.
+// for tangent ones, within the tolerance like IntersectsCircle, and none for circles apart or
+// nested.
 // Coincident circles share every point and also return none, and circles with centers within
 // the tolerance of each other count as coincident. The second point is the mirror of the first
 // across the line of centers. Tangency is judged on the sum and the difference of the radii by
-// the same comparison Intersects makes, so a tangent a rounding error outside its reach gives
+// the same comparison IntersectsCircle makes, so a tangent a rounding error outside its reach gives
 // one point rather than the same point twice; that point is placed halfway between the two
 // boundaries where they meet, since the crossing formula amplifies the tolerance there. For
 // integer T the points are rounded like every other result stored into T, and two crossings
@@ -723,11 +725,52 @@ func (c Circle[T]) RegularPolygon(n int, orientation Orientation) RegularPolygon
 	return RegularPolygon[T]{c.Center, SzU(c.Radius), n, 0, RegularPolygonOrientationPhase(n, orientation)}
 }
 
-// Arc converts the circle to the Arc that is its whole boundary, from the angle zero through a
-// full turn counterclockwise: the line of the circle without its inside, which contains the
-// points on the boundary alone and is measured to from within.
-func (c Circle[T]) Arc() Arc[T] {
-	return Arc[T]{c.Center, c.Radius, 0, 2 * math.Pi}
+// Arc returns the part of the circle boundary that starts at the given angle and runs through
+// the given sweep, both in radians: the Arc of this center and radius. A sweep of a full turn is
+// the whole boundary, the line of the circle without its inside, which contains the points on
+// the boundary alone and is measured to from within.
+func (c Circle[T]) Arc(angle, sweep float64) Arc[T] {
+	return Arc[T]{c.Center, c.Radius, angle, sweep}
+}
+
+// Sector returns the slice of the circle between the radius at the given angle and the one the
+// given sweep away, both in radians: the Sector of this center and radius. A sweep of a full
+// turn is the whole disc, which the circle itself answers for faster.
+func (c Circle[T]) Sector(angle, sweep float64) Sector[T] {
+	return Sector[T]{c.Center, c.Radius, angle, sweep}
+}
+
+// Polygon converts the circle to a Polygon within the given tolerance of it, the outline that
+// draws or walks one: equal chords from the point at the angle zero, as few as keep the circle
+// within the tolerance of each and never fewer than three, with its vertices on the boundary
+// and wound as the corners of a Rectangle are. A negative tolerance is taken absolute, and the
+// circle has at most a thousand chords, which a tolerance of zero gives. A circle of no radius
+// gives its center alone. For integer T the vertices are rounded and one rounding onto the
+// vertex before it is left out. RegularPolygon is the outline of a chosen vertex count.
+func (c Circle[T]) Polygon(tolerance float64) Polygon[T] {
+	return Polygon[T]{c.AppendPolygon(nil, tolerance)}
+}
+
+// AppendPolygon appends the vertices of the polygon Polygon returns to dst and returns the
+// extended slice, so a caller reusing dst allocates nothing once it has room for them.
+func (c Circle[T]) AppendPolygon(dst []Point[T], tolerance float64) []Point[T] {
+	arc := c.Arc(0, 2*math.Pi)
+	pieces := max(arc.pieces(tolerance), 3)
+
+	from := len(dst)
+	dst = slices.Grow(dst, int(pieces))
+
+	for i := 0.0; i < pieces; i++ {
+		if point := arc.PointAt(i / pieces); len(dst) == from || point != dst[len(dst)-1] {
+			dst = append(dst, point)
+		}
+	}
+
+	if last := len(dst) - 1; last > from && dst[last].Equal(dst[from]) {
+		dst = dst[:last]
+	}
+
+	return dst
 }
 
 // Cast converts the circle to a Circle of another number type, rounding as Cast does.

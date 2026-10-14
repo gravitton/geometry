@@ -61,7 +61,8 @@ func RectangleFromMinMax[T Number](a, b Point[T]) Rectangle[T] {
 	return Rectangle[T]{a.AddXY(w/2, h/2), Size[T]{w, h}, 0}
 }
 
-// RectangleFromSize creates a Rectangle from zero point and size.
+// RectangleFromSize creates a Rectangle from zero point and size. A negative extent measures
+// the other way, so the zero point is a corner but no longer the minimum one.
 func RectangleFromSize[T Number](size Size[T]) Rectangle[T] {
 	return RectangleFromMin(Pt[T](0, 0), size)
 }
@@ -223,7 +224,7 @@ func (r Rectangle[T]) Inertia() float64 {
 	return w * h * (float64(w*w) + float64(h*h)) / 12
 }
 
-// AspectRatio returns width/height.
+// AspectRatio returns width/height, and 0 for a zero height, as Size.AspectRatio gives it.
 func (r Rectangle[T]) AspectRatio() float64 {
 	return r.Size.AspectRatio()
 }
@@ -350,7 +351,7 @@ func (r Rectangle[T]) AlignTo(direction Direction, point Point[T]) Rectangle[T] 
 // exactly, as Box.Clamp moves their Bounds; otherwise the corners of this one are taken into
 // the frame of the other, where it is an aligned box and the extent of the corners lies within
 // it exactly where the rectangle does, and the move Box.Clamp finds there is turned back into
-// the world. The frame is the box localMinMax spans, which for an integer T lies a half unit
+// the world. The frame is the box of its own corners, which for an integer T lies a half unit
 // off the center on an odd extent, so a rectangle already within is not moved by that half.
 // For integer T the move is rounded once, so the corners can land a unit past the edges of a
 // rotated rectangle.
@@ -467,7 +468,7 @@ func (r Rectangle[T]) ShrinkXY(amountX, amountY T) Rectangle[T] {
 // both paddings on an axis over-run, Left and Top win, since the minimum corner moves first and the
 // maximum is then stopped at it. A negative padding outsets the rectangle, so Outset undoes Inset
 // as long as nothing was clamped. For integer T the moved center of a rotated rectangle is rounded
-// once, as worldRectangle places it.
+// once.
 func (r Rectangle[T]) Inset(padding Padding[T]) Rectangle[T] {
 	a, b := r.localMinMax()
 	inset := Box[T]{a.Point(), b.Point()}.Inset(padding)
@@ -511,7 +512,7 @@ func (r Rectangle[T]) DistanceTo(point Point[T]) float64 {
 }
 
 // DistanceSquaredTo returns the squared distance DistanceTo takes the root of, faster for
-// comparisons, in one pass over the edges, the edgeWalk every closed shape makes: zero for a
+// comparisons, in one pass over the edges, the walk every closed shape makes: zero for a
 // point inside by the even-odd rule, or on an edge within the tolerance as
 // Segment.DistanceSquaredTo snaps it, and the squared distance to the nearest edge otherwise. A
 // rectangle that is not rotated answers a point within its extent before any edge is examined.
@@ -706,7 +707,7 @@ func (r Rectangle[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 // same closed convention as Contains. Two rectangles that are not rotated are their Bounds and are
 // decided as Box.IntersectsBox decides those. Rectangles whose extents do not overlap are rejected
 // before any edge is examined. Two rectangles of the same angle, or half a turn apart, are tested
-// in their shared frame, the one sharedFrame picks whichever of the two asks, as
+// in their shared frame, the same one whichever of the two asks, as
 // ClipRectangle finds their overlap, once the extents of their vertices overlap. The offset
 // between the centers is turned into that frame, where the vertices were placed in the world, so
 // two rotated rectangles of one angle can answer differently from IntersectsPolygon on the Polygon
