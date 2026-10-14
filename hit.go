@@ -28,22 +28,6 @@ func (h Hit[T]) IsZero() bool {
 	return h.Equal(Hit[T]{})
 }
 
-// Cast converts the hit to a Hit of another number type, rounding the point as Cast does and
-// keeping the normal and the fraction, which are float64 whatever T is.
-func (h Hit[T]) Cast[R Number]() Hit[R] {
-	return Hit[R]{h.Point.Cast[R](), h.Normal, h.Fraction}
-}
-
-// Int converts the hit to a Hit[int], keeping the normal and the fraction.
-func (h Hit[T]) Int() Hit[int] {
-	return Hit[int]{h.Point.Int(), h.Normal, h.Fraction}
-}
-
-// Float converts the hit to a Hit[float64].
-func (h Hit[T]) Float() Hit[float64] {
-	return Hit[float64]{h.Point.Float(), h.Normal, h.Fraction}
-}
-
 // String returns the hit by its point, normal and fraction: Hit((x,y);⟨x,y⟩;f).
 func (h Hit[T]) String() string {
 	buf := make([]byte, 0, stringSize)

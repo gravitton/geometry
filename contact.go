@@ -36,23 +36,6 @@ func (c Contact[T]) IsZero() bool {
 	return c.Equal(Contact[T]{})
 }
 
-// Cast converts the contact to a Contact of another number type, rounding the points as Cast
-// does and keeping the normal and the depth, which are float64 whatever T is. Two points
-// rounding to the same one are held once.
-func (c Contact[T]) Cast[R Number]() Contact[R] {
-	return Contact[R]{c.Normal, c.Depth, mapPair(c.Points, Point[T].Cast[R])}
-}
-
-// Int converts the contact to a Contact[int], two points rounding to the same one held once.
-func (c Contact[T]) Int() Contact[int] {
-	return Contact[int]{c.Normal, c.Depth, mapPair(c.Points, Point[T].Int)}
-}
-
-// Float converts the contact to a Contact[float64].
-func (c Contact[T]) Float() Contact[float64] {
-	return Contact[float64]{c.Normal, c.Depth, mapPair(c.Points, Point[T].Float)}
-}
-
 // String returns the contact by its normal, depth and points: Contact(⟨x,y⟩;d), with each
 // point it holds after them as Contact(⟨x,y⟩;d;(x,y);(x,y)).
 func (c Contact[T]) String() string {

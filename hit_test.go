@@ -7,7 +7,6 @@ import (
 
 	"github.com/gravitton/assert"
 	. "github.com/gravitton/geometry"
-	"github.com/gravitton/geometry/geomtest"
 )
 
 func TestHit_Equal(t *testing.T) {
@@ -41,23 +40,6 @@ func TestHit_IsZero(t *testing.T) {
 		assert.False(t, Hit[int]{Point: Pt(-2, 0), Normal: Vec(-1.0, 0.0), Fraction: 0.3}.IsZero())
 		assert.False(t, Hit[int]{Fraction: 0.3}.IsZero())
 	})
-}
-
-func TestHit_Cast(t *testing.T) {
-	hit := Hit[float64]{Point: Pt(1.5, -2.4), Normal: Vec(0.6, -0.8), Fraction: 0.25}
-
-	t.Run("rounds the point and keeps the normal and the fraction", func(t *testing.T) {
-		geomtest.AssertHit(t, Hit[float64].Cast[int32](hit), Hit[int32]{Point: Pt[int32](2, -2), Normal: Vec(0.6, -0.8), Fraction: 0.25})
-		geomtest.AssertHit(t, Hit[float64].Cast[float32](hit), Hit[float32]{Point: Pt[float32](1.5, -2.4), Normal: Vec(0.6, -0.8), Fraction: 0.25})
-	})
-}
-
-func TestHit_Int(t *testing.T) {
-	geomtest.AssertHit(t, Hit[float64]{Point: Pt(1.5, -2.4), Normal: Vec(0.6, -0.8), Fraction: 0.25}.Int(), Hit[int]{Point: Pt(2, -2), Normal: Vec(0.6, -0.8), Fraction: 0.25})
-}
-
-func TestHit_Float(t *testing.T) {
-	geomtest.AssertHit(t, Hit[int]{Point: Pt(2, -2), Normal: Vec(0.6, -0.8), Fraction: 0.25}.Float(), Hit[float64]{Point: Pt(2.0, -2.0), Normal: Vec(0.6, -0.8), Fraction: 0.25})
 }
 
 func TestHit_String(t *testing.T) {

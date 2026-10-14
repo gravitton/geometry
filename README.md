@@ -436,11 +436,13 @@ geom.Pt(1.0, 0.0).Transform(m) // Point{1.41, 1.41}
 m.Angle()                      // π/4, read back from the matrix
 m.Scaling()                    // Vector{2, 2}
 
-geom.TRSMatrix(10.0, 20.0, math.Pi/2, 2.0, 3.0) // scale, then turn, then move: TranslationMatrix(10, 20).Rotate(π/2).Scale(2, 3)
+geom.TRSMatrix(10.0, 20.0, math.Pi/2, 2.0, 3.0)  // scale, then turn, then move: TranslationMatrix(10, 20).Rotate(π/2).Scale(2, 3)
+geom.RotationMatrixAround(10.0, 20.0, math.Pi/2) // turn about a pivot: TranslationMatrix(10, 20).Rotate(π/2).Translate(-10, -20)
+geom.ScaleMatrixAround(10.0, 20.0, 2.0, 3.0)     // scale about a pivot, which stays where it is
 ```
 
-`TranslationMatrix`, `RotationMatrix`, `ScaleMatrix`, `ShearMatrix` and `ReflectionMatrix` each have a composing method
-on both sides.
+`TranslationMatrix`, `RotationMatrix`, `RotationMatrixAround`, `ScaleMatrix`, `ShearMatrix` and `ReflectionMatrix` each
+have a composing method on both sides; `ScaleMatrixAround` has none.
 
 ### Numbers
 

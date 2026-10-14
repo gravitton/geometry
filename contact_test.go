@@ -119,42 +119,6 @@ func TestContact_IsZero(t *testing.T) {
 	})
 }
 
-func TestContact_Cast(t *testing.T) {
-	contact := Contact[float64]{Normal: Vec(0.0, -1.0), Depth: 0.5, Points: Pair[Point[float64]]{[2]Point[float64]{Pt(0.4, 1.0), Pt(3.6, 1.0)}, 2}}
-
-	t.Run("rounds the points and keeps the normal and the depth", func(t *testing.T) {
-		geomtest.AssertContact(t, Contact[float64].Cast[int32](contact), Contact[int32]{Normal: Vec(0.0, -1.0), Depth: 0.5, Points: Pair[Point[int32]]{[2]Point[int32]{Pt[int32](0, 1), Pt[int32](4, 1)}, 2}})
-	})
-	t.Run("two points rounding to the same one are held once", func(t *testing.T) {
-		near := Contact[float64]{Normal: Vec(0.0, -1.0), Depth: 0.5, Points: Pair[Point[float64]]{[2]Point[float64]{Pt(0.4, 1.0), Pt(-0.4, 1.0)}, 2}}
-
-		assert.Equal(t, Contact[float64].Cast[int32](near).Points, Pair[Point[int32]]{[2]Point[int32]{Pt[int32](0, 1)}, 1})
-	})
-}
-
-func TestContact_Int(t *testing.T) {
-	t.Run("rounds the points", func(t *testing.T) {
-		contact := Contact[float64]{Normal: Vec(0.0, -1.0), Depth: 0.5, Points: Pair[Point[float64]]{[2]Point[float64]{Pt(0.4, 1.0), Pt(3.6, 1.0)}, 2}}
-
-		geomtest.AssertContact(t, contact.Int(), Contact[int]{Normal: Vec(0.0, -1.0), Depth: 0.5, Points: Pair[Point[int]]{[2]Point[int]{Pt(0, 1), Pt(4, 1)}, 2}})
-	})
-	t.Run("two points rounding to the same one are held once", func(t *testing.T) {
-		contact := Contact[float64]{Points: Pair[Point[float64]]{[2]Point[float64]{Pt(0.4, 1.0), Pt(-0.4, 1.0)}, 2}}
-
-		assert.Equal(t, contact.Int().Points, Pair[Point[int]]{[2]Point[int]{Pt(0, 1)}, 1})
-	})
-	t.Run("one point and none", func(t *testing.T) {
-		assert.Equal(t, Contact[float64]{Points: Pair[Point[float64]]{[2]Point[float64]{Pt(0.4, 1.0)}, 1}}.Int().Points, Pair[Point[int]]{[2]Point[int]{Pt(0, 1)}, 1})
-		assert.True(t, Contact[float64]{}.Int().Points.IsEmpty())
-	})
-}
-
-func TestContact_Float(t *testing.T) {
-	contact := Contact[int]{Normal: Vec(0.0, -1.0), Depth: 1, Points: Pair[Point[int]]{[2]Point[int]{Pt(0, 1), Pt(4, 1)}, 2}}
-
-	geomtest.AssertContact(t, contact.Float(), Contact[float64]{Normal: Vec(0.0, -1.0), Depth: 1, Points: Pair[Point[float64]]{[2]Point[float64]{Pt(0.0, 1.0), Pt(4.0, 1.0)}, 2}})
-}
-
 func TestContact_String(t *testing.T) {
 	t.Run("two points", func(t *testing.T) {
 		contact := Contact[int]{Normal: Vec(0.0, -1.0), Depth: 1, Points: Pair[Point[int]]{[2]Point[int]{Pt(0, 1), Pt(4, 1)}, 2}}
