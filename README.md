@@ -20,6 +20,15 @@ Generic, immutable 2D geometry library for game development
 
 </div>
 
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/hero-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/hero-light.svg">
+  <img alt="A platformer level built from every kind: Box tiles, Polygon spikes, a Rectangle plank and an Ellipse portal; a Capsule hero resting on the ground by Collide, collecting a Circle coin, its Sector view seeing part of a Line tripwire by ClipSector, and its QuadraticBezier jump crossing the wire; a Segment rope swinging along an Arc; a floating lift; a crate landed on a shelf by Sweep; a Polyline trail from the hero to the portal, its footsteps by Every; a RegularPolygon drone flying in along a CubicBezier, with its own Sector view; and a laser reflecting off the solids by Raycast into the drone" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/hero-light.svg">
+</picture>
+</p>
+
+Every picture in this README is drawn from the package's own results: each point is what the code beside it returns.
 
 ## Features
 
@@ -34,8 +43,7 @@ Generic, immutable 2D geometry library for game development
 - **Reproducible** – the same bits on amd64 and arm64, trigonometry aside.
 - **Extras** – direction enums, `image` interop, JSON, parsing and `geomtest` assertions.
 
-The rules behind them are in the [package documentation][link-go-dev-reference]. Every figure below is drawn from
-the results of the calls it shows.
+The rules behind them are in the [package documentation][link-go-dev-reference].
 
 ## Installation
 
@@ -48,6 +56,22 @@ go get github.com/gravitton/geometry
 ```go
 import geom "github.com/gravitton/geometry"
 ```
+
+The level at the top, call by call:
+
+```go
+contact, ok := geom.Collide[float64](hero, ground)    // the hero rests on the floor: Normal, Depth, Points
+wire, _ := tripwire.ClipBox(scene)                    // the Line drawn within the scene
+seen := wire.ClipSector(sight)                        // the part of it in the hero's view
+crossed := tripwire.IntersectionQuadraticBezier(jump) // where the jump trips the wire
+hit, ok := geom.Sweep[float64](crate, fall, shelf)    // the crate stops on the shelf at hit.Fraction
+hit, ok = geom.Raycast[float64](laser, plank)         // each bounce of the laser, reflected off hit.Normal
+coin.IntersectsCapsule(hero)                          // a coin collected
+for step := range trail.Every(14) {                   // footsteps along the Polyline to the portal
+}
+```
+
+The same calls with real numbers:
 
 ```go
 ship := geom.Circ(geom.Pt(0.0, 0.0), 10.0)
@@ -64,8 +88,8 @@ part, ok := laser.ClipRegularPolygon(rock) // Seg((32.24,0.00);(67.76,0.00)), tr
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/shapes-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/shapes-light.svg">
-  <img alt="The nine shapes, each labelled with its shorthand constructor: Circ, Cap, Sect, Seg, Pol, Rect, RegPol, Bx and Ell" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/shapes-light.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/level-light.svg">
+  <img alt="The nine shapes: Circle, Capsule, Sector, Segment, Polygon, Rectangle, RegularPolygon, Box and Ellipse" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/shapes-light.svg">
 </picture>
 
 Every kind has a shorthand constructor in its own letters, and named constructors that read as phrases
@@ -86,7 +110,7 @@ geom.Ell(center, size, angle)              // the semi-axes, turned about the ce
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/paths-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/paths-light.svg">
-  <img alt="The paths, each labelled with its shorthand constructor: Ry, Ln, PolLn, Ac, QuadBez and CubBez" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/paths-light.svg">
+  <img alt="The paths: Ray, Line, Polyline, Arc, QuadraticBezier and CubicBezier" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/paths-light.svg">
 </picture>
 
 ```go
@@ -174,6 +198,7 @@ A `Box` is the axis-aligned extent, for clipping, viewports, layout and culling,
 view := geom.BoxFromSize(geom.Sz(800, 600)) // (0,0)-(800,600)
 view.Contains(geom.Pt(800, 600))            // true, closed like every shape
 view.Inset(geom.PadU(16))                   // (16,16)-(784,584)
+view.Shrink(32)                             // the same, each extent less by the amount
 
 hud := geom.Bx(geom.Pt(200, 40), geom.Pt(0, 0))        // (0,0)-(200,40), the corners in either order
 hud.AlignTo(geom.TopRight, view.Anchor(geom.TopRight)) // (600,0)-(800,40), pinned to the corner of the view
@@ -402,7 +427,7 @@ dir.Turn(2)                 // DirectionRight, two 45° steps
 dir.Vector(5.0)             // ⟨0,-5⟩
 geom.Vec(3, -7).Direction() // DirectionUpRight, nearest of the eight
 
-geom.DirectionFromAxes(up, down, left, right) // keyboard input to an 8-way direction
+geom.DirectionFromAxes(left, right, up, down) // keyboard input to an 8-way direction
 geom.CardinalOffsets[int]()                   // the lattice steps of Right, Down, Left and Up
 
 axis := geom.AxisVertical
