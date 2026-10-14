@@ -35,6 +35,38 @@ func TestRay_Angle(t *testing.T) {
 	})
 }
 
+func TestRay_Direction(t *testing.T) {
+	t.Run("the nearest direction of the vector", func(t *testing.T) {
+		assert.Equal(t, Ry(Pt(1, 1), Vec(5, 0)).Direction(), DirectionRight)
+		assert.Equal(t, Ry(Pt(1, 1), Vec(0, -5)).Direction(), DirectionUp)
+		assert.Equal(t, Ry(Pt(1.0, 1.0), Vec(4.0, 5.0)).Direction(), DirectionDownRight)
+	})
+	t.Run("a zero vector has no direction", func(t *testing.T) {
+		assert.Equal(t, Ry(Pt(3, 4), Vec(0, 0)).Direction(), DirectionNone)
+	})
+	t.Run("is the direction of the vector over the fixtures", func(t *testing.T) {
+		for _, r := range rayFixtures {
+			assert.Equal(t, r.Direction(), r.Vector.Direction(), r.String())
+		}
+	})
+}
+
+func TestRay_Normal(t *testing.T) {
+	t.Run("a quarter turn of the vector, with its length", func(t *testing.T) {
+		geomtest.AssertVector(t, Ry(Pt(1, 1), Vec(3, 0)).Normal(), Vec(0, 3))
+		geomtest.AssertVector(t, Ry(Pt(0.0, 0.0), Vec(0.0, 2.5)).Normal(), Vec(-2.5, 0.0))
+	})
+	t.Run("a zero vector has none", func(t *testing.T) {
+		geomtest.AssertVector(t, Ry(Pt(3, 4), Vec(0, 0)).Normal(), ZeroVector[int]())
+	})
+	t.Run("is perpendicular to the vector over the fixtures", func(t *testing.T) {
+		for _, r := range rayFixtures {
+			geomtest.AssertNumber(t, r.Normal().Dot(r.Vector), 0.0, r.String())
+			geomtest.AssertNumber(t, r.Normal().Length(), r.Vector.Length(), r.String())
+		}
+	})
+}
+
 func TestRay_Translate(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		geomtest.AssertRay(t, Ry(Pt(1, 2), Vec(3, 4)).Translate(Vec(-2, 5)), Ry(Pt(-1, 7), Vec(3, 4)))
@@ -129,6 +161,30 @@ func TestRay_Transform(t *testing.T) {
 			for _, t0 := range []float64{0, 0.5, 3} {
 				assert.True(t, transformed.Contains(r.PointAt(t0).Transform(matrix)), fmt.Sprintf("%s at %v: ", r, t0))
 			}
+		}
+	})
+}
+
+func TestRay_Lerp(t *testing.T) {
+	a := Ry(Pt(0.0, 0.0), Vec(4.0, 0.0))
+	b := Ry(Pt(10.0, 2.0), Vec(0.0, 8.0))
+
+	t.Run("the origin and the vector move together", func(t *testing.T) {
+		geomtest.AssertRay(t, a.Lerp(b, 0.5), Ry(Pt(5.0, 1.0), Vec(2.0, 4.0)))
+	})
+	t.Run("the ends are the two rays", func(t *testing.T) {
+		geomtest.AssertRay(t, a.Lerp(b, 0), a)
+		geomtest.AssertRay(t, a.Lerp(b, 1), b)
+	})
+	t.Run("extrapolates outside [0, 1]", func(t *testing.T) {
+		geomtest.AssertRay(t, a.Lerp(b, 2), Ry(Pt(20.0, 4.0), Vec(-4.0, 16.0)))
+	})
+	t.Run("int rounds", func(t *testing.T) {
+		geomtest.AssertRay(t, Ry(Pt(0, 0), Vec(4, 0)).Lerp(Ry(Pt(1, 1), Vec(1, 3)), 0.5), Ry(Pt(1, 1), Vec(3, 2)))
+	})
+	t.Run("towards a translation is a part of it over the fixtures", func(t *testing.T) {
+		for _, r := range rayFixtures {
+			geomtest.AssertRay(t, r.Lerp(r.Translate(Vec(4.0, -2.0)), 0.25), r.Translate(Vec(1.0, -0.5)), r.String())
 		}
 	})
 }
@@ -1825,6 +1881,7 @@ func TestRay_Immutable(t *testing.T) {
 	r.MoveTo(Pt(4, 3))
 	r.Scale(2)
 	r.Rotate(Pi / 2)
+	r.Lerp(Ry(Pt(0, 0), Vec(1, 1)), 0.5)
 
 	geomtest.AssertRay(t, r, Ry(Pt(1, 2), Vec(3, 5)))
 }

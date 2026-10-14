@@ -41,21 +41,6 @@ func TestEllipse_SemiMinor(t *testing.T) {
 	})
 }
 
-func TestEllipse_Eccentricity(t *testing.T) {
-	t.Run("a circle is not eccentric", func(t *testing.T) {
-		geomtest.AssertNumber(t, Ell(Pt(0.0, 0.0), SzU(4.0), 0).Eccentricity(), 0.0)
-	})
-	t.Run("float", func(t *testing.T) {
-		geomtest.AssertNumber(t, Ell(Pt(0.0, 0.0), Sz(5.0, 3.0), 0).Eccentricity(), 0.8)
-	})
-	t.Run("a degenerate ellipse is fully eccentric", func(t *testing.T) {
-		geomtest.AssertNumber(t, Ell(Pt(0.0, 0.0), Sz(5.0, 0.0), 0).Eccentricity(), 1.0)
-	})
-	t.Run("an ellipse of no extent is a point", func(t *testing.T) {
-		geomtest.AssertNumber(t, Ell(Pt(0.0, 0.0), Sz(0.0, 0.0), 0).Eccentricity(), 0.0)
-	})
-}
-
 func TestEllipse_Foci(t *testing.T) {
 	t.Run("on the horizontal major axis", func(t *testing.T) {
 		a, b := Ell(Pt(1.0, 2.0), Sz(5.0, 3.0), 0).Foci()
@@ -168,6 +153,21 @@ func TestEllipse_Inertia(t *testing.T) {
 		for _, e := range ellipseFixtures {
 			assert.EqualDelta(t, e.Inertia(), e.RegularPolygon(360, OrientationPointyTop).Inertia(), e.Inertia()*1e-3, e.String())
 		}
+	})
+}
+
+func TestEllipse_Eccentricity(t *testing.T) {
+	t.Run("a circle is not eccentric", func(t *testing.T) {
+		geomtest.AssertNumber(t, Ell(Pt(0.0, 0.0), SzU(4.0), 0).Eccentricity(), 0.0)
+	})
+	t.Run("float", func(t *testing.T) {
+		geomtest.AssertNumber(t, Ell(Pt(0.0, 0.0), Sz(5.0, 3.0), 0).Eccentricity(), 0.8)
+	})
+	t.Run("a degenerate ellipse is fully eccentric", func(t *testing.T) {
+		geomtest.AssertNumber(t, Ell(Pt(0.0, 0.0), Sz(5.0, 0.0), 0).Eccentricity(), 1.0)
+	})
+	t.Run("an ellipse of no extent is a point", func(t *testing.T) {
+		geomtest.AssertNumber(t, Ell(Pt(0.0, 0.0), Sz(0.0, 0.0), 0).Eccentricity(), 0.0)
 	})
 }
 

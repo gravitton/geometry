@@ -41,17 +41,6 @@ func (e Ellipse[T]) SemiMinor() T {
 	return min(e.Radius.Width, e.Radius.Height)
 }
 
-// Eccentricity returns how far the ellipse departs from a circle, in [0, 1]: zero for a circle or a
-// point, one where the shorter semi-axis is zero.
-func (e Ellipse[T]) Eccentricity() float64 {
-	a, b := float64(e.SemiMajor()), float64(e.SemiMinor())
-	if a == 0 {
-		return 0
-	}
-
-	return math.Sqrt(1 - b*b/(a*a))
-}
-
 // Foci returns the two focal points on the major axis, the one on its negative end before the turn
 // first. A circle has both at the center.
 func (e Ellipse[T]) Foci() (Point[T], Point[T]) {
@@ -109,6 +98,17 @@ func (e Ellipse[T]) Inertia() float64 {
 	w, h := e.Radius.Float().XY()
 
 	return Pi * w * h * (float64(w*w) + float64(h*h)) / 4
+}
+
+// Eccentricity returns how far the ellipse departs from a circle, in [0, 1]: zero for a circle or a
+// point, one where the shorter semi-axis is zero.
+func (e Ellipse[T]) Eccentricity() float64 {
+	a, b := float64(e.SemiMajor()), float64(e.SemiMinor())
+	if a == 0 {
+		return 0
+	}
+
+	return math.Sqrt(1 - b*b/(a*a))
 }
 
 // Bounds returns the axis-aligned bounding box.

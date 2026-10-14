@@ -142,6 +142,11 @@ func (b Box[T]) Inertia() float64 {
 	return w * h * (float64(w*w) + float64(h*h)) / 12
 }
 
+// AspectRatio returns the width divided by the height, and zero for a zero height.
+func (b Box[T]) AspectRatio() float64 {
+	return b.Size().AspectRatio()
+}
+
 // Bounds returns the box itself.
 func (b Box[T]) Bounds() Box[T] {
 	return b
@@ -191,6 +196,63 @@ func (b Box[T]) AlignTo(direction Direction, point Point[T]) Box[T] {
 // centered on the given box instead.
 func (b Box[T]) Clamp(box Box[T]) Box[T] {
 	return b.Translate(b.clampOffset(box))
+}
+
+// Scale returns the box with its size scaled by the factor about its Center, taken absolute.
+func (b Box[T]) Scale(factor float64) Box[T] {
+	return b.Resize(b.Size().Scale(factor))
+}
+
+// ScaleXY returns the box with its size scaled by the factors about its Center, taken absolute.
+func (b Box[T]) ScaleXY(factorX, factorY float64) Box[T] {
+	return b.Resize(b.Size().ScaleXY(factorX, factorY))
+}
+
+// Unscale returns the box with its size divided by the factor about its Center, taken absolute. It
+// panics for a zero factor.
+func (b Box[T]) Unscale(factor float64) Box[T] {
+	return b.Resize(b.Size().Unscale(factor))
+}
+
+// UnscaleXY returns the box with its size divided by the factors about its Center, taken absolute.
+// It panics for a zero factor.
+func (b Box[T]) UnscaleXY(factorX, factorY float64) Box[T] {
+	return b.Resize(b.Size().UnscaleXY(factorX, factorY))
+}
+
+// Resize returns the box with the size about its Center, taken absolute. For integer T the corners
+// are those of its Rectangle resized, so an odd extent keeps the center nearer Min.
+func (b Box[T]) Resize(size Size[T]) Box[T] {
+	size = size.Abs()
+	w, h := b.Size().XY()
+	a := Point[T]{b.Min.X + (w/2 - size.Width/2), b.Min.Y + (h/2 - size.Height/2)}
+
+	return Box[T]{a, Point[T]{b.Max.X + ((size.Width - size.Width/2) - (w - w/2)), b.Max.Y + ((size.Height - size.Height/2) - (h - h/2))}}
+}
+
+// Grow returns the box with each extent increased by the amount, clamped at zero, so each side
+// moves out by half of it. For integer T an odd amount moves one side a unit farther than the other; Outset moves a chosen side by a whole amount.
+func (b Box[T]) Grow(amount T) Box[T] {
+	return b.Resize(b.Size().Grow(amount).AtLeastZero())
+}
+
+// GrowXY returns the box with its extents increased by the amounts, clamped at zero. For integer T
+// an odd amount moves one side a unit farther than the other.
+func (b Box[T]) GrowXY(amountX, amountY T) Box[T] {
+	return b.Resize(b.Size().GrowXY(amountX, amountY).AtLeastZero())
+}
+
+// Shrink returns the box with each extent decreased by the amount, clamped at zero, so each side
+// moves in by half of it and the box collapses onto its Center. For integer T an odd amount moves
+// one side a unit farther than the other; Inset moves a chosen side by a whole amount.
+func (b Box[T]) Shrink(amount T) Box[T] {
+	return b.Resize(b.Size().Shrink(amount).AtLeastZero())
+}
+
+// ShrinkXY returns the box with its extents decreased by the amounts, clamped at zero. For integer T
+// an odd amount moves one side a unit farther than the other.
+func (b Box[T]) ShrinkXY(amountX, amountY T) Box[T] {
+	return b.Resize(b.Size().ShrinkXY(amountX, amountY).AtLeastZero())
 }
 
 // Inset returns the box with each edge moved in by its padding. An edge pushed past its opposite

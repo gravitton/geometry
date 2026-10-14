@@ -35,6 +35,43 @@ func TestLine_Angle(t *testing.T) {
 	})
 }
 
+func TestLine_Direction(t *testing.T) {
+	t.Run("the nearest direction of the vector", func(t *testing.T) {
+		assert.Equal(t, Ln(Pt(1, 1), Vec(5, 0)).Direction(), DirectionRight)
+		assert.Equal(t, Ln(Pt(1, 1), Vec(0, -5)).Direction(), DirectionUp)
+		assert.Equal(t, Ln(Pt(1.0, 1.0), Vec(4.0, 5.0)).Direction(), DirectionDownRight)
+	})
+	t.Run("a zero vector has no direction", func(t *testing.T) {
+		assert.Equal(t, Ln(Pt(3, 4), Vec(0, 0)).Direction(), DirectionNone)
+	})
+	t.Run("is the direction of the vector over the fixtures", func(t *testing.T) {
+		for _, l := range lineFixtures {
+			assert.Equal(t, l.Direction(), l.Vector.Direction(), l.String())
+		}
+	})
+}
+
+func TestLine_Normal(t *testing.T) {
+	t.Run("a quarter turn of the vector, with its length", func(t *testing.T) {
+		geomtest.AssertVector(t, Ln(Pt(1, 1), Vec(3, 0)).Normal(), Vec(0, 3))
+		geomtest.AssertVector(t, Ln(Pt(0.0, 0.0), Vec(0.0, 2.5)).Normal(), Vec(-2.5, 0.0))
+	})
+	t.Run("a zero vector has none", func(t *testing.T) {
+		geomtest.AssertVector(t, Ln(Pt(3, 4), Vec(0, 0)).Normal(), ZeroVector[int]())
+	})
+	t.Run("is perpendicular to the vector over the fixtures", func(t *testing.T) {
+		for _, l := range lineFixtures {
+			geomtest.AssertNumber(t, l.Normal().Dot(l.Vector), 0.0, l.String())
+			geomtest.AssertNumber(t, l.Normal().Length(), l.Vector.Length(), l.String())
+		}
+	})
+	t.Run("points to the side Side gives 1 for", func(t *testing.T) {
+		for _, l := range lineFixtures[1:] {
+			assert.Equal(t, l.Side(l.Origin.Add(l.Normal())), 1, l.String())
+		}
+	})
+}
+
 func TestLine_Translate(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		geomtest.AssertLine(t, Ln(Pt(1, 2), Vec(3, 4)).Translate(Vec(-2, 5)), Ln(Pt(-1, 7), Vec(3, 4)))
@@ -128,6 +165,49 @@ func TestLine_Transform(t *testing.T) {
 
 			for _, t0 := range []float64{-3, 0, 0.5, 3} {
 				assert.True(t, transformed.Contains(l.PointAt(t0).Transform(matrix)), fmt.Sprintf("%s at %v: ", l, t0))
+			}
+		}
+	})
+}
+
+func TestLine_Lerp(t *testing.T) {
+	a := Ln(Pt(0.0, 0.0), Vec(4.0, 0.0))
+	b := Ln(Pt(10.0, 2.0), Vec(0.0, 8.0))
+
+	t.Run("the origin and the vector move together", func(t *testing.T) {
+		geomtest.AssertLine(t, a.Lerp(b, 0.5), Ln(Pt(5.0, 1.0), Vec(2.0, 4.0)))
+	})
+	t.Run("the ends are the two lines", func(t *testing.T) {
+		geomtest.AssertLine(t, a.Lerp(b, 0), a)
+		geomtest.AssertLine(t, a.Lerp(b, 1), b)
+	})
+	t.Run("extrapolates outside [0, 1]", func(t *testing.T) {
+		geomtest.AssertLine(t, a.Lerp(b, 2), Ln(Pt(20.0, 4.0), Vec(-4.0, 16.0)))
+	})
+	t.Run("int rounds", func(t *testing.T) {
+		geomtest.AssertLine(t, Ln(Pt(0, 0), Vec(4, 0)).Lerp(Ln(Pt(1, 1), Vec(1, 3)), 0.5), Ln(Pt(1, 1), Vec(3, 2)))
+	})
+	t.Run("towards a translation is a part of it over the fixtures", func(t *testing.T) {
+		for _, l := range lineFixtures {
+			geomtest.AssertLine(t, l.Lerp(l.Translate(Vec(4.0, -2.0)), 0.25), l.Translate(Vec(1.0, -0.5)), l.String())
+		}
+	})
+}
+
+func TestLine_Reverse(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		geomtest.AssertLine(t, Ln(Pt(1, 2), Vec(3, -4)).Reverse(), Ln(Pt(1, 2), Vec(-3, 4)))
+	})
+	t.Run("float", func(t *testing.T) {
+		geomtest.AssertLine(t, Ln(Pt(0.6, -0.25), Vec(1.2, 3.4)).Reverse(), Ln(Pt(0.6, -0.25), Vec(-1.2, -3.4)))
+	})
+	t.Run("holds the same points and swaps the sides over the fixtures", func(t *testing.T) {
+		for _, l := range lineFixtures {
+			for _, p := range pointFixtures {
+				message := fmt.Sprintf("%s → %s: ", l, p)
+
+				assert.Equal(t, l.Reverse().Contains(p), l.Contains(p), message)
+				assert.Equal(t, l.Reverse().Side(p), -l.Side(p), message)
 			}
 		}
 	})
@@ -1330,6 +1410,8 @@ func TestLine_Immutable(t *testing.T) {
 	l.MoveTo(Pt(4, 3))
 	l.Scale(2)
 	l.Rotate(Pi / 2)
+	l.Lerp(Ln(Pt(0, 0), Vec(1, 1)), 0.5)
+	l.Reverse()
 
 	geomtest.AssertLine(t, l, Ln(Pt(1, 2), Vec(3, 5)))
 }

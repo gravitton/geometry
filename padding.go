@@ -1,28 +1,27 @@
 package geom
 
-// Padding is the space kept inside the four edges of a box, in CSS order: Top, Right, Bottom, Left.
-// A negative amount moves an edge out.
+// Padding is the space kept inside the four edges of a box, X first: Left, Right, Top, Bottom. A
+// negative amount moves an edge out.
 type Padding[T Number] struct {
-	Top    T `json:"t"`
-	Right  T `json:"r"`
-	Bottom T `json:"b"`
 	Left   T `json:"l"`
+	Right  T `json:"r"`
+	Top    T `json:"t"`
+	Bottom T `json:"b"`
 }
 
-// Pad is shorthand for Padding{top, right, bottom, left}.
-func Pad[T Number](top, right, bottom, left T) Padding[T] {
-	return Padding[T]{top, right, bottom, left}
+// Pad is shorthand for Padding{left, right, top, bottom}.
+func Pad[T Number](left, right, top, bottom T) Padding[T] {
+	return Padding[T]{left, right, top, bottom}
+}
+
+// PadXY is shorthand for Padding{leftRight, leftRight, topBottom, topBottom}.
+func PadXY[T Number](leftRight, topBottom T) Padding[T] {
+	return Padding[T]{leftRight, leftRight, topBottom, topBottom}
 }
 
 // PadU is shorthand for Padding{padding, padding, padding, padding}.
 func PadU[T Number](padding T) Padding[T] {
 	return Padding[T]{padding, padding, padding, padding}
-}
-
-// PadXY is shorthand for Padding{topBottom, leftRight, topBottom, leftRight}. It takes X first, as
-// every XY does, not in the order of the two CSS values.
-func PadXY[T Number](leftRight, topBottom T) Padding[T] {
-	return Padding[T]{topBottom, leftRight, topBottom, leftRight}
 }
 
 // XY returns the Width and the Height.
@@ -42,38 +41,38 @@ func (p Padding[T]) Height() T {
 
 // Add returns the sum of the paddings, edge by edge.
 func (p Padding[T]) Add(padding Padding[T]) Padding[T] {
-	return Padding[T]{p.Top + padding.Top, p.Right + padding.Right, p.Bottom + padding.Bottom, p.Left + padding.Left}
+	return Padding[T]{p.Left + padding.Left, p.Right + padding.Right, p.Top + padding.Top, p.Bottom + padding.Bottom}
 }
 
 // Subtract returns the difference of the paddings, edge by edge.
 func (p Padding[T]) Subtract(padding Padding[T]) Padding[T] {
-	return Padding[T]{p.Top - padding.Top, p.Right - padding.Right, p.Bottom - padding.Bottom, p.Left - padding.Left}
+	return Padding[T]{p.Left - padding.Left, p.Right - padding.Right, p.Top - padding.Top, p.Bottom - padding.Bottom}
 }
 
 // Negate returns the padding with every amount negated.
 func (p Padding[T]) Negate() Padding[T] {
-	return Padding[T]{-p.Top, -p.Right, -p.Bottom, -p.Left}
+	return Padding[T]{-p.Left, -p.Right, -p.Top, -p.Bottom}
 }
 
 // Scale returns the padding with every amount multiplied by the factor.
 func (p Padding[T]) Scale(factor float64) Padding[T] {
-	return Padding[T]{Multiply(p.Top, factor), Multiply(p.Right, factor), Multiply(p.Bottom, factor), Multiply(p.Left, factor)}
+	return Padding[T]{Multiply(p.Left, factor), Multiply(p.Right, factor), Multiply(p.Top, factor), Multiply(p.Bottom, factor)}
 }
 
 // Unscale returns the padding with every amount divided by the factor. It panics for a zero factor.
 func (p Padding[T]) Unscale(factor float64) Padding[T] {
-	return Padding[T]{Divide(p.Top, factor), Divide(p.Right, factor), Divide(p.Bottom, factor), Divide(p.Left, factor)}
+	return Padding[T]{Divide(p.Left, factor), Divide(p.Right, factor), Divide(p.Top, factor), Divide(p.Bottom, factor)}
 }
 
 // Lerp returns the padding interpolated toward the given one, edge by edge, extrapolated outside
 // [0, 1].
 func (p Padding[T]) Lerp(padding Padding[T], t float64) Padding[T] {
-	return Padding[T]{Lerp(p.Top, padding.Top, t), Lerp(p.Right, padding.Right, t), Lerp(p.Bottom, padding.Bottom, t), Lerp(p.Left, padding.Left, t)}
+	return Padding[T]{Lerp(p.Left, padding.Left, t), Lerp(p.Right, padding.Right, t), Lerp(p.Top, padding.Top, t), Lerp(p.Bottom, padding.Bottom, t)}
 }
 
 // Equal reports whether the paddings have equal amounts.
 func (p Padding[T]) Equal(padding Padding[T]) bool {
-	return Equal(p.Top, padding.Top) && Equal(p.Right, padding.Right) && Equal(p.Bottom, padding.Bottom) && Equal(p.Left, padding.Left)
+	return Equal(p.Left, padding.Left) && Equal(p.Right, padding.Right) && Equal(p.Top, padding.Top) && Equal(p.Bottom, padding.Bottom)
 }
 
 // IsZero reports whether every amount is zero.
@@ -88,30 +87,30 @@ func (p Padding[T]) Size() Size[T] {
 
 // Cast converts the padding to a Padding of another number type, rounding as Cast does.
 func (p Padding[T]) Cast[R Number]() Padding[R] {
-	return Padding[R]{Cast[R](float64(p.Top)), Cast[R](float64(p.Right)), Cast[R](float64(p.Bottom)), Cast[R](float64(p.Left))}
+	return Padding[R]{Cast[R](float64(p.Left)), Cast[R](float64(p.Right)), Cast[R](float64(p.Top)), Cast[R](float64(p.Bottom))}
 }
 
 // Int converts the padding to a Padding[int].
 func (p Padding[T]) Int() Padding[int] {
-	return Padding[int]{Int(p.Top), Int(p.Right), Int(p.Bottom), Int(p.Left)}
+	return Padding[int]{Int(p.Left), Int(p.Right), Int(p.Top), Int(p.Bottom)}
 }
 
 // Float converts the padding to a Padding[float64].
 func (p Padding[T]) Float() Padding[float64] {
-	return Padding[float64]{float64(p.Top), float64(p.Right), float64(p.Bottom), float64(p.Left)}
+	return Padding[float64]{float64(p.Left), float64(p.Right), float64(p.Top), float64(p.Bottom)}
 }
 
-// String returns the padding in the form of its constructor: Pad(t;r;b;l).
+// String returns the padding in the form of its constructor: Pad(l;r;t;b).
 func (p Padding[T]) String() string {
 	buf := make([]byte, 0, stringSize)
 	buf = append(buf, "Pad("...)
-	buf = appendString(buf, p.Top)
+	buf = appendString(buf, p.Left)
 	buf = append(buf, ';')
 	buf = appendString(buf, p.Right)
 	buf = append(buf, ';')
-	buf = appendString(buf, p.Bottom)
+	buf = appendString(buf, p.Top)
 	buf = append(buf, ';')
-	buf = appendString(buf, p.Left)
+	buf = appendString(buf, p.Bottom)
 	buf = append(buf, ')')
 
 	return string(buf)

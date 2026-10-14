@@ -115,7 +115,7 @@ func DirectionFromAngle(angle float64) Direction {
 
 // DirectionFromAxes returns the direction of the pressed axis inputs, opposite inputs canceling
 // each other.
-func DirectionFromAxes(up, down, left, right bool) Direction {
+func DirectionFromAxes(left, right, up, down bool) Direction {
 	if left && right {
 		left, right = false, false
 	}

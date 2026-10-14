@@ -745,29 +745,29 @@ func TestRectangle_Inset(t *testing.T) {
 		geomtest.AssertRectangle(t, Rect(Pt(0, 0), Sz(10, 10), 0).Inset(PadU(1)), Rect(Pt(0, 0), Sz(8, 8), 0))
 	})
 	t.Run("asymmetric padding shifts the center", func(t *testing.T) {
-		geomtest.AssertRectangle(t, Rect(Pt(0, 0), Sz(10, 10), 0).Inset(Pad(3, 1, 1, 5)), Rect(Pt(2, 1), Sz(4, 6), 0))
+		geomtest.AssertRectangle(t, Rect(Pt(0, 0), Sz(10, 10), 0).Inset(Pad(5, 1, 3, 1)), Rect(Pt(2, 1), Sz(4, 6), 0))
 	})
 	t.Run("odd integer padding stays inside the rectangle", func(t *testing.T) {
 		r := Rect(Pt(0, 0), Sz(10, 10), 0)
 
-		geomtest.AssertPoint(t, r.Inset(Pad(0, 0, 0, 1)).Min(), r.Min().AddXY(1, 0))
-		geomtest.AssertPoint(t, r.Inset(Pad(0, 0, 0, 1)).Max(), r.Max())
-		geomtest.AssertPoint(t, r.Inset(Pad(0, 3, 1, 0)).Min(), r.Min())
-		geomtest.AssertPoint(t, r.Inset(Pad(0, 3, 1, 0)).Max(), r.Max().AddXY(-3, -1))
+		geomtest.AssertPoint(t, r.Inset(Pad(1, 0, 0, 0)).Min(), r.Min().AddXY(1, 0))
+		geomtest.AssertPoint(t, r.Inset(Pad(1, 0, 0, 0)).Max(), r.Max())
+		geomtest.AssertPoint(t, r.Inset(Pad(0, 3, 0, 1)).Min(), r.Min())
+		geomtest.AssertPoint(t, r.Inset(Pad(0, 3, 0, 1)).Max(), r.Max().AddXY(-3, -1))
 	})
 	t.Run("padding beyond the size collapses inside the rectangle", func(t *testing.T) {
 		r := Rect(Pt(0, 0), Sz(10, 10), 0)
 
-		geomtest.AssertRectangle(t, r.Inset(Pad(0, 0, 0, 20)), Rect(Pt(5, 0), Sz(0, 10), 0))
+		geomtest.AssertRectangle(t, r.Inset(Pad(20, 0, 0, 0)), Rect(Pt(5, 0), Sz(0, 10), 0))
 		geomtest.AssertRectangle(t, r.Inset(Pad(0, 20, 0, 0)), Rect(Pt(-5, 0), Sz(0, 10), 0))
-		geomtest.AssertRectangle(t, r.Inset(Pad(20, 0, 20, 0)), Rect(Pt(0, 5), Sz(10, 0), 0))
+		geomtest.AssertRectangle(t, r.Inset(Pad(0, 0, 20, 20)), Rect(Pt(0, 5), Sz(10, 0), 0))
 		geomtest.AssertRectangle(t, r.Inset(PadU(20)), Rect(Pt(5, 5), Sz(0, 0), 0))
-		geomtest.AssertRectangle(t, Rect(Pt(0.0, 0.0), Sz(10.0, 10.0), 0).Inset(Pad(0.0, 0.0, 0.0, 12.5)), Rect(Pt(5.0, 0.0), Sz(0.0, 10.0), 0))
+		geomtest.AssertRectangle(t, Rect(Pt(0.0, 0.0), Sz(10.0, 10.0), 0).Inset(Pad(12.5, 0.0, 0.0, 0.0)), Rect(Pt(5.0, 0.0), Sz(0.0, 10.0), 0))
 	})
 	t.Run("a collapsed rectangle is contained by the original", func(t *testing.T) {
 		r := Rect(Pt(0, 0), Sz(10, 10), 0)
 
-		for _, padding := range []Padding[int]{Pad(0, 0, 0, 20), Pad(0, 20, 0, 0), Pad(20, 0, 0, 0), Pad(0, 0, 20, 0), PadU(20), Pad(7, 7, 7, 7)} {
+		for _, padding := range []Padding[int]{Pad(20, 0, 0, 0), Pad(0, 20, 0, 0), Pad(0, 0, 20, 0), Pad(0, 0, 0, 20), PadU(20), Pad(7, 7, 7, 7)} {
 			inset := r.Inset(padding)
 
 			assert.True(t, r.Contains(inset.Min()), fmt.Sprintf("%s min: ", padding))
@@ -775,11 +775,11 @@ func TestRectangle_Inset(t *testing.T) {
 		}
 	})
 	t.Run("negative padding grows the edge", func(t *testing.T) {
-		geomtest.AssertRectangle(t, Rect(Pt(0.0, 0.0), Sz(10.0, 10.0), 0).Inset(Pad(1.5, -2.0, 0.0, 1.0)), Rect(Pt(1.5, 0.75), Sz(11.0, 8.5), 0))
+		geomtest.AssertRectangle(t, Rect(Pt(0.0, 0.0), Sz(10.0, 10.0), 0).Inset(Pad(1.0, -2.0, 1.5, 0.0)), Rect(Pt(1.5, 0.75), Sz(11.0, 8.5), 0))
 	})
 	t.Run("each edge moves inward by its own padding", func(t *testing.T) {
 		r := Rect(Pt(0.0, 0.0), Sz(10.0, 10.0), 0)
-		padding := Pad(3.0, 1.0, 1.0, 5.0)
+		padding := Pad(5.0, 1.0, 3.0, 1.0)
 		inset := r.Inset(padding)
 
 		geomtest.AssertPoint(t, inset.Min(), r.Min().AddXY(padding.Left, padding.Top))
@@ -787,7 +787,7 @@ func TestRectangle_Inset(t *testing.T) {
 	})
 	t.Run("rotated moves the edges in the frame before the turn", func(t *testing.T) {
 		turned := Rect(Pt(0.0, 0.0), Sz(10.0, 10.0), 0).Rotate(Pi / 2)
-		inset := turned.Inset(Pad(0.0, 0.0, 0.0, 4.0))
+		inset := turned.Inset(Pad(4.0, 0.0, 0.0, 0.0))
 
 		geomtest.AssertRectangle(t, inset, Rect(Pt(0.0, 2.0), Sz(6.0, 10.0), 0).Rotate(Pi/2))
 		geomtest.AssertPoint(t, inset.Anchor(DirectionLeft), Pt(0.0, -1.0))
@@ -800,11 +800,11 @@ func TestRectangle_Outset(t *testing.T) {
 		geomtest.AssertRectangle(t, Rect(Pt(0, 0), Sz(10, 10), 0).Outset(PadU(1)), Rect(Pt(0, 0), Sz(12, 12), 0))
 	})
 	t.Run("asymmetric padding shifts the center", func(t *testing.T) {
-		geomtest.AssertRectangle(t, Rect(Pt(0, 0), Sz(10, 10), 0).Outset(Pad(3, 1, 1, 5)), Rect(Pt(-2, -1), Sz(16, 14), 0))
+		geomtest.AssertRectangle(t, Rect(Pt(0, 0), Sz(10, 10), 0).Outset(Pad(5, 1, 3, 1)), Rect(Pt(-2, -1), Sz(16, 14), 0))
 	})
 	t.Run("undoes an inset", func(t *testing.T) {
 		r := RectangleFromMinMax(Pt(0.0, 0.0), Pt(10.0, 10.0))
-		padding := Pad(1.0, 2.0, 3.0, 4.0)
+		padding := Pad(4.0, 2.0, 1.0, 3.0)
 
 		geomtest.AssertRectangle(t, r.Inset(padding).Outset(padding), r)
 		geomtest.AssertRectangle(t, r.Outset(padding).Inset(padding), r)

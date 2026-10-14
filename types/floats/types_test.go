@@ -12,7 +12,7 @@ func TestConstructors(t *testing.T) {
 	assert.Equal(t, Pt(1, -2), geom.Pt(1.0, -2.0))
 	assert.Equal(t, Vec(1, -2), geom.Vec(1.0, -2.0))
 	assert.Equal(t, Sz(1, 2), geom.Sz(1.0, 2.0))
-	assert.Equal(t, Pad(1, 2, 3, 4), geom.Pad(1.0, 2.0, 3.0, 4.0))
+	assert.Equal(t, Pad(4, 2, 1, 3), geom.Pad(4.0, 2.0, 1.0, 3.0))
 	assert.Equal(t, Mat(1, 2, 3, 4, 5, 6), geom.Mat(1.0, 2.0, 3.0, 4.0, 5.0, 6.0))
 	assert.Equal(t, IdentityMatrix(), geom.IdentityMatrix[float64]())
 

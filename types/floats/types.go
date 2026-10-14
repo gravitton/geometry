@@ -87,9 +87,9 @@ func Sz[T geom.Number](width, height T) Size {
 	return geom.Sz(width, height).Float()
 }
 
-// Pad is shorthand for geom.Pad(top, right, bottom, left).Float().
-func Pad[T geom.Number](top, right, bottom, left T) Padding {
-	return geom.Pad(top, right, bottom, left).Float()
+// Pad is shorthand for geom.Pad(left, right, top, bottom).Float().
+func Pad[T geom.Number](left, right, top, bottom T) Padding {
+	return geom.Pad(left, right, top, bottom).Float()
 }
 
 // Mat is shorthand for geom.Mat(a, b, c, d, e, f).Float().

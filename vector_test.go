@@ -540,6 +540,79 @@ func TestVector_Normal(t *testing.T) {
 	})
 }
 
+func TestVector_Dot(t *testing.T) {
+	t.Run("general vectors", func(t *testing.T) {
+		geomtest.AssertNumber(t, Vec(10, 16).Dot(Vec(3, -3)), -18)
+		geomtest.AssertNumber(t, Vec(0.6, -0.25).Dot(Vec(100.1, -0.1)), 60.085)
+	})
+	t.Run("perpendicular vectors are zero", func(t *testing.T) {
+		geomtest.AssertNumber(t, Vec(1, 0).Dot(Vec(0, 1)), 0)
+	})
+	t.Run("rounds each product, the same bits on every architecture", func(t *testing.T) {
+		assert.Equal(t, Vec(tenth, 0.3).Dot(Vec(tenth, 0.3)), 0.10000000000000001)
+	})
+	t.Run("a float vector and its normal are exactly zero", func(t *testing.T) {
+		for _, v := range []Vector[float64]{Vec(0.1, 0.3), Vec(1.1, 3.3), Vec(2.5, 1e5+0.1)} {
+			assert.Equal(t, v.Dot(v.Normal()), 0.0, v.String())
+		}
+		for _, v := range []Vector[float32]{Vec[float32](0.1, 0.3), Vec[float32](1.1, 3.3)} {
+			assert.Equal(t, v.Dot(v.Normal()), float32(0), v.String())
+		}
+	})
+	t.Run("narrow integers do not overflow mid-computation", func(t *testing.T) {
+		geomtest.AssertNumber(t, Vec[int8](100, 50).Dot(Vec[int8](2, -2)), 100)
+	})
+}
+
+func TestVector_Cross(t *testing.T) {
+	t.Run("general vectors", func(t *testing.T) {
+		geomtest.AssertNumber(t, Vec(10, 16).Cross(Vec(3, -3)), -78)
+		geomtest.AssertNumber(t, Vec(0.6, -0.25).Cross(Vec(100.1, -0.1)), 24.965)
+	})
+	t.Run("parallel vectors are zero", func(t *testing.T) {
+		geomtest.AssertNumber(t, Vec(2, 4).Cross(Vec(1, 2)), 0)
+	})
+	t.Run("rounds each product, the same bits on every architecture", func(t *testing.T) {
+		assert.Equal(t, Vec(tenth, 0.3).Cross(Vec(-0.3, tenth)), 0.10000000000000001)
+	})
+	t.Run("a float vector with itself is exactly zero", func(t *testing.T) {
+		for _, v := range []Vector[float64]{Vec(0.1, 0.3), Vec(1.1, 3.3), Vec(2.5, 1e5+0.1)} {
+			assert.Equal(t, v.Cross(v), 0.0, v.String())
+		}
+		for _, v := range []Vector[float32]{Vec[float32](0.1, 0.3), Vec[float32](1.1, 3.3)} {
+			assert.Equal(t, v.Cross(v), float32(0), v.String())
+		}
+	})
+}
+
+func TestVector_AngleBetween(t *testing.T) {
+	t.Run("right angle", func(t *testing.T) {
+		geomtest.AssertNumber(t, Vec(1, 0).AngleBetween(Vec(0, 1)), Pi/2)
+	})
+	t.Run("unsigned, so the order does not matter", func(t *testing.T) {
+		geomtest.AssertNumber(t, Vec(1.0, 0.0).AngleBetween(Vec(1.0, 1.0)), Pi/4)
+		geomtest.AssertNumber(t, Vec(1.0, 1.0).AngleBetween(Vec(1.0, 0.0)), Pi/4)
+		geomtest.AssertNumber(t, Vec(1.0, 0.0).AngleBetween(Vec(1.0, -1.0)), Pi/4)
+	})
+	t.Run("parallel and opposite", func(t *testing.T) {
+		geomtest.AssertNumber(t, Vec(2, 3).AngleBetween(Vec(4, 6)), 0.0)
+		geomtest.AssertNumber(t, Vec(2, 3).AngleBetween(Vec(-2, -3)), Pi)
+	})
+	t.Run("the zero vector is at angle zero", func(t *testing.T) {
+		geomtest.AssertNumber(t, Vec(0, 0).AngleBetween(Vec(1, 1)), 0.0)
+	})
+	t.Run("within a half turn", func(t *testing.T) {
+		for _, a := range vectorFixtures {
+			for _, b := range vectorFixtures {
+				angle := a.AngleBetween(b)
+
+				assert.True(t, angle >= 0 && angle <= Pi, fmt.Sprintf("%s to %s: %v", a, b, angle))
+				geomtest.AssertNumber(t, angle, b.AngleBetween(a), fmt.Sprintf("%s to %s: ", a, b))
+			}
+		}
+	})
+}
+
 func TestVector_Project(t *testing.T) {
 	t.Run("onto an axis keeps that component", func(t *testing.T) {
 		geomtest.AssertVector(t, Vec(3, 4).Project(Vec(10, 0)), Vec(3, 0))
@@ -613,79 +686,6 @@ func TestVector_Reflect(t *testing.T) {
 			for _, n := range vectorFixtures {
 				geomtest.AssertNumber(t, a.Reflect(n).Length(), a.Length(), fmt.Sprintf("%s off %s: ", a, n))
 				geomtest.AssertVector(t, a.Reflect(n).Reflect(n), a, fmt.Sprintf("%s off %s: ", a, n))
-			}
-		}
-	})
-}
-
-func TestVector_Dot(t *testing.T) {
-	t.Run("general vectors", func(t *testing.T) {
-		geomtest.AssertNumber(t, Vec(10, 16).Dot(Vec(3, -3)), -18)
-		geomtest.AssertNumber(t, Vec(0.6, -0.25).Dot(Vec(100.1, -0.1)), 60.085)
-	})
-	t.Run("perpendicular vectors are zero", func(t *testing.T) {
-		geomtest.AssertNumber(t, Vec(1, 0).Dot(Vec(0, 1)), 0)
-	})
-	t.Run("rounds each product, the same bits on every architecture", func(t *testing.T) {
-		assert.Equal(t, Vec(tenth, 0.3).Dot(Vec(tenth, 0.3)), 0.10000000000000001)
-	})
-	t.Run("a float vector and its normal are exactly zero", func(t *testing.T) {
-		for _, v := range []Vector[float64]{Vec(0.1, 0.3), Vec(1.1, 3.3), Vec(2.5, 1e5+0.1)} {
-			assert.Equal(t, v.Dot(v.Normal()), 0.0, v.String())
-		}
-		for _, v := range []Vector[float32]{Vec[float32](0.1, 0.3), Vec[float32](1.1, 3.3)} {
-			assert.Equal(t, v.Dot(v.Normal()), float32(0), v.String())
-		}
-	})
-	t.Run("narrow integers do not overflow mid-computation", func(t *testing.T) {
-		geomtest.AssertNumber(t, Vec[int8](100, 50).Dot(Vec[int8](2, -2)), 100)
-	})
-}
-
-func TestVector_Cross(t *testing.T) {
-	t.Run("general vectors", func(t *testing.T) {
-		geomtest.AssertNumber(t, Vec(10, 16).Cross(Vec(3, -3)), -78)
-		geomtest.AssertNumber(t, Vec(0.6, -0.25).Cross(Vec(100.1, -0.1)), 24.965)
-	})
-	t.Run("parallel vectors are zero", func(t *testing.T) {
-		geomtest.AssertNumber(t, Vec(2, 4).Cross(Vec(1, 2)), 0)
-	})
-	t.Run("rounds each product, the same bits on every architecture", func(t *testing.T) {
-		assert.Equal(t, Vec(tenth, 0.3).Cross(Vec(-0.3, tenth)), 0.10000000000000001)
-	})
-	t.Run("a float vector with itself is exactly zero", func(t *testing.T) {
-		for _, v := range []Vector[float64]{Vec(0.1, 0.3), Vec(1.1, 3.3), Vec(2.5, 1e5+0.1)} {
-			assert.Equal(t, v.Cross(v), 0.0, v.String())
-		}
-		for _, v := range []Vector[float32]{Vec[float32](0.1, 0.3), Vec[float32](1.1, 3.3)} {
-			assert.Equal(t, v.Cross(v), float32(0), v.String())
-		}
-	})
-}
-
-func TestVector_AngleBetween(t *testing.T) {
-	t.Run("right angle", func(t *testing.T) {
-		geomtest.AssertNumber(t, Vec(1, 0).AngleBetween(Vec(0, 1)), Pi/2)
-	})
-	t.Run("unsigned, so the order does not matter", func(t *testing.T) {
-		geomtest.AssertNumber(t, Vec(1.0, 0.0).AngleBetween(Vec(1.0, 1.0)), Pi/4)
-		geomtest.AssertNumber(t, Vec(1.0, 1.0).AngleBetween(Vec(1.0, 0.0)), Pi/4)
-		geomtest.AssertNumber(t, Vec(1.0, 0.0).AngleBetween(Vec(1.0, -1.0)), Pi/4)
-	})
-	t.Run("parallel and opposite", func(t *testing.T) {
-		geomtest.AssertNumber(t, Vec(2, 3).AngleBetween(Vec(4, 6)), 0.0)
-		geomtest.AssertNumber(t, Vec(2, 3).AngleBetween(Vec(-2, -3)), Pi)
-	})
-	t.Run("the zero vector is at angle zero", func(t *testing.T) {
-		geomtest.AssertNumber(t, Vec(0, 0).AngleBetween(Vec(1, 1)), 0.0)
-	})
-	t.Run("within a half turn", func(t *testing.T) {
-		for _, a := range vectorFixtures {
-			for _, b := range vectorFixtures {
-				angle := a.AngleBetween(b)
-
-				assert.True(t, angle >= 0 && angle <= Pi, fmt.Sprintf("%s to %s: %v", a, b, angle))
-				geomtest.AssertNumber(t, angle, b.AngleBetween(a), fmt.Sprintf("%s to %s: ", a, b))
 			}
 		}
 	})

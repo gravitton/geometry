@@ -266,6 +266,28 @@ func (v Vector[T]) Normal() Vector[T] {
 	return Vector[T]{-v.Y, v.X}
 }
 
+// Dot returns the dot product of the vectors, exactly zero for perpendicular ones.
+func (v Vector[T]) Dot(vector Vector[T]) T {
+	a, b := v.Float(), vector.Float()
+
+	return Cast[T](float64(a.X*b.X) + float64(a.Y*b.Y))
+}
+
+// Cross returns the cross product of the vectors, exactly zero for parallel ones.
+func (v Vector[T]) Cross(vector Vector[T]) T {
+	a, b := v.Float(), vector.Float()
+
+	return Cast[T](float64(a.X*b.Y) - float64(a.Y*b.X))
+}
+
+// AngleBetween returns the unsigned angle between the vectors in radians, in [0, π], and zero where
+// either is the zero vector.
+func (v Vector[T]) AngleBetween(vector Vector[T]) float64 {
+	a, b := v.Float(), vector.Float()
+
+	return math.Atan2(math.Abs(a.Cross(b)), a.Dot(b))
+}
+
 // Project returns the component of the vector along the given one, and the zero vector for a zero
 // one.
 func (v Vector[T]) Project(vector Vector[T]) Vector[T] {
@@ -296,28 +318,6 @@ func (v Vector[T]) Reflect(normal Vector[T]) Vector[T] {
 	}
 
 	return v.Subtract(normal.Multiply(2 * a.Dot(b) / length))
-}
-
-// Dot returns the dot product of the vectors, exactly zero for perpendicular ones.
-func (v Vector[T]) Dot(vector Vector[T]) T {
-	a, b := v.Float(), vector.Float()
-
-	return Cast[T](float64(a.X*b.X) + float64(a.Y*b.Y))
-}
-
-// Cross returns the cross product of the vectors, exactly zero for parallel ones.
-func (v Vector[T]) Cross(vector Vector[T]) T {
-	a, b := v.Float(), vector.Float()
-
-	return Cast[T](float64(a.X*b.Y) - float64(a.Y*b.X))
-}
-
-// AngleBetween returns the unsigned angle between the vectors in radians, in [0, π], and zero where
-// either is the zero vector.
-func (v Vector[T]) AngleBetween(vector Vector[T]) float64 {
-	a, b := v.Float(), vector.Float()
-
-	return math.Atan2(math.Abs(a.Cross(b)), a.Dot(b))
 }
 
 // Equal reports whether the vectors have equal components.

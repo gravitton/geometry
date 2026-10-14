@@ -87,20 +87,20 @@ func TestDirectionFromAngle(t *testing.T) {
 
 func TestDirectionFromAxes(t *testing.T) {
 	t.Run("one axis gives a cardinal", func(t *testing.T) {
-		assert.Equal(t, DirectionFromAxes(true, false, false, false), DirectionUp)
-		assert.Equal(t, DirectionFromAxes(false, true, false, false), DirectionDown)
-		assert.Equal(t, DirectionFromAxes(false, false, true, false), DirectionLeft)
-		assert.Equal(t, DirectionFromAxes(false, false, false, true), DirectionRight)
+		assert.Equal(t, DirectionFromAxes(false, false, true, false), DirectionUp)
+		assert.Equal(t, DirectionFromAxes(false, false, false, true), DirectionDown)
+		assert.Equal(t, DirectionFromAxes(true, false, false, false), DirectionLeft)
+		assert.Equal(t, DirectionFromAxes(false, true, false, false), DirectionRight)
 	})
 	t.Run("two axes give a diagonal", func(t *testing.T) {
 		assert.Equal(t, DirectionFromAxes(true, false, true, false), DirectionUpLeft)
-		assert.Equal(t, DirectionFromAxes(true, false, false, true), DirectionUpRight)
-		assert.Equal(t, DirectionFromAxes(false, true, true, false), DirectionDownLeft)
+		assert.Equal(t, DirectionFromAxes(false, true, true, false), DirectionUpRight)
+		assert.Equal(t, DirectionFromAxes(true, false, false, true), DirectionDownLeft)
 		assert.Equal(t, DirectionFromAxes(false, true, false, true), DirectionDownRight)
 	})
 	t.Run("opposite inputs cancel out", func(t *testing.T) {
-		assert.Equal(t, DirectionFromAxes(true, true, false, false), DirectionNone)
 		assert.Equal(t, DirectionFromAxes(false, false, true, true), DirectionNone)
+		assert.Equal(t, DirectionFromAxes(true, true, false, false), DirectionNone)
 		assert.Equal(t, DirectionFromAxes(true, true, true, true), DirectionNone)
 		assert.Equal(t, DirectionFromAxes(false, false, false, false), DirectionNone)
 	})

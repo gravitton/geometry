@@ -90,16 +90,16 @@ func AssertPadding[T geom.Number](t Testing, actual, expected geom.Padding[T], m
 
 	ok := true
 
-	if !AssertNumber(t, actual.Top, expected.Top, prefixed(messages, "Top: ")...) {
+	if !AssertNumber(t, actual.Left, expected.Left, prefixed(messages, "Left: ")...) {
 		ok = false
 	}
 	if !AssertNumber(t, actual.Right, expected.Right, prefixed(messages, "Right: ")...) {
 		ok = false
 	}
-	if !AssertNumber(t, actual.Bottom, expected.Bottom, prefixed(messages, "Bottom: ")...) {
+	if !AssertNumber(t, actual.Top, expected.Top, prefixed(messages, "Top: ")...) {
 		ok = false
 	}
-	if !AssertNumber(t, actual.Left, expected.Left, prefixed(messages, "Left: ")...) {
+	if !AssertNumber(t, actual.Bottom, expected.Bottom, prefixed(messages, "Bottom: ")...) {
 		ok = false
 	}
 

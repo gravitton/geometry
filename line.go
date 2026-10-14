@@ -31,6 +31,17 @@ func (l Line[T]) Angle() float64 {
 	return l.Vector.Angle()
 }
 
+// Direction returns the direction nearest to Vector, or DirectionNone for a zero Vector.
+func (l Line[T]) Direction() Direction {
+	return l.Vector.Direction()
+}
+
+// Normal returns Vector turned a quarter turn in the sense of Vector.Rotate, of the same length,
+// pointing to the side Side gives 1 for. A zero Vector gives the zero vector.
+func (l Line[T]) Normal() Vector[T] {
+	return l.Vector.Normal()
+}
+
 // Translate returns the line with its origin moved by the vector.
 func (l Line[T]) Translate(vector Vector[T]) Line[T] {
 	return Line[T]{l.Origin.Add(vector), l.Vector}
@@ -75,6 +86,18 @@ func (l Line[T]) UnscaleXY(factorX, factorY float64) Line[T] {
 // vector, so a translation moves the origin alone.
 func (l Line[T]) Transform[M Float](matrix Matrix[M]) Line[T] {
 	return Line[T]{l.Origin.Transform(matrix), l.Vector.Transform(matrix)}
+}
+
+// Lerp returns the line interpolated toward the given one, Origin and Vector together, and
+// extrapolated outside [0, 1].
+func (l Line[T]) Lerp(line Line[T], t float64) Line[T] {
+	return Line[T]{l.Origin.Lerp(line.Origin, t), l.Vector.Lerp(line.Vector, t)}
+}
+
+// Reverse returns the line with Vector negated: the same points run the other way, so Side gives
+// the opposite sign.
+func (l Line[T]) Reverse() Line[T] {
+	return Line[T]{l.Origin, l.Vector.Negate()}
 }
 
 // PointAt returns the point t times Vector from Origin, on the other side of it for a negative

@@ -119,12 +119,6 @@ func (b QuadraticBezier[T]) IsZero() bool {
 	return b.Equal(QuadraticBezier[T]{})
 }
 
-// CubicBezier returns the curve as a cubic, its control points two thirds of the way from each end
-// to Control. For integer T they are rounded, so the cubic only approximates the curve.
-func (b QuadraticBezier[T]) CubicBezier() CubicBezier[T] {
-	return CubicBezier[T]{b.Start, b.Start.Lerp(b.Control, 2.0/3), b.End.Lerp(b.Control, 2.0/3), b.End}
-}
-
 // Polyline returns the curve flattened to a path within the tolerance of it, from Start to End, as
 // CubicBezier.Polyline flattens the cubic of the same curve. A negative tolerance is taken
 // absolute.
@@ -135,6 +129,12 @@ func (b QuadraticBezier[T]) Polyline(tolerance float64) Polyline[T] {
 // AppendPolyline appends the points of Polyline(tolerance) to dst and returns the extended slice.
 func (b QuadraticBezier[T]) AppendPolyline(dst []Point[T], tolerance float64) []Point[T] {
 	return b.Float().CubicBezier().appendPolyline(dst, tolerance)
+}
+
+// CubicBezier returns the curve as a cubic, its control points two thirds of the way from each end
+// to Control. For integer T they are rounded, so the cubic only approximates the curve.
+func (b QuadraticBezier[T]) CubicBezier() CubicBezier[T] {
+	return CubicBezier[T]{b.Start, b.Start.Lerp(b.Control, 2.0/3), b.End.Lerp(b.Control, 2.0/3), b.End}
 }
 
 // Cast converts the curve to a QuadraticBezier of another number type, rounding as Cast does.

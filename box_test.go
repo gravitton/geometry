@@ -207,6 +207,23 @@ func TestBox_Inertia(t *testing.T) {
 	})
 }
 
+func TestBox_AspectRatio(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		geomtest.AssertNumber(t, BoxFromMinMax(Pt(0, 0), Pt(2, 3)).AspectRatio(), 2.0/3.0)
+	})
+	t.Run("float", func(t *testing.T) {
+		geomtest.AssertNumber(t, BoxFromMinMax(Pt(0.0, -2.05), Pt(1.2, 1.55)).AspectRatio(), 1.0/3.0)
+	})
+	t.Run("zero for a zero height", func(t *testing.T) {
+		geomtest.AssertNumber(t, BoxFromMinMax(Pt(0, 1), Pt(4, 1)).AspectRatio(), 0.0)
+	})
+	t.Run("is the ratio of its rectangle", func(t *testing.T) {
+		for _, box := range boxFixtures {
+			geomtest.AssertNumber(t, box.AspectRatio(), box.Rectangle().AspectRatio(), box.String())
+		}
+	})
+}
+
 func TestBox_Bounds(t *testing.T) {
 	box := BoxFromMinMax(Pt(1, 2), Pt(4, 7))
 
@@ -316,33 +333,156 @@ func TestBox_Clamp(t *testing.T) {
 	})
 }
 
+func TestBox_Scale(t *testing.T) {
+	t.Run("uniform factor", func(t *testing.T) {
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0, 0), Pt(2, 4)).Scale(2), BoxFromMinMax(Pt(-1, -2), Pt(3, 6)))
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0.0, 0.5), Pt(2.0, 3.5)).Scale(1.5), BoxFromMinMax(Pt(-0.5, -0.25), Pt(2.5, 4.25)))
+	})
+	t.Run("per-axis factor", func(t *testing.T) {
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0, 0), Pt(2, 4)).ScaleXY(2, 3), BoxFromMinMax(Pt(-1, -4), Pt(3, 8)))
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0.0, 0.5), Pt(2.0, 3.5)).ScaleXY(-1.5, 2), BoxFromMinMax(Pt(-0.5, -1.0), Pt(2.5, 5.0)))
+	})
+	t.Run("a negative factor scales by its absolute value", func(t *testing.T) {
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0, 0), Pt(2, 4)).Scale(-2), BoxFromMinMax(Pt(-1, -2), Pt(3, 6)))
+	})
+	t.Run("a factor of one returns the box", func(t *testing.T) {
+		for _, box := range boxFixtures {
+			assert.Equal(t, box.Scale(1), box, box.String())
+			assert.Equal(t, box.ScaleXY(1, 1), box, box.String())
+		}
+	})
+}
+
+func TestBox_Unscale(t *testing.T) {
+	t.Run("uniform factor", func(t *testing.T) {
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(-1, -2), Pt(3, 6)).Unscale(2), BoxFromMinMax(Pt(0, 0), Pt(2, 4)))
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(-0.5, -0.25), Pt(2.5, 4.25)).Unscale(1.5), BoxFromMinMax(Pt(0.0, 0.5), Pt(2.0, 3.5)))
+	})
+	t.Run("per-axis factor", func(t *testing.T) {
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(-1, -4), Pt(3, 8)).UnscaleXY(2, 3), BoxFromMinMax(Pt(0, 0), Pt(2, 4)))
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(-0.5, -1.0), Pt(2.5, 5.0)).UnscaleXY(-1.5, 2), BoxFromMinMax(Pt(0.0, 0.5), Pt(2.0, 3.5)))
+	})
+	t.Run("zero factor panics", func(t *testing.T) {
+		assert.Panics(t, func() {
+			BoxFromMinMax(Pt(0, 0), Pt(2, 4)).Unscale(0)
+		})
+		assert.Panics(t, func() {
+			BoxFromMinMax(Pt(0, 0), Pt(2, 4)).UnscaleXY(1, 0)
+		})
+	})
+}
+
+func TestBox_Resize(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0, 0), Pt(2, 4)).Resize(Sz(8, 9)), BoxFromMinMax(Pt(-3, -2), Pt(5, 7)))
+	})
+	t.Run("float", func(t *testing.T) {
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0.0, 0.5), Pt(2.0, 3.5)).Resize(Sz(3.0, 0.5)), BoxFromMinMax(Pt(-0.5, 1.75), Pt(2.5, 2.25)))
+	})
+	t.Run("a negative size is taken absolute", func(t *testing.T) {
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0, 0), Pt(2, 4)).Resize(Sz(-8, 9)), BoxFromMinMax(Pt(-3, -2), Pt(5, 7)))
+	})
+	t.Run("an odd integer extent keeps the center nearer Min", func(t *testing.T) {
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0, 0), Pt(4, 4)).Resize(Sz(5, 3)), BoxFromMinMax(Pt(0, 1), Pt(5, 4)))
+	})
+	t.Run("its own size returns the box", func(t *testing.T) {
+		for _, box := range boxFixtures {
+			assert.Equal(t, box.Resize(box.Size()), box, box.String())
+		}
+	})
+	t.Run("keeps the center and takes the size", func(t *testing.T) {
+		for _, box := range boxFixtures {
+			for _, size := range []Size[float64]{{}, Sz(1.0, 1.0), Sz(0.3, 7.5), Sz(12.0, 0.25)} {
+				resized := box.Resize(size)
+				message := fmt.Sprintf("%s → %s: ", box, size)
+
+				geomtest.AssertSize(t, resized.Size(), size, message)
+				geomtest.AssertPoint(t, resized.Center(), box.Center(), message)
+			}
+		}
+	})
+	t.Run("an integer box keeps the center of its rectangle", func(t *testing.T) {
+		for _, size := range []Size[int]{{}, Sz(1, 1), Sz(4, 4), Sz(7, 2)} {
+			box := BoxFromMinMax(Pt(-3, 1), Pt(2, 5))
+
+			geomtest.AssertBox(t, box.Resize(size), box.Rectangle().Resize(size).Bounds(), size.String())
+		}
+	})
+}
+
+func TestBox_Grow(t *testing.T) {
+	t.Run("uniform amount", func(t *testing.T) {
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0, 0), Pt(2, 4)).Grow(2), BoxFromMinMax(Pt(-1, -1), Pt(3, 5)))
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0.0, 0.5), Pt(2.0, 3.5)).Grow(0.1), BoxFromMinMax(Pt(-0.05, 0.45), Pt(2.05, 3.55)))
+	})
+	t.Run("per-axis amount", func(t *testing.T) {
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0, 0), Pt(2, 4)).GrowXY(2, 4), BoxFromMinMax(Pt(-1, -2), Pt(3, 6)))
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0.0, 0.5), Pt(2.0, 3.5)).GrowXY(0.1, 0.2), BoxFromMinMax(Pt(-0.05, 0.4), Pt(2.05, 3.6)))
+	})
+	t.Run("clamps to zero", func(t *testing.T) {
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0, 0), Pt(2, 4)).Grow(-5), BoxFromMinMax(Pt(1, 2), Pt(1, 2)))
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0, 0), Pt(2, 4)).GrowXY(-5, 1), BoxFromMinMax(Pt(1, 0), Pt(1, 5)))
+	})
+	t.Run("agrees with its rectangle", func(t *testing.T) {
+		for _, box := range boxFixtures {
+			for _, amount := range []float64{0, 0.5, 3, -0.25, -40} {
+				message := fmt.Sprintf("%s → %v: ", box, amount)
+
+				geomtest.AssertRectangle(t, box.Grow(amount).Rectangle(), box.Rectangle().Grow(amount), message)
+				geomtest.AssertRectangle(t, box.GrowXY(amount, -amount).Rectangle(), box.Rectangle().GrowXY(amount, -amount), message)
+			}
+		}
+	})
+}
+
+func TestBox_Shrink(t *testing.T) {
+	t.Run("uniform amount", func(t *testing.T) {
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0, 0), Pt(4, 6)).Shrink(2), BoxFromMinMax(Pt(1, 1), Pt(3, 5)))
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0.0, 0.5), Pt(2.0, 3.5)).Shrink(0.5), BoxFromMinMax(Pt(0.25, 0.75), Pt(1.75, 3.25)))
+	})
+	t.Run("per-axis amount", func(t *testing.T) {
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0, 0), Pt(4, 6)).ShrinkXY(2, 4), BoxFromMinMax(Pt(1, 2), Pt(3, 4)))
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0.0, 0.5), Pt(2.0, 3.5)).ShrinkXY(0.5, 1.0), BoxFromMinMax(Pt(0.25, 1.0), Pt(1.75, 3.0)))
+	})
+	t.Run("collapses onto the center", func(t *testing.T) {
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0, 0), Pt(4, 6)).Shrink(100), BoxFromMinMax(Pt(2, 3), Pt(2, 3)))
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0, 0), Pt(4, 6)).ShrinkXY(5, 2), BoxFromMinMax(Pt(2, 1), Pt(2, 5)))
+	})
+	t.Run("is the inverse of Grow while nothing was clamped", func(t *testing.T) {
+		for _, box := range boxFixtures {
+			geomtest.AssertBox(t, box.Grow(1.5).Shrink(1.5), box, box.String())
+			geomtest.AssertBox(t, box.GrowXY(1.5, 0.5).ShrinkXY(1.5, 0.5), box, box.String())
+		}
+	})
+}
+
 func TestBox_Inset(t *testing.T) {
 	box := BoxFromMinMax(Pt(0, 0), Pt(10, 10))
 
 	t.Run("each edge moves in by its own padding", func(t *testing.T) {
 		geomtest.AssertBox(t, box.Inset(PadU(1)), BoxFromMinMax(Pt(1, 1), Pt(9, 9)))
-		geomtest.AssertBox(t, box.Inset(Pad(3, 1, 2, 5)), BoxFromMinMax(Pt(5, 3), Pt(9, 8)))
+		geomtest.AssertBox(t, box.Inset(Pad(5, 1, 3, 2)), BoxFromMinMax(Pt(5, 3), Pt(9, 8)))
 	})
 	t.Run("padding beyond the size collapses at the opposite edge", func(t *testing.T) {
-		geomtest.AssertBox(t, box.Inset(Pad(0, 0, 0, 20)), BoxFromMinMax(Pt(10, 0), Pt(10, 10)))
+		geomtest.AssertBox(t, box.Inset(Pad(20, 0, 0, 0)), BoxFromMinMax(Pt(10, 0), Pt(10, 10)))
 		geomtest.AssertBox(t, box.Inset(Pad(0, 20, 0, 0)), BoxFromMinMax(Pt(0, 0), Pt(0, 10)))
-		geomtest.AssertBox(t, box.Inset(Pad(20, 0, 0, 0)), BoxFromMinMax(Pt(0, 10), Pt(10, 10)))
+		geomtest.AssertBox(t, box.Inset(Pad(0, 0, 20, 0)), BoxFromMinMax(Pt(0, 10), Pt(10, 10)))
 	})
 	t.Run("both paddings over-running leaves the collapse at left and top", func(t *testing.T) {
 		geomtest.AssertBox(t, box.Inset(PadU(20)), BoxFromMinMax(Pt(10, 10), Pt(10, 10)))
 	})
 	t.Run("negative padding grows the edge", func(t *testing.T) {
-		geomtest.AssertBox(t, BoxFromMinMax(Pt(0.0, 0.0), Pt(10.0, 10.0)).Inset(Pad(1.5, -2.0, 0.0, 1.0)), BoxFromMinMax(Pt(1.0, 1.5), Pt(12.0, 10.0)))
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0.0, 0.0), Pt(10.0, 10.0)).Inset(Pad(1.0, -2.0, 1.5, 0.0)), BoxFromMinMax(Pt(1.0, 1.5), Pt(12.0, 10.0)))
 	})
 }
 
 func TestBox_Outset(t *testing.T) {
 	t.Run("each edge moves out by its own padding", func(t *testing.T) {
-		geomtest.AssertBox(t, BoxFromMinMax(Pt(0, 0), Pt(10, 10)).Outset(Pad(3, 1, 2, 5)), BoxFromMinMax(Pt(-5, -3), Pt(11, 12)))
+		geomtest.AssertBox(t, BoxFromMinMax(Pt(0, 0), Pt(10, 10)).Outset(Pad(5, 1, 3, 2)), BoxFromMinMax(Pt(-5, -3), Pt(11, 12)))
 	})
 	t.Run("undoes an inset", func(t *testing.T) {
 		box := BoxFromMinMax(Pt(0.0, 0.0), Pt(10.0, 10.0))
-		padding := Pad(1.0, 2.0, 3.0, 4.0)
+		padding := Pad(4.0, 2.0, 1.0, 3.0)
 
 		geomtest.AssertBox(t, box.Inset(padding).Outset(padding), box)
 		geomtest.AssertBox(t, box.Outset(padding).Inset(padding), box)
@@ -1057,6 +1197,15 @@ func TestBox_Immutable(t *testing.T) {
 	box.Inset(PadU(1))
 	box.Outset(PadU(1))
 	box.Clamp(BoxFromSize(Sz(2, 2)))
+	box.Scale(2)
+	box.ScaleXY(2, 3)
+	box.Unscale(2)
+	box.UnscaleXY(2, 3)
+	box.Resize(Sz(8, 9))
+	box.Grow(1)
+	box.GrowXY(1, 2)
+	box.Shrink(1)
+	box.ShrinkXY(1, 2)
 
 	geomtest.AssertBox(t, box, BoxFromMinMax(Pt(1, 2), Pt(4, 7)))
 }

@@ -220,19 +220,6 @@ func TestQuadraticBezier_IsZero(t *testing.T) {
 	assert.False(t, QuadBez(Pt(0, 0), Pt(0, 1), Pt(0, 0)).IsZero())
 }
 
-func TestQuadraticBezier_CubicBezier(t *testing.T) {
-	t.Run("the control points two thirds of the way to the one", func(t *testing.T) {
-		geomtest.AssertCubicBezier(t, QuadBez(Pt(0.0, 0.0), Pt(3.0, 6.0), Pt(9.0, 0.0)).CubicBezier(), CubBez(Pt(0.0, 0.0), Pt(2.0, 4.0), Pt(5.0, 4.0), Pt(9.0, 0.0)))
-	})
-	t.Run("the cubic traces the curve", func(t *testing.T) {
-		for _, curve := range quadraticFixtures {
-			for _, fraction := range curveFractions {
-				geomtest.AssertPoint(t, curve.CubicBezier().PointAt(fraction), curve.PointAt(fraction), fmt.Sprintf("%s @%v: ", curve, fraction))
-			}
-		}
-	})
-}
-
 func TestQuadraticBezier_Polyline(t *testing.T) {
 	t.Run("a straight curve is its two ends", func(t *testing.T) {
 		geomtest.AssertPolyline(t, QuadBez(Pt(0.0, 0.0), Pt(1.0, 1.0), Pt(3.0, 3.0)).Polyline(0.01), PolLn([]Point[float64]{Pt(0.0, 0.0), Pt(3.0, 3.0)}))
@@ -281,6 +268,19 @@ func TestQuadraticBezier_AppendPolyline(t *testing.T) {
 		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkPoints = curve.AppendPolyline(buffer[:0], 1)
 		}), 0)
+	})
+}
+
+func TestQuadraticBezier_CubicBezier(t *testing.T) {
+	t.Run("the control points two thirds of the way to the one", func(t *testing.T) {
+		geomtest.AssertCubicBezier(t, QuadBez(Pt(0.0, 0.0), Pt(3.0, 6.0), Pt(9.0, 0.0)).CubicBezier(), CubBez(Pt(0.0, 0.0), Pt(2.0, 4.0), Pt(5.0, 4.0), Pt(9.0, 0.0)))
+	})
+	t.Run("the cubic traces the curve", func(t *testing.T) {
+		for _, curve := range quadraticFixtures {
+			for _, fraction := range curveFractions {
+				geomtest.AssertPoint(t, curve.CubicBezier().PointAt(fraction), curve.PointAt(fraction), fmt.Sprintf("%s @%v: ", curve, fraction))
+			}
+		}
 	})
 }
 

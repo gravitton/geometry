@@ -31,6 +31,17 @@ func (r Ray[T]) Angle() float64 {
 	return r.Vector.Angle()
 }
 
+// Direction returns the direction nearest to Vector, or DirectionNone for a zero Vector.
+func (r Ray[T]) Direction() Direction {
+	return r.Vector.Direction()
+}
+
+// Normal returns Vector turned a quarter turn in the sense of Vector.Rotate, of the same length. A
+// zero Vector gives the zero vector.
+func (r Ray[T]) Normal() Vector[T] {
+	return r.Vector.Normal()
+}
+
 // Translate returns the ray with its origin moved by the vector.
 func (r Ray[T]) Translate(vector Vector[T]) Ray[T] {
 	return Ray[T]{r.Origin.Add(vector), r.Vector}
@@ -75,6 +86,12 @@ func (r Ray[T]) UnscaleXY(factorX, factorY float64) Ray[T] {
 // vector, so a translation moves the origin alone.
 func (r Ray[T]) Transform[M Float](matrix Matrix[M]) Ray[T] {
 	return Ray[T]{r.Origin.Transform(matrix), r.Vector.Transform(matrix)}
+}
+
+// Lerp returns the ray interpolated toward the given one, Origin and Vector together, and
+// extrapolated outside [0, 1].
+func (r Ray[T]) Lerp(ray Ray[T], t float64) Ray[T] {
+	return Ray[T]{r.Origin.Lerp(ray.Origin, t), r.Vector.Lerp(ray.Vector, t)}
 }
 
 // PointAt returns the point t times Vector from Origin, behind it for a negative t.

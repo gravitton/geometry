@@ -76,10 +76,10 @@ func TestAssertPadding(t *testing.T) {
 		assertHelper(t, AssertPadding, p, geom.Pad(1, 2, 3, 4), true)
 	})
 	t.Run("one side differs", func(t *testing.T) {
-		assertHelper(t, AssertPadding, p, geom.Pad(9, 2, 3, 4), false, "top")
+		assertHelper(t, AssertPadding, p, geom.Pad(9, 2, 3, 4), false, "left")
 		assertHelper(t, AssertPadding, p, geom.Pad(1, 9, 3, 4), false, "right")
-		assertHelper(t, AssertPadding, p, geom.Pad(1, 2, 9, 4), false, "bottom")
-		assertHelper(t, AssertPadding, p, geom.Pad(1, 2, 3, 9), false, "left")
+		assertHelper(t, AssertPadding, p, geom.Pad(1, 2, 9, 4), false, "top")
+		assertHelper(t, AssertPadding, p, geom.Pad(1, 2, 3, 9), false, "bottom")
 	})
 }
 
