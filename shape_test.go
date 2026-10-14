@@ -128,7 +128,7 @@ func TestShape(t *testing.T) {
 		Sect(Pt(1.0, 2.0), 3.0, Pi/6, Pi/2),
 		Seg(Pt(0.0, 0.0), Pt(3.0, 4.0)),
 		Pol(triangleVertices()),
-		Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi / 6),
+		Rect(Pt(1.0, 2.0), Sz(4.0, 2.0), 0).Rotate(Pi / 6),
 		RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop),
 		BoxFromMinMax(Pt(-1.0, 0.5), Pt(2.0, 3.0)),
 		Ell(Pt(1.0, 2.0), Sz(4.0, 2.0), Pi/6),
@@ -225,7 +225,7 @@ func TestOutline(t *testing.T) {
 	outlines := []outline[float64]{
 		Seg(Pt(0.0, 0.0), Pt(3.0, 4.0)),
 		Pol(triangleVertices()),
-		Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi / 6),
+		Rect(Pt(1.0, 2.0), Sz(4.0, 2.0), 0).Rotate(Pi / 6),
 		RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop),
 		BoxFromMinMax(Pt(-1.0, 1.0), Pt(3.0, 3.0)),
 		PolLn(triangleVertices()),
@@ -244,7 +244,7 @@ func TestOutline(t *testing.T) {
 	t.Run("only the segment and the path are open", func(t *testing.T) {
 		assert.False(t, closed[float64](Seg(Pt(0.0, 0.0), Pt(3.0, 4.0))))
 		assert.False(t, closed[float64](PolLn(triangleVertices())))
-		assert.True(t, closed[float64](Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi/6)))
+		assert.True(t, closed[float64](Rect(Pt(1.0, 2.0), Sz(4.0, 2.0), 0).Rotate(Pi/6)))
 		assert.True(t, closed[float64](Pol(triangleVertices())))
 		assert.True(t, closed[float64](RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop)))
 		assert.True(t, closed[float64](BoxFromMinMax(Pt(-1.0, 1.0), Pt(3.0, 3.0))))
@@ -276,7 +276,7 @@ func TestIntersector(t *testing.T) {
 		RayThrough(Pt(-1.0, -1.0), Pt(3.0, 4.0)),
 		LineThrough(Pt(-1.0, -1.0), Pt(3.0, 4.0)),
 		Pol(triangleVertices()),
-		Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi / 6),
+		Rect(Pt(1.0, 2.0), Sz(4.0, 2.0), 0).Rotate(Pi / 6),
 		RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop),
 		BoxFromMinMax(Pt(-1.0, 0.5), Pt(2.0, 3.0)),
 	}
@@ -466,7 +466,7 @@ func TestBody(t *testing.T) {
 		Cap(Pt(1.0, 2.0), Pt(4.0, -1.0), 1.5),
 		Sect(Pt(1.0, 2.0), 3.0, Pi/6, Pi/2),
 		Pol(triangleVertices()),
-		Rect(Pt(1.0, 2.0), Sz(4.0, 2.0)).Rotate(Pi / 6),
+		Rect(Pt(1.0, 2.0), Sz(4.0, 2.0), 0).Rotate(Pi / 6),
 		RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop),
 		BoxFromMinMax(Pt(-1.0, 1.0), Pt(3.0, 3.0)),
 		Ell(Pt(1.0, 2.0), Sz(4.0, 2.0), Pi/6),
@@ -492,7 +492,7 @@ func TestDistance(t *testing.T) {
 	t.Run("the gap between two shapes apart", func(t *testing.T) {
 		geomtest.AssertNumber(t, Distance[float64](BoxFromMinMax(Pt(0.0, 0.0), Pt(1.0, 1.0)), BoxFromMinMax(Pt(4.0, 5.0), Pt(6.0, 6.0))), 5.0)
 		geomtest.AssertNumber(t, Distance[float64](Circ(Pt(0.0, 0.0), 1.0), Circ(Pt(5.0, 0.0), 1.5)), 2.5)
-		geomtest.AssertNumber(t, Distance[float64](Circ(Pt(0.0, 3.0), 1.0), Rect(Pt(0.0, 0.0), Sz(4.0, 2.0))), 1.0)
+		geomtest.AssertNumber(t, Distance[float64](Circ(Pt(0.0, 3.0), 1.0), Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)), 1.0)
 		geomtest.AssertNumber(t, Distance[float64](Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0), Ell(Pt(9.0, 0.0), Sz(2.0, 3.0), 0)), 3.0)
 		geomtest.AssertNumber(t, Distance[float64](Seg(Pt(0.0, 0.0), Pt(4.0, 0.0)), Seg(Pt(0.0, 2.0), Pt(4.0, 3.0))), 2.0)
 	})
@@ -602,7 +602,7 @@ func TestDistance(t *testing.T) {
 		assert.False(t, Distance[float64](Circ(Pt(math.NaN(), 0.0), 1.0), ellipse) == 0)
 	})
 	t.Run("allocates nothing for shapes held as Shape", func(t *testing.T) {
-		var rectangle, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(0.3), Ell(Pt(9.0, 0.0), Sz(2.0, 1.0), 0.2)
+		var rectangle, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Rotate(0.3), Ell(Pt(9.0, 0.0), Sz(2.0, 1.0), 0.2)
 
 		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkBool = Distance(rectangle, ellipse) > 0
@@ -770,7 +770,7 @@ func TestNearest(t *testing.T) {
 		geomtest.AssertPoint(t, second, Pt(3, 2).Add(far))
 	})
 	t.Run("allocates nothing for shapes held as Shape", func(t *testing.T) {
-		var circle, rectangle, ellipse Shape[float64] = Circ(Pt(-4.0, 0.0), 1.0), Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(0.3), Ell(Pt(9.0, 0.0), Sz(2.0, 1.0), 0.2)
+		var circle, rectangle, ellipse Shape[float64] = Circ(Pt(-4.0, 0.0), 1.0), Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Rotate(0.3), Ell(Pt(9.0, 0.0), Sz(2.0, 1.0), 0.2)
 
 		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			first, second := Nearest(rectangle, ellipse)
@@ -848,7 +848,7 @@ func TestContains(t *testing.T) {
 	})
 	t.Run("an ellipse lies between the polygon within it and the polygon about it", func(t *testing.T) {
 		for _, ellipse := range ellipseFixtures {
-			if !ellipse.Size.IsPositive() {
+			if !ellipse.Radius.IsPositive() {
 				continue
 			}
 
@@ -982,7 +982,7 @@ func BenchmarkContains(b *testing.B) {
 
 func TestIntersects(t *testing.T) {
 	t.Run("a circle is tested against any shape by its radius", func(t *testing.T) {
-		shape := foreignShape[float64]{Rect(Pt(0.0, 0.0), Sz(2.0, 2.0))}
+		shape := foreignShape[float64]{Rect(Pt(0.0, 0.0), Sz(2.0, 2.0), 0)}
 
 		assert.True(t, Intersects[float64](shape, Circ(Pt(2.0, 0.0), 1.0)))
 		assert.True(t, Intersects[float64](Circ(Pt(2.0, 0.0), 1.0), shape))
@@ -1016,6 +1016,16 @@ func TestIntersects(t *testing.T) {
 		assert.True(t, Intersects[float64](ellipse, Circ(Pt(0.0, 3.0), 1.0)))
 		assert.False(t, Intersects[float64](ellipse, Circ(Pt(0.0, 3.0+1e-4), 1.0)))
 	})
+	t.Run("a segment and an ellipse are decided by Segment.IntersectsEllipse, either way round", func(t *testing.T) {
+		for _, e := range ellipseFixtures {
+			for _, s := range ellipseCasts() {
+				message := fmt.Sprintf("%v → %v: ", s, e)
+
+				assert.Equal(t, Intersects[float64](s, e), s.IntersectsEllipse(e), message)
+				assert.Equal(t, Intersects[float64](e, s), s.IntersectsEllipse(e), message)
+			}
+		}
+	})
 	t.Run("an int ellipse touches an outline on the lattice", func(t *testing.T) {
 		ellipse := Ell(Pt(0, 0), Sz(4, 2), 0)
 
@@ -1035,7 +1045,7 @@ func TestIntersects(t *testing.T) {
 				intersects := Intersects[float64](ellipse, other)
 
 				assert.Equal(t, Intersects[float64](other, ellipse), intersects, message)
-				if !ellipse.Size.IsPositive() {
+				if !ellipse.Radius.IsPositive() {
 					continue
 				}
 
@@ -1107,7 +1117,7 @@ func TestIntersects(t *testing.T) {
 		assert.False(t, Intersects[int](ellipse, BoxFromMinMax(Pt(5, -1), Pt(6, 1)).Translate(far)))
 	})
 	t.Run("allocates nothing for shapes held as Shape", func(t *testing.T) {
-		var rectangle, other, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(0.3), Rect(Pt(1.0, 0.0), Sz(3.0, 2.0)), Ell(Pt(3.0, 0.0), Sz(2.0, 1.0), 0.2)
+		var rectangle, other, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Rotate(0.3), Rect(Pt(1.0, 0.0), Sz(3.0, 2.0), 0), Ell(Pt(3.0, 0.0), Sz(2.0, 1.0), 0.2)
 
 		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkBool = Intersects(rectangle, other)
@@ -1119,7 +1129,7 @@ func TestIntersects(t *testing.T) {
 }
 
 func BenchmarkIntersects(b *testing.B) {
-	var rectangle, other, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(0.3), Rect(Pt(1.0, 0.0), Sz(3.0, 2.0)), Ell(Pt(3.0, 0.0), Sz(2.0, 1.0), 0.2)
+	var rectangle, other, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Rotate(0.3), Rect(Pt(1.0, 0.0), Sz(3.0, 2.0), 0), Ell(Pt(3.0, 0.0), Sz(2.0, 1.0), 0.2)
 
 	b.Run("by the method naming the kind", func(b *testing.B) {
 		for b.Loop() {
@@ -1145,13 +1155,13 @@ func TestCollide(t *testing.T) {
 		assertContactPoints(t, contact, Pt(0.0, 1.5), Pt(4.0, 1.5))
 	})
 	t.Run("a side a little tilted still meets at two points", func(t *testing.T) {
-		contact, ok := Collide[float64](Rect(Pt(2.0, 1.0), Sz(4.0, 2.0)).Rotate(2e-4), ground)
+		contact, ok := Collide[float64](Rect(Pt(2.0, 1.0), Sz(4.0, 2.0), 0).Rotate(2e-4), ground)
 
 		assert.True(t, ok)
 		assert.Equal(t, contact.Points.Count, 2)
 	})
 	t.Run("a corner meets at one point", func(t *testing.T) {
-		contact, ok := Collide[float64](Rect(Pt(2.0, 0.5), Sz(2.0, 2.0)).Rotate(Pi/4), ground)
+		contact, ok := Collide[float64](Rect(Pt(2.0, 0.5), Sz(2.0, 2.0), 0).Rotate(Pi/4), ground)
 
 		assert.True(t, ok)
 		geomtest.AssertVector(t, contact.Normal, Vec(0.0, -1.0))
@@ -1399,7 +1409,7 @@ func TestCollide(t *testing.T) {
 		assertContactPoints(t, contact, Pt(0, 1).Add(far), Pt(4, 1).Add(far))
 	})
 	t.Run("allocates nothing for shapes held as Shape", func(t *testing.T) {
-		var rectangle, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(0.3), Ell(Pt(3.0, 0.0), Sz(2.0, 1.0), 0.2)
+		var rectangle, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Rotate(0.3), Ell(Pt(3.0, 0.0), Sz(2.0, 1.0), 0.2)
 
 		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			_, sinkBool = Collide(rectangle, ellipse)
@@ -1432,7 +1442,7 @@ func reverse[T Number](points []Point[T]) []Point[T] {
 }
 
 func BenchmarkCollide(b *testing.B) {
-	var rectangle, other, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(0.3), Rect(Pt(1.0, 0.0), Sz(3.0, 2.0)), Ell(Pt(3.0, 0.0), Sz(2.0, 1.0), 0.2)
+	var rectangle, other, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Rotate(0.3), Rect(Pt(1.0, 0.0), Sz(3.0, 2.0), 0), Ell(Pt(3.0, 0.0), Sz(2.0, 1.0), 0.2)
 
 	b.Run("two outlines", func(b *testing.B) {
 		for b.Loop() {
@@ -1466,7 +1476,7 @@ func FuzzCollide(f *testing.F) {
 			}
 		}
 
-		var a, b Shape[float64] = Ell(Pt(x1, y1), Sz(w1, h1), angle1), Rect(Pt(x2, y2), Sz(w2, h2)).Rotate(angle2)
+		var a, b Shape[float64] = Ell(Pt(x1, y1), Sz(w1, h1), angle1), Rect(Pt(x2, y2), Sz(w2, h2), 0).Rotate(angle2)
 		message := fmt.Sprintf("%v → %v: ", a, b)
 
 		intersects := Intersects(a, b)
@@ -1657,7 +1667,7 @@ func TestSweep(t *testing.T) {
 		assert.Equal(t, hit.Point.X, 5+far.X)
 	})
 	t.Run("allocates nothing for shapes held as Shape", func(t *testing.T) {
-		var circle, wall Shape[float64] = Circ(Pt(0.0, 0.0), 1.0), Rect(Pt(6.0, 0.0), Sz(2.0, 8.0)).Rotate(0.2)
+		var circle, wall Shape[float64] = Circ(Pt(0.0, 0.0), 1.0), Rect(Pt(6.0, 0.0), Sz(2.0, 8.0), 0).Rotate(0.2)
 
 		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			_, sinkBool = Sweep(circle, Vec(10.0, 0.0), wall)
@@ -1687,7 +1697,7 @@ func assertPointSweep(t *testing.T, start Point[float64], motion Vector[float64]
 }
 
 func BenchmarkSweep(b *testing.B) {
-	var circle, wall, ellipse Shape[float64] = Circ(Pt(0.0, 0.0), 1.0), Rect(Pt(6.0, 0.0), Sz(2.0, 8.0)).Rotate(0.2), Ell(Pt(7.0, 0.5), Sz(2.0, 1.0), 0.2)
+	var circle, wall, ellipse Shape[float64] = Circ(Pt(0.0, 0.0), 1.0), Rect(Pt(6.0, 0.0), Sz(2.0, 8.0), 0).Rotate(0.2), Ell(Pt(7.0, 0.5), Sz(2.0, 1.0), 0.2)
 	motion := Vec(10.0, 0.0)
 
 	b.Run("onto a flat edge", func(b *testing.B) {
@@ -1752,7 +1762,7 @@ func TestRaycast(t *testing.T) {
 			}
 		}
 	})
-	t.Run("an ellipse is reached at its boundary, the fraction in units of Direction", func(t *testing.T) {
+	t.Run("an ellipse is reached at its boundary, the fraction in units of Vector", func(t *testing.T) {
 		hit, ok := Raycast[float64](Ry(Pt(-10.0, 0.0), Vec(2.0, 0.0)), Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0))
 
 		assert.True(t, ok)
@@ -1768,7 +1778,7 @@ func TestRaycast(t *testing.T) {
 		}
 	})
 	t.Run("a shape known by its support is reached where its kind is", func(t *testing.T) {
-		rectangle := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(Pi / 6)
+		rectangle := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Rotate(Pi / 6)
 		ray := RayThrough(Pt(-10.0, 1.0), Pt(0.0, 0.0))
 
 		expected, _ := ray.HitRectangle(rectangle)
@@ -1780,13 +1790,13 @@ func TestRaycast(t *testing.T) {
 		assert.True(t, hit.Normal.Subtract(expected.Normal).LessOrEqual(1e-4), fmt.Sprint(hit, expected))
 	})
 	t.Run("a shape known by its support around the origin of the ray is not hit", func(t *testing.T) {
-		_, ok := Raycast[float64](Ry(Pt(1.0, 0.0), Vec(2.0, 0.0)), foreignShape[float64]{Rect(Pt(0.0, 0.0), Sz(4.0, 2.0))})
+		_, ok := Raycast[float64](Ry(Pt(1.0, 0.0), Vec(2.0, 0.0)), foreignShape[float64]{Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)})
 
 		assert.False(t, ok)
 	})
 	t.Run("an ellipse is reached between the polygon within it and the polygon about it", func(t *testing.T) {
 		for _, ellipse := range ellipseFixtures {
-			if !ellipse.Size.IsPositive() {
+			if !ellipse.Radius.IsPositive() {
 				continue
 			}
 
@@ -1820,7 +1830,7 @@ func TestRaycast(t *testing.T) {
 		}
 	})
 	t.Run("allocates nothing for a shape held as Shape", func(t *testing.T) {
-		var rectangle, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(0.3), Ell(Pt(3.0, 0.0), Sz(2.0, 1.0), 0.2)
+		var rectangle, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Rotate(0.3), Ell(Pt(3.0, 0.0), Sz(2.0, 1.0), 0.2)
 		var foreign Shape[float64] = foreignShape[float64]{ellipse}
 		ray := Ry(Pt(-10.0, 0.0), Vec(1.0, 0.0))
 
@@ -1837,7 +1847,7 @@ func TestRaycast(t *testing.T) {
 }
 
 func BenchmarkRaycast(b *testing.B) {
-	var rectangle, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0)).Rotate(0.3), Ell(Pt(3.0, 0.0), Sz(2.0, 1.0), 0.2)
+	var rectangle, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Rotate(0.3), Ell(Pt(3.0, 0.0), Sz(2.0, 1.0), 0.2)
 	var foreign Shape[float64] = foreignShape[float64]{ellipse}
 	ray := Ry(Pt(-10.0, 0.0), Vec(1.0, 0.0))
 
@@ -1863,7 +1873,7 @@ func TestTransformable(t *testing.T) {
 		geomtest.AssertSegment(t, moved(Seg(Pt(0, 0), Pt(2, 2)), Vec(1, 1)), Seg(Pt(1, 1), Pt(3, 3)))
 		geomtest.AssertRay(t, moved(Ry(Pt(0, 0), Vec(2, 2)), Vec(1, 1)), Ry(Pt(1, 1), Vec(2, 2)))
 		geomtest.AssertLine(t, moved(Ln(Pt(0, 0), Vec(2, 2)), Vec(1, 1)), Ln(Pt(1, 1), Vec(2, 2)))
-		geomtest.AssertRectangle(t, moved(Rect(Pt(0, 0), Sz(2, 2)), Vec(1, 1)), Rect(Pt(1, 1), Sz(2, 2)))
+		geomtest.AssertRectangle(t, moved(Rect(Pt(0, 0), Sz(2, 2), 0), Vec(1, 1)), Rect(Pt(1, 1), Sz(2, 2), 0))
 		geomtest.AssertCircle(t, moved(Circ(Pt(0, 0), 2), Vec(1, 1)), Circ(Pt(1, 1), 2))
 		geomtest.AssertPolygon(t, moved(Pol(squareVertices()), Vec(1, 1)), Pol([]Point[int]{Pt(1, 1), Pt(3, 1), Pt(3, 3), Pt(1, 3)}))
 		geomtest.AssertRegularPolygon(t, moved(RegPol(Pt(0, 0), Sz(2, 2), 6, 0, 0), Vec(1, 1)), RegPol(Pt(1, 1), Sz(2, 2), 6, 0, 0))
@@ -1914,6 +1924,24 @@ func assertCrossings[T Number](t *testing.T, cast caster[T], points []Point[T], 
 		assert.True(t, slices.ContainsFunc(slices.Collect(edges()), func(edge Segment[T]) bool {
 			return edge.Contains(point)
 		}), message+point.String()+" on the boundary: ")
+	}
+	assertOrdered(t, cast, points, message)
+	assert.True(t, len(points) == 0 || intersects, message)
+}
+
+// assertEllipseCrossings asserts the properties the boundary crossings of a segment, a ray or a
+// line have on an ellipse: each point lies on the cast and on the boundary, a point moved outward
+// from the center past it being outside, they follow one another along the cast, and there is one
+// only where the pair intersects.
+func assertEllipseCrossings(t *testing.T, cast caster[float64], points []Point[float64], intersects bool, ellipse Ellipse[float64], message string) {
+	t.Helper()
+
+	for _, point := range points {
+		assert.True(t, cast.Contains(point), message+point.String()+" on the cast: ")
+		assert.True(t, ellipse.Contains(point), message+point.String()+" on the boundary: ")
+		if ellipse.Radius.IsPositive() {
+			assert.False(t, ellipse.Contains(point.Add(point.Subtract(ellipse.Center).Multiply(1e-4))), message+point.String()+" on the boundary: ")
+		}
 	}
 	assertOrdered(t, cast, points, message)
 	assert.True(t, len(points) == 0 || intersects, message)

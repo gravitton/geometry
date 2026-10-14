@@ -51,11 +51,6 @@ func ArcThrough[T Number](a, b, c Point[T]) (Arc[T], bool) {
 	return Arc[T]{circle.Center, circle.Radius, NormalizeAngle(angle), sweep}, true
 }
 
-// Length returns the length of the arc (r·|sweep|), the sweep held to a full turn.
-func (a Arc[T]) Length() float64 {
-	return float64(a.Radius) * math.Abs(a.turn())
-}
-
 // Start returns PointAt(0), the point at Angle.
 func (a Arc[T]) Start() Point[T] {
 	return a.PointAt(0)
@@ -74,6 +69,11 @@ func (a Arc[T]) Midpoint() Point[T] {
 // Chord returns the segment from Start to End, its ends Equal for the whole circle.
 func (a Arc[T]) Chord() Segment[T] {
 	return Segment[T]{a.PointAt(0), a.PointAt(1)}
+}
+
+// Length returns the length of the arc (r·|sweep|), the sweep held to a full turn.
+func (a Arc[T]) Length() float64 {
+	return float64(a.Radius) * math.Abs(a.turn())
 }
 
 // Bounds returns the axis-aligned bounding box. For integer T the ends are rounded outward, except
@@ -258,7 +258,7 @@ func (a Arc[T]) IntersectionRay(ray Ray[T]) Pair[Point[T]] {
 	return a.IntersectionSegment(ray.reach(a.minMax()))
 }
 
-// IntersectionLine returns the points where the line crosses the arc, in order along its Direction.
+// IntersectionLine returns the points where the line crosses the arc, in order along its Vector.
 func (a Arc[T]) IntersectionLine(line Line[T]) Pair[Point[T]] {
 	return a.IntersectionSegment(line.span(a.minMax()))
 }
@@ -369,6 +369,11 @@ func (a Arc[T]) Circle() Circle[T] {
 	return Circle[T]{a.Center, a.Radius}
 }
 
+// Sector returns the sector the arc bounds with the radii to its ends.
+func (a Arc[T]) Sector() Sector[T] {
+	return Sector[T](a)
+}
+
 // Polyline returns the arc as a polyline within the tolerance of it, from Start to End: as few
 // equal chords as keep within it, at most 1024. A negative tolerance is taken absolute.
 func (a Arc[T]) Polyline(tolerance float64) Polyline[T] {
@@ -378,11 +383,6 @@ func (a Arc[T]) Polyline(tolerance float64) Polyline[T] {
 // AppendPolyline appends the points of Polyline(tolerance) to dst and returns the extended slice.
 func (a Arc[T]) AppendPolyline(dst []Point[T], tolerance float64) []Point[T] {
 	return a.appendPieces(dst, a.pieces(tolerance))
-}
-
-// Sector returns the sector the arc bounds with the radii to its ends.
-func (a Arc[T]) Sector() Sector[T] {
-	return Sector[T](a)
 }
 
 // Cast converts the arc to an Arc of another number type, rounding as Cast does and keeping the

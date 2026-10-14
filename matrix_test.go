@@ -330,6 +330,34 @@ func TestMatrix_Scale(t *testing.T) {
 	})
 }
 
+func TestMatrix_ScaleAround(t *testing.T) {
+	t.Run("unit factors are identity", func(t *testing.T) {
+		geomtest.AssertMatrix(t, IdentityMatrix[float64]().ScaleAround(5.0, 3.0, 1, 1), IdentityMatrix[float64]())
+		geomtest.AssertMatrix(t, IdentityMatrix[int]().ScaleAround(5, 3, 1, 1), IdentityMatrix[int]())
+	})
+	t.Run("scales about the pivot before the current transform", func(t *testing.T) {
+		geomtest.AssertPoint(t, Pt(3.0, 1.0).Transform(TranslationMatrix(10.0, 0.0).ScaleAround(2.0, 1.0, 2.0, 3.0)), Pt(14.0, 1.0))
+		geomtest.AssertMatrix(t, TranslationMatrix(10, 0).ScaleAround(2, 1, 2, 3), Mat(2, 0, 8, 0, 3, -2))
+	})
+	t.Run("float factors on an integer matrix keep a pivot whose offset is whole", func(t *testing.T) {
+		m := ScaleMatrix(4, 4).ScaleAround(2, 2, 0.5, 0.5)
+
+		geomtest.AssertMatrix(t, m, Mat(2, 0, 4, 0, 2, 4))
+		geomtest.AssertPoint(t, Pt(2, 2).Transform(m.Float()), Pt(2, 2).Transform(ScaleMatrix(4.0, 4.0)))
+	})
+	t.Run("equals right-multiplying ScaleMatrixAround to the bit", func(t *testing.T) {
+		for _, m := range matrixFixtures {
+			assert.Equal(t, m.ScaleAround(tenth, -7.0, 1.1, 0.3), m.Multiply(ScaleMatrixAround(tenth, -7.0, 1.1, 0.3)), m.String())
+		}
+	})
+	t.Run("rounds each product, the same bits on every architecture", func(t *testing.T) {
+		m := Mat(1.1, 0.3, tenth, -0.7, 2.3, 0.9).ScaleAround(tenth, 0.7, 3.0, 1.5)
+
+		assert.Equal(t, m.C, -0.225)
+		assert.Equal(t, m.F, 0.23500000000000043)
+	})
+}
+
 func TestMatrix_Unscale(t *testing.T) {
 	t.Run("undoes a scale", func(t *testing.T) {
 		geomtest.AssertMatrix(t, ScaleMatrix(2.0, 3.0).Unscale(2.0, 3.0), IdentityMatrix[float64]())
@@ -383,27 +411,30 @@ func TestMatrix_PreScale(t *testing.T) {
 	})
 }
 
-func TestMatrix_Multiply(t *testing.T) {
-	t.Run("identity is neutral", func(t *testing.T) {
-		geomtest.AssertMatrix(t, IdentityMatrix[float64]().Multiply(TranslationMatrix(5.0, 3.0)), TranslationMatrix(5.0, 3.0))
-		geomtest.AssertMatrix(t, TranslationMatrix(5.0, 3.0).Multiply(IdentityMatrix[float64]()), TranslationMatrix(5.0, 3.0))
-		geomtest.AssertMatrix(t, IdentityMatrix[int]().Multiply(TranslationMatrix(5, 3)), TranslationMatrix(5, 3))
+func TestMatrix_PreScaleAround(t *testing.T) {
+	t.Run("unit factors are identity", func(t *testing.T) {
+		geomtest.AssertMatrix(t, IdentityMatrix[float64]().PreScaleAround(5.0, 3.0, 1, 1), IdentityMatrix[float64]())
 	})
-	t.Run("narrow integers do not overflow mid-computation", func(t *testing.T) {
-		geomtest.AssertMatrix(t, Mat[int8](100, 50, 0, 0, 1, 0).Multiply(Mat[int8](2, 0, 0, -2, 1, 0)), Mat[int8](100, 50, 0, -2, 1, 0))
+	t.Run("scales about the pivot after the current transform", func(t *testing.T) {
+		geomtest.AssertPoint(t, Pt(1.0, 1.0).Transform(TranslationMatrix(2.0, 0.0).PreScaleAround(2.0, 1.0, 2.0, 3.0)), Pt(4.0, 1.0))
+		geomtest.AssertMatrix(t, TranslationMatrix(2, 0).PreScaleAround(2, 1, 2, 3), Mat(2, 0, 2, 0, 3, -2))
+	})
+	t.Run("differs from scaling around after", func(t *testing.T) {
+		before := TranslationMatrix(5.0, 0.0).PreScaleAround(2.0, 1.0, 2.0, 3.0)
+		after := TranslationMatrix(5.0, 0.0).ScaleAround(2.0, 1.0, 2.0, 3.0)
+
+		assert.False(t, before.Equal(after))
+	})
+	t.Run("equals left-multiplying ScaleMatrixAround to the bit", func(t *testing.T) {
+		for _, m := range matrixFixtures {
+			assert.Equal(t, m.PreScaleAround(tenth, -7.0, 1.1, 0.3), ScaleMatrixAround(tenth, -7.0, 1.1, 0.3).Multiply(m), m.String())
+		}
 	})
 	t.Run("rounds each product, the same bits on every architecture", func(t *testing.T) {
-		assert.Equal(t, Mat(tenth, 0.2, 0.0, 0.0, 1.0, 0.0).Multiply(Mat(1.1, 0.0, 0.0, 1.3, 1.0, 0.0)).A, 0.37)
-	})
-	t.Run("translations compose additively", func(t *testing.T) {
-		geomtest.AssertMatrix(t, TranslationMatrix(5.0, 3.0).Multiply(TranslationMatrix(2.0, 1.0)), TranslationMatrix(7.0, 4.0))
-		geomtest.AssertMatrix(t, TranslationMatrix[float32](5, 3).Multiply(TranslationMatrix[float32](2, 1)), TranslationMatrix[float32](7, 4))
-		geomtest.AssertMatrix(t, TranslationMatrix(5, 3).Multiply(TranslationMatrix(2, 1)), TranslationMatrix(7, 4))
-	})
-	t.Run("scales compose multiplicatively", func(t *testing.T) {
-		geomtest.AssertMatrix(t, ScaleMatrix(2.0, 3.0).Multiply(ScaleMatrix(4.0, 2.0)), ScaleMatrix(8.0, 6.0))
-		geomtest.AssertMatrix(t, ScaleMatrix[float32](2, 3).Multiply(ScaleMatrix[float32](4, 2)), ScaleMatrix[float32](8, 6))
-		geomtest.AssertMatrix(t, ScaleMatrix(2, 3).Multiply(ScaleMatrix(4, 2)), ScaleMatrix(8, 6))
+		m := Mat(1.1, 0.3, tenth, -0.7, 2.3, 0.9).PreScaleAround(tenth, 0.7, 3.0, 1.5)
+
+		assert.Equal(t, m.C, tenth)
+		assert.Equal(t, m.F, 1.0000000000000002)
 	})
 }
 
@@ -472,6 +503,30 @@ func TestMatrix_PreReflect(t *testing.T) {
 		m := TranslationMatrix(5.0, 6.0)
 
 		assert.False(t, m.Reflect(AxisHorizontal).Equal(m.PreReflect(AxisHorizontal)))
+	})
+}
+
+func TestMatrix_Multiply(t *testing.T) {
+	t.Run("identity is neutral", func(t *testing.T) {
+		geomtest.AssertMatrix(t, IdentityMatrix[float64]().Multiply(TranslationMatrix(5.0, 3.0)), TranslationMatrix(5.0, 3.0))
+		geomtest.AssertMatrix(t, TranslationMatrix(5.0, 3.0).Multiply(IdentityMatrix[float64]()), TranslationMatrix(5.0, 3.0))
+		geomtest.AssertMatrix(t, IdentityMatrix[int]().Multiply(TranslationMatrix(5, 3)), TranslationMatrix(5, 3))
+	})
+	t.Run("narrow integers do not overflow mid-computation", func(t *testing.T) {
+		geomtest.AssertMatrix(t, Mat[int8](100, 50, 0, 0, 1, 0).Multiply(Mat[int8](2, 0, 0, -2, 1, 0)), Mat[int8](100, 50, 0, -2, 1, 0))
+	})
+	t.Run("rounds each product, the same bits on every architecture", func(t *testing.T) {
+		assert.Equal(t, Mat(tenth, 0.2, 0.0, 0.0, 1.0, 0.0).Multiply(Mat(1.1, 0.0, 0.0, 1.3, 1.0, 0.0)).A, 0.37)
+	})
+	t.Run("translations compose additively", func(t *testing.T) {
+		geomtest.AssertMatrix(t, TranslationMatrix(5.0, 3.0).Multiply(TranslationMatrix(2.0, 1.0)), TranslationMatrix(7.0, 4.0))
+		geomtest.AssertMatrix(t, TranslationMatrix[float32](5, 3).Multiply(TranslationMatrix[float32](2, 1)), TranslationMatrix[float32](7, 4))
+		geomtest.AssertMatrix(t, TranslationMatrix(5, 3).Multiply(TranslationMatrix(2, 1)), TranslationMatrix(7, 4))
+	})
+	t.Run("scales compose multiplicatively", func(t *testing.T) {
+		geomtest.AssertMatrix(t, ScaleMatrix(2.0, 3.0).Multiply(ScaleMatrix(4.0, 2.0)), ScaleMatrix(8.0, 6.0))
+		geomtest.AssertMatrix(t, ScaleMatrix[float32](2, 3).Multiply(ScaleMatrix[float32](4, 2)), ScaleMatrix[float32](8, 6))
+		geomtest.AssertMatrix(t, ScaleMatrix(2, 3).Multiply(ScaleMatrix(4, 2)), ScaleMatrix(8, 6))
 	})
 }
 

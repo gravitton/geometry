@@ -142,6 +142,27 @@ func (v Vector[T]) Lerp(vector Vector[T], t float64) Vector[T] {
 	return Vector[T]{Lerp(v.X, vector.X, t), Lerp(v.Y, vector.Y, t)}
 }
 
+// Slerp returns the vector interpolated toward the given one, the direction along the shorter arc
+// as LerpAngle turns it and the length linearly, extrapolated outside [0, 1]. The zero vector takes
+// the direction of the other, so the result runs as Lerp does, and opposite vectors turn toward
+// increasing angle. A length taken past zero flips the direction, and a t of zero returns the
+// receiver exactly.
+func (v Vector[T]) Slerp(vector Vector[T], t float64) Vector[T] {
+	from, to := v.Float(), vector.Float()
+
+	switch {
+	case !from.hasDirection():
+		return to.Multiply(t).Cast[T]()
+	case !to.hasDirection():
+		return from.Multiply(1 - t).Cast[T]()
+	}
+
+	length := from.Length()
+	turned := from.Rotate(LerpAngle(0, to.Angle()-from.Angle(), t))
+
+	return turned.Multiply(Lerp(length, to.Length(), t) / length).Cast[T]()
+}
+
 // AtLeast returns the vector resized to the length where Less holds for it, and the vector itself
 // otherwise, so a non-positive length changes nothing. The zero vector is resized along +X.
 func (v Vector[T]) AtLeast(length T) Vector[T] {
@@ -219,27 +240,6 @@ func (v Vector[T]) Resize(length float64) Vector[T] {
 	current := v.Length()
 
 	return Vector[T]{Cast[T](float64(v.X) / current * length), Cast[T](float64(v.Y) / current * length)}
-}
-
-// Slerp returns the vector interpolated toward the given one, the direction along the shorter arc
-// as LerpAngle turns it and the length linearly, extrapolated outside [0, 1]. The zero vector takes
-// the direction of the other, so the result runs as Lerp does, and opposite vectors turn toward
-// increasing angle. A length taken past zero flips the direction, and a t of zero returns the
-// receiver exactly.
-func (v Vector[T]) Slerp(vector Vector[T], t float64) Vector[T] {
-	from, to := v.Float(), vector.Float()
-
-	switch {
-	case !from.hasDirection():
-		return to.Multiply(t).Cast[T]()
-	case !to.hasDirection():
-		return from.Multiply(1 - t).Cast[T]()
-	}
-
-	length := from.Length()
-	turned := from.Rotate(LerpAngle(0, to.Angle()-from.Angle(), t))
-
-	return turned.Multiply(Lerp(length, to.Length(), t) / length).Cast[T]()
 }
 
 // Normalize returns the vector of length one in its own direction, and (1,0) for the zero vector.

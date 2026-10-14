@@ -303,16 +303,16 @@ func TestAssertVertices(t *testing.T) {
 }
 
 func TestAssertRectangle(t *testing.T) {
-	r := geom.Rect(geom.Pt(1, 2), geom.Sz(3, 4))
+	r := geom.Rect(geom.Pt(1, 2), geom.Sz(3, 4), 0)
 
 	t.Run("equal", func(t *testing.T) {
-		assertHelper(t, AssertRectangle, r, geom.Rect(geom.Pt(1, 2), geom.Sz(3, 4)), true)
+		assertHelper(t, AssertRectangle, r, geom.Rect(geom.Pt(1, 2), geom.Sz(3, 4), 0), true)
 	})
 	t.Run("center differs", func(t *testing.T) {
-		assertHelper(t, AssertRectangle, r, geom.Rect(geom.Pt(9, 2), geom.Sz(3, 4)), false)
+		assertHelper(t, AssertRectangle, r, geom.Rect(geom.Pt(9, 2), geom.Sz(3, 4), 0), false)
 	})
 	t.Run("size differs", func(t *testing.T) {
-		assertHelper(t, AssertRectangle, r, geom.Rect(geom.Pt(1, 2), geom.Sz(9, 4)), false)
+		assertHelper(t, AssertRectangle, r, geom.Rect(geom.Pt(1, 2), geom.Sz(9, 4), 0), false)
 	})
 	t.Run("angle is compared normalized", func(t *testing.T) {
 		assertHelper(t, AssertRectangle, r.Rotate(geom.Pi/2), r.Rotate(-3*geom.Pi/2), true)

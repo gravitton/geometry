@@ -949,7 +949,7 @@ func (p Polygon[T]) IntersectionRay(ray Ray[T]) []Point[T] {
 }
 
 // IntersectionLine returns the points where the line crosses the boundary, in order along its
-// Direction.
+// Vector.
 func (p Polygon[T]) IntersectionLine(line Line[T]) []Point[T] {
 	return line.IntersectionPolygon(p)
 }
@@ -1029,7 +1029,7 @@ func (p Polygon[T]) ClipRegularPolygon(polygon RegularPolygon[T]) (Polygon[T], b
 // AppendClipRegularPolygon appends the vertices of ClipRegularPolygon(polygon) to dst and returns
 // the extended slice.
 func (p Polygon[T]) AppendClipRegularPolygon(dst []Point[T], polygon RegularPolygon[T]) []Point[T] {
-	if polygon.N < 3 || !polygon.Size.IsPositive() || !p.IntersectsRegularPolygon(polygon) {
+	if polygon.N < 3 || !polygon.Radius.IsPositive() || !p.IntersectsRegularPolygon(polygon) {
 		return dst
 	}
 
@@ -1086,7 +1086,7 @@ func (p Polygon[T]) Split(line Line[T]) (Polygon[T], Polygon[T]) {
 // AppendSplit appends the vertices of the two parts of Split(line) to front and back and returns
 // the extended slices.
 func (p Polygon[T]) AppendSplit(front, back []Point[T], line Line[T]) ([]Point[T], []Point[T]) {
-	if !line.Direction.hasDirection() {
+	if !line.Vector.hasDirection() {
 		return append(front, p.Points...), back
 	}
 

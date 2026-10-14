@@ -241,7 +241,7 @@ func (p Polyline[T]) IntersectionRay(ray Ray[T]) []Point[T] {
 }
 
 // IntersectionLine returns the points where the line crosses the path, in order along its
-// Direction.
+// Vector.
 func (p Polyline[T]) IntersectionLine(line Line[T]) []Point[T] {
 	return line.IntersectionPolyline(p)
 }

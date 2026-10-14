@@ -1362,8 +1362,8 @@ func TestPolygon_ContainsRectangle(t *testing.T) {
 	notched := Pol(notchedVertices())
 
 	t.Run("an edge along the bottom vertex of the notch stays inside", func(t *testing.T) {
-		assert.True(t, notched.ContainsRectangle(Rect(Pt(4, 1), Sz(6, 2))))
-		assert.False(t, notched.ContainsRectangle(Rect(Pt(4, 2), Sz(6, 2))))
+		assert.True(t, notched.ContainsRectangle(Rect(Pt(4, 1), Sz(6, 2), 0)))
+		assert.False(t, notched.ContainsRectangle(Rect(Pt(4, 2), Sz(6, 2), 0)))
 	})
 }
 
@@ -1507,20 +1507,20 @@ func TestPolygon_IntersectsRectangle(t *testing.T) {
 	square := Pol(squareVertices())
 
 	t.Run("overlapping", func(t *testing.T) {
-		assert.True(t, square.IntersectsRectangle(Rect(Pt(2, 2), Sz(2, 2))))
+		assert.True(t, square.IntersectsRectangle(Rect(Pt(2, 2), Sz(2, 2), 0)))
 	})
 	t.Run("apart", func(t *testing.T) {
-		assert.False(t, square.IntersectsRectangle(Rect(Pt(4, 4), Sz(2, 2))))
+		assert.False(t, square.IntersectsRectangle(Rect(Pt(4, 4), Sz(2, 2), 0)))
 	})
 	t.Run("one contained in the other", func(t *testing.T) {
-		assert.True(t, square.IntersectsRectangle(Rect(Pt(1, 1), Sz(20, 20))))
-		assert.True(t, square.IntersectsRectangle(Rect(Pt(1, 1), Sz(1, 1))))
+		assert.True(t, square.IntersectsRectangle(Rect(Pt(1, 1), Sz(20, 20), 0)))
+		assert.True(t, square.IntersectsRectangle(Rect(Pt(1, 1), Sz(1, 1), 0)))
 	})
 	t.Run("edges crossing without a corner inside", func(t *testing.T) {
-		assert.True(t, square.IntersectsRectangle(Rect(Pt(1, 1), Sz(6, 1))))
+		assert.True(t, square.IntersectsRectangle(Rect(Pt(1, 1), Sz(6, 1), 0)))
 	})
 	t.Run("an empty polygon intersects nothing", func(t *testing.T) {
-		assert.False(t, Pol[int](nil).IntersectsRectangle(Rect(Pt(1, 1), Sz(2, 2))))
+		assert.False(t, Pol[int](nil).IntersectsRectangle(Rect(Pt(1, 1), Sz(2, 2), 0)))
 	})
 	t.Run("matches the rectangle as a polygon", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
@@ -1702,19 +1702,19 @@ func TestPolygon_ClipRectangle(t *testing.T) {
 	square := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(4.0, 4.0), Pt(0.0, 4.0)})
 
 	t.Run("is the part inside a turned rectangle", func(t *testing.T) {
-		part, ok := square.ClipRectangle(Rect(Pt(4.0, 2.0), Sz(4.0, 4.0)).Rotate(Pi / 4))
+		part, ok := square.ClipRectangle(Rect(Pt(4.0, 2.0), Sz(4.0, 4.0), 0).Rotate(Pi / 4))
 		reach := 4 - 2*Sqrt2
 
 		assert.True(t, ok)
 		geomtest.AssertPolygon(t, part, Pol([]Point[float64]{Pt(reach, 2.0), Pt(reach+2, 0.0), Pt(4.0, 0.0), Pt(4.0, 4.0), Pt(reach+2, 4.0)}))
 	})
 	t.Run("a rectangle apart or of no area leaves nothing", func(t *testing.T) {
-		part, ok := square.ClipRectangle(Rect(Pt(10.0, 10.0), Sz(2.0, 2.0)))
+		part, ok := square.ClipRectangle(Rect(Pt(10.0, 10.0), Sz(2.0, 2.0), 0))
 
 		assert.False(t, ok)
 		assert.Nil(t, part.Points)
 
-		_, ok = square.ClipRectangle(Rect(Pt(2.0, 2.0), Sz(0.0, 2.0)))
+		_, ok = square.ClipRectangle(Rect(Pt(2.0, 2.0), Sz(0.0, 2.0), 0))
 		assert.False(t, ok)
 	})
 	t.Run("over the fixtures", func(t *testing.T) {
@@ -1730,7 +1730,7 @@ func TestPolygon_ClipRectangle(t *testing.T) {
 
 func TestPolygon_AppendClipRectangle(t *testing.T) {
 	square := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(0, 4)})
-	rectangle := Rect(Pt(4, 4), Sz(4, 4))
+	rectangle := Rect(Pt(4, 4), Sz(4, 4), 0)
 
 	t.Run("appends the part after the points in dst", func(t *testing.T) {
 		geomtest.AssertVertices(t, square.AppendClipRectangle([]Point[int]{Pt(9, 9)}, rectangle), []Point[int]{Pt(9, 9), Pt(2, 2), Pt(4, 2), Pt(4, 4), Pt(2, 4)})
@@ -1931,8 +1931,8 @@ func TestPolygon_Split(t *testing.T) {
 				front, back := p.Split(l)
 				message := fmt.Sprintf("%s → %s: ", p, l)
 
-				if !l.Direction.IsZero() {
-					reversedFront, reversedBack := p.Split(Ln(l.Origin, l.Direction.Negate()))
+				if !l.Vector.IsZero() {
+					reversedFront, reversedBack := p.Split(Ln(l.Origin, l.Vector.Negate()))
 					geomtest.AssertPolygon(t, reversedFront, back, message)
 					geomtest.AssertPolygon(t, reversedBack, front, message)
 				}
@@ -1952,7 +1952,7 @@ func assertPolygonSplit(t *testing.T, p, part Polygon[float64], line Line[float6
 	assert.True(t, LessOrEqual(part.Area(), p.Area()), message)
 	for _, vertex := range part.Points {
 		assert.True(t, p.Contains(vertex), message+vertex.String())
-		assert.True(t, line.Direction.IsZero() || line.Contains(vertex) || line.Side(vertex) == side, message+vertex.String())
+		assert.True(t, line.Vector.IsZero() || line.Contains(vertex) || line.Side(vertex) == side, message+vertex.String())
 	}
 }
 

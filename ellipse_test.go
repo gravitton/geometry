@@ -13,10 +13,10 @@ import (
 
 func TestEllipse_Constructor(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		geomtest.AssertEllipse(t, Ell(Pt(10, 16), Sz(12, 4), 0), Ellipse[int]{Center: Pt(10, 16), Size: Sz(12, 4)})
+		geomtest.AssertEllipse(t, Ell(Pt(10, 16), Sz(12, 4), 0), Ellipse[int]{Center: Pt(10, 16), Radius: Sz(12, 4)})
 	})
 	t.Run("float", func(t *testing.T) {
-		geomtest.AssertEllipse(t, Ell(Pt(0.16, 204), Sz(5.1, 1.2), 0.5), Ellipse[float64]{Center: Pt(0.16, 204.0), Size: Sz(5.1, 1.2), Angle: 0.5})
+		geomtest.AssertEllipse(t, Ell(Pt(0.16, 204), Sz(5.1, 1.2), 0.5), Ellipse[float64]{Center: Pt(0.16, 204.0), Radius: Sz(5.1, 1.2), Angle: 0.5})
 	})
 	t.Run("a negative semi-axis is taken absolute", func(t *testing.T) {
 		geomtest.AssertEllipse(t, Ell(Pt(10, 16), Sz(-12, -4), 0), Ell(Pt(10, 16), Sz(12, 4), 0))
@@ -82,7 +82,7 @@ func TestEllipse_Foci(t *testing.T) {
 		geomtest.AssertPoint(t, b, Pt(0.0, 4.0))
 	})
 	t.Run("a literal negative semi-axis places them as its absolute value does", func(t *testing.T) {
-		a, b := Ellipse[int]{Center: Pt(1, 2), Size: Sz(-3, -5)}.Foci()
+		a, b := Ellipse[int]{Center: Pt(1, 2), Radius: Sz(-3, -5)}.Foci()
 
 		geomtest.AssertPoint(t, a, Pt(1, -2))
 		geomtest.AssertPoint(t, b, Pt(1, 6))
@@ -183,7 +183,7 @@ func TestEllipse_Bounds(t *testing.T) {
 	})
 	t.Run("a turned ellipse reaches where its tangent is axis-aligned", func(t *testing.T) {
 		// not the corner of the turned box: √(w²cos² + h²sin²) either side
-		geomtest.AssertBox(t, Ell(Pt(0.0, 0.0), Sz(10.0, 4.0), Pi/6).Bounds(), Rect(Pt(0.0, 0.0), Sz(2*math.Hypot(10*math.Cos(Pi/6), 4*math.Sin(Pi/6)), 2*math.Hypot(10*math.Sin(Pi/6), 4*math.Cos(Pi/6)))).Bounds())
+		geomtest.AssertBox(t, Ell(Pt(0.0, 0.0), Sz(10.0, 4.0), Pi/6).Bounds(), Rect(Pt(0.0, 0.0), Sz(2*math.Hypot(10*math.Cos(Pi/6), 4*math.Sin(Pi/6)), 2*math.Hypot(10*math.Sin(Pi/6), 4*math.Cos(Pi/6))), 0).Bounds())
 	})
 	t.Run("int is rounded once", func(t *testing.T) {
 		geomtest.AssertBox(t, Ell(Pt(1, 2), Sz(10, 4), 0).Bounds(), Bx(Pt(-9, -2), Pt(11, 6)))
@@ -500,8 +500,8 @@ func TestEllipse_Nearest(t *testing.T) {
 		geomtest.AssertPoint(t, Ell(Pt(0.0, 0.0), Sz(0.0, 5.0), 0).Nearest(Pt(9.0, 3.0)), Pt(0.0, 3.0))
 	})
 	t.Run("a literal negative semi-axis measures as its absolute value does", func(t *testing.T) {
-		geomtest.AssertPoint(t, Ellipse[int]{Center: Pt(0, 0), Size: Sz(-5, -3)}.Nearest(Pt(8, 6)), Ell(Pt(0, 0), Sz(5, 3), 0).Nearest(Pt(8, 6)))
-		geomtest.AssertPoint(t, Ellipse[int]{Center: Pt(8, 2), Size: Sz(-1, -2), Angle: Pi}.Nearest(Pt(5, 2)), Ell(Pt(8, 2), Sz(1, 2), Pi).Nearest(Pt(5, 2)))
+		geomtest.AssertPoint(t, Ellipse[int]{Center: Pt(0, 0), Radius: Sz(-5, -3)}.Nearest(Pt(8, 6)), Ell(Pt(0, 0), Sz(5, 3), 0).Nearest(Pt(8, 6)))
+		geomtest.AssertPoint(t, Ellipse[int]{Center: Pt(8, 2), Radius: Sz(-1, -2), Angle: Pi}.Nearest(Pt(5, 2)), Ell(Pt(8, 2), Sz(1, 2), Pi).Nearest(Pt(5, 2)))
 	})
 	t.Run("it is the nearest point of a fine sampling", func(t *testing.T) {
 		for _, e := range ellipseFixtures {
@@ -614,6 +614,66 @@ func TestEllipse_Contains(t *testing.T) {
 	})
 }
 
+func TestEllipse_IntersectsSegment(t *testing.T) {
+	t.Run("mirrors Segment.IntersectsEllipse", func(t *testing.T) {
+		for _, e := range ellipseFixtures {
+			for _, s := range segmentFixtures {
+				assert.Equal(t, e.IntersectsSegment(s), s.IntersectsEllipse(e), fmt.Sprintf("%s → %s: ", e, s))
+			}
+		}
+	})
+}
+
+func TestEllipse_IntersectsRay(t *testing.T) {
+	t.Run("mirrors Ray.IntersectsEllipse", func(t *testing.T) {
+		for _, e := range ellipseFixtures {
+			for _, r := range rayFixtures {
+				assert.Equal(t, e.IntersectsRay(r), r.IntersectsEllipse(e), fmt.Sprintf("%s → %s: ", e, r))
+			}
+		}
+	})
+}
+
+func TestEllipse_IntersectsLine(t *testing.T) {
+	t.Run("mirrors Line.IntersectsEllipse", func(t *testing.T) {
+		for _, e := range ellipseFixtures {
+			for _, l := range lineFixtures {
+				assert.Equal(t, e.IntersectsLine(l), l.IntersectsEllipse(e), fmt.Sprintf("%s → %s: ", e, l))
+			}
+		}
+	})
+}
+
+func TestEllipse_IntersectionSegment(t *testing.T) {
+	t.Run("matches Segment.IntersectionEllipse", func(t *testing.T) {
+		for _, e := range ellipseFixtures {
+			for _, s := range segmentFixtures {
+				geomtest.AssertVertices(t, e.IntersectionSegment(s).AppendTo(nil), s.IntersectionEllipse(e).AppendTo(nil), fmt.Sprintf("%s → %s: ", e, s))
+			}
+		}
+	})
+}
+
+func TestEllipse_IntersectionRay(t *testing.T) {
+	t.Run("matches Ray.IntersectionEllipse", func(t *testing.T) {
+		for _, e := range ellipseFixtures {
+			for _, r := range rayFixtures {
+				geomtest.AssertVertices(t, e.IntersectionRay(r).AppendTo(nil), r.IntersectionEllipse(e).AppendTo(nil), fmt.Sprintf("%s → %s: ", e, r))
+			}
+		}
+	})
+}
+
+func TestEllipse_IntersectionLine(t *testing.T) {
+	t.Run("matches Line.IntersectionEllipse", func(t *testing.T) {
+		for _, e := range ellipseFixtures {
+			for _, l := range lineFixtures {
+				geomtest.AssertVertices(t, e.IntersectionLine(l).AppendTo(nil), l.IntersectionEllipse(e).AppendTo(nil), fmt.Sprintf("%s → %s: ", e, l))
+			}
+		}
+	})
+}
+
 func BenchmarkEllipse_Contains(b *testing.B) {
 	e := Ell(Pt(0.0, 0.0), Sz(50.0, 30.0), Pi/6)
 	inside, outside := Pt(10.0, 20.0), Pt(99.0, 99.0)
@@ -685,6 +745,77 @@ func TestEllipse_Circle(t *testing.T) {
 	})
 }
 
+func TestEllipse_Polygon(t *testing.T) {
+	t.Run("equal steps of the parameter from the end of the width semi-axis", func(t *testing.T) {
+		geomtest.AssertPolygon(t, Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Polygon(1.5), Pol([]Point[float64]{Pt(4.0, 0.0), Pt(0.0, 2.0), Pt(-4.0, 0.0), Pt(0.0, -2.0)}))
+		geomtest.AssertPolygon(t, Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Polygon(-1.5), Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Polygon(1.5))
+	})
+	t.Run("turned with the ellipse", func(t *testing.T) {
+		geomtest.AssertPolygon(t, Ell(Pt(1.0, 1.0), Sz(4.0, 2.0), Pi/2).Polygon(1.5), Pol([]Point[float64]{Pt(1.0, 5.0), Pt(-1.0, 1.0), Pt(1.0, -3.0), Pt(3.0, 1.0)}))
+	})
+	t.Run("a circle is flattened as the circle", func(t *testing.T) {
+		geomtest.AssertPolygon(t, Circ(Pt(1.0, 2.0), 5.0).Ellipse().Polygon(0.1), Circ(Pt(1.0, 2.0), 5.0).Polygon(0.1))
+	})
+	t.Run("never fewer than three, a thousand at most", func(t *testing.T) {
+		assert.Length(t, Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Polygon(100).Points, 3)
+		assert.Length(t, Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Polygon(0).Points, 1024)
+	})
+	t.Run("int rounds the vertices, and no extent gives the center", func(t *testing.T) {
+		geomtest.AssertPolygon(t, Ell(Pt(1, 2), Sz(4, 2), 0).Polygon(1.5), Pol([]Point[int]{Pt(5, 2), Pt(1, 4), Pt(-3, 2), Pt(1, 0)}))
+		geomtest.AssertPolygon(t, Ell(Pt(0, 0), Sz(1, 1), 0).Polygon(0.02), Pol([]Point[int]{Pt(1, 0), Pt(1, 1), Pt(0, 1), Pt(-1, 1), Pt(-1, 0), Pt(-1, -1), Pt(0, -1), Pt(1, -1)}))
+		geomtest.AssertPolygon(t, Ell(Pt(1, 2), Sz(0, 0), 0).Polygon(1), Pol([]Point[int]{Pt(1, 2)}))
+	})
+	t.Run("the vertices lie on the boundary, the edges within the tolerance of it, wound as a rectangle", func(t *testing.T) {
+		for _, e := range ellipseFixtures {
+			for _, tolerance := range []float64{0.01, 0.25} {
+				polygon := e.Polygon(tolerance)
+				message := fmt.Sprintf("%s ±%v: ", e, tolerance)
+
+				if e.Radius.Area() == 0 {
+					continue
+				}
+
+				for vertex := range polygon.Vertices() {
+					assert.True(t, e.Contains(vertex), message+vertex.String())
+					assert.True(t, EqualDelta(boundaryGap(e, vertex), 0, 1e-9), message+vertex.String())
+				}
+
+				for edge := range polygon.Edges() {
+					assert.True(t, LessOrEqual(boundaryGap(e, edge.Midpoint()), tolerance), message+edge.String())
+				}
+
+				assert.Equal(t, polygon.Winding(), WindingClockwise, message)
+			}
+		}
+	})
+}
+
+// boundaryGap returns how far the point lies from the boundary of the ellipse along the ray
+// from its center, which is no less than its distance to the boundary.
+func boundaryGap(e Ellipse[float64], point Point[float64]) float64 {
+	offset := point.Subtract(e.Center).Rotate(-e.Angle)
+	scaled := Vec(offset.X/e.Radius.Width, offset.Y/e.Radius.Height)
+
+	return math.Abs(offset.Length() * (1/scaled.Length() - 1))
+}
+
+func TestEllipse_AppendPolygon(t *testing.T) {
+	t.Run("appends after the points already there", func(t *testing.T) {
+		geomtest.AssertVertices(t, Ell(Pt(0, 0), Sz(4, 2), 0).AppendPolygon([]Point[int]{Pt(9, 9)}, 1.5), []Point[int]{Pt(9, 9), Pt(4, 0), Pt(0, 2), Pt(-4, 0), Pt(0, -2)})
+	})
+	t.Run("allocates once, and nothing into a buffer with room", func(t *testing.T) {
+		ellipse := Ell(Pt(0, 0), Sz(50, 30), 0.5)
+		buffer := make([]Point[int], 0, 64)
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = ellipse.Polygon(1).Points
+		}), 1)
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkPoints = ellipse.AppendPolygon(buffer[:0], 1)
+		}), 0)
+	})
+}
+
 func TestEllipse_RegularPolygon(t *testing.T) {
 	e := Ell(Pt(1.0, 2.0), Sz(10.0, 4.0), Pi/6)
 
@@ -719,77 +850,6 @@ func TestEllipse_RegularPolygon(t *testing.T) {
 	})
 	t.Run("it round-trips through Ellipse", func(t *testing.T) {
 		geomtest.AssertEllipse(t, e.RegularPolygon(6, OrientationFlatTop).Ellipse(), e)
-	})
-}
-
-func TestEllipse_Polygon(t *testing.T) {
-	t.Run("equal steps of the parameter from the end of the width semi-axis", func(t *testing.T) {
-		geomtest.AssertPolygon(t, Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Polygon(1.5), Pol([]Point[float64]{Pt(4.0, 0.0), Pt(0.0, 2.0), Pt(-4.0, 0.0), Pt(0.0, -2.0)}))
-		geomtest.AssertPolygon(t, Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Polygon(-1.5), Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Polygon(1.5))
-	})
-	t.Run("turned with the ellipse", func(t *testing.T) {
-		geomtest.AssertPolygon(t, Ell(Pt(1.0, 1.0), Sz(4.0, 2.0), Pi/2).Polygon(1.5), Pol([]Point[float64]{Pt(1.0, 5.0), Pt(-1.0, 1.0), Pt(1.0, -3.0), Pt(3.0, 1.0)}))
-	})
-	t.Run("a circle is flattened as the circle", func(t *testing.T) {
-		geomtest.AssertPolygon(t, Circ(Pt(1.0, 2.0), 5.0).Ellipse().Polygon(0.1), Circ(Pt(1.0, 2.0), 5.0).Polygon(0.1))
-	})
-	t.Run("never fewer than three, a thousand at most", func(t *testing.T) {
-		assert.Length(t, Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Polygon(100).Points, 3)
-		assert.Length(t, Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Polygon(0).Points, 1024)
-	})
-	t.Run("int rounds the vertices, and no extent gives the center", func(t *testing.T) {
-		geomtest.AssertPolygon(t, Ell(Pt(1, 2), Sz(4, 2), 0).Polygon(1.5), Pol([]Point[int]{Pt(5, 2), Pt(1, 4), Pt(-3, 2), Pt(1, 0)}))
-		geomtest.AssertPolygon(t, Ell(Pt(0, 0), Sz(1, 1), 0).Polygon(0.02), Pol([]Point[int]{Pt(1, 0), Pt(1, 1), Pt(0, 1), Pt(-1, 1), Pt(-1, 0), Pt(-1, -1), Pt(0, -1), Pt(1, -1)}))
-		geomtest.AssertPolygon(t, Ell(Pt(1, 2), Sz(0, 0), 0).Polygon(1), Pol([]Point[int]{Pt(1, 2)}))
-	})
-	t.Run("the vertices lie on the boundary, the edges within the tolerance of it, wound as a rectangle", func(t *testing.T) {
-		for _, e := range ellipseFixtures {
-			for _, tolerance := range []float64{0.01, 0.25} {
-				polygon := e.Polygon(tolerance)
-				message := fmt.Sprintf("%s ±%v: ", e, tolerance)
-
-				if e.Size.Area() == 0 {
-					continue
-				}
-
-				for vertex := range polygon.Vertices() {
-					assert.True(t, e.Contains(vertex), message+vertex.String())
-					assert.True(t, EqualDelta(boundaryGap(e, vertex), 0, 1e-9), message+vertex.String())
-				}
-
-				for edge := range polygon.Edges() {
-					assert.True(t, LessOrEqual(boundaryGap(e, edge.Midpoint()), tolerance), message+edge.String())
-				}
-
-				assert.Equal(t, polygon.Winding(), WindingClockwise, message)
-			}
-		}
-	})
-}
-
-// boundaryGap returns how far the point lies from the boundary of the ellipse along the ray
-// from its center, which is no less than its distance to the boundary.
-func boundaryGap(e Ellipse[float64], point Point[float64]) float64 {
-	offset := point.Subtract(e.Center).Rotate(-e.Angle)
-	scaled := Vec(offset.X/e.Size.Width, offset.Y/e.Size.Height)
-
-	return math.Abs(offset.Length() * (1/scaled.Length() - 1))
-}
-
-func TestEllipse_AppendPolygon(t *testing.T) {
-	t.Run("appends after the points already there", func(t *testing.T) {
-		geomtest.AssertVertices(t, Ell(Pt(0, 0), Sz(4, 2), 0).AppendPolygon([]Point[int]{Pt(9, 9)}, 1.5), []Point[int]{Pt(9, 9), Pt(4, 0), Pt(0, 2), Pt(-4, 0), Pt(0, -2)})
-	})
-	t.Run("allocates once, and nothing into a buffer with room", func(t *testing.T) {
-		ellipse := Ell(Pt(0, 0), Sz(50, 30), 0.5)
-		buffer := make([]Point[int], 0, 64)
-
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
-			sinkPoints = ellipse.Polygon(1).Points
-		}), 1)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
-			sinkPoints = ellipse.AppendPolygon(buffer[:0], 1)
-		}), 0)
 	})
 }
 
@@ -864,7 +924,7 @@ func TestEllipse_JSON(t *testing.T) {
 func TestEllipse_Properties(t *testing.T) {
 	t.Run("area follows the semi-axes", func(t *testing.T) {
 		for _, e := range ellipseFixtures {
-			geomtest.AssertNumber(t, e.Area(), Pi*e.Size.Width*e.Size.Height, fmt.Sprintf("%s: ", e))
+			geomtest.AssertNumber(t, e.Area(), Pi*e.Radius.Width*e.Radius.Height, fmt.Sprintf("%s: ", e))
 		}
 	})
 	t.Run("the perimeter is between the axes and the circle around them", func(t *testing.T) {
@@ -1033,7 +1093,7 @@ func TestEllipse_Immutable(t *testing.T) {
 
 // boundaryAt returns the point of the ellipse boundary at the parameter.
 func boundaryAt(e Ellipse[float64], parameter float64) Point[float64] {
-	return e.Center.Add(VectorFromAngleSize(parameter, e.Size).Rotate(e.Angle))
+	return e.Center.Add(VectorFromAngleSize(parameter, e.Radius).Rotate(e.Angle))
 }
 
 var ellipseFixtures = []Ellipse[float64]{

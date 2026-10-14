@@ -30,10 +30,24 @@ func TestSizeFromImage(t *testing.T) {
 
 func TestRectangleFromImage(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		geomtest.AssertRectangle(t, RectangleFromImage[int](image.Rect(0, 10, 55, 70)), Rect(Pt(27, 40), Sz(55, 60)))
+		geomtest.AssertRectangle(t, RectangleFromImage[int](image.Rect(0, 10, 55, 70)), Rect(Pt(27, 40), Sz(55, 60), 0))
 	})
 	t.Run("float", func(t *testing.T) {
-		geomtest.AssertRectangle(t, RectangleFromImage[float64](image.Rect(0, 10, 55, 70)), Rect(Pt(27.5, 40.0), Sz(55.0, 60.0)))
+		geomtest.AssertRectangle(t, RectangleFromImage[float64](image.Rect(0, 10, 55, 70)), Rect(Pt(27.5, 40.0), Sz(55.0, 60.0), 0))
+	})
+}
+
+func TestBoxFromImage(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		geomtest.AssertBox(t, BoxFromImage[int](image.Rect(0, 10, 55, 70)), Bx(Pt(0, 10), Pt(55, 70)))
+	})
+	t.Run("float", func(t *testing.T) {
+		geomtest.AssertBox(t, BoxFromImage[float64](image.Rect(0, 10, 55, 70)), Bx(Pt(0.0, 10.0), Pt(55.0, 70.0)))
+	})
+	t.Run("an int box of any extent round-trips through its Rectangle", func(t *testing.T) {
+		for _, b := range []Box[int]{Bx(Pt(0, 0), Pt(3, 5)), Bx(Pt(-6, 10), Pt(14, 71)), Bx(Pt(2, 2), Pt(2, 2))} {
+			geomtest.AssertBox(t, BoxFromImage[int](b.Rectangle().Rectangle()), b, b.String())
+		}
 	})
 }
 
@@ -53,14 +67,14 @@ func TestPoint_Point(t *testing.T) {
 
 func TestRectangle_Rectangle(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		assert.Equal(t, Rect(Pt(1, 2), Sz(2, 3)).Rectangle(), image.Rect(0, 1, 2, 4))
+		assert.Equal(t, Rect(Pt(1, 2), Sz(2, 3), 0).Rectangle(), image.Rect(0, 1, 2, 4))
 	})
 	t.Run("float rounds like Int", func(t *testing.T) {
-		assert.Equal(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6)).Rectangle(), image.Rect(1, -2, 2, 2))
+		assert.Equal(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6), 0).Rectangle(), image.Rect(1, -2, 2, 2))
 	})
 	t.Run("float spans exactly the rounded size", func(t *testing.T) {
-		assert.Equal(t, Rect(Pt(0.5, 0.5), SzU(16.0)).Rectangle(), image.Rect(-7, -7, 9, 9))
-		assert.Equal(t, Rect(Pt(0.4, 0.4), SzU(0.2)).Rectangle(), image.Rect(0, 0, 0, 0))
+		assert.Equal(t, Rect(Pt(0.5, 0.5), SzU(16.0), 0).Rectangle(), image.Rect(-7, -7, 9, 9))
+		assert.Equal(t, Rect(Pt(0.4, 0.4), SzU(0.2), 0).Rectangle(), image.Rect(0, 0, 0, 0))
 	})
 	t.Run("is the image rectangle of Int", func(t *testing.T) {
 		for _, r := range rectFixtures {

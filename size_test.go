@@ -141,43 +141,6 @@ func TestSize_Unscale(t *testing.T) {
 	})
 }
 
-func TestSize_Abs(t *testing.T) {
-	geomtest.AssertSize(t, Sz(-2, 3).Abs(), Sz(2, 3))
-	geomtest.AssertSize(t, Sz(-0.4, -0.25).Abs(), Sz(0.4, 0.25))
-	geomtest.AssertSize(t, Sz(2, 3).Abs(), Sz(2, 3))
-}
-
-func TestSize_Transpose(t *testing.T) {
-	t.Run("swaps width and height", func(t *testing.T) {
-		geomtest.AssertSize(t, Sz(2, 3).Transpose(), Sz(3, 2))
-		geomtest.AssertSize(t, Sz(0.4, -0.25).Transpose(), Sz(-0.25, 0.4))
-	})
-	t.Run("twice is the identity and matches Axis.Size", func(t *testing.T) {
-		for _, s := range sizeFixtures {
-			geomtest.AssertSize(t, s.Transpose().Transpose(), s, s.String())
-			geomtest.AssertSize(t, s.Transpose(), AxisVertical.Size(s.Width, s.Height), s.String())
-		}
-	})
-}
-
-func TestSize_Round(t *testing.T) {
-	geomtest.AssertSize(t, Sz(1.4, 2.5).Round(), Sz(1.0, 3.0))
-	geomtest.AssertSize(t, Sz(-1.4, -2.5).Round(), Sz(-1.0, -3.0))
-	geomtest.AssertSize(t, Sz(1, 2).Round(), Sz(1, 2))
-}
-
-func TestSize_Floor(t *testing.T) {
-	geomtest.AssertSize(t, Sz(1.4, 2.5).Floor(), Sz(1.0, 2.0))
-	geomtest.AssertSize(t, Sz(-1.4, -2.5).Floor(), Sz(-2.0, -3.0))
-	geomtest.AssertSize(t, Sz(1, 2).Floor(), Sz(1, 2))
-}
-
-func TestSize_Ceil(t *testing.T) {
-	geomtest.AssertSize(t, Sz(1.4, 2.5).Ceil(), Sz(2.0, 3.0))
-	geomtest.AssertSize(t, Sz(-1.4, -2.5).Ceil(), Sz(-1.0, -2.0))
-	geomtest.AssertSize(t, Sz(1, 2).Ceil(), Sz(1, 2))
-}
-
 func TestSize_Grow(t *testing.T) {
 	t.Run("uniform amount", func(t *testing.T) {
 		geomtest.AssertSize(t, Sz(2, 3).Grow(2), Sz(4, 5))
@@ -222,6 +185,43 @@ func TestSize_Lerp(t *testing.T) {
 	t.Run("extrapolates outside the unit range", func(t *testing.T) {
 		geomtest.AssertSize(t, Sz(2.0, 3.0).Lerp(Sz(4.0, 5.0), 2), Sz(6.0, 7.0))
 		geomtest.AssertSize(t, Sz(2.0, 3.0).Lerp(Sz(4.0, 5.0), -1), Sz(0.0, 1.0))
+	})
+}
+
+func TestSize_Abs(t *testing.T) {
+	geomtest.AssertSize(t, Sz(-2, 3).Abs(), Sz(2, 3))
+	geomtest.AssertSize(t, Sz(-0.4, -0.25).Abs(), Sz(0.4, 0.25))
+	geomtest.AssertSize(t, Sz(2, 3).Abs(), Sz(2, 3))
+}
+
+func TestSize_Round(t *testing.T) {
+	geomtest.AssertSize(t, Sz(1.4, 2.5).Round(), Sz(1.0, 3.0))
+	geomtest.AssertSize(t, Sz(-1.4, -2.5).Round(), Sz(-1.0, -3.0))
+	geomtest.AssertSize(t, Sz(1, 2).Round(), Sz(1, 2))
+}
+
+func TestSize_Floor(t *testing.T) {
+	geomtest.AssertSize(t, Sz(1.4, 2.5).Floor(), Sz(1.0, 2.0))
+	geomtest.AssertSize(t, Sz(-1.4, -2.5).Floor(), Sz(-2.0, -3.0))
+	geomtest.AssertSize(t, Sz(1, 2).Floor(), Sz(1, 2))
+}
+
+func TestSize_Ceil(t *testing.T) {
+	geomtest.AssertSize(t, Sz(1.4, 2.5).Ceil(), Sz(2.0, 3.0))
+	geomtest.AssertSize(t, Sz(-1.4, -2.5).Ceil(), Sz(-1.0, -2.0))
+	geomtest.AssertSize(t, Sz(1, 2).Ceil(), Sz(1, 2))
+}
+
+func TestSize_Transpose(t *testing.T) {
+	t.Run("swaps width and height", func(t *testing.T) {
+		geomtest.AssertSize(t, Sz(2, 3).Transpose(), Sz(3, 2))
+		geomtest.AssertSize(t, Sz(0.4, -0.25).Transpose(), Sz(-0.25, 0.4))
+	})
+	t.Run("twice is the identity and matches Axis.Size", func(t *testing.T) {
+		for _, s := range sizeFixtures {
+			geomtest.AssertSize(t, s.Transpose().Transpose(), s, s.String())
+			geomtest.AssertSize(t, s.Transpose(), AxisVertical.Size(s.Width, s.Height), s.String())
+		}
 	})
 }
 

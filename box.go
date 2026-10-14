@@ -29,6 +29,12 @@ func BoxFromMin[T Number](a Point[T], size Size[T]) Box[T] {
 	return BoxFromMinMax(a, a.Add(size.Vector()))
 }
 
+// BoxFromMax returns the box with its max corner at b and the size. A negative extent measures the
+// other way, so b is then a corner but not the maximum one.
+func BoxFromMax[T Number](b Point[T], size Size[T]) Box[T] {
+	return BoxFromMinMax(b.Add(size.Vector().Negate()), b)
+}
+
 // BoxFromMinMax returns the box between the opposite corners a and b, in either order.
 func BoxFromMinMax[T Number](a, b Point[T]) Box[T] {
 	return Bx(a, b)
@@ -55,6 +61,34 @@ func (b Box[T]) Height() T {
 // Size returns the width and height.
 func (b Box[T]) Size() Size[T] {
 	return Size[T]{b.Width(), b.Height()}
+}
+
+// Anchor returns the point of the boundary in the direction from the center: a corner for a
+// diagonal, the midpoint of an edge for a cardinal, and the Center for DirectionNone. Top is the side
+// of Min.Y, as drawn on a screen with Y pointing down.
+func (b Box[T]) Anchor(direction Direction) Point[T] {
+	center := b.Center()
+
+	switch direction.normalize() {
+	case TopLeft:
+		return b.Min
+	case Top:
+		return Point[T]{center.X, b.Min.Y}
+	case TopRight:
+		return Point[T]{b.Max.X, b.Min.Y}
+	case Right:
+		return Point[T]{b.Max.X, center.Y}
+	case BottomRight:
+		return b.Max
+	case Bottom:
+		return Point[T]{center.X, b.Max.Y}
+	case BottomLeft:
+		return Point[T]{b.Min.X, b.Max.Y}
+	case Left:
+		return Point[T]{b.Min.X, center.Y}
+	default:
+		return center
+	}
 }
 
 // Vertices returns an iterator over the corners from Min, clockwise as drawn on a screen with Y
@@ -145,6 +179,11 @@ func (b Box[T]) Translate(vector Vector[T]) Box[T] {
 // nearer Min.
 func (b Box[T]) MoveTo(point Point[T]) Box[T] {
 	return b.Translate(point.Subtract(b.Center()))
+}
+
+// AlignTo returns the box moved so that its Anchor in the direction lies at the point.
+func (b Box[T]) AlignTo(direction Direction, point Point[T]) Box[T] {
+	return b.Translate(point.Subtract(b.Anchor(direction)))
 }
 
 // Clamp returns the box moved by the least distance that brings it within the given one, the
@@ -408,7 +447,7 @@ func (b Box[T]) IntersectionRay(ray Ray[T]) Pair[Point[T]] {
 }
 
 // IntersectionLine returns the points where the line crosses the boundary, in order along its
-// Direction.
+// Vector.
 func (b Box[T]) IntersectionLine(line Line[T]) Pair[Point[T]] {
 	return line.IntersectionBox(b)
 }

@@ -23,8 +23,14 @@ type Rectangle[T Number] struct {
 	Angle  float64  `json:"a,omitzero"`
 }
 
-// Rect is shorthand for Rectangle{center, size}, with the size taken absolute and no turn.
-func Rect[T Number](center Point[T], size Size[T]) Rectangle[T] {
+// Rect is shorthand for Rectangle{center, size, angle}, with the size taken absolute.
+func Rect[T Number](center Point[T], size Size[T], angle float64) Rectangle[T] {
+	return Rectangle[T]{center, size.Abs(), angle}
+}
+
+// RectangleFromCenter returns the aligned rectangle with its center at the point and the size, taken
+// absolute.
+func RectangleFromCenter[T Number](center Point[T], size Size[T]) Rectangle[T] {
 	return Rectangle[T]{center, size.Abs(), 0}
 }
 
@@ -672,7 +678,7 @@ func (r Rectangle[T]) IntersectionRay(ray Ray[T]) Pair[Point[T]] {
 }
 
 // IntersectionLine returns the points where the line crosses the boundary, in order along its
-// Direction.
+// Vector.
 func (r Rectangle[T]) IntersectionLine(line Line[T]) Pair[Point[T]] {
 	return line.IntersectionRectangle(r)
 }

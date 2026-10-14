@@ -288,7 +288,7 @@ func (c Capsule[T]) IntersectsCapsule(capsule Capsule[T]) bool {
 
 // IntersectsSector reports whether the capsule and the sector share a point.
 func (c Capsule[T]) IntersectsSector(sector Sector[T]) bool {
-	return sector.IntersectsCapsule(c)
+	return lessOrEqualSquared(sector.distanceSquaredToSegment(c.Segment.Float()), float64(c.Radius), sector.epsilon(c.magnitude()))
 }
 
 // IntersectsSegment reports whether the capsule and the segment share a point.
@@ -418,7 +418,7 @@ func (c Capsule[T]) IntersectionRay(ray Ray[T]) Pair[Point[T]] {
 }
 
 // IntersectionLine returns the points where the line crosses the boundary, in order along its
-// Direction.
+// Vector.
 func (c Capsule[T]) IntersectionLine(line Line[T]) Pair[Point[T]] {
 	return c.IntersectionSegment(line.span(c.minMax()))
 }

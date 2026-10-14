@@ -8,9 +8,9 @@ import (
 // [0 0 1] implied.
 //
 // Translate, Rotate, RotateAround, Shear and Reflect compose the matrix with the constructor of the
-// same name on the right, applied first, and their Pre forms on the left, applied last. Scale and
-// Unscale take float64 factors, where ScaleMatrix takes T, so an integer matrix can be scaled by a
-// half.
+// same name on the right, applied first, and their Pre forms on the left, applied last. Scale,
+// ScaleAround and Unscale take float64 factors, where ScaleMatrix and ScaleMatrixAround take T, so an
+// integer matrix can be scaled by a half.
 //
 // For integer T, translation, integer scaling, reflection and quarter turns are exact. Any other
 // rotation rounds into a different matrix, and Inverse and Unscale do unless the result is integer.
@@ -274,6 +274,19 @@ func (m Matrix[T]) Scale(factorX, factorY float64) Matrix[T] {
 	}
 }
 
+// ScaleAround returns the matrix composed with a scale by the factors about the pivot on the right
+// (m·S), so the pivot keeps its place before the current transform. Each entry is rounded once, and
+// for float64 it equals the product with ScaleMatrixAround to the bit.
+func (m Matrix[T]) ScaleAround(pivotX, pivotY T, factorX, factorY float64) Matrix[T] {
+	f := m.Float()
+	x, y := pivotOffset(pivotX, factorX), pivotOffset(pivotY, factorY)
+
+	return Matrix[T]{
+		Multiply(m.A, factorX), Multiply(m.B, factorY), Cast[T](float64(f.A*x) + float64(f.B*y) + f.C),
+		Multiply(m.D, factorX), Multiply(m.E, factorY), Cast[T](float64(f.D*x) + float64(f.E*y) + f.F),
+	}
+}
+
 // Unscale returns the matrix composed with a scale by the inverse factors on the right, each column
 // divided by its factor. It panics for a zero factor.
 func (m Matrix[T]) Unscale(factorX, factorY float64) Matrix[T] {
@@ -292,17 +305,15 @@ func (m Matrix[T]) PreScale(factorX, factorY float64) Matrix[T] {
 	}
 }
 
-// Multiply returns the product of this matrix and the given one, the given one applied first.
-func (m Matrix[T]) Multiply(matrix Matrix[T]) Matrix[T] {
-	l, r := m.Float(), matrix.Float()
+// PreScaleAround returns the matrix composed with a scale by the factors about the pivot on the
+// left (S·m), so the pivot keeps its place after the current transform. Each entry is rounded once.
+func (m Matrix[T]) PreScaleAround(pivotX, pivotY T, factorX, factorY float64) Matrix[T] {
+	f := m.Float()
+	x, y := pivotOffset(pivotX, factorX), pivotOffset(pivotY, factorY)
 
 	return Matrix[T]{
-		Cast[T](float64(l.A*r.A) + float64(l.B*r.D)),
-		Cast[T](float64(l.A*r.B) + float64(l.B*r.E)),
-		Cast[T](float64(l.A*r.C) + float64(l.B*r.F) + l.C),
-		Cast[T](float64(l.D*r.A) + float64(l.E*r.D)),
-		Cast[T](float64(l.D*r.B) + float64(l.E*r.E)),
-		Cast[T](float64(l.D*r.C) + float64(l.E*r.F) + l.F),
+		Multiply(m.A, factorX), Multiply(m.B, factorX), Cast[T](float64(f.C*factorX) + x),
+		Multiply(m.D, factorY), Multiply(m.E, factorY), Cast[T](float64(f.F*factorY) + y),
 	}
 }
 
@@ -327,6 +338,20 @@ func (m Matrix[T]) PreReflect(axis Axis) Matrix[T] {
 	return ReflectionMatrix[T](axis).Multiply(m)
 }
 
+// Multiply returns the product of this matrix and the given one, the given one applied first.
+func (m Matrix[T]) Multiply(matrix Matrix[T]) Matrix[T] {
+	l, r := m.Float(), matrix.Float()
+
+	return Matrix[T]{
+		Cast[T](float64(l.A*r.A) + float64(l.B*r.D)),
+		Cast[T](float64(l.A*r.B) + float64(l.B*r.E)),
+		Cast[T](float64(l.A*r.C) + float64(l.B*r.F) + l.C),
+		Cast[T](float64(l.D*r.A) + float64(l.E*r.D)),
+		Cast[T](float64(l.D*r.B) + float64(l.E*r.E)),
+		Cast[T](float64(l.D*r.C) + float64(l.E*r.F) + l.F),
+	}
+}
+
 // Inverse returns the matrix that undoes this one. It panics for a singular matrix; check
 // IsInvertible first. For integer T only a determinant of ±1 inverts exactly.
 func (m Matrix[T]) Inverse() Matrix[T] {
@@ -346,6 +371,14 @@ func (m Matrix[T]) Inverse() Matrix[T] {
 		Cast[T](f.A * invDet),
 		Cast[T]((float64(f.C*f.D) - float64(f.A*f.F)) * invDet),
 	}
+}
+
+// pivotOffset returns the translation of a scale about the pivot along one axis, the pivot less its
+// scaled self, in the order the product with ScaleMatrixAround rounds it.
+func pivotOffset[T Number](pivot T, factor float64) float64 {
+	p := float64(pivot)
+
+	return float64(factor*-p) + p
 }
 
 // Equal reports whether the matrices have equal components.

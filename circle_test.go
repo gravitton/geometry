@@ -120,6 +120,15 @@ func TestCircleThrough(t *testing.T) {
 	})
 }
 
+func TestCircle_Diameter(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		geomtest.AssertNumber(t, Circ(Pt(1, 2), 10).Diameter(), 20)
+	})
+	t.Run("float", func(t *testing.T) {
+		geomtest.AssertNumber(t, Circ(Pt(0.6, -0.25), 1.2).Diameter(), 2.4)
+	})
+}
+
 func TestCircle_Anchor(t *testing.T) {
 	c := Circ(Pt(10.0, 10.0), 5.0)
 
@@ -175,15 +184,6 @@ func TestCircle_Inertia(t *testing.T) {
 			geomtest.AssertNumber(t, c.Inertia(), c.Ellipse().Inertia(), c.String())
 			assert.EqualDelta(t, c.Inertia(), c.RegularPolygon(360, OrientationFlatTop).Inertia(), c.Inertia()*1e-3, c.String())
 		}
-	})
-}
-
-func TestCircle_Diameter(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		geomtest.AssertNumber(t, Circ(Pt(1, 2), 10).Diameter(), 20)
-	})
-	t.Run("float", func(t *testing.T) {
-		geomtest.AssertNumber(t, Circ(Pt(0.6, -0.25), 1.2).Diameter(), 2.4)
 	})
 }
 
@@ -491,70 +491,6 @@ func TestCircle_Support(t *testing.T) {
 	})
 }
 
-func TestCircle_Tangents(t *testing.T) {
-	circle := Circ(Pt(0.0, 0.0), 3.0)
-
-	t.Run("a point outside gives two, mirrored across the line to the center", func(t *testing.T) {
-		geomtest.AssertVertices(t, circle.Tangents(Pt(5.0, 0.0)).AppendTo(nil), []Point[float64]{Pt(1.8, 2.4), Pt(1.8, -2.4)})
-		geomtest.AssertVertices(t, circle.Tangents(Pt(0.0, -5.0)).AppendTo(nil), []Point[float64]{Pt(2.4, -1.8), Pt(-2.4, -1.8)})
-	})
-	t.Run("a point on the boundary is the one tangent point", func(t *testing.T) {
-		geomtest.AssertVertices(t, circle.Tangents(Pt(3.0, 0.0)).AppendTo(nil), []Point[float64]{Pt(3.0, 0.0)})
-	})
-	t.Run("a point within the tolerance of the boundary is kept as it is", func(t *testing.T) {
-		assert.Equal(t, circle.Tangents(Pt(3.0+Delta/2, 0.0)).AppendTo(nil), []Point[float64]{Pt(3.0+Delta/2, 0.0)})
-		assert.Equal(t, circle.Tangents(Pt(3.0-Delta/2, 0.0)).AppendTo(nil), []Point[float64]{Pt(3.0-Delta/2, 0.0)})
-	})
-	t.Run("a point inside gives none", func(t *testing.T) {
-		assert.Nil(t, circle.Tangents(Pt(1.0, 1.0)).AppendTo(nil))
-		assert.Nil(t, circle.Tangents(Pt(0.0, 0.0)).AppendTo(nil))
-	})
-	t.Run("int rounds the points", func(t *testing.T) {
-		geomtest.AssertVertices(t, Circ(Pt(0, 0), 5).Tangents(Pt(13, 0)).AppendTo(nil), []Point[int]{Pt(2, 5), Pt(2, -5)})
-		geomtest.AssertVertices(t, Circ(Pt(0, 0), 1).Tangents(Pt(1, 1)).AppendTo(nil), []Point[int]{Pt(0, 1), Pt(1, 0)})
-	})
-	t.Run("a zero radius is touched at its center", func(t *testing.T) {
-		geomtest.AssertVertices(t, Circ(Pt(1.0, 1.0), 0.0).Tangents(Pt(5.0, 4.0)).AppendTo(nil), []Point[float64]{Pt(1.0, 1.0)})
-		geomtest.AssertVertices(t, Circ(Pt(1, 1), 0).Tangents(Pt(1, 1)).AppendTo(nil), []Point[int]{Pt(1, 1)})
-	})
-	t.Run("points lie on the boundary, at a right angle to the radius, and mirror Contains", func(t *testing.T) {
-		for _, c := range circleFixtures {
-			for _, p := range pointFixtures {
-				points := c.Tangents(p).AppendTo(nil)
-				message := fmt.Sprintf("%s → %s: ", c, p)
-
-				switch {
-				case touches(c, p):
-					assert.Equal(t, points, []Point[float64]{p}, message)
-				case c.Contains(p):
-					assert.Nil(t, points, message)
-				case c.Radius == 0:
-					geomtest.AssertVertices(t, points, []Point[float64]{c.Center}, message)
-				default:
-					assert.Length(t, points, 2, message)
-					for _, tangent := range points {
-						assert.True(t, touches(c, tangent), message)
-						geomtest.AssertNumber(t, tangent.Subtract(c.Center).Normalize().Dot(p.Subtract(tangent).Normalize()), 0, message)
-					}
-				}
-			}
-		}
-	})
-	t.Run("far from the origin float32 points lie on the boundary", func(t *testing.T) {
-		for _, offset := range farOffsets {
-			for _, c := range circleFixtures {
-				for _, p := range pointFixtures {
-					c, p := c.Cast[float32]().Translate(offset), p.Cast[float32]().Add(offset)
-
-					for _, tangent := range c.Tangents(p).AppendTo(nil) {
-						assert.True(t, touches(c, tangent), fmt.Sprintf("%s → %s: %s: ", c, p, tangent))
-					}
-				}
-			}
-		}
-	})
-}
-
 func BenchmarkCircle_Tangents(b *testing.B) {
 	circle, point := Circ(Pt(0.0, 0.0), 3.0), Pt(5.0, 0.0)
 
@@ -563,119 +499,12 @@ func BenchmarkCircle_Tangents(b *testing.B) {
 	}
 }
 
-func TestCircle_OuterTangents(t *testing.T) {
-	circle := Circ(Pt(0.0, 0.0), 3.0)
-
-	t.Run("equal circles are joined along both sides", func(t *testing.T) {
-		geomtest.AssertSegments(t, circle.OuterTangents(Circ(Pt(10.0, 0.0), 3.0)).AppendTo(nil), []Segment[float64]{Seg(Pt(0.0, 3.0), Pt(10.0, 3.0)), Seg(Pt(0.0, -3.0), Pt(10.0, -3.0))})
-	})
-	t.Run("unequal circles are joined on a slant", func(t *testing.T) {
-		geomtest.AssertSegments(t, Circ(Pt(0.0, 0.0), 8.0).OuterTangents(Circ(Pt(10.0, 0.0), 2.0)).AppendTo(nil), []Segment[float64]{Seg(Pt(4.8, 6.4), Pt(11.2, 1.6)), Seg(Pt(4.8, -6.4), Pt(11.2, -1.6))})
-	})
-	t.Run("touching from outside and overlapping circles keep both", func(t *testing.T) {
-		geomtest.AssertSegments(t, circle.OuterTangents(Circ(Pt(6.0, 0.0), 3.0)).AppendTo(nil), []Segment[float64]{Seg(Pt(0.0, 3.0), Pt(6.0, 3.0)), Seg(Pt(0.0, -3.0), Pt(6.0, -3.0))})
-		geomtest.AssertSegments(t, circle.OuterTangents(Circ(Pt(4.0, 0.0), 3.0)).AppendTo(nil), []Segment[float64]{Seg(Pt(0.0, 3.0), Pt(4.0, 3.0)), Seg(Pt(0.0, -3.0), Pt(4.0, -3.0))})
-	})
-	t.Run("a circle within the other, touching or not, has none", func(t *testing.T) {
-		assert.Nil(t, circle.OuterTangents(Circ(Pt(1.0, 0.0), 2.0)).AppendTo(nil))
-		assert.Nil(t, circle.OuterTangents(Circ(Pt(1.0+Delta/2, 0.0), 2.0)).AppendTo(nil))
-		assert.Nil(t, circle.OuterTangents(Circ(Pt(0.5, 0.0), 1.0)).AppendTo(nil))
-		assert.Nil(t, Circ(Pt(0.5, 0.0), 1.0).OuterTangents(circle).AppendTo(nil))
-		assert.Nil(t, circle.OuterTangents(circle).AppendTo(nil))
-	})
-	t.Run("a zero radius is touched at its center, from the Tangents of it", func(t *testing.T) {
-		geomtest.AssertSegments(t, circle.OuterTangents(Circ(Pt(5.0, 0.0), 0.0)).AppendTo(nil), []Segment[float64]{Seg(Pt(1.8, 2.4), Pt(5.0, 0.0)), Seg(Pt(1.8, -2.4), Pt(5.0, 0.0))})
-	})
-	t.Run("two zero radii are joined once", func(t *testing.T) {
-		geomtest.AssertSegments(t, Circ(Pt(1.0, 1.0), 0.0).OuterTangents(Circ(Pt(5.0, 4.0), 0.0)).AppendTo(nil), []Segment[float64]{Seg(Pt(1.0, 1.0), Pt(5.0, 4.0))})
-		assert.Nil(t, Circ(Pt(1.0, 1.0), 0.0).OuterTangents(Circ(Pt(1.0, 1.0), 0.0)).AppendTo(nil))
-	})
-	t.Run("int rounds the points", func(t *testing.T) {
-		geomtest.AssertSegments(t, Circ(Pt(0, 0), 3).OuterTangents(Circ(Pt(10, 0), 3)).AppendTo(nil), []Segment[int]{Seg(Pt(0, 3), Pt(10, 3)), Seg(Pt(0, -3), Pt(10, -3))})
-		geomtest.AssertSegments(t, Circ(Pt(0, 0), 8).OuterTangents(Circ(Pt(10, 0), 2)).AppendTo(nil), []Segment[int]{Seg(Pt(5, 6), Pt(11, 2)), Seg(Pt(5, -6), Pt(11, -2))})
-	})
-	t.Run("ends lie on their circles, at a right angle to the radius, from either side", func(t *testing.T) {
-		for _, a := range circleFixtures {
-			for _, b := range circleFixtures {
-				assertTangents(t, a, b, a.OuterTangents(b).AppendTo(nil), b.OuterTangents(a).AppendTo(nil))
-			}
-		}
-	})
-	t.Run("far from the origin float32 ends lie on their circles", func(t *testing.T) {
-		for _, offset := range farOffsets {
-			for _, a := range circleFixtures {
-				for _, b := range circleFixtures {
-					a, b := a.Cast[float32]().Translate(offset), b.Cast[float32]().Translate(offset)
-
-					for _, s := range a.OuterTangents(b).AppendTo(nil) {
-						assert.True(t, touches(a, s.Start), fmt.Sprintf("%s → %s: %s on a: ", a, b, s))
-						assert.True(t, touches(b, s.End), fmt.Sprintf("%s → %s: %s on b: ", a, b, s))
-					}
-				}
-			}
-		}
-	})
-}
-
 func BenchmarkCircle_OuterTangents(b *testing.B) {
 	circle, other := Circ(Pt(0.0, 0.0), 8.0), Circ(Pt(10.0, 0.0), 2.0)
 
 	for b.Loop() {
 		_ = circle.OuterTangents(other)
 	}
-}
-
-func TestCircle_InnerTangents(t *testing.T) {
-	circle := Circ(Pt(0.0, 0.0), 3.0)
-
-	t.Run("circles apart are joined across the line of centers", func(t *testing.T) {
-		geomtest.AssertSegments(t, circle.InnerTangents(Circ(Pt(10.0, 0.0), 3.0)).AppendTo(nil), []Segment[float64]{Seg(Pt(1.8, 2.4), Pt(8.2, -2.4)), Seg(Pt(1.8, -2.4), Pt(8.2, 2.4))})
-		geomtest.AssertSegments(t, Circ(Pt(0.0, 0.0), 2.0).InnerTangents(Circ(Pt(10.0, 0.0), 4.0)).AppendTo(nil), []Segment[float64]{Seg(Pt(1.2, 1.6), Pt(7.6, -3.2)), Seg(Pt(1.2, -1.6), Pt(7.6, 3.2))})
-	})
-	t.Run("touching and overlapping circles have none", func(t *testing.T) {
-		assert.Nil(t, circle.InnerTangents(Circ(Pt(6.0, 0.0), 3.0)).AppendTo(nil))
-		assert.Nil(t, circle.InnerTangents(Circ(Pt(6.0+Delta/2, 0.0), 3.0)).AppendTo(nil))
-		assert.Nil(t, circle.InnerTangents(Circ(Pt(4.0, 0.0), 3.0)).AppendTo(nil))
-		assert.Nil(t, circle.InnerTangents(Circ(Pt(1.0, 0.0), 1.0)).AppendTo(nil))
-		assert.Nil(t, circle.InnerTangents(circle).AppendTo(nil))
-	})
-	t.Run("a zero radius is touched at its center, from the Tangents of it", func(t *testing.T) {
-		geomtest.AssertSegments(t, circle.InnerTangents(Circ(Pt(5.0, 0.0), 0.0)).AppendTo(nil), []Segment[float64]{Seg(Pt(1.8, 2.4), Pt(5.0, 0.0)), Seg(Pt(1.8, -2.4), Pt(5.0, 0.0))})
-	})
-	t.Run("two zero radii are joined once", func(t *testing.T) {
-		geomtest.AssertSegments(t, Circ(Pt(1.0, 1.0), 0.0).InnerTangents(Circ(Pt(5.0, 4.0), 0.0)).AppendTo(nil), []Segment[float64]{Seg(Pt(1.0, 1.0), Pt(5.0, 4.0))})
-	})
-	t.Run("int rounds the points", func(t *testing.T) {
-		geomtest.AssertSegments(t, Circ(Pt(0, 0), 3).InnerTangents(Circ(Pt(10, 0), 3)).AppendTo(nil), []Segment[int]{Seg(Pt(2, 2), Pt(8, -2)), Seg(Pt(2, -2), Pt(8, 2))})
-	})
-	t.Run("exist exactly where the circles do not intersect", func(t *testing.T) {
-		for _, a := range circleFixtures {
-			for _, b := range circleFixtures {
-				assert.Equal(t, len(a.InnerTangents(b).AppendTo(nil)) > 0, !a.IntersectsCircle(b), fmt.Sprintf("%s → %s: ", a, b))
-			}
-		}
-	})
-	t.Run("ends lie on their circles, at a right angle to the radius, from either side", func(t *testing.T) {
-		for _, a := range circleFixtures {
-			for _, b := range circleFixtures {
-				assertTangents(t, a, b, a.InnerTangents(b).AppendTo(nil), b.InnerTangents(a).AppendTo(nil))
-			}
-		}
-	})
-	t.Run("far from the origin float32 ends lie on their circles", func(t *testing.T) {
-		for _, offset := range farOffsets {
-			for _, a := range circleFixtures {
-				for _, b := range circleFixtures {
-					a, b := a.Cast[float32]().Translate(offset), b.Cast[float32]().Translate(offset)
-
-					for _, s := range a.InnerTangents(b).AppendTo(nil) {
-						assert.True(t, touches(a, s.Start), fmt.Sprintf("%s → %s: %s on a: ", a, b, s))
-						assert.True(t, touches(b, s.End), fmt.Sprintf("%s → %s: %s on b: ", a, b, s))
-					}
-				}
-			}
-		}
-	})
 }
 
 func TestCircle_Contains(t *testing.T) {
@@ -801,11 +630,11 @@ func TestCircle_ContainsPolygon(t *testing.T) {
 
 func TestCircle_ContainsRectangle(t *testing.T) {
 	t.Run("corners on the boundary count", func(t *testing.T) {
-		assert.True(t, Circ(Pt(0, 0), 5).ContainsRectangle(Rect(Pt(0, 0), Sz(6, 8))))
-		assert.False(t, Circ(Pt(0, 0), 5).ContainsRectangle(Rect(Pt(0, 0), Sz(6, 9))))
+		assert.True(t, Circ(Pt(0, 0), 5).ContainsRectangle(Rect(Pt(0, 0), Sz(6, 8), 0)))
+		assert.False(t, Circ(Pt(0, 0), 5).ContainsRectangle(Rect(Pt(0, 0), Sz(6, 9), 0)))
 	})
 	t.Run("rotated is tested on its turned corners", func(t *testing.T) {
-		long := Rect(Pt(0.0, 0.0), Sz(9.0, 1.0))
+		long := Rect(Pt(0.0, 0.0), Sz(9.0, 1.0), 0)
 
 		assert.False(t, Circ(Pt(0.0, 0.0), 4.0).ContainsRectangle(long))
 		assert.False(t, Circ(Pt(0.0, 0.0), 4.0).ContainsRectangle(long.Rotate(Pi/4)))
@@ -906,6 +735,26 @@ func TestCircle_IntersectsCapsule(t *testing.T) {
 				assert.Equal(t, a.IntersectsCapsule(Cap(b.Center, b.Center, b.Radius)), a.IntersectsCircle(b), fmt.Sprintf("%s → %s: ", a, b))
 			}
 		}
+	})
+}
+
+func TestCircle_IntersectsSector(t *testing.T) {
+	sector := Sect(Pt(0.0, 0.0), 5.0, 0, Pi/2)
+
+	t.Run("touching the arc or a radius counts", func(t *testing.T) {
+		assert.True(t, Circ(Pt(6.0, 8.0), 5.0).IntersectsSector(sector))
+		assert.True(t, Circ(Pt(-1.0, 1.0), 1.0).IntersectsSector(sector))
+	})
+	t.Run("a center within the sector", func(t *testing.T) {
+		assert.True(t, Circ(Pt(2.0, 2.0), 0.0).IntersectsSector(sector))
+	})
+	t.Run("apart", func(t *testing.T) {
+		assert.False(t, Circ(Pt(6.0, 8.0), 4.9).IntersectsSector(sector))
+		assert.False(t, Circ(Pt(2.0, -2.0), 1.0).IntersectsSector(sector))
+	})
+	t.Run("float within the tolerance counts, beyond it not", func(t *testing.T) {
+		assert.True(t, Circ(Pt(2.0, -1.0-Delta/2), 1.0).IntersectsSector(sector))
+		assert.False(t, Circ(Pt(2.0, -1.0-2*Delta), 1.0).IntersectsSector(sector))
 	})
 }
 
@@ -1014,7 +863,7 @@ func TestCircle_IntersectsLine(t *testing.T) {
 	t.Run("holds where either ray from the origin of the line meets the circle", func(t *testing.T) {
 		for _, c := range circleFixtures {
 			for _, l := range lineFixtures {
-				ahead, behind := Ry(l.Origin, l.Direction), Ry(l.Origin, l.Direction.Negate())
+				ahead, behind := Ry(l.Origin, l.Vector), Ry(l.Origin, l.Vector.Negate())
 
 				assert.True(t, !(c.IntersectsRay(ahead) || c.IntersectsRay(behind)) || c.IntersectsLine(l), fmt.Sprintf("%s → %s: ", c, l))
 			}
@@ -1052,7 +901,7 @@ func TestCircle_IntersectsPolygon(t *testing.T) {
 }
 
 func TestCircle_IntersectsRectangle(t *testing.T) {
-	rectangle := Rect(Pt(0.0, 0.0), Sz(200.0, 100.0))
+	rectangle := Rect(Pt(0.0, 0.0), Sz(200.0, 100.0), 0)
 
 	t.Run("overlapping", func(t *testing.T) {
 		assert.True(t, Circ(Pt(150.0, 0.0), 60.0).IntersectsRectangle(rectangle))
@@ -1073,7 +922,7 @@ func TestCircle_IntersectsRectangle(t *testing.T) {
 		assert.False(t, Circ(Pt(104.0, 54.0), 5.0).IntersectsRectangle(rectangle))
 	})
 	t.Run("odd integer sizes keep exact half extents", func(t *testing.T) {
-		odd := Rect(Pt(0, 0), Sz(3, 3))
+		odd := Rect(Pt(0, 0), Sz(3, 3), 0)
 
 		assert.True(t, Circ(Pt(3, 0), 1).IntersectsRectangle(odd))
 		assert.False(t, Circ(Pt(4, 0), 1).IntersectsRectangle(odd))
@@ -1082,7 +931,7 @@ func TestCircle_IntersectsRectangle(t *testing.T) {
 		assert.True(t, Circ(Pt(0.0, 0.0), 10.0).IntersectsRectangle(rectangle))
 	})
 	t.Run("rotated measures to the turned edge", func(t *testing.T) {
-		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
+		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0), 0).Rotate(Pi / 4)
 
 		assert.False(t, Circ(Pt(1.5, 1.5), 0.5).IntersectsRectangle(diamond))
 		assert.True(t, Circ(Pt(1.5, 1.5), 0.5).IntersectsRectangle(diamond.Bounds().Rectangle()))
@@ -1155,26 +1004,6 @@ func TestCircle_IntersectsBox(t *testing.T) {
 				assert.Equal(t, c.IntersectsBox(b), c.IntersectsRectangle(b.Rectangle()), fmt.Sprintf("%s → %s: ", c, b))
 			}
 		}
-	})
-}
-
-func TestCircle_IntersectsSector(t *testing.T) {
-	sector := Sect(Pt(0.0, 0.0), 5.0, 0, Pi/2)
-
-	t.Run("touching the arc or a radius counts", func(t *testing.T) {
-		assert.True(t, Circ(Pt(6.0, 8.0), 5.0).IntersectsSector(sector))
-		assert.True(t, Circ(Pt(-1.0, 1.0), 1.0).IntersectsSector(sector))
-	})
-	t.Run("a center within the sector", func(t *testing.T) {
-		assert.True(t, Circ(Pt(2.0, 2.0), 0.0).IntersectsSector(sector))
-	})
-	t.Run("apart", func(t *testing.T) {
-		assert.False(t, Circ(Pt(6.0, 8.0), 4.9).IntersectsSector(sector))
-		assert.False(t, Circ(Pt(2.0, -2.0), 1.0).IntersectsSector(sector))
-	})
-	t.Run("float within the tolerance counts, beyond it not", func(t *testing.T) {
-		assert.True(t, Circ(Pt(2.0, -1.0-Delta/2), 1.0).IntersectsSector(sector))
-		assert.False(t, Circ(Pt(2.0, -1.0-2*Delta), 1.0).IntersectsSector(sector))
 	})
 }
 
@@ -1539,7 +1368,7 @@ func TestCircle_IntersectionRay(t *testing.T) {
 					assert.True(t, touches(c, point), message+point.String()+" on the boundary: ")
 				}
 				assert.True(t, len(points) <= 2, message)
-				if r.Direction != (Vector[float64]{}) {
+				if r.Vector != (Vector[float64]{}) {
 					assert.Equal(t, len(points) > 0, c.IntersectsRay(r), message)
 				}
 			}
@@ -1584,8 +1413,179 @@ func TestCircle_IntersectionLine(t *testing.T) {
 					assert.True(t, touches(c, point), message+point.String()+" on the boundary: ")
 				}
 				assert.True(t, len(points) <= 2, message)
-				if l.Direction != (Vector[float64]{}) {
+				if l.Vector != (Vector[float64]{}) {
 					assert.Equal(t, len(points) > 0, c.IntersectsLine(l), message)
+				}
+			}
+		}
+	})
+}
+
+func TestCircle_Tangents(t *testing.T) {
+	circle := Circ(Pt(0.0, 0.0), 3.0)
+
+	t.Run("a point outside gives two, mirrored across the line to the center", func(t *testing.T) {
+		geomtest.AssertVertices(t, circle.Tangents(Pt(5.0, 0.0)).AppendTo(nil), []Point[float64]{Pt(1.8, 2.4), Pt(1.8, -2.4)})
+		geomtest.AssertVertices(t, circle.Tangents(Pt(0.0, -5.0)).AppendTo(nil), []Point[float64]{Pt(2.4, -1.8), Pt(-2.4, -1.8)})
+	})
+	t.Run("a point on the boundary is the one tangent point", func(t *testing.T) {
+		geomtest.AssertVertices(t, circle.Tangents(Pt(3.0, 0.0)).AppendTo(nil), []Point[float64]{Pt(3.0, 0.0)})
+	})
+	t.Run("a point within the tolerance of the boundary is kept as it is", func(t *testing.T) {
+		assert.Equal(t, circle.Tangents(Pt(3.0+Delta/2, 0.0)).AppendTo(nil), []Point[float64]{Pt(3.0+Delta/2, 0.0)})
+		assert.Equal(t, circle.Tangents(Pt(3.0-Delta/2, 0.0)).AppendTo(nil), []Point[float64]{Pt(3.0-Delta/2, 0.0)})
+	})
+	t.Run("a point inside gives none", func(t *testing.T) {
+		assert.Nil(t, circle.Tangents(Pt(1.0, 1.0)).AppendTo(nil))
+		assert.Nil(t, circle.Tangents(Pt(0.0, 0.0)).AppendTo(nil))
+	})
+	t.Run("int rounds the points", func(t *testing.T) {
+		geomtest.AssertVertices(t, Circ(Pt(0, 0), 5).Tangents(Pt(13, 0)).AppendTo(nil), []Point[int]{Pt(2, 5), Pt(2, -5)})
+		geomtest.AssertVertices(t, Circ(Pt(0, 0), 1).Tangents(Pt(1, 1)).AppendTo(nil), []Point[int]{Pt(0, 1), Pt(1, 0)})
+	})
+	t.Run("a zero radius is touched at its center", func(t *testing.T) {
+		geomtest.AssertVertices(t, Circ(Pt(1.0, 1.0), 0.0).Tangents(Pt(5.0, 4.0)).AppendTo(nil), []Point[float64]{Pt(1.0, 1.0)})
+		geomtest.AssertVertices(t, Circ(Pt(1, 1), 0).Tangents(Pt(1, 1)).AppendTo(nil), []Point[int]{Pt(1, 1)})
+	})
+	t.Run("points lie on the boundary, at a right angle to the radius, and mirror Contains", func(t *testing.T) {
+		for _, c := range circleFixtures {
+			for _, p := range pointFixtures {
+				points := c.Tangents(p).AppendTo(nil)
+				message := fmt.Sprintf("%s → %s: ", c, p)
+
+				switch {
+				case touches(c, p):
+					assert.Equal(t, points, []Point[float64]{p}, message)
+				case c.Contains(p):
+					assert.Nil(t, points, message)
+				case c.Radius == 0:
+					geomtest.AssertVertices(t, points, []Point[float64]{c.Center}, message)
+				default:
+					assert.Length(t, points, 2, message)
+					for _, tangent := range points {
+						assert.True(t, touches(c, tangent), message)
+						geomtest.AssertNumber(t, tangent.Subtract(c.Center).Normalize().Dot(p.Subtract(tangent).Normalize()), 0, message)
+					}
+				}
+			}
+		}
+	})
+	t.Run("far from the origin float32 points lie on the boundary", func(t *testing.T) {
+		for _, offset := range farOffsets {
+			for _, c := range circleFixtures {
+				for _, p := range pointFixtures {
+					c, p := c.Cast[float32]().Translate(offset), p.Cast[float32]().Add(offset)
+
+					for _, tangent := range c.Tangents(p).AppendTo(nil) {
+						assert.True(t, touches(c, tangent), fmt.Sprintf("%s → %s: %s: ", c, p, tangent))
+					}
+				}
+			}
+		}
+	})
+}
+
+func TestCircle_OuterTangents(t *testing.T) {
+	circle := Circ(Pt(0.0, 0.0), 3.0)
+
+	t.Run("equal circles are joined along both sides", func(t *testing.T) {
+		geomtest.AssertSegments(t, circle.OuterTangents(Circ(Pt(10.0, 0.0), 3.0)).AppendTo(nil), []Segment[float64]{Seg(Pt(0.0, 3.0), Pt(10.0, 3.0)), Seg(Pt(0.0, -3.0), Pt(10.0, -3.0))})
+	})
+	t.Run("unequal circles are joined on a slant", func(t *testing.T) {
+		geomtest.AssertSegments(t, Circ(Pt(0.0, 0.0), 8.0).OuterTangents(Circ(Pt(10.0, 0.0), 2.0)).AppendTo(nil), []Segment[float64]{Seg(Pt(4.8, 6.4), Pt(11.2, 1.6)), Seg(Pt(4.8, -6.4), Pt(11.2, -1.6))})
+	})
+	t.Run("touching from outside and overlapping circles keep both", func(t *testing.T) {
+		geomtest.AssertSegments(t, circle.OuterTangents(Circ(Pt(6.0, 0.0), 3.0)).AppendTo(nil), []Segment[float64]{Seg(Pt(0.0, 3.0), Pt(6.0, 3.0)), Seg(Pt(0.0, -3.0), Pt(6.0, -3.0))})
+		geomtest.AssertSegments(t, circle.OuterTangents(Circ(Pt(4.0, 0.0), 3.0)).AppendTo(nil), []Segment[float64]{Seg(Pt(0.0, 3.0), Pt(4.0, 3.0)), Seg(Pt(0.0, -3.0), Pt(4.0, -3.0))})
+	})
+	t.Run("a circle within the other, touching or not, has none", func(t *testing.T) {
+		assert.Nil(t, circle.OuterTangents(Circ(Pt(1.0, 0.0), 2.0)).AppendTo(nil))
+		assert.Nil(t, circle.OuterTangents(Circ(Pt(1.0+Delta/2, 0.0), 2.0)).AppendTo(nil))
+		assert.Nil(t, circle.OuterTangents(Circ(Pt(0.5, 0.0), 1.0)).AppendTo(nil))
+		assert.Nil(t, Circ(Pt(0.5, 0.0), 1.0).OuterTangents(circle).AppendTo(nil))
+		assert.Nil(t, circle.OuterTangents(circle).AppendTo(nil))
+	})
+	t.Run("a zero radius is touched at its center, from the Tangents of it", func(t *testing.T) {
+		geomtest.AssertSegments(t, circle.OuterTangents(Circ(Pt(5.0, 0.0), 0.0)).AppendTo(nil), []Segment[float64]{Seg(Pt(1.8, 2.4), Pt(5.0, 0.0)), Seg(Pt(1.8, -2.4), Pt(5.0, 0.0))})
+	})
+	t.Run("two zero radii are joined once", func(t *testing.T) {
+		geomtest.AssertSegments(t, Circ(Pt(1.0, 1.0), 0.0).OuterTangents(Circ(Pt(5.0, 4.0), 0.0)).AppendTo(nil), []Segment[float64]{Seg(Pt(1.0, 1.0), Pt(5.0, 4.0))})
+		assert.Nil(t, Circ(Pt(1.0, 1.0), 0.0).OuterTangents(Circ(Pt(1.0, 1.0), 0.0)).AppendTo(nil))
+	})
+	t.Run("int rounds the points", func(t *testing.T) {
+		geomtest.AssertSegments(t, Circ(Pt(0, 0), 3).OuterTangents(Circ(Pt(10, 0), 3)).AppendTo(nil), []Segment[int]{Seg(Pt(0, 3), Pt(10, 3)), Seg(Pt(0, -3), Pt(10, -3))})
+		geomtest.AssertSegments(t, Circ(Pt(0, 0), 8).OuterTangents(Circ(Pt(10, 0), 2)).AppendTo(nil), []Segment[int]{Seg(Pt(5, 6), Pt(11, 2)), Seg(Pt(5, -6), Pt(11, -2))})
+	})
+	t.Run("ends lie on their circles, at a right angle to the radius, from either side", func(t *testing.T) {
+		for _, a := range circleFixtures {
+			for _, b := range circleFixtures {
+				assertTangents(t, a, b, a.OuterTangents(b).AppendTo(nil), b.OuterTangents(a).AppendTo(nil))
+			}
+		}
+	})
+	t.Run("far from the origin float32 ends lie on their circles", func(t *testing.T) {
+		for _, offset := range farOffsets {
+			for _, a := range circleFixtures {
+				for _, b := range circleFixtures {
+					a, b := a.Cast[float32]().Translate(offset), b.Cast[float32]().Translate(offset)
+
+					for _, s := range a.OuterTangents(b).AppendTo(nil) {
+						assert.True(t, touches(a, s.Start), fmt.Sprintf("%s → %s: %s on a: ", a, b, s))
+						assert.True(t, touches(b, s.End), fmt.Sprintf("%s → %s: %s on b: ", a, b, s))
+					}
+				}
+			}
+		}
+	})
+}
+
+func TestCircle_InnerTangents(t *testing.T) {
+	circle := Circ(Pt(0.0, 0.0), 3.0)
+
+	t.Run("circles apart are joined across the line of centers", func(t *testing.T) {
+		geomtest.AssertSegments(t, circle.InnerTangents(Circ(Pt(10.0, 0.0), 3.0)).AppendTo(nil), []Segment[float64]{Seg(Pt(1.8, 2.4), Pt(8.2, -2.4)), Seg(Pt(1.8, -2.4), Pt(8.2, 2.4))})
+		geomtest.AssertSegments(t, Circ(Pt(0.0, 0.0), 2.0).InnerTangents(Circ(Pt(10.0, 0.0), 4.0)).AppendTo(nil), []Segment[float64]{Seg(Pt(1.2, 1.6), Pt(7.6, -3.2)), Seg(Pt(1.2, -1.6), Pt(7.6, 3.2))})
+	})
+	t.Run("touching and overlapping circles have none", func(t *testing.T) {
+		assert.Nil(t, circle.InnerTangents(Circ(Pt(6.0, 0.0), 3.0)).AppendTo(nil))
+		assert.Nil(t, circle.InnerTangents(Circ(Pt(6.0+Delta/2, 0.0), 3.0)).AppendTo(nil))
+		assert.Nil(t, circle.InnerTangents(Circ(Pt(4.0, 0.0), 3.0)).AppendTo(nil))
+		assert.Nil(t, circle.InnerTangents(Circ(Pt(1.0, 0.0), 1.0)).AppendTo(nil))
+		assert.Nil(t, circle.InnerTangents(circle).AppendTo(nil))
+	})
+	t.Run("a zero radius is touched at its center, from the Tangents of it", func(t *testing.T) {
+		geomtest.AssertSegments(t, circle.InnerTangents(Circ(Pt(5.0, 0.0), 0.0)).AppendTo(nil), []Segment[float64]{Seg(Pt(1.8, 2.4), Pt(5.0, 0.0)), Seg(Pt(1.8, -2.4), Pt(5.0, 0.0))})
+	})
+	t.Run("two zero radii are joined once", func(t *testing.T) {
+		geomtest.AssertSegments(t, Circ(Pt(1.0, 1.0), 0.0).InnerTangents(Circ(Pt(5.0, 4.0), 0.0)).AppendTo(nil), []Segment[float64]{Seg(Pt(1.0, 1.0), Pt(5.0, 4.0))})
+	})
+	t.Run("int rounds the points", func(t *testing.T) {
+		geomtest.AssertSegments(t, Circ(Pt(0, 0), 3).InnerTangents(Circ(Pt(10, 0), 3)).AppendTo(nil), []Segment[int]{Seg(Pt(2, 2), Pt(8, -2)), Seg(Pt(2, -2), Pt(8, 2))})
+	})
+	t.Run("exist exactly where the circles do not intersect", func(t *testing.T) {
+		for _, a := range circleFixtures {
+			for _, b := range circleFixtures {
+				assert.Equal(t, len(a.InnerTangents(b).AppendTo(nil)) > 0, !a.IntersectsCircle(b), fmt.Sprintf("%s → %s: ", a, b))
+			}
+		}
+	})
+	t.Run("ends lie on their circles, at a right angle to the radius, from either side", func(t *testing.T) {
+		for _, a := range circleFixtures {
+			for _, b := range circleFixtures {
+				assertTangents(t, a, b, a.InnerTangents(b).AppendTo(nil), b.InnerTangents(a).AppendTo(nil))
+			}
+		}
+	})
+	t.Run("far from the origin float32 ends lie on their circles", func(t *testing.T) {
+		for _, offset := range farOffsets {
+			for _, a := range circleFixtures {
+				for _, b := range circleFixtures {
+					a, b := a.Cast[float32]().Translate(offset), b.Cast[float32]().Translate(offset)
+
+					for _, s := range a.InnerTangents(b).AppendTo(nil) {
+						assert.True(t, touches(a, s.Start), fmt.Sprintf("%s → %s: %s on a: ", a, b, s))
+						assert.True(t, touches(b, s.End), fmt.Sprintf("%s → %s: %s on b: ", a, b, s))
+					}
 				}
 			}
 		}
@@ -1663,46 +1663,16 @@ func TestCircle_IsZero(t *testing.T) {
 	})
 }
 
-func TestCircle_Ellipse(t *testing.T) {
-	t.Run("equal semi-axes and no angle", func(t *testing.T) {
-		geomtest.AssertEllipse(t, Circ(Pt(1, 2), 10).Ellipse(), Ell(Pt(1, 2), SzU(10), 0))
-	})
-	t.Run("round-trips through Circle", func(t *testing.T) {
-		geomtest.AssertCircle(t, Circ(Pt(1, 2), 10).Ellipse().Circle(), Circ(Pt(1, 2), 10))
-	})
-	t.Run("it is what a matrix transforms", func(t *testing.T) {
-		c := Circ(Pt(2.0, 3.0), 4.0)
+func TestCircle_Sector(t *testing.T) {
+	c := Circ(Pt(1.0, 2.0), 5)
 
-		geomtest.AssertEllipse(t, c.Ellipse().Transform(ScaleMatrix(3.0, 1.0)), Ell(Pt(6.0, 3.0), Sz(12.0, 4.0), 0))
+	t.Run("a slice of the disc", func(t *testing.T) {
+		geomtest.AssertSector(t, c.Sector(Pi/2, -Pi), Sect(Pt(1.0, 2.0), 5, Pi/2, -Pi))
+		geomtest.AssertCircle(t, c.Sector(Pi/2, -Pi).Circle(), c)
+		geomtest.AssertArc(t, c.Sector(Pi/2, -Pi).Arc(), c.Arc(Pi/2, -Pi))
 	})
-	t.Run("a uniform transform converts back", func(t *testing.T) {
-		c, m := Circ(Pt(2.0, 3.0), 4.0), RotationMatrix[float64](Pi/3)
-		turned := c.Ellipse().Transform(m)
-
-		assert.True(t, turned.IsCircle())
-		geomtest.AssertCircle(t, turned.Circle(), c.MoveTo(c.Center.Transform(m)))
-	})
-}
-
-func TestCircle_RegularPolygon(t *testing.T) {
-	c := Circ(Pt(0.0, 0.0), 10.0)
-
-	t.Run("pointy top places a vertex at the top", func(t *testing.T) {
-		geomtest.AssertRegularPolygon(t, c.RegularPolygon(6, OrientationPointyTop), RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationPointyTop))
-		assertOrientation(t, c.RegularPolygon(6, OrientationPointyTop), OrientationPointyTop, "")
-	})
-	t.Run("flat top places an edge at the top", func(t *testing.T) {
-		geomtest.AssertRegularPolygon(t, c.RegularPolygon(6, OrientationFlatTop), RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop))
-	})
-	t.Run("every vertex lies on the boundary", func(t *testing.T) {
-		for vertex := range c.RegularPolygon(7, OrientationPointyTop).Vertices() {
-			geomtest.AssertNumber(t, c.Center.DistanceTo(vertex), c.Radius, fmt.Sprintf("%s: ", vertex))
-		}
-	})
-	t.Run("an orientation with no meaning panics", func(t *testing.T) {
-		assert.Panics(t, func() {
-			c.RegularPolygon(6, OrientationNone)
-		})
+	t.Run("the whole disc", func(t *testing.T) {
+		geomtest.AssertNumber(t, c.Sector(0, 2*Pi).Area(), c.Area())
 	})
 }
 
@@ -1720,19 +1690,6 @@ func TestCircle_Arc(t *testing.T) {
 		assert.True(t, c.Arc(0, 2*Pi).Contains(Pt(1.0, 7.0)))
 		assert.False(t, c.Arc(0, 2*Pi).Contains(c.Center))
 		geomtest.AssertNumber(t, c.Arc(0, 2*Pi).DistanceTo(c.Center), 5)
-	})
-}
-
-func TestCircle_Sector(t *testing.T) {
-	c := Circ(Pt(1.0, 2.0), 5)
-
-	t.Run("a slice of the disc", func(t *testing.T) {
-		geomtest.AssertSector(t, c.Sector(Pi/2, -Pi), Sect(Pt(1.0, 2.0), 5, Pi/2, -Pi))
-		geomtest.AssertCircle(t, c.Sector(Pi/2, -Pi).Circle(), c)
-		geomtest.AssertArc(t, c.Sector(Pi/2, -Pi).Arc(), c.Arc(Pi/2, -Pi))
-	})
-	t.Run("the whole disc", func(t *testing.T) {
-		geomtest.AssertNumber(t, c.Sector(0, 2*Pi).Area(), c.Area())
 	})
 }
 
@@ -1797,6 +1754,49 @@ func TestCircle_AppendPolygon(t *testing.T) {
 		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			sinkPoints = circle.AppendPolygon(buffer[:0], 1)
 		}), 0)
+	})
+}
+
+func TestCircle_RegularPolygon(t *testing.T) {
+	c := Circ(Pt(0.0, 0.0), 10.0)
+
+	t.Run("pointy top places a vertex at the top", func(t *testing.T) {
+		geomtest.AssertRegularPolygon(t, c.RegularPolygon(6, OrientationPointyTop), RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationPointyTop))
+		assertOrientation(t, c.RegularPolygon(6, OrientationPointyTop), OrientationPointyTop, "")
+	})
+	t.Run("flat top places an edge at the top", func(t *testing.T) {
+		geomtest.AssertRegularPolygon(t, c.RegularPolygon(6, OrientationFlatTop), RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop))
+	})
+	t.Run("every vertex lies on the boundary", func(t *testing.T) {
+		for vertex := range c.RegularPolygon(7, OrientationPointyTop).Vertices() {
+			geomtest.AssertNumber(t, c.Center.DistanceTo(vertex), c.Radius, fmt.Sprintf("%s: ", vertex))
+		}
+	})
+	t.Run("an orientation with no meaning panics", func(t *testing.T) {
+		assert.Panics(t, func() {
+			c.RegularPolygon(6, OrientationNone)
+		})
+	})
+}
+
+func TestCircle_Ellipse(t *testing.T) {
+	t.Run("equal semi-axes and no angle", func(t *testing.T) {
+		geomtest.AssertEllipse(t, Circ(Pt(1, 2), 10).Ellipse(), Ell(Pt(1, 2), SzU(10), 0))
+	})
+	t.Run("round-trips through Circle", func(t *testing.T) {
+		geomtest.AssertCircle(t, Circ(Pt(1, 2), 10).Ellipse().Circle(), Circ(Pt(1, 2), 10))
+	})
+	t.Run("it is what a matrix transforms", func(t *testing.T) {
+		c := Circ(Pt(2.0, 3.0), 4.0)
+
+		geomtest.AssertEllipse(t, c.Ellipse().Transform(ScaleMatrix(3.0, 1.0)), Ell(Pt(6.0, 3.0), Sz(12.0, 4.0), 0))
+	})
+	t.Run("a uniform transform converts back", func(t *testing.T) {
+		c, m := Circ(Pt(2.0, 3.0), 4.0), RotationMatrix[float64](Pi/3)
+		turned := c.Ellipse().Transform(m)
+
+		assert.True(t, turned.IsCircle())
+		geomtest.AssertCircle(t, turned.Circle(), c.MoveTo(c.Center.Transform(m)))
 	})
 }
 

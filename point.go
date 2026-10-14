@@ -157,15 +157,6 @@ func (p Point[T]) AngleTo(point Point[T]) float64 {
 	return point.Float().Subtract(p.Float()).Angle()
 }
 
-// Between reports whether the point lies in the axis-aligned box from a to b. The corners are not
-// reordered, so a box with a greater than b on either axis contains nothing.
-func (p Point[T]) Between(a, b Point[T]) bool {
-	epsilon := epsilonAt[T](max(p.magnitude(), a.magnitude(), b.magnitude()))
-
-	return LessOrEqualDelta(a.X, p.X, epsilon) && LessOrEqualDelta(p.X, b.X, epsilon) &&
-		LessOrEqualDelta(a.Y, p.Y, epsilon) && LessOrEqualDelta(p.Y, b.Y, epsilon)
-}
-
 // DistanceTo returns the distance to the given point.
 func (p Point[T]) DistanceTo(point Point[T]) float64 {
 	return point.Float().Subtract(p.Float()).Length()
@@ -196,6 +187,15 @@ func (p Point[T]) OctileDistanceTo(point Point[T]) float64 {
 	dx, dy := p.deltas(point)
 
 	return max(dx, dy) + float64((Sqrt2-1)*min(dx, dy))
+}
+
+// Between reports whether the point lies in the axis-aligned box from a to b. The corners are not
+// reordered, so a box with a greater than b on either axis contains nothing.
+func (p Point[T]) Between(a, b Point[T]) bool {
+	epsilon := epsilonAt[T](max(p.magnitude(), a.magnitude(), b.magnitude()))
+
+	return LessOrEqualDelta(a.X, p.X, epsilon) && LessOrEqualDelta(p.X, b.X, epsilon) &&
+		LessOrEqualDelta(a.Y, p.Y, epsilon) && LessOrEqualDelta(p.Y, b.Y, epsilon)
 }
 
 // deltas returns the absolute coordinate differences to the given point.

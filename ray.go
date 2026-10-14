@@ -5,81 +5,81 @@ import (
 	"math"
 )
 
-// Ray is a half-line from Origin along Direction without end.
+// Ray is a half-line from Origin along Vector without end.
 //
-// Only the direction of Direction matters to the points of the ray; its length is the unit PointAt
-// and every Fraction measure in. A zero Direction gives a ray that is its origin alone. A ray has
+// Only the direction of Vector matters to the points of the ray; its length is the unit PointAt
+// and every Fraction measure in. A zero Vector gives a ray that is its origin alone. A ray has
 // no Bounds, so it is no Shape.
 type Ray[T Number] struct {
-	Origin    Point[T]  `json:"o"`
-	Direction Vector[T] `json:"d"`
+	Origin Point[T]  `json:"o"`
+	Vector Vector[T] `json:"d"`
 }
 
-// Ry is shorthand for Ray{origin, direction}.
-func Ry[T Number](origin Point[T], direction Vector[T]) Ray[T] {
-	return Ray[T]{origin, direction}
+// Ry is shorthand for Ray{origin, vector}.
+func Ry[T Number](origin Point[T], vector Vector[T]) Ray[T] {
+	return Ray[T]{origin, vector}
 }
 
-// RayThrough returns the ray from the origin through the point, a ray of zero Direction where they
+// RayThrough returns the ray from the origin through the point, a ray of zero Vector where they
 // are equal.
 func RayThrough[T Number](origin, point Point[T]) Ray[T] {
 	return Ray[T]{origin, point.Subtract(origin)}
 }
 
-// Angle returns the angle of Direction in radians, zero for a zero Direction.
+// Angle returns the angle of Vector in radians, zero for a zero Vector.
 func (r Ray[T]) Angle() float64 {
-	return r.Direction.Angle()
+	return r.Vector.Angle()
 }
 
 // Translate returns the ray with its origin moved by the vector.
 func (r Ray[T]) Translate(vector Vector[T]) Ray[T] {
-	return Ray[T]{r.Origin.Add(vector), r.Direction}
+	return Ray[T]{r.Origin.Add(vector), r.Vector}
 }
 
 // MoveTo returns the ray with its origin at the point.
 func (r Ray[T]) MoveTo(point Point[T]) Ray[T] {
-	return Ray[T]{point, r.Direction}
+	return Ray[T]{point, r.Vector}
 }
 
 // Rotate returns the ray turned by the angle in radians about its origin. For integer T the
 // direction is rounded, exact only for quarter turns.
 func (r Ray[T]) Rotate(angle float64) Ray[T] {
-	return Ray[T]{r.Origin, r.Direction.Rotate(angle)}
+	return Ray[T]{r.Origin, r.Vector.Rotate(angle)}
 }
 
-// Scale returns the ray with its Direction scaled by the factor, so PointAt steps the scaled
+// Scale returns the ray with its Vector scaled by the factor, so PointAt steps the scaled
 // length. A negative factor turns the ray to the other side of its origin, and a zero factor
 // collapses it onto its origin.
 func (r Ray[T]) Scale(factor float64) Ray[T] {
 	return r.ScaleXY(factor, factor)
 }
 
-// ScaleXY returns the ray with its Direction scaled by the factors along X and Y, which can turn it
+// ScaleXY returns the ray with its Vector scaled by the factors along X and Y, which can turn it
 // where they differ.
 func (r Ray[T]) ScaleXY(factorX, factorY float64) Ray[T] {
-	return Ray[T]{r.Origin, r.Direction.MultiplyXY(factorX, factorY)}
+	return Ray[T]{r.Origin, r.Vector.MultiplyXY(factorX, factorY)}
 }
 
-// Unscale returns the ray with its Direction divided by the factor. It panics for a zero factor.
+// Unscale returns the ray with its Vector divided by the factor. It panics for a zero factor.
 func (r Ray[T]) Unscale(factor float64) Ray[T] {
 	return r.UnscaleXY(factor, factor)
 }
 
-// UnscaleXY returns the ray with its Direction divided by the factors along X and Y. It panics for
+// UnscaleXY returns the ray with its Vector divided by the factors along X and Y. It panics for
 // a zero factor.
 func (r Ray[T]) UnscaleXY(factorX, factorY float64) Ray[T] {
-	return Ray[T]{r.Origin, r.Direction.DivideXY(factorX, factorY)}
+	return Ray[T]{r.Origin, r.Vector.DivideXY(factorX, factorY)}
 }
 
-// Transform returns the ray with the matrix applied to Origin as a point and to Direction as a
+// Transform returns the ray with the matrix applied to Origin as a point and to Vector as a
 // vector, so a translation moves the origin alone.
 func (r Ray[T]) Transform[M Float](matrix Matrix[M]) Ray[T] {
-	return Ray[T]{r.Origin.Transform(matrix), r.Direction.Transform(matrix)}
+	return Ray[T]{r.Origin.Transform(matrix), r.Vector.Transform(matrix)}
 }
 
-// PointAt returns the point t times Direction from Origin, behind it for a negative t.
+// PointAt returns the point t times Vector from Origin, behind it for a negative t.
 func (r Ray[T]) PointAt(t float64) Point[T] {
-	point := r.Origin.Float().Add(r.Direction.Float().Multiply(t))
+	point := r.Origin.Float().Add(r.Vector.Float().Multiply(t))
 
 	return point.Cast[T]()
 }
@@ -101,9 +101,9 @@ func (r Ray[T]) Nearest(point Point[T]) Point[T] {
 }
 
 // NearestFraction returns the t at which PointAt gives the point of the ray nearest to the given
-// point, zero for a point behind the origin and for a zero Direction.
+// point, zero for a point behind the origin and for a zero Vector.
 func (r Ray[T]) NearestFraction(point Point[T]) float64 {
-	direction := r.Direction.Float()
+	direction := r.Vector.Float()
 	offset := point.Float().Subtract(r.Origin.Float())
 
 	return max(ratio(offset.Dot(direction), direction.LengthSquared()), 0)
@@ -166,6 +166,11 @@ func (r Ray[T]) IntersectsBox(box Box[T]) bool {
 	return r.reach(box.Min, box.Max).IntersectsBox(box)
 }
 
+// IntersectsEllipse reports whether the ray and the ellipse share a point.
+func (r Ray[T]) IntersectsEllipse(ellipse Ellipse[T]) bool {
+	return r.reach(ellipse.minMax()).IntersectsEllipse(ellipse)
+}
+
 // IntersectionCircle returns the points where the ray crosses the boundary of the circle, from
 // Origin on.
 func (r Ray[T]) IntersectionCircle(circle Circle[T]) Pair[Point[T]] {
@@ -202,7 +207,7 @@ func (r Ray[T]) IntersectionSegment(segment Segment[T]) (Point[T], bool) {
 }
 
 // IntersectionRay returns the point where the rays cross, and false where they do not. Parallel
-// rays give false even where they overlap, though IntersectsRay holds. A ray of zero Direction is
+// rays give false even where they overlap, though IntersectsRay holds. A ray of zero Vector is
 // parallel to nothing and is the point wherever it lies on the other. Rays nearly along each other
 // can share more than one point; the given ray's origin is then taken before this one's, so the two
 // orders can differ.
@@ -244,7 +249,9 @@ func (r Ray[T]) AppendIntersectionPolyline(dst []Point[T], polyline Polyline[T])
 
 // IntersectionQuadraticBezier returns the points where the ray crosses the curve, from Origin on.
 func (r Ray[T]) IntersectionQuadraticBezier(curve QuadraticBezier[T]) Pair[Point[T]] {
-	return curve.IntersectionRay(r)
+	bounds := curve.Bounds()
+
+	return r.reach(bounds.Min, bounds.Max).IntersectionQuadraticBezier(curve)
 }
 
 // IntersectionCubicBezier returns the points where the ray crosses the curve, from Origin on.
@@ -287,6 +294,12 @@ func (r Ray[T]) IntersectionRegularPolygon(polygon RegularPolygon[T]) Pair[Point
 // IntersectionBox returns the points where the ray crosses the boundary of the box, from Origin on.
 func (r Ray[T]) IntersectionBox(box Box[T]) Pair[Point[T]] {
 	return r.reach(box.Min, box.Max).IntersectionBox(box)
+}
+
+// IntersectionEllipse returns the points where the ray crosses the boundary of the ellipse, from
+// Origin on.
+func (r Ray[T]) IntersectionEllipse(ellipse Ellipse[T]) Pair[Point[T]] {
+	return r.reach(ellipse.minMax()).IntersectionEllipse(ellipse)
 }
 
 // ClipCircle returns the part of the ray in the circle, and false where they share no point. It
@@ -338,6 +351,13 @@ func (r Ray[T]) ClipBox(box Box[T]) (Segment[T], bool) {
 	return r.reach(box.Min, box.Max).ClipBox(box)
 }
 
+// ClipEllipse returns the part of the ray in the ellipse, and false where they share no point. It
+// starts at Origin where the ellipse contains it, else at the first point of the ellipse the ray
+// reaches.
+func (r Ray[T]) ClipEllipse(ellipse Ellipse[T]) (Segment[T], bool) {
+	return r.reach(ellipse.minMax()).ClipEllipse(ellipse)
+}
+
 // HitCircle returns where the ray first reaches the circle from outside, with the normal pointing
 // from the center, and false where it does not or Origin is inside.
 func (r Ray[T]) HitCircle(circle Circle[T]) (Hit[T], bool) {
@@ -370,7 +390,7 @@ func (r Ray[T]) HitSegment(segment Segment[T]) (Hit[T], bool) {
 
 // HitRay returns where the ray first reaches the given one as a wall, and false where it does not
 // or Origin lies on the wall. A wall running along the ray is met at its origin with the normal
-// back along the ray, as is a wall of zero Direction.
+// back along the ray, as is a wall of zero Vector.
 func (r Ray[T]) HitRay(ray Ray[T]) (Hit[T], bool) {
 	if ray.Contains(r.Origin) {
 		return Hit[T]{}, false
@@ -380,7 +400,7 @@ func (r Ray[T]) HitRay(ray Ray[T]) (Hit[T], bool) {
 
 	switch {
 	case crossed:
-		return r.hitAt(point, ray.Direction.Float().Normal()), true
+		return r.hitAt(point, ray.Vector.Float().Normal()), true
 	case r.Contains(ray.Origin):
 		return r.hitAt(ray.Origin, Vector[float64]{}), true
 	default:
@@ -463,11 +483,11 @@ func (r Ray[T]) HitEllipse(ellipse Ellipse[T]) (Hit[T], bool) {
 // extent, it is never taken for a touch beside a vertex. For integer T the fraction is rounded up,
 // so the end is a lattice point on the ray.
 func (r Ray[T]) reach(a, b Point[T]) Segment[T] {
-	if !r.Direction.hasDirection() {
+	if !r.Vector.hasDirection() {
 		return Segment[T]{r.Origin, r.Origin}
 	}
 
-	direction := r.Direction.Float()
+	direction := r.Vector.Float()
 	corner := a
 	if direction.X > 0 {
 		corner.X = b.X
@@ -485,22 +505,22 @@ func (r Ray[T]) reach(a, b Point[T]) Segment[T] {
 }
 
 // rescale returns a hit of the reach as a hit of the ray, its Fraction remeasured in units of
-// Direction.
+// Vector.
 func (r Ray[T]) rescale(hit Hit[T], ok bool) (Hit[T], bool) {
 	if !ok {
 		return Hit[T]{}, false
 	}
 
-	direction := r.Direction.Float()
+	direction := r.Vector.Float()
 	fraction := ratio(hit.Point.Float().Subtract(r.Origin.Float()).Dot(direction), direction.LengthSquared())
 
 	return Hit[T]{hit.Point, hit.Normal, fraction}, true
 }
 
 // hitAt returns the Hit at the point of a boundary of the given normal, built on the first step of
-// the ray so the Fraction is in units of Direction.
+// the ray so the Fraction is in units of Vector.
 func (r Ray[T]) hitAt(point Point[T], normal Vector[float64]) Hit[T] {
-	return Segment[T]{r.Origin, r.Origin.Add(r.Direction)}.hitAt(point, normal)
+	return Segment[T]{r.Origin, r.Origin.Add(r.Vector)}.hitAt(point, normal)
 }
 
 // crosses reports whether the rays meet strictly ahead of both origins. Touching and parallel rays
@@ -519,14 +539,14 @@ func (r Ray[T]) crosses(ray Ray[T]) bool {
 //
 // The point is placed by each direction component times the numerator, divided once, so an integer
 // crossing on a half unit is exact while the product fits a float64 mantissa. Past that it rounds,
-// so the rays are ordered by Point.Compare of Origin then Direction to give the same bits either
+// so the rays are ordered by Point.Compare of Origin then Vector to give the same bits either
 // way.
 func (r Ray[T]) crossing(ray Ray[T]) (Point[float64], bool) {
-	if cmp.Or(ray.Origin.Compare(r.Origin), ray.Direction.Point().Compare(r.Direction.Point())) < 0 {
+	if cmp.Or(ray.Origin.Compare(r.Origin), ray.Vector.Point().Compare(r.Vector.Point())) < 0 {
 		r, ray = ray, r
 	}
 
-	a, b := r.Direction.Float(), ray.Direction.Float()
+	a, b := r.Vector.Float(), ray.Vector.Float()
 	origin := r.Origin.Float()
 	offset := ray.Origin.Float().Subtract(origin)
 	denominator, along, other := a.Cross(b), offset.Cross(b), offset.Cross(a)
@@ -541,10 +561,10 @@ func (r Ray[T]) crossing(ray Ray[T]) (Point[float64], bool) {
 	return point, point.Subtract(ray.Origin.Float()).Dot(b) >= 0
 }
 
-// parallel reports whether the rays have the same line direction, either way. A zero Direction is
+// parallel reports whether the rays have the same line direction, either way. A zero Vector is
 // parallel to nothing, so its origin can still be found on the other.
 func (r Ray[T]) parallel(ray Ray[T]) bool {
-	a, b := r.Direction.Float(), ray.Direction.Float()
+	a, b := r.Vector.Float(), ray.Vector.Float()
 
 	return a.hasDirection() && b.hasDirection() && a.Cross(b) == 0
 }
@@ -565,7 +585,7 @@ func (r Ray[T]) touch(ray Ray[T]) (Point[T], bool) {
 // Equal reports whether the rays have equal origin and direction. Rays of the same points with
 // directions of different lengths are not equal.
 func (r Ray[T]) Equal(ray Ray[T]) bool {
-	return r.Origin.Equal(ray.Origin) && r.Direction.Equal(ray.Direction)
+	return r.Origin.Equal(ray.Origin) && r.Vector.Equal(ray.Vector)
 }
 
 // IsZero reports whether the ray is the zero value.
@@ -573,7 +593,7 @@ func (r Ray[T]) IsZero() bool {
 	return r.Equal(Ray[T]{})
 }
 
-// Line returns the line through the ray, with the same Origin and Direction.
+// Line returns the line through the ray, with the same Origin and Vector.
 func (r Ray[T]) Line() Line[T] {
 	return Line[T](r)
 }
@@ -581,17 +601,17 @@ func (r Ray[T]) Line() Line[T] {
 // Cast converts the ray to a Ray of another number type, rounding as Cast does, so a short
 // direction can round to zero for an integer R.
 func (r Ray[T]) Cast[R Number]() Ray[R] {
-	return Ray[R]{r.Origin.Cast[R](), r.Direction.Cast[R]()}
+	return Ray[R]{r.Origin.Cast[R](), r.Vector.Cast[R]()}
 }
 
 // Int converts the ray to a Ray[int].
 func (r Ray[T]) Int() Ray[int] {
-	return Ray[int]{r.Origin.Int(), r.Direction.Int()}
+	return Ray[int]{r.Origin.Int(), r.Vector.Int()}
 }
 
 // Float converts the ray to a Ray[float64].
 func (r Ray[T]) Float() Ray[float64] {
-	return Ray[float64]{r.Origin.Float(), r.Direction.Float()}
+	return Ray[float64]{r.Origin.Float(), r.Vector.Float()}
 }
 
 // String returns the ray by its origin and direction: Ray((x,y);⟨x,y⟩).
@@ -600,7 +620,7 @@ func (r Ray[T]) String() string {
 	buf = append(buf, "Ray("...)
 	buf = r.Origin.appendString(buf)
 	buf = append(buf, ';')
-	buf = r.Direction.appendString(buf)
+	buf = r.Vector.appendString(buf)
 	buf = append(buf, ')')
 
 	return string(buf)

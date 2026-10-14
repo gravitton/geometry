@@ -62,16 +62,6 @@ func TestArcThrough(t *testing.T) {
 	})
 }
 
-func TestArc_Length(t *testing.T) {
-	t.Run("the radius times the sweep, either way", func(t *testing.T) {
-		geomtest.AssertNumber(t, Ac(Pt(0, 0), 5, 0, Pi/2).Length(), 2.5*Pi)
-		geomtest.AssertNumber(t, Ac(Pt(0, 0), 5, 1, -Pi/2).Length(), 2.5*Pi)
-	})
-	t.Run("no more than the circumference", func(t *testing.T) {
-		geomtest.AssertNumber(t, Ac(Pt(0, 0), 5, 0, 7*Pi).Length(), 10*Pi)
-	})
-}
-
 func TestArc_Start(t *testing.T) {
 	geomtest.AssertPoint(t, quarterArc().Start(), Pt(5.0, 0.0))
 }
@@ -96,6 +86,16 @@ func TestArc_Chord(t *testing.T) {
 	})
 	t.Run("the whole circle has a chord of no length", func(t *testing.T) {
 		assert.True(t, Ac(Pt(1.0, 2.0), 5.0, 1, 2*Pi).Chord().IsPoint())
+	})
+}
+
+func TestArc_Length(t *testing.T) {
+	t.Run("the radius times the sweep, either way", func(t *testing.T) {
+		geomtest.AssertNumber(t, Ac(Pt(0, 0), 5, 0, Pi/2).Length(), 2.5*Pi)
+		geomtest.AssertNumber(t, Ac(Pt(0, 0), 5, 1, -Pi/2).Length(), 2.5*Pi)
+	})
+	t.Run("no more than the circumference", func(t *testing.T) {
+		geomtest.AssertNumber(t, Ac(Pt(0, 0), 5, 0, 7*Pi).Length(), 10*Pi)
 	})
 }
 
@@ -497,6 +497,10 @@ func TestArc_Circle(t *testing.T) {
 	geomtest.AssertCircle(t, Ac(Pt(1, 2), 5, 0.5, 1.5).Circle(), Circ(Pt(1, 2), 5))
 }
 
+func TestArc_Sector(t *testing.T) {
+	geomtest.AssertSector(t, Ac(Pt(1, 2), 5, 0.5, 1.5).Sector(), Sect(Pt(1, 2), 5, 0.5, 1.5))
+}
+
 func TestArc_Polyline(t *testing.T) {
 	t.Run("equal chords from the start to the end", func(t *testing.T) {
 		geomtest.AssertPolyline(t, quarterArc().Polyline(0.5), PolLn([]Point[float64]{Pt(5.0, 0.0), Pt(5/math.Sqrt2, 5/math.Sqrt2), Pt(0.0, 5.0)}))
@@ -560,10 +564,6 @@ func TestArc_AppendPolyline(t *testing.T) {
 			sinkPoints = arc.AppendPolyline(buffer[:0], 1)
 		}), 0)
 	})
-}
-
-func TestArc_Sector(t *testing.T) {
-	geomtest.AssertSector(t, Ac(Pt(1, 2), 5, 0.5, 1.5).Sector(), Sect(Pt(1, 2), 5, 0.5, 1.5))
 }
 
 func TestArc_Cast(t *testing.T) {

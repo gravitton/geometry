@@ -471,12 +471,12 @@ func TestCapsule_ContainsRectangle(t *testing.T) {
 	c := Cap(Pt(-4.0, 0.0), Pt(4.0, 0.0), 2.0)
 
 	t.Run("corners on the boundary count", func(t *testing.T) {
-		assert.True(t, c.ContainsRectangle(Rect(Pt(0.0, 0.0), Sz(8.0, 4.0))))
-		assert.False(t, c.ContainsRectangle(Rect(Pt(0.0, 0.0), Sz(8.0, 5.0))))
+		assert.True(t, c.ContainsRectangle(Rect(Pt(0.0, 0.0), Sz(8.0, 4.0), 0)))
+		assert.False(t, c.ContainsRectangle(Rect(Pt(0.0, 0.0), Sz(8.0, 5.0), 0)))
 	})
 	t.Run("rotated is tested on its turned corners", func(t *testing.T) {
-		assert.True(t, c.ContainsRectangle(Rect(Pt(0.0, 0.0), Sz(2.0, 1.0)).Rotate(Pi/4)))
-		assert.False(t, c.ContainsRectangle(Rect(Pt(0.0, 0.0), Sz(8.0, 4.0)).Rotate(Pi/4)))
+		assert.True(t, c.ContainsRectangle(Rect(Pt(0.0, 0.0), Sz(2.0, 1.0), 0).Rotate(Pi/4)))
+		assert.False(t, c.ContainsRectangle(Rect(Pt(0.0, 0.0), Sz(8.0, 4.0), 0).Rotate(Pi/4)))
 	})
 }
 
@@ -630,7 +630,7 @@ func TestCapsule_IntersectsPolygon(t *testing.T) {
 }
 
 func TestCapsule_IntersectsRectangle(t *testing.T) {
-	rectangle := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0))
+	rectangle := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
 
 	t.Run("touching a side counts", func(t *testing.T) {
 		assert.True(t, Cap(Pt(0.0, 3.0), Pt(5.0, 3.0), 2.0).IntersectsRectangle(rectangle))

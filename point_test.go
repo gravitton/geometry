@@ -302,54 +302,6 @@ func TestPoint_AngleTo(t *testing.T) {
 	})
 }
 
-func TestPoint_Between(t *testing.T) {
-	t.Run("inside and on the boundary", func(t *testing.T) {
-		assert.True(t, Pt(1, 1).Between(Pt(0, 0), Pt(2, 2)))
-		assert.True(t, Pt(0, 2).Between(Pt(0, 0), Pt(2, 2)))
-		assert.True(t, Pt(2, 0).Between(Pt(0, 0), Pt(2, 2)))
-	})
-	t.Run("outside on either axis", func(t *testing.T) {
-		assert.False(t, Pt(3, 1).Between(Pt(0, 0), Pt(2, 2)))
-		assert.False(t, Pt(1, -1).Between(Pt(0, 0), Pt(2, 2)))
-	})
-	t.Run("corners out of order contain nothing", func(t *testing.T) {
-		assert.False(t, Pt(1, 1).Between(Pt(2, 2), Pt(0, 0)))
-	})
-	t.Run("float is tolerant", func(t *testing.T) {
-		assert.True(t, Pt(2.0+Delta/2, 1.0).Between(Pt(0.0, 0.0), Pt(2.0, 2.0)))
-		assert.False(t, Pt(2.0+2*Delta, 1.0).Between(Pt(0.0, 0.0), Pt(2.0, 2.0)))
-	})
-	t.Run("matches Rectangle.Contains before a turn, and never rejects a contained point after one", func(t *testing.T) {
-		for _, r := range rectFixtures {
-			for _, p := range pointFixtures {
-				if r.IsAligned() {
-					assert.Equal(t, p.Between(r.MinMax()), r.Contains(p), fmt.Sprintf("%s in %s: ", p, r))
-				} else if r.Contains(p) {
-					assert.True(t, p.Between(r.MinMax()), fmt.Sprintf("%s in %s: ", p, r))
-				}
-			}
-		}
-	})
-	t.Run("the tolerance widens to two ulps of T far from the origin", func(t *testing.T) {
-		far32, far64 := float32(1<<20), float64(1<<40)
-
-		assert.True(t, Pt(far32+0.25, 0).Between(Pt[float32](0, 0), Pt(far32, 1)))
-		assert.False(t, Pt(far32+0.375, 0).Between(Pt[float32](0, 0), Pt(far32, 1)))
-		assert.True(t, Pt(far64+0x1p-11, 0).Between(Pt(0.0, 0.0), Pt(far64, 1)))
-		assert.False(t, Pt(far64+3*0x1p-12, 0).Between(Pt(0.0, 0.0), Pt(far64, 1)))
-	})
-	t.Run("and is Epsilon near it", func(t *testing.T) {
-		assert.True(t, Pt[float32](100.00009, 0).Between(Pt[float32](0, 0), Pt[float32](100, 1)))
-		assert.False(t, Pt[float32](100.00012, 0).Between(Pt[float32](0, 0), Pt[float32](100, 1)))
-	})
-	t.Run("int stays exact at any magnitude", func(t *testing.T) {
-		assert.False(t, Pt(1_000_000_000_001, 0).Between(Pt(0, 0), Pt(1_000_000_000_000, 1)))
-	})
-	t.Run("an infinite coordinate lies within nothing", func(t *testing.T) {
-		assert.False(t, Pt(math.Inf(1), 0.0).Between(Pt(0.0, 0.0), Pt(math.Inf(1), 1.0)))
-	})
-}
-
 func TestPoint_DistanceTo(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
 		for _, test := range distanceFixtures {
@@ -420,6 +372,54 @@ func TestPoint_OctileDistanceTo(t *testing.T) {
 	})
 	t.Run("int", func(t *testing.T) {
 		geomtest.AssertNumber(t, Pt(1, 2).OctileDistanceTo(Pt(2, 3)), Sqrt2)
+	})
+}
+
+func TestPoint_Between(t *testing.T) {
+	t.Run("inside and on the boundary", func(t *testing.T) {
+		assert.True(t, Pt(1, 1).Between(Pt(0, 0), Pt(2, 2)))
+		assert.True(t, Pt(0, 2).Between(Pt(0, 0), Pt(2, 2)))
+		assert.True(t, Pt(2, 0).Between(Pt(0, 0), Pt(2, 2)))
+	})
+	t.Run("outside on either axis", func(t *testing.T) {
+		assert.False(t, Pt(3, 1).Between(Pt(0, 0), Pt(2, 2)))
+		assert.False(t, Pt(1, -1).Between(Pt(0, 0), Pt(2, 2)))
+	})
+	t.Run("corners out of order contain nothing", func(t *testing.T) {
+		assert.False(t, Pt(1, 1).Between(Pt(2, 2), Pt(0, 0)))
+	})
+	t.Run("float is tolerant", func(t *testing.T) {
+		assert.True(t, Pt(2.0+Delta/2, 1.0).Between(Pt(0.0, 0.0), Pt(2.0, 2.0)))
+		assert.False(t, Pt(2.0+2*Delta, 1.0).Between(Pt(0.0, 0.0), Pt(2.0, 2.0)))
+	})
+	t.Run("matches Rectangle.Contains before a turn, and never rejects a contained point after one", func(t *testing.T) {
+		for _, r := range rectFixtures {
+			for _, p := range pointFixtures {
+				if r.IsAligned() {
+					assert.Equal(t, p.Between(r.MinMax()), r.Contains(p), fmt.Sprintf("%s in %s: ", p, r))
+				} else if r.Contains(p) {
+					assert.True(t, p.Between(r.MinMax()), fmt.Sprintf("%s in %s: ", p, r))
+				}
+			}
+		}
+	})
+	t.Run("the tolerance widens to two ulps of T far from the origin", func(t *testing.T) {
+		far32, far64 := float32(1<<20), float64(1<<40)
+
+		assert.True(t, Pt(far32+0.25, 0).Between(Pt[float32](0, 0), Pt(far32, 1)))
+		assert.False(t, Pt(far32+0.375, 0).Between(Pt[float32](0, 0), Pt(far32, 1)))
+		assert.True(t, Pt(far64+0x1p-11, 0).Between(Pt(0.0, 0.0), Pt(far64, 1)))
+		assert.False(t, Pt(far64+3*0x1p-12, 0).Between(Pt(0.0, 0.0), Pt(far64, 1)))
+	})
+	t.Run("and is Epsilon near it", func(t *testing.T) {
+		assert.True(t, Pt[float32](100.00009, 0).Between(Pt[float32](0, 0), Pt[float32](100, 1)))
+		assert.False(t, Pt[float32](100.00012, 0).Between(Pt[float32](0, 0), Pt[float32](100, 1)))
+	})
+	t.Run("int stays exact at any magnitude", func(t *testing.T) {
+		assert.False(t, Pt(1_000_000_000_001, 0).Between(Pt(0, 0), Pt(1_000_000_000_000, 1)))
+	})
+	t.Run("an infinite coordinate lies within nothing", func(t *testing.T) {
+		assert.False(t, Pt(math.Inf(1), 0.0).Between(Pt(0.0, 0.0), Pt(math.Inf(1), 1.0)))
 	})
 }
 

@@ -266,6 +266,10 @@ func Intersects[T Number](a, b Shape[T]) bool {
 		}
 	}
 
+	if segment, ellipse, ok := eitherSegmentEllipse(a, b); ok {
+		return segment.IntersectsEllipse(ellipse)
+	}
+
 	if isEmpty(a) || isEmpty(b) {
 		return false
 	}
@@ -415,7 +419,7 @@ func Sweep[T Number](a Shape[T], motion Vector[T], b Shape[T]) (Hit[T], bool) {
 }
 
 // Raycast returns where the ray first reaches the shape from outside, and false where it does not,
-// by the Hit method of the ray naming the kind. The Fraction is in units of Direction, and an
+// by the Hit method of the ray naming the kind. The Fraction is in units of Vector, and an
 // Origin inside the shape hits nothing. A shape of another package is reached as Sweep reaches it,
 // within the tolerance, a touch in passing left out. The shape escapes to the heap.
 func Raycast[T Number](ray Ray[T], shape Shape[T]) (Hit[T], bool) {
@@ -487,6 +491,21 @@ func isEmpty[T Number](shape Shape[T]) bool {
 	}
 
 	return false
+}
+
+// eitherSegmentEllipse returns the segment and the ellipse where the shapes are one of each, the
+// one pair of an Ellipse with a named Intersects method.
+func eitherSegmentEllipse[T Number](a, b Shape[T]) (Segment[T], Ellipse[T], bool) {
+	if segment, ok := a.(Segment[T]); ok {
+		ellipse, ok := b.(Ellipse[T])
+
+		return segment, ellipse, ok
+	}
+
+	segment, ok := b.(Segment[T])
+	ellipse, isEllipse := a.(Ellipse[T])
+
+	return segment, ellipse, ok && isEllipse
 }
 
 // eitherCircle returns whichever shape is a circle, the first where both are, with the other one.

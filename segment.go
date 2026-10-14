@@ -27,11 +27,6 @@ func (s Segment[T]) Vector() Vector[T] {
 	return s.End.Subtract(s.Start)
 }
 
-// Length returns the length.
-func (s Segment[T]) Length() float64 {
-	return s.Float().Vector().Length()
-}
-
 // Angle returns the angle of Vector in radians, zero for a segment of zero length.
 func (s Segment[T]) Angle() float64 {
 	return s.Float().Vector().Angle()
@@ -40,6 +35,13 @@ func (s Segment[T]) Angle() float64 {
 // Direction returns the direction nearest to Vector, or DirectionNone for a segment of zero length.
 func (s Segment[T]) Direction() Direction {
 	return s.Float().Vector().Direction()
+}
+
+// Normal returns Vector turned a quarter turn in the sense of Vector.Rotate, of the same length. On
+// an edge of a Rectangle, or of a polygon wound the same way, it points inward. A segment of zero
+// length gives the zero vector.
+func (s Segment[T]) Normal() Vector[T] {
+	return s.Vector().Normal()
 }
 
 // Vertices returns Start and End, in that order.
@@ -59,6 +61,11 @@ func (s Segment[T]) Edges() iter.Seq[Segment[T]] {
 // Midpoint returns PointAt(0.5).
 func (s Segment[T]) Midpoint() Point[T] {
 	return s.Start.Midpoint(s.End)
+}
+
+// Length returns the length.
+func (s Segment[T]) Length() float64 {
+	return s.Float().Vector().Length()
 }
 
 // Bounds returns the axis-aligned bounding box.
@@ -185,13 +192,6 @@ func (s Segment[T]) Split(t float64) (Segment[T], Segment[T]) {
 	point := s.PointAt(t)
 
 	return Segment[T]{s.Start, point}, Segment[T]{point, s.End}
-}
-
-// Normal returns Vector turned a quarter turn in the sense of Vector.Rotate, of the same length. On
-// an edge of a Rectangle, or of a polygon wound the same way, it points inward. A segment of zero
-// length gives the zero vector.
-func (s Segment[T]) Normal() Vector[T] {
-	return s.Vector().Normal()
 }
 
 // DistanceTo returns the distance from the point to the segment, zero on it.
@@ -397,6 +397,12 @@ func (s Segment[T]) IntersectsBox(box Box[T]) bool {
 	return false
 }
 
+// IntersectsEllipse reports whether the segment and the ellipse share a point: Start lies in it or
+// the segment reaches its boundary, as IntersectionEllipse finds it.
+func (s Segment[T]) IntersectsEllipse(ellipse Ellipse[T]) bool {
+	return ellipse.Contains(s.Start) || !s.IntersectionEllipse(ellipse).IsEmpty()
+}
+
 // IntersectionCircle returns the points where the segment crosses the boundary of the circle, from
 // Start to End.
 func (s Segment[T]) IntersectionCircle(circle Circle[T]) Pair[Point[T]] {
@@ -485,7 +491,18 @@ func (s Segment[T]) AppendIntersectionPolyline(dst []Point[T], polyline Polyline
 // IntersectionQuadraticBezier returns the points where the segment crosses the curve, from Start to
 // End.
 func (s Segment[T]) IntersectionQuadraticBezier(curve QuadraticBezier[T]) Pair[Point[T]] {
-	return curve.IntersectionSegment(s)
+	cast := bezierCast{segment: s.Float(), curve: curve.Float().CubicBezier()}
+	cast.step(cast.curve, 0, 1, bezierDepth)
+
+	var points Pair[Point[T]]
+	for _, hit := range cast.hits[:cast.count] {
+		if rounded := hit.Point.Cast[T](); points.Count < 2 && !(points.Count > 0 && rounded.Equal(points.Items[points.Count-1])) {
+			points.Items[points.Count] = rounded
+			points.Count++
+		}
+	}
+
+	return points
 }
 
 // IntersectionCubicBezier returns the points where the segment crosses the curve, from Start to
@@ -559,6 +576,18 @@ func (s Segment[T]) IntersectionBox(box Box[T]) Pair[Point[T]] {
 	}
 
 	return span.pair()
+}
+
+// IntersectionEllipse returns the points where the segment crosses the boundary of the ellipse,
+// from Start to End: two where it passes through, one where it is tangent or ends inside, and none
+// where it misses. A segment entirely inside crosses no boundary, so it gives none while
+// IntersectsEllipse holds. An endpoint on the boundary is one of the points, so a segment and its
+// Reverse give the same points. An ellipse with a zero semi-axis is crossed as the segment its other
+// axis spans.
+func (s Segment[T]) IntersectionEllipse(ellipse Ellipse[T]) Pair[Point[T]] {
+	fractions, n := ellipse.fractions(s)
+
+	return s.pointsAt(fractions[:n]...)
 }
 
 // ClipCircle returns the part of the segment in the circle, and false where they share no point. A
@@ -702,6 +731,14 @@ func (s Segment[T]) ClipBox(box Box[T]) (Segment[T], bool) {
 	}
 
 	return s.clipConvex(span.crossings(), box.Contains(s.Start), box.Contains(s.End))
+}
+
+// ClipEllipse returns the part of the segment in the ellipse, and false where they share no point.
+// A segment touching the ellipse is clipped to that one point.
+func (s Segment[T]) ClipEllipse(ellipse Ellipse[T]) (Segment[T], bool) {
+	crossings := s.IntersectionEllipse(ellipse)
+
+	return s.clipConvex(crossings.Items[:crossings.Count], ellipse.Contains(s.Start), ellipse.Contains(s.End))
 }
 
 // HitCircle returns where the segment first reaches the circle from outside, and false where it
@@ -942,12 +979,11 @@ func (s Segment[T]) HitBox(box Box[T]) (Hit[T], bool) {
 }
 
 // HitEllipse returns where the segment first reaches the ellipse from outside, and false where it
-// does not or Start lies in it. The normal is the perpendicular of the boundary. A segment touching
-// the ellipse in passing is decided with no tolerance and may answer either way. An ellipse with a
-// zero semi-axis is hit as the segment its other axis spans.
+// does not or Start lies in it: the first of the crossings IntersectionEllipse gives, with the
+// perpendicular of the boundary as the normal. An ellipse with a zero semi-axis is hit as the
+// segment its other axis spans.
 func (s Segment[T]) HitEllipse(ellipse Ellipse[T]) (Hit[T], bool) {
-	w, h := ellipse.Size.Float().XY()
-	if w == 0 || h == 0 {
+	if w, h := ellipse.Radius.Float().XY(); w == 0 || h == 0 {
 		axis := Vector[float64]{w, h}
 
 		return s.HitSegment(Segment[T]{ellipse.worldPoint(axis.Negate()), ellipse.worldPoint(axis)})
@@ -957,24 +993,18 @@ func (s Segment[T]) HitEllipse(ellipse Ellipse[T]) (Hit[T], bool) {
 		return Hit[T]{}, false
 	}
 
-	offset := ellipse.localOffset(s.Start).DivideXY(w, h)
-	direction := s.Float().Vector().Rotate(-ellipse.Angle).DivideXY(w, h)
+	fractions, n := ellipse.fractions(s)
+	for _, t := range fractions[:n] {
+		if !s.containsAt(t) {
+			continue
+		}
 
-	a, b, c := direction.LengthSquared(), offset.Dot(direction), offset.LengthSquared()-1
-	discriminant := float64(b*b) - float64(a*c)
-	if a == 0 || !(discriminant >= 0) {
-		return Hit[T]{}, false
+		point := s.Float().PointAt(Clamp(t, 0, 1))
+
+		return s.hitAt(point.Cast[T](), ellipse.normal(point)), true
 	}
 
-	t := (-b - math.Sqrt(discriminant)) / a
-	if !s.containsAt(t) {
-		return Hit[T]{}, false
-	}
-
-	t = Clamp(t, 0, 1)
-	normal := offset.Add(direction.Multiply(t)).DivideXY(w, h).Rotate(ellipse.Angle)
-
-	return s.hitAt(s.Float().PointAt(t).Cast[T](), normal), true
+	return Hit[T]{}, false
 }
 
 // distanceSquaredTo returns the squared distance to the point with no tolerance. Beside the segment

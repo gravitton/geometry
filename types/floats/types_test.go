@@ -27,7 +27,7 @@ func TestConstructors(t *testing.T) {
 	assert.Equal(t, QuadBez(geom.Pt(1, 2), geom.Pt(3, 4), geom.Pt(5, 6)), geom.QuadBez(geom.Pt(1.0, 2.0), geom.Pt(3.0, 4.0), geom.Pt(5.0, 6.0)))
 	assert.Equal(t, CubBez(geom.Pt(1, 2), geom.Pt(3, 4), geom.Pt(5, 6), geom.Pt(7, 8)), geom.CubBez(geom.Pt(1.0, 2.0), geom.Pt(3.0, 4.0), geom.Pt(5.0, 6.0), geom.Pt(7.0, 8.0)))
 	assert.True(t, Pol([]geom.Point[int]{geom.Pt(1, 2), geom.Pt(3, 4)}).Equal(geom.Pol([]geom.Point[float64]{geom.Pt(1.0, 2.0), geom.Pt(3.0, 4.0)})))
-	assert.Equal(t, Rect(geom.Pt(1, 2), geom.Sz(3, 4)), geom.Rect(geom.Pt(1.0, 2.0), geom.Sz(3.0, 4.0)))
+	assert.Equal(t, Rect(geom.Pt(1, 2), geom.Sz(3, 4), 0), geom.Rect(geom.Pt(1.0, 2.0), geom.Sz(3.0, 4.0), 0))
 	assert.Equal(t, RegPol(geom.Pt(1, 2), geom.Sz(3, 4), 6, 0.5, 0), geom.RegPol(geom.Pt(1.0, 2.0), geom.Sz(3.0, 4.0), 6, 0.5, 0))
 	assert.Equal(t, Bx(geom.Pt(3, 4), geom.Pt(1, 2)), geom.Bx(geom.Pt(1.0, 2.0), geom.Pt(3.0, 4.0)))
 	assert.Equal(t, Ell(geom.Pt(1, 2), geom.Sz(3, 4), 0.5), geom.Ell(geom.Pt(1.0, 2.0), geom.Sz(3.0, 4.0), 0.5))

@@ -140,7 +140,7 @@ func (b CubicBezier[T]) IntersectionRay(ray Ray[T]) []Point[T] {
 }
 
 // IntersectionLine returns the points where the line crosses the curve, in order along its
-// Direction.
+// Vector.
 func (b CubicBezier[T]) IntersectionLine(line Line[T]) []Point[T] {
 	return line.IntersectionCubicBezier(b)
 }

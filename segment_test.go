@@ -30,18 +30,6 @@ func TestSegment_Vector(t *testing.T) {
 	})
 }
 
-func TestSegment_Length(t *testing.T) {
-	t.Run("int", func(t *testing.T) {
-		geomtest.AssertNumber(t, Seg(Pt(1, 2), Pt(3, 5)).Length(), math.Sqrt(13))
-	})
-	t.Run("float", func(t *testing.T) {
-		geomtest.AssertNumber(t, Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)).Length(), math.Sqrt(13.6825))
-	})
-	t.Run("a narrow integer span wider than its range", func(t *testing.T) {
-		geomtest.AssertNumber(t, Seg(Pt[int8](-100, 0), Pt[int8](100, 0)).Length(), 200.0)
-	})
-}
-
 func TestSegment_Angle(t *testing.T) {
 	t.Run("measures from start to end", func(t *testing.T) {
 		geomtest.AssertNumber(t, Seg(Pt(0, 0), Pt(1, 0)).Angle(), 0.0)
@@ -77,6 +65,29 @@ func TestSegment_Direction(t *testing.T) {
 	})
 	t.Run("a narrow integer span wider than its range", func(t *testing.T) {
 		assert.Equal(t, Seg(Pt[int8](-100, 0), Pt[int8](100, 0)).Direction(), DirectionRight)
+	})
+}
+
+func TestSegment_Normal(t *testing.T) {
+	t.Run("a quarter turn of the vector, with its length", func(t *testing.T) {
+		geomtest.AssertVector(t, Seg(Pt(1, 1), Pt(4, 1)).Normal(), Vec(0, 3))
+		geomtest.AssertVector(t, Seg(Pt(0.0, 0.0), Pt(0.0, 2.5)).Normal(), Vec(-2.5, 0.0))
+	})
+	t.Run("points inward on a rectangle edge", func(t *testing.T) {
+		r := Rect(Pt(0, 0), Sz(4, 4), 0)
+
+		for edge := range r.Edges() {
+			assert.True(t, r.Contains(edge.Midpoint().Add(edge.Normal().Resize(1))), edge.String())
+		}
+	})
+	t.Run("a zero-length segment has none", func(t *testing.T) {
+		geomtest.AssertVector(t, Seg(Pt(3, 4), Pt(3, 4)).Normal(), ZeroVector[int]())
+	})
+	t.Run("is perpendicular to the segment", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			geomtest.AssertNumber(t, s.Normal().Dot(s.Vector()), 0.0, s.String())
+			geomtest.AssertNumber(t, s.Normal().Length(), s.Length(), s.String())
+		}
 	})
 }
 
@@ -129,6 +140,18 @@ func TestSegment_Midpoint(t *testing.T) {
 	})
 	t.Run("float", func(t *testing.T) {
 		geomtest.AssertPoint(t, Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)).Midpoint(), Pt(0.9, 1.575))
+	})
+}
+
+func TestSegment_Length(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		geomtest.AssertNumber(t, Seg(Pt(1, 2), Pt(3, 5)).Length(), math.Sqrt(13))
+	})
+	t.Run("float", func(t *testing.T) {
+		geomtest.AssertNumber(t, Seg(Pt(0.6, -0.25), Pt(1.2, 3.4)).Length(), math.Sqrt(13.6825))
+	})
+	t.Run("a narrow integer span wider than its range", func(t *testing.T) {
+		geomtest.AssertNumber(t, Seg(Pt[int8](-100, 0), Pt[int8](100, 0)).Length(), 200.0)
 	})
 }
 
@@ -397,29 +420,6 @@ func TestSegment_Split(t *testing.T) {
 				geomtest.AssertPoint(t, second.End, s.End, message)
 				geomtest.AssertNumber(t, first.Length()+second.Length(), s.Length(), message)
 			}
-		}
-	})
-}
-
-func TestSegment_Normal(t *testing.T) {
-	t.Run("a quarter turn of the vector, with its length", func(t *testing.T) {
-		geomtest.AssertVector(t, Seg(Pt(1, 1), Pt(4, 1)).Normal(), Vec(0, 3))
-		geomtest.AssertVector(t, Seg(Pt(0.0, 0.0), Pt(0.0, 2.5)).Normal(), Vec(-2.5, 0.0))
-	})
-	t.Run("points inward on a rectangle edge", func(t *testing.T) {
-		r := Rect(Pt(0, 0), Sz(4, 4))
-
-		for edge := range r.Edges() {
-			assert.True(t, r.Contains(edge.Midpoint().Add(edge.Normal().Resize(1))), edge.String())
-		}
-	})
-	t.Run("a zero-length segment has none", func(t *testing.T) {
-		geomtest.AssertVector(t, Seg(Pt(3, 4), Pt(3, 4)).Normal(), ZeroVector[int]())
-	})
-	t.Run("is perpendicular to the segment", func(t *testing.T) {
-		for _, s := range segmentFixtures {
-			geomtest.AssertNumber(t, s.Normal().Dot(s.Vector()), 0.0, s.String())
-			geomtest.AssertNumber(t, s.Normal().Length(), s.Length(), s.String())
 		}
 	})
 }
@@ -850,7 +850,7 @@ func TestSegment_IntersectsPolygon(t *testing.T) {
 }
 
 func TestSegment_IntersectsRectangle(t *testing.T) {
-	rectangle := Rect(Pt(0, 0), Sz(4, 4))
+	rectangle := Rect(Pt(0, 0), Sz(4, 4), 0)
 
 	t.Run("crossing an edge", func(t *testing.T) {
 		assert.True(t, Seg(Pt(0, 0), Pt(5, 0)).IntersectsRectangle(rectangle))
@@ -872,7 +872,7 @@ func TestSegment_IntersectsRectangle(t *testing.T) {
 }
 
 func BenchmarkSegment_IntersectsRectangle(b *testing.B) {
-	rectangle := Rect(Pt(0.0, 0.0), Sz(10.0, 10.0))
+	rectangle := Rect(Pt(0.0, 0.0), Sz(10.0, 10.0), 0)
 	through, apart := Seg(Pt(-20.0, 0.0), Pt(20.0, 0.0)), Seg(Pt(-20.0, 20.0), Pt(20.0, 20.0))
 
 	b.Run("through", func(b *testing.B) {
@@ -949,6 +949,62 @@ func TestSegment_IntersectsBox(t *testing.T) {
 			p := points[i]
 
 			assert.Equal(t, Seg(p, p).IntersectsBox(b), b.Contains(p), fmt.Sprintf("%s → %s: ", p, b))
+		}
+	})
+}
+
+func TestSegment_IntersectsEllipse(t *testing.T) {
+	ellipse := Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
+
+	t.Run("passing through, ending inside or inside", func(t *testing.T) {
+		for _, s := range []Segment[float64]{Seg(Pt(-8.0, 0.0), Pt(8.0, 0.0)), Seg(Pt(-8.0, 1.0), Pt(0.0, 1.0)), Seg(Pt(-1.0, 0.5), Pt(1.0, -0.5))} {
+			assert.True(t, s.IntersectsEllipse(ellipse), s.String())
+		}
+	})
+	t.Run("apart or short of the ellipse", func(t *testing.T) {
+		for _, s := range []Segment[float64]{Seg(Pt(-8.0, 3.0), Pt(8.0, 3.0)), Seg(Pt(-8.0, 0.0), Pt(-5.0, 0.0)), Seg(Pt(4.0, 2.0), Pt(6.0, 0.0))} {
+			assert.False(t, s.IntersectsEllipse(ellipse), s.String())
+		}
+	})
+	t.Run("a tangent touches, within the tolerance and not past it", func(t *testing.T) {
+		assert.True(t, Seg(Pt(-5.0, 2.0), Pt(5.0, 2.0)).IntersectsEllipse(ellipse))
+		assert.True(t, Seg(Pt(-5.0, 2.0+1e-12), Pt(5.0, 2.0+1e-12)).IntersectsEllipse(ellipse))
+		assert.False(t, Seg(Pt(-5.0, 2.0+1e-4), Pt(5.0, 2.0+1e-4)).IntersectsEllipse(ellipse))
+	})
+	t.Run("a degenerate ellipse is the segment of its other axis", func(t *testing.T) {
+		flat := Ell(Pt(0.0, 0.0), Sz(4.0, 0.0), 0)
+
+		assert.True(t, Seg(Pt(0.0, -3.0), Pt(0.0, 3.0)).IntersectsEllipse(flat))
+		assert.True(t, Seg(Pt(-6.0, 0.0), Pt(6.0, 0.0)).IntersectsEllipse(flat))
+		assert.True(t, Seg(Pt(4.0+1e-12, -3.0), Pt(4.0+1e-12, 3.0)).IntersectsEllipse(flat))
+		assert.False(t, Seg(Pt(5.0, -3.0), Pt(5.0, 3.0)).IntersectsEllipse(flat))
+		assert.True(t, Seg(Pt(0.0, 0.0), Pt(2.0, 2.0)).IntersectsEllipse(Ell(Pt(1.0, 1.0), Sz(0.0, 0.0), 0)))
+	})
+	t.Run("int touches on the lattice", func(t *testing.T) {
+		assert.True(t, Seg(Pt(-10, 2), Pt(10, 2)).IntersectsEllipse(Ell(Pt(0, 0), Sz(4, 2), 0)))
+		assert.False(t, Seg(Pt(-10, 3), Pt(10, 3)).IntersectsEllipse(Ell(Pt(0, 0), Sz(4, 2), 0)))
+	})
+	t.Run("a NaN coordinate intersects nothing", func(t *testing.T) {
+		assert.False(t, Seg(Pt(math.NaN(), 0.0), Pt(8.0, 0.0)).IntersectsEllipse(ellipse))
+	})
+	t.Run("matches IntersectsCircle on the circle's Ellipse", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, c := range circleFixtures {
+				assert.Equal(t, s.IntersectsEllipse(c.Ellipse()), s.IntersectsCircle(c), fmt.Sprintf("%s → %s: ", s, c))
+			}
+		}
+	})
+	t.Run("holds wherever a point along the segment lies in the ellipse, either way round", func(t *testing.T) {
+		for _, e := range ellipseFixtures {
+			for _, s := range ellipseCasts() {
+				message := fmt.Sprintf("%s → %s: ", s, e)
+				intersects := s.IntersectsEllipse(e)
+
+				assert.Equal(t, s.Reverse().IntersectsEllipse(e), intersects, message)
+				for i := range 33 {
+					assert.True(t, !e.Contains(s.PointAt(float64(i)/32)) || intersects, message)
+				}
+			}
 		}
 	})
 }
@@ -1308,7 +1364,7 @@ func TestSegment_IntersectionRay(t *testing.T) {
 	t.Run("agrees with Intersects on non-parallel fixtures, on both", func(t *testing.T) {
 		for _, s := range segmentFixtures {
 			for _, r := range rayFixtures {
-				if s.Vector().Float().Cross(r.Direction.Float()) == 0 && s.Vector() != (Vector[float64]{}) && r.Direction != (Vector[float64]{}) {
+				if s.Vector().Float().Cross(r.Vector.Float()) == 0 && s.Vector() != (Vector[float64]{}) && r.Vector != (Vector[float64]{}) {
 					continue
 				}
 
@@ -1354,7 +1410,7 @@ func TestSegment_IntersectionLine(t *testing.T) {
 	t.Run("agrees with Intersects on non-parallel fixtures, on both", func(t *testing.T) {
 		for _, s := range segmentFixtures {
 			for _, l := range lineFixtures {
-				if s.Vector().Float().Cross(l.Direction.Float()) == 0 && s.Vector() != (Vector[float64]{}) && l.Direction != (Vector[float64]{}) {
+				if s.Vector().Float().Cross(l.Vector.Float()) == 0 && s.Vector() != (Vector[float64]{}) && l.Vector != (Vector[float64]{}) {
 					continue
 				}
 
@@ -1543,7 +1599,7 @@ func TestSegment_AppendIntersectionPolygon(t *testing.T) {
 }
 
 func TestSegment_IntersectionRectangle(t *testing.T) {
-	rectangle := Rect(Pt(0, 0), Sz(4, 4))
+	rectangle := Rect(Pt(0, 0), Sz(4, 4), 0)
 
 	t.Run("passing through gives both crossings from Start to End", func(t *testing.T) {
 		geomtest.AssertVertices(t, Seg(Pt(-5, 0), Pt(5, 0)).IntersectionRectangle(rectangle).AppendTo(nil), []Point[int]{Pt(-2, 0), Pt(2, 0)})
@@ -1565,7 +1621,7 @@ func TestSegment_IntersectionRectangle(t *testing.T) {
 		geomtest.AssertVertices(t, s.IntersectionRectangle(rect).AppendTo(nil), []Point[float32]{clipped.Start, clipped.End})
 	})
 	t.Run("an endpoint exactly Delta outside is judged like IntersectsRectangle", func(t *testing.T) {
-		s, r := Seg(Pt(-2.0, 2.000001), Pt(2.0, 68.0000005)), Rect(Pt(0.0, 0.0), Sz(26.0, 4.0))
+		s, r := Seg(Pt(-2.0, 2.000001), Pt(2.0, 68.0000005)), Rect(Pt(0.0, 0.0), Sz(26.0, 4.0), 0)
 
 		assert.Equal(t, len(s.IntersectionRectangle(r).AppendTo(nil)) > 0, s.IntersectsRectangle(r))
 	})
@@ -1591,7 +1647,7 @@ func TestSegment_IntersectionRectangle(t *testing.T) {
 		}), 0)
 	})
 	t.Run("float keeps the crossings", func(t *testing.T) {
-		geomtest.AssertVertices(t, Seg(Pt(-5.0, 1.0), Pt(5.0, 1.0)).IntersectionRectangle(Rect(Pt(0.0, 0.0), Sz(3.0, 3.0))).AppendTo(nil), []Point[float64]{Pt(-1.5, 1.0), Pt(1.5, 1.0)})
+		geomtest.AssertVertices(t, Seg(Pt(-5.0, 1.0), Pt(5.0, 1.0)).IntersectionRectangle(Rect(Pt(0.0, 0.0), Sz(3.0, 3.0), 0)).AppendTo(nil), []Point[float64]{Pt(-1.5, 1.0), Pt(1.5, 1.0)})
 	})
 	t.Run("every point lies on the segment and the boundary, and exists where IntersectsRectangle holds", func(t *testing.T) {
 		for _, s := range segmentFixtures {
@@ -1667,7 +1723,7 @@ func FuzzSegment_IntersectionRectangle(f *testing.F) {
 			}
 		}
 
-		s, r := Seg(Pt(x1, y1), Pt(x2, y2)), Rect(Pt(cx, cy), Sz(w, h))
+		s, r := Seg(Pt(x1, y1), Pt(x2, y2)), Rect(Pt(cx, cy), Sz(w, h), 0)
 		points := s.IntersectionRectangle(r).AppendTo(nil)
 
 		assert.True(t, len(points) <= 2, fmt.Sprintf("%s → %s: at most two crossings, got %d: ", s, r, len(points)))
@@ -1783,6 +1839,90 @@ func TestSegment_IntersectionBox(t *testing.T) {
 
 					assertCrossings(t, s, s.IntersectionBox(b).AppendTo(nil), s.IntersectsBox(b), b.Rectangle().Edges, fmt.Sprintf("%v → %v: ", s, b))
 				}
+			}
+		}
+	})
+}
+
+func TestSegment_IntersectionEllipse(t *testing.T) {
+	ellipse := Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
+
+	t.Run("passing through gives both crossings from Start to End", func(t *testing.T) {
+		geomtest.AssertVertices(t, Seg(Pt(-8.0, 0.0), Pt(8.0, 0.0)).IntersectionEllipse(ellipse).AppendTo(nil), []Point[float64]{Pt(-4.0, 0.0), Pt(4.0, 0.0)})
+		geomtest.AssertVertices(t, Seg(Pt(8.0, 1.6), Pt(-8.0, 1.6)).IntersectionEllipse(ellipse).AppendTo(nil), []Point[float64]{Pt(2.4, 1.6), Pt(-2.4, 1.6)})
+	})
+	t.Run("a turned ellipse turns its crossings with it", func(t *testing.T) {
+		geomtest.AssertVertices(t, Seg(Pt(-5.0, 2.0), Pt(7.0, 2.0)).IntersectionEllipse(Ell(Pt(1.0, 2.0), Sz(4.0, 2.0), Pi/2)).AppendTo(nil), []Point[float64]{Pt(-1.0, 2.0), Pt(3.0, 2.0)})
+	})
+	t.Run("an end inside gives the one crossing, and inside none", func(t *testing.T) {
+		geomtest.AssertVertices(t, Seg(Pt(-8.0, 0.0), Pt(0.0, 0.0)).IntersectionEllipse(ellipse).AppendTo(nil), []Point[float64]{Pt(-4.0, 0.0)})
+		assert.True(t, Seg(Pt(-1.0, 0.5), Pt(1.0, -0.5)).IntersectionEllipse(ellipse).IsEmpty())
+	})
+	t.Run("an endpoint on the boundary is one of the points", func(t *testing.T) {
+		geomtest.AssertVertices(t, Seg(Pt(4.0, 0.0), Pt(9.0, 0.0)).IntersectionEllipse(ellipse).AppendTo(nil), []Point[float64]{Pt(4.0, 0.0)})
+		geomtest.AssertVertices(t, Seg(Pt(0.0, 0.0), Pt(4.0, 0.0)).IntersectionEllipse(ellipse).AppendTo(nil), []Point[float64]{Pt(4.0, 0.0)})
+		geomtest.AssertVertices(t, Seg(Pt(4.0, 0.0), Pt(-4.0, 0.0)).IntersectionEllipse(ellipse).AppendTo(nil), []Point[float64]{Pt(4.0, 0.0), Pt(-4.0, 0.0)})
+		geomtest.AssertVertices(t, Seg(Pt(-2.0, 0.0), Pt(-4.0, 0.0)).IntersectionEllipse(ellipse).AppendTo(nil), []Point[float64]{Pt(-4.0, 0.0)})
+		geomtest.AssertVertices(t, Seg(Pt(-8.0, 0.0), Pt(-4.0, 0.0)).IntersectionEllipse(ellipse).AppendTo(nil), []Point[float64]{Pt(-4.0, 0.0)})
+		geomtest.AssertVertices(t, Seg(Pt(4.0, 0.0), Pt(8.0, 0.0)).Reverse().IntersectionEllipse(ellipse).AppendTo(nil), []Point[float64]{Pt(4.0, 0.0)})
+	})
+	t.Run("a tangent is the point of contact, placed within the tolerance of the boundary", func(t *testing.T) {
+		geomtest.AssertVertices(t, Seg(Pt(-5.0, 2.0), Pt(5.0, 2.0)).IntersectionEllipse(ellipse).AppendTo(nil), []Point[float64]{Pt(0.0, 2.0)})
+		geomtest.AssertVertices(t, Seg(Pt(-5.0, 2.0+1e-12), Pt(5.0, 2.0+1e-12)).IntersectionEllipse(ellipse).AppendTo(nil), []Point[float64]{Pt(0.0, 2.0)})
+
+		turned := Ell(Pt(0.0, 0.0), Sz(4.0, 1.0), Pi/4)
+		touch := turned.Support(Vec(-1.0, 1.0))
+		for _, offset := range []float64{0, 1e-12} {
+			edge := Pt(touch.X-offset, touch.Y+offset)
+			points := Seg(edge.Add(Vec(-3.0, -3.0)), edge.Add(Vec(3.0, 3.0))).IntersectionEllipse(turned)
+
+			assert.Equal(t, points.Count, 1)
+			assert.True(t, turned.Contains(points.Items[0]), points.Items[0].String())
+		}
+	})
+	t.Run("apart or of no length crosses nothing", func(t *testing.T) {
+		assert.True(t, Seg(Pt(-8.0, 3.0), Pt(8.0, 3.0)).IntersectionEllipse(ellipse).IsEmpty())
+		assert.True(t, Seg(Pt(-8.0, 0.0), Pt(-8.0, 0.0)).IntersectionEllipse(ellipse).IsEmpty())
+		geomtest.AssertVertices(t, Seg(Pt(4.0, 0.0), Pt(4.0, 0.0)).IntersectionEllipse(ellipse).AppendTo(nil), []Point[float64]{Pt(4.0, 0.0)})
+	})
+	t.Run("a degenerate ellipse is crossed as the segment of its other axis", func(t *testing.T) {
+		flat := Ell(Pt(0.0, 0.0), Sz(4.0, 0.0), 0)
+
+		geomtest.AssertVertices(t, Seg(Pt(0.0, -3.0), Pt(0.0, 3.0)).IntersectionEllipse(flat).AppendTo(nil), []Point[float64]{Pt(0.0, 0.0)})
+		geomtest.AssertVertices(t, Seg(Pt(-6.0, 0.0), Pt(6.0, 0.0)).IntersectionEllipse(flat).AppendTo(nil), []Point[float64]{Pt(-4.0, 0.0), Pt(4.0, 0.0)})
+		geomtest.AssertVertices(t, Seg(Pt(4.0+1e-12, -3.0), Pt(4.0+1e-12, 3.0)).IntersectionEllipse(flat).AppendTo(nil), []Point[float64]{Pt(4.0, 0.0)})
+		geomtest.AssertVertices(t, Seg(Pt(0.0, 0.0), Pt(2.0, 2.0)).IntersectionEllipse(Ell(Pt(1.0, 1.0), Sz(0.0, 0.0), 0)).AppendTo(nil), []Point[float64]{Pt(1.0, 1.0)})
+		geomtest.AssertVertices(t, Seg(Pt(-1.0, 1.0), Pt(3.0, 1.0)).IntersectionEllipse(Ell(Pt(1.0, 1.0), Sz(0.0, 0.0), 0)).AppendTo(nil), []Point[float64]{Pt(1.0, 1.0)})
+	})
+	t.Run("a NaN coordinate crosses nothing", func(t *testing.T) {
+		assert.True(t, Seg(Pt(math.NaN(), 0.0), Pt(8.0, 0.0)).IntersectionEllipse(ellipse).IsEmpty())
+	})
+	t.Run("int rounds the crossings once", func(t *testing.T) {
+		geomtest.AssertVertices(t, Seg(Pt(-10, 1), Pt(10, 1)).IntersectionEllipse(Ell(Pt(0, 0), Sz(4, 2), 0)).AppendTo(nil), []Point[int]{Pt(-3, 1), Pt(3, 1)})
+		geomtest.AssertVertices(t, Seg(Pt(-10, 2), Pt(10, 2)).IntersectionEllipse(Ell(Pt(0, 0), Sz(4, 2), 0)).AppendTo(nil), []Point[int]{Pt(0, 2)})
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		through := Seg(Pt(-8.0, 1.0), Pt(8.0, 1.0))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			sinkBool = through.IntersectionEllipse(ellipse).IsEmpty()
+		}), 0)
+	})
+	t.Run("matches IntersectionCircle on the circle's Ellipse", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, c := range circleFixtures {
+				geomtest.AssertVertices(t, s.IntersectionEllipse(c.Ellipse()).AppendTo(nil), s.IntersectionCircle(c).AppendTo(nil), fmt.Sprintf("%s → %s: ", s, c))
+			}
+		}
+	})
+	t.Run("every point lies on the segment and the boundary, in order and the same reversed", func(t *testing.T) {
+		for _, e := range ellipseFixtures {
+			for _, s := range ellipseCasts() {
+				message := fmt.Sprintf("%s → %s: ", s, e)
+				points := s.IntersectionEllipse(e).AppendTo(nil)
+
+				assertEllipseCrossings(t, s, points, s.IntersectsEllipse(e), e, message)
+				assertReversed(t, points, s.Reverse().IntersectionEllipse(e).AppendTo(nil), message)
 			}
 		}
 	})
@@ -2140,7 +2280,7 @@ func TestSegment_AppendClipPolygon(t *testing.T) {
 }
 
 func TestSegment_ClipRectangle(t *testing.T) {
-	rectangle := Rect(Pt(0, 0), Sz(4, 4))
+	rectangle := Rect(Pt(0, 0), Sz(4, 4), 0)
 
 	t.Run("passing through gives the part between the crossings", func(t *testing.T) {
 		geomtest.AssertSegments(t, partsOf(Seg(Pt(-5, 0), Pt(5, 0)).ClipRectangle(rectangle)), []Segment[int]{Seg(Pt(-2, 0), Pt(2, 0))})
@@ -2164,7 +2304,7 @@ func TestSegment_ClipRectangle(t *testing.T) {
 		assert.Nil(t, partsOf(Seg(Pt(2, 4), Pt(4, 2)).ClipRectangle(rectangle)))
 	})
 	t.Run("a rotated rectangle clips on its turned edges", func(t *testing.T) {
-		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
+		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0), 0).Rotate(Pi / 4)
 
 		geomtest.AssertSegments(t, partsOf(Seg(Pt(-3.0, 0.0), Pt(3.0, 0.0)).ClipRectangle(diamond)), []Segment[float64]{Seg(Pt(-Sqrt2, 0.0), Pt(Sqrt2, 0.0))})
 	})
@@ -2279,6 +2419,51 @@ func TestSegment_ClipBox(t *testing.T) {
 		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
 			_, sinkBool = through.ClipBox(box)
 		}), 0)
+	})
+}
+
+func TestSegment_ClipEllipse(t *testing.T) {
+	ellipse := Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
+
+	t.Run("passing through gives the chord from Start to End", func(t *testing.T) {
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(-8.0, 0.0), Pt(8.0, 0.0)).ClipEllipse(ellipse)), []Segment[float64]{Seg(Pt(-4.0, 0.0), Pt(4.0, 0.0))})
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(8.0, 1.6), Pt(-8.0, 1.6)).ClipEllipse(ellipse)), []Segment[float64]{Seg(Pt(2.4, 1.6), Pt(-2.4, 1.6))})
+	})
+	t.Run("an endpoint inside is kept, and inside is the segment itself", func(t *testing.T) {
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(1.0, 0.0), Pt(8.0, 0.0)).ClipEllipse(ellipse)), []Segment[float64]{Seg(Pt(1.0, 0.0), Pt(4.0, 0.0))})
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(-1.0, 0.5), Pt(1.0, -0.5)).ClipEllipse(ellipse)), []Segment[float64]{Seg(Pt(-1.0, 0.5), Pt(1.0, -0.5))})
+	})
+	t.Run("a tangent is the point of contact", func(t *testing.T) {
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(-5.0, 2.0), Pt(5.0, 2.0)).ClipEllipse(ellipse)), []Segment[float64]{Seg(Pt(0.0, 2.0), Pt(0.0, 2.0))})
+	})
+	t.Run("apart gives none", func(t *testing.T) {
+		assert.Nil(t, partsOf(Seg(Pt(-8.0, 3.0), Pt(8.0, 3.0)).ClipEllipse(ellipse)))
+	})
+	t.Run("int rounds the crossings", func(t *testing.T) {
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(-10, 1), Pt(10, 1)).ClipEllipse(Ell(Pt(0, 0), Sz(4, 2), 0))), []Segment[int]{Seg(Pt(-3, 1), Pt(3, 1))})
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		through := Seg(Pt(-8.0, 1.0), Pt(8.0, 1.0))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.ClipEllipse(ellipse)
+		}), 0)
+	})
+	t.Run("matches ClipCircle on the circle's Ellipse", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			for _, c := range circleFixtures {
+				geomtest.AssertSegments(t, partsOf(s.ClipEllipse(c.Ellipse())), partsOf(s.ClipCircle(c)), fmt.Sprintf("%s → %s: ", s, c))
+			}
+		}
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, e := range ellipseFixtures {
+			for _, s := range ellipseCasts() {
+				assertClipped(t, s, partsOf(s.ClipEllipse(e)), s.IntersectsEllipse(e), func(part Segment[float64]) bool {
+					return e.Contains(part.Start) && e.Contains(part.End)
+				}, fmt.Sprintf("%s → %s: ", s, e))
+			}
+		}
 	})
 }
 
@@ -2888,7 +3073,7 @@ func TestSegment_HitPolygon(t *testing.T) {
 }
 
 func TestSegment_HitRectangle(t *testing.T) {
-	rectangle := Rect(Pt(0, 0), Sz(4, 4))
+	rectangle := Rect(Pt(0, 0), Sz(4, 4), 0)
 
 	t.Run("from outside is the first crossing, with the normal of its edge", func(t *testing.T) {
 		hit, ok := Seg(Pt(-5, 0), Pt(5, 0)).HitRectangle(rectangle)
@@ -2924,7 +3109,7 @@ func TestSegment_HitRectangle(t *testing.T) {
 		assert.False(t, ok)
 	})
 	t.Run("a rotated rectangle is hit on its turned edges", func(t *testing.T) {
-		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0)).Rotate(Pi / 4)
+		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0), 0).Rotate(Pi / 4)
 
 		hit, ok := Seg(Pt(-3.0, 0.5), Pt(3.0, 0.5)).HitRectangle(diamond)
 		assertHit(t, hit, ok, Hit[float64]{Point: Pt(0.5-Sqrt2, 0.5), Normal: Vec(-Sqrt2/2, Sqrt2/2), Fraction: (3.5 - Sqrt2) / 6})
@@ -3396,6 +3581,19 @@ func assertHit[T Number](t *testing.T, hit Hit[T], ok bool, expected Hit[T]) {
 
 	assert.True(t, ok)
 	geomtest.AssertHit(t, hit, expected)
+}
+
+// ellipseCasts returns the segments the ellipse fixtures are crossed by: every one between two
+// point fixtures, and the segment fixtures.
+func ellipseCasts() []Segment[float64] {
+	casts := slices.Clone(segmentFixtures)
+	for _, start := range pointFixtures {
+		for _, end := range pointFixtures {
+			casts = append(casts, Seg(start, end))
+		}
+	}
+
+	return casts
 }
 
 // segmentFixtures span axis-aligned, diagonal, degenerate, and backwards segments.

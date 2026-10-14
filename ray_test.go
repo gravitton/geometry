@@ -13,8 +13,8 @@ import (
 
 func TestRay_Constructor(t *testing.T) {
 	t.Run("shorthand", func(t *testing.T) {
-		geomtest.AssertRay(t, Ry(Pt(1, -1), Vec(3, 4)), Ray[int]{Origin: Pt(1, -1), Direction: Vec(3, 4)})
-		geomtest.AssertRay(t, Ry(Pt(0.5, -1.25), Vec(2.0, 5.0)), Ray[float64]{Origin: Pt(0.5, -1.25), Direction: Vec(2.0, 5.0)})
+		geomtest.AssertRay(t, Ry(Pt(1, -1), Vec(3, 4)), Ray[int]{Origin: Pt(1, -1), Vector: Vec(3, 4)})
+		geomtest.AssertRay(t, Ry(Pt(0.5, -1.25), Vec(2.0, 5.0)), Ray[float64]{Origin: Pt(0.5, -1.25), Vector: Vec(2.0, 5.0)})
 	})
 	t.Run("through a point", func(t *testing.T) {
 		geomtest.AssertRay(t, RayThrough(Pt(1, -1), Pt(4, 3)), Ry(Pt(1, -1), Vec(3, 4)))
@@ -84,7 +84,7 @@ func TestRay_Scale(t *testing.T) {
 				scaled := r.Scale(factor)
 
 				assert.True(t, r.Contains(scaled.PointAt(3)), fmt.Sprintf("%s x%v: ", r, factor))
-				geomtest.AssertNumber(t, scaled.Direction.Length(), r.Direction.Length()*factor, fmt.Sprintf("%s x%v: ", r, factor))
+				geomtest.AssertNumber(t, scaled.Vector.Length(), r.Vector.Length()*factor, fmt.Sprintf("%s x%v: ", r, factor))
 			}
 		}
 	})
@@ -402,7 +402,7 @@ func TestRay_IntersectsLine(t *testing.T) {
 	t.Run("holds where the ray meets either ray from the origin of the line", func(t *testing.T) {
 		for _, r := range rayFixtures {
 			for _, l := range lineFixtures {
-				ahead, behind := Ry(l.Origin, l.Direction), Ry(l.Origin, l.Direction.Negate())
+				ahead, behind := Ry(l.Origin, l.Vector), Ry(l.Origin, l.Vector.Negate())
 
 				assert.Equal(t, r.IntersectsLine(l), r.IntersectsRay(ahead) || r.IntersectsRay(behind), fmt.Sprintf("%s → %s: ", r, l))
 			}
@@ -449,7 +449,7 @@ func TestRay_IntersectsPolygon(t *testing.T) {
 }
 
 func TestRay_IntersectsRectangle(t *testing.T) {
-	rectangle := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0))
+	rectangle := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
 
 	t.Run("passing through", func(t *testing.T) {
 		assert.True(t, Ry(Pt(-5.0, 0.0), Vec(1.0, 0.0)).IntersectsRectangle(rectangle))
@@ -509,6 +509,26 @@ func TestRay_IntersectsBox(t *testing.T) {
 		for _, r := range rayFixtures {
 			for _, b := range boxFixtures {
 				assert.Equal(t, r.IntersectsBox(b), r.IntersectsRectangle(b.Rectangle()), fmt.Sprintf("%s → %s: ", r, b))
+			}
+		}
+	})
+}
+
+func TestRay_IntersectsEllipse(t *testing.T) {
+	ellipse := Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
+
+	t.Run("passing through or from inside", func(t *testing.T) {
+		assert.True(t, Ry(Pt(-8.0, 0.0), Vec(1.0, 0.0)).IntersectsEllipse(ellipse))
+		assert.True(t, Ry(Pt(0.0, 0.0), Vec(0.0, 1.0)).IntersectsEllipse(ellipse))
+	})
+	t.Run("pointing away or passing by", func(t *testing.T) {
+		assert.False(t, Ry(Pt(-8.0, 0.0), Vec(-1.0, 0.0)).IntersectsEllipse(ellipse))
+		assert.False(t, Ry(Pt(-8.0, 3.0), Vec(1.0, 0.0)).IntersectsEllipse(ellipse))
+	})
+	t.Run("matches IntersectsCircle on the circle's Ellipse", func(t *testing.T) {
+		for _, r := range rayFixtures {
+			for _, c := range circleFixtures {
+				assert.Equal(t, r.IntersectsEllipse(c.Ellipse()), r.IntersectsCircle(c), fmt.Sprintf("%s → %s: ", r, c))
 			}
 		}
 	})
@@ -660,7 +680,7 @@ func TestRay_IntersectionRay(t *testing.T) {
 	t.Run("agrees with Intersects on non-parallel fixtures, on both rays", func(t *testing.T) {
 		for _, a := range rayFixtures {
 			for _, b := range rayFixtures {
-				if a.Direction.Float().Cross(b.Direction.Float()) == 0 && a.Direction != (Vector[float64]{}) && b.Direction != (Vector[float64]{}) {
+				if a.Vector.Float().Cross(b.Vector.Float()) == 0 && a.Vector != (Vector[float64]{}) && b.Vector != (Vector[float64]{}) {
 					continue
 				}
 
@@ -746,7 +766,7 @@ func TestRay_IntersectionLine(t *testing.T) {
 	t.Run("agrees with Intersects on non-parallel fixtures, on both", func(t *testing.T) {
 		for _, r := range rayFixtures {
 			for _, l := range lineFixtures {
-				if r.Direction.Cross(l.Direction) == 0 && r.Direction != (Vector[float64]{}) && l.Direction != (Vector[float64]{}) {
+				if r.Vector.Cross(l.Vector) == 0 && r.Vector != (Vector[float64]{}) && l.Vector != (Vector[float64]{}) {
 					continue
 				}
 
@@ -894,7 +914,7 @@ func TestRay_AppendIntersectionPolygon(t *testing.T) {
 }
 
 func TestRay_IntersectionRectangle(t *testing.T) {
-	rectangle := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0))
+	rectangle := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
 
 	t.Run("passing through gives both crossings from Origin on", func(t *testing.T) {
 		geomtest.AssertVertices(t, Ry(Pt(-5.0, 0.0), Vec(1.0, 0.0)).IntersectionRectangle(rectangle).AppendTo(nil), []Point[float64]{Pt(-2.0, 0.0), Pt(2.0, 0.0)})
@@ -904,7 +924,7 @@ func TestRay_IntersectionRectangle(t *testing.T) {
 		assert.Nil(t, Ry(Pt(-5.0, 0.0), Vec(-1.0, 0.0)).IntersectionRectangle(rectangle).AppendTo(nil))
 	})
 	t.Run("int is exact", func(t *testing.T) {
-		geomtest.AssertVertices(t, Ry(Pt(-7, -3), Vec(3, 1)).IntersectionRectangle(Rect(Pt(0, 0), Sz(4, 2))).AppendTo(nil), []Point[int]{Pt(-1, -1), Pt(2, 0)})
+		geomtest.AssertVertices(t, Ry(Pt(-7, -3), Vec(3, 1)).IntersectionRectangle(Rect(Pt(0, 0), Sz(4, 2), 0)).AppendTo(nil), []Point[int]{Pt(-1, -1), Pt(2, 0)})
 	})
 	t.Run("every point lies on the ray and the boundary, and exists where IntersectsRectangle holds", func(t *testing.T) {
 		for _, rect := range rectFixtures {
@@ -922,7 +942,7 @@ func TestRay_IntersectionRectangle(t *testing.T) {
 		for _, offset := range farOffsets {
 			for _, jitter := range []float64{-1e-4, -1e-5, -1e-6, 1e-6, 1e-5, 1e-4} {
 				for _, quarter := range []float64{Pi / 2, 3 * Pi / 2} {
-					rect := Rect(Pt[float32](0, 0).Add(offset), Sz[float32](20000, 60000)).Rotate(quarter + jitter)
+					rect := Rect(Pt[float32](0, 0).Add(offset), Sz[float32](20000, 60000), 0).Rotate(quarter + jitter)
 					for corner := range rect.Vertices() {
 						for _, direction := range []Vector[float32]{Vec[float32](1, 0), Vec[float32](0, 1), Vec[float32](-1, 0), Vec[float32](0, -1)} {
 							for step := -10; step <= 10; step++ {
@@ -968,6 +988,29 @@ func TestRay_IntersectionBox(t *testing.T) {
 		for _, b := range boxFixtures {
 			for _, r := range rayFixtures {
 				assertCrossings(t, r, r.IntersectionBox(b).AppendTo(nil), r.IntersectsBox(b), b.Rectangle().Edges, fmt.Sprintf("%s → %s: ", r, b))
+			}
+		}
+	})
+}
+
+func TestRay_IntersectionEllipse(t *testing.T) {
+	ellipse := Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
+
+	t.Run("passing through gives both crossings from Origin on", func(t *testing.T) {
+		geomtest.AssertVertices(t, Ry(Pt(8.0, 0.0), Vec(-1.0, 0.0)).IntersectionEllipse(ellipse).AppendTo(nil), []Point[float64]{Pt(4.0, 0.0), Pt(-4.0, 0.0)})
+		geomtest.AssertVertices(t, Ry(Pt(0.0, 0.0), Vec(0.0, 1.0)).IntersectionEllipse(ellipse).AppendTo(nil), []Point[float64]{Pt(0.0, 2.0)})
+	})
+	t.Run("matches IntersectionCircle on the circle's Ellipse", func(t *testing.T) {
+		for _, r := range rayFixtures {
+			for _, c := range circleFixtures {
+				geomtest.AssertVertices(t, r.IntersectionEllipse(c.Ellipse()).AppendTo(nil), r.IntersectionCircle(c).AppendTo(nil), fmt.Sprintf("%s → %s: ", r, c))
+			}
+		}
+	})
+	t.Run("every point lies on the ray and the boundary, and exists where IntersectsEllipse holds", func(t *testing.T) {
+		for _, e := range ellipseFixtures {
+			for _, r := range rayFixtures {
+				assertEllipseCrossings(t, r, r.IntersectionEllipse(e).AppendTo(nil), r.IntersectsEllipse(e), e, fmt.Sprintf("%s → %s: ", r, e))
 			}
 		}
 	})
@@ -1091,7 +1134,7 @@ func TestRay_AppendClipPolygon(t *testing.T) {
 }
 
 func TestRay_ClipRectangle(t *testing.T) {
-	rectangle := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0))
+	rectangle := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
 
 	t.Run("passing through gives the part between the crossings", func(t *testing.T) {
 		geomtest.AssertSegments(t, partsOf(Ry(Pt(-5.0, 0.0), Vec(1.0, 0.0)).ClipRectangle(rectangle)), []Segment[float64]{Seg(Pt(-2.0, 0.0), Pt(2.0, 0.0))})
@@ -1167,10 +1210,40 @@ func TestRay_ClipBox(t *testing.T) {
 	})
 }
 
+func TestRay_ClipEllipse(t *testing.T) {
+	ellipse := Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
+
+	t.Run("passing through gives the chord", func(t *testing.T) {
+		geomtest.AssertSegments(t, partsOf(Ry(Pt(-8.0, 0.0), Vec(1.0, 0.0)).ClipEllipse(ellipse)), []Segment[float64]{Seg(Pt(-4.0, 0.0), Pt(4.0, 0.0))})
+	})
+	t.Run("the origin inside is kept", func(t *testing.T) {
+		geomtest.AssertSegments(t, partsOf(Ry(Pt(0.0, 0.0), Vec(0.0, 1.0)).ClipEllipse(ellipse)), []Segment[float64]{Seg(Pt(0.0, 0.0), Pt(0.0, 2.0))})
+	})
+	t.Run("pointing away gives none", func(t *testing.T) {
+		assert.Nil(t, partsOf(Ry(Pt(-8.0, 0.0), Vec(-1.0, 0.0)).ClipEllipse(ellipse)))
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		through := Ry(Pt(-8.0, 0.0), Vec(1.0, 0.0))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.ClipEllipse(ellipse)
+		}), 0)
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, e := range ellipseFixtures {
+			for _, r := range rayFixtures {
+				assertClipped(t, r, partsOf(r.ClipEllipse(e)), r.IntersectsEllipse(e), func(part Segment[float64]) bool {
+					return e.Contains(part.Start) && e.Contains(part.End)
+				}, fmt.Sprintf("%s → %s: ", r, e))
+			}
+		}
+	})
+}
+
 func TestRay_HitCircle(t *testing.T) {
 	circle := Circ(Pt(0, 0), 5)
 
-	t.Run("from outside is the first crossing, with the fraction in units of Direction", func(t *testing.T) {
+	t.Run("from outside is the first crossing, with the fraction in units of Vector", func(t *testing.T) {
 		hit, ok := Ry(Pt(-10, 0), Vec(2, 0)).HitCircle(circle)
 		assertHit(t, hit, ok, Hit[int]{Point: Pt(-5, 0), Normal: Vec(-1.0, 0.0), Fraction: 2.5})
 	})
@@ -1211,7 +1284,7 @@ func TestRay_HitCircle(t *testing.T) {
 func TestRay_HitCapsule(t *testing.T) {
 	capsule := Cap(Pt(0.0, 0.0), Pt(10.0, 0.0), 2.0)
 
-	t.Run("from outside is the first point of the boundary, the fraction in units of Direction", func(t *testing.T) {
+	t.Run("from outside is the first point of the boundary, the fraction in units of Vector", func(t *testing.T) {
 		hit, ok := Ry(Pt(5.0, 10.0), Vec(0.0, -2.0)).HitCapsule(capsule)
 		assertHit(t, hit, ok, Hit[float64]{Point: Pt(5.0, 2.0), Normal: Vec(0.0, 1.0), Fraction: 4})
 	})
@@ -1247,7 +1320,7 @@ func TestRay_HitCapsule(t *testing.T) {
 func TestRay_HitSector(t *testing.T) {
 	sector := Sect(Pt(0.0, 0.0), 5.0, 0, Pi/2)
 
-	t.Run("from outside is the first point of the boundary, the fraction in units of Direction", func(t *testing.T) {
+	t.Run("from outside is the first point of the boundary, the fraction in units of Vector", func(t *testing.T) {
 		hit, ok := Ry(Pt(3.0, 10.0), Vec(0.0, -2.0)).HitSector(sector)
 		assertHit(t, hit, ok, Hit[float64]{Point: Pt(3.0, 4.0), Normal: Vec(0.6, 0.8), Fraction: 3})
 	})
@@ -1293,7 +1366,7 @@ func TestRay_HitArc(t *testing.T) {
 func TestRay_HitSegment(t *testing.T) {
 	ray := Ry(Pt(-10, 0), Vec(2, 0))
 
-	t.Run("crossing a wall is the crossing, with the fraction in units of Direction", func(t *testing.T) {
+	t.Run("crossing a wall is the crossing, with the fraction in units of Vector", func(t *testing.T) {
 		hit, ok := ray.HitSegment(Seg(Pt(0, -1), Pt(0, 1)))
 		assertHit(t, hit, ok, Hit[int]{Point: Pt(0, 0), Normal: Vec(-1.0, 0.0), Fraction: 5})
 	})
@@ -1472,7 +1545,7 @@ func TestRay_HitPolygon(t *testing.T) {
 }
 
 func TestRay_HitRectangle(t *testing.T) {
-	rectangle := Rect(Pt(0, 0), Sz(4, 4))
+	rectangle := Rect(Pt(0, 0), Sz(4, 4), 0)
 
 	t.Run("from outside is the first crossing, with the normal of its edge", func(t *testing.T) {
 		hit, ok := Ry(Pt(-5, 0), Vec(1, 0)).HitRectangle(rectangle)
@@ -1569,7 +1642,7 @@ func TestRay_HitBox(t *testing.T) {
 func TestRay_HitEllipse(t *testing.T) {
 	ellipse := Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
 
-	t.Run("from outside is the first crossing, the fraction in units of Direction", func(t *testing.T) {
+	t.Run("from outside is the first crossing, the fraction in units of Vector", func(t *testing.T) {
 		hit, ok := Ry(Pt(-10.0, 0.0), Vec(2.0, 0.0)).HitEllipse(ellipse)
 		assertHit(t, hit, ok, Hit[float64]{Point: Pt(-4.0, 0.0), Normal: Vec(-1.0, 0.0), Fraction: 3})
 	})
@@ -1626,7 +1699,7 @@ func TestRay_IsZero(t *testing.T) {
 		assert.True(t, Ray[int]{}.IsZero())
 	})
 	t.Run("a direction alone is not zero", func(t *testing.T) {
-		assert.False(t, Ray[int]{Direction: Vec(1, 0)}.IsZero())
+		assert.False(t, Ray[int]{Vector: Vec(1, 0)}.IsZero())
 	})
 	t.Run("within delta", func(t *testing.T) {
 		assert.True(t, Ry(Pt(Delta/2, 0.0), Vec(0.0, -Delta/2)).IsZero())
@@ -1713,12 +1786,12 @@ func TestRay_JSON(t *testing.T) {
 func TestRay_Properties(t *testing.T) {
 	t.Run("the angle is the direction's", func(t *testing.T) {
 		for _, r := range rayFixtures {
-			geomtest.AssertNumber(t, r.Angle(), r.Direction.Angle(), r.String()+": ")
+			geomtest.AssertNumber(t, r.Angle(), r.Vector.Angle(), r.String()+": ")
 		}
 	})
 	t.Run("every point ahead of the origin lies on the ray, none behind it", func(t *testing.T) {
 		for _, r := range rayFixtures {
-			if r.Direction == (Vector[float64]{}) {
+			if r.Vector == (Vector[float64]{}) {
 				continue
 			}
 
@@ -1731,8 +1804,8 @@ func TestRay_Properties(t *testing.T) {
 	t.Run("translate and move to keep the direction", func(t *testing.T) {
 		for _, r := range rayFixtures {
 			for _, p := range pointFixtures {
-				assert.True(t, r.MoveTo(p).Direction.Equal(r.Direction), fmt.Sprintf("%s → %s: ", r, p))
-				assert.True(t, r.Translate(p.Vector()).Direction.Equal(r.Direction), fmt.Sprintf("%s → %s: ", r, p))
+				assert.True(t, r.MoveTo(p).Vector.Equal(r.Vector), fmt.Sprintf("%s → %s: ", r, p))
+				assert.True(t, r.Translate(p.Vector()).Vector.Equal(r.Vector), fmt.Sprintf("%s → %s: ", r, p))
 			}
 		}
 	})

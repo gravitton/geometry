@@ -21,6 +21,12 @@ func RectangleFromImage[T Number](r image.Rectangle) Rectangle[T] {
 	return RectangleFromMin(PointFromImage[T](r.Min), SizeFromImage[T](r))
 }
 
+// BoxFromImage returns the box of an image.Rectangle, between its Min and Max. For an integer T it
+// keeps every extent, odd ones included, where RectangleFromImage halves it about a center.
+func BoxFromImage[T Number](r image.Rectangle) Box[T] {
+	return BoxFromMinMax(PointFromImage[T](r.Min), PointFromImage[T](r.Max))
+}
+
 // Point converts the point to an image.Point, rounding a float T.
 func (p Point[T]) Point() image.Point {
 	return image.Point(p.Int())

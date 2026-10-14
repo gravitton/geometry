@@ -345,7 +345,7 @@ func (s Sector[T]) IntersectsCircle(circle Circle[T]) bool {
 
 // IntersectsCapsule reports whether the sector and the capsule share a point.
 func (s Sector[T]) IntersectsCapsule(capsule Capsule[T]) bool {
-	return lessOrEqualSquared(s.distanceSquaredToSegment(capsule.Segment.Float()), float64(capsule.Radius), s.epsilon(capsule.magnitude()))
+	return capsule.IntersectsSector(s)
 }
 
 // IntersectsSector reports whether the sectors share a point.
@@ -466,7 +466,7 @@ func (s Sector[T]) IntersectionRay(ray Ray[T]) []Point[T] {
 }
 
 // IntersectionLine returns the points where the line crosses the boundary, in order along its
-// Direction.
+// Vector.
 func (s Sector[T]) IntersectionLine(line Line[T]) []Point[T] {
 	return line.IntersectionSector(s)
 }
@@ -829,14 +829,14 @@ func (s Sector[T]) isReflex() bool {
 	return math.Abs(s.turn()) > math.Pi
 }
 
-// Arc returns the arc of the sector, from one radius to the other.
-func (s Sector[T]) Arc() Arc[T] {
-	return Arc[T](s)
-}
-
 // Circle returns the circle the sector is a slice of.
 func (s Sector[T]) Circle() Circle[T] {
 	return Circle[T]{s.Center, s.Radius}
+}
+
+// Arc returns the arc of the sector, from one radius to the other.
+func (s Sector[T]) Arc() Arc[T] {
+	return Arc[T](s)
 }
 
 // Polygon returns the sector as a polygon within the tolerance of it: Center and the arc as few

@@ -127,14 +127,14 @@ func Seg[T geom.Number](start, end geom.Point[T]) Segment {
 	return geom.Seg(start, end).Float()
 }
 
-// Ry is shorthand for geom.Ry(origin, direction).Float().
-func Ry[T geom.Number](origin geom.Point[T], direction geom.Vector[T]) Ray {
-	return geom.Ry(origin, direction).Float()
+// Ry is shorthand for geom.Ry(origin, vector).Float().
+func Ry[T geom.Number](origin geom.Point[T], vector geom.Vector[T]) Ray {
+	return geom.Ry(origin, vector).Float()
 }
 
-// Ln is shorthand for geom.Ln(origin, direction).Float().
-func Ln[T geom.Number](origin geom.Point[T], direction geom.Vector[T]) Line {
-	return geom.Ln(origin, direction).Float()
+// Ln is shorthand for geom.Ln(origin, vector).Float().
+func Ln[T geom.Number](origin geom.Point[T], vector geom.Vector[T]) Line {
+	return geom.Ln(origin, vector).Float()
 }
 
 // PolLn is shorthand for geom.PolLn(points).Float().
@@ -157,14 +157,14 @@ func Pol[T geom.Number](vertices []geom.Point[T]) Polygon {
 	return geom.Pol(vertices).Float()
 }
 
-// Rect is shorthand for geom.Rect(center, size).Float().
-func Rect[T geom.Number](center geom.Point[T], size geom.Size[T]) Rectangle {
-	return geom.Rect(center, size).Float()
+// Rect is shorthand for geom.Rect(center, size, angle).Float().
+func Rect[T geom.Number](center geom.Point[T], size geom.Size[T], angle float64) Rectangle {
+	return geom.Rect(center, size, angle).Float()
 }
 
-// RegPol is shorthand for geom.RegPol(center, size, n, angle, phase).Float().
-func RegPol[T geom.Number](center geom.Point[T], size geom.Size[T], n int, angle, phase float64) RegularPolygon {
-	return geom.RegPol(center, size, n, angle, phase).Float()
+// RegPol is shorthand for geom.RegPol(center, radius, n, angle, phase).Float().
+func RegPol[T geom.Number](center geom.Point[T], radius geom.Size[T], n int, angle, phase float64) RegularPolygon {
+	return geom.RegPol(center, radius, n, angle, phase).Float()
 }
 
 // Bx is shorthand for geom.Bx(a, b).Float().
@@ -172,7 +172,7 @@ func Bx[T geom.Number](a, b geom.Point[T]) Box {
 	return geom.Bx(a, b).Float()
 }
 
-// Ell is shorthand for geom.Ell(center, size, angle).Float().
-func Ell[T geom.Number](center geom.Point[T], size geom.Size[T], angle float64) Ellipse {
-	return geom.Ell(center, size, angle).Float()
+// Ell is shorthand for geom.Ell(center, radius, angle).Float().
+func Ell[T geom.Number](center geom.Point[T], radius geom.Size[T], angle float64) Ellipse {
+	return geom.Ell(center, radius, angle).Float()
 }

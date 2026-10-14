@@ -14,10 +14,10 @@ import (
 
 func TestRegularPolygon_Constructor(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
-		geomtest.AssertRegularPolygon(t, RegPol(Pt(0, 0), Sz(2, 2), 4, 0, 0), RegularPolygon[int]{Center: Pt(0, 0), Size: Sz(2, 2), N: 4, Angle: 0})
+		geomtest.AssertRegularPolygon(t, RegPol(Pt(0, 0), Sz(2, 2), 4, 0, 0), RegularPolygon[int]{Center: Pt(0, 0), Radius: Sz(2, 2), N: 4, Angle: 0})
 	})
 	t.Run("float", func(t *testing.T) {
-		geomtest.AssertRegularPolygon(t, RegPol(Pt(0.5, -1.25), Sz(2.5, 3.75), 6, Pi/3, 0), RegularPolygon[float64]{Center: Pt(0.5, -1.25), Size: Sz(2.5, 3.75), N: 6, Angle: Pi / 3})
+		geomtest.AssertRegularPolygon(t, RegPol(Pt(0.5, -1.25), Sz(2.5, 3.75), 6, Pi/3, 0), RegularPolygon[float64]{Center: Pt(0.5, -1.25), Radius: Sz(2.5, 3.75), N: 6, Angle: Pi / 3})
 	})
 	t.Run("a negative size is taken absolute", func(t *testing.T) {
 		geomtest.AssertRegularPolygon(t, RegPol(Pt(0, 0), Sz(-2, 3), 4, 0, 0), RegPol(Pt(0, 0), Sz(2, 3), 4, 0, 0))
@@ -396,7 +396,7 @@ func TestRegularPolygon_BoundingCircle(t *testing.T) {
 	})
 	t.Run("equal semi-axes give the circle through the vertices", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
-			if rp.Size.Width == rp.Size.Height {
+			if rp.Radius.Width == rp.Radius.Height {
 				geomtest.AssertCircle(t, rp.BoundingCircle(), rp.Circle(), rp.String())
 			}
 		}
@@ -517,7 +517,7 @@ func TestRegularPolygon_Resize(t *testing.T) {
 			resized := rp.Resize(Sz(3.0, 7.0))
 
 			geomtest.AssertRegularPolygon(t, resized, RegPol(rp.Center, Sz(3.0, 7.0), rp.N, rp.Angle, rp.Phase), rp.String())
-			geomtest.AssertRegularPolygon(t, resized.Resize(rp.Size), rp, rp.String())
+			geomtest.AssertRegularPolygon(t, resized.Resize(rp.Radius), rp, rp.String())
 		}
 	})
 }
@@ -608,7 +608,7 @@ func TestRegularPolygon_Transform(t *testing.T) {
 	t.Run("a long thin polygon keeps its lesser semi-axis", func(t *testing.T) {
 		thin := RegPol(Pt(0.0, 0.0), Sz(1e6, 1e-3), 6, 0, 0)
 
-		assert.EqualDelta(t, thin.Transform(IdentityMatrix[float64]()).Size.Height, 1e-3, 1e-18)
+		assert.EqualDelta(t, thin.Transform(IdentityMatrix[float64]()).Radius.Height, 1e-3, 1e-18)
 	})
 }
 
@@ -708,8 +708,8 @@ func TestRegularPolygon_Canonical(t *testing.T) {
 	t.Run("is the polygon RegPol builds", func(t *testing.T) {
 		rp := RegularPolygon[float64]{Pt(0.5, -1.25), Sz(-2.5, -3.75), 5, 1, 0}
 
-		geomtest.AssertRegularPolygon(t, rp.Canonical(), RegPol(rp.Center, rp.Size, rp.N, rp.Angle, 0))
-		geomtest.AssertVertices(t, slices.Collect(rp.Canonical().Vertices()), slices.Collect(RegPol(rp.Center, rp.Size, rp.N, rp.Angle, 0).Vertices()))
+		geomtest.AssertRegularPolygon(t, rp.Canonical(), RegPol(rp.Center, rp.Radius, rp.N, rp.Angle, 0))
+		geomtest.AssertVertices(t, slices.Collect(rp.Canonical().Vertices()), slices.Collect(RegPol(rp.Center, rp.Radius, rp.N, rp.Angle, 0).Vertices()))
 	})
 	t.Run("normalizes the angle the way Rotate stores it", func(t *testing.T) {
 		geomtest.AssertRegularPolygon(t, RegularPolygon[float64]{Pt(0.0, 0.0), SzU(2.0), 4, 7, 0}.Canonical(), RegPol(Pt(0.0, 0.0), SzU(2.0), 4, 7-2*Pi, 0))
@@ -957,8 +957,8 @@ func TestRegularPolygon_ContainsRectangle(t *testing.T) {
 	t.Run("a square rotated into a diamond", func(t *testing.T) {
 		diamond := RegPol(Pt(0.0, 0.0), Sz(2.0, 2.0), 4, 0, 0)
 
-		assert.True(t, diamond.ContainsRectangle(Rect(Pt(0.0, 0.0), Sz(2.0, 2.0))))
-		assert.False(t, diamond.ContainsRectangle(Rect(Pt(0.0, 0.0), Sz(2.0, 2.2))))
+		assert.True(t, diamond.ContainsRectangle(Rect(Pt(0.0, 0.0), Sz(2.0, 2.0), 0)))
+		assert.False(t, diamond.ContainsRectangle(Rect(Pt(0.0, 0.0), Sz(2.0, 2.2), 0)))
 	})
 	t.Run("matches the polygon of the vertices", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
@@ -1241,6 +1241,15 @@ func TestRegularPolygon_IsAligned(t *testing.T) {
 	})
 }
 
+func TestRegularPolygon_Circle(t *testing.T) {
+	t.Run("the circumscribed circle of a polygon of equal semi-axes", func(t *testing.T) {
+		geomtest.AssertCircle(t, RegularPolygonWithOrientation(Pt(1, 2), SzU(10), 6, OrientationFlatTop).Circle(), Circ(Pt(1, 2), 10))
+	})
+	t.Run("the circle around an elliptical polygon", func(t *testing.T) {
+		geomtest.AssertCircle(t, RegPol(Pt(1, 2), Sz(4, 10), 5, 0, 0).Circle(), Circ(Pt(1, 2), 10))
+	})
+}
+
 func TestRegularPolygon_Polygon(t *testing.T) {
 	rp := RegPol(Pt(0.0, 0.0), Sz(1.0, 1.0), 5, 0, 0)
 	p := rp.Polygon()
@@ -1271,15 +1280,6 @@ func TestRegularPolygon_Ellipse(t *testing.T) {
 	})
 	t.Run("an empty polygon still names its ellipse", func(t *testing.T) {
 		geomtest.AssertEllipse(t, RegPol(Pt(1, 2), Sz(10, 4), 0, 0, 0).Ellipse(), Ell(Pt(1, 2), Sz(10, 4), 0))
-	})
-}
-
-func TestRegularPolygon_Circle(t *testing.T) {
-	t.Run("the circumscribed circle of a polygon of equal semi-axes", func(t *testing.T) {
-		geomtest.AssertCircle(t, RegularPolygonWithOrientation(Pt(1, 2), SzU(10), 6, OrientationFlatTop).Circle(), Circ(Pt(1, 2), 10))
-	})
-	t.Run("the circle around an elliptical polygon", func(t *testing.T) {
-		geomtest.AssertCircle(t, RegPol(Pt(1, 2), Sz(4, 10), 5, 0, 0).Circle(), Circ(Pt(1, 2), 10))
 	})
 }
 
@@ -1414,7 +1414,7 @@ func TestRegularPolygon_Properties(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
 			for vertex := range rp.Vertices() {
 				offset := vertex.Subtract(rp.Center).Rotate(-rp.Angle)
-				normalized := offset.X*offset.X/(rp.Size.Width*rp.Size.Width) + offset.Y*offset.Y/(rp.Size.Height*rp.Size.Height)
+				normalized := offset.X*offset.X/(rp.Radius.Width*rp.Radius.Width) + offset.Y*offset.Y/(rp.Radius.Height*rp.Radius.Height)
 
 				geomtest.AssertNumber(t, normalized, 1.0, fmt.Sprintf("%s: ", rp))
 			}
@@ -1438,7 +1438,7 @@ func TestRegularPolygon_Properties(t *testing.T) {
 	})
 	t.Run("rotating by one step permutes the vertices of equal semi-axes", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
-			if rp.Size.Width != rp.Size.Height {
+			if rp.Radius.Width != rp.Radius.Height {
 				continue // a turned ellipse is a different shape, not the same ring one step on
 			}
 
@@ -1456,7 +1456,7 @@ func TestRegularPolygon_Properties(t *testing.T) {
 				moved := rp.Translate(vector)
 
 				assert.True(t, moved.Center.Equal(rp.Center.Add(vector)), fmt.Sprintf("%s → %s: ", rp, vector))
-				assert.True(t, moved.Size.Equal(rp.Size), fmt.Sprintf("%s → %s: ", rp, vector))
+				assert.True(t, moved.Radius.Equal(rp.Radius), fmt.Sprintf("%s → %s: ", rp, vector))
 				geomtest.AssertNumber(t, moved.Angle, rp.Angle, fmt.Sprintf("%s → %s: ", rp, vector))
 			}
 		}
@@ -1486,7 +1486,7 @@ func TestRegularPolygon_Properties(t *testing.T) {
 	t.Run("the ellipse round-trips through the polygon of the phase of an orientation", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
 			for _, orientation := range []Orientation{OrientationFlatTop, OrientationPointyTop} {
-				oriented := RegPol(rp.Center, rp.Size, rp.N, rp.Angle, RegularPolygonOrientationPhase(rp.N, orientation))
+				oriented := RegPol(rp.Center, rp.Radius, rp.N, rp.Angle, RegularPolygonOrientationPhase(rp.N, orientation))
 
 				geomtest.AssertRegularPolygon(t, rp.Ellipse().RegularPolygon(rp.N, orientation), oriented, fmt.Sprintf("%s %s: ", rp, orientation))
 			}

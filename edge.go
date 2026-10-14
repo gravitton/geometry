@@ -357,7 +357,7 @@ func (c *edgeClip[T]) add(edge Segment[T]) {
 // cuts of one line agree. A line with no direction cuts nothing, and a clip of no real cut leaves
 // dst without the outline.
 func (c *edgeClip[T]) cut(line Line[T], sense float64) {
-	if !line.Direction.hasDirection() || len(c.points) == 0 {
+	if !line.Vector.hasDirection() || len(c.points) == 0 {
 		return
 	}
 

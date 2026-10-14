@@ -94,33 +94,18 @@ func (b QuadraticBezier[T]) Split(t float64) (QuadraticBezier[T], QuadraticBezie
 
 // IntersectionSegment returns the points where the segment crosses the curve, from Start to End.
 func (b QuadraticBezier[T]) IntersectionSegment(segment Segment[T]) Pair[Point[T]] {
-	cast := bezierCast{segment: segment.Float(), curve: b.Float().CubicBezier()}
-	cast.step(cast.curve, 0, 1, bezierDepth)
-
-	var points Pair[Point[T]]
-	for _, hit := range cast.hits[:cast.count] {
-		if rounded := hit.Point.Cast[T](); points.Count < 2 && !(points.Count > 0 && rounded.Equal(points.Items[points.Count-1])) {
-			points.Items[points.Count] = rounded
-			points.Count++
-		}
-	}
-
-	return points
+	return segment.IntersectionQuadraticBezier(b)
 }
 
 // IntersectionRay returns the points where the ray crosses the curve, from its Origin on.
 func (b QuadraticBezier[T]) IntersectionRay(ray Ray[T]) Pair[Point[T]] {
-	bounds := b.Bounds()
-
-	return b.IntersectionSegment(ray.reach(bounds.Min, bounds.Max))
+	return ray.IntersectionQuadraticBezier(b)
 }
 
 // IntersectionLine returns the points where the line crosses the curve, in order along its
-// Direction.
+// Vector.
 func (b QuadraticBezier[T]) IntersectionLine(line Line[T]) Pair[Point[T]] {
-	bounds := b.Bounds()
-
-	return b.IntersectionSegment(line.span(bounds.Min, bounds.Max))
+	return line.IntersectionQuadraticBezier(b)
 }
 
 // Equal reports whether the curves have equal points in the same places, so a curve and its Reverse

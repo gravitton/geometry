@@ -260,7 +260,7 @@ func AssertRay[T geom.Number](t Testing, actual, expected geom.Ray[T], messages 
 	if !AssertPoint(t, actual.Origin, expected.Origin, prefixed(messages, "Origin.")...) {
 		ok = false
 	}
-	if !AssertVector(t, actual.Direction, expected.Direction, prefixed(messages, "Direction.")...) {
+	if !AssertVector(t, actual.Vector, expected.Vector, prefixed(messages, "Vector.")...) {
 		ok = false
 	}
 
@@ -276,7 +276,7 @@ func AssertLine[T geom.Number](t Testing, actual, expected geom.Line[T], message
 	if !AssertPoint(t, actual.Origin, expected.Origin, prefixed(messages, "Origin.")...) {
 		ok = false
 	}
-	if !AssertVector(t, actual.Direction, expected.Direction, prefixed(messages, "Direction.")...) {
+	if !AssertVector(t, actual.Vector, expected.Vector, prefixed(messages, "Vector.")...) {
 		ok = false
 	}
 
@@ -385,7 +385,7 @@ func AssertRegularPolygon[T geom.Number](t Testing, actual, expected geom.Regula
 	if !AssertPoint(t, actual.Center, expected.Center, prefixed(messages, "Center.")...) {
 		ok = false
 	}
-	if !AssertSize(t, actual.Size, expected.Size, prefixed(messages, "Size.")...) {
+	if !AssertSize(t, actual.Radius, expected.Radius, prefixed(messages, "Radius.")...) {
 		ok = false
 	}
 	if !assert.Equal(t, actual.N, expected.N, prefixed(messages, "N: ")...) {
@@ -426,7 +426,7 @@ func AssertEllipse[T geom.Number](t Testing, actual, expected geom.Ellipse[T], m
 	if !AssertPoint(t, actual.Center, expected.Center, prefixed(messages, "Center.")...) {
 		ok = false
 	}
-	if !AssertSize(t, actual.Size, expected.Size, prefixed(messages, "Size.")...) {
+	if !AssertSize(t, actual.Radius, expected.Radius, prefixed(messages, "Radius.")...) {
 		ok = false
 	}
 	if !AssertAngle(t, actual.Angle, expected.Angle, messages...) {

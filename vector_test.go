@@ -236,6 +236,54 @@ func TestVector_Lerp(t *testing.T) {
 	})
 }
 
+func TestVector_Slerp(t *testing.T) {
+	t.Run("turns the direction and keeps the length on the arc", func(t *testing.T) {
+		geomtest.AssertVector(t, Vec(1.0, 0.0).Slerp(Vec(0.0, 1.0), 0.5), Vec(OneOverSqrt2, OneOverSqrt2))
+	})
+	t.Run("changes the length linearly", func(t *testing.T) {
+		geomtest.AssertVector(t, Vec(2.0, 0.0).Slerp(Vec(0.0, 4.0), 0.5), Vec(3*OneOverSqrt2, 3*OneOverSqrt2))
+	})
+	t.Run("turns along the shorter arc across the seam", func(t *testing.T) {
+		from, to := VectorFromAngle(ToRadians(350), 2.0), VectorFromAngle(ToRadians(10), 2.0)
+
+		geomtest.AssertVector(t, from.Slerp(to, 0.5), Vec(2.0, 0.0))
+		geomtest.AssertVector(t, to.Slerp(from, 0.5), Vec(2.0, 0.0))
+	})
+	t.Run("opposite vectors turn in the sense of increasing angle", func(t *testing.T) {
+		geomtest.AssertVector(t, Vec(1.0, 0.0).Slerp(Vec(-1.0, 0.0), 0.5), Vec(0.0, 1.0))
+	})
+	t.Run("the zero vector takes the other direction", func(t *testing.T) {
+		geomtest.AssertVector(t, ZeroVector[float64]().Slerp(Vec(0.0, 4.0), 0.5), Vec(0.0, 2.0))
+		geomtest.AssertVector(t, Vec(0.0, 4.0).Slerp(ZeroVector[float64](), 0.25), Vec(0.0, 3.0))
+		geomtest.AssertVector(t, ZeroVector[float64]().Slerp(ZeroVector[float64](), 0.5), ZeroVector[float64]())
+	})
+	t.Run("the ends are the vectors themselves", func(t *testing.T) {
+		geomtest.AssertVector(t, Vec(10.0, 16.0).Slerp(Vec(-3.0, 4.0), 0), Vec(10.0, 16.0))
+		geomtest.AssertVector(t, Vec(10.0, 16.0).Slerp(Vec(-3.0, 4.0), 1), Vec(-3.0, 4.0))
+	})
+	t.Run("extrapolates outside the unit range", func(t *testing.T) {
+		geomtest.AssertVector(t, Vec(1.0, 0.0).Slerp(Vec(0.0, 1.0), 2), Vec(-1.0, 0.0))
+		geomtest.AssertVector(t, Vec(2.0, 0.0).Slerp(Vec(1.0, 0.0), 3), Vec(-1.0, 0.0))
+	})
+	t.Run("int rounds", func(t *testing.T) {
+		geomtest.AssertVector(t, Vec(10, 0).Slerp(Vec(0, 10), 0.5), Vec(7, 7))
+	})
+	t.Run("the ends and the length hold over the fixtures", func(t *testing.T) {
+		for _, from := range vectorFixtures {
+			for _, to := range vectorFixtures {
+				assert.True(t, from.Slerp(to, 0).Equal(from), fmt.Sprintf("%s → %s: ", from, to))
+				assert.True(t, from.Slerp(to, 1).Equal(to), fmt.Sprintf("%s → %s: ", from, to))
+				geomtest.AssertNumber(t, from.Slerp(to, 0.5).Length(), (from.Length()+to.Length())/2, fmt.Sprintf("%s → %s: ", from, to))
+			}
+		}
+	})
+	t.Run("a t of zero gives the receiver back exactly", func(t *testing.T) {
+		for _, from := range []Vector[float64]{Vec(3.0, 4.0), Vec(-0.1, 0.7), Vec(1e-3, -2e5)} {
+			assert.Equal(t, from.Slerp(Vec(0.0, 1.0), 0), from)
+		}
+	})
+}
+
 func TestVector_AtLeast(t *testing.T) {
 	t.Run("a shorter vector is resized along its direction", func(t *testing.T) {
 		geomtest.AssertVector(t, Vec(3.0, 4.0).AtLeast(10), Vec(6.0, 8.0))
@@ -449,54 +497,6 @@ func TestVector_Resize(t *testing.T) {
 	t.Run("a subnormal vector does not overflow", func(t *testing.T) {
 		geomtest.AssertVector(t, Vec(5e-324, 0).Resize(3), Vec(3.0, 0.0))
 		geomtest.AssertVector(t, Vec(0, -5e-324).Normalize(), Vec(0.0, -1.0))
-	})
-}
-
-func TestVector_Slerp(t *testing.T) {
-	t.Run("turns the direction and keeps the length on the arc", func(t *testing.T) {
-		geomtest.AssertVector(t, Vec(1.0, 0.0).Slerp(Vec(0.0, 1.0), 0.5), Vec(OneOverSqrt2, OneOverSqrt2))
-	})
-	t.Run("changes the length linearly", func(t *testing.T) {
-		geomtest.AssertVector(t, Vec(2.0, 0.0).Slerp(Vec(0.0, 4.0), 0.5), Vec(3*OneOverSqrt2, 3*OneOverSqrt2))
-	})
-	t.Run("turns along the shorter arc across the seam", func(t *testing.T) {
-		from, to := VectorFromAngle(ToRadians(350), 2.0), VectorFromAngle(ToRadians(10), 2.0)
-
-		geomtest.AssertVector(t, from.Slerp(to, 0.5), Vec(2.0, 0.0))
-		geomtest.AssertVector(t, to.Slerp(from, 0.5), Vec(2.0, 0.0))
-	})
-	t.Run("opposite vectors turn in the sense of increasing angle", func(t *testing.T) {
-		geomtest.AssertVector(t, Vec(1.0, 0.0).Slerp(Vec(-1.0, 0.0), 0.5), Vec(0.0, 1.0))
-	})
-	t.Run("the zero vector takes the other direction", func(t *testing.T) {
-		geomtest.AssertVector(t, ZeroVector[float64]().Slerp(Vec(0.0, 4.0), 0.5), Vec(0.0, 2.0))
-		geomtest.AssertVector(t, Vec(0.0, 4.0).Slerp(ZeroVector[float64](), 0.25), Vec(0.0, 3.0))
-		geomtest.AssertVector(t, ZeroVector[float64]().Slerp(ZeroVector[float64](), 0.5), ZeroVector[float64]())
-	})
-	t.Run("the ends are the vectors themselves", func(t *testing.T) {
-		geomtest.AssertVector(t, Vec(10.0, 16.0).Slerp(Vec(-3.0, 4.0), 0), Vec(10.0, 16.0))
-		geomtest.AssertVector(t, Vec(10.0, 16.0).Slerp(Vec(-3.0, 4.0), 1), Vec(-3.0, 4.0))
-	})
-	t.Run("extrapolates outside the unit range", func(t *testing.T) {
-		geomtest.AssertVector(t, Vec(1.0, 0.0).Slerp(Vec(0.0, 1.0), 2), Vec(-1.0, 0.0))
-		geomtest.AssertVector(t, Vec(2.0, 0.0).Slerp(Vec(1.0, 0.0), 3), Vec(-1.0, 0.0))
-	})
-	t.Run("int rounds", func(t *testing.T) {
-		geomtest.AssertVector(t, Vec(10, 0).Slerp(Vec(0, 10), 0.5), Vec(7, 7))
-	})
-	t.Run("the ends and the length hold over the fixtures", func(t *testing.T) {
-		for _, from := range vectorFixtures {
-			for _, to := range vectorFixtures {
-				assert.True(t, from.Slerp(to, 0).Equal(from), fmt.Sprintf("%s → %s: ", from, to))
-				assert.True(t, from.Slerp(to, 1).Equal(to), fmt.Sprintf("%s → %s: ", from, to))
-				geomtest.AssertNumber(t, from.Slerp(to, 0.5).Length(), (from.Length()+to.Length())/2, fmt.Sprintf("%s → %s: ", from, to))
-			}
-		}
-	})
-	t.Run("a t of zero gives the receiver back exactly", func(t *testing.T) {
-		for _, from := range []Vector[float64]{Vec(3.0, 4.0), Vec(-0.1, 0.7), Vec(1e-3, -2e5)} {
-			assert.Equal(t, from.Slerp(Vec(0.0, 1.0), 0), from)
-		}
 	})
 }
 

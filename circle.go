@@ -42,6 +42,11 @@ func CircleThrough[T Number](a, b, c Point[T]) (Circle[T], bool) {
 	return Circle[T]{center, Cast[T](center.Float().DistanceTo(origin))}, true
 }
 
+// Diameter returns twice the radius.
+func (c Circle[T]) Diameter() T {
+	return c.Radius * 2
+}
+
 // Anchor returns the point of the boundary in the direction from the center, or the center for
 // DirectionNone. For integer T a diagonal anchor is rounded like Direction.Vector and can lie just
 // outside a small circle.
@@ -72,11 +77,6 @@ func (c Circle[T]) Inertia() float64 {
 	radius := float64(c.Radius)
 
 	return Pi * radius * radius * radius * radius / 2
-}
-
-// Diameter returns twice the radius.
-func (c Circle[T]) Diameter() T {
-	return c.Radius * 2
 }
 
 // Bounds returns the axis-aligned bounding box.
@@ -211,42 +211,6 @@ func (c Circle[T]) Nearest(point Point[T]) Point[T] {
 // along X for a zero direction.
 func (c Circle[T]) Support(direction Vector[float64]) Point[float64] {
 	return c.Center.Float().Add(direction.Normalize().Multiply(float64(c.Radius)))
-}
-
-// Tangents returns the points where the lines through the point touch the circle: two for a point
-// outside, the point itself on the boundary, and none inside. The second is the mirror of the first
-// across the line from the center to the point.
-func (c Circle[T]) Tangents(point Point[T]) Pair[Point[T]] {
-	distanceSquared := c.centerDistanceSquared(point)
-	magnitude := point.magnitude()
-
-	if c.touchesSquared(distanceSquared, magnitude) {
-		return Pair[Point[T]]{[2]Point[T]{point}, 1}
-	}
-	if c.containsSquared(distanceSquared, magnitude) {
-		return Pair[Point[T]]{}
-	}
-
-	radius := float64(c.Radius)
-
-	return c.chordPoints(point.Float().Subtract(c.Center.Float()), radius*radius/math.Sqrt(distanceSquared))
-}
-
-// OuterTangents returns the segments that touch both circles on the same side, each from its point
-// on this circle to its point on the given one: two unless one circle lies within the other or the
-// centers coincide, which give none. The second is the mirror of the first across the line of
-// centers. A circle of zero radius is touched at its center, and two of them are joined by one
-// segment.
-func (c Circle[T]) OuterTangents(circle Circle[T]) Pair[Segment[T]] {
-	return c.tangents(circle, float64(circle.Radius))
-}
-
-// InnerTangents returns the segments that touch the circles on opposite sides and cross between
-// them, each from its point on this circle to its point on the given one: two for circles that
-// share no point, and none otherwise, touching circles included. The second is the mirror of the
-// first across the line of centers. Two circles of zero radius are joined by one segment.
-func (c Circle[T]) InnerTangents(circle Circle[T]) Pair[Segment[T]] {
-	return c.tangents(circle, -float64(circle.Radius))
 }
 
 // Contains reports whether the point lies in the circle.
@@ -443,9 +407,45 @@ func (c Circle[T]) IntersectionRay(ray Ray[T]) Pair[Point[T]] {
 }
 
 // IntersectionLine returns the points where the line crosses the boundary, in order along its
-// Direction: two where it passes through, one where it is tangent, and none where it misses.
+// Vector: two where it passes through, one where it is tangent, and none where it misses.
 func (c Circle[T]) IntersectionLine(line Line[T]) Pair[Point[T]] {
 	return c.IntersectionSegment(line.span(c.minMax()))
+}
+
+// Tangents returns the points where the lines through the point touch the circle: two for a point
+// outside, the point itself on the boundary, and none inside. The second is the mirror of the first
+// across the line from the center to the point.
+func (c Circle[T]) Tangents(point Point[T]) Pair[Point[T]] {
+	distanceSquared := c.centerDistanceSquared(point)
+	magnitude := point.magnitude()
+
+	if c.touchesSquared(distanceSquared, magnitude) {
+		return Pair[Point[T]]{[2]Point[T]{point}, 1}
+	}
+	if c.containsSquared(distanceSquared, magnitude) {
+		return Pair[Point[T]]{}
+	}
+
+	radius := float64(c.Radius)
+
+	return c.chordPoints(point.Float().Subtract(c.Center.Float()), radius*radius/math.Sqrt(distanceSquared))
+}
+
+// OuterTangents returns the segments that touch both circles on the same side, each from its point
+// on this circle to its point on the given one: two unless one circle lies within the other or the
+// centers coincide, which give none. The second is the mirror of the first across the line of
+// centers. A circle of zero radius is touched at its center, and two of them are joined by one
+// segment.
+func (c Circle[T]) OuterTangents(circle Circle[T]) Pair[Segment[T]] {
+	return c.tangents(circle, float64(circle.Radius))
+}
+
+// InnerTangents returns the segments that touch the circles on opposite sides and cross between
+// them, each from its point on this circle to its point on the given one: two for circles that
+// share no point, and none otherwise, touching circles included. The second is the mirror of the
+// first across the line of centers. Two circles of zero radius are joined by one segment.
+func (c Circle[T]) InnerTangents(circle Circle[T]) Pair[Segment[T]] {
+	return c.tangents(circle, -float64(circle.Radius))
 }
 
 // Union returns the smallest circle containing both, the one that contains the other where there is
@@ -603,28 +603,15 @@ func (c Circle[T]) IsZero() bool {
 	return c.Equal(Circle[T]{})
 }
 
-// Ellipse returns the circle as an Ellipse of equal semi-axes and no angle. A circle has no
-// Transform, since a matrix takes it to an ellipse: transform Ellipse() instead.
-func (c Circle[T]) Ellipse() Ellipse[T] {
-	return Ellipse[T]{c.Center, SzU(c.Radius), 0}
-}
-
-// RegularPolygon returns the regular polygon of n vertices inscribed in the circle, its first
-// vertex placed by RegularPolygonOrientationPhase. It panics for an orientation that is neither
-// OrientationFlatTop nor OrientationPointyTop.
-func (c Circle[T]) RegularPolygon(n int, orientation Orientation) RegularPolygon[T] {
-	return RegularPolygon[T]{c.Center, SzU(c.Radius), n, 0, RegularPolygonOrientationPhase(n, orientation)}
+// Sector returns the slice of the circle from the angle through the sweep, both in radians.
+func (c Circle[T]) Sector(angle, sweep float64) Sector[T] {
+	return Sector[T]{c.Center, c.Radius, angle, sweep}
 }
 
 // Arc returns the part of the boundary from the angle through the sweep, both in radians. A sweep
 // of a full turn is the whole boundary without the inside.
 func (c Circle[T]) Arc(angle, sweep float64) Arc[T] {
 	return Arc[T]{c.Center, c.Radius, angle, sweep}
-}
-
-// Sector returns the slice of the circle from the angle through the sweep, both in radians.
-func (c Circle[T]) Sector(angle, sweep float64) Sector[T] {
-	return Sector[T]{c.Center, c.Radius, angle, sweep}
 }
 
 // Polygon returns the circle as a polygon within the tolerance of it: as few equal chords as keep
@@ -654,6 +641,19 @@ func (c Circle[T]) AppendPolygon(dst []Point[T], tolerance float64) []Point[T] {
 	}
 
 	return dst
+}
+
+// RegularPolygon returns the regular polygon of n vertices inscribed in the circle, its first
+// vertex placed by RegularPolygonOrientationPhase. It panics for an orientation that is neither
+// OrientationFlatTop nor OrientationPointyTop.
+func (c Circle[T]) RegularPolygon(n int, orientation Orientation) RegularPolygon[T] {
+	return RegularPolygon[T]{c.Center, SzU(c.Radius), n, 0, RegularPolygonOrientationPhase(n, orientation)}
+}
+
+// Ellipse returns the circle as an Ellipse of equal semi-axes and no angle. A circle has no
+// Transform, since a matrix takes it to an ellipse: transform Ellipse() instead.
+func (c Circle[T]) Ellipse() Ellipse[T] {
+	return Ellipse[T]{c.Center, SzU(c.Radius), 0}
 }
 
 // Cast converts the circle to a Circle of another number type, rounding as Cast does.

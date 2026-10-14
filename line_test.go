@@ -13,8 +13,8 @@ import (
 
 func TestLine_Constructor(t *testing.T) {
 	t.Run("shorthand", func(t *testing.T) {
-		geomtest.AssertLine(t, Ln(Pt(1, -1), Vec(3, 4)), Line[int]{Origin: Pt(1, -1), Direction: Vec(3, 4)})
-		geomtest.AssertLine(t, Ln(Pt(0.5, -1.25), Vec(2.0, 5.0)), Line[float64]{Origin: Pt(0.5, -1.25), Direction: Vec(2.0, 5.0)})
+		geomtest.AssertLine(t, Ln(Pt(1, -1), Vec(3, 4)), Line[int]{Origin: Pt(1, -1), Vector: Vec(3, 4)})
+		geomtest.AssertLine(t, Ln(Pt(0.5, -1.25), Vec(2.0, 5.0)), Line[float64]{Origin: Pt(0.5, -1.25), Vector: Vec(2.0, 5.0)})
 	})
 	t.Run("through two points", func(t *testing.T) {
 		geomtest.AssertLine(t, LineThrough(Pt(1, -1), Pt(4, 3)), Ln(Pt(1, -1), Vec(3, 4)))
@@ -84,7 +84,7 @@ func TestLine_Scale(t *testing.T) {
 				scaled := l.Scale(factor)
 
 				assert.True(t, l.Contains(scaled.PointAt(3)), fmt.Sprintf("%s x%v: ", l, factor))
-				geomtest.AssertNumber(t, scaled.Direction.Length(), l.Direction.Length()*math.Abs(factor), fmt.Sprintf("%s x%v: ", l, factor))
+				geomtest.AssertNumber(t, scaled.Vector.Length(), l.Vector.Length()*math.Abs(factor), fmt.Sprintf("%s x%v: ", l, factor))
 			}
 		}
 	})
@@ -157,7 +157,7 @@ func TestLine_Side(t *testing.T) {
 
 	t.Run("positive on the side the normal points to", func(t *testing.T) {
 		assert.Equal(t, line.Side(Pt(0, 4)), 1)
-		assert.Equal(t, line.Side(line.Origin.Add(line.Direction.Normal())), 1)
+		assert.Equal(t, line.Side(line.Origin.Add(line.Vector.Normal())), 1)
 	})
 	t.Run("negative on the other", func(t *testing.T) {
 		assert.Equal(t, line.Side(Pt(9, -4)), -1)
@@ -188,7 +188,7 @@ func TestLine_Side(t *testing.T) {
 	})
 	t.Run("the sign of the distance along the normal", func(t *testing.T) {
 		for _, l := range lineFixtures {
-			normal := l.Direction.Normal()
+			normal := l.Vector.Normal()
 
 			for _, p := range pointFixtures {
 				along := p.Subtract(l.Origin).Dot(normal)
@@ -326,39 +326,6 @@ func TestLine_NearestFraction(t *testing.T) {
 	})
 }
 
-func TestLine_Reflect(t *testing.T) {
-	t.Run("across an axis-parallel line", func(t *testing.T) {
-		geomtest.AssertPoint(t, Ln(Pt(0, 2), Vec(5, 0)).Reflect(Pt(3, 7)), Pt(3, -3))
-		geomtest.AssertPoint(t, Ln(Pt(-1, 0), Vec(0, -3)).Reflect(Pt(3, 7)), Pt(-5, 7))
-	})
-	t.Run("across a diagonal swaps the coordinates", func(t *testing.T) {
-		geomtest.AssertPoint(t, Ln(Pt(0, 0), Vec(1, 1)).Reflect(Pt(3, 1)), Pt(1, 3))
-		geomtest.AssertPoint(t, Ln(Pt(0.0, 0.0), Vec(-2.0, -2.0)).Reflect(Pt(0.5, -1.25)), Pt(-1.25, 0.5))
-	})
-	t.Run("a point on the line is its own image", func(t *testing.T) {
-		geomtest.AssertPoint(t, Ln(Pt(1, 1), Vec(3, 7)).Reflect(Pt(-5, -13)), Pt(-5, -13))
-	})
-	t.Run("int rounds once", func(t *testing.T) {
-		geomtest.AssertPoint(t, Ln(Pt(0, 0), Vec(2, 1)).Reflect(Pt(0, 1)), Pt(1, -1))
-	})
-	t.Run("a zero direction mirrors through the origin", func(t *testing.T) {
-		geomtest.AssertPoint(t, Ln(Pt(1, 1), Vec(0, 0)).Reflect(Pt(4, 5)), Pt(-2, -3))
-	})
-	t.Run("over the fixtures", func(t *testing.T) {
-		for _, l := range lineFixtures {
-			for _, p := range pointFixtures {
-				image := l.Reflect(p)
-				message := fmt.Sprintf("%s → %s: ", l, p)
-
-				geomtest.AssertPoint(t, l.Reflect(image), p, message+"twice is the point: ")
-				geomtest.AssertPoint(t, p.Midpoint(image), l.Float().Nearest(p), message+"halfway is the foot: ")
-				geomtest.AssertNumber(t, l.DistanceTo(image), l.DistanceTo(p), message+"as far from the line: ")
-				assert.True(t, l.Contains(p) || l.Side(image) == -l.Side(p), message+"on the other side: ")
-			}
-		}
-	})
-}
-
 func TestLine_Contains(t *testing.T) {
 	line := Ln(Pt(0, 0), Vec(2, 1))
 
@@ -477,7 +444,7 @@ func TestLine_IntersectsLine(t *testing.T) {
 
 				assert.Equal(t, a.IntersectsLine(b), b.IntersectsLine(a), message)
 				assert.True(t, !ok || a.IntersectsLine(b), message)
-				if a.Direction.Cross(b.Direction) != 0 {
+				if a.Vector.Cross(b.Vector) != 0 {
 					assert.True(t, ok, message)
 				}
 			}
@@ -524,7 +491,7 @@ func TestLine_IntersectsPolygon(t *testing.T) {
 }
 
 func TestLine_IntersectsRectangle(t *testing.T) {
-	rectangle := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0))
+	rectangle := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
 
 	t.Run("passing through, whichever way it runs", func(t *testing.T) {
 		assert.True(t, Ln(Pt(-5.0, 0.0), Vec(1.0, 0.0)).IntersectsRectangle(rectangle))
@@ -583,6 +550,25 @@ func TestLine_IntersectsBox(t *testing.T) {
 		for _, l := range lineFixtures {
 			for _, b := range boxFixtures {
 				assert.Equal(t, l.IntersectsBox(b), l.IntersectsRectangle(b.Rectangle()), fmt.Sprintf("%s → %s: ", l, b))
+			}
+		}
+	})
+}
+
+func TestLine_IntersectsEllipse(t *testing.T) {
+	ellipse := Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
+
+	t.Run("passing through, whichever way it runs", func(t *testing.T) {
+		assert.True(t, Ln(Pt(-8.0, 0.0), Vec(1.0, 0.0)).IntersectsEllipse(ellipse))
+		assert.True(t, Ln(Pt(-8.0, 0.0), Vec(-1.0, 0.0)).IntersectsEllipse(ellipse))
+	})
+	t.Run("passing by", func(t *testing.T) {
+		assert.False(t, Ln(Pt(-8.0, 3.0), Vec(1.0, 0.0)).IntersectsEllipse(ellipse))
+	})
+	t.Run("matches IntersectsCircle on the circle's Ellipse", func(t *testing.T) {
+		for _, l := range lineFixtures {
+			for _, c := range circleFixtures {
+				assert.Equal(t, l.IntersectsEllipse(c.Ellipse()), l.IntersectsCircle(c), fmt.Sprintf("%s → %s: ", l, c))
 			}
 		}
 	})
@@ -887,7 +873,7 @@ func TestLine_AppendIntersectionPolygon(t *testing.T) {
 }
 
 func TestLine_IntersectionRectangle(t *testing.T) {
-	rectangle := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0))
+	rectangle := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
 
 	t.Run("passing through gives both crossings along the direction", func(t *testing.T) {
 		geomtest.AssertVertices(t, Ln(Pt(5.0, 0.0), Vec(1.0, 0.0)).IntersectionRectangle(rectangle).AppendTo(nil), []Point[float64]{Pt(-2.0, 0.0), Pt(2.0, 0.0)})
@@ -897,7 +883,7 @@ func TestLine_IntersectionRectangle(t *testing.T) {
 		assert.Nil(t, Ln(Pt(-5.0, 0.0), Vec(0.0, 1.0)).IntersectionRectangle(rectangle).AppendTo(nil))
 	})
 	t.Run("int is exact", func(t *testing.T) {
-		geomtest.AssertVertices(t, Ln(Pt(5, 1), Vec(3, 1)).IntersectionRectangle(Rect(Pt(0, 0), Sz(4, 2))).AppendTo(nil), []Point[int]{Pt(-1, -1), Pt(2, 0)})
+		geomtest.AssertVertices(t, Ln(Pt(5, 1), Vec(3, 1)).IntersectionRectangle(Rect(Pt(0, 0), Sz(4, 2), 0)).AppendTo(nil), []Point[int]{Pt(-1, -1), Pt(2, 0)})
 	})
 	t.Run("every point lies on the line and the boundary, and exists where IntersectsRectangle holds", func(t *testing.T) {
 		for _, rect := range rectFixtures {
@@ -937,6 +923,29 @@ func TestLine_IntersectionBox(t *testing.T) {
 		for _, b := range boxFixtures {
 			for _, l := range lineFixtures {
 				assertCrossings(t, l, l.IntersectionBox(b).AppendTo(nil), l.IntersectsBox(b), b.Rectangle().Edges, fmt.Sprintf("%s → %s: ", l, b))
+			}
+		}
+	})
+}
+
+func TestLine_IntersectionEllipse(t *testing.T) {
+	ellipse := Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
+
+	t.Run("passing through gives both crossings along the direction", func(t *testing.T) {
+		geomtest.AssertVertices(t, Ln(Pt(-8.0, 0.0), Vec(-1.0, 0.0)).IntersectionEllipse(ellipse).AppendTo(nil), []Point[float64]{Pt(4.0, 0.0), Pt(-4.0, 0.0)})
+		geomtest.AssertVertices(t, Ln(Pt(9.0, 2.0), Vec(1.0, 0.0)).IntersectionEllipse(ellipse).AppendTo(nil), []Point[float64]{Pt(0.0, 2.0)})
+	})
+	t.Run("matches IntersectionCircle on the circle's Ellipse", func(t *testing.T) {
+		for _, l := range lineFixtures {
+			for _, c := range circleFixtures {
+				geomtest.AssertVertices(t, l.IntersectionEllipse(c.Ellipse()).AppendTo(nil), l.IntersectionCircle(c).AppendTo(nil), fmt.Sprintf("%s → %s: ", l, c))
+			}
+		}
+	})
+	t.Run("every point lies on the line and the boundary, and exists where IntersectsEllipse holds", func(t *testing.T) {
+		for _, e := range ellipseFixtures {
+			for _, l := range lineFixtures {
+				assertEllipseCrossings(t, l, l.IntersectionEllipse(e).AppendTo(nil), l.IntersectsEllipse(e), e, fmt.Sprintf("%s → %s: ", l, e))
 			}
 		}
 	})
@@ -1055,7 +1064,7 @@ func TestLine_AppendClipPolygon(t *testing.T) {
 }
 
 func TestLine_ClipRectangle(t *testing.T) {
-	rectangle := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0))
+	rectangle := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
 
 	t.Run("passing through gives the part between the crossings", func(t *testing.T) {
 		geomtest.AssertSegments(t, partsOf(Ln(Pt(5.0, 0.0), Vec(1.0, 0.0)).ClipRectangle(rectangle)), []Segment[float64]{Seg(Pt(-2.0, 0.0), Pt(2.0, 0.0))})
@@ -1132,6 +1141,66 @@ func TestLine_ClipBox(t *testing.T) {
 	})
 }
 
+func TestLine_ClipEllipse(t *testing.T) {
+	ellipse := Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
+
+	t.Run("passing through gives the chord along the direction", func(t *testing.T) {
+		geomtest.AssertSegments(t, partsOf(Ln(Pt(0.0, 0.0), Vec(0.0, -1.0)).ClipEllipse(ellipse)), []Segment[float64]{Seg(Pt(0.0, 2.0), Pt(0.0, -2.0))})
+	})
+	t.Run("passing by gives none", func(t *testing.T) {
+		assert.Nil(t, partsOf(Ln(Pt(-8.0, 3.0), Vec(1.0, 0.0)).ClipEllipse(ellipse)))
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		through := Ln(Pt(-8.0, 0.0), Vec(1.0, 0.0))
+
+		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			_, sinkBool = through.ClipEllipse(ellipse)
+		}), 0)
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, e := range ellipseFixtures {
+			for _, l := range lineFixtures {
+				assertClipped(t, l, partsOf(l.ClipEllipse(e)), l.IntersectsEllipse(e), func(part Segment[float64]) bool {
+					return e.Contains(part.Start) && e.Contains(part.End)
+				}, fmt.Sprintf("%s → %s: ", l, e))
+			}
+		}
+	})
+}
+
+func TestLine_Reflect(t *testing.T) {
+	t.Run("across an axis-parallel line", func(t *testing.T) {
+		geomtest.AssertPoint(t, Ln(Pt(0, 2), Vec(5, 0)).Reflect(Pt(3, 7)), Pt(3, -3))
+		geomtest.AssertPoint(t, Ln(Pt(-1, 0), Vec(0, -3)).Reflect(Pt(3, 7)), Pt(-5, 7))
+	})
+	t.Run("across a diagonal swaps the coordinates", func(t *testing.T) {
+		geomtest.AssertPoint(t, Ln(Pt(0, 0), Vec(1, 1)).Reflect(Pt(3, 1)), Pt(1, 3))
+		geomtest.AssertPoint(t, Ln(Pt(0.0, 0.0), Vec(-2.0, -2.0)).Reflect(Pt(0.5, -1.25)), Pt(-1.25, 0.5))
+	})
+	t.Run("a point on the line is its own image", func(t *testing.T) {
+		geomtest.AssertPoint(t, Ln(Pt(1, 1), Vec(3, 7)).Reflect(Pt(-5, -13)), Pt(-5, -13))
+	})
+	t.Run("int rounds once", func(t *testing.T) {
+		geomtest.AssertPoint(t, Ln(Pt(0, 0), Vec(2, 1)).Reflect(Pt(0, 1)), Pt(1, -1))
+	})
+	t.Run("a zero direction mirrors through the origin", func(t *testing.T) {
+		geomtest.AssertPoint(t, Ln(Pt(1, 1), Vec(0, 0)).Reflect(Pt(4, 5)), Pt(-2, -3))
+	})
+	t.Run("over the fixtures", func(t *testing.T) {
+		for _, l := range lineFixtures {
+			for _, p := range pointFixtures {
+				image := l.Reflect(p)
+				message := fmt.Sprintf("%s → %s: ", l, p)
+
+				geomtest.AssertPoint(t, l.Reflect(image), p, message+"twice is the point: ")
+				geomtest.AssertPoint(t, p.Midpoint(image), l.Float().Nearest(p), message+"halfway is the foot: ")
+				geomtest.AssertNumber(t, l.DistanceTo(image), l.DistanceTo(p), message+"as far from the line: ")
+				assert.True(t, l.Contains(p) || l.Side(image) == -l.Side(p), message+"on the other side: ")
+			}
+		}
+	})
+}
+
 func TestLine_Equal(t *testing.T) {
 	t.Run("same line", func(t *testing.T) {
 		assert.True(t, Ln(Pt(1, 2), Vec(3, 4)).Equal(Ln(Pt(1, 2), Vec(3, 4))))
@@ -1153,7 +1222,7 @@ func TestLine_IsZero(t *testing.T) {
 		assert.True(t, Line[int]{}.IsZero())
 	})
 	t.Run("a direction alone is not zero", func(t *testing.T) {
-		assert.False(t, Line[int]{Direction: Vec(1, 0)}.IsZero())
+		assert.False(t, Line[int]{Vector: Vec(1, 0)}.IsZero())
 	})
 	t.Run("within delta", func(t *testing.T) {
 		assert.True(t, Ln(Pt(Delta/2, 0.0), Vec(0.0, -Delta/2)).IsZero())
@@ -1225,7 +1294,7 @@ func TestLine_JSON(t *testing.T) {
 func TestLine_Properties(t *testing.T) {
 	t.Run("the angle is the direction's", func(t *testing.T) {
 		for _, l := range lineFixtures {
-			geomtest.AssertNumber(t, l.Angle(), l.Direction.Angle(), l.String()+": ")
+			geomtest.AssertNumber(t, l.Angle(), l.Vector.Angle(), l.String()+": ")
 		}
 	})
 	t.Run("every point along the direction lies on the line, either way, on no side", func(t *testing.T) {
@@ -1238,8 +1307,8 @@ func TestLine_Properties(t *testing.T) {
 	t.Run("translate and move to keep the direction", func(t *testing.T) {
 		for _, l := range lineFixtures {
 			for _, p := range pointFixtures {
-				assert.True(t, l.MoveTo(p).Direction.Equal(l.Direction), fmt.Sprintf("%s → %s: ", l, p))
-				assert.True(t, l.Translate(p.Vector()).Direction.Equal(l.Direction), fmt.Sprintf("%s → %s: ", l, p))
+				assert.True(t, l.MoveTo(p).Vector.Equal(l.Vector), fmt.Sprintf("%s → %s: ", l, p))
+				assert.True(t, l.Translate(p.Vector()).Vector.Equal(l.Vector), fmt.Sprintf("%s → %s: ", l, p))
 			}
 		}
 	})

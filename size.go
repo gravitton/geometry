@@ -92,32 +92,6 @@ func (s Size[T]) UnscaleXY(factorX, factorY float64) Size[T] {
 	return Size[T]{Divide(s.Width, factorX), Divide(s.Height, factorY)}
 }
 
-// Abs returns the size with absolute extents.
-func (s Size[T]) Abs() Size[T] {
-	return Size[T]{Abs(s.Width), Abs(s.Height)}
-}
-
-// Transpose returns the size with the width and the height swapped, the extent turned a quarter
-// turn.
-func (s Size[T]) Transpose() Size[T] {
-	return Size[T]{s.Height, s.Width}
-}
-
-// Round returns the size with extents rounded to the nearest integer.
-func (s Size[T]) Round() Size[T] {
-	return Size[T]{Round(s.Width), Round(s.Height)}
-}
-
-// Floor returns the size with extents rounded down.
-func (s Size[T]) Floor() Size[T] {
-	return Size[T]{Floor(s.Width), Floor(s.Height)}
-}
-
-// Ceil returns the size with extents rounded up.
-func (s Size[T]) Ceil() Size[T] {
-	return Size[T]{Ceil(s.Width), Ceil(s.Height)}
-}
-
 // Grow returns the size with both extents increased by the amount, the total change of each extent
 // rather than one per side.
 func (s Size[T]) Grow(amount T) Size[T] {
@@ -143,6 +117,32 @@ func (s Size[T]) ShrinkXY(amountX, amountY T) Size[T] {
 // Lerp returns the size interpolated toward the given one, extrapolated outside [0, 1].
 func (s Size[T]) Lerp(size Size[T], t float64) Size[T] {
 	return Size[T]{Lerp(s.Width, size.Width, t), Lerp(s.Height, size.Height, t)}
+}
+
+// Abs returns the size with absolute extents.
+func (s Size[T]) Abs() Size[T] {
+	return Size[T]{Abs(s.Width), Abs(s.Height)}
+}
+
+// Round returns the size with extents rounded to the nearest integer.
+func (s Size[T]) Round() Size[T] {
+	return Size[T]{Round(s.Width), Round(s.Height)}
+}
+
+// Floor returns the size with extents rounded down.
+func (s Size[T]) Floor() Size[T] {
+	return Size[T]{Floor(s.Width), Floor(s.Height)}
+}
+
+// Ceil returns the size with extents rounded up.
+func (s Size[T]) Ceil() Size[T] {
+	return Size[T]{Ceil(s.Width), Ceil(s.Height)}
+}
+
+// Transpose returns the size with the width and the height swapped, the extent turned a quarter
+// turn.
+func (s Size[T]) Transpose() Size[T] {
+	return Size[T]{s.Height, s.Width}
 }
 
 // Fit returns the largest size of the same aspect ratio that fits in the given one. A size with a

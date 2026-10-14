@@ -455,9 +455,9 @@ func TestSector_ContainsPolygon(t *testing.T) {
 func TestSector_ContainsRectangle(t *testing.T) {
 	s := quarterSector()
 
-	assert.True(t, s.ContainsRectangle(Rect(Pt(2.0, 2.0), Sz(2.0, 2.0))))
-	assert.True(t, s.ContainsRectangle(Rect(Pt(2.0, 2.0), Sz(2.0, 2.0)).Rotate(Pi/4)))
-	assert.False(t, s.ContainsRectangle(Rect(Pt(2.0, 2.0), Sz(5.0, 5.0))))
+	assert.True(t, s.ContainsRectangle(Rect(Pt(2.0, 2.0), Sz(2.0, 2.0), 0)))
+	assert.True(t, s.ContainsRectangle(Rect(Pt(2.0, 2.0), Sz(2.0, 2.0), 0).Rotate(Pi/4)))
+	assert.False(t, s.ContainsRectangle(Rect(Pt(2.0, 2.0), Sz(5.0, 5.0), 0)))
 }
 
 func TestSector_ContainsRegularPolygon(t *testing.T) {
@@ -707,13 +707,13 @@ func TestSector_IntersectsRectangle(t *testing.T) {
 	s := quarterSector()
 
 	t.Run("a rectangle crossing it, around it or within it", func(t *testing.T) {
-		assert.True(t, s.IntersectsRectangle(Rect(Pt(4.0, 4.0), Sz(2.0, 2.0))))
-		assert.True(t, s.IntersectsRectangle(Rect(Pt(0.0, 0.0), Sz(20.0, 20.0)).Rotate(Pi/6)))
-		assert.True(t, s.IntersectsRectangle(Rect(Pt(2.0, 2.0), Sz(1.0, 1.0))))
+		assert.True(t, s.IntersectsRectangle(Rect(Pt(4.0, 4.0), Sz(2.0, 2.0), 0)))
+		assert.True(t, s.IntersectsRectangle(Rect(Pt(0.0, 0.0), Sz(20.0, 20.0), 0).Rotate(Pi/6)))
+		assert.True(t, s.IntersectsRectangle(Rect(Pt(2.0, 2.0), Sz(1.0, 1.0), 0)))
 	})
 	t.Run("a rectangle short of it, and one in the notch of a sector past half a turn", func(t *testing.T) {
-		assert.False(t, s.IntersectsRectangle(Rect(Pt(5.0, 5.0), Sz(2.0, 2.0))))
-		assert.False(t, notchedSector().IntersectsRectangle(Rect(Pt(2.5, 0.0), Sz(1.0, 1.0))))
+		assert.False(t, s.IntersectsRectangle(Rect(Pt(5.0, 5.0), Sz(2.0, 2.0), 0)))
+		assert.False(t, notchedSector().IntersectsRectangle(Rect(Pt(2.5, 0.0), Sz(1.0, 1.0), 0)))
 	})
 	t.Run("either side gives the same answer", func(t *testing.T) {
 		for _, sector := range sectorFixtures() {
@@ -910,12 +910,12 @@ func TestSector_IsZero(t *testing.T) {
 	assert.False(t, Sect(Pt(0, 0), 1, 0, 0).IsZero())
 }
 
-func TestSector_Arc(t *testing.T) {
-	geomtest.AssertArc(t, Sect(Pt(1, 2), 5, 0.5, 1.5).Arc(), Ac(Pt(1, 2), 5, 0.5, 1.5))
-}
-
 func TestSector_Circle(t *testing.T) {
 	geomtest.AssertCircle(t, Sect(Pt(1, 2), 5, 0.5, 1.5).Circle(), Circ(Pt(1, 2), 5))
+}
+
+func TestSector_Arc(t *testing.T) {
+	geomtest.AssertArc(t, Sect(Pt(1, 2), 5, 0.5, 1.5).Arc(), Ac(Pt(1, 2), 5, 0.5, 1.5))
 }
 
 func TestSector_Polygon(t *testing.T) {
