@@ -32,6 +32,13 @@ var (
 	_ intersector[int] = Rectangle[int]{}
 	_ intersector[int] = RegularPolygon[int]{}
 	_ intersector[int] = Box[int]{}
+	_ container[int]   = Circle[int]{}
+	_ container[int]   = Capsule[int]{}
+	_ container[int]   = Sector[int]{}
+	_ container[int]   = Polygon[int]{}
+	_ container[int]   = Rectangle[int]{}
+	_ container[int]   = RegularPolygon[int]{}
+	_ container[int]   = Box[int]{}
 	_ Body[int]        = Circle[int]{}
 	_ Body[int]        = Capsule[int]{}
 	_ Body[int]        = Sector[int]{}
@@ -801,7 +808,26 @@ func TestContains(t *testing.T) {
 		assert.True(t, Contains[float64](Circ(Pt(5.0, 5.0), 8.0), box))
 		assert.False(t, Contains[float64](Seg(Pt(0.0, 0.0), Pt(10.0, 0.0)), box))
 	})
-	t.Run("convex shapes known by their support hold none the named methods do not, and every one shrunk", func(t *testing.T) {
+	t.Run("shapes known by their support are held by none the named methods do not hold, and every one shrunk", func(t *testing.T) {
+		for _, a := range shapeFixtures() {
+			if _, ok := a.(container[float64]); !ok {
+				continue
+			}
+
+			for _, b := range convexFixtures() {
+				if _, ok := b.(Ellipse[float64]); ok {
+					continue
+				}
+
+				message := fmt.Sprintf("%v → %v: ", a, b)
+				contains := Contains(a, b)
+
+				assert.True(t, !Contains[float64](a, foreignShape[float64]{b}) || contains, message)
+				assert.True(t, !contains || Contains[float64](a, foreignShape[float64]{scaled(b, 0.99)}), message)
+			}
+		}
+	})
+	t.Run("convex shapes holding by their support hold none the named methods do not, and every one shrunk", func(t *testing.T) {
 		for _, a := range convexFixtures() {
 			if _, ok := a.(container[float64]); !ok {
 				continue
@@ -816,9 +842,7 @@ func TestContains(t *testing.T) {
 				contains := Contains(a, b)
 
 				assert.True(t, !Contains[float64](foreignShape[float64]{a}, b) || contains, message)
-				assert.True(t, !Contains[float64](a, foreignShape[float64]{b}) || contains, message)
 				assert.True(t, !contains || Contains[float64](foreignShape[float64]{a}, scaled(b, 0.99)), message)
-				assert.True(t, !contains || Contains[float64](a, foreignShape[float64]{scaled(b, 0.99)}), message)
 			}
 		}
 	})
@@ -831,7 +855,7 @@ func TestContains(t *testing.T) {
 			within := ellipse.RegularPolygon(64, OrientationPointyTop)
 			about := ellipse.Scale(1/math.Cos(Pi/64)).RegularPolygon(64, OrientationPointyTop)
 
-			for _, other := range convexFixtures() {
+			for _, other := range shapeFixtures() {
 				message := fmt.Sprintf("%v → %v: ", ellipse, other)
 
 				assert.True(t, !Contains(within, other) || Contains[float64](ellipse, other), message+"holds: ")
@@ -858,20 +882,46 @@ func TestContains(t *testing.T) {
 		assert.False(t, Contains[float64](segment, foreignShape[float64]{Seg(Pt(0.6, 0.8), Pt(3.6, 4.8))}))
 		assert.False(t, Contains[float64](segment, Ell(Pt(1.5, 2.0), Sz(0.5, 0.25), 0)))
 	})
-	t.Run("a round shape within one of nearly its own form is not taken to lie within it", func(t *testing.T) {
+	t.Run("an ellipse holds an equal one, and a round shape within one of nearly its own form is not taken to lie within it", func(t *testing.T) {
 		ellipse := Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0.3)
 
 		assert.True(t, Contains[float64](ellipse.Scale(1.01), ellipse))
-		assert.False(t, Contains[float64](ellipse.Scale(1+1e-6), ellipse))
+		assert.True(t, Contains[float64](ellipse, ellipse))
+		assert.True(t, Contains[float64](ellipse, ellipse.Rotate(2*Pi)))
+		assert.False(t, Contains[float64](ellipse, ellipse.Scale(1-1e-6)))
+		assert.False(t, Contains[float64](ellipse, ellipse.Rotate(Pi)))
+		assert.False(t, Contains[float64](foreignShape[float64]{ellipse}, ellipse))
 	})
-	t.Run("a notch is not filled in, so a shape that is not convex holds nothing by supports", func(t *testing.T) {
+	t.Run("a notch of a polygon is not filled in", func(t *testing.T) {
 		polygon := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(6.0, 0.0), Pt(6.0, 6.0), Pt(4.0, 6.0), Pt(4.0, 2.0), Pt(2.0, 2.0), Pt(2.0, 6.0), Pt(0.0, 6.0)})
 
+		assert.True(t, Contains[float64](polygon, Ell(Pt(1.0, 1.0), Sz(0.5, 0.25), 0)))
+		assert.True(t, Contains[float64](polygon, Ell(Pt(3.0, 1.0), Sz(2.5, 0.5), 0)))
+		assert.True(t, Contains[float64](polygon, Ell(Pt(1.0, 4.0), Sz(1.0, 2.0), 0)))
+		assert.False(t, Contains[float64](polygon, Ell(Pt(1.0+1e-4, 4.0), Sz(1.0, 2.0), 0)))
 		assert.False(t, Contains[float64](polygon, Ell(Pt(3.0, 5.0), Sz(0.5, 0.5), 0)))
-		assert.False(t, Contains[float64](polygon, Ell(Pt(1.0, 1.0), Sz(0.5, 0.25), 0)))
-		assert.False(t, Contains[float64](notchedSector(), Ell(Pt(3.0, 0.0), Sz(1.0, 0.5), 0)))
-		assert.False(t, Contains[float64](notchedSector(), Ell(Pt(-3.0, 0.0), Sz(1.0, 0.5), 0)))
+		assert.False(t, Contains[float64](polygon, Ell(Pt(3.0, 2.5), Sz(2.5, 1.0), 0)))
+		assert.False(t, Contains[float64](polygon, Ell(Pt(-1.0, 0.0), Sz(1.0, 0.5), 0)))
+		assert.False(t, Contains[float64](Pol([]Point[float64]{Pt(0.0, 0.0), Pt(6.0, 0.0)}), Ell(Pt(3.0, 0.5), Sz(1.0, 0.5), 0)))
+		assert.True(t, Contains[float64](polygon, foreignShape[float64]{Seg(Pt(0.5, 1.0), Pt(5.5, 1.0))}))
+		assert.False(t, Contains[float64](polygon, foreignShape[float64]{Seg(Pt(1.0, 4.0), Pt(5.0, 4.0))}))
+		assert.False(t, Contains[float64](polygon, Ell(Pt(3.0, 4.0), Sz(2.0, 0), 0)))
+		assert.True(t, Contains[float64](Pol(reverse(polygon.Points)), Ell(Pt(1.0, 4.0), Sz(1.0, 2.0), 0)))
+		assert.False(t, Contains[float64](Pol(reverse(polygon.Points)), Ell(Pt(3.0, 2.5), Sz(2.5, 1.0), 0)))
 		assert.True(t, Contains[float64](Ell(Pt(3.0, 3.0), Sz(10.0, 10.0), 0), polygon))
+	})
+	t.Run("the notch of a sector past half a turn is not filled in", func(t *testing.T) {
+		sector := notchedSector()
+
+		assert.True(t, Contains[float64](sector, Ell(Pt(-3.0, 0.0), Sz(1.0, 0.5), 0)))
+		assert.True(t, Contains[float64](sector, Ell(Pt(-2.5, 0.0), Sz(2.5, 1.0), 0)))
+		assert.False(t, Contains[float64](sector, Ell(Pt(3.0, 0.0), Sz(1.0, 0.5), 0)))
+		assert.False(t, Contains[float64](sector, Ell(Pt(0.0, 0.0), Sz(1.0, 1.0), 0)))
+		assert.False(t, Contains[float64](sector, Ell(Pt(-3.0, 0.0), Sz(2.5, 1.0), 0)))
+		assert.True(t, Contains[float64](sector, foreignShape[float64]{Seg(Pt(-3.0, -1.0), Pt(-3.0, 1.0))}))
+		assert.False(t, Contains[float64](sector, foreignShape[float64]{Seg(Pt(2.0, -3.0), Pt(2.0, 3.0))}))
+		assert.False(t, Contains[float64](sector, Ell(Pt(2.0, 0.0), Sz(0, 3.0), 0)))
+		assert.True(t, Contains[float64](Sect(Pt(0.0, 0.0), 5.0, 0, 2*Pi), Ell(Pt(3.0, 0.0), Sz(1.0, 0.5), 0)))
 	})
 	t.Run("an empty polygon holds nothing and lies within nothing", func(t *testing.T) {
 		ellipse := Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)

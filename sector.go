@@ -143,6 +143,15 @@ func (s Sector[T]) halves() [2]Sector[T] {
 	return [2]Sector[T]{{s.Center, s.Radius, s.Angle, half}, {s.Center, s.Radius, s.Angle + float64(half), half}}
 }
 
+// notch returns the sector of the rest of the turn, from the end of this one round to its start:
+// the part of the circle this one leaves out, convex where this one is past half a turn, and a
+// single radius where this one is the whole disc.
+func (s Sector[T]) notch() Sector[T] {
+	turn := s.turn()
+
+	return Sector[T]{s.Center, s.Radius, s.Angle + turn, math.Copysign(2*math.Pi, turn) - turn}
+}
+
 // Translate creates a new Sector translated by the given vector.
 func (s Sector[T]) Translate(vector Vector[T]) Sector[T] {
 	return Sector[T]{s.Center.Add(vector), s.Radius, s.Angle, s.Sweep}
@@ -646,6 +655,29 @@ func (s Sector[T]) containsArc(arc Arc[float64]) bool {
 	}
 
 	return true
+}
+
+// containsSupport reports whether the sector, one past half a turn, holds a shape no Contains
+// method names: its circle holds the shape by their supports, and the notch, the rest of the
+// turn, reaches no deeper into it than the tolerance, so a shape in the notch is not held. The
+// whole disc has no notch and is its circle.
+func (s Sector[T]) containsSupport(shape Shape[T]) bool {
+	if !containsSupport[T](s.Circle(), shape) {
+		return false
+	}
+
+	if s.isWhole() {
+		return true
+	}
+
+	notch := minkowski[T]{a: s.notch(), b: shape}
+	if !notch.intersects() {
+		return true
+	}
+
+	_, depth := notch.depth()
+
+	return depth <= notch.tolerance()
 }
 
 // enters reports whether the given segment passes through the inside of the sector, off its

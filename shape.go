@@ -207,10 +207,18 @@ func Nearest[T Number](a, b Shape[T]) (Point[T], Point[T]) {
 // the one the method gives. Any other pair, an Ellipse or a shape of another package on either
 // side, is tested by the supports of the two, in float64: the inner shape lies within where it
 // reaches no farther than the outer one in any direction. That is closed on within the
-// tolerance, so a shape touching the other from inside within it may answer either way, and
-// a shape within one of nearly its own round form, close to it all the way round, is taken
-// not to lie within it. A Polygon that is not convex and a Sector past half a turn hold no shape
-// this way, since their supports fill in a notch.
+// tolerance, so a shape touching the other from inside within it may answer either way.
+//
+// A round boundary is closed on a stretch at a time, and the stretches needed grow without
+// bound as a round shape within another nears its boundary all the way round, so past a limit
+// such a shape is taken not to lie within the other: an Ellipse holds an ellipse equal to it,
+// by Ellipse.Equal, but not one a little smaller, one turned by a half turn, which is the same
+// ellipse as another value, or a shape sharing a stretch of its boundary, and a round shape of
+// another package does not hold itself. Two shapes clear of each other by a small part of their
+// size are well within the limit. A Polygon that is not convex holds a shape where no edge reaches into
+// it and it contains a point of the shape, and a Sector past half a turn where its circle holds
+// the shape and the rest of the turn reaches no deeper into it, so a shape in a notch is not
+// held.
 //
 // Both arguments escape to the heap, as in Intersects.
 func Contains[T Number](outer, inner Shape[T]) bool {
@@ -239,12 +247,18 @@ func Contains[T Number](outer, inner Shape[T]) bool {
 		return false
 	}
 
-	if _, ok := nonConvex(outer); ok {
-		return false
+	if ellipse, ok := outer.(Ellipse[T]); ok {
+		if other, ok := inner.(Ellipse[T]); ok && ellipse.Equal(other) {
+			return true
+		}
 	}
 
-	if _, ok := reflex(outer); ok {
-		return false
+	if polygon, ok := nonConvex(outer); ok {
+		return polygon.containsSupport(inner)
+	}
+
+	if sector, ok := reflex(outer); ok {
+		return sector.containsSupport(inner)
 	}
 
 	return containsSupport(outer, inner)

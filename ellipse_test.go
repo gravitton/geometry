@@ -739,6 +739,7 @@ func TestEllipse_Polygon(t *testing.T) {
 	})
 	t.Run("int rounds the vertices, and no extent gives the center", func(t *testing.T) {
 		geomtest.AssertPolygon(t, Ell(Pt(1, 2), Sz(4, 2), 0).Polygon(1.5), Pol([]Point[int]{Pt(5, 2), Pt(1, 4), Pt(-3, 2), Pt(1, 0)}))
+		geomtest.AssertPolygon(t, Ell(Pt(0, 0), Sz(1, 1), 0).Polygon(0.02), Pol([]Point[int]{Pt(1, 0), Pt(1, 1), Pt(0, 1), Pt(-1, 1), Pt(-1, 0), Pt(-1, -1), Pt(0, -1), Pt(1, -1)}))
 		geomtest.AssertPolygon(t, Ell(Pt(1, 2), Sz(0, 0), 0).Polygon(1), Pol([]Point[int]{Pt(1, 2)}))
 	})
 	t.Run("the vertices lie on the boundary, the edges within the tolerance of it, wound as a rectangle", func(t *testing.T) {

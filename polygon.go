@@ -1147,6 +1147,43 @@ func (p Polygon[T]) AppendClipBox(dst []Point[T], box Box[T]) []Point[T] {
 	return clip.result()
 }
 
+// containsSupport reports whether the polygon, one that is not convex, holds a shape no
+// Contains method names: no edge the shape meets, by their supports, has it reaching past the
+// line of the edge on the outer side by more than the tolerance, which the winding gives, so the
+// shape lies wholly within the polygon or wholly outside it, and the polygon contains a point of
+// it, the middle of its supports along the X axis, off the boundary wherever the shape does not
+// lie along an edge. A shape across a notch is not held, however thin. A shape touching a vertex
+// where the outline turns inward reaches past the line of the edges there from inside, and
+// within the tolerance may answer either way; so does one touching a repeated vertex, an edge
+// of no length, whose outer side is taken along the X axis.
+func (p Polygon[T]) containsSupport(shape Shape[T]) bool {
+	reversed := p.twiceArea() < 0
+	bounds := shape.Bounds()
+	for edge := range p.Edges() {
+		if !edge.Bounds().IntersectsBox(bounds) {
+			continue
+		}
+
+		difference := minkowski[T]{a: edge, b: shape}
+		if !difference.intersects() {
+			continue
+		}
+
+		outward := edge.Float().Normal().Negate().Normalize()
+		if reversed {
+			outward = outward.Negate()
+		}
+
+		if shape.Support(outward).Subtract(edge.Start.Float()).Dot(outward) > difference.tolerance() {
+			return false
+		}
+	}
+
+	middle := shape.Support(Vector[float64]{1, 0}).Lerp(shape.Support(Vector[float64]{-1, 0}), 0.5)
+
+	return p.Contains(middle.Cast[T]())
+}
+
 // intersectsSupport reports whether the polygon, one with a vertex, and a shape no Intersects
 // method names share a point: a vertex of the polygon lies within the shape, a point of the
 // shape lies within the polygon, or an edge of the polygon meets the shape by their supports,
