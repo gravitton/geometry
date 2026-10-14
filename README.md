@@ -25,12 +25,13 @@ Generic, immutable 2D geometry library for game development
 
 - **Generic** – every type works with any integer or float type, named types included.
 - **Immutable** – every method returns a new value.
-- **Shapes** – rectangle, box, circle, ellipse, segment, ray, polygon and regular polygon.
-- **Collisions** – intersections, containment, ray casts, nearest points, separation and sweeps.
+- **Shapes** – circle, capsule, sector, polygon, rectangle, regular polygon, box and ellipse.
+- **Paths** – segment, ray, line, polyline, arc and Bezier curves.
+- **Collisions** – intersections, containment, raycasts, nearest points, contacts and sweeps.
 - **Interfaces** – `Shape` and `Body` hold a shape without knowing which one.
 - **Screen space** – top-left origin, `+Y` down, one winding order everywhere.
 - **Closed boundaries** – the edge counts as inside, within a tolerance matched to `T`.
-- **Reproducible** – the same bits on amd64 and arm64.
+- **Reproducible** – the same bits on amd64 and arm64, trigonometry aside.
 - **Extras** – direction enums, `image` interop, JSON, parsing and `geomtest` assertions.
 
 The rules behind them are in the [package documentation][link-go-dev-reference].
@@ -62,23 +63,23 @@ hit, ok := laser.ClipRegularPolygon(rock) // Seg((32.24,0.00);(67.76,0.00)), tru
 
 ```go
 p := geom.Pt(1, 2)
-v := geom.Pt(4, 6).Subtract(p) // Vector{3, 4}
+v := geom.Pt(4, 6).Subtract(p) // ⟨3,4⟩
 
 v.Length()          // 5
-v.Normal()          // Vector{-4, 3}, perpendicular
-p.Add(v.Resize(10)) // Point{7, 10}
+v.Normal()          // ⟨-4,3⟩, perpendicular
+p.Add(v.Resize(10)) // (7,10)
 
-v.Reflect(geom.Vec(0, 1))                 // Vector{3, -4}, bounced off a horizontal wall
-p.RotateAround(geom.Pt(0, 0), math.Pi/2)  // Point{-2, 1}
-p.Lerp(geom.Pt(9, 10), 0.25)              // Point{3, 4}
-geom.Vec(8, 0).Slerp(geom.Vec(0, 8), 0.5) // Vector{6, 6}, turned along the arc, where Lerp gives Vector{4, 4}
+v.Reflect(geom.Vec(0, 1))                 // ⟨3,-4⟩, bounced off a horizontal wall
+p.RotateAround(geom.Pt(0, 0), math.Pi/2)  // (-2,1)
+p.Lerp(geom.Pt(9, 10), 0.25)              // (3,4)
+geom.Vec(8, 0).Slerp(geom.Vec(0, 8), 0.5) // ⟨6,6⟩, turned along the arc, where Lerp gives ⟨4,4⟩
 ```
 
 `Lerp` and `Slerp` move by a fraction; a game loop moves by a speed times the frame time, a step that never passes
 the target:
 
 ```go
-p.MoveToward(geom.Pt(4, 6), 2.5)              // Point{3, 4}, and Point{4, 6} once the step reaches it
+p.MoveToward(geom.Pt(4, 6), 2.5)              // (3,4), and (4,6) once the step reaches it
 geom.Vec(2.0, 0).RotateToward(math.Pi, 0.1)   // turned by 0.1 along the shorter arc, the length kept
 velocity.MoveToward(wanted, accel*dt)         // a velocity taken toward another by an acceleration
 geom.MoveTowardAngle(angle, target, speed*dt) // the same step on a bare angle
@@ -91,13 +92,13 @@ Vectors also have `Project`, `Reject`, `AngleBetween`, and `AtMost` and `AtLeast
 
 ```go
 s := geom.Sz(1920, 1080)
-s.Scale(0.5)                 // Size{960, 540}
-s.AtMost(geom.SzU(800))      // Size{800, 800}, clamped per axis
-s.Shrink(2000).AtLeastZero() // Size{0, 0}, the clamp every shape applies to its own size
-s.Fit(geom.SzU(800))         // Size{800, 450}, largest with the same ratio inside
-s.Fill(geom.SzU(800))        // Size{1422, 800}, smallest with the same ratio around
+s.Scale(0.5)                 // 960x540
+s.AtMost(geom.SzU(800))      // 800x800, clamped per axis
+s.Shrink(2000).AtLeastZero() // 0x0, the clamp every shape applies to its own size
+s.Fit(geom.SzU(800))         // 800x450, largest with the same ratio inside
+s.Fill(geom.SzU(800))        // 1422x800, smallest with the same ratio around
 
-geom.PadXY(8, 4).Size() // Size{16, 8}, horizontal and vertical total
+geom.PadXY(8, 4).Size() // 16x8, horizontal and vertical total
 ```
 
 ### Rectangles
@@ -106,16 +107,16 @@ geom.PadXY(8, 4).Size() // Size{16, 8}, horizontal and vertical total
 r := geom.Rect(geom.Pt(50, 50), geom.Sz(20, 10)) // center and size
 
 r.Contains(geom.Pt(55, 52))                 // true
-r.Nearest(geom.Pt(80, 0))                   // Point{60, 45}, the nearest point, on every shape
-r.Inset(geom.PadU(2)).Anchor(geom.TopRight) // Point{58, 47}
-r.AlignTo(geom.TopLeft, geom.Pt(0, 0))      // Rectangle (0,0)-(20,10)
+r.Nearest(geom.Pt(80, 0))                   // (60,45), the nearest point, on every shape
+r.Inset(geom.PadU(2)).Anchor(geom.TopRight) // (58,47)
+r.AlignTo(geom.TopLeft, geom.Pt(0, 0))      // Rect((10,5);20x10), its Min at the origin
 
 screen := geom.RectangleFromMinMax(geom.Pt(0, 0), geom.Pt(55, 100))
-r.Clamp(screen) // Rectangle (35,45)-(55,55), moved by the least that brings it inside
+r.Clamp(screen) // Rect((45,50);20x10), moved by the least that brings it inside
 
 b := geom.RectangleFromMinMax(geom.Pt(0, 0), geom.Pt(8, 6))
-b.Scale(2)                    // Rectangle (-4,-3)-(12,9), scaled around the center
-for edge := range b.Edges() { // clockwise from the top edge, Segment (0,0)-(8,0), without allocating
+b.Scale(2)                    // Rect((4,3);16x12), scaled around the center
+for edge := range b.Edges() { // clockwise from the top edge, Seg((0,0);(8,0)), without allocating
 	edge.Midpoint()
 }
 slices.Collect(b.Vertices()) // the four corners as a slice, clockwise from the top-left
@@ -143,8 +144,8 @@ view.Inset(geom.PadU(16))                   // (16,16)-(784,584)
 tip := geom.BoxFromMin(geom.Pt(750, 20), geom.Sz(120, 40))
 hud := geom.Bx(geom.Pt(200, 40), geom.Pt(0, 0)) // (0,0)-(200,40), the corners in either order
 
-tip.Clamp(view)   // (680,20)-(800,60), moved by the least that brings it inside
-view.ClipBox(tip) // (750,20)-(800,60), true: the part on screen
+tip.Clamp(view)           // (680,20)-(800,60), moved by the least that brings it inside
+view.ClipBox(tip)         // (750,20)-(800,60), true: the part on screen
 tip.MoveTo(view.Center()) // the same size about another center; Vertices, Edges and Polygon walk it
 
 r.Bounds().IntersectsBox(view) // every shape's Bounds is a Box, for the broad pass
@@ -157,7 +158,7 @@ view.IntersectsRectangle(r)    // a Box is a Shape, tested against every other
 
 ```go
 c := geom.Circ(geom.Pt(0.0, 0.0), 5.0)
-c.Anchor(geom.Bottom)          // Point{0, 5}
+c.Anchor(geom.Bottom)          // (0,5)
 c.Tangents(geom.Pt(13.0, 0.0)) // a Pair: the two points a line from there touches the circle at; one on it, none inside
 
 wheel := geom.Circ(geom.Pt(20.0, 0.0), 2.0)
@@ -165,14 +166,14 @@ c.OuterTangents(wheel) // the two straight runs of a belt around both, each a Se
 c.InnerTangents(wheel) // the two of a crossed belt; none once the circles touch
 c.Union(wheel)         // Circ((8.5,0);13.5), the smallest circle around both
 
-geom.CircleBetween(geom.Pt(0.0, 0.0), geom.Pt(6.0, 8.0))                   // Circ((3,4);5), the two across a diameter
+geom.CircleBetween(geom.Pt(0.0, 0.0), geom.Pt(6.0, 8.0))                    // Circ((3,4);5), the two across a diameter
 geom.CircleThrough(geom.Pt(0.0, 0.0), geom.Pt(6.0, 0.0), geom.Pt(0.0, 8.0)) // Circ((3,4);5), true; false on one line
 
 // a circle has no Transform of its own: an affine matrix takes it to an ellipse
-e := c.Ellipse().Transform(geom.ScaleMatrix(2.0, 1.0)) // Ellipse, semi-axes 10x5, exact for every matrix
+e := c.Ellipse().Transform(geom.ScaleMatrix(2.0, 1.0)) // Ell((0,0);10x5), exact for every matrix
 e.Contains(geom.Pt(9.0, 0.0))                          // true
 e.DistanceTo(geom.Pt(0.0, 9.0))                        // 4, to the nearest point of the boundary
-e.Rotate(geom.Pi / 2).Bounds()                         // the box around the turned ellipse, 10x20
+e.Rotate(geom.Pi / 2).Bounds()                         // (-5,-10)-(5,10), the box around the turned ellipse
 e.Foci()                                               // the two focal points, on the major axis
 e.Circle()                                             // the circle around it, of the major semi-axis
 ```
@@ -196,7 +197,7 @@ walks one, and it converts back exactly.
 
 ```go
 e.RegularPolygon(64, geom.OrientationPointyTop) // every vertex on the boundary, and Ellipse() converts back
-c.RegularPolygon(6, geom.OrientationFlatTop)     // the orientation places the first vertex before the stretch
+c.RegularPolygon(6, geom.OrientationFlatTop)    // the orientation places the first vertex before the stretch
 
 slices.Collect(c.RegularPolygon(64, geom.OrientationFlatTop).Vertices()) // the points that draw the circle
 ```
@@ -205,15 +206,15 @@ slices.Collect(c.RegularPolygon(64, geom.OrientationFlatTop).Vertices()) // the 
 
 ```go
 s := geom.Seg(geom.Pt(0, 0), geom.Pt(3, 4))
-s.Length()                  // 5
-s.DistanceTo(geom.Pt(3, 0)) // 2.4, to the nearest point of the segment
-s.Contains(geom.Pt(6, 8))   // false, the segment ends at (3,4)
+s.Length()                       // 5
+s.DistanceTo(geom.Pt(3, 0))      // 2.4, to the nearest point of the segment
+s.Contains(geom.Pt(6, 8))        // false, the segment ends at (3,4)
 s.NearestFraction(geom.Pt(3, 0)) // 0.36, how far along the nearest point lies, the t PointAt takes
 
 p := geom.Pol([]geom.Point[int]{{0, 0}, {4, 0}, {4, 4}, {2, 1}, {0, 4}})
 p.Area()                  // 10
 p.Contains(geom.Pt(2, 3)) // false, inside the notch
-p.Points[3]               // Point{2, 1}, the notch
+p.Points[3]               // (2,1), the notch
 p.Winding()               // WindingClockwise, the winding of a Rectangle's corners
 p.IsConvex()              // false, the notch turns the other way
 p.IsSimple()              // true, no two edges meet but neighbours at their vertex
@@ -234,9 +235,9 @@ for vertex := range p.Vertices() { // the same loop draws a Segment, Rectangle o
 
 ```go
 hex := geom.RegularPolygonWithOrientation(geom.Pt(0, 0), geom.SzU(20), 6, geom.OrientationFlatTop)
-hex.Anchor(geom.Top)                 // Point{0, -17}, the midpoint of the top edge; a pointy-top one gives its top vertex
+hex.Anchor(geom.Top)                 // (0,-17), the midpoint of the top edge; a pointy-top one gives its top vertex
 hex.AlignTo(geom.Top, geom.Pt(0, 0)) // the hexagon moved so that anchor is at the origin
-hex.Bounds()                         // Box (-20,-17)-(20,17)
+hex.Bounds()                         // (-20,-17)-(20,17)
 hex.Area()                           // 1039, 3√3/2 · r²
 hex.Contains(geom.Pt(10, 5))         // true, walked on the edges without building the vertices
 hex.Ellipse()                        // the ellipse its vertices lie on, exactly
@@ -248,7 +249,7 @@ hex.Transform(geom.ShearMatrix(1.0, 0.0))                                       
 
 ### Interfaces
 
-Every shape has `Translate`, `Bounds`, `Contains`, `DistanceTo` and `Nearest`, and all but `Box` also `MoveTo`,
+Every shape has `Translate`, `MoveTo`, `Bounds`, `Contains`, `DistanceTo` and `Nearest`, and all but `Box` also
 `Scale`, `Unscale` and `Rotate`. Two interfaces name what they share, so a spatial index or a broad collision pass
 holds a shape without knowing which one:
 
@@ -266,17 +267,18 @@ var b geom.Body[float64] = c // Area, Centroid, Inertia — the mass properties 
 b.Inertia()                  // for a physics body to scale by its density; every shape but Segment
 ```
 
-The functions take the type argument where a concrete shape is passed, `geom.Intersects[float64](c, r)`, and infer
-it from a value already held as a `Shape`. The interfaces are for the code around a hot loop: a call through one allocates, where the same call on a concrete
-shape does not. `Ellipse` has no `Intersects<Kind>` methods: the functions test it by its `Support`, as they do a
-shape of another package. `Ray` and `Line` run without end and are no `Shape`: they test a shape by their own methods.
+The functions take the type argument where a concrete shape is passed, `geom.Intersects[float64](c, r)`, and infer it
+from a value already held as a `Shape`. The interfaces are for the code around a hot loop: a call through one
+allocates, where the same call on a concrete shape does not. `Ellipse` has no `Intersects<Kind>` methods: the
+functions test it by its `Support`, as they do a shape of another package, or against a circle by its distance to the
+center. `Ray` and `Line` run without end and are no `Shape`: they test a shape by their own methods.
 
 Two shapes are parted and moved against each other whatever kind they are:
 
 ```go
-on, at := geom.Nearest(turret, target)    // the point of each nearest the other, one point where they intersect
-contact, ok := geom.Collide(crate, floor) // how they meet: Normal, Depth and one or two Points
-crate.Translate(contact.Separation())     // the shortest move out of the floor, the normal as far as the depth
+on, at := geom.Nearest(turret, target)        // the point of each nearest the other, one point where they intersect
+contact, ok := geom.Collide(crate, floor)     // how they meet: Normal, Depth and one or two Points
+crate.Translate(contact.Separation())         // the shortest move out of the floor, the normal as far as the depth
 hit, ok := geom.Sweep(bullet, step, wall)     // where the bullet first touches the wall while it moves by step:
 bullet.Translate(step.Multiply(hit.Fraction)) // the point, the normal and the fraction of the step made by then
 ```
@@ -285,12 +287,14 @@ bullet.Translate(step.Multiply(hit.Fraction)) // the point, the normal and the f
 
 Every shape has one `Intersects<Kind>` per kind, symmetric and counting a touch. `Intersection<Kind>` gives where the
 two meet: one point with a bool between segments, rays and lines, a `Pair` of at most two points on a circle or a
-convex shape, and a slice on a polygon, which may be concave. `Clip<Kind>` gives the part the two have in common, in
-the type of the receiver: a segment of a segment, a rectangle of a rectangle:
+convex shape, and a slice where there can be more: a polygon, which may be concave, a sector, a path or a cubic.
+`Clip<Kind>` gives the part the two have in common, in the type of the receiver: a segment of a segment, a rectangle
+of a rectangle:
 
 ```go
-a.IntersectsRectangle(b) // IntersectsSegment, IntersectsRay, IntersectsLine, IntersectsRectangle, IntersectsCircle,
-r.IntersectsCircle(c)    // IntersectsPolygon, IntersectsRegularPolygon and IntersectsBox, on every shape but Ellipse
+a.IntersectsRectangle(b) // IntersectsCircle, IntersectsCapsule, IntersectsSector, IntersectsSegment, IntersectsRay,
+r.IntersectsCircle(c)    // IntersectsLine, IntersectsPolygon, IntersectsRectangle, IntersectsRegularPolygon and
+                         // IntersectsBox, on every shape but Ellipse
 geom.Intersects(a, c)    // the same answer without knowing either type
 
 point, ok := s.IntersectionSegment(other) // where two segments cross
@@ -330,41 +334,41 @@ c.Polygon(0.25)                                            // a circle and an el
 cone.DistanceToSector(other)                               // the gap between two, whatever the sweeps
 
 ring := geom.Ac(geom.Pt(0.0, 0.0), 5.0, -geom.Pi/2, 2*geom.Pi*progress) // a signed sweep; a full turn is the circle
-ring.PointAt(0.5)                                                        // also Start, End, Midpoint and Length
-ring.Nearest(cursor)                                                     // DistanceTo and Contains, as on every shape
-ring.Polyline(0.25)                                                      // the path that draws it, within a tolerance
-done, rest := ring.Split(0.5)                                            // two arcs tracing the same points
-bend, ok := geom.ArcThrough(a, b, c)                                     // from a through b to c
-hit, ok = ray.HitArc(ring)                                               // a curved wall, and IntersectionArc its crossings
+ring.PointAt(0.5)                                                       // also Start, End, Midpoint and Length
+ring.Nearest(cursor)                                                    // DistanceTo and Contains, as on every shape
+ring.Polyline(0.25)                                                     // the path that draws it, within a tolerance
+done, rest := ring.Split(0.5)                                           // two arcs tracing the same points
+bend, ok := geom.ArcThrough(a, b, c)                                    // from a through b to c
+hit, ok = ray.HitArc(ring)                                              // a curved wall, and IntersectionArc its crossings
 ```
 
 A `Polyline` is an open path, a road, a patrol route or a stroke drawn by a pointer:
 
 ```go
 route := geom.PolLn([]geom.Point[float64]{geom.Pt(0.0, 0.0), geom.Pt(4.0, 0.0), geom.Pt(4.0, 3.0)})
-route.Length()                            // 7
-route.PointAt(0.5)                        // (3.5,0), half the length along; outside [0, 1] it runs on past the ends
-t := route.NearestFraction(player)        // how far along the route the nearest point lies, the t PointAt takes
-route.Nearest(player)                     // that point; DistanceTo and Contains as on every shape
-for p := range route.Every(0.5) {         // a point every half unit of length, in one walk
+route.Length()                     // 7
+route.PointAt(0.5)                 // (3.5,0), half the length along; outside [0, 1] it runs on past the ends
+t := route.NearestFraction(player) // how far along the route the nearest point lies, the t PointAt takes
+route.Nearest(player)              // that point; DistanceTo and Contains as on every shape
+for p := range route.Every(0.5) {  // a point every half unit of length, in one walk
 }
-route.Simplify(0.25)                      // Ramer–Douglas–Peucker, the ends kept; AppendSimplify into a buffer
-route.Lerp(detour, 0.5)                   // halfway to a path of as many points, each point toward its own
-p.Polyline()                              // the outline of a polygon as a closed path, and Polygon() back
-hit, ok := ray.HitPolyline(route)         // a wall of several edges, and IntersectionPolyline every crossing
+route.Simplify(0.25)              // Ramer–Douglas–Peucker, the ends kept; AppendSimplify into a buffer
+route.Lerp(detour, 0.5)           // halfway to a path of as many points, each point toward its own
+p.Polyline()                      // the outline of a polygon as a closed path, and Polygon() back
+hit, ok := ray.HitPolyline(route) // a wall of several edges, and IntersectionPolyline every crossing
 ```
 
 A `QuadraticBezier` and a `CubicBezier` are curves of control points, flattened to a `Polyline` to measure them:
 
 ```go
 curve := geom.CubBez(geom.Pt(0.0, 0.0), geom.Pt(0.0, 4.0), geom.Pt(8.0, 4.0), geom.Pt(8.0, 0.0))
-curve.PointAt(0.5)                  // (4,3); the parameter is not a fraction of the length
-curve.TangentAt(0.5)                  // the direction it runs in there, in float64
-curve.Bounds()                      // the box of the curve itself, not of its control points
-first, second := curve.Split(0.25)  // two curves tracing the same points
-path := curve.Polyline(0.05)        // a path within the tolerance of the curve, denser where it bends
-path.Length()                       // its length, Nearest and DistanceTo are the curve's to within the tolerance
-hit, ok := ray.HitCubicBezier(curve) // a curved wall, cast at with no tolerance to give, and IntersectionCubicBezier
+curve.PointAt(0.5)                        // (4,3); the parameter is not a fraction of the length
+curve.TangentAt(0.5)                      // the direction it runs in there, in float64
+curve.Bounds()                            // the box of the curve itself, not of its control points
+first, second := curve.Split(0.25)        // two curves tracing the same points
+path := curve.Polyline(0.05)              // a path within the tolerance of the curve, denser where it bends
+path.Length()                             // its length, Nearest and DistanceTo are the curve's to within the tolerance
+hit, ok := ray.HitCubicBezier(curve)      // a curved wall, cast at with no tolerance to give, and IntersectionCubicBezier
 geom.QuadBez(a, control, b).CubicBezier() // a quadratic curve has the same methods, and is a cubic exactly
 ```
 
@@ -378,12 +382,12 @@ ray.ClipPolygon(p)                     // the parts inside a concave polygon, fr
 ray.IntersectionBox(box)               // the boundary crossings, from Origin on
 
 if part, ok := ray.ClipCircle(c); ok { // allocation-free on every convex shape
-	part.Start // the first point of c on the ray, and part.End where the ray leaves it
+	part.Start                            // the first point of c on the ray, and part.End where the ray leaves it
 }
 
 if hit, ok := ray.HitRectangle(r); ok { // false from an Origin inside r; Segment has the same family
-	hit.Point                           // where the ray reaches r, ray.PointAt(hit.Fraction)
-	ray.Direction.Reflect(hit.Normal)   // the unit normal there faces the ray, so this is the bounce
+	hit.Point                              // where the ray reaches r, ray.PointAt(hit.Fraction)
+	ray.Direction.Reflect(hit.Normal)      // the unit normal there faces the ray, so this is the bounce
 }
 ```
 
@@ -405,8 +409,8 @@ wall.ClipBox(view)             // the part of the line a viewport shows, and fal
 `Contains` takes a point; `Contains<Kind>` takes a whole shape, on every shape with an area but `Ellipse`:
 
 ```go
-view.ContainsCircle(c) // ContainsCircle, ContainsSegment, ContainsPolygon, ContainsRectangle,
-r.ContainsPolygon(p)   // ContainsRegularPolygon and ContainsBox
+view.ContainsCircle(c) // ContainsCircle, ContainsCapsule, ContainsSector, ContainsSegment, ContainsPolygon,
+r.ContainsPolygon(p)   // ContainsRectangle, ContainsRegularPolygon and ContainsBox
 p.ContainsSegment(s)   // a concave polygon also checks that s does not leave it between its ends
 ```
 
@@ -415,7 +419,7 @@ p.ContainsSegment(s)   // a concave polygon also checks that s does not leave it
 ```go
 dir := geom.DirectionUp
 dir.Turn(2)     // DirectionRight, two 45° steps
-dir.Vector(5.0) // Vector{0, -5}
+dir.Vector(5.0) // ⟨0,-5⟩
 
 geom.DirectionFromAxes(up, down, left, right) // keyboard input to an 8-way direction
 geom.Vec(3, -7).Direction()                   // DirectionUpRight, nearest of the eight
@@ -424,7 +428,7 @@ geom.CardinalOffsets[int]()                   // their lattice steps, in the sam
 
 axis := geom.AxisVertical
 axis.Along(size)             // Height, because the axis is vertical
-axis.Size(length, thickness) // Size{thickness, length}
+axis.Size(length, thickness) // Sz(thickness, length)
 
 geom.RegularPolygonWithOrientation(center, size, 6, geom.OrientationPointyTop) // orientation places a vertex or an edge at the top
 geom.ParseOrientation("FlatTop")                                               // the name back to the constant, "None" to OrientationNone
@@ -435,9 +439,9 @@ geom.ParseOrientation("FlatTop")                                               /
 ```go
 m := geom.IdentityMatrix[float64]().Rotate(math.Pi/4).Scale(2, 2)
 
-geom.Pt(1.0, 0.0).Transform(m) // Point{1.41, 1.41}
+geom.Pt(1.0, 0.0).Transform(m) // (1.41,1.41)
 m.Angle()                      // π/4, read back from the matrix
-m.Scaling()                    // Vector{2, 2}
+m.Scaling()                    // ⟨2,2⟩
 
 geom.TRSMatrix(10.0, 20.0, math.Pi/2, 2.0, 3.0)  // scale, then turn, then move: TranslationMatrix(10, 20).Rotate(π/2).Scale(2, 3)
 geom.RotationMatrixAround(10.0, 20.0, math.Pi/2) // turn about a pivot: TranslationMatrix(10, 20).Rotate(π/2).Translate(-10, -20)
@@ -467,8 +471,8 @@ The `ints` and `floats` packages alias the two common ones:
 ```go
 type Tile int32
 
-geom.Pt[Tile](3, 4).Add(geom.DirectionRight.Unit[Tile]()) // Point[Tile]{4, 4}
-geom.Pt(1.4, 2.6).Int()                                   // Point[int]{1, 3}, rounded
+geom.Pt[Tile](3, 4).Add(geom.DirectionRight.Unit[Tile]()) // (4,4)
+geom.Pt(1.4, 2.6).Int()                                   // (1,3), a Point[int], rounded
 ints.Pt(1.4, 2.6)                                         // the same, from github.com/gravitton/geometry/types/ints
 ```
 
@@ -481,8 +485,8 @@ geom.RectangleFromMin(geom.Pt(0, 0), geom.Sz(4, 2)).Rectangle() // image.Rectang
 json.Marshal(geom.Rect(geom.Pt(1, 2), geom.Sz(3, 4))) // {"x":1,"y":2,"w":3,"h":4}
 json.Marshal(geom.DirectionUp)                        // "Up"
 json.Marshal(geom.OrientationPointyTop)               // "PointyTop"
-geom.ParseSize[int]("4x2")                            // Size{4, 2}
-geom.ParsePoint[int]("(1,2)")                         // Point{1, 2}
+geom.ParseSize[int]("4x2")                            // 4x2
+geom.ParsePoint[int]("(1,2)")                         // (1,2)
 ```
 
 ### Testing
