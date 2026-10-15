@@ -577,9 +577,9 @@ Full reference: [pkg.go.dev][link-go-dev-reference].
 The MIT License (MIT). Please see [License File][link-licence] for more information.
 
 
-[ico-license]:              https://img.shields.io/github/license/gravitton/geometry.svg?style=flat-square&colorB=blue
+[ico-license]:              https://img.shields.io/github/license/gravitton/geometry.svg?style=flat-square&color=blue
 [ico-workflow]:             https://img.shields.io/github/actions/workflow/status/gravitton/geometry/main.yml?branch=main&style=flat-square
-[ico-release]:              https://img.shields.io/github/v/release/gravitton/geometry?style=flat-square&colorB=blue
+[ico-release]:              https://img.shields.io/github/v/release/gravitton/geometry?style=flat-square&color=blue
 [ico-go-dev-reference]:     https://img.shields.io/badge/go.dev-reference-blue?style=flat-square
 [ico-coverage]:             https://img.shields.io/coverallsCoverage/github/gravitton/geometry?style=flat-square
 
