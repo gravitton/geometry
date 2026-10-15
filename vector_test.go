@@ -296,6 +296,9 @@ func TestVector_AtLeast(t *testing.T) {
 	t.Run("the zero vector grows along +X", func(t *testing.T) {
 		geomtest.AssertVector(t, ZeroVector[int]().AtLeast(3), Vec(3, 0))
 	})
+	t.Run("int can stay shorter than the length", func(t *testing.T) {
+		geomtest.AssertVector(t, Vec(1, 1).AtLeast(3), Vec(2, 2))
+	})
 	t.Run("a non-positive length changes nothing", func(t *testing.T) {
 		geomtest.AssertVector(t, Vec(3.0, 4.0).AtLeast(-10), Vec(3.0, 4.0))
 		geomtest.AssertVector(t, ZeroVector[float64]().AtLeast(0), ZeroVector[float64]())
@@ -316,6 +319,9 @@ func TestVector_AtMost(t *testing.T) {
 	t.Run("a shorter vector is unchanged", func(t *testing.T) {
 		geomtest.AssertVector(t, Vec(3.0, 4.0).AtMost(10), Vec(3.0, 4.0))
 		geomtest.AssertVector(t, Vec(3.0, 4.0).AtMost(5), Vec(3.0, 4.0))
+	})
+	t.Run("int can stay longer than the length", func(t *testing.T) {
+		geomtest.AssertVector(t, Vec(6, 6).AtMost(5), Vec(4, 4))
 	})
 	t.Run("float keeps a vector a rounding error past the length", func(t *testing.T) {
 		v := Vec(3.0, 4.0+Delta/2)

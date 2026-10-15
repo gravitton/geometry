@@ -945,6 +945,9 @@ func TestContains(t *testing.T) {
 			assert.False(t, Contains[int](BoxFromMinMax(Pt(-3, -2), Pt(4, 2)).Translate(offset), Ell(Pt(0, 0), Sz(4, 2), 0).Translate(offset)))
 		}
 	})
+	t.Run("an int flat ellipse reaching out of a flat polygon does not lie within it", func(t *testing.T) {
+		assert.False(t, Contains[int](Pol([]Point[int]{Pt(10, 11), Pt(11, 5)}), Ell(Pt(11, 5), Sz(3, 0), 2.3767601586650002)))
+	})
 	t.Run("far from the origin a float32 ellipse lies within the box about it", func(t *testing.T) {
 		for _, offset := range farOffsets {
 			ellipse := Ell[float32](Pt[float32](0, 0), Sz[float32](4, 2), 0).Translate(offset)
@@ -1032,6 +1035,21 @@ func TestIntersects(t *testing.T) {
 		assert.True(t, Intersects[int](ellipse, BoxFromMinMax(Pt(4, -1), Pt(6, 1))))
 		assert.False(t, Intersects[int](ellipse, BoxFromMinMax(Pt(5, -1), Pt(6, 1))))
 		assert.True(t, Intersects[int](ellipse, Ell(Pt(1, 1), Sz(1, 1), 0)))
+	})
+	t.Run("an int turned ellipse is met alike from either side", func(t *testing.T) {
+		assert.True(t, Intersects[int](Ell(Pt(7, 1), Sz(5, 5), Pi/2), BoxFromMinMax(Pt(11, 4), Pt(12, 8))))
+		assert.True(t, Intersects[int](BoxFromMinMax(Pt(11, 4), Pt(12, 8)), Ell(Pt(7, 1), Sz(5, 5), Pi/2)))
+
+		for x := -3; x <= 3; x++ {
+			for _, angle := range []float64{Pi / 2, Pi, 0.7} {
+				ellipse := Ell(Pt(x, 1), Sz(5, 3), angle)
+				for _, b := range boxFixtures {
+					box := b.Int()
+
+					assert.Equal(t, Intersects[int](ellipse, box), Intersects[int](box, ellipse), fmt.Sprintf("%s → %s: ", ellipse, box))
+				}
+			}
+		}
 	})
 	t.Run("an ellipse lies between the polygon within it and the polygon about it", func(t *testing.T) {
 		shapes := append(shapeFixtures(), Polygon[float64]{}, RegularPolygon[float64]{})

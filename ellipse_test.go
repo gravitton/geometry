@@ -188,6 +188,20 @@ func TestEllipse_Bounds(t *testing.T) {
 	t.Run("int is rounded once", func(t *testing.T) {
 		geomtest.AssertBox(t, Ell(Pt(1, 2), Sz(10, 4), 0).Bounds(), Bx(Pt(-9, -2), Pt(11, 6)))
 	})
+	t.Run("int is rounded outward on a turned ellipse", func(t *testing.T) {
+		geomtest.AssertBox(t, Ell(Pt(0, 0), Sz(1, 6), 2.56).Bounds(), Bx(Pt(-4, -6), Pt(4, 6)))
+		geomtest.AssertBox(t, Ell(Pt(1, 2), Sz(10, 4), Pi/2).Bounds(), Bx(Pt(-3, -8), Pt(5, 12)))
+	})
+	t.Run("int holds the float bounds", func(t *testing.T) {
+		for _, e := range ellipseFixtures {
+			for _, angle := range []float64{0, 0.3, Pi / 2, 2.56, Pi} {
+				turned := Ell(e.Center.Int(), e.Radius.Int(), angle)
+				bounds, exact := turned.Bounds(), turned.Float().Bounds()
+
+				assert.True(t, bounds.Float().Contains(exact.Min) && bounds.Float().Contains(exact.Max), turned.String())
+			}
+		}
+	})
 }
 
 func TestEllipse_BoundingCircle(t *testing.T) {

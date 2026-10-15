@@ -164,7 +164,8 @@ func (v Vector[T]) Slerp(vector Vector[T], t float64) Vector[T] {
 }
 
 // AtLeast returns the vector resized to the length where Less holds for it, and the vector itself
-// otherwise, so a non-positive length changes nothing. The zero vector is resized along +X.
+// otherwise, so a non-positive length changes nothing. The zero vector is resized along +X. For
+// integer T the components are rounded, so the result can still be shorter than the length.
 func (v Vector[T]) AtLeast(length T) Vector[T] {
 	if !v.Less(length) {
 		return v
@@ -174,7 +175,8 @@ func (v Vector[T]) AtLeast(length T) Vector[T] {
 }
 
 // AtMost returns the vector resized to the length where LessOrEqual fails for it, and the vector
-// itself otherwise. A non-positive length gives the zero vector.
+// itself otherwise. A non-positive length gives the zero vector. For integer T the components are
+// rounded, so the result can still be longer than the length.
 func (v Vector[T]) AtMost(length T) Vector[T] {
 	if v.LessOrEqual(length) {
 		return v
@@ -298,7 +300,9 @@ func (v Vector[T]) Project(vector Vector[T]) Vector[T] {
 		return Vector[T]{}
 	}
 
-	return vector.Multiply(a.Dot(b) / length)
+	dot := a.Dot(b)
+
+	return Vector[T]{Cast[T](float64(b.X*dot) / length), Cast[T](float64(b.Y*dot) / length)}
 }
 
 // Reject returns the component of the vector perpendicular to the given one, so Project and Reject
@@ -317,7 +321,9 @@ func (v Vector[T]) Reflect(normal Vector[T]) Vector[T] {
 		return v
 	}
 
-	return v.Subtract(normal.Multiply(2 * a.Dot(b) / length))
+	dot := 2 * a.Dot(b)
+
+	return v.Subtract(Vector[T]{Cast[T](float64(b.X*dot) / length), Cast[T](float64(b.Y*dot) / length)})
 }
 
 // Equal reports whether the vectors have equal components.

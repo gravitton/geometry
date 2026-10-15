@@ -688,8 +688,14 @@ func (p Polygon[T]) ContainsCapsule(capsule Capsule[T]) bool {
 
 // ContainsSector reports whether the sector lies entirely in the polygon.
 func (p Polygon[T]) ContainsSector(sector Sector[T]) bool {
-	arc := sector.Arc()
-	if !p.ContainsSegment(Segment[T]{sector.Center, arc.PointAt(0)}) || !p.ContainsSegment(Segment[T]{sector.Center, arc.PointAt(1)}) || !p.Contains(sector.Centroid()) {
+	epsilon := sector.epsilon(p.Bounds().magnitude())
+	for _, corner := range sector.corners() {
+		if !p.containsPoint(corner, epsilon) {
+			return false
+		}
+	}
+
+	if !p.containsPoint(sector.Float().Centroid(), epsilon) {
 		return false
 	}
 
@@ -1103,7 +1109,8 @@ func (p Polygon[T]) AppendSplit(front, back []Point[T], line Line[T]) ([]Point[T
 // convex or they share no area, touching included. The outline keeps the winding of this polygon
 // and starts at its first vertex outside the given one; where one contains the other it has that
 // one's vertices, in this winding. A vertex on the boundary of the other polygon gives way to the
-// crossing beside it.
+// crossing beside it. For an integer type the outline is placed as for float64 and its crossings
+// rounded once, so where the polygons overlap by less than a unit it can touch itself.
 func (p Polygon[T]) Union(polygon Polygon[T]) (Polygon[T], bool) {
 	points := p.AppendUnion(nil, polygon)
 
@@ -1116,22 +1123,10 @@ func (p Polygon[T]) AppendUnion(dst []Point[T], polygon Polygon[T]) []Point[T] {
 		return dst
 	}
 
-	outline := unionOutline[T]{dst: slices.Grow(dst, 2*(len(p.Points)+len(polygon.Points))), from: len(dst)}
-	for _, point := range p.Points {
-		outline.add(point, polygon.Contains(point))
-	}
-	for _, point := range polygon.Points {
-		outline.add(point, p.Contains(point))
-	}
-	for edge := range p.Edges() {
-		for other := range polygon.Edges() {
-			if point, ok := edge.IntersectionSegment(other); ok {
-				outline.cross(point)
-			}
-		}
-	}
+	outline := unionOutline[T]{dst: slices.Grow(dst, 2*(len(p.Points)+len(polygon.Points))), from: len(dst), a: p, b: polygon}
+	outline.gather()
 
-	return outline.result(p.twiceArea() < 0)
+	return outline.walk()
 }
 
 // containsSupport reports whether the polygon, one that is not convex, holds a shape no Contains
@@ -1284,15 +1279,19 @@ func (p Polygon[T]) containsWithin(point, a, b Point[T]) bool {
 // is not rounded onto either point. Segment.ClipPolygon judges each piece between two crossings by
 // it.
 func (p Polygon[T]) containsMidpoint(a, b Point[T]) bool {
-	midpoint := a.Float().Midpoint(b.Float())
+	return p.containsPoint(a.Float().Midpoint(b.Float()), 0)
+}
 
+// containsPoint is Contains at a point of float64, for an integer T no lattice point, at the
+// tolerance of T and no less than the floor.
+func (p Polygon[T]) containsPoint(point Point[float64], floor float64) bool {
 	inside := false
 	for edge := range p.Edges() {
-		if lessOrEqualSquared(edge.Float().distanceSquaredTo(midpoint), 0, epsilonAt[T](max(edge.magnitude(), midpoint.magnitude()))) {
+		if lessOrEqualSquared(edge.Float().distanceSquaredTo(point), 0, max(epsilonAt[T](max(edge.magnitude(), point.magnitude())), floor)) {
 			return true
 		}
 
-		if edge.Float().crossesRay(midpoint) {
+		if edge.Float().crossesRay(point) {
 			inside = !inside
 		}
 	}

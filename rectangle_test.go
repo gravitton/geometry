@@ -1099,6 +1099,12 @@ func TestRectangle_ContainsSector(t *testing.T) {
 		assert.False(t, Rect(Pt(2.5, 2.5), Sz(4.9, 5.0), 0).ContainsSector(quarterSector()))
 		assert.False(t, Rect(Pt(0.0, 2.25), Sz(8.0, 4.5), 0).ContainsSector(Sect(Pt(0.0, 0.0), 5.0, Pi/4, Pi/2)))
 	})
+	t.Run("int tests its own corners, not the float rectangle", func(t *testing.T) {
+		r := RectangleFromMinMax(Pt(7, 9), Pt(12, 12))
+
+		assert.True(t, r.ContainsSector(Sect(Pt(10, 11), 1, 0, 3.67)))
+		assert.False(t, r.ContainsSector(Sect(Pt(7, 10), 1, 1.6, 0.3)))
+	})
 }
 
 func TestRectangle_ContainsSegment(t *testing.T) {

@@ -917,6 +917,11 @@ func TestRegularPolygon_ContainsSector(t *testing.T) {
 	t.Run("an empty polygon encloses nothing", func(t *testing.T) {
 		assert.False(t, RegPol(Pt(0.0, 0.0), SzU(10.0), 0, 0, 0).ContainsSector(Sect(Pt(0.0, 0.0), 0.0, 0, 0)))
 	})
+	t.Run("int tests its own rounded vertices", func(t *testing.T) {
+		rp := RegularPolygon[int]{Pt(11, 2), Sz(1, 3), 4, 3.1236657947916844, 1.0576161291417152}
+
+		assert.Equal(t, rp.ContainsSector(Sect(Pt(10, 1), 0, 0, 1)), rp.Contains(Pt(10, 1)))
+	})
 }
 
 func TestRegularPolygon_ContainsSegment(t *testing.T) {

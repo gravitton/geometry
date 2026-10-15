@@ -405,15 +405,12 @@ func (rp RegularPolygon[T]) ContainsCapsule(capsule Capsule[T]) bool {
 
 // ContainsSector reports whether the sector lies entirely in the polygon.
 func (rp RegularPolygon[T]) ContainsSector(sector Sector[T]) bool {
-	outer, inner := rp.Float(), sector.Float()
-	for _, corner := range inner.corners() {
-		if !outer.Contains(corner) {
-			return false
-		}
+	if rp.IsEmpty() || !rp.Bounds().ContainsBox(sector.Bounds()) {
+		return false
 	}
 
-	for edge := range outer.Edges() {
-		if normal := edge.Normal(); !outer.Contains(inner.Support(normal)) || !outer.Contains(inner.Support(normal.Negate())) {
+	for edge := range rp.Edges() {
+		if !sector.liesLeftOf(edge.Float()) {
 			return false
 		}
 	}

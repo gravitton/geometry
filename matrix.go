@@ -361,15 +361,14 @@ func (m Matrix[T]) Inverse() Matrix[T] {
 	}
 
 	f := m.Float()
-	invDet := 1 / det
 
 	return Matrix[T]{
-		Cast[T](f.E * invDet),
-		Cast[T](-f.B * invDet),
-		Cast[T]((float64(f.B*f.F) - float64(f.C*f.E)) * invDet),
-		Cast[T](-f.D * invDet),
-		Cast[T](f.A * invDet),
-		Cast[T]((float64(f.C*f.D) - float64(f.A*f.F)) * invDet),
+		Cast[T](f.E / det),
+		Cast[T](-f.B / det),
+		Cast[T]((float64(f.B*f.F) - float64(f.C*f.E)) / det),
+		Cast[T](-f.D / det),
+		Cast[T](f.A / det),
+		Cast[T]((float64(f.C*f.D) - float64(f.A*f.F)) / det),
 	}
 }
 

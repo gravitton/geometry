@@ -476,15 +476,12 @@ func (r Rectangle[T]) ContainsCapsule(capsule Capsule[T]) bool {
 
 // ContainsSector reports whether the sector lies entirely in the rectangle.
 func (r Rectangle[T]) ContainsSector(sector Sector[T]) bool {
-	outer, inner := r.Float(), sector.Float()
-	for _, corner := range inner.corners() {
-		if !outer.Contains(corner) {
-			return false
-		}
+	if !r.Bounds().ContainsBox(sector.Bounds()) {
+		return false
 	}
 
-	for edge := range outer.Edges() {
-		if normal := edge.Normal(); !outer.Contains(inner.Support(normal)) || !outer.Contains(inner.Support(normal.Negate())) {
+	for edge := range r.Edges() {
+		if !sector.liesLeftOf(edge.Float()) {
 			return false
 		}
 	}

@@ -16,6 +16,9 @@ import (
 // until Canonical repairs it. A zero semi-axis is not repaired: the ellipse is then the segment the
 // other axis spans, and answers as that segment.
 //
+// For integer T a turned ellipse is measured and compared at no less than the tolerance of float64,
+// since its frame places no lattice points.
+//
 // The ellipse has no vertices, and no Intersects method for a shape but Segment. Intersects,
 // Distance, Collide and Sweep test it against any other by its Support, or by its distance to the
 // center of a Circle; Segment, Ray and Line cross, clip and hit it in closed form, and
@@ -111,7 +114,8 @@ func (e Ellipse[T]) Eccentricity() float64 {
 	return math.Sqrt(1 - b*b/(a*a))
 }
 
-// Bounds returns the axis-aligned bounding box.
+// Bounds returns the axis-aligned bounding box. For integer T it is rounded outward, except a side
+// within the tolerance of a whole coordinate, which takes it.
 func (e Ellipse[T]) Bounds() Box[T] {
 	a, b := e.minMax()
 
@@ -158,11 +162,18 @@ func (e Ellipse[T]) extent() Vector[float64] {
 	return Vector[float64]{math.Hypot(w*cos, h*sin), math.Hypot(w*sin, h*cos)}
 }
 
-// minMax returns the corners of Bounds, the center less and plus its extent.
+// minMax returns the corners of Bounds, the center less and plus its extent, for integer T rounded
+// outward past the tolerance.
 func (e Ellipse[T]) minMax() (Point[T], Point[T]) {
 	center, extent := e.Center.Float(), e.extent()
+	a, b := center.Add(extent.Negate()), center.Add(extent)
 
-	return center.Add(extent.Negate()).Cast[T](), center.Add(extent).Cast[T]()
+	epsilon := 0.0
+	if isInt[T]() {
+		epsilon = e.epsilon(0)
+	}
+
+	return Point[T]{-castUp[T](-a.X - epsilon), -castUp[T](-a.Y - epsilon)}, Point[T]{castUp[T](b.X - epsilon), castUp[T](b.Y - epsilon)}
 }
 
 // Translate returns the ellipse moved by the vector.
@@ -338,7 +349,7 @@ func (e Ellipse[T]) nearestLocal(point Point[T]) (Vector[float64], float64) {
 
 	foot := e.nearestOffset(local)
 	distanceSquared := local.Subtract(foot).LengthSquared()
-	if lessOrEqualSquared(distanceSquared, 0, epsilonAt[T](max(e.Center.magnitude(), point.magnitude()))) {
+	if lessOrEqualSquared(distanceSquared, 0, e.epsilon(point.magnitude())) {
 		return local, 0
 	}
 
@@ -468,7 +479,7 @@ func (e Ellipse[T]) chord(segment Segment[T]) (float64, float64, bool) {
 
 	w, h := e.Radius.Float().XY()
 	offset := e.localOffset(segment.Start)
-	epsilon := epsilonAt[T](max(e.Center.magnitude(), segment.magnitude()))
+	epsilon := e.epsilon(segment.magnitude())
 
 	lengthSquared := direction.LengthSquared()
 	length := math.Sqrt(lengthSquared)
@@ -478,7 +489,7 @@ func (e Ellipse[T]) chord(segment Segment[T]) (float64, float64, bool) {
 	x, y := float64(direction.X*h), float64(direction.Y*w)
 	across := float64(x*x) + float64(y*y)
 	widthSquared := across / lengthSquared
-	if !lessOrEqualSquared(gapSquared, math.Sqrt(widthSquared), epsilon) {
+	if !lessOrEqualSquared(gapSquared, math.Sqrt(across)/length, epsilon) {
 		return 0, 0, false
 	}
 
@@ -532,7 +543,19 @@ func (e Ellipse[T]) touches(point Point[T], magnitude float64) bool {
 	level := float64(x*x) + float64(y*y) - float64(extent*extent)
 	gap := level / (2 * math.Hypot(float64(x*h), float64(y*w)))
 
-	return lessOrEqualSquared(float64(gap*gap), 0, epsilonAt[T](magnitude))
+	return lessOrEqualSquared(float64(gap*gap), 0, e.epsilon(magnitude))
+}
+
+// epsilon returns the tolerance of a comparison between the ellipse and geometry of the given
+// magnitude, for a turned ellipse never less than that of float64, since its frame places no
+// lattice points.
+func (e Ellipse[T]) epsilon(magnitude float64) float64 {
+	magnitude = max(e.Center.magnitude(), magnitude)
+	if e.IsAligned() {
+		return epsilonAt[T](magnitude)
+	}
+
+	return max(epsilonAt[T](magnitude), epsilonAt[float64](magnitude))
 }
 
 // normal returns the perpendicular of the boundary at the point, the gradient of the quadratic form,

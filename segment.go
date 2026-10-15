@@ -444,19 +444,9 @@ func (s Segment[T]) IntersectionArc(arc Arc[T]) Pair[Point[T]] {
 // running along each other share a stretch, and the endpoint returned is one of the given segment
 // before one of this one, so the two orders can name different ends of it.
 func (s Segment[T]) IntersectionSegment(segment Segment[T]) (Point[T], bool) {
-	if point, ok := s.crossing(segment); ok {
-		if endpoint, ok := s.touch(segment); ok {
-			return endpoint, true
-		}
+	point, ok := s.intersectionSegment(segment)
 
-		return point.Cast[T](), true
-	}
-
-	if s.parallel(segment) {
-		return Point[T]{}, false
-	}
-
-	return s.touch(segment)
+	return point.Cast[T](), ok
 }
 
 // IntersectionRay returns the point where the segment and the ray cross, and false where they do
@@ -1039,6 +1029,26 @@ func (s Segment[T]) foot(point Point[T]) Point[T] {
 	default:
 		return s.PointAt(t)
 	}
+}
+
+// intersectionSegment returns IntersectionSegment before it is rounded, the crossing where the
+// segments properly cross and the endpoint where one touches the other.
+func (s Segment[T]) intersectionSegment(segment Segment[T]) (Point[float64], bool) {
+	if point, ok := s.crossing(segment); ok {
+		if endpoint, ok := s.touch(segment); ok {
+			return endpoint.Float(), true
+		}
+
+		return point, true
+	}
+
+	if s.parallel(segment) {
+		return Point[float64]{}, false
+	}
+
+	endpoint, ok := s.touch(segment)
+
+	return endpoint.Float(), ok
 }
 
 // crosses reports whether the segments properly cross, each with its ends on opposite sides of the

@@ -1276,6 +1276,12 @@ func TestPolygon_ContainsSector(t *testing.T) {
 		assert.True(t, Pol([]Point[int]{Pt(0, 0), Pt(5, 0), Pt(5, 5), Pt(0, 5)}).ContainsSector(Sect(Pt(0, 0), 5, 0, Pi/2)))
 		assert.False(t, Pol([]Point[int]{Pt(0, 0), Pt(5, 0), Pt(0, 5)}).ContainsSector(Sect(Pt(0, 0), 5, 0, Pi/2)))
 	})
+	t.Run("int tests the arc ends before they are rounded", func(t *testing.T) {
+		square := Pol([]Point[int]{Pt(0, 0), Pt(10, 0), Pt(10, 10), Pt(0, 10)})
+
+		assert.False(t, square.ContainsSector(Sect(Pt(0, 5), 1, 1.6, 0.3)))
+		assert.True(t, square.ContainsSector(Sect(Pt(5, 5), 1, 1.6, 0.3)))
+	})
 }
 
 func TestPolygon_ContainsSegment(t *testing.T) {
@@ -2039,6 +2045,45 @@ func TestPolygon_Union(t *testing.T) {
 		assert.False(t, ok)
 		assert.Nil(t, union.Points)
 	})
+	t.Run("int keeps a rounded crossing in its place on the outline", func(t *testing.T) {
+		union, ok := Pol([]Point[int]{Pt(3, 1), Pt(7, 1), Pt(5, 5)}).Union(Pol([]Point[int]{Pt(0, 0), Pt(4, 1), Pt(6, 6), Pt(0, 4)}))
+
+		assert.True(t, ok)
+		geomtest.AssertPolygon(t, union, Pol([]Point[int]{Pt(7, 1), Pt(5, 4), Pt(6, 6), Pt(0, 4), Pt(0, 0), Pt(4, 1)}))
+		assert.True(t, union.Contains(Pt(5, 5)))
+
+		union, ok = Pol([]Point[int]{Pt(0, 6), Pt(6, 1), Pt(4, 4)}).Union(Pol([]Point[int]{Pt(3, 5), Pt(4, 2), Pt(7, 4)}))
+
+		assert.True(t, ok)
+		assert.True(t, union.IsSimple(), union.String())
+	})
+	t.Run("int is the float union with its crossings rounded", func(t *testing.T) {
+		for x := -3; x <= 3; x++ {
+			for y := -3; y <= 3; y++ {
+				for _, a := range []Polygon[int]{
+					Pol([]Point[int]{Pt(3, 1), Pt(7, 1), Pt(5, 5)}),
+					Pol([]Point[int]{Pt(0, 6), Pt(6, 1), Pt(4, 4)}),
+					Pol([]Point[int]{Pt(4, 4), Pt(1, 3), Pt(2, 0)}),
+				} {
+					for _, b := range []Polygon[int]{
+						Pol([]Point[int]{Pt(0, 0), Pt(4, 1), Pt(6, 6), Pt(0, 4)}),
+						Pol([]Point[int]{Pt(3, 5), Pt(4, 2), Pt(7, 4)}),
+						Pol([]Point[int]{Pt(1, 1), Pt(5, 2), Pt(2, 5)}),
+					} {
+						b := b.Translate(Vec(x, y))
+						union, ok := a.Union(b)
+						exact, exactOk := a.Float().Union(b.Float())
+						message := fmt.Sprintf("%s ∪ %s: ", a, b)
+
+						assert.Equal(t, ok, exactOk, message)
+						if ok {
+							geomtest.AssertPolygon(t, union, roundedOutline(exact), message)
+						}
+					}
+				}
+			}
+		}
+	})
 	t.Run("over the fixtures", func(t *testing.T) {
 		for _, a := range outlineFixtures() {
 			for _, b := range outlineFixtures() {
@@ -2064,6 +2109,15 @@ func TestPolygon_Union(t *testing.T) {
 			}
 		}
 	})
+}
+
+func roundedOutline(polygon Polygon[float64]) Polygon[int] {
+	points := slices.Compact(polygon.Int().Points)
+	if last := len(points) - 1; last > 0 && points[last] == points[0] {
+		points = points[:last]
+	}
+
+	return Pol(points)
 }
 
 func TestPolygon_AppendUnion(t *testing.T) {

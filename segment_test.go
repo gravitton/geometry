@@ -984,6 +984,39 @@ func TestSegment_IntersectsEllipse(t *testing.T) {
 		assert.True(t, Seg(Pt(-10, 2), Pt(10, 2)).IntersectsEllipse(Ell(Pt(0, 0), Sz(4, 2), 0)))
 		assert.False(t, Seg(Pt(-10, 3), Pt(10, 3)).IntersectsEllipse(Ell(Pt(0, 0), Sz(4, 2), 0)))
 	})
+	t.Run("int touches on every exact tangent", func(t *testing.T) {
+		for w := 1; w <= 20; w++ {
+			for h := 1; h <= 20; h++ {
+				for m := -10; m <= 10; m++ {
+					c := int(math.Sqrt(float64(w*w*m*m + h*h)))
+					if c*c != w*w*m*m+h*h {
+						continue
+					}
+
+					s, e := Seg(Pt(-2*w, -2*w*m+c), Pt(2*w, 2*w*m+c)), Ell(Pt(0, 0), Sz(w, h), 0)
+					assert.True(t, s.IntersectsEllipse(e), fmt.Sprintf("%s → %s: ", s, e))
+				}
+			}
+		}
+	})
+	t.Run("int touches the tip of a flat ellipse", func(t *testing.T) {
+		assert.True(t, Seg(Pt(6, -3), Pt(-3, 6)).IntersectsEllipse(Ell(Pt(0, 0), Sz(3, 0), 0)))
+		assert.True(t, Seg(Pt(-8, -1), Pt(3, 10)).IntersectsEllipse(Ell(Pt(-4, 0), Sz(3, 0), 0)))
+	})
+	t.Run("int turned by a quarter turn matches the transposed ellipse", func(t *testing.T) {
+		for _, s := range segmentFixtures {
+			s := s.Int()
+			for _, e := range ellipseFixtures {
+				e := e.Int()
+				transposed := Ell(e.Center, Sz(e.Radius.Height, e.Radius.Width), 0)
+
+				assert.Equal(t, s.IntersectsEllipse(Ell(e.Center, e.Radius, Pi/2)), s.IntersectsEllipse(transposed), fmt.Sprintf("%s → %s: ", s, e))
+				assert.Equal(t, s.IntersectsEllipse(Ell(e.Center, e.Radius, Pi)), s.IntersectsEllipse(Ell(e.Center, e.Radius, 0)), fmt.Sprintf("%s → %s: ", s, e))
+			}
+		}
+		assert.True(t, Seg(Pt(4, 6), Pt(4, -4)).IntersectsEllipse(Ell(Pt(1, -2), Sz(3, 3), Pi)))
+		assert.True(t, Seg(Pt(9, 3), Pt(-4, 3)).IntersectsEllipse(Ell(Pt(-3, -1), Sz(4, 1), Pi/2)))
+	})
 	t.Run("a NaN coordinate intersects nothing", func(t *testing.T) {
 		assert.False(t, Seg(Pt(math.NaN(), 0.0), Pt(8.0, 0.0)).IntersectsEllipse(ellipse))
 	})

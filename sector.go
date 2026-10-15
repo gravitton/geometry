@@ -617,6 +617,21 @@ func (s Sector[T]) containsSupport(shape Shape[T]) bool {
 	return depth <= notch.tolerance()
 }
 
+// liesLeftOf reports whether the sector lies on the left of the line through the edge, the inside of
+// an outline wound as Vector.Normal turns: its support away from that side is on the line within
+// the tolerance or short of it. An edge with no direction has no side and holds anything.
+func (s Sector[T]) liesLeftOf(edge Segment[float64]) bool {
+	along := edge.Vector()
+	cross := along.Cross(s.Support(Vector[float64]{along.Y, -along.X}).Subtract(edge.Start))
+	if cross >= 0 {
+		return true
+	}
+
+	gap := cross / math.Sqrt(along.LengthSquared())
+
+	return lessOrEqualSquared(float64(gap*gap), 0, s.epsilon(edge.magnitude()))
+}
+
 // enters reports whether the segment passes through the inside of the sector, farther than the
 // tolerance from the boundary, so an edge running along it does not enter.
 func (s Sector[T]) enters(segment Segment[float64]) bool {

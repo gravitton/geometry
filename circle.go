@@ -311,7 +311,7 @@ func (c Circle[T]) IntersectsCapsule(capsule Capsule[T]) bool {
 
 // IntersectsSector reports whether the circle and the sector share a point.
 func (c Circle[T]) IntersectsSector(sector Sector[T]) bool {
-	return c.containsSquared(sector.DistanceSquaredTo(c.Center), sector.magnitude())
+	return lessOrEqualSquared(sector.DistanceSquaredTo(c.Center), float64(c.Radius), sector.epsilon(c.magnitude()))
 }
 
 // IntersectsSegment reports whether the circle and the segment share a point.

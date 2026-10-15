@@ -756,6 +756,21 @@ func TestCircle_IntersectsSector(t *testing.T) {
 		assert.True(t, Circ(Pt(2.0, -1.0-Delta/2), 1.0).IntersectsSector(sector))
 		assert.False(t, Circ(Pt(2.0, -1.0-2*Delta), 1.0).IntersectsSector(sector))
 	})
+	t.Run("int touches at the tolerance of float64", func(t *testing.T) {
+		assert.True(t, Circ(Pt(0, 5), 1).IntersectsSector(Sect(Pt(2, 4), 3, 0, -Pi)))
+		assert.True(t, Circ(Pt(-7, -1), 3).IntersectsSector(Sect(Pt(-3, 2), 2, 0, 2*Pi)))
+	})
+	t.Run("int matches the capsule of no length and the whole circle", func(t *testing.T) {
+		for _, c := range circleFixtures {
+			c := c.Int()
+			for _, s := range sectorFixtures() {
+				s := s.Int()
+
+				assert.Equal(t, c.IntersectsSector(s), Cap(c.Center, c.Center, c.Radius).IntersectsSector(s), fmt.Sprintf("%s → %s: ", c, s))
+				assert.Equal(t, c.IntersectsSector(Sect(s.Center, s.Radius, s.Angle, 2*Pi)), c.IntersectsCircle(s.Circle()), fmt.Sprintf("%s → %s: ", c, s))
+			}
+		}
+	})
 }
 
 func TestCircle_IntersectsSegment(t *testing.T) {

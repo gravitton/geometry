@@ -581,6 +581,9 @@ func TestRay_IntersectsEllipse(t *testing.T) {
 		assert.False(t, Ry(Pt(-8.0, 0.0), Vec(-1.0, 0.0)).IntersectsEllipse(ellipse))
 		assert.False(t, Ry(Pt(-8.0, 3.0), Vec(1.0, 0.0)).IntersectsEllipse(ellipse))
 	})
+	t.Run("int reaches a turned ellipse past its nearest whole bounds", func(t *testing.T) {
+		assert.True(t, Ry(Pt(3, 5), Vec(1, 0)).IntersectsEllipse(Ell(Pt(0, 0), Sz(1, 6), 2.56)))
+	})
 	t.Run("matches IntersectsCircle on the circle's Ellipse", func(t *testing.T) {
 		for _, r := range rayFixtures {
 			for _, c := range circleFixtures {

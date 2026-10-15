@@ -52,10 +52,10 @@ func (m minkowski[T]) tolerance() float64 {
 	return max(epsilonAt[T](magnitude), epsilonAt[float64](magnitude))
 }
 
-// intersects reports whether the shapes share a point within the tolerance of T. For an integer T
-// that is zero, which outlines with vertices reach and a round one in general does not.
+// intersects reports whether the shapes share a point within the tolerance, the one every other
+// answer of the difference takes, so a round shape touching on the lattice is met from either side.
 func (m minkowski[T]) intersects() bool {
-	return lessOrEqualSquared(m.nearest().point.LengthSquared(), 0, epsilonAt[T](m.magnitude()))
+	return lessOrEqualSquared(m.nearest().point.LengthSquared(), 0, m.tolerance())
 }
 
 // nearest returns the point of the difference nearest the origin, zero where it holds the origin,
