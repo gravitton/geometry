@@ -221,6 +221,41 @@ func TestVector_Ceil(t *testing.T) {
 	})
 }
 
+func TestVector_Snap(t *testing.T) {
+	t.Run("float", func(t *testing.T) {
+		geomtest.AssertVector(t, Vec(7.4, -3.6).Snap(2.5), Vec(7.5, -2.5))
+	})
+	t.Run("int", func(t *testing.T) {
+		geomtest.AssertVector(t, Vec(37, -20).Snap(16), Vec(32, -16))
+	})
+	t.Run("a tie rounds toward positive infinity", func(t *testing.T) {
+		geomtest.AssertVector(t, Vec(8, -8).Snap(16), Vec(16, 0))
+	})
+	t.Run("a zero step leaves the vector", func(t *testing.T) {
+		geomtest.AssertVector(t, Vec(7.4, -3.6).Snap(0), Vec(7.4, -3.6))
+	})
+	t.Run("agrees with the point", func(t *testing.T) {
+		for _, v := range vectorFixtures {
+			geomtest.AssertVector(t, v.Snap(0.75), v.Point().Snap(0.75).Vector())
+		}
+	})
+}
+
+func TestVector_SnapXY(t *testing.T) {
+	t.Run("a step per axis", func(t *testing.T) {
+		geomtest.AssertVector(t, Vec(37, 37).SnapXY(16, 10), Vec(32, 40))
+	})
+	t.Run("a zero step leaves its component", func(t *testing.T) {
+		geomtest.AssertVector(t, Vec(7.4, 7.4).SnapXY(2.5, 0), Vec(7.5, 7.4))
+		geomtest.AssertVector(t, Vec(7.4, 7.4).SnapXY(0, 2.5), Vec(7.4, 7.5))
+	})
+	t.Run("equal steps are Snap", func(t *testing.T) {
+		for _, v := range vectorFixtures {
+			geomtest.AssertVector(t, v.SnapXY(0.75, 0.75), v.Snap(0.75))
+		}
+	})
+}
+
 func TestVector_Lerp(t *testing.T) {
 	t.Run("between vectors", func(t *testing.T) {
 		geomtest.AssertVector(t, Vec(10, 16).Lerp(Vec(20, 20), 0.25), Vec(13, 17))

@@ -115,6 +115,19 @@ func Ceil[T Number](x T) T {
 	return T(math.Ceil(float64(x)))
 }
 
+// Snap returns the multiple of step nearest x, a tie rounded toward positive infinity as
+// RoundHalfUp does, so every cell of the lattice is as wide on both sides of zero. A step and its
+// negation give the same lattice, and a zero step leaves x as it is.
+func Snap[T Number](x, step T) T {
+	if step == 0 {
+		return x
+	}
+
+	size := math.Abs(float64(step))
+
+	return Cast[T](RoundHalfUp(float64(x)/size) * size)
+}
+
 // Mod returns n wrapped into [0, m), or (m, 0] for a negative m, as a floored division gives it. It
 // panics for a zero m.
 func Mod[T Integer](n, m T) T {

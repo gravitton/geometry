@@ -174,6 +174,58 @@ func TestCeil(t *testing.T) {
 	})
 }
 
+func TestSnap(t *testing.T) {
+	t.Run("float moves to the nearest multiple", func(t *testing.T) {
+		geomtest.AssertNumber(t, Snap(7.4, 2.5), 7.5)
+		geomtest.AssertNumber(t, Snap(-3.6, 2.5), -2.5)
+		geomtest.AssertNumber(t, Snap(0.2, 0.25), 0.25)
+	})
+	t.Run("a tie rounds toward positive infinity", func(t *testing.T) {
+		geomtest.AssertNumber(t, Snap(5.0, 2.0), 6.0)
+		geomtest.AssertNumber(t, Snap(-5.0, 2.0), -4.0)
+		geomtest.AssertNumber(t, Snap(1.0, 2.0), 2.0)
+		geomtest.AssertNumber(t, Snap(-1.0, 2.0), 0.0)
+	})
+	t.Run("shifts with a multiple of the step", func(t *testing.T) {
+		for _, x := range []float64{0, 0.75, 1.5, 2.25} {
+			for shift := -8.0; shift <= 8; shift++ {
+				geomtest.AssertNumber(t, Snap(x+shift*3, 3), Snap(x, 3)+shift*3)
+			}
+		}
+	})
+	t.Run("a negative step gives the same lattice", func(t *testing.T) {
+		for _, x := range []float64{-5, -3.6, -1, 0, 1, 2.4, 5, 7.4} {
+			geomtest.AssertNumber(t, Snap(x, -2.5), Snap(x, 2.5))
+		}
+		geomtest.AssertNumber(t, Snap(5, -2), 6)
+	})
+	t.Run("a zero step leaves the value", func(t *testing.T) {
+		geomtest.AssertNumber(t, Snap(7.4, 0), 7.4)
+		geomtest.AssertNumber(t, Snap(7, 0), 7)
+	})
+	t.Run("int", func(t *testing.T) {
+		geomtest.AssertNumber(t, Snap(17, 8), 16)
+		geomtest.AssertNumber(t, Snap(20, 8), 24)
+		geomtest.AssertNumber(t, Snap(-20, 8), -16)
+		geomtest.AssertNumber(t, Snap(-21, 8), -24)
+	})
+	t.Run("float32", func(t *testing.T) {
+		geomtest.AssertNumber(t, Snap(float32(7.4), 2.5), float32(7.5))
+	})
+	t.Run("a non-finite float is returned as it is", func(t *testing.T) {
+		assert.True(t, math.IsNaN(Snap(math.NaN(), 2)))
+		assert.True(t, math.IsInf(Snap(math.Inf(-1), 2), -1))
+	})
+}
+
+func ExampleSnap() {
+	fmt.Println(Snap(37, 16))
+	fmt.Println(Snap(7.4, 2.5))
+	// Output:
+	// 32
+	// 7.5
+}
+
 func TestMod(t *testing.T) {
 	t.Run("non-negative operands", func(t *testing.T) {
 		geomtest.AssertNumber(t, Mod(5, 8), 5)

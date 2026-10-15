@@ -116,6 +116,18 @@ func (p Point[T]) Ceil() Point[T] {
 	return Point[T]{Ceil(p.X), Ceil(p.Y)}
 }
 
+// Snap returns the point moved to the nearest multiple of the step on each axis, as Snap does for
+// a number.
+func (p Point[T]) Snap(step T) Point[T] {
+	return Point[T]{Snap(p.X, step), Snap(p.Y, step)}
+}
+
+// SnapXY returns the point snapped with a step of its own on each axis; a zero step leaves that
+// axis as it is.
+func (p Point[T]) SnapXY(stepX, stepY T) Point[T] {
+	return Point[T]{Snap(p.X, stepX), Snap(p.Y, stepY)}
+}
+
 // Lerp returns the point interpolated toward the given one, extrapolated outside [0, 1].
 func (p Point[T]) Lerp(point Point[T], t float64) Point[T] {
 	return Point[T]{Lerp(p.X, point.X, t), Lerp(p.Y, point.Y, t)}

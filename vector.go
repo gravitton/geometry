@@ -137,6 +137,18 @@ func (v Vector[T]) Ceil() Vector[T] {
 	return Vector[T]{Ceil(v.X), Ceil(v.Y)}
 }
 
+// Snap returns the vector with each component moved to the nearest multiple of the step, as Snap
+// does for a number.
+func (v Vector[T]) Snap(step T) Vector[T] {
+	return Vector[T]{Snap(v.X, step), Snap(v.Y, step)}
+}
+
+// SnapXY returns the vector snapped with a step of its own on each axis; a zero step leaves that
+// component as it is.
+func (v Vector[T]) SnapXY(stepX, stepY T) Vector[T] {
+	return Vector[T]{Snap(v.X, stepX), Snap(v.Y, stepY)}
+}
+
 // Lerp returns the vector interpolated toward the given one, extrapolated outside [0, 1].
 func (v Vector[T]) Lerp(vector Vector[T], t float64) Vector[T] {
 	return Vector[T]{Lerp(v.X, vector.X, t), Lerp(v.Y, vector.Y, t)}
