@@ -184,7 +184,7 @@ func (l Line[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 
 // IntersectsRectangle reports whether the line and the rectangle share a point.
 func (l Line[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
-	return l.span(rectangle.MinMax()).IntersectsRectangle(rectangle)
+	return l.span(rectangle.minMax()).IntersectsRectangle(rectangle)
 }
 
 // IntersectsRegularPolygon reports whether the line and the regular polygon share a point.
@@ -310,7 +310,7 @@ func (l Line[T]) AppendIntersectionPolygon(dst []Point[T], polygon Polygon[T]) [
 // IntersectionRectangle returns the points where the line crosses the boundary of the rectangle, in
 // order along Vector.
 func (l Line[T]) IntersectionRectangle(rectangle Rectangle[T]) Pair[Point[T]] {
-	return l.span(rectangle.MinMax()).IntersectionRectangle(rectangle)
+	return l.span(rectangle.minMax()).IntersectionRectangle(rectangle)
 }
 
 // IntersectionRegularPolygon returns the points where the line crosses the boundary of the regular
@@ -366,7 +366,7 @@ func (l Line[T]) AppendClipPolygon(dst []Segment[T], polygon Polygon[T]) []Segme
 // ClipRectangle returns the part of the line in the rectangle, running along Vector, and false
 // where they share no point.
 func (l Line[T]) ClipRectangle(rectangle Rectangle[T]) (Segment[T], bool) {
-	return l.span(rectangle.MinMax()).ClipRectangle(rectangle)
+	return l.span(rectangle.minMax()).ClipRectangle(rectangle)
 }
 
 // ClipRegularPolygon returns the part of the line in the regular polygon, running along Vector,

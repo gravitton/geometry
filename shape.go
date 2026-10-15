@@ -31,16 +31,6 @@ type Shape[T Number] interface {
 	Support(direction Vector[float64]) Point[float64]
 }
 
-// Body is a shape with an area and its mass properties at unit density: Circle, Capsule, Sector,
-// Polygon, Rectangle, RegularPolygon, Box and Ellipse. Area is the mass, Centroid the center of
-// mass and Inertia the polar second moment of area about it. Segment encloses no area and is no
-// Body.
-type Body[T Number] interface {
-	Area() float64
-	Centroid() Point[T]
-	Inertia() float64
-}
-
 // Distance returns the distance between the nearest points of the shapes, zero where Intersects
 // holds.
 func Distance[T Number](a, b Shape[T]) float64 {
@@ -182,9 +172,9 @@ func Nearest[T Number](a, b Shape[T]) (Point[T], Point[T]) {
 // Contains reports whether the inner shape lies entirely in the outer one, and false where either
 // is an empty polygon.
 //
-// Where the outer shape has a Contains method naming the kind of the inner one, it decides. Any
-// other pair, an Ellipse or a shape of another package on either side, is decided by the supports,
-// so a shape touching the other from inside may answer either way. A round shape that nears the
+// Where the outer shape is a kind of this package with a Contains method naming the kind of the
+// inner one, it decides. Any other pair, an Ellipse or a shape of another package on either side,
+// is decided by the supports, so a shape touching the other from inside may answer either way. A round shape that nears the
 // boundary of the other all the way round is taken not to lie in it: an Ellipse holds one Equal to
 // it, but not one a little smaller or the same ellipse turned by a half turn, and shapes clear of
 // each other by a small part of their size are decided correctly. A shape in the notch of a
@@ -192,7 +182,7 @@ func Nearest[T Number](a, b Shape[T]) (Point[T], Point[T]) {
 //
 // Both arguments escape to the heap.
 func Contains[T Number](outer, inner Shape[T]) bool {
-	if shape, ok := outer.(container[T]); ok {
+	if shape, ok := outer.(container[T]); ok && isKind(outer) {
 		switch kind := inner.(type) {
 		case Circle[T]:
 			return shape.ContainsCircle(kind)
@@ -236,16 +226,16 @@ func Contains[T Number](outer, inner Shape[T]) bool {
 
 // Intersects reports whether the shapes share a point, the same whichever is given first.
 //
-// Two kinds with an Intersects method for each other are decided by it. Any other pair is decided
-// from what the two are: an empty polygon intersects nothing, a Circle by its radius on the
-// distance of the other to its center, a non-convex Polygon edge by edge or one within the other,
-// so a notch is not filled in, a Sector past half a turn as its two halves, and any other two by
-// their supports.
+// Two kinds of this package with an Intersects method for each other are decided by it. Any other
+// pair is decided from what the two are: an empty polygon intersects nothing, a Circle by its
+// radius on the distance of the other to its center, a non-convex Polygon edge by edge or one
+// within the other, so a notch is not filled in, a Sector past half a turn as its two halves, and
+// any other two by their supports.
 //
 // Both arguments escape to the heap, so a loop that knows its types calls the named method instead.
 // A pointer to a shape of this package counts as a shape of another package.
 func Intersects[T Number](a, b Shape[T]) bool {
-	if shape, ok := a.(intersector[T]); ok {
+	if shape, ok := a.(intersector[T]); ok && isKind(a) {
 		switch kind := b.(type) {
 		case Circle[T]:
 			return shape.IntersectsCircle(kind)
@@ -455,7 +445,8 @@ func Raycast[T Number](ray Ray[T], shape Shape[T]) (Hit[T], bool) {
 }
 
 // intersector is a shape with an Intersects method for each of the eight kinds Intersects
-// dispatches on, which every shape but Ellipse has.
+// dispatches on, which every shape but Ellipse has. Intersects reads it only on a kind isKind
+// names, so a shape of another package with the same methods is not taken for one.
 type intersector[T Number] interface {
 	IntersectsCircle(circle Circle[T]) bool
 	IntersectsCapsule(capsule Capsule[T]) bool
@@ -468,7 +459,8 @@ type intersector[T Number] interface {
 }
 
 // container is a shape with a Contains method for each of the eight kinds Contains dispatches on,
-// which every shape with an area but Ellipse has.
+// which every shape with an area but Ellipse has. Contains reads it only on a kind isKind names, so a
+// shape of another package with the same methods is not taken for one.
 type container[T Number] interface {
 	ContainsCircle(circle Circle[T]) bool
 	ContainsCapsule(capsule Capsule[T]) bool
@@ -478,6 +470,33 @@ type container[T Number] interface {
 	ContainsRectangle(rectangle Rectangle[T]) bool
 	ContainsRegularPolygon(polygon RegularPolygon[T]) bool
 	ContainsBox(box Box[T]) bool
+}
+
+// isKind reports whether the shape is one of the kinds this package names, the only shapes
+// Intersects and Contains read named methods of.
+func isKind[T Number](shape Shape[T]) bool {
+	switch shape.(type) {
+	case Circle[T]:
+		return true
+	case Capsule[T]:
+		return true
+	case Sector[T]:
+		return true
+	case Segment[T]:
+		return true
+	case Polygon[T]:
+		return true
+	case Rectangle[T]:
+		return true
+	case RegularPolygon[T]:
+		return true
+	case Box[T]:
+		return true
+	case Ellipse[T]:
+		return true
+	default:
+		return false
+	}
 }
 
 // isEmpty reports whether the shape is a polygon or regular polygon of no vertices, which is

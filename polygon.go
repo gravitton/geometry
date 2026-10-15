@@ -852,7 +852,7 @@ func (p Polygon[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 	}
 
 	a1, b1 := p.minMax()
-	a2, b2 := rectangle.MinMax()
+	a2, b2 := rectangle.minMax()
 
 	if !overlaps(a1, b1, a2, b2) {
 		return false

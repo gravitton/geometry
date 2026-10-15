@@ -170,7 +170,7 @@ func (r Ray[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 
 // IntersectsRectangle reports whether the ray and the rectangle share a point.
 func (r Ray[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
-	return r.reach(rectangle.MinMax()).IntersectsRectangle(rectangle)
+	return r.reach(rectangle.minMax()).IntersectsRectangle(rectangle)
 }
 
 // IntersectsRegularPolygon reports whether the ray and the regular polygon share a point.
@@ -299,7 +299,7 @@ func (r Ray[T]) AppendIntersectionPolygon(dst []Point[T], polygon Polygon[T]) []
 // IntersectionRectangle returns the points where the ray crosses the boundary of the rectangle,
 // from Origin on.
 func (r Ray[T]) IntersectionRectangle(rectangle Rectangle[T]) Pair[Point[T]] {
-	return r.reach(rectangle.MinMax()).IntersectionRectangle(rectangle)
+	return r.reach(rectangle.minMax()).IntersectionRectangle(rectangle)
 }
 
 // IntersectionRegularPolygon returns the points where the ray crosses the boundary of the regular
@@ -354,7 +354,7 @@ func (r Ray[T]) AppendClipPolygon(dst []Segment[T], polygon Polygon[T]) []Segmen
 
 // ClipRectangle returns the part of the ray in the rectangle, and false where they share no point.
 func (r Ray[T]) ClipRectangle(rectangle Rectangle[T]) (Segment[T], bool) {
-	return r.reach(rectangle.MinMax()).ClipRectangle(rectangle)
+	return r.reach(rectangle.minMax()).ClipRectangle(rectangle)
 }
 
 // ClipRegularPolygon returns the part of the ray in the regular polygon, and false where they share
@@ -473,7 +473,7 @@ func (r Ray[T]) HitPolygon(polygon Polygon[T]) (Hit[T], bool) {
 // HitRectangle returns where the ray first reaches the rectangle from outside, and false where it
 // does not or Origin is inside.
 func (r Ray[T]) HitRectangle(rectangle Rectangle[T]) (Hit[T], bool) {
-	return r.rescale(r.reach(rectangle.MinMax()).HitRectangle(rectangle))
+	return r.rescale(r.reach(rectangle.minMax()).HitRectangle(rectangle))
 }
 
 // HitRegularPolygon returns where the ray first reaches the regular polygon from outside, and false

@@ -1095,8 +1095,8 @@ func TestBox_Rectangle(t *testing.T) {
 		r := BoxFromMinMax(Pt(1, 2), Pt(4, 7)).Rectangle()
 
 		geomtest.AssertRectangle(t, r, Rect(Pt(2, 4), Sz(3, 5), 0))
-		geomtest.AssertPoint(t, r.Min(), Pt(1, 2))
-		geomtest.AssertPoint(t, r.Max(), Pt(4, 7))
+		geomtest.AssertPoint(t, r.TopLeft(), Pt(1, 2))
+		geomtest.AssertPoint(t, r.BottomRight(), Pt(4, 7))
 	})
 	t.Run("float", func(t *testing.T) {
 		geomtest.AssertRectangle(t, BoxFromMinMax(Pt(0.6, -0.25), Pt(1.8, 3.35)).Rectangle(), Rect(Pt(1.2, 1.55), Sz(1.2, 3.6), 0))

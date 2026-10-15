@@ -32,11 +32,11 @@ func (p Point[T]) Point() image.Point {
 	return image.Point(p.Int())
 }
 
-// Rectangle converts the rectangle to the half-open image.Rectangle of the Min and Max of its Int,
-// so it spans exactly Size.Int pixels and keeps its width through sub-pixel positions. A rotated
-// rectangle gives the box around its rounded vertices.
+// Rectangle converts the rectangle to the half-open image.Rectangle of the Bounds of its Int, so it
+// spans exactly Size.Int pixels and keeps its width through sub-pixel positions. A rotated rectangle
+// gives the box around its rounded vertices.
 func (r Rectangle[T]) Rectangle() image.Rectangle {
-	rounded := r.Int()
+	bounds := r.Int().Bounds()
 
-	return image.Rectangle{rounded.Min().Point(), rounded.Max().Point()}
+	return image.Rectangle{bounds.Min.Point(), bounds.Max.Point()}
 }

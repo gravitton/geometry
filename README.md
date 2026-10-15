@@ -37,7 +37,7 @@ Every picture in this README is drawn from the package's own results: each point
 - **Shapes** – circle, capsule, sector, polygon, rectangle, regular polygon, box and ellipse.
 - **Paths** – segment, ray, line, polyline, arc and Bezier curves.
 - **Collisions** – intersections, containment, raycasts, nearest points, contacts and sweeps.
-- **Interfaces** – `Shape` and `Body` hold a shape without knowing which one.
+- **Interfaces** – `Shape` holds a shape without knowing which one.
 - **Screen space** – top-left origin, `+Y` down, one winding order everywhere.
 - **Closed boundaries** – the edge counts as inside, within a tolerance matched to `T`.
 - **Reproducible** – the same bits on amd64 and arm64, trigonometry aside.
@@ -402,11 +402,10 @@ on, at := geom.Nearest[float64](turret, target) // the point of each nearest the
 geom.Distance[float64](turret, target)          // 2.21, zero exactly where they intersect
 ```
 
-`Shape` and `Body` hold a shape without knowing which one, for a spatial index or a broad pass:
+`Shape` holds a shape without knowing which one, for a spatial index or a broad pass:
 
 ```go
 var s geom.Shape[float64] = c // Bounds, Contains, DistanceTo, DistanceSquaredTo, Nearest, Support
-var b geom.Body[float64] = c  // Area, Centroid and Inertia at unit density; every shape but Segment
 ```
 
 The functions take the type argument where a concrete shape is passed and infer it from a value held as a `Shape`. A

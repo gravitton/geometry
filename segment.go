@@ -329,7 +329,7 @@ func (s Segment[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 
 // IntersectsRectangle reports whether the segment and the rectangle share a point.
 func (s Segment[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
-	a, b := rectangle.MinMax()
+	a, b := rectangle.minMax()
 	probe := edgeProbe[T]{a: a, b: b}
 
 	if !probe.aim(s) {

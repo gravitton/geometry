@@ -45,14 +45,14 @@ func TestRectangle_Constructor(t *testing.T) {
 	t.Run("a negative size is taken absolute", func(t *testing.T) {
 		geomtest.AssertRectangle(t, Rect(Pt(2, 1), Sz(-4, -2), 0), Rect(Pt(2, 1), Sz(4, 2), 0))
 	})
-	t.Run("min and max round-trip for odd and even integer sizes", func(t *testing.T) {
+	t.Run("the corners round-trip for odd and even integer sizes", func(t *testing.T) {
 		for w := 0; w < 6; w++ {
 			for h := 0; h < 6; h++ {
 				r := Rect(Pt(-3, 7), Sz(w, h), 0)
 
-				geomtest.AssertRectangle(t, RectangleFromMin(r.Min(), r.Size), r, r.String())
-				geomtest.AssertRectangle(t, RectangleFromMax(r.Max(), r.Size), r, r.String())
-				geomtest.AssertRectangle(t, RectangleFromMinMax(r.MinMax()), r, r.String())
+				geomtest.AssertRectangle(t, RectangleFromMin(r.TopLeft(), r.Size), r, r.String())
+				geomtest.AssertRectangle(t, RectangleFromMax(r.BottomRight(), r.Size), r, r.String())
+				geomtest.AssertRectangle(t, RectangleFromMinMax(r.TopLeft(), r.BottomRight()), r, r.String())
 			}
 		}
 	})
@@ -90,47 +90,6 @@ func TestRectangle_Height(t *testing.T) {
 	})
 }
 
-func TestRectangle_Min(t *testing.T) {
-	t.Run("top-left corner", func(t *testing.T) {
-		geomtest.AssertPoint(t, Rect(Pt(1, 2), Sz(2, 3), 0).Min(), Pt(0, 1))
-		geomtest.AssertPoint(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6), 0).Min(), Pt(0.0, -2.05))
-	})
-	t.Run("agrees with the corner accessor", func(t *testing.T) {
-		r := Rect(Pt(1, 2), Sz(2, 3), 0)
-		geomtest.AssertPoint(t, r.Min(), r.TopLeft())
-	})
-	t.Run("rotated is the minimum of the vertices", func(t *testing.T) {
-		geomtest.AssertPoint(t, Rect(Pt(0, 0), Sz(4, 2), 0).Rotate(Pi/2).Min(), Pt(-1, -2))
-		geomtest.AssertPoint(t, Rect(Pt(1.0, 2.0), Sz(2.0, 4.0), 0).Rotate(Pi/2).Min(), Pt(-1.0, 1.0))
-	})
-}
-
-func TestRectangle_Max(t *testing.T) {
-	t.Run("bottom-right corner", func(t *testing.T) {
-		geomtest.AssertPoint(t, Rect(Pt(1, 2), Sz(2, 3), 0).Max(), Pt(2, 4))
-		geomtest.AssertPoint(t, Rect(Pt(0.6, -0.25), Sz(1.2, 3.6), 0).Max(), Pt(1.2, 1.55))
-	})
-	t.Run("agrees with the corner accessor", func(t *testing.T) {
-		r := Rect(Pt(1, 2), Sz(2, 3), 0)
-		geomtest.AssertPoint(t, r.Max(), r.BottomRight())
-	})
-	t.Run("rotated is the maximum of the vertices", func(t *testing.T) {
-		geomtest.AssertPoint(t, Rect(Pt(0, 0), Sz(4, 2), 0).Rotate(Pi/2).Max(), Pt(1, 2))
-		geomtest.AssertPoint(t, Rect(Pt(1.0, 2.0), Sz(2.0, 4.0), 0).Rotate(Pi/2).Max(), Pt(3.0, 3.0))
-	})
-}
-
-func TestRectangle_MinMax(t *testing.T) {
-	t.Run("both corners at once", func(t *testing.T) {
-		for _, r := range rectFixtures {
-			a, b := r.MinMax()
-
-			geomtest.AssertPoint(t, a, r.Min(), fmt.Sprintf("%s min: ", r))
-			geomtest.AssertPoint(t, b, r.Max(), fmt.Sprintf("%s max: ", r))
-		}
-	})
-}
-
 func TestRectangle_Corners(t *testing.T) {
 	r := RectangleFromMin(Pt(0, 0), Sz(10, 20))
 
@@ -140,9 +99,9 @@ func TestRectangle_Corners(t *testing.T) {
 		geomtest.AssertPoint(t, r.BottomRight(), Pt(10, 20))
 		geomtest.AssertPoint(t, r.BottomLeft(), Pt(0, 20))
 	})
-	t.Run("the diagonal corners are min and max", func(t *testing.T) {
-		geomtest.AssertPoint(t, r.TopLeft(), r.Min())
-		geomtest.AssertPoint(t, r.BottomRight(), r.Max())
+	t.Run("the diagonal corners are the corners of the bounds", func(t *testing.T) {
+		geomtest.AssertPoint(t, r.TopLeft(), r.Bounds().Min)
+		geomtest.AssertPoint(t, r.BottomRight(), r.Bounds().Max)
 	})
 	t.Run("float", func(t *testing.T) {
 		f := RectangleFromMin(Pt(0.5, 1.25), Sz(2.0, 3.0))
@@ -750,10 +709,10 @@ func TestRectangle_Inset(t *testing.T) {
 	t.Run("odd integer padding stays inside the rectangle", func(t *testing.T) {
 		r := Rect(Pt(0, 0), Sz(10, 10), 0)
 
-		geomtest.AssertPoint(t, r.Inset(Pad(1, 0, 0, 0)).Min(), r.Min().AddXY(1, 0))
-		geomtest.AssertPoint(t, r.Inset(Pad(1, 0, 0, 0)).Max(), r.Max())
-		geomtest.AssertPoint(t, r.Inset(Pad(0, 3, 0, 1)).Min(), r.Min())
-		geomtest.AssertPoint(t, r.Inset(Pad(0, 3, 0, 1)).Max(), r.Max().AddXY(-3, -1))
+		geomtest.AssertPoint(t, r.Inset(Pad(1, 0, 0, 0)).TopLeft(), r.TopLeft().AddXY(1, 0))
+		geomtest.AssertPoint(t, r.Inset(Pad(1, 0, 0, 0)).BottomRight(), r.BottomRight())
+		geomtest.AssertPoint(t, r.Inset(Pad(0, 3, 0, 1)).TopLeft(), r.TopLeft())
+		geomtest.AssertPoint(t, r.Inset(Pad(0, 3, 0, 1)).BottomRight(), r.BottomRight().AddXY(-3, -1))
 	})
 	t.Run("padding beyond the size collapses inside the rectangle", func(t *testing.T) {
 		r := Rect(Pt(0, 0), Sz(10, 10), 0)
@@ -770,8 +729,8 @@ func TestRectangle_Inset(t *testing.T) {
 		for _, padding := range []Padding[int]{Pad(20, 0, 0, 0), Pad(0, 20, 0, 0), Pad(0, 0, 20, 0), Pad(0, 0, 0, 20), PadU(20), Pad(7, 7, 7, 7)} {
 			inset := r.Inset(padding)
 
-			assert.True(t, r.Contains(inset.Min()), fmt.Sprintf("%s min: ", padding))
-			assert.True(t, r.Contains(inset.Max()), fmt.Sprintf("%s max: ", padding))
+			assert.True(t, r.Contains(inset.TopLeft()), fmt.Sprintf("%s top left: ", padding))
+			assert.True(t, r.Contains(inset.BottomRight()), fmt.Sprintf("%s bottom right: ", padding))
 		}
 	})
 	t.Run("negative padding grows the edge", func(t *testing.T) {
@@ -782,8 +741,8 @@ func TestRectangle_Inset(t *testing.T) {
 		padding := Pad(5.0, 1.0, 3.0, 1.0)
 		inset := r.Inset(padding)
 
-		geomtest.AssertPoint(t, inset.Min(), r.Min().AddXY(padding.Left, padding.Top))
-		geomtest.AssertPoint(t, inset.Max(), r.Max().AddXY(-padding.Right, -padding.Bottom))
+		geomtest.AssertPoint(t, inset.TopLeft(), r.TopLeft().AddXY(padding.Left, padding.Top))
+		geomtest.AssertPoint(t, inset.BottomRight(), r.BottomRight().AddXY(-padding.Right, -padding.Bottom))
 	})
 	t.Run("rotated moves the edges in the frame before the turn", func(t *testing.T) {
 		turned := Rect(Pt(0.0, 0.0), Sz(10.0, 10.0), 0).Rotate(Pi / 2)
@@ -848,7 +807,7 @@ func TestRectangle_Canonical(t *testing.T) {
 		r := Rectangle[int]{Pt(1, 2), Sz(-8, 9), 0}
 
 		geomtest.AssertRectangle(t, r.Canonical(), Rect(r.Center, r.Size, 0))
-		assert.True(t, r.Canonical().Contains(r.Canonical().Min()))
+		assert.True(t, r.Canonical().Contains(r.Canonical().TopLeft()))
 	})
 	t.Run("repairs decoded JSON", func(t *testing.T) {
 		var r Rectangle[int]
@@ -1006,8 +965,8 @@ func TestRectangle_Contains(t *testing.T) {
 	t.Run("the boundary counts as inside", func(t *testing.T) {
 		r := Rect(Pt(1, 2), Sz(2, 3), 0)
 
-		assert.True(t, r.Contains(r.Min()))
-		assert.True(t, r.Contains(r.Max()))
+		assert.True(t, r.Contains(r.TopLeft()))
+		assert.True(t, r.Contains(r.BottomRight()))
 	})
 	t.Run("a float rectangle contains the corners it was built from", func(t *testing.T) {
 		for _, corners := range [][2]float64{{0.1, 0.7}, {0.2, 0.9}, {5.7, 9.1}, {0.15, 0.45}} {
@@ -1483,6 +1442,18 @@ func TestRectangle_ClipRectangle(t *testing.T) {
 		assert.True(t, ok)
 		geomtest.AssertRectangle(t, overlap, turned)
 	})
+	t.Run("a quarter turn apart overlap in a rectangle of their angle", func(t *testing.T) {
+		overlap, ok := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).ClipRectangle(Rect(Pt(1.0, 0.0), Sz(4.0, 2.0), Pi/2))
+
+		assert.True(t, ok)
+		geomtest.AssertRectangle(t, overlap, Rect(Pt(1.0, 0.0), Sz(2.0, 2.0), 0))
+
+		turned := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Rotate(0.3)
+		overlap, ok = turned.ClipRectangle(Rect(Pt(0.0, 0.0), Sz(2.0, 1.0), 0).Rotate(0.3 + Pi/2))
+
+		assert.True(t, ok)
+		geomtest.AssertRectangle(t, overlap, Rect(Pt(0.0, 0.0), Sz(1.0, 2.0), 0).Rotate(0.3))
+	})
 	t.Run("touching gives a zero extent", func(t *testing.T) {
 		overlap, ok := rectangle.ClipRectangle(Rect(Pt(4, 0), Sz(4, 4), 0))
 
@@ -1550,7 +1521,7 @@ func TestRectangle_ClipRectangle(t *testing.T) {
 					ra, rb := a.Int().Rotate(angle), b.Int().Rotate(angle)
 					_, ok := ra.ClipRectangle(rb)
 
-					assert.Equal(t, ok, ra.IntersectsRectangle(rb) && EqualAngle(ra.Angle, rb.Angle), fmt.Sprintf("%s → %s: ", ra, rb))
+					assert.Equal(t, ok, ra.IntersectsRectangle(rb) && quarterTurnsApart(ra.Angle, rb.Angle), fmt.Sprintf("%s → %s: ", ra, rb))
 				}
 			}
 		}
@@ -1562,7 +1533,7 @@ func TestRectangle_ClipRectangle(t *testing.T) {
 				ba, okBA := b.ClipRectangle(a)
 
 				assert.Equal(t, okAB, okBA, fmt.Sprintf("%s → %s: ", a, b))
-				assert.Equal(t, okAB, a.IntersectsRectangle(b) && EqualAngle(a.Angle, b.Angle), fmt.Sprintf("%s → %s: ", a, b))
+				assert.Equal(t, okAB, a.IntersectsRectangle(b) && quarterTurnsApart(a.Angle, b.Angle), fmt.Sprintf("%s → %s: ", a, b))
 				if !okAB {
 					continue
 				}
@@ -1581,28 +1552,38 @@ func TestRectangle_ClipRectangle(t *testing.T) {
 		_, ok := a.ClipRectangle(a.Rotate(9e-7))
 		assert.False(t, ok)
 	})
-	t.Run("int rectangles half a turn apart overlap as their corners do, in either order", func(t *testing.T) {
-		for _, size := range []Size[int]{Sz(3, 5), Sz(4, 4), Sz(1, 0), Sz(5, 2)} {
-			a := Rect(Pt(0, 1), size, 0).Rotate(Pi)
-			for x := -8; x <= 8; x++ {
-				for y := -8; y <= 8; y++ {
-					b := Rect(Pt(x, y), Sz(3, 7), 0)
-					message := fmt.Sprintf("%s → %s: ", a, b)
+	t.Run("int rectangles whole quarter turns apart overlap as their corners do, in either order", func(t *testing.T) {
+		for _, turn := range []float64{Pi / 2, Pi, -Pi / 2} {
+			for _, size := range []Size[int]{Sz(3, 5), Sz(4, 4), Sz(1, 0), Sz(5, 2)} {
+				a := Rect(Pt(0, 1), size, 0).Rotate(turn)
+				for x := -8; x <= 8; x++ {
+					for y := -8; y <= 8; y++ {
+						b := Rect(Pt(x, y), Sz(3, 7), 0)
+						message := fmt.Sprintf("%s → %s: ", a, b)
 
-					overlap, ok := a.ClipRectangle(b)
-					reversed, reversedOk := b.ClipRectangle(a)
-					box, boxOk := a.Bounds().ClipBox(b.Bounds())
+						overlap, ok := a.ClipRectangle(b)
+						reversed, reversedOk := b.ClipRectangle(a)
+						box, boxOk := a.Bounds().ClipBox(b.Bounds())
 
-					assert.Equal(t, ok, boxOk, message)
-					assert.Equal(t, ok, reversedOk, message)
-					if ok {
-						geomtest.AssertBox(t, overlap.Bounds(), box, message)
-						geomtest.AssertRectangle(t, overlap, reversed, message)
+						assert.Equal(t, ok, boxOk, message)
+						assert.Equal(t, ok, reversedOk, message)
+						if ok {
+							geomtest.AssertBox(t, overlap.Bounds(), box, message)
+							geomtest.AssertRectangle(t, overlap, reversed, message)
+						}
 					}
 				}
 			}
 		}
 	})
+}
+
+// quarterTurnsApart reports whether the angles are whole quarter turns apart, where two rectangles
+// share a frame.
+func quarterTurnsApart(a, b float64) bool {
+	turn := AngleDistance(a, b)
+
+	return EqualAngle(turn, 0) || EqualAngle(turn, Pi/2) || EqualAngle(turn, Pi)
 }
 
 func TestRectangle_Union(t *testing.T) {
@@ -1630,6 +1611,11 @@ func TestRectangle_Union(t *testing.T) {
 
 		geomtest.AssertRectangle(t, turned.Union(turned.Rotate(Pi)), turned)
 	})
+	t.Run("a quarter turn apart unite in a rectangle of their angle", func(t *testing.T) {
+		turned := Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Rotate(0.3)
+
+		geomtest.AssertRectangle(t, turned.Union(Rect(Pt(0.0, 0.0), Sz(2.0, 6.0), 0).Rotate(0.3+Pi/2)), Rect(Pt(0.0, 0.0), Sz(6.0, 2.0), 0).Rotate(0.3))
+	})
 	t.Run("different angles unite in the box around both", func(t *testing.T) {
 		diamond := Rect(Pt(0.0, 0.0), Sz(2.0, 2.0), 0).Rotate(Pi / 4)
 
@@ -1655,16 +1641,18 @@ func TestRectangle_Union(t *testing.T) {
 
 		geomtest.AssertRectangle(t, a.Union(b), a.Bounds().Union(b.Bounds()).Rectangle())
 	})
-	t.Run("int rectangles half a turn apart unite as their corners do, in either order", func(t *testing.T) {
-		for _, size := range []Size[int]{Sz(3, 5), Sz(4, 4), Sz(1, 0), Sz(5, 2)} {
-			a := Rect(Pt(0, 1), size, 0).Rotate(Pi)
-			for x := -8; x <= 8; x++ {
-				for y := -8; y <= 8; y++ {
-					b := Rect(Pt(x, y), Sz(3, 7), 0)
-					message := fmt.Sprintf("%s → %s: ", a, b)
+	t.Run("int rectangles whole quarter turns apart unite as their corners do, in either order", func(t *testing.T) {
+		for _, turn := range []float64{Pi / 2, Pi, -Pi / 2} {
+			for _, size := range []Size[int]{Sz(3, 5), Sz(4, 4), Sz(1, 0), Sz(5, 2)} {
+				a := Rect(Pt(0, 1), size, 0).Rotate(turn)
+				for x := -8; x <= 8; x++ {
+					for y := -8; y <= 8; y++ {
+						b := Rect(Pt(x, y), Sz(3, 7), 0)
+						message := fmt.Sprintf("%s → %s: ", a, b)
 
-					geomtest.AssertBox(t, a.Union(b).Bounds(), a.Bounds().Union(b.Bounds()), message)
-					geomtest.AssertRectangle(t, a.Union(b), b.Union(a), message)
+						geomtest.AssertBox(t, a.Union(b).Bounds(), a.Bounds().Union(b.Bounds()), message)
+						geomtest.AssertRectangle(t, a.Union(b), b.Union(a), message)
+					}
 				}
 			}
 		}
@@ -1832,15 +1820,17 @@ func TestRectangle_JSON(t *testing.T) {
 }
 
 func TestRectangle_Properties(t *testing.T) {
-	t.Run("min and max bracket the center and span the size before the turn", func(t *testing.T) {
+	t.Run("the bounds bracket the center and span the size before the turn", func(t *testing.T) {
 		for _, r := range rectFixtures {
-			assert.True(t, r.Min().Midpoint(r.Max()).Equal(r.Center), fmt.Sprintf("%s: ", r))
+			bounds := r.Bounds()
+
+			assert.True(t, bounds.Min.Midpoint(bounds.Max).Equal(r.Center), fmt.Sprintf("%s: ", r))
 			if !r.IsAligned() {
 				continue
 			}
 
-			geomtest.AssertNumber(t, r.Max().X-r.Min().X, r.Width(), fmt.Sprintf("%s: ", r))
-			geomtest.AssertNumber(t, r.Max().Y-r.Min().Y, r.Height(), fmt.Sprintf("%s: ", r))
+			geomtest.AssertNumber(t, bounds.Max.X-bounds.Min.X, r.Width(), fmt.Sprintf("%s: ", r))
+			geomtest.AssertNumber(t, bounds.Max.Y-bounds.Min.Y, r.Height(), fmt.Sprintf("%s: ", r))
 		}
 	})
 	t.Run("area and perimeter follow the size", func(t *testing.T) {
@@ -1853,7 +1843,7 @@ func TestRectangle_Properties(t *testing.T) {
 	t.Run("corners are the corners before the turn, turned about the center", func(t *testing.T) {
 		for _, r := range rectFixtures {
 			flat := Rectangle[float64]{r.Center, r.Size, 0}
-			a, b := flat.MinMax()
+			a, b := flat.TopLeft(), flat.BottomRight()
 
 			geomtest.AssertPoint(t, r.TopLeft(), a.RotateAround(r.Center, r.Angle), fmt.Sprintf("%s: ", r))
 			geomtest.AssertPoint(t, r.BottomRight(), b.RotateAround(r.Center, r.Angle), fmt.Sprintf("%s: ", r))

@@ -12,10 +12,11 @@ import (
 // as a struct literal or decoded from JSON gives no meaningful answers until Canonical repairs it.
 //
 // Width, Height and the named corners are those of the rectangle's own frame before the turn, so
-// TopLeft is the corner that was top-left wherever the turn has put it. Min, Max and Bounds are the
-// axis-aligned extent of the vertices, which coincide with the corners only while the rectangle is
-// not rotated. For integer T a rectangle of width w spans w+1 lattice columns from Min to Max
-// inclusive, while the image.Rectangle that Rectangle returns is half-open and spans w pixels. A
+// TopLeft is the corner that was top-left wherever the turn has put it. Bounds is the axis-aligned
+// extent of the vertices, whose corners are TopLeft and BottomRight only while the rectangle is not
+// rotated. For integer T a rectangle of width w spans w+1 lattice columns from TopLeft to
+// BottomRight inclusive, while the image.Rectangle that Rectangle returns is half-open and spans w
+// pixels. A
 // rotated rectangle has each corner rounded onto the lattice, and its edges join those corners.
 type Rectangle[T Number] struct {
 	Center Point[T] `json:",embed"`
@@ -69,35 +70,6 @@ func (r Rectangle[T]) Width() T {
 // Height returns the extent along the rectangle's own Y axis.
 func (r Rectangle[T]) Height() T {
 	return r.Size.Height
-}
-
-// Min returns the minimum corner of the axis-aligned extent: TopLeft while the rectangle is not
-// rotated, the minimum of its vertices once it is.
-func (r Rectangle[T]) Min() Point[T] {
-	a, _ := r.MinMax()
-
-	return a
-}
-
-// Max returns the maximum corner of the axis-aligned extent: BottomRight while the rectangle is not
-// rotated, the maximum of its vertices once it is.
-func (r Rectangle[T]) Max() Point[T] {
-	_, b := r.MinMax()
-
-	return b
-}
-
-// MinMax returns Min and Max together, the corners of Bounds.
-func (r Rectangle[T]) MinMax() (Point[T], Point[T]) {
-	if r.IsAligned() {
-		a, b := r.localMinMax()
-
-		return r.Center.Add(a), r.Center.Add(b)
-	}
-
-	corners := r.corners()
-
-	return minMaxOf(corners[:])
 }
 
 // TopLeft returns the top-left corner in the frame before the turn.
@@ -209,9 +181,22 @@ func (r Rectangle[T]) AspectRatio() float64 {
 
 // Bounds returns the axis-aligned bounding box.
 func (r Rectangle[T]) Bounds() Box[T] {
-	a, b := r.MinMax()
+	a, b := r.minMax()
 
 	return Box[T]{a, b}
+}
+
+// minMax returns the corners of Bounds, the prefilter of the intersection tests.
+func (r Rectangle[T]) minMax() (Point[T], Point[T]) {
+	if r.IsAligned() {
+		a, b := r.localMinMax()
+
+		return r.Center.Add(a), r.Center.Add(b)
+	}
+
+	corners := r.corners()
+
+	return minMaxOf(corners[:])
 }
 
 // BoundingCircle returns the circle about the center through the farthest corner, the smallest
@@ -255,17 +240,26 @@ func (r Rectangle[T]) localOffset(point Point[T]) Vector[float64] {
 }
 
 // localRectangle returns the given rectangle in the frame of this one, centered at its offset and
-// not turned. A rectangle half a turn from this one lies mirrored about its center there, so its
-// center moves by the unit an odd integer extent leaves between its corner offsets. For integer T
-// the offset is rounded.
+// not turned. A rectangle whole quarter turns from this one lies turned by them about its center
+// there, its size transposed by an odd number of them, so its center moves by the unit an odd
+// integer extent leaves between its corner offsets. For integer T the offset is rounded.
 func (r Rectangle[T]) localRectangle(rectangle Rectangle[T]) Rectangle[T] {
 	offset := r.localOffset(rectangle.Center).Cast[T]()
-	if AngleDistance(r.Angle, rectangle.Angle) > Pi/2 {
-		a, b := rectangle.localMinMax()
-		offset = offset.Subtract(a.Add(b))
+	a, b := rectangle.localMinMax()
+
+	low, size := a, rectangle.Size
+	switch int(math.Round(NormalizeAngle(rectangle.Angle-r.Angle)/(Pi/2))) % 4 {
+	case 1:
+		low, size = Vector[T]{-b.Y, a.X}, size.Transpose()
+	case 2:
+		low = b.Negate()
+	case 3:
+		low, size = Vector[T]{a.Y, -b.X}, size.Transpose()
 	}
 
-	return Rectangle[T]{offset.Point(), rectangle.Size, 0}
+	own, _ := Rectangle[T]{Size: size}.localMinMax()
+
+	return Rectangle[T]{offset.Add(low.Subtract(own)).Point(), size, 0}
 }
 
 // sharedFrame returns the rectangle whose frame a parallel pair is measured in: the one with the
@@ -491,7 +485,7 @@ func (r Rectangle[T]) ContainsSector(sector Sector[T]) bool {
 
 // ContainsSegment reports whether the segment lies entirely in the rectangle.
 func (r Rectangle[T]) ContainsSegment(segment Segment[T]) bool {
-	a, b := r.MinMax()
+	a, b := r.minMax()
 
 	return r.containsWithin(segment.Start, a, b) && r.containsWithin(segment.End, a, b)
 }
@@ -502,7 +496,7 @@ func (r Rectangle[T]) ContainsPolygon(polygon Polygon[T]) bool {
 		return false
 	}
 
-	a, b := r.MinMax()
+	a, b := r.minMax()
 	for vertex := range polygon.Vertices() {
 		if !r.containsWithin(vertex, a, b) {
 			return false
@@ -514,7 +508,7 @@ func (r Rectangle[T]) ContainsPolygon(polygon Polygon[T]) bool {
 
 // ContainsRectangle reports whether the given rectangle lies entirely in this one.
 func (r Rectangle[T]) ContainsRectangle(rectangle Rectangle[T]) bool {
-	a, b := r.MinMax()
+	a, b := r.minMax()
 	for vertex := range rectangle.Vertices() {
 		if !r.containsWithin(vertex, a, b) {
 			return false
@@ -530,7 +524,7 @@ func (r Rectangle[T]) ContainsRegularPolygon(polygon RegularPolygon[T]) bool {
 		return false
 	}
 
-	a, b := r.MinMax()
+	a, b := r.minMax()
 	for vertex := range polygon.Vertices() {
 		if !r.containsWithin(vertex, a, b) {
 			return false
@@ -542,7 +536,7 @@ func (r Rectangle[T]) ContainsRegularPolygon(polygon RegularPolygon[T]) bool {
 
 // ContainsBox reports whether the box lies entirely in the rectangle.
 func (r Rectangle[T]) ContainsBox(box Box[T]) bool {
-	a, b := r.MinMax()
+	a, b := r.minMax()
 	for _, corner := range box.corners() {
 		if !r.containsWithin(corner, a, b) {
 			return false
@@ -588,7 +582,7 @@ func (r Rectangle[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 }
 
 // IntersectsRectangle reports whether the rectangles share a point. Two rectangles of the same
-// angle, or half a turn apart, are measured in a frame they share, as ClipRectangle and Union are,
+// angle, or whole quarter turns apart, are measured in a frame they share, as ClipRectangle and Union are,
 // so they can differ from IntersectsPolygon on their Polygon forms: by a unit for integer T, within
 // the tolerance for float T. Far from the origin that frame can miss a touch ContainsRectangle
 // admits.
@@ -597,8 +591,8 @@ func (r Rectangle[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 		return r.Bounds().IntersectsBox(rectangle.Bounds())
 	}
 
-	a1, b1 := r.MinMax()
-	a2, b2 := rectangle.MinMax()
+	a1, b1 := r.minMax()
+	a2, b2 := rectangle.minMax()
 
 	switch {
 	case !overlaps(a1, b1, a2, b2):
@@ -618,7 +612,7 @@ func (r Rectangle[T]) IntersectsRegularPolygon(polygon RegularPolygon[T]) bool {
 		return false
 	}
 
-	a1, b1 := r.MinMax()
+	a1, b1 := r.minMax()
 	a2, b2 := polygon.minMax()
 
 	if !overlaps(a1, b1, a2, b2) {
@@ -651,7 +645,7 @@ func (r Rectangle[T]) IntersectsBox(box Box[T]) bool {
 		return r.Bounds().IntersectsBox(box)
 	}
 
-	a, b := r.MinMax()
+	a, b := r.minMax()
 	if !overlaps(a, b, box.Min, box.Max) {
 		return false
 	}
@@ -680,9 +674,9 @@ func (r Rectangle[T]) IntersectionLine(line Line[T]) Pair[Point[T]] {
 	return line.IntersectionRectangle(r)
 }
 
-// ClipRectangle returns the rectangle common to both, and false where they share no point. Touching
-// rectangles clip to a zero width or height. Only rectangles of the same angle, or half a turn
-// apart, overlap in a rectangle; others return false even where IntersectsRectangle holds. For
+// ClipRectangle returns the rectangle common to both, and false where the common part is no
+// rectangle: where they share no point, or where their angles are not whole quarter turns apart,
+// though IntersectsRectangle may hold. Touching rectangles clip to a zero width or height. For
 // integer T the result of a rotated pair is rounded through the frame they share.
 func (r Rectangle[T]) ClipRectangle(rectangle Rectangle[T]) (Rectangle[T], bool) {
 	if !r.IntersectsRectangle(rectangle) {
@@ -704,8 +698,8 @@ func (r Rectangle[T]) ClipRectangle(rectangle Rectangle[T]) (Rectangle[T], bool)
 	}
 }
 
-// Union returns the smallest rectangle containing both, of their angle for two of the same angle or
-// half a turn apart, and otherwise the aligned rectangle of the union of their Bounds. For integer
+// Union returns the smallest rectangle containing both, turned as one of them for two whole quarter
+// turns apart, and otherwise the aligned rectangle of the union of their Bounds. For integer
 // T the union of a rotated pair is rounded through the frame they share and need not enclose their
 // rounded corners.
 func (r Rectangle[T]) Union(rectangle Rectangle[T]) Rectangle[T] {
@@ -723,7 +717,7 @@ func (r Rectangle[T]) Union(rectangle Rectangle[T]) Rectangle[T] {
 // once, with no edge measured, which is why ContainsCircle asks its Bounds instead.
 func (r Rectangle[T]) walk(point Point[T]) edgeWalk[T] {
 	if r.IsAligned() {
-		if a, b := r.MinMax(); a.X <= point.X && point.X <= b.X && a.Y <= point.Y && point.Y <= b.Y {
+		if a, b := r.minMax(); a.X <= point.X && point.X <= b.X && a.Y <= point.Y && point.Y <= b.Y {
 			return edgeWalk[T]{inside: true}
 		}
 	}
@@ -738,7 +732,7 @@ func (r Rectangle[T]) walk(point Point[T]) edgeWalk[T] {
 	return w
 }
 
-// containsWithin is Contains for a caller that already holds the corners of MinMax.
+// containsWithin is Contains for a caller that already holds the corners of minMax.
 func (r Rectangle[T]) containsWithin(point, a, b Point[T]) bool {
 	return point.Between(a, b) && r.DistanceSquaredTo(point) == 0
 }
@@ -775,11 +769,11 @@ func (Rectangle[T]) edgesMeet(corners, others [4]Point[T], a, b Point[T]) bool {
 	return false
 }
 
-// parallel reports whether the given rectangle is turned by the same angle as this one, up to a
-// half turn: a corner turned by the difference moves no farther than the tolerance at its
+// parallel reports whether the given rectangle is turned by the same angle as this one, up to whole
+// quarter turns: a corner turned by the difference moves no farther than the tolerance at its
 // coordinates. The tolerance is on that distance, not the angle, since any fixed angle moves the
-// far corner of a long rectangle off its edge; for integer T only an exactly equal or opposite
-// angle is parallel.
+// far corner of a long rectangle off its edge, and it is no less than that of float64, since an
+// angle a quarter turn from another carries the rounding of the turn even for integer T.
 func (r Rectangle[T]) parallel(rectangle Rectangle[T]) bool {
 	w1, h1 := r.Size.Float().XY()
 	w2, h2 := rectangle.Size.Float().XY()
@@ -787,7 +781,7 @@ func (r Rectangle[T]) parallel(rectangle Rectangle[T]) bool {
 	magnitude := max(r.Center.magnitude(), rectangle.Center.magnitude()) + reach
 	turn := AngleDistance(r.Angle, rectangle.Angle)
 
-	return min(turn, math.Pi-turn)*reach <= epsilonAt[T](magnitude)
+	return min(turn, math.Abs(Pi/2-turn), Pi-turn)*reach <= max(epsilonAt[T](magnitude), epsilonAt[float64](magnitude))
 }
 
 // Equal reports whether the rectangles have equal center, size and angle, the angles compared with

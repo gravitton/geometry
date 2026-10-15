@@ -393,7 +393,7 @@ func (s Sector[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 // IntersectsRectangle reports whether the sector and the rectangle share a point.
 func (s Sector[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 	a1, b1 := s.minMax()
-	a2, b2 := rectangle.MinMax()
+	a2, b2 := rectangle.minMax()
 
 	if !overlaps(a1, b1, a2, b2) {
 		return false

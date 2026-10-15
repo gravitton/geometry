@@ -39,14 +39,14 @@ var (
 	_ container[int]   = Rectangle[int]{}
 	_ container[int]   = RegularPolygon[int]{}
 	_ container[int]   = Box[int]{}
-	_ Body[int]        = Circle[int]{}
-	_ Body[int]        = Capsule[int]{}
-	_ Body[int]        = Sector[int]{}
-	_ Body[int]        = Polygon[int]{}
-	_ Body[int]        = Rectangle[int]{}
-	_ Body[int]        = RegularPolygon[int]{}
-	_ Body[int]        = Box[int]{}
-	_ Body[int]        = Ellipse[int]{}
+	_ body[int]        = Circle[int]{}
+	_ body[int]        = Capsule[int]{}
+	_ body[int]        = Sector[int]{}
+	_ body[int]        = Polygon[int]{}
+	_ body[int]        = Rectangle[int]{}
+	_ body[int]        = RegularPolygon[int]{}
+	_ body[int]        = Box[int]{}
+	_ body[int]        = Ellipse[int]{}
 )
 
 // outline is a shape whose boundary is a chain of straight edges, each starting where the
@@ -98,10 +98,14 @@ type bounded[T Number] interface {
 	BoundingCircle() Circle[T]
 }
 
-// solid is a shape with mass properties, the pair the Body properties are checked through.
-type solid[T Number] interface {
+// body is a shape with an area and its mass properties at unit density: Circle, Capsule, Sector,
+// Polygon, Rectangle, RegularPolygon, Box and Ellipse. Area is the mass, Centroid the center of
+// mass and Inertia the polar second moment of area about it.
+type body[T Number] interface {
 	Shape[T]
-	Body[T]
+	Area() float64
+	Centroid() Point[T]
+	Inertia() float64
 }
 
 // intersector is a shape, a ray or a line with the Intersects method for each of the ten
@@ -461,7 +465,7 @@ func farIntersectors(offset Vector[float32]) []intersector[float32] {
 }
 
 func TestBody(t *testing.T) {
-	solids := []solid[float64]{
+	bodies := []body[float64]{
 		Circ(Pt(1.0, 1.0), 2.0),
 		Cap(Pt(1.0, 2.0), Pt(4.0, -1.0), 1.5),
 		Sect(Pt(1.0, 2.0), 3.0, Pi/6, Pi/2),
@@ -473,12 +477,12 @@ func TestBody(t *testing.T) {
 	}
 
 	t.Run("the centroid lies within the shape", func(t *testing.T) {
-		for _, s := range solids {
+		for _, s := range bodies {
 			assert.True(t, s.Contains(s.Centroid()), fmt.Sprintf("%v: ", s))
 		}
 	})
 	t.Run("the inertia is positive and below the area at the farthest corner", func(t *testing.T) {
-		for _, s := range solids {
+		for _, s := range bodies {
 			bounds := s.Bounds()
 			reach := max(bounds.Min.DistanceSquaredTo(s.Centroid()), bounds.Max.DistanceSquaredTo(s.Centroid()))
 
@@ -875,6 +879,11 @@ func TestContains(t *testing.T) {
 		assert.True(t, Contains[float64](Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0), Seg(Pt(-4.0, 0.0), Pt(4.0, 0.0))))
 		assert.False(t, Contains[float64](Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0), Seg(Pt(-4.0, 0.0), Pt(4.0+1e-4, 0.0))))
 	})
+	t.Run("a shape of another package is decided by its supports though it has the named methods", func(t *testing.T) {
+		box := impostorShape[float64]{BoxFromMinMax(Pt(0.0, 0.0), Pt(2.0, 2.0))}
+
+		assert.False(t, Contains[float64](box, Circ(Pt(9.0, 9.0), 1.0)))
+	})
 	t.Run("a segment holds the part of itself and nothing with an area", func(t *testing.T) {
 		segment := Seg(Pt(0.0, 0.0), Pt(3.0, 4.0))
 
@@ -990,6 +999,12 @@ func TestIntersects(t *testing.T) {
 		assert.True(t, Intersects[float64](shape, Circ(Pt(2.0, 0.0), 1.0)))
 		assert.True(t, Intersects[float64](Circ(Pt(2.0, 0.0), 1.0), shape))
 		assert.False(t, Intersects[float64](Circ(Pt(2.5, 0.0), 1.0), shape))
+	})
+	t.Run("a shape of another package is tested by its supports though it has the named methods", func(t *testing.T) {
+		box := impostorShape[float64]{BoxFromMinMax(Pt(0.0, 0.0), Pt(2.0, 2.0))}
+
+		assert.False(t, Intersects[float64](box, Circ(Pt(9.0, 9.0), 1.0)))
+		assert.False(t, Intersects[float64](Circ(Pt(9.0, 9.0), 1.0), box))
 	})
 	t.Run("convex shapes known by their support answer as the named methods do", func(t *testing.T) {
 		for _, a := range convexFixtures() {
@@ -2078,6 +2093,20 @@ func assertReversed[T Number](t *testing.T, points, reversed []Point[T], message
 // shape it holds, known to the package by the methods of Shape alone.
 type foreignShape[T Number] struct {
 	Shape[T]
+}
+
+// impostorShape is a shape of another package that has every method of a Box, its Intersects and
+// Contains of a circle answering true wherever the circle is, so a call that reaches them shows.
+type impostorShape[T Number] struct {
+	Box[T]
+}
+
+func (s impostorShape[T]) IntersectsCircle(circle Circle[T]) bool {
+	return true
+}
+
+func (s impostorShape[T]) ContainsCircle(circle Circle[T]) bool {
+	return true
 }
 
 // convexFixtures returns the fixtures of every kind of shape that are convex: the sectors of no
