@@ -10,7 +10,7 @@ import (
 const flattenDepth = 10
 
 // bezierDepth bounds how many times a curve is halved while a segment is cast at it, far more than
-// a piece of sensible size needs to be straight within Delta.
+// a piece needs to be straight within the tolerance of its magnitude.
 const bezierDepth = 32
 
 // CubicBezier is a curve from Start to End, leaving Start toward Control1 and reaching End from

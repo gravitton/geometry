@@ -128,7 +128,8 @@ func (p Polyline[T]) PointAt(t float64) Point[T] {
 // Every returns an iterator over the points a step apart along the path, from the first point on,
 // in one walk. The last point is among them only where a whole number of steps reaches it. A step
 // that is not positive yields the first point alone, and an empty path nothing. Each point is
-// placed at its count of steps, so rounding does not accumulate.
+// placed at its count of steps, so rounding does not accumulate. The walk ends at the edge where the
+// length of the path stops being finite.
 func (p Polyline[T]) Every(step float64) iter.Seq[Point[T]] {
 	return func(yield func(Point[T]) bool) {
 		if p.IsEmpty() {
@@ -147,6 +148,9 @@ func (p Polyline[T]) Every(step float64) iter.Seq[Point[T]] {
 		for i := 1; i < len(p.Points); i++ {
 			edge := Segment[T]{p.Points[i-1], p.Points[i]}
 			length := edge.Length()
+			if !IsFinite(walked + length) {
+				return
+			}
 
 			for next <= walked+length {
 				if !yield(edge.PointAt(ratio(next-walked, length))) {

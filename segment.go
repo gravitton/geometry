@@ -442,7 +442,9 @@ func (s Segment[T]) IntersectionArc(arc Arc[T]) Pair[Point[T]] {
 // An endpoint of one segment on the other is the answer, even where rounding finds a proper
 // crossing beside it, so a segment passing a vertex meets both edges at that vertex. Segments
 // running along each other share a stretch, and the endpoint returned is one of the given segment
-// before one of this one, so the two orders can name different ends of it.
+// before one of this one, so the two orders can name different ends of it. Far from the origin a
+// crossing is placed to a few ulps of the length of the segments, so a long segment may not
+// contain it within the tolerance.
 func (s Segment[T]) IntersectionSegment(segment Segment[T]) (Point[T], bool) {
 	point, ok := s.intersectionSegment(segment)
 
@@ -496,9 +498,9 @@ func (s Segment[T]) IntersectionQuadraticBezier(curve QuadraticBezier[T]) Pair[P
 }
 
 // IntersectionCubicBezier returns the points where the segment crosses the curve, from Start to
-// End, three at most, each within Delta of the curve. A segment along a straight curve gives an end
-// of the stretch they share or none, and one touching a bend over a stretch without crossing it can
-// give two points where there is one touch.
+// End, three at most, each within the tolerance of the curve. A segment along a straight curve gives
+// an end of the stretch they share or none, and one touching a bend over a stretch without crossing
+// it can give two points where there is one touch.
 func (s Segment[T]) IntersectionCubicBezier(curve CubicBezier[T]) []Point[T] {
 	return s.AppendIntersectionCubicBezier(nil, curve)
 }
@@ -641,7 +643,8 @@ func (s Segment[T]) AppendClipSector(dst []Segment[T], sector Sector[T]) []Segme
 // such as at a reflex vertex, and a touch from outside is a part of zero length.
 //
 // A part never starts or ends at a point the polygon does not contain, so a segment leaving the
-// boundary at a shallow angle without crossing it ends there. There are parts exactly where
+// boundary at a shallow angle without crossing it ends there; for integer T an end is rounded and
+// may lie just outside. There are parts exactly where
 // IntersectsPolygon holds, except for a flat polygon, its vertices on one line: a segment along
 // that line with both ends beyond the polygon has none.
 func (s Segment[T]) ClipPolygon(polygon Polygon[T]) []Segment[T] {
@@ -904,7 +907,8 @@ func (s Segment[T]) HitCubicBezier(curve CubicBezier[T]) (Hit[T], bool) {
 // HitPolygon returns where the segment first reaches the polygon from outside, and false where it
 // does not, Start lies in it or the polygon is empty. The normal is that of the edge hit, turned to
 // face the segment, so the polygon may be wound either way. A vertex takes the edge that faces
-// Start, and the earlier in Edges where both do or, in a notch, neither does.
+// Start, and the earlier in Edges where both do or, in a notch, neither does. A spike of no width
+// running along the segment is not hit at its tip, though IntersectsPolygon holds.
 func (s Segment[T]) HitPolygon(polygon Polygon[T]) (Hit[T], bool) {
 	if polygon.Contains(s.Start) {
 		return Hit[T]{}, false

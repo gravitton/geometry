@@ -180,28 +180,37 @@ func (e *edgePass[T]) precedes(a, b Point[T]) bool {
 // the perpendicular of the curve where it is hit, a point two pieces share held once. A cubic is
 // crossed three times at most; the rest of the room holds a crossing both neighbouring pieces find,
 // and the last slot takes the farthest hit when there is no room, outside count.
+//
+// Pieces met one after another along the curve are a run. Where the chords of a run only touch the
+// segment, both ends on one side of it, the curve passes it within the tolerance, so the run holds
+// its first touch, and none once it holds a crossing.
 type bezierCast struct {
-	segment Segment[float64]
-	curve   CubicBezier[float64]
-	hits    [7]Hit[float64]
-	count   int
+	segment  Segment[float64]
+	curve    CubicBezier[float64]
+	hits     [7]Hit[float64]
+	count    int
+	reached  float64
+	crossed  bool
+	touching bool
+	touch    Point[float64]
 }
 
 // step casts the segment at the piece between the two parameters: nothing where it misses the box
-// of the control points, the crossing of the chord where the piece is straight within Delta or the
-// depth is spent, and its two halves otherwise.
+// of the control points, the crossing of the chord where the piece is straight within the
+// tolerance of its magnitude or the depth is spent, and its two halves otherwise.
 func (c *bezierCast) step(piece CubicBezier[float64], from, to float64, depth int) {
 	a, b := minMaxOf([]Point[float64]{piece.Start, piece.Control1, piece.Control2, piece.End})
-	if !(Box[float64]{a, b}).IntersectsSegment(c.segment) {
+	box := Box[float64]{a, b}
+	if !box.IntersectsSegment(c.segment) {
 		return
 	}
 
-	if depth == 0 || piece.isFlatWithin(Delta) {
+	if depth == 0 || piece.isFlatWithin(epsilonAt[float64](box.magnitude())) {
 		chord := Segment[float64]{piece.Start, piece.End}
 		if point, ok := c.segment.IntersectionSegment(chord); ok {
 			t := from + float64((to-from)*Clamp(chord.fraction(point), 0, 1))
 
-			c.add(c.segment.hitAt(point, c.curve.TangentAt(t).Normal()))
+			c.meet(c.segment.hitAt(point, c.curve.TangentAt(t).Normal()), chord, from, to)
 		}
 
 		return
@@ -212,6 +221,52 @@ func (c *bezierCast) step(piece CubicBezier[float64], from, to float64, depth in
 
 	c.step(first, from, middle, depth-1)
 	c.step(second, middle, to, depth-1)
+}
+
+// meet holds the hit of the chord of the piece between the two parameters, a crossing always and a
+// touch as one of its run.
+func (c *bezierCast) meet(hit Hit[float64], chord Segment[float64], from, to float64) {
+	if from != c.reached {
+		c.crossed, c.touching = false, false
+	}
+
+	c.reached = to
+
+	line := c.segment.Line()
+	start, end := line.side(chord.Start), line.side(chord.End)
+
+	if start < 0 && end > 0 || start > 0 && end < 0 {
+		c.release()
+		c.crossed = true
+		c.add(hit)
+
+		return
+	}
+
+	if c.crossed || c.touching {
+		return
+	}
+
+	c.touching, c.touch = true, hit.Point
+	c.add(hit)
+}
+
+// release lets the touch of the run go, where it is still held.
+func (c *bezierCast) release() {
+	if !c.touching {
+		return
+	}
+
+	c.touching = false
+
+	for i, held := range c.hits[:c.count] {
+		if held.Point == c.touch {
+			copy(c.hits[i:], c.hits[i+1:c.count])
+			c.count--
+
+			return
+		}
+	}
 }
 
 // add holds the hit in its place by Fraction unless its point is already held. Where there is no

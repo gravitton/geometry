@@ -19,7 +19,9 @@ import (
 //
 // For integer T the vertices are rounded, and the rounded outline need not be convex. Contains
 // follows it exactly, but the Contains<Kind> methods test the points of the other shape alone, so
-// they can admit a shape passing through a dent the rounding made.
+// they can admit a shape passing through a dent the rounding made, and Distance, Nearest, Collide
+// and Sweep take it by its supports, so a shape in such a dent is at no distance without
+// intersecting it.
 type RegularPolygon[T Number] struct {
 	Center Point[T] `json:",embed"`
 	Radius Size[T]  `json:",embed"`

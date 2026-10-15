@@ -387,7 +387,10 @@ func (c Circle[T]) IntersectionCircle(circle Circle[T]) Pair[Point[T]] {
 		return Pair[Point[T]]{[2]Point[T]{point.Cast[T]()}, 1}
 	}
 
-	return c.chordPoints(direction, (float64(r1*r1)-float64(r2*r2)+distanceSquared)/(2*distance))
+	along := (float64(r1*r1) - float64(r2*r2) + distanceSquared) / (2 * distance)
+	half := math.Sqrt(max(float64((outer-distance)*(outer+distance))*float64((distance-inner)*(distance+inner)), 0)) / (2 * distance)
+
+	return c.chordPoints(direction, along, half)
 }
 
 // IntersectionSegment returns the points where the segment crosses the boundary, from Start to End:
@@ -427,8 +430,9 @@ func (c Circle[T]) Tangents(point Point[T]) Pair[Point[T]] {
 	}
 
 	radius := float64(c.Radius)
+	along := radius * radius / math.Sqrt(distanceSquared)
 
-	return c.chordPoints(point.Float().Subtract(c.Center.Float()), radius*radius/math.Sqrt(distanceSquared))
+	return c.chordPoints(point.Float().Subtract(c.Center.Float()), along, c.halfChord(along))
 }
 
 // OuterTangents returns the segments that touch both circles on the same side, each from its point
@@ -558,8 +562,8 @@ func (c Circle[T]) tangents(circle Circle[T], radius float64) Pair[Segment[T]] {
 
 	direction := circle.Center.Float().Subtract(c.Center.Float())
 	ratio := reach / math.Sqrt(distanceSquared)
-	start1, start2 := c.chordEnds(direction, float64(c.Radius)*ratio)
-	end1, end2 := circle.chordEnds(direction, radius*ratio)
+	start1, start2 := c.chordEnds(direction, float64(c.Radius)*ratio, c.halfChord(float64(c.Radius)*ratio))
+	end1, end2 := circle.chordEnds(direction, radius*ratio, circle.halfChord(radius*ratio))
 	if radius < 0 {
 		end1, end2 = end2, end1
 	}
@@ -573,8 +577,8 @@ func (c Circle[T]) tangents(circle Circle[T], radius float64) Pair[Segment[T]] {
 }
 
 // chordPoints returns chordEnds stored into T, once where both round to the same point.
-func (c Circle[T]) chordPoints(direction Vector[float64], along float64) Pair[Point[T]] {
-	first, second := c.chordEnds(direction, along)
+func (c Circle[T]) chordPoints(direction Vector[float64], along, half float64) Pair[Point[T]] {
+	first, second := c.chordEnds(direction, along, half)
 	if second.Equal(first) {
 		return Pair[Point[T]]{[2]Point[T]{first}, 1}
 	}
@@ -583,14 +587,20 @@ func (c Circle[T]) chordPoints(direction Vector[float64], along float64) Pair[Po
 }
 
 // chordEnds returns the ends of the chord perpendicular to the direction at the given distance
-// along it from the center, negative behind it: the first a quarter turn from the direction, the
-// second its mirror.
-func (c Circle[T]) chordEnds(direction Vector[float64], along float64) (Point[T], Point[T]) {
-	radius := float64(c.Radius)
+// along it from the center, negative behind it, half its length to either side: the first a
+// quarter turn from the direction, the second its mirror.
+func (c Circle[T]) chordEnds(direction Vector[float64], along, half float64) (Point[T], Point[T]) {
 	middle := c.Center.Float().Add(direction.Resize(along))
-	normal := direction.Normal().Resize(math.Sqrt(max(float64(radius*radius)-float64(along*along), 0)))
+	normal := direction.Normal().Resize(half)
 
 	return middle.Add(normal).Cast[T](), middle.Add(normal.Negate()).Cast[T]()
+}
+
+// halfChord returns half the length of the chord at the distance along a direction from the center.
+func (c Circle[T]) halfChord(along float64) float64 {
+	radius := float64(c.Radius)
+
+	return math.Sqrt(max(float64(radius*radius)-float64(along*along), 0))
 }
 
 // Equal reports whether the circles have equal center and radius.

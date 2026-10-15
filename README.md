@@ -498,6 +498,8 @@ geom.Remap(0.5, -1.0, 1.0, -30.0, 30.0)                      // 15, a stick axis
 geom.Lerp(10.0, 20.0, 0.25)                                  // 12.5
 geom.InverseLerp(10.0, 20.0, 12.5)                           // 0.25, the ratio Lerp takes
 geom.Clamp(15.0, 0.0, 10.0)                                  // 10
+geom.Snap(37, 16)                                            // 32, the nearest multiple of the step
+geom.Pt(37, 21).Snap(16)                                     // (32,16), and on points and vectors
 geom.LerpAngle(geom.ToRadians(350), geom.ToRadians(10), 0.5) // across the zero angle, the short way
 ```
 

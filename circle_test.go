@@ -1071,6 +1071,21 @@ func TestCircle_IntersectionCircle(t *testing.T) {
 			assert.True(t, touches(b, p), "on b")
 		}
 	})
+	t.Run("a small circle on a large one is crossed on both boundaries", func(t *testing.T) {
+		for _, radius := range []float64{1e5, 1e6, 1e7} {
+			for _, turn := range []float64{0.3, 0.9, 2.2, 4.0} {
+				large := Circ(Pt(0.0, 0.0), radius)
+				small := Circ(Pt(0.0, 0.0).Add(Vec(math.Cos(turn), math.Sin(turn)).Multiply(radius+0.25)), 1.0)
+				points := large.IntersectionCircle(small).AppendTo(nil)
+
+				assert.Length(t, points, 2, fmt.Sprintf("%s → %s", large, small))
+				for _, p := range points {
+					assert.True(t, touches(large, p), fmt.Sprintf("%s → %s: %s on large: ", large, small, p))
+					assert.True(t, touches(small, p), fmt.Sprintf("%s → %s: %s on small: ", large, small, p))
+				}
+			}
+		}
+	})
 	t.Run("int rounds the points", func(t *testing.T) {
 		geomtest.AssertVertices(t, Circ(Pt(0, 0), 5).IntersectionCircle(Circ(Pt(6, 0), 5)).AppendTo(nil), []Point[int]{Pt(3, 4), Pt(3, -4)})
 		geomtest.AssertVertices(t, Circ(Pt(0, 0), 2).IntersectionCircle(Circ(Pt(3, 0), 2)).AppendTo(nil), []Point[int]{Pt(2, 1), Pt(2, -1)})

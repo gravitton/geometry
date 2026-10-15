@@ -53,9 +53,11 @@
 //
 // Products, distances and interpolations are computed in float64 and stored once through [Cast],
 // which rounds half away from zero; sums and differences stay in T. For an integer T a constructed
-// point is therefore rounded and may lie just off the boundary it was placed on. The center of an
-// integer [Rectangle] or [Box] truncates toward Min instead, so Max-Min stays exactly the size. A
-// result that rounds onto one it already holds is given once.
+// point is therefore rounded and may lie just off the boundary it was placed on. A polygon clipped
+// to a region is the one exception to rounding once: each edge of the region cuts the outline the
+// last one left, rounded, so near a sharp corner a vertex can land several units outside both. The
+// center of an integer [Rectangle] or [Box] truncates toward Min instead, so Max-Min stays exactly
+// the size. A result that rounds onto one it already holds is given once.
 //
 // Results hold at most what the geometry allows and come in a defined order. Up to two are a
 // [Pair], which allocates nothing; more are a slice, allocated once, with an Append form that

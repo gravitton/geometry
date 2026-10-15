@@ -205,6 +205,33 @@ func TestCubicBezier_IntersectionSegment(t *testing.T) {
 			}
 		}
 	})
+	t.Run("a curve passing the segment within the tolerance touches it once", func(t *testing.T) {
+		curve := CubBez(Pt(-0.9589141136356627, 7.897593105795719), Pt(-1.8683972828661322, -3.059377200831941), Pt(-2.8179811580914427, 1.4316269269607185), Pt(5.050910566843976, -0.827377732113157))
+		s := Seg(Pt(-2.030576000305963, 0.14222560539036552), Pt(1.7657750606089917, -0.1459449398840639))
+
+		geomtest.AssertVertices(t, curve.IntersectionSegment(s), []Point[float64]{Pt(-0.21238622718481381, 0.0042126716946197336), Pt(1.5998483513727035, -0.13334990072435851)})
+	})
+	t.Run("far from the origin a straight curve along the segment is met at its Start alone", func(t *testing.T) {
+		for _, offset := range []float64{1e10, 1e12, 1e15} {
+			start := Pt(offset, offset)
+			curve := CubBez(start, start.Add(Vec(333.3, 111.1)), start.Add(Vec(666.7, 222.2)), start.Add(Vec(1000.0, 333.3)))
+
+			geomtest.AssertVertices(t, curve.IntersectionSegment(Seg(start.Add(Vec(-1.0, -1.0/3)), start.Add(Vec(1001.0, 1001.0/3)))), []Point[float64]{start})
+		}
+	})
+	t.Run("far from the origin a curve is crossed as often as near it", func(t *testing.T) {
+		far := Vec(1e10, -1e10)
+
+		for _, curve := range cubicFixtures {
+			for _, start := range pointFixtures {
+				for _, end := range pointFixtures {
+					s := Seg(start, end)
+
+					assert.Length(t, curve.Translate(far).IntersectionSegment(s.Translate(far)), len(curve.IntersectionSegment(s)), fmt.Sprintf("%s → %s", curve, s))
+				}
+			}
+		}
+	})
 	t.Run("a segment that crosses the flattened curve well within it crosses the curve", func(t *testing.T) {
 		for _, curve := range cubicFixtures {
 			path := curve.Polyline(1e-6)

@@ -44,7 +44,7 @@ func Distance[T Number](a, b Shape[T]) float64 {
 // non-convex Polygon the least over its edges, so a shape in a notch is measured to the notch, and
 // a Sector past half a turn the nearer of its halves. An empty polygon is infinitely far from
 // everything. The other pairs are measured by their supports: two outlines to the rounding of the
-// arithmetic, and a round shape to within Delta.
+// arithmetic, and a round shape to within the tolerance.
 //
 // Both arguments escape to the heap, and a non-convex polygon allocates for every edge it is
 // measured by.
@@ -81,7 +81,8 @@ func DistanceSquared[T Number](a, b Shape[T]) float64 {
 	}
 
 	if circle, other, ok := eitherCircle(a, b); ok {
-		gap := other.DistanceTo(circle.Center) - float64(circle.Radius)
+		distanceSquared, radius := other.DistanceSquaredTo(circle.Center), float64(circle.Radius)
+		gap := (distanceSquared - float64(radius*radius)) / (math.Sqrt(distanceSquared) + radius)
 
 		return gap * gap
 	}
@@ -101,7 +102,9 @@ func DistanceSquared[T Number](a, b Shape[T]) float64 {
 		return min(DistanceSquared[T](halves[0], other), DistanceSquared[T](halves[1], other))
 	}
 
-	return minkowski[T]{a: a, b: b}.nearest().point.LengthSquared()
+	difference := minkowski[T]{a: a, b: b}
+
+	return difference.nearest(difference.precision()).point.LengthSquared()
 }
 
 // Nearest returns the points Distance is measured between: the point of the first shape nearest the
@@ -109,9 +112,9 @@ func DistanceSquared[T Number](a, b Shape[T]) float64 {
 // point twice, and where the nearest points are not single, as with two parallel sides, one pair is
 // returned, which may differ with the shapes swapped. An empty polygon gives two zero points.
 //
-// Apart from a Circle, the pair is found by supports to within Delta, so it can differ by that much
-// from a Distance measured in closed form. Both arguments escape to the heap, and a non-convex
-// polygon allocates for every edge it is measured by.
+// Apart from a Circle, the pair is found by supports to within the tolerance, so it can differ by
+// that much from a Distance measured in closed form. Both arguments escape to the heap, and a
+// non-convex polygon allocates for every edge it is measured by.
 func Nearest[T Number](a, b Shape[T]) (Point[T], Point[T]) {
 	if isEmpty(a) || isEmpty(b) {
 		return Point[T]{}, Point[T]{}
@@ -159,7 +162,8 @@ func Nearest[T Number](a, b Shape[T]) (Point[T], Point[T]) {
 		return first, second
 	}
 
-	nearest := minkowski[T]{a: a, b: b}.nearest()
+	difference := minkowski[T]{a: a, b: b}
+	nearest := difference.nearest(difference.precision())
 	if intersects {
 		point := nearest.from.Cast[T]()
 

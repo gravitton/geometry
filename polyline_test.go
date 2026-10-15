@@ -214,6 +214,10 @@ func TestPolyline_Every(t *testing.T) {
 		geomtest.AssertVertices(t, slices.Collect(PolLn([]Point[int]{Pt(1, 2)}).Every(1)), []Point[int]{Pt(1, 2)})
 		assert.Length(t, slices.Collect(Polyline[int]{}.Every(1)), 0)
 	})
+	t.Run("the walk ends where the length of the path stops being finite", func(t *testing.T) {
+		geomtest.AssertVertices(t, slices.Collect(PolLn([]Point[float64]{Pt(0.0, 0.0), Pt(1.0, 0.0), Pt(math.Inf(1), 0.0)}).Every(0.5)), []Point[float64]{Pt(0.0, 0.0), Pt(0.5, 0.0), Pt(1.0, 0.0)})
+		assert.Length(t, slices.Collect(PolLn([]Point[float64]{Pt(-1e308, 0.0), Pt(1e308, 0.0)}).Every(1e307)), 0)
+	})
 	t.Run("stops when the loop does", func(t *testing.T) {
 		count := 0
 		for range path.Every(1) {

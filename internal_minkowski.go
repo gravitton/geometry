@@ -1,5 +1,7 @@
 package geom
 
+import "math"
+
 const (
 	// simplexSteps bounds the supports nearest asks for. Two outlines end long before it, and two
 	// round shapes are within the tolerance by then.
@@ -52,16 +54,22 @@ func (m minkowski[T]) tolerance() float64 {
 	return max(epsilonAt[T](magnitude), epsilonAt[float64](magnitude))
 }
 
+// precision returns the tolerance of float64 at the magnitude of the pair, the arithmetic every gap
+// is measured in, which nearest closes on whatever T is.
+func (m minkowski[T]) precision() float64 {
+	return epsilonAt[float64](m.magnitude())
+}
+
 // intersects reports whether the shapes share a point within the tolerance, the one every other
 // answer of the difference takes, so a round shape touching on the lattice is met from either side.
 func (m minkowski[T]) intersects() bool {
-	return lessOrEqualSquared(m.nearest().point.LengthSquared(), 0, m.tolerance())
+	return lessOrEqualSquared(m.nearest(m.precision()).point.LengthSquared(), 0, m.tolerance())
 }
 
 // nearest returns the point of the difference nearest the origin, zero where it holds the origin,
 // by the Gilbert–Johnson–Keerthi walk: it stops on a support already held or one reaching no nearer
-// within Delta. A NaN ends it at once.
-func (m minkowski[T]) nearest() minkowskiVertex {
+// within the precision, the bound on how far the gap may still close. A NaN ends it at once.
+func (m minkowski[T]) nearest(precision float64) minkowskiVertex {
 	simplex := minkowskiSimplex{}
 	simplex.add(m.support(Vector[float64]{1, 0}))
 
@@ -70,7 +78,7 @@ func (m minkowski[T]) nearest() minkowskiVertex {
 		next := m.support(nearest.point.Negate())
 
 		distanceSquared := nearest.point.LengthSquared()
-		if simplex.holds(next) || !(distanceSquared-float64(nearest.point.Dot(next.point)) > Delta*distanceSquared) {
+		if simplex.holds(next) || !(distanceSquared-float64(nearest.point.Dot(next.point)) > float64(precision*math.Sqrt(distanceSquared))) {
 			break
 		}
 
@@ -118,11 +126,11 @@ func (m minkowski[T]) depth() (Vector[float64], float64) {
 // each step moves it by the gap over the closing speed, which never passes the other, until the gap
 // is within the tolerance. The normal is that of the last advance, since a closed gap has none.
 func (m minkowski[T]) sweep(motion Vector[float64]) (Hit[T], bool) {
-	tolerance := m.tolerance()
+	tolerance, precision := m.tolerance(), m.precision()
 	start := m.offset
 
 	fraction := 0.0
-	nearest := m.nearest()
+	nearest := m.nearest(precision)
 	for range sweepSteps {
 		normal := nearest.point.Normalize()
 
@@ -134,7 +142,7 @@ func (m minkowski[T]) sweep(motion Vector[float64]) (Hit[T], bool) {
 		fraction = min(fraction+nearest.point.Length()/approach, 1)
 
 		m.offset = start.Add(motion.Multiply(fraction))
-		nearest = m.nearest()
+		nearest = m.nearest(precision)
 		if lessOrEqualSquared(nearest.point.LengthSquared(), 0, tolerance) {
 			return Hit[T]{nearest.from.Cast[T](), normal, fraction}, true
 		}

@@ -564,6 +564,27 @@ func TestDistance(t *testing.T) {
 			}
 		}
 	})
+	t.Run("two outlines far apart are measured to the tolerance, not to a share of the gap", func(t *testing.T) {
+		box := BoxFromMinMax(Pt(0.0, 0.0), Pt(1.0, 10.0))
+
+		for _, rectangle := range []Rectangle[float64]{Rect(Pt(20.0, 5.0), Sz(1.0, 10.0), 2e-6), Rect(Pt(1000.0, 5.0), Sz(1.0, 10.0), 0.000199)} {
+			expected := math.Inf(1)
+			for a := range box.Edges() {
+				for b := range rectangle.Edges() {
+					expected = min(expected, a.DistanceToSegment(b))
+				}
+			}
+
+			assert.True(t, EqualDelta(Distance[float64](box, rectangle), expected, Delta), fmt.Sprintf("%v → %v: %v, %v", box, rectangle, Distance[float64](box, rectangle), expected))
+		}
+	})
+	t.Run("a circle whose center is a radius from the other only past the rounding of a root is apart", func(t *testing.T) {
+		circle, ellipse := Circ(Pt(-5, -1), 2), Ell(Pt(-2, 3), Sz(3, 3), 4.71238898038469)
+
+		assert.False(t, Intersects[int](circle, ellipse))
+		assert.True(t, Distance[int](circle, ellipse) > 0)
+		assert.True(t, Distance[int](ellipse, circle) > 0)
+	})
 	t.Run("a point as a segment is at the distance the shape gives it", func(t *testing.T) {
 		for _, a := range shapeFixtures() {
 			for _, p := range pointFixtures {
@@ -1293,6 +1314,19 @@ func TestCollide(t *testing.T) {
 			}
 		}
 	})
+	t.Run("a polygon that is not convex parts the same way given the other way round, an edge crossed in its very middle included", func(t *testing.T) {
+		assertCollideReversed(t, Seg(Pt(3, 0), Pt(-1, 0)), Pol([]Point[int]{Pt(1, -1), Pt(1, 0), Pt(2, 1), Pt(0, 1)}))
+		assertCollideReversed(t, Seg(Pt(-1, -2), Pt(1, 0)), Pol([]Point[int]{Pt(0, 0), Pt(0, -2), Pt(2, 1), Pt(-1, 2)}))
+		assertCollideReversed(t, Pol([]Point[float64]{Pt(10.0, 0.0), Pt(5.0, 6.0), Pt(4.0, 5.0), Pt(6.0, 8.0), Pt(8.0, 5.0), Pt(6.0, 5.0)}), Pol([]Point[float64]{Pt(1.0, 3.0), Pt(8.0, 3.0), Pt(9.0, 8.0), Pt(1.0, 8.0)}))
+
+		for _, polygon := range []Polygon[float64]{Pol(cornerVertices()), Pol(reverse(cornerVertices()))} {
+			for _, shape := range convexFixtures() {
+				if !Contains(polygon, shape) {
+					assertCollideReversed(t, polygon, shape)
+				}
+			}
+		}
+	})
 	t.Run("boxes overlapping alike on both axes part along X whichever is given first", func(t *testing.T) {
 		a, b := BoxFromMinMax(Pt(0.0, 0.0), Pt(2.0, 2.0)), BoxFromMinMax(Pt(1.0, 1.0), Pt(3.0, 3.0))
 
@@ -1461,6 +1495,18 @@ func assertContactPoints[T Number](t *testing.T, contact Contact[T], expected ..
 	geomtest.AssertVertices(t, points, expected)
 }
 
+func assertCollideReversed[T Number](t *testing.T, a, b Shape[T]) {
+	t.Helper()
+
+	contact, ok := Collide(a, b)
+	reverse, reverseOk := Collide(b, a)
+	message := fmt.Sprintf("%v → %v: %v, %v", a, b, contact, reverse)
+
+	assert.Equal(t, ok, reverseOk, message)
+	geomtest.AssertNumber(t, contact.Depth, reverse.Depth, message)
+	geomtest.AssertVector(t, contact.Normal, reverse.Normal.Negate(), message)
+}
+
 // cornerVertices returns the vertices of an L, two arms of width two along the axes from the
 // origin, with an inside corner between them.
 func cornerVertices() []Point[float64] {
@@ -1539,6 +1585,16 @@ func TestSweep(t *testing.T) {
 		assert.True(t, EqualDelta(hit.Fraction, (5-math.Sqrt(3))/10, 1e-5), fmt.Sprint(hit))
 		assert.True(t, EqualDelta(hit.Normal.X, -math.Sqrt(3)/2, 1e-3) && EqualDelta(hit.Normal.Y, -0.5, 1e-3), fmt.Sprint(hit))
 		assert.True(t, EqualDelta(hit.Point.X, 5-math.Sqrt(3)/2, 1e-3) && EqualDelta(hit.Point.Y, 0.5, 1e-3), fmt.Sprint(hit))
+	})
+	t.Run("a box far from a turned rectangle stops short of it", func(t *testing.T) {
+		box, motion := BoxFromMinMax(Pt(0.0, 0.0), Pt(1.0, 10.0)), Vec(1005.0, 0.0)
+		rectangle := Rect(Pt(1000.0, 5.0), Sz(1.0, 10.0), 0.000199)
+
+		hit, ok := Sweep[float64](box, motion, rectangle)
+		contact, _ := Collide[float64](box.Translate(motion.Multiply(hit.Fraction)), rectangle)
+
+		assert.True(t, ok)
+		assert.True(t, contact.Depth <= Delta, fmt.Sprint(hit, contact))
 	})
 	t.Run("int rounds the point", func(t *testing.T) {
 		hit, ok := Sweep[int](BoxFromMinMax(Pt(0, 0), Pt(1, 1)), Vec(10, 0), BoxFromMinMax(Pt(5, -1), Pt(6, 3)))

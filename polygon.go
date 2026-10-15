@@ -1204,7 +1204,9 @@ func (p Polygon[T]) nearestSupport(shape Shape[T], intersects bool) (Point[T], P
 
 // collideSupport returns how the polygon, one that is not convex, and a shape meet, edge by edge so
 // a notch is not filled in, and false where the shape crosses no edge. The polygon is the second
-// shape of the contact where second is set.
+// shape of the contact where second is set. Each edge is met as the first shape whichever is asked,
+// so an edge crossed in its very middle parts the two the same way in both orders, and the contact
+// is turned round at the end.
 //
 // The deepest contact of the edges crossed is kept, so a shape in an inside corner parts from the
 // deeper wall first. An edge is a wall with no inside, so its own contact may part the shapes into
@@ -1215,14 +1217,11 @@ func (p Polygon[T]) nearestSupport(shape Shape[T], intersects bool) (Point[T], P
 func (p Polygon[T]) collideSupport(shape Shape[T], second bool) (Contact[T], bool) {
 	deepest, shallowest := Contact[T]{Depth: math.Inf(-1)}, Contact[T]{Depth: math.Inf(1)}
 
+	var deepestEdge, shallowestEdge Segment[T]
+
 	reversed := p.twiceArea() < 0
 	for edge := range p.Edges() {
-		var a, b Shape[T] = edge, shape
-		if second {
-			a, b = b, a
-		}
-
-		contact, ok := Collide(a, b)
+		contact, ok := Collide[T](edge, shape)
 		if !ok {
 			continue
 		}
@@ -1232,19 +1231,14 @@ func (p Polygon[T]) collideSupport(shape Shape[T], second bool) (Contact[T], boo
 			inward = inward.Negate()
 		}
 
-		parting := inward
-		if second {
-			parting = inward.Negate()
-		}
-
-		if inward.hasDirection() && !(contact.Normal.Dot(parting) > 0) {
-			inward, parting = inward.Normalize(), parting.Normalize()
+		if inward.hasDirection() && !(contact.Normal.Dot(inward) > 0) {
+			inward = inward.Normalize()
 
 			depth := max(shape.Support(inward).Subtract(edge.Start.Float()).Dot(inward), 0)
-			outward := Contact[T]{parting, depth, minkowski[T]{a: a, b: b}.contact(parting)}
+			outward := Contact[T]{inward, depth, minkowski[T]{a: edge, b: shape}.contact(inward)}
 			if depth > contact.Depth {
 				if depth < shallowest.Depth {
-					shallowest = outward
+					shallowest, shallowestEdge = outward, edge
 				}
 
 				continue
@@ -1254,19 +1248,26 @@ func (p Polygon[T]) collideSupport(shape Shape[T], second bool) (Contact[T], boo
 		}
 
 		if contact.Depth > deepest.Depth {
-			deepest = contact
+			deepest, deepestEdge = contact, edge
 		}
 	}
 
-	if deepest.Depth >= 0 {
-		return deepest, true
+	contact, edge := deepest, deepestEdge
+	if !(deepest.Depth >= 0) {
+		if !(shallowest.Depth < math.Inf(1)) {
+			return Contact[T]{}, false
+		}
+
+		contact, edge = shallowest, shallowestEdge
 	}
 
-	if shallowest.Depth < math.Inf(1) {
-		return shallowest, true
+	if second {
+		normal := contact.Normal.Negate()
+
+		return Contact[T]{normal, contact.Depth, minkowski[T]{a: shape, b: edge}.contact(normal)}, true
 	}
 
-	return Contact[T]{}, false
+	return contact, true
 }
 
 // containsWithin is Contains for a caller that already holds the extent of the vertices and tests
