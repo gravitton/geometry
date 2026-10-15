@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="252" viewBox="0 0 960 252" role="img">
+<g transform="translate(15.1 12.0) scale(20) translate(-0.000 -0.000)">
+<line x1="0.000" y1="0.000" x2="0.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
+<line x1="1.000" y1="0.000" x2="1.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="2.000" y1="0.000" x2="2.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="3.000" y1="0.000" x2="3.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="4.000" y1="0.000" x2="4.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="5.000" y1="0.000" x2="5.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
+<line x1="6.000" y1="0.000" x2="6.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="7.000" y1="0.000" x2="7.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="8.000" y1="0.000" x2="8.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="9.000" y1="0.000" x2="9.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="10.000" y1="0.000" x2="10.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
+<line x1="0.000" y1="0.000" x2="10.000" y2="0.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
+<line x1="0.000" y1="1.000" x2="10.000" y2="1.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="2.000" x2="10.000" y2="2.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="3.000" x2="10.000" y2="3.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="4.000" x2="10.000" y2="4.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="5.000" x2="10.000" y2="5.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
+<line x1="0.000" y1="6.000" x2="10.000" y2="6.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="7.000" x2="10.000" y2="7.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="8.000" x2="10.000" y2="8.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="9.000" x2="10.000" y2="9.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="10.000" x2="10.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
+<polygon points="5.000,5.000 4.926,5.540 4.709,6.039 4.365,6.462 3.920,6.776 3.407,6.958 2.864,6.995 2.330,6.885 1.847,6.634 1.449,6.262 1.166,5.797 1.019,5.272 1.019,4.728 1.166,4.203 1.449,3.738 1.847,3.366 2.330,3.115 2.864,3.005 3.407,3.042 3.920,3.224 4.365,3.538 4.709,3.961 4.926,4.460" fill="#cfe4f3" stroke="#2f7fb8" stroke-width="0.100" stroke-linejoin="round"/>
+<line x1="8.500" y1="1.500" x2="4.540" y2="6.277" stroke="#e8883a" stroke-width="0.100" stroke-linecap="round"/>
+<circle cx="4.540" cy="6.277" r="0.200" fill="#e8883a"/>
+<line x1="8.500" y1="1.500" x2="2.496" y2="3.065" stroke="#e8883a" stroke-width="0.100" stroke-linecap="round"/>
+<circle cx="2.496" cy="3.065" r="0.200" fill="#e8883a"/>
+<circle cx="8.500" cy="1.500" r="0.200" fill="#1c1713"/>
+<text x="9.000" y="1.710" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="0.600" text-anchor="start" fill="#1c1713" stroke="#fdfbf9" stroke-width="0.200" stroke-linejoin="round" paint-order="stroke">from</text>
+<text x="3.000" y="5.210" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="0.600" text-anchor="middle" fill="#1c1713" stroke="#fdfbf9" stroke-width="0.200" stroke-linejoin="round" paint-order="stroke">c</text>
+</g>
+<text x="120.0" y="232.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" text-anchor="middle" fill="#8a8178">c.Tangents(from)</text>
+<g transform="translate(264.9 12.0) scale(20) translate(-0.000 -0.000)">
+<line x1="0.000" y1="0.000" x2="0.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
+<line x1="1.000" y1="0.000" x2="1.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="2.000" y1="0.000" x2="2.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="3.000" y1="0.000" x2="3.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="4.000" y1="0.000" x2="4.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="5.000" y1="0.000" x2="5.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
+<line x1="6.000" y1="0.000" x2="6.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="7.000" y1="0.000" x2="7.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="8.000" y1="0.000" x2="8.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="9.000" y1="0.000" x2="9.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="10.000" y1="0.000" x2="10.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
+<line x1="0.000" y1="0.000" x2="10.000" y2="0.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
+<line x1="0.000" y1="1.000" x2="10.000" y2="1.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="2.000" x2="10.000" y2="2.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="3.000" x2="10.000" y2="3.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="4.000" x2="10.000" y2="4.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="5.000" x2="10.000" y2="5.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
+<line x1="0.000" y1="6.000" x2="10.000" y2="6.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="7.000" x2="10.000" y2="7.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="8.000" x2="10.000" y2="8.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="9.000" x2="10.000" y2="9.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="10.000" x2="10.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
+<polygon points="5.000,5.000 4.926,5.540 4.709,6.039 4.365,6.462 3.920,6.776 3.407,6.958 2.864,6.995 2.330,6.885 1.847,6.634 1.449,6.262 1.166,5.797 1.019,5.272 1.019,4.728 1.166,4.203 1.449,3.738 1.847,3.366 2.330,3.115 2.864,3.005 3.407,3.042 3.920,3.224 4.365,3.538 4.709,3.961 4.926,4.460" fill="#cfe4f3" stroke="#2f7fb8" stroke-width="0.100" stroke-linejoin="round"/>
+<polygon points="9.000,6.000 8.924,6.383 8.707,6.707 8.383,6.924 8.000,7.000 7.617,6.924 7.293,6.707 7.076,6.383 7.000,6.000 7.076,5.617 7.293,5.293 7.617,5.076 8.000,5.000 8.383,5.076 8.707,5.293 8.924,5.617" fill="#d6ebcb" stroke="#4f9a3c" stroke-width="0.100" stroke-linejoin="round"/>
+<line x1="3.000" y1="7.000" x2="8.000" y2="7.000" stroke="#e8883a" stroke-width="0.100" stroke-linecap="round"/>
+<line x1="3.769" y1="3.154" x2="8.385" y2="5.077" stroke="#e8883a" stroke-width="0.100" stroke-linecap="round"/>
+</g>
+<text x="364.9" y="232.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" text-anchor="middle" fill="#8a8178">c.OuterTangents(wheel)</text>
+<g transform="translate(504.9 12.0) scale(20) translate(-0.000 -0.000)">
+<line x1="0.000" y1="0.000" x2="0.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
+<line x1="1.000" y1="0.000" x2="1.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="2.000" y1="0.000" x2="2.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="3.000" y1="0.000" x2="3.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="4.000" y1="0.000" x2="4.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="5.000" y1="0.000" x2="5.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
+<line x1="6.000" y1="0.000" x2="6.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="7.000" y1="0.000" x2="7.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="8.000" y1="0.000" x2="8.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="9.000" y1="0.000" x2="9.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="10.000" y1="0.000" x2="10.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
+<line x1="0.000" y1="0.000" x2="10.000" y2="0.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
+<line x1="0.000" y1="1.000" x2="10.000" y2="1.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="2.000" x2="10.000" y2="2.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="3.000" x2="10.000" y2="3.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="4.000" x2="10.000" y2="4.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="5.000" x2="10.000" y2="5.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
+<line x1="0.000" y1="6.000" x2="10.000" y2="6.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="7.000" x2="10.000" y2="7.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="8.000" x2="10.000" y2="8.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="9.000" x2="10.000" y2="9.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="10.000" x2="10.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
+<polygon points="5.000,5.000 4.926,5.540 4.709,6.039 4.365,6.462 3.920,6.776 3.407,6.958 2.864,6.995 2.330,6.885 1.847,6.634 1.449,6.262 1.166,5.797 1.019,5.272 1.019,4.728 1.166,4.203 1.449,3.738 1.847,3.366 2.330,3.115 2.864,3.005 3.407,3.042 3.920,3.224 4.365,3.538 4.709,3.961 4.926,4.460" fill="#cfe4f3" stroke="#2f7fb8" stroke-width="0.100" stroke-linejoin="round"/>
+<polygon points="9.000,6.000 8.924,6.383 8.707,6.707 8.383,6.924 8.000,7.000 7.617,6.924 7.293,6.707 7.076,6.383 7.000,6.000 7.076,5.617 7.293,5.293 7.617,5.076 8.000,5.000 8.383,5.076 8.707,5.293 8.924,5.617" fill="#d6ebcb" stroke="#4f9a3c" stroke-width="0.100" stroke-linejoin="round"/>
+<line x1="3.837" y1="6.817" x2="7.582" y2="5.092" stroke="#e8883a" stroke-width="0.100" stroke-linecap="round"/>
+<line x1="4.471" y1="3.645" x2="7.264" y2="6.678" stroke="#e8883a" stroke-width="0.100" stroke-linecap="round"/>
+</g>
+<text x="604.9" y="232.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" text-anchor="middle" fill="#8a8178">c.InnerTangents(wheel)</text>
+<g transform="translate(744.9 12.0) scale(20) translate(-0.000 -0.000)">
+<line x1="0.000" y1="0.000" x2="0.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
+<line x1="1.000" y1="0.000" x2="1.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="2.000" y1="0.000" x2="2.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="3.000" y1="0.000" x2="3.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="4.000" y1="0.000" x2="4.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="5.000" y1="0.000" x2="5.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
+<line x1="6.000" y1="0.000" x2="6.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="7.000" y1="0.000" x2="7.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="8.000" y1="0.000" x2="8.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="9.000" y1="0.000" x2="9.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="10.000" y1="0.000" x2="10.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
+<line x1="0.000" y1="0.000" x2="10.000" y2="0.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
+<line x1="0.000" y1="1.000" x2="10.000" y2="1.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="2.000" x2="10.000" y2="2.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="3.000" x2="10.000" y2="3.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="4.000" x2="10.000" y2="4.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="5.000" x2="10.000" y2="5.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
+<line x1="0.000" y1="6.000" x2="10.000" y2="6.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="7.000" x2="10.000" y2="7.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="8.000" x2="10.000" y2="8.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="9.000" x2="10.000" y2="9.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
+<line x1="0.000" y1="10.000" x2="10.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
+<polygon points="9.059,5.402 8.981,6.192 8.751,6.952 8.377,7.652 7.873,8.265 7.259,8.769 6.559,9.143 5.800,9.374 5.010,9.451 4.220,9.374 3.460,9.143 2.760,8.769 2.146,8.265 1.643,7.652 1.268,6.952 1.038,6.192 0.960,5.402 1.038,4.612 1.268,3.852 1.643,3.152 2.146,2.539 2.760,2.035 3.460,1.661 4.220,1.430 5.010,1.352 5.800,1.430 6.559,1.661 7.259,2.035 7.873,2.539 8.377,3.152 8.751,3.852 8.981,4.612" fill="none" stroke="#e8883a" stroke-width="0.075" stroke-dasharray="0.250 0.200" stroke-linejoin="round"/>
+<polygon points="5.000,5.000 4.926,5.540 4.709,6.039 4.365,6.462 3.920,6.776 3.407,6.958 2.864,6.995 2.330,6.885 1.847,6.634 1.449,6.262 1.166,5.797 1.019,5.272 1.019,4.728 1.166,4.203 1.449,3.738 1.847,3.366 2.330,3.115 2.864,3.005 3.407,3.042 3.920,3.224 4.365,3.538 4.709,3.961 4.926,4.460" fill="#cfe4f3" stroke="#2f7fb8" stroke-width="0.100" stroke-linejoin="round"/>
+<polygon points="9.000,6.000 8.924,6.383 8.707,6.707 8.383,6.924 8.000,7.000 7.617,6.924 7.293,6.707 7.076,6.383 7.000,6.000 7.076,5.617 7.293,5.293 7.617,5.076 8.000,5.000 8.383,5.076 8.707,5.293 8.924,5.617" fill="#d6ebcb" stroke="#4f9a3c" stroke-width="0.100" stroke-linejoin="round"/>
+</g>
+<text x="844.9" y="232.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" text-anchor="middle" fill="#8a8178">c.Union(wheel)</text>
+</svg>

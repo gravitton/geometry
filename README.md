@@ -24,7 +24,7 @@ Generic, immutable 2D geometry library for game development
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/hero-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/hero-light.svg">
-  <img alt="A platformer level built from every kind: Box tiles, Polygon spikes, a Rectangle plank and an Ellipse portal; a Capsule hero resting on the ground by Collide, collecting a Circle coin, its Sector view seeing part of a Line tripwire by ClipSector, and its QuadraticBezier jump crossing the wire; a Segment rope swinging along an Arc; a floating lift; a crate landed on a shelf by Sweep; a Polyline trail from the hero to the portal, its footsteps by Every; a RegularPolygon drone flying in along a CubicBezier, with its own Sector view; and a laser reflecting off the solids by Raycast into the drone" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/hero-light.svg">
+  <img alt="A tile platformer level: a RegularPolygon sentry with a short Sector showing its facing lights the level with a view built from Raycasts that stop at the Box walls and the Polygon spikes in the pit, its facing ray reflected off the floor at the hit normal; a Capsule hero hides in a pillar's shadow; Circle coins are filled where the light Contains them and outlined in the dark" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/hero-light.svg">
 </picture>
 </p>
 
@@ -51,401 +51,434 @@ The rules behind them are in the [package documentation][link-go-dev-reference].
 go get github.com/gravitton/geometry
 ```
 
-## Usage
-
 ```go
 import geom "github.com/gravitton/geometry"
 ```
 
+## Usage
+
 The level at the top, call by call:
 
 ```go
-contact, ok := geom.Collide[float64](hero, ground)    // the hero rests on the floor: Normal, Depth, Points
-wire, _ := tripwire.ClipBox(scene)                    // the Line drawn within the scene
-seen := wire.ClipSector(sight)                        // the part of it in the hero's view
-crossed := tripwire.IntersectionQuadraticBezier(jump) // where the jump trips the wire
-hit, ok := geom.Sweep[float64](crate, fall, shelf)    // the crate stops on the shelf at hit.Fraction
-hit, ok = geom.Raycast[float64](laser, plank)         // each bounce of the laser, reflected off hit.Normal
-coin.IntersectsCapsule(hero)                          // a coin collected
-for step := range trail.Every(14) {                   // footsteps along the Polyline to the portal
-}
+ray := geom.Ry(view.Center, geom.VectorFromAngle(angle, 1.0)) // one ray of the sentry's view
+exit, _ := ray.ClipBox(scene)                                  // it leaves the level here
+hit, ok := geom.Raycast(ray, solid)                            // or stops at a wall or the spikes: Point, Normal
+bounce := ray.Vector.Reflect(hit.Normal)                       // the facing ray reflected off the floor
+light := geom.Pol(outline)                                     // the rays' ends outline what the sentry sees
+light.Contains(coin.Center)                                    // a coin in sight
 ```
 
-The same calls with real numbers:
+Every figure below is drawn on a grid of one unit per cell, from the values in the code beside it.
 
-```go
-ship := geom.Circ(geom.Pt(0.0, 0.0), 10.0)
-rock := geom.RegularPolygonWithOrientation(geom.Pt(50.0, 0.0), geom.SzU(20.0), 6, geom.OrientationFlatTop).Rotate(0.3)
-
-ship.IntersectsRegularPolygon(rock)                                // false
-ship.Translate(geom.Vec(25.0, 0.0)).IntersectsRegularPolygon(rock) // true, after the move
-
-laser := geom.Ry(ship.Center, geom.Vec(1.0, 0.0))
-part, ok := laser.ClipRegularPolygon(rock) // Seg((32.24,0.00);(67.76,0.00)), true: part.Start is the first point hit
-```
-
-### Shapes and paths
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/shapes-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/level-light.svg">
-  <img alt="The nine shapes: Circle, Capsule, Sector, Segment, Polygon, Rectangle, RegularPolygon, Box and Ellipse" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/shapes-light.svg">
-</picture>
+### Shapes
 
 Every kind has a shorthand constructor in its own letters, and named constructors that read as phrases
-(`CircleThrough`, `RectangleFromMinMax`, `RegularPolygonWithOrientation`):
+(`CircleThrough`, `RectangleFromMinMax`, `RegularPolygonWithOrientation`).
+
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/shapes-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/shapes-light.svg">
+  <img alt="The nine shapes on a unit grid: Circle, Capsule, Sector, Segment, Polygon, Rectangle, RegularPolygon, Box and Ellipse" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/shapes-light.svg">
+</picture>
+</p>
 
 ```go
-geom.Circ(center, radius)
-geom.Cap(start, end, radius)            // every point within the radius of a segment
-geom.Sect(center, radius, angle, sweep) // a slice of a disc, angles in radians
-geom.Seg(start, end)
-geom.Pol(vertices)                         // closed, convex or not
-geom.Rect(center, size, angle)             // turned about its center; RectangleFromCenter has no angle
-geom.RegPol(center, size, n, angle, phase) // n vertices on the ellipse of the semi-axes
-geom.Bx(a, b)                              // axis-aligned, the corners in either order
-geom.Ell(center, size, angle)              // the semi-axes, turned about the center
+geom.Circ(geom.Pt(4.5, 4.0), 3.0)                                                        // center, radius
+geom.Cap(geom.Pt(11.5, 5.5), geom.Pt(15.5, 2.5), 1.5)                                    // every point within the radius of a segment
+geom.Sect(geom.Pt(22.5, 6.5), 5.0, -3*geom.Pi/4, geom.Pi/2)                              // center, radius, angle and sweep in radians
+geom.Seg(geom.Pt(28.5, 6.0), geom.Pt(34.5, 1.0))                                         // from Start to End
+geom.Pol([]geom.Point[float64]{{37.5, 1}, {43.5, 1}, {43.5, 6}, {40.5, 3.5}, {37.5, 6}}) // closed, convex or not
+geom.Rect(geom.Pt(9.0, 11.0), geom.Sz(6.0, 3.0), 0.4)                                    // center, size and angle
+geom.RegularPolygonWithOrientation(geom.Pt(18.0, 11.0), geom.SzU(2.5), 6, geom.OrientationFlatTop)
+geom.Bx(geom.Pt(24.0, 9.0), geom.Pt(30.0, 13.0))      // axis-aligned, the corners in either order
+geom.Ell(geom.Pt(36.0, 11.0), geom.Sz(3.5, 1.8), 0.5) // center, semi-axes and angle
 ```
 
+### Paths
+
+<p align="center">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/paths-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/paths-light.svg">
-  <img alt="The paths: Ray, Line, Polyline, Arc, QuadraticBezier and CubicBezier" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/paths-light.svg">
+  <img alt="The paths on a unit grid: Ray, Line, Polyline, Arc, QuadraticBezier and CubicBezier" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/paths-light.svg">
 </picture>
+</p>
 
 ```go
-geom.Ry(origin, direction)            // from Origin without end
-geom.Ln(origin, direction)            // without end both ways
-geom.PolLn(points)                    // an open path
-geom.Ac(center, radius, angle, sweep) // a part of a circle, the sweep signed
-geom.QuadBez(start, control, end)     // Bezier curves, flattened by Polyline(tolerance)
-geom.CubBez(start, control1, control2, end)
+geom.Ry(geom.Pt(1.0, 6.0), geom.Vec(2.0, -1.0))                       // from Origin along a direction, without end
+geom.Ln(geom.Pt(11.0, 4.0), geom.Vec(2.0, 1.0))                       // without end both ways
+geom.PolLn([]geom.Point[float64]{{16, 7}, {18, 1}, {20, 5}, {22, 1}}) // an open path
+geom.Ac(geom.Pt(27.0, 4.0), 3.0, -geom.Pi, 1.25*geom.Pi)              // a part of a circle, the sweep signed
+geom.QuadBez(geom.Pt(31.0, 7.0), geom.Pt(34.0, -1.0), geom.Pt(37.0, 7.0))
+geom.CubBez(geom.Pt(38.0, 6.0), geom.Pt(39.0, 0.0), geom.Pt(43.0, 8.0), geom.Pt(44.0, 2.0))
 ```
 
 ### Points and vectors
 
+A `Point` is a position and a `Vector` a displacement; subtracting two points gives the vector between them.
+
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/vectors-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/vectors-light.svg">
+  <img alt="Points a and b, the vector v between them, its normal, its reflection off a horizontal wall, a point a quarter of the way from a to b, and a turned a quarter turn about b" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/vectors-light.svg">
+</picture>
+</p>
+
 ```go
-p := geom.Pt(1, 2)
-v := geom.Pt(4, 6).Subtract(p) // ⟨3,4⟩
+a, b := geom.Pt(2.0, 8.0), geom.Pt(8.0, 5.0)
+v := b.Subtract(a) // ⟨6,-3⟩
 
-v.Length()          // 5
-v.Normal()          // ⟨-4,3⟩, perpendicular
-p.Add(v.Resize(10)) // (7,10)
-
-v.Reflect(geom.Vec(0, 1))                 // ⟨3,-4⟩, bounced off a horizontal wall
-p.RotateAround(geom.Pt(0, 0), math.Pi/2)  // (-2,1)
-p.Lerp(geom.Pt(9, 10), 0.25)              // (3,4)
-geom.Vec(8, 0).Slerp(geom.Vec(0, 8), 0.5) // ⟨6,6⟩, turned along the arc, where Lerp gives ⟨4,4⟩
+v.Length()                    // 6.71
+v.Normal()                    // ⟨3,6⟩, perpendicular, of the same length
+v.Reflect(geom.Vec(0.0, 1.0)) // ⟨6,3⟩, bounced off a horizontal wall
+a.Lerp(b, 0.25)               // (3.5,7.25)
+a.RotateAround(b, -geom.Pi/2) // (11,11)
 ```
 
-`Lerp` and `Slerp` move by a fraction; a game loop moves by a speed times the frame time, a step that never passes
-the target:
+`Lerp` moves by a fraction; a game loop moves by a speed times the frame time, a step that never passes the target:
 
 ```go
-p.MoveToward(geom.Pt(4, 6), 2.5)              // (3,4), and (4,6) once the step reaches it
-geom.Vec(2.0, 0).RotateToward(math.Pi, 0.1)   // turned by 0.1 along the shorter arc, the length kept
-velocity.MoveToward(wanted, accel*dt)         // a velocity taken toward another by an acceleration
+a.MoveToward(b, 2.5)                          // 2.5 along the way to b, and b itself once the step reaches it
+v.RotateToward(geom.Pi, 0.1)                  // turned by 0.1 along the shorter arc, the length kept
 geom.MoveTowardAngle(angle, target, speed*dt) // the same step on a bare angle
 geom.MoveToward(volume, 1.0, fade*dt)         // and on any number
 ```
 
 ### Sizes and padding
 
-```go
-s := geom.Sz(1920, 1080)
-s.Scale(0.5)                 // 960x540
-s.AtMost(geom.SzU(800))      // 800x800, clamped per axis
-s.Shrink(2000).AtLeastZero() // 0x0, the clamp every shape applies to its own size
-s.Fit(geom.SzU(800))         // 800x450, largest with the same ratio inside
-s.Fill(geom.SzU(800))        // 1422x800, smallest with the same ratio around
-
-geom.PadXY(8, 4).Size() // 16x8, horizontal and vertical total
-```
-
-### Rectangles and boxes
-
+<p align="center">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/rectangle-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/rectangle-light.svg">
-  <img alt="A turned rectangle with its corner names, its Bounds and its BoundingCircle; the anchor of every direction on a rectangle; a rectangle clamped into another" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/rectangle-light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/sizes-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/sizes-light.svg">
+  <img alt="A 16x9 screen size fitted into and filled around a 6x6 slot" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/sizes-light.svg">
 </picture>
-
-A `Rectangle` is a center, a size and an angle. Turned, it keeps its center, size and corner names, and `Min`, `Max`
-and `Bounds` become the box around its vertices:
+</p>
 
 ```go
-r := geom.RectangleFromCenter(geom.Pt(50, 50), geom.Sz(20, 10))
+screen, slot := geom.Sz(16.0, 9.0), geom.SzU(6.0)
+screen.Fit(slot)  // 6x3.38, the largest of the same ratio inside
+screen.Fill(slot) // 10.67x6, the smallest of the same ratio around
 
-r.Contains(geom.Pt(55, 52))                 // true
-r.Nearest(geom.Pt(80, 0))                   // (60,45), the nearest point, on every shape
-r.Inset(geom.PadU(2)).Anchor(geom.TopRight) // (58,47)
-r.AlignTo(geom.TopLeft, geom.Pt(0, 0))      // Rect((10,5);20x10), its Min at the origin
-r.Clamp(screen)                             // moved by the least that brings it inside
-
-d := geom.Rect(geom.Pt(0.0, 0.0), geom.Sz(2.0, 2.0), geom.Pi/4) // a diamond
-d.Contains(geom.Pt(0.9, 0.9))                                   // false, outside the turned edges
-d.TopLeft()                                                     // the corner that was top-left before the turn
-d.Transform(geom.ShearMatrix(1.0, 0.0))                         // the nearest rectangle; Polygon() holds the parallelogram
-
-for edge := range d.Edges() { // clockwise from TopLeft, without allocating
-	edge.Midpoint()
-}
+geom.PadXY(1.0, 0.5).Size() // 2x1, the horizontal and vertical total
 ```
 
-A `Box` is the axis-aligned extent, for clipping, viewports, layout and culling, and the `Bounds` of every shape:
+### Rectangles
 
-```go
-view := geom.BoxFromSize(geom.Sz(800, 600)) // (0,0)-(800,600)
-view.Contains(geom.Pt(800, 600))            // true, closed like every shape
-view.Inset(geom.PadU(16))                   // (16,16)-(784,584)
-view.Shrink(32)                             // the same, each extent less by the amount
+A `Rectangle` is a center, a size and an angle. Turned, it keeps its corner names, and `Bounds` becomes the box
+around its vertices.
 
-hud := geom.Bx(geom.Pt(200, 40), geom.Pt(0, 0))        // (0,0)-(200,40), the corners in either order
-hud.AlignTo(geom.TopRight, view.Anchor(geom.TopRight)) // (600,0)-(800,40), pinned to the corner of the view
-
-tip := geom.BoxFromMin(geom.Pt(750, 20), geom.Sz(120, 40))
-tip.Clamp(view)   // (680,20)-(800,60)
-view.ClipBox(tip) // (750,20)-(800,60), true: the part on screen
-
-r.Bounds().IntersectsBox(view) // the broad pass
-view.IntersectsRectangle(r)    // and a Box is a Shape like every other
-```
-
-### Circles, capsules and ellipses
-
+<p align="center">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/tangents-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/tangents-light.svg">
-  <img alt="The tangents from a point to a circle, the outer and the inner tangents of two circles, and the smallest circle around both" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/tangents-light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/rectangles-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/rectangles-light.svg">
+  <img alt="A turned rectangle r with its corner names, Bounds, BoundingCircle and top anchor; a window w clamped into a screen" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/rectangles-light.svg">
 </picture>
+</p>
 
 ```go
-c := geom.Circ(geom.Pt(0.0, 0.0), 5.0)
-c.Anchor(geom.Bottom)          // (0,5)
-c.Tangents(geom.Pt(13.0, 0.0)) // a Pair of the points the lines from there touch
+r := geom.Rect(geom.Pt(6.0, 5.5), geom.Sz(7.0, 3.5), 0.4)
+r.TopLeft()        // (3.46,2.53), the corner that was top-left before the turn
+r.Anchor(geom.Top) // (6.68,3.89), the midpoint of that edge
+r.Bounds()         // (2.09,2.53)-(9.91,8.47)
+r.BoundingCircle() // Circ((6,5.5);3.91)
 
-wheel := geom.Circ(geom.Pt(20.0, 0.0), 2.0)
-c.OuterTangents(wheel) // a belt around both, each a Segment from c to wheel
-c.InnerTangents(wheel) // a crossed belt; none once the circles touch
-c.Union(wheel)         // Circ((8.5,0);13.5), the smallest circle around both
-
-geom.CircleThrough(geom.Pt(0.0, 0.0), geom.Pt(6.0, 0.0), geom.Pt(0.0, 8.0)) // Circ((3,4);5), true; false on one line
+screen := geom.RectangleFromMinMax(geom.Pt(15.0, 1.0), geom.Pt(27.0, 10.0))
+w := geom.RectangleFromCenter(geom.Pt(26.0, 1.5), geom.Sz(5.0, 3.0))
+w.Clamp(screen) // Rect((24.5,2.5);5x3), moved by the least that brings it inside
 ```
 
-A circle has no `Transform` of its own, since a matrix takes it to an ellipse:
+### Boxes
+
+A `Box` is the axis-aligned extent, for clipping, viewports, layout and culling, and the `Bounds` of every shape.
+
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/boxes-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/boxes-light.svg">
+  <img alt="A view box with a HUD pinned to its top-right corner, a tooltip clamped inside it, and the part of the tooltip on screen" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/boxes-light.svg">
+</picture>
+</p>
 
 ```go
-e := c.Ellipse().Transform(geom.ScaleMatrix(2.0, 1.0)) // Ell((0,0);10x5), exact for every matrix
-e.Contains(geom.Pt(9.0, 0.0))                          // true
-e.DistanceTo(geom.Pt(0.0, 9.0))                        // 4, to the nearest point of the boundary
-e.Foci()                                               // the two focal points, on the major axis
-e.RegularPolygon(64, geom.OrientationPointyTop)        // the outline that draws it, every vertex on the boundary
+view := geom.BoxFromSize(geom.Sz(20.0, 12.0))
+view.Inset(geom.PadU(1.0)) // (1,1)-(19,11)
+
+hud := geom.Bx(geom.Pt(6.0, 2.0), geom.Pt(0.0, 0.0))   // (0,0)-(6,2), the corners in either order
+hud.AlignTo(geom.TopRight, view.Anchor(geom.TopRight)) // (14,0)-(20,2), pinned to the corner of the view
+
+tip := geom.BoxFromMin(geom.Pt(17.0, 8.0), geom.Sz(7.0, 3.0))
+tip.Clamp(view)   // (13,8)-(20,11)
+view.ClipBox(tip) // (17,8)-(20,11), true: the part on screen
 ```
 
-A `Capsule` is the rounded collider of a character:
+### Circles
+
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/circles-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/circles-light.svg">
+  <img alt="The tangents from a point to circle c, the outer and inner tangents of c and a wheel, and the smallest circle around both" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/circles-light.svg">
+</picture>
+</p>
 
 ```go
-body := geom.Cap(geom.Pt(0.0, 0.0), geom.Pt(0.0, 10.0), 2.0)
-body.Contains(geom.Pt(1.5, 11.0))  // true, in the round end
-body.DistanceTo(geom.Pt(6.0, 5.0)) // 4, to the side
-body.Polygon(0.25)                 // the outline that draws it, within a tolerance
+c, wheel := geom.Circ(geom.Pt(3.0, 5.0), 2.0), geom.Circ(geom.Pt(8.0, 6.0), 1.0)
+
+c.Tangents(geom.Pt(8.5, 1.5)) // a Pair of the points the lines from there touch
+c.OuterTangents(wheel)        // a belt around both, each a Segment from c to wheel
+c.InnerTangents(wheel)        // a crossed belt; none once the circles touch
+c.Union(wheel)                // Circ((5.01,5.4);4.05)
+```
+
+### Ellipses and capsules
+
+A circle has no `Transform` of its own, since a matrix takes it to an ellipse. A `Capsule` is a segment with a
+radius, the rounded collider of a character.
+
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/ellipses-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/ellipses-light.svg">
+  <img alt="A circle transformed into an ellipse with its foci, a point inside it and the distance to a point outside; a capsule and the distance to a point beside it" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/ellipses-light.svg">
+</picture>
+</p>
+
+```go
+o := geom.Circ(geom.Pt(4.0, 5.0), 2.5)
+e := o.Ellipse().Transform(geom.ScaleMatrix(2.0, 1.0)) // Ell((8,5);5x2.5), exact for every matrix
+e.Contains(geom.Pt(6.0, 4.0))                          // true
+e.DistanceTo(geom.Pt(10.0, 8.5))                       // 1.18, to the nearest point of the boundary
+e.Foci()                                               // (3.67,5), (12.33,5)
+
+body := geom.Cap(geom.Pt(4.0, 2.0), geom.Pt(4.0, 8.0), 1.5)
+body.DistanceTo(geom.Pt(8.5, 5.0)) // 3, to the side
 ```
 
 ### Polygons
 
+<p align="center">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/polygons-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/polygons-light.svg">
-  <img alt="A notched polygon with its ConvexHull, its Triangulate triangles, its Grow and Shrink outlines, and its two parts after a Split" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/polygons-light.svg">
+  <img alt="A notched polygon p with its ConvexHull, its triangles, its Grow and Shrink outlines, and its two parts after a Split" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/polygons-light.svg">
 </picture>
+</p>
 
 ```go
-p := geom.Pol([]geom.Point[int]{{0, 0}, {4, 0}, {4, 4}, {2, 1}, {0, 4}})
-p.Area()                  // 10
-p.Contains(geom.Pt(2, 3)) // false, inside the notch
-p.Winding()               // WindingClockwise, the winding of a Rectangle's corners
-p.IsConvex()              // false
-p.ConvexHull()            // Pol((0,0);(4,0);(4,4);(0,4)), the notch dropped
-p.Triangulate()           // [1 2 3 0 1 3 4 0 3]: three indices into Points per triangle, an index buffer
-p.Grow(1)                 // every edge moved out along its normal; Shrink moves them in
+p := geom.Pol([]geom.Point[float64]{{1, 1}, {9, 1}, {9, 9}, {5, 4}, {1, 9}})
+p.Area()        // 44
+p.IsConvex()    // false
+p.ConvexHull()  // Pol((1,1);(9,1);(9,9);(1,9)), the notch dropped
+p.Triangulate() // [1 2 3 0 1 3 4 0 3]: three indices into Points per triangle
+p.Grow(0.5)     // every edge moved out along its normal; Shrink moves them in
 
-front, back := p.Split(geom.Ln(cut, dir)) // the two parts either side of a line, meeting exactly along it
-both, ok := p.Union(other)                // the outline two overlapping convex polygons cover together
+front, back := p.Split(geom.Ln(geom.Pt(3.0, 0.0), geom.Vec(1.0, 2.0))) // meeting exactly along the line
 
 for vertex := range p.Vertices() { // the same loop walks a Rectangle, RegularPolygon or Box
-	vertex.Float()
 }
 ```
 
 ### Regular polygons
 
+<p align="center">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/regular-polygons-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/regular-polygons-light.svg">
-  <img alt="Flat-top and pointy-top hexagons with their vertices numbered and their top anchor; a stretched hexagon on its ellipse; a phase that slides the vertices and an angle that turns the ellipse" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/regular-polygons-light.svg">
+  <img alt="Flat-top and pointy-top hexagons with their vertices numbered and their top anchor, a stretched hexagon on its ellipse, and a pentagon with a phase or an angle" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/regular-polygons-light.svg">
 </picture>
+</p>
 
 ```go
-hex := geom.RegularPolygonWithOrientation(geom.Pt(0, 0), geom.SzU(20), 6, geom.OrientationFlatTop)
-hex.Anchor(geom.Top)         // (0,-17), the midpoint of the top edge; a pointy-top one gives its top vertex
-hex.Bounds()                 // (-20,-17)-(20,17)
-hex.Area()                   // 1039.23, 3√3/2 · r²
-hex.Contains(geom.Pt(10, 5)) // true, walked on the edges without building the vertices
-hex.Ellipse()                // the ellipse its vertices lie on
+hex := geom.RegularPolygonWithOrientation(geom.Pt(5.0, 5.0), geom.SzU(4.0), 6, geom.OrientationFlatTop)
+hex.Anchor(geom.Top) // (5,1.54), the midpoint of the top edge; a pointy-top one gives its top vertex
+hex.Bounds()         // (1,1.54)-(9,8.46)
+hex.Area()           // 41.57
 
-geom.RegPol(geom.Pt(0, 0), geom.Sz(20, 10), 8, 0, geom.Pi/8) // n, angle and phase
-hex.Transform(geom.ShearMatrix(1.0, 0.0))                    // exact for every matrix, shears included
+geom.RegularPolygonWithOrientation(geom.Pt(5.0, 5.0), geom.Sz(4.5, 2.5), 6, geom.OrientationFlatTop) // on an ellipse
+geom.RegPol(geom.Pt(5.0, 5.0), geom.Sz(4.5, 2.5), 5, 0, 0.6)                                         // the phase slides the vertices along the ellipse
+geom.RegPol(geom.Pt(5.0, 5.0), geom.Sz(4.5, 2.5), 5, 0.6, 0)                                         // the angle turns the ellipse
 ```
 
 ### Intersections
 
+Every shape has `Intersects<Kind>`, `Contains<Kind>` and `Intersection<Kind>` for each kind, symmetric and counting a
+touch. `Intersection<Kind>` gives the boundary points, a `Pair` where there are at most two; `Clip<Kind>` gives the
+part in common.
+
+<p align="center">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/intersections-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/intersections-light.svg">
-  <img alt="The crossing points of two circles; the parts of a segment inside a notched polygon; the two parts of a segment through the notch of a wide sector; the rectangle two turned rectangles share" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/intersections-light.svg">
+  <img alt="The crossing points of two circles, the parts of a segment inside a notched polygon, the two parts of a segment through the notch of a wide sector, and the rectangle two turned rectangles share" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/intersections-light.svg">
 </picture>
-
-Every shape has `Intersects<Kind>`, `Contains<Kind>` and `Intersection<Kind>` for each kind, symmetric and counting a
-touch. `Intersection<Kind>` gives the boundary points: one with a bool between segments, rays and lines, a `Pair` of
-at most two on a convex shape, and a slice where there can be more. `Clip<Kind>` gives the part in common, in the
-type of the receiver:
+</p>
 
 ```go
-a.IntersectsRectangle(b) // on every kind of a, for every kind of b
-view.ContainsCircle(c)   // the whole circle inside
-geom.Intersects(a, c)    // the same answers for two shapes of any kind
+a, b := geom.Circ(geom.Pt(4.0, 5.0), 3.0), geom.Circ(geom.Pt(7.0, 6.0), 2.5)
+a.IntersectionCircle(b) // Pair((5.21,7.75);(6.62,3.53)), which allocates nothing
 
-c.IntersectionCircle(other)       // a Pair, which allocates nothing
-s.IntersectionPolygon(p)          // every crossing, as a slice
-s.ClipPolygon(p)                  // the parts inside a concave polygon, from Start to End
-beam.ClipSector(cone)             // two parts through the notch of a sector past half a turn
-overlap, ok := a.ClipRectangle(b) // the overlap of two rectangles of one angle
-part, ok := p.ClipBox(view)       // the polygon as a viewport shows it
+s := geom.Seg(geom.Pt(0.0, 6.0), geom.Pt(10.0, 6.0))
+s.ClipPolygon(p) // [Seg((1,6);(3.4,6)) Seg((6.6,6);(9,6))], from Start to End
 
-buffer = s.AppendIntersectionPolygon(buffer[:0], p) // a slice result has an Append form for a reused buffer
+cone := geom.Sect(geom.Pt(5.0, 5.0), 4.0, -geom.Pi/4, 1.5*geom.Pi)
+geom.Seg(geom.Pt(0.0, 3.5), geom.Pt(10.0, 3.5)).ClipSector(cone) // two parts through the notch
+
+r := geom.Rect(geom.Pt(4.0, 4.5), geom.Sz(5.0, 3.5), 0.3)
+r.ClipRectangle(geom.Rect(geom.Pt(6.5, 6.0), geom.Sz(4.0, 3.0), 0.3)) // the overlap, a Rectangle of the same angle
+
+geom.Intersects[float64](a, r) // the same answers for two shapes of any kind
 ```
 
 ### Casts
 
+`Hit<Kind>` on a segment or a ray is the first point of the boundary it reaches from outside, with the unit normal
+there and the fraction of the cast; `Sweep` moves a whole shape.
+
+<p align="center">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/casts-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/casts-light.svg">
-  <img alt="A ray reaching a turned rectangle, with the normal and the bounce; a circle swept into a box, stopped at the fraction of the motion; a segment hitting a circle" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/casts-light.svg">
+  <img alt="A ray hitting a turned wall, with the normal and the bounce; a ball swept into a block, stopped at the fraction of its motion" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/casts-light.svg">
 </picture>
-
-`Hit<Kind>` on a segment or a ray is the first point of the boundary reached from outside, with the unit normal there
-and the fraction of the cast; `Raycast` and `Sweep` take a shape of any kind:
+</p>
 
 ```go
-ray := geom.RayThrough(camera, cursor) // from the camera through the cursor; Ry takes a direction
+wall := geom.Rect(geom.Pt(10.0, 5.0), geom.Sz(2.0, 6.0), 0.35)
+ray := geom.Ry(geom.Pt(1.0, 7.0), geom.Vec(3.0, -1.0))
+hit, ok := ray.HitRectangle(wall) // Hit((9.2,4.27);⟨-0.94,-0.34⟩;2.73), true
+ray.Vector.Reflect(hit.Normal)    // ⟨-1.65,-2.7⟩, the bounce
 
-if hit, ok := ray.HitRectangle(r); ok { // false from an Origin inside r
-	hit.Point                              // ray.PointAt(hit.Fraction)
-	ray.Vector.Reflect(hit.Normal)         // the normal faces the ray, so this is the bounce
-}
-
-hit, ok := geom.Raycast(ray, shape)                  // the same for a Shape of any kind
-hit, ok = geom.Sweep(ball, motion, wall)             // where ball first touches wall while it moves:
-ball = ball.Translate(motion.Multiply(hit.Fraction)) // the point, the normal and the fraction of the motion
+ball := geom.Circ(geom.Pt(2.0, 2.0), 1.0)
+block := geom.Bx(geom.Pt(8.0, 4.0), geom.Pt(11.0, 9.0))
+hit, ok = geom.Sweep[float64](ball, geom.Vec(11.0, 5.0), block) // Fraction 0.45: where the ball first touches
+geom.Raycast[float64](ray, wall)                                // a Hit on a shape of any kind
 ```
 
-A `Line` runs both ways and tells its sides apart:
+### Lines
+
+A `Line` runs without end both ways and tells its two sides apart.
+
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/lines-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/lines-light.svg">
+  <img alt="A line through two points, a point a on one side of it, its nearest point on the line and its reflection" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/lines-light.svg">
+</picture>
+</p>
 
 ```go
-wall := geom.LineThrough(a, b) // Ln takes a direction; s.Line() and ray.Line() convert
-wall.Side(p)                   // 1 on the side the normal points to, -1 on the other, 0 on the line
-wall.Reflect(p)                // p mirrored across the line
-wall.ClipBox(view)             // the part a viewport shows
+wall := geom.LineThrough(geom.Pt(1.0, 8.0), geom.Pt(13.0, 2.0))
+a := geom.Pt(10.0, 8.0)
+wall.Side(a)       // 1, the side the normal of the direction points to
+wall.Nearest(a)    // (8.2,4.4)
+wall.Reflect(a)    // (6.4,0.8)
+wall.ClipBox(view) // the part a viewport shows
 ```
 
 ### Collisions
 
+Two shapes of any kind are parted, measured and moved against each other by package functions.
+
+<p align="center">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/collisions-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/collisions-light.svg">
-  <img alt="A circle and a crate overlapping a floor, with their contact points, normals and the separated position; the nearest points of two shapes and the distance between them" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/collisions-light.svg">
+  <img alt="A ball and a crate overlapping a floor with their contact points, normals and separated position, and the nearest points of two shapes with the distance between them" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/collisions-light.svg">
 </picture>
+</p>
 
 ```go
-contact, ok := geom.Collide(crate, floor) // Normal, Depth and one or two Points
-crate.Translate(contact.Separation())     // the shortest move out of the floor
-on, at := geom.Nearest(turret, target)    // the point of each nearest the other
-geom.Distance(turret, target)             // zero exactly where they intersect
+floor := geom.Bx(geom.Pt(1.0, 6.0), geom.Pt(9.0, 8.0))
+ball := geom.Circ(geom.Pt(4.0, 5.0), 1.5)
+contact, ok := geom.Collide[float64](ball, floor) // Contact(⟨0,-1⟩;0.5;(4,6)): Normal, Depth, Points
+ball.Translate(contact.Separation())              // the shortest move out of the floor
+
+crate := geom.RectangleFromCenter(geom.Pt(5.0, 5.0), geom.Sz(3.0, 2.5))
+geom.Collide[float64](crate, floor) // two Points where the sides lie flat
+
+on, at := geom.Nearest[float64](turret, target) // the point of each nearest the other
+geom.Distance[float64](turret, target)          // 2.21, zero exactly where they intersect
 ```
 
 `Shape` and `Body` hold a shape without knowing which one, for a spatial index or a broad pass:
 
 ```go
 var s geom.Shape[float64] = c // Bounds, Contains, DistanceTo, DistanceSquaredTo, Nearest, Support
-s.Support(geom.Vec(1.0, 0.0)) // the point farthest along a direction, what the functions part shapes by
-
-var b geom.Body[float64] = c // Area, Centroid and Inertia at unit density; every shape but Segment
-b.Inertia()
+var b geom.Body[float64] = c  // Area, Centroid and Inertia at unit density; every shape but Segment
 ```
 
-The functions take the type argument where a concrete shape is passed, `geom.Collide[float64](c, r)`, and infer it
-from a value held as a `Shape`. A call through an interface allocates where the same named method does not, so a hot
-loop that knows its types calls the method.
+The functions take the type argument where a concrete shape is passed and infer it from a value held as a `Shape`. A
+call through an interface allocates where the same named method does not, so a hot loop that knows its types calls
+the method.
 
 ### Arcs, sectors and curves
 
+<p align="center">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/curves-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/curves-light.svg">
-  <img alt="An arc as a progress ring; points inside and outside a sector; a cubic Bezier flattened to a polyline; points at an even step along a polyline" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/curves-light.svg">
+  <img alt="An arc as a progress ring, points inside and outside a vision cone, a step along a polyline, and a cubic Bezier flattened to a polyline" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/curves-light.svg">
 </picture>
+</p>
 
 ```go
-ring := geom.Ac(geom.Pt(0.0, 0.0), 5.0, -geom.Pi/2, 2*geom.Pi*progress) // a full turn is the circle
-ring.PointAt(0.5)                                                       // also Start, End, Midpoint and Length
+ring := geom.Ac(geom.Pt(5.0, 5.0), 4.0, -geom.Pi/2, 1.3*geom.Pi) // a full turn is the circle
+ring.PointAt(0.5)                                                // (8.56,6.82), also Start, End and Length
 
-cone := geom.Sect(guard, 8.0, facing-geom.Pi/6, geom.Pi/3) // a vision cone
-cone.Contains(player)                                      // the tolerance is on the distance, never an angle
+cone := geom.Sect(geom.Pt(1.0, 5.0), 8.5, -geom.Pi/6, geom.Pi/3)
+cone.Contains(geom.Pt(5.0, 8.5)) // false; the tolerance is on the distance, never an angle
 
-route := geom.PolLn([]geom.Point[float64]{geom.Pt(0.0, 0.0), geom.Pt(4.0, 0.0), geom.Pt(4.0, 3.0)})
-route.Length()                    // 7
-route.PointAt(0.5)                // (3.5,0), half the length along
-for p := range route.Every(0.5) { // a point every half unit of length, in one walk
+route := geom.PolLn([]geom.Point[float64]{{1, 8}, {4, 2}, {6, 7}, {9, 2}})
+for step := range route.Every(1) { // a point every unit of length, in one walk
 }
 
-curve := geom.CubBez(geom.Pt(0.0, 0.0), geom.Pt(0.0, 4.0), geom.Pt(8.0, 4.0), geom.Pt(8.0, 0.0))
-curve.PointAt(0.5)   // (4,3); the parameter is not a fraction of the length
-curve.Polyline(0.05) // a path within the tolerance, denser where it bends, to measure the curve by
+curve := geom.CubBez(geom.Pt(1.0, 9.0), geom.Pt(1.0, 1.0), geom.Pt(9.0, 1.0), geom.Pt(9.0, 9.0))
+curve.PointAt(0.5)  // (5,3); the parameter is not a fraction of the length
+curve.Polyline(0.2) // a path within the tolerance, to measure the curve by
 ```
 
 ### Coordinates and directions
 
+The origin is top-left and `+Y` points down. Angles grow counterclockwise in math terms, so clockwise on screen, and
+every outline winds that way.
+
+<p align="center">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/coordinates-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/coordinates-light.svg">
-  <img alt="The screen axes with +Y down and the sense of a positive angle; the eight directions; the clockwise winding of a rectangle's vertices" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/coordinates-light.svg">
+  <img alt="The screen axes with +Y down and the sense of a positive angle, the eight directions, and the clockwise winding of a rectangle's vertices" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/coordinates-light.svg">
 </picture>
+</p>
 
 ```go
 dir := geom.DirectionUp
 dir.Turn(2)                 // DirectionRight, two 45° steps
 dir.Vector(5.0)             // ⟨0,-5⟩
-geom.Vec(3, -7).Direction() // DirectionUpRight, nearest of the eight
+geom.Vec(3, -7).Direction() // DirectionUpRight, the nearest of the eight
 
-geom.DirectionFromAxes(left, right, up, down) // keyboard input to an 8-way direction
-geom.CardinalOffsets[int]()                   // the lattice steps of Right, Down, Left and Up
-
-axis := geom.AxisVertical
-axis.Along(size) // Height, because the axis is vertical
+geom.DirectionFromAxes(up, down, left, right) // keyboard input to an 8-way direction
 ```
 
 ### Matrices
 
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/matrices-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/matrices-light.svg">
+  <img alt="An arrow turned and scaled about a pivot and sheared, its original outline dashed" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/matrices-light.svg">
+</picture>
+</p>
+
 ```go
-m := geom.IdentityMatrix[float64]().Rotate(math.Pi/4).Scale(2, 2)
+geom.RotationMatrixAround(5.0, 5.0, geom.Pi/4) // turn about a pivot
+geom.ScaleMatrixAround(5.0, 5.0, 1.5, 0.5)     // scale about a pivot, which stays where it is
+geom.ShearMatrix(0.5, 0.0)                     // x moved by half of y
 
-geom.Pt(1.0, 0.0).Transform(m) // (1.41,1.41)
-m.Angle()                      // π/4, read back from the matrix
-m.Scaling()                    // ⟨2,2⟩
-
-geom.TRSMatrix(10.0, 20.0, math.Pi/2, 2.0, 3.0)  // scale, then turn, then move
-geom.RotationMatrixAround(10.0, 20.0, math.Pi/2) // turn about a pivot
-geom.ScaleMatrixAround(10.0, 20.0, 2.0, 3.0)     // scale about a pivot, which stays where it is
+m := geom.IdentityMatrix[float64]().Rotate(geom.Pi / 4).Scale(2, 2)
+arrow.Transform(m) // every shape, point and vector takes a matrix
+m.Angle()          // π/4, read back from the matrix
 ```
 
 `Translate`, `Rotate`, `RotateAround`, `Scale`, `ScaleAround`, `Shear` and `Reflect` compose with their constructor on
@@ -453,31 +486,67 @@ the right, applied first, and their `Pre` forms on the left, applied last.
 
 ### Numbers
 
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/numbers-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/numbers-light.svg">
+  <img alt="A stick axis from -1 to 1 remapped onto a steering angle from -30 to 30" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/numbers-light.svg">
+</picture>
+</p>
+
 ```go
+geom.Remap(0.5, -1.0, 1.0, -30.0, 30.0)                      // 15, a stick axis as a steering angle
 geom.Lerp(10.0, 20.0, 0.25)                                  // 12.5
 geom.InverseLerp(10.0, 20.0, 12.5)                           // 0.25, the ratio Lerp takes
-geom.Remap(0.5, -1.0, 1.0, -30.0, 30.0)                      // 15, a stick axis as a steering angle
 geom.Clamp(15.0, 0.0, 10.0)                                  // 10
 geom.LerpAngle(geom.ToRadians(350), geom.ToRadians(10), 0.5) // across the zero angle, the short way
 ```
 
-Any type satisfying `Number` works, named types included, and `Int()` and `Float()` convert between them. The
-`ints` and `floats` packages alias the two common ones:
+### Number types
+
+Any type satisfying `Number` works, named types included. `Int()` rounds half away from zero, and the `ints` and
+`floats` packages alias the two common instantiations.
+
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/rounding-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/rounding-light.svg">
+  <img alt="Five float points and the lattice points they round to" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/rounding-light.svg">
+</picture>
+</p>
 
 ```go
-type Tile int32
+geom.Pt(1.4, 2.6).Int() // (1,3)
+geom.Pt(3.5, 1.5).Int() // (4,2), a half rounds away from zero
+geom.Pt(6.6, 3.2).Int() // (7,3)
+geom.Pt(2.5, 7.5).Int() // (3,8)
+geom.Pt(7.2, 6.7).Int() // (7,7)
 
+type Tile int32
 geom.Pt[Tile](3, 4).Add(geom.DirectionRight.Unit[Tile]()) // (4,4)
-geom.Pt(1.4, 2.6).Int()                                   // (1,3), rounded
-ints.Pt(1.4, 2.6)                                         // the same, from github.com/gravitton/geometry/types/ints
+ints.Pt(1.4, 2.6)                                         // (1,3), from github.com/gravitton/geometry/types/ints
 ```
 
 ### Interop
 
+`Int()` rounds a float rectangle onto the lattice. An integer rectangle is closed: its corners are lattice points on
+the boundary, so a width of 6 spans 7 columns of them. The `image.Rectangle` it converts to is half-open and covers
+exactly 6 pixels across.
+
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/pixels-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/pixels-light.svg">
+  <img alt="A float rectangle f rounded by Int to a 6 by 6 integer rectangle with its 7 by 7 lattice points, over the 6 by 6 pixels of its image.Rectangle" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/pixels-light.svg">
+</picture>
+</p>
+
 ```go
+f := geom.RectangleFromMin(geom.Pt(1.6, 2.3), geom.Sz(5.8, 5.6))
+r := f.Int()  // Rect((5,5);6x6), the center and size rounded
+r.Rectangle() // (2,2)-(8,8), an image.Rectangle of 6x6 pixels
 geom.RectangleFromImage[int](img.Bounds())
-geom.BoxFromImage[int](img.Bounds())                            // Min and Max as they are, an odd extent kept
-geom.RectangleFromMin(geom.Pt(0, 0), geom.Sz(4, 2)).Rectangle() // image.Rectangle
+geom.BoxFromImage[int](img.Bounds()) // Min and Max as they are
 
 json.Marshal(geom.Rect(geom.Pt(1, 2), geom.Sz(3, 4), 0)) // {"x":1,"y":2,"w":3,"h":4}
 json.Marshal(geom.DirectionUp)                           // "Up"
