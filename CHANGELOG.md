@@ -13,6 +13,8 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 
 ## [Unreleased](https://github.com/gravitton/geometry/compare/v1.17.0...main)
 
+### Changed
+- CI runs the tests under the race detector again and measures coverage in a second run; the allocation tests check nothing under the race detector, since it allocates on its own
 
 ## [v1.17.0](https://github.com/gravitton/geometry/compare/v1.16.0...v1.17.0) (2026-10-15)
 

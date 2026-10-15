@@ -455,9 +455,9 @@ func TestArc_IntersectionSegment(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(3.0, 10.0), Pt(tenth, -10.0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = a.IntersectionSegment(through).Count > 0
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -557,12 +557,12 @@ func TestArc_AppendPolyline(t *testing.T) {
 	t.Run("allocates once, and nothing into a buffer with room", func(t *testing.T) {
 		arc, buffer := Ac(Pt(0, 0), 50, 0, Pi), make([]Point[int], 0, 64)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkPoints = arc.Polyline(tenth).Points
-		}), 1)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		}, 1)
+		assertAllocations(t, func() {
 			sinkPoints = arc.AppendPolyline(buffer[:0], 1)
-		}), 0)
+		}, 0)
 	})
 }
 

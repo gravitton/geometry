@@ -269,9 +269,9 @@ func TestCapsule_DistanceToCapsule(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		other := Cap(Pt(0, 7), Pt(10, 7), 1)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = c.DistanceToCapsule(other) > 0
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -333,9 +333,9 @@ func TestCapsule_Support(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		capsule, direction := Cap(Pt(1, 2), Pt(4, 2), 2), Vec(tenth, 0.7)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = capsule.Support(direction).X > 0
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -743,9 +743,9 @@ func TestCapsule_IntersectionSegment(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(5.0, 10.0), Pt(tenth, -10.0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = capsule.IntersectionSegment(through).Count > 0
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -890,12 +890,12 @@ func TestCapsule_AppendPolygon(t *testing.T) {
 		whole := Cap(Pt(0, 0), Pt(100, 0), 20)
 		buffer := make([]Point[int], 0, 64)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkPoints = whole.Polygon(tenth).Points
-		}), 1)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		}, 1)
+		assertAllocations(t, func() {
 			sinkPoints = whole.AppendPolygon(buffer[:0], tenth)
-		}), 0)
+		}, 0)
 	})
 }
 

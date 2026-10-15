@@ -227,11 +227,11 @@ func TestRectangle_Vertices(t *testing.T) {
 	})
 	t.Run("ranging allocates nothing", func(t *testing.T) {
 		for _, r := range rectFixtures {
-			geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			assertAllocations(t, func() {
 				for vertex := range r.Vertices() {
 					sinkBool = vertex.IsZero()
 				}
-			}), 0, fmt.Sprintf("%s: ", r))
+			}, 0, fmt.Sprintf("%s: ", r))
 		}
 	})
 }
@@ -291,11 +291,11 @@ func TestRectangle_Edges(t *testing.T) {
 	})
 	t.Run("ranging allocates nothing", func(t *testing.T) {
 		for _, r := range rectFixtures {
-			geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			assertAllocations(t, func() {
 				for edge := range r.Edges() {
 					sinkBool = edge.IsZero()
 				}
-			}), 0, fmt.Sprintf("%s: ", r))
+			}, 0, fmt.Sprintf("%s: ", r))
 		}
 	})
 }
@@ -393,9 +393,9 @@ func TestRectangle_BoundingCircle(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		r := Rect(Pt(1, 2), Sz(2, 3), 0).Rotate(Pi / 6)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = r.BoundingCircle().IsZero()
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -947,9 +947,9 @@ func TestRectangle_Support(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		rectangle, direction := Rect(Pt(0, 0), Sz(4, 2), 0).Rotate(Pi/6), Vec(tenth, 0.7)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = rectangle.Support(direction).X > 0
-		}), 0)
+		}, 0)
 	})
 }
 

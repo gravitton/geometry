@@ -629,9 +629,9 @@ func TestDistance(t *testing.T) {
 	t.Run("allocates nothing for shapes held as Shape", func(t *testing.T) {
 		var rectangle, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Rotate(0.3), Ell(Pt(9.0, 0.0), Sz(2.0, 1.0), 0.2)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = Distance(rectangle, ellipse) > 0
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -797,13 +797,13 @@ func TestNearest(t *testing.T) {
 	t.Run("allocates nothing for shapes held as Shape", func(t *testing.T) {
 		var circle, rectangle, ellipse Shape[float64] = Circ(Pt(-4.0, 0.0), 1.0), Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Rotate(0.3), Ell(Pt(9.0, 0.0), Sz(2.0, 1.0), 0.2)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			first, second := Nearest(rectangle, ellipse)
 			sinkBool = first == second
 
 			first, second = Nearest(circle, rectangle)
 			sinkBool = first == second
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -989,12 +989,12 @@ func TestContains(t *testing.T) {
 	t.Run("allocates nothing for shapes held as Shape", func(t *testing.T) {
 		var box, circle, ellipse Shape[float64] = BoxFromMinMax(Pt(0.0, 0.0), Pt(10.0, 10.0)), Circ(Pt(5.0, 5.0), 2.0), Ell(Pt(5.0, 5.0), Sz(3.0, 2.0), 0.2)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = Contains(box, circle)
-		}), 0)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		}, 0)
+		assertAllocations(t, func() {
 			sinkBool = Contains(box, ellipse)
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -1173,12 +1173,12 @@ func TestIntersects(t *testing.T) {
 	t.Run("allocates nothing for shapes held as Shape", func(t *testing.T) {
 		var rectangle, other, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Rotate(0.3), Rect(Pt(1.0, 0.0), Sz(3.0, 2.0), 0), Ell(Pt(3.0, 0.0), Sz(2.0, 1.0), 0.2)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = Intersects(rectangle, other)
-		}), 0)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		}, 0)
+		assertAllocations(t, func() {
 			sinkBool = Intersects(rectangle, ellipse)
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -1478,9 +1478,9 @@ func TestCollide(t *testing.T) {
 	t.Run("allocates nothing for shapes held as Shape", func(t *testing.T) {
 		var rectangle, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Rotate(0.3), Ell(Pt(3.0, 0.0), Sz(2.0, 1.0), 0.2)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			_, sinkBool = Collide(rectangle, ellipse)
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -1758,9 +1758,9 @@ func TestSweep(t *testing.T) {
 	t.Run("allocates nothing for shapes held as Shape", func(t *testing.T) {
 		var circle, wall Shape[float64] = Circ(Pt(0.0, 0.0), 1.0), Rect(Pt(6.0, 0.0), Sz(2.0, 8.0), 0).Rotate(0.2)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			_, sinkBool = Sweep(circle, Vec(10.0, 0.0), wall)
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -1923,15 +1923,15 @@ func TestRaycast(t *testing.T) {
 		var foreign Shape[float64] = foreignShape[float64]{ellipse}
 		ray := Ry(Pt(-10.0, 0.0), Vec(1.0, 0.0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			_, sinkBool = Raycast(ray, rectangle)
-		}), 0)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		}, 0)
+		assertAllocations(t, func() {
 			_, sinkBool = Raycast(ray, ellipse)
-		}), 0)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		}, 0)
+		assertAllocations(t, func() {
 			_, sinkBool = Raycast(ray, foreign)
-		}), 0)
+		}, 0)
 	})
 }
 

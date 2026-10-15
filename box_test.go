@@ -117,11 +117,11 @@ func TestBox_Vertices(t *testing.T) {
 		}
 	})
 	t.Run("ranging allocates nothing", func(t *testing.T) {
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			for vertex := range box.Vertices() {
 				sinkBool = vertex.IsZero()
 			}
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -141,11 +141,11 @@ func TestBox_Edges(t *testing.T) {
 		}
 	})
 	t.Run("ranging allocates nothing", func(t *testing.T) {
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			for edge := range box.Edges() {
 				sinkBool = edge.IsZero()
 			}
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -599,9 +599,9 @@ func TestBox_DistanceToBox(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		other := BoxFromMinMax(Pt(5, 6), Pt(7, 8))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = box.DistanceToBox(other) > 0
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -647,9 +647,9 @@ func TestBox_Support(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		direction := Vec(tenth, 0.7)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = box.Support(direction).X > 0
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -1084,9 +1084,9 @@ func TestBox_Polygon(t *testing.T) {
 		geomtest.AssertPolygon(t, box.Polygon(), box.Rectangle().Polygon())
 	})
 	t.Run("allocates once", func(t *testing.T) {
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkPoints = box.Polygon().Points
-		}), 1)
+		}, 1)
 	})
 }
 

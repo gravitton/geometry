@@ -31,11 +31,11 @@ func TestPolygon_Vertices(t *testing.T) {
 	})
 	t.Run("ranging allocates nothing", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
-			geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			assertAllocations(t, func() {
 				for vertex := range p.Vertices() {
 					sinkBool = vertex.IsZero()
 				}
-			}), 0, fmt.Sprintf("%s: ", p))
+			}, 0, fmt.Sprintf("%s: ", p))
 		}
 	})
 }
@@ -67,11 +67,11 @@ func TestPolygon_Edges(t *testing.T) {
 	})
 	t.Run("ranging allocates nothing", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
-			geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			assertAllocations(t, func() {
 				for edge := range p.Edges() {
 					sinkBool = edge.IsZero()
 				}
-			}), 0, fmt.Sprintf("%s: ", p))
+			}, 0, fmt.Sprintf("%s: ", p))
 		}
 	})
 }
@@ -224,9 +224,9 @@ func TestPolygon_Winding(t *testing.T) {
 		assert.Equal(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 2), Pt(2, 0), Pt(0, 2)}).Winding(), WindingNone)
 	})
 	t.Run("allocates nothing", func(t *testing.T) {
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = square.Winding().IsNone()
-		}), 0)
+		}, 0)
 	})
 	t.Run("float vertices on a line, each rounded off it, have no winding", func(t *testing.T) {
 		assert.Equal(t, Pol(alongLine()).Winding(), WindingNone)
@@ -279,9 +279,9 @@ func TestPolygon_BoundingCircle(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		polygon := Pol(notchedVertices())
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = polygon.BoundingCircle().IsZero()
-		}), 0)
+		}, 0)
 	})
 	t.Run("stays the same as the polygon turns", func(t *testing.T) {
 		for _, p := range outlineFixtures() {
@@ -474,9 +474,9 @@ func TestPolygon_Grow(t *testing.T) {
 		geomtest.AssertPolygon(t, point.Shrink(1), point)
 	})
 	t.Run("allocates the result alone", func(t *testing.T) {
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkPoints = square.Grow(1).Points
-		}), 1)
+		}, 1)
 	})
 	t.Run("over the fixtures every edge of a convex polygon lies the amount farther out", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
@@ -509,9 +509,9 @@ func TestPolygon_AppendGrow(t *testing.T) {
 	t.Run("a buffer with room for every vertex allocates nothing", func(t *testing.T) {
 		buffer := make([]Point[int], 0, len(square.Points))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkPoints = square.AppendGrow(buffer[:0], 1)
-		}), 0)
+		}, 0)
 	})
 	t.Run("matches Grow after the points in dst", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
@@ -576,9 +576,9 @@ func TestPolygon_AppendShrink(t *testing.T) {
 	t.Run("a buffer with room for the cuts allocates nothing", func(t *testing.T) {
 		buffer := make([]Point[int], 0, 2*len(square.Points)+2)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkPoints = square.AppendShrink(buffer[:0], 1)
-		}), 0)
+		}, 0)
 	})
 	t.Run("matches Shrink after the points in dst", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
@@ -701,9 +701,9 @@ func TestPolygon_ConvexHull(t *testing.T) {
 		assert.Zero(t, Polygon[int]{}.ConvexHull())
 	})
 	t.Run("allocates once", func(t *testing.T) {
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkPoints = dart.ConvexHull().Points
-		}), 1)
+		}, 1)
 	})
 	t.Run("over the fixtures", func(t *testing.T) {
 		for _, p := range outlineFixtures() {
@@ -772,9 +772,9 @@ func TestPolygon_AppendConvexHull(t *testing.T) {
 	t.Run("a buffer with room for every vertex allocates nothing", func(t *testing.T) {
 		buffer := make([]Point[int], 0, len(dart.Points))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkPoints = dart.AppendConvexHull(buffer[:0])
-		}), 0)
+		}, 0)
 	})
 	t.Run("matches ConvexHull after the points in dst", func(t *testing.T) {
 		for _, p := range outlineFixtures() {
@@ -856,9 +856,9 @@ func TestPolygon_Simplify(t *testing.T) {
 	t.Run("allocates once", func(t *testing.T) {
 		square := Pol([]Point[int]{Pt(0, 0), Pt(1, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2)})
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkPoints = square.Simplify(0).Points
-		}), 1)
+		}, 1)
 	})
 	t.Run("over the fixtures", func(t *testing.T) {
 		for _, p := range outlineFixtures() {
@@ -903,9 +903,9 @@ func TestPolygon_AppendSimplify(t *testing.T) {
 	t.Run("a buffer with room for every vertex allocates nothing", func(t *testing.T) {
 		buffer := make([]Point[int], 0, len(turned.Points))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkPoints = turned.AppendSimplify(buffer[:0], 0)
-		}), 0)
+		}, 0)
 	})
 	t.Run("matches Simplify after the points in dst", func(t *testing.T) {
 		for _, p := range outlineFixtures() {
@@ -965,9 +965,9 @@ func TestPolygon_Triangulate(t *testing.T) {
 	t.Run("allocates once", func(t *testing.T) {
 		notched := Pol(notchedVertices())
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkInts = notched.Triangulate()
-		}), 1)
+		}, 1)
 	})
 	t.Run("over the fixtures the triangles fill the polygon", func(t *testing.T) {
 		for _, p := range append(outlineFixtures(), Pol(notchedVertices()).Float(), Pol(reverse(notchedVertices())).Float(), benchPolygon()) {
@@ -1017,9 +1017,9 @@ func TestPolygon_AppendTriangulate(t *testing.T) {
 	t.Run("a buffer with room for three indices per vertex past the second allocates nothing", func(t *testing.T) {
 		buffer := make([]int, 0, 3*(len(notched.Points)-2))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkInts = notched.AppendTriangulate(buffer[:0])
-		}), 0)
+		}, 0)
 	})
 	t.Run("matches Triangulate after the indices in dst", func(t *testing.T) {
 		for _, p := range append(outlineFixtures(), Pol(notchedVertices()).Float()) {
@@ -1133,9 +1133,9 @@ func TestPolygon_Support(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		polygon, direction := Pol(squareVertices()), Vec(tenth, 0.7)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = polygon.Support(direction).X > 0
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -1386,9 +1386,9 @@ func TestPolygon_ContainsRegularPolygon(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		inside := RegPol(Pt(2, 2), Sz(1, 1), 6, Pi/5, 0)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = notched.ContainsRegularPolygon(inside)
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -1695,12 +1695,12 @@ func TestPolygon_AppendClipPolygon(t *testing.T) {
 	t.Run("a buffer with room allocates nothing and a convex polygon allocates once", func(t *testing.T) {
 		buffer := make([]Point[int], 0, 2*(len(square.Points)+len(triangle.Points)))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkPoints = square.AppendClipPolygon(buffer[:0], triangle)
-		}), 0)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		}, 0)
+		assertAllocations(t, func() {
 			sinkPoints = square.AppendClipPolygon(nil, triangle)
-		}), 1)
+		}, 1)
 	})
 }
 
@@ -1744,12 +1744,12 @@ func TestPolygon_AppendClipRectangle(t *testing.T) {
 	t.Run("a buffer with room allocates nothing and a convex polygon allocates once", func(t *testing.T) {
 		buffer := make([]Point[int], 0, 16)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkPoints = square.AppendClipRectangle(buffer[:0], rectangle)
-		}), 0)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		}, 0)
+		assertAllocations(t, func() {
 			sinkPoints = square.AppendClipRectangle(nil, rectangle)
-		}), 1)
+		}, 1)
 	})
 }
 
@@ -1795,9 +1795,9 @@ func TestPolygon_AppendClipRegularPolygon(t *testing.T) {
 	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
 		buffer := make([]Point[float64], 0, 16)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = len(square.AppendClipRegularPolygon(buffer[:0], diamond)) > 0
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -1864,12 +1864,12 @@ func TestPolygon_AppendClipBox(t *testing.T) {
 	t.Run("a buffer with room allocates nothing and a convex polygon allocates once", func(t *testing.T) {
 		buffer := make([]Point[int], 0, 16)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkPoints = square.AppendClipBox(buffer[:0], box)
-		}), 0)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		}, 0)
+		assertAllocations(t, func() {
 			sinkPoints = square.AppendClipBox(nil, box)
-		}), 1)
+		}, 1)
 	})
 }
 
@@ -1975,13 +1975,13 @@ func TestPolygon_AppendSplit(t *testing.T) {
 	t.Run("buffers with room allocate nothing and Split allocates once", func(t *testing.T) {
 		front, back := make([]Point[int], 0, 8), make([]Point[int], 0, 8)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkPoints, sinkPoints = square.AppendSplit(front[:0], back[:0], line)
-		}), 0)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		}, 0)
+		assertAllocations(t, func() {
 			front, back := square.Split(line)
 			sinkPoints, sinkPoints = front.Points, back.Points
-		}), 1)
+		}, 1)
 	})
 }
 
@@ -2135,13 +2135,13 @@ func TestPolygon_AppendUnion(t *testing.T) {
 	t.Run("a buffer with room allocates nothing and Union allocates once", func(t *testing.T) {
 		buffer := make([]Point[int], 0, 2*(len(square.Points)+len(shifted.Points)))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkPoints = square.AppendUnion(buffer[:0], shifted)
-		}), 0)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		}, 0)
+		assertAllocations(t, func() {
 			union, _ := square.Union(shifted)
 			sinkPoints = union.Points
-		}), 1)
+		}, 1)
 	})
 }
 
@@ -2227,9 +2227,9 @@ func TestPolygon_IsConvex(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		square := Pol(squareVertices())
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = square.IsConvex()
-		}), 0)
+		}, 0)
 	})
 	t.Run("every rectangle and regular polygon with an area is convex", func(t *testing.T) {
 		for _, r := range rectFixtures {
@@ -2286,9 +2286,9 @@ func TestPolygon_IsSimple(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		square := Pol(squareVertices())
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = square.IsSimple()
-		}), 0)
+		}, 0)
 	})
 	t.Run("every convex polygon is simple, as is the outline of every shape with an area", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
@@ -2335,9 +2335,9 @@ func TestPolygon_Polyline(t *testing.T) {
 	t.Run("allocates once", func(t *testing.T) {
 		polygon := Pol(squareVertices())
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkPoints = polygon.Polyline().Points
-		}), 1)
+		}, 1)
 	})
 }
 

@@ -39,9 +39,21 @@ var sinkString string
 func assertStringAllocation(t *testing.T, stringer func() string) {
 	t.Helper()
 
-	geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+	assertAllocations(t, func() {
 		sinkString = stringer()
-	}), 1)
+	}, 1)
+}
+
+// assertAllocations asserts that f allocates the expected number of times on average. It checks
+// nothing under the race detector, which allocates on its own.
+func assertAllocations(t *testing.T, f func(), expected float64, messages ...string) {
+	t.Helper()
+
+	if race {
+		return
+	}
+
+	geomtest.AssertNumber(t, testing.AllocsPerRun(100, f), expected, messages...)
 }
 
 func TestMultiply(t *testing.T) {

@@ -42,11 +42,11 @@ func TestPair_All(t *testing.T) {
 	t.Run("ranging a result allocates nothing", func(t *testing.T) {
 		circle, other := Circ(Pt(0.0, 0.0), 5.0), Circ(Pt(6.0, 0.0), 5.0)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			for p := range circle.IntersectionCircle(other).All() {
 				sinkBool = p.X > 0
 			}
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -111,9 +111,9 @@ func TestPair_AppendTo(t *testing.T) {
 		circle, other := Circ(Pt(0, 0), 5), Circ(Pt(6, 0), 5)
 		buffer := make([]Point[int], 0, 2)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkPoints = circle.IntersectionCircle(other).AppendTo(buffer[:0])
-		}), 0)
+		}, 0)
 	})
 }
 

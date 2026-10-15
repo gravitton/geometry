@@ -183,9 +183,9 @@ func TestQuadraticBezier_IntersectionSegment(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(-1.0, 1.5), Pt(5.0, 1.5+tenth))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = curve.IntersectionSegment(through).Count > 0
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -262,12 +262,12 @@ func TestQuadraticBezier_AppendPolyline(t *testing.T) {
 	t.Run("allocates once, and nothing into a buffer with room", func(t *testing.T) {
 		curve, buffer := QuadBez(Pt(0, 0), Pt(40, 40), Pt(80, 0)), make([]Point[int], 0, 64)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkPoints = curve.Polyline(tenth).Points
-		}), 1)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		}, 1)
+		assertAllocations(t, func() {
 			sinkPoints = curve.AppendPolyline(buffer[:0], 1)
-		}), 0)
+		}, 0)
 	})
 }
 

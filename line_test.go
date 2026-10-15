@@ -564,9 +564,9 @@ func TestLine_IntersectsPolygon(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Ln(Pt(-2, 2), Vec(1, 0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = through.IntersectsPolygon(square)
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -693,9 +693,9 @@ func TestLine_AppendIntersectionSector(t *testing.T) {
 	t.Run("appends to a buffer with room without allocating", func(t *testing.T) {
 		buffer := make([]Point[float64], 0, 4)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = len(through.AppendIntersectionSector(buffer[:0], sector)) > 0
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -878,9 +878,9 @@ func TestLine_AppendIntersectionCubicBezier(t *testing.T) {
 	t.Run("appends to a buffer with room without allocating", func(t *testing.T) {
 		buffer := make([]Point[float64], 0, 4)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = len(through.AppendIntersectionCubicBezier(buffer[:0], curve)) > 0
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -909,12 +909,12 @@ func TestLine_IntersectionPolygon(t *testing.T) {
 	t.Run("allocates the result alone", func(t *testing.T) {
 		through, apart := Ln(Pt(-2, 2), Vec(1, 0)), Ln(Pt(-2, 2), Vec(0, 1))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkPoints = through.IntersectionPolygon(square)
-		}), 1)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		}, 1)
+		assertAllocations(t, func() {
 			sinkPoints = apart.IntersectionPolygon(square)
-		}), 0)
+		}, 0)
 	})
 	t.Run("every point lies on the line and an edge, and exists where IntersectsPolygon holds", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
@@ -939,9 +939,9 @@ func TestLine_AppendIntersectionPolygon(t *testing.T) {
 	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
 		buffer := make([]Point[int], 0, 2)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkPoints = through.AppendIntersectionPolygon(buffer[:0], square)
-		}), 0)
+		}, 0)
 	})
 	t.Run("matches IntersectionPolygon after the points in dst", func(t *testing.T) {
 		for _, l := range lineFixtures {
@@ -1050,9 +1050,9 @@ func TestLine_ClipCircle(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Ln(Pt(-10, 0), Vec(1, 0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			_, sinkBool = through.ClipCircle(circle)
-		}), 0)
+		}, 0)
 	})
 	t.Run("over the fixtures", func(t *testing.T) {
 		for _, l := range lineFixtures {
@@ -1130,9 +1130,9 @@ func TestLine_AppendClipPolygon(t *testing.T) {
 	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
 		buffer := make([]Segment[int], 0, 1)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkSegments = through.AppendClipPolygon(buffer[:0], square)
-		}), 0)
+		}, 0)
 	})
 	t.Run("matches ClipPolygon after the segments in dst", func(t *testing.T) {
 		for _, l := range lineFixtures {
@@ -1158,9 +1158,9 @@ func TestLine_ClipRectangle(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Ln(Pt(-5.0, 0.0), Vec(1.0, 0.0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			_, sinkBool = through.ClipRectangle(rectangle)
-		}), 0)
+		}, 0)
 	})
 	t.Run("over the fixtures", func(t *testing.T) {
 		for _, l := range lineFixtures {
@@ -1184,9 +1184,9 @@ func TestLine_ClipRegularPolygon(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Ln(Pt(-20.0, 0.0), Vec(1.0, 0.0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			_, sinkBool = through.ClipRegularPolygon(hexagon)
-		}), 0)
+		}, 0)
 	})
 	t.Run("over the fixtures", func(t *testing.T) {
 		for _, l := range lineFixtures {
@@ -1215,9 +1215,9 @@ func TestLine_ClipBox(t *testing.T) {
 		through := Ln(Pt(-5.0, 0.5), Vec(1.0, 0.0))
 		box := Bx(Pt(-2.0, -2.0), Pt(2.0, 2.0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			_, sinkBool = through.ClipBox(box)
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -1233,9 +1233,9 @@ func TestLine_ClipEllipse(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Ln(Pt(-8.0, 0.0), Vec(1.0, 0.0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			_, sinkBool = through.ClipEllipse(ellipse)
-		}), 0)
+		}, 0)
 	})
 	t.Run("over the fixtures", func(t *testing.T) {
 		for _, e := range ellipseFixtures {

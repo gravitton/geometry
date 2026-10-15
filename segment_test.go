@@ -108,11 +108,11 @@ func TestSegment_Vertices(t *testing.T) {
 	t.Run("ranging allocates nothing", func(t *testing.T) {
 		s := Seg(Pt(1, 2), Pt(3, 5))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			for vertex := range s.Vertices() {
 				sinkBool = vertex.IsZero()
 			}
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -126,11 +126,11 @@ func TestSegment_Edges(t *testing.T) {
 		geomtest.AssertSegment(t, edges[0], s)
 	})
 	t.Run("ranging allocates nothing", func(t *testing.T) {
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			for edge := range s.Edges() {
 				sinkBool = edge.IsZero()
 			}
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -621,9 +621,9 @@ func TestSegment_Support(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		direction := Vec(tenth, 0.7)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = segment.Support(direction).X > 0
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -1081,9 +1081,9 @@ func TestSegment_AppendIntersectionSector(t *testing.T) {
 	t.Run("appends to a buffer with room without allocating", func(t *testing.T) {
 		buffer := make([]Point[float64], 0, 4)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = len(through.AppendIntersectionSector(buffer[:0], sector)) > 0
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -1509,9 +1509,9 @@ func TestSegment_AppendIntersectionCubicBezier(t *testing.T) {
 	t.Run("appends to a buffer with room without allocating", func(t *testing.T) {
 		buffer := make([]Point[float64], 0, 4)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = len(through.AppendIntersectionCubicBezier(buffer[:0], wave)) > 0
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -1546,12 +1546,12 @@ func TestSegment_IntersectionPolygon(t *testing.T) {
 	t.Run("allocates the result alone", func(t *testing.T) {
 		through, apart := Seg(Pt(-1, 1), Pt(5, 1)), Seg(Pt(3, -1), Pt(3, 3))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkPoints = through.IntersectionPolygon(square)
-		}), 1)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		}, 1)
+		assertAllocations(t, func() {
 			sinkPoints = apart.IntersectionPolygon(square)
-		}), 0)
+		}, 0)
 	})
 	t.Run("matches the rectangle crossings on the rectangle as a polygon", func(t *testing.T) {
 		for _, r := range rectFixtures {
@@ -1618,9 +1618,9 @@ func TestSegment_AppendIntersectionPolygon(t *testing.T) {
 	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
 		buffer := make([]Point[int], 0, 2)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkPoints = through.AppendIntersectionPolygon(buffer[:0], square)
-		}), 0)
+		}, 0)
 	})
 	t.Run("matches IntersectionPolygon after the points in dst", func(t *testing.T) {
 		for _, s := range segmentFixtures {
@@ -1669,15 +1669,15 @@ func TestSegment_IntersectionRectangle(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through, apart := Seg(Pt(-5, 1), Pt(5, 1)), Seg(Pt(3, -5), Pt(3, 5))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = through.IntersectionRectangle(rectangle).Count > 0
-		}), 0)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		}, 0)
+		assertAllocations(t, func() {
 			sinkBool = through.IntersectionRectangle(rectangle.Rotate(Pi/5)).Count > 0
-		}), 0)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		}, 0)
+		assertAllocations(t, func() {
 			sinkBool = apart.IntersectionRectangle(rectangle).Count > 0
-		}), 0)
+		}, 0)
 	})
 	t.Run("float keeps the crossings", func(t *testing.T) {
 		geomtest.AssertVertices(t, Seg(Pt(-5.0, 1.0), Pt(5.0, 1.0)).IntersectionRectangle(Rect(Pt(0.0, 0.0), Sz(3.0, 3.0), 0)).AppendTo(nil), []Point[float64]{Pt(-1.5, 1.0), Pt(1.5, 1.0)})
@@ -1797,12 +1797,12 @@ func TestSegment_IntersectionRegularPolygon(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through, apart := Seg(Pt(-3, 0), Pt(3, 0)), Seg(Pt(5, 0), Pt(6, 0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = through.IntersectionRegularPolygon(diamond).Count > 0
-		}), 0)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		}, 0)
+		assertAllocations(t, func() {
 			sinkBool = apart.IntersectionRegularPolygon(diamond).Count > 0
-		}), 0)
+		}, 0)
 	})
 	t.Run("matches the polygon of the vertices", func(t *testing.T) {
 		for _, s := range segmentFixtures {
@@ -1937,9 +1937,9 @@ func TestSegment_IntersectionEllipse(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(-8.0, 1.0), Pt(8.0, 1.0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = through.IntersectionEllipse(ellipse).IsEmpty()
-		}), 0)
+		}, 0)
 	})
 	t.Run("matches IntersectionCircle on the circle's Ellipse", func(t *testing.T) {
 		for _, s := range segmentFixtures {
@@ -1990,9 +1990,9 @@ func TestSegment_ClipCircle(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		unit, through := Circ(Pt(0, 0), 5), Seg(Pt(-10, 0), Pt(10, 0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			_, sinkBool = through.ClipCircle(unit)
-		}), 0)
+		}, 0)
 	})
 	t.Run("over the fixtures", func(t *testing.T) {
 		for _, s := range segmentFixtures {
@@ -2033,9 +2033,9 @@ func TestSegment_ClipCapsule(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(5.0, 10.0), Pt(tenth, -10.0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			_, sinkBool = through.ClipCapsule(capsule)
-		}), 0)
+		}, 0)
 	})
 	t.Run("over the fixtures", func(t *testing.T) {
 		for _, c := range capsuleFixtures {
@@ -2074,9 +2074,9 @@ func TestSegment_ClipSector(t *testing.T) {
 	t.Run("appends to a buffer with room without allocating", func(t *testing.T) {
 		buffer, through := make([]Segment[float64], 0, 4), Seg(Pt(3.0, 10.0), Pt(tenth, -10.0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = len(through.AppendClipSector(buffer[:0], notched)) > 0
-		}), 0)
+		}, 0)
 	})
 	t.Run("over the fixtures", func(t *testing.T) {
 		for _, fixture := range sectorFixtures() {
@@ -2158,12 +2158,12 @@ func TestSegment_ClipPolygon(t *testing.T) {
 	t.Run("allocates the result alone", func(t *testing.T) {
 		through, apart := Seg(Pt(-1, 1), Pt(5, 1)), Seg(Pt(3, -1), Pt(3, 3))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkSegments = through.ClipPolygon(square)
-		}), 1)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		}, 1)
+		assertAllocations(t, func() {
 			sinkSegments = apart.ClipPolygon(square)
-		}), 0)
+		}, 0)
 	})
 	t.Run("matches ClipRectangle on the rectangle as a polygon", func(t *testing.T) {
 		for _, r := range rectFixtures {
@@ -2272,9 +2272,9 @@ func TestSegment_AppendClipPolygon(t *testing.T) {
 	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
 		buffer := make([]Segment[int], 0, 1)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkSegments = through.AppendClipPolygon(buffer[:0], square)
-		}), 0)
+		}, 0)
 	})
 	t.Run("more crossings than one pass holds are found by passing again, without allocating", func(t *testing.T) {
 		const teeth = 12
@@ -2299,9 +2299,9 @@ func TestSegment_AppendClipPolygon(t *testing.T) {
 		}
 
 		geomtest.AssertSegments(t, across.Reverse().AppendClipPolygon(buffer[:0], Pol(comb)), parts)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkSegments = across.AppendClipPolygon(buffer[:0], Pol(comb))
-		}), 0)
+		}, 0)
 	})
 	t.Run("matches ClipPolygon after the segments in dst", func(t *testing.T) {
 		for _, s := range segmentFixtures {
@@ -2344,12 +2344,12 @@ func TestSegment_ClipRectangle(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(-5, 1), Pt(5, 1))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			_, sinkBool = through.ClipRectangle(rectangle)
-		}), 0)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		}, 0)
+		assertAllocations(t, func() {
 			_, sinkBool = through.ClipRectangle(rectangle.Rotate(Pi / 5))
-		}), 0)
+		}, 0)
 	})
 	t.Run("over the fixtures", func(t *testing.T) {
 		for _, r := range rectFixtures {
@@ -2399,9 +2399,9 @@ func TestSegment_ClipRegularPolygon(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(-3, 0), Pt(3, 0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			_, sinkBool = through.ClipRegularPolygon(diamond)
-		}), 0)
+		}, 0)
 	})
 	t.Run("matches the polygon of the vertices", func(t *testing.T) {
 		for _, s := range segmentFixtures {
@@ -2449,9 +2449,9 @@ func TestSegment_ClipBox(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(-5, 0), Pt(5, 0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			_, sinkBool = through.ClipBox(box)
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -2478,9 +2478,9 @@ func TestSegment_ClipEllipse(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(-8.0, 1.0), Pt(8.0, 1.0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			_, sinkBool = through.ClipEllipse(ellipse)
-		}), 0)
+		}, 0)
 	})
 	t.Run("matches ClipCircle on the circle's Ellipse", func(t *testing.T) {
 		for _, s := range segmentFixtures {
@@ -2546,9 +2546,9 @@ func TestSegment_HitCircle(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		unit, through := Circ(Pt(0, 0), 5), Seg(Pt(-10, 0), Pt(10, 0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			_, sinkBool = through.HitCircle(unit)
-		}), 0)
+		}, 0)
 	})
 	t.Run("over the fixtures", func(t *testing.T) {
 		for _, c := range circleFixtures {
@@ -2634,9 +2634,9 @@ func TestSegment_HitCapsule(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(5.0, 10.0), Pt(tenth, -10.0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			_, sinkBool = through.HitCapsule(capsule)
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -2720,9 +2720,9 @@ func TestSegment_HitSector(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(3.0, 10.0), Pt(tenth, -10.0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			_, sinkBool = through.HitSector(sector)
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -2768,9 +2768,9 @@ func TestSegment_HitArc(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(3.0, 10.0), Pt(tenth, -10.0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			_, sinkBool = through.HitArc(arc)
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -2836,9 +2836,9 @@ func TestSegment_HitSegment(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		wall := Seg(Pt(0.0, -1.0), Pt(0.0, 1.0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			_, sinkBool = through.HitSegment(wall)
-		}), 0)
+		}, 0)
 	})
 	t.Run("over the fixtures", func(t *testing.T) {
 		for _, s := range segmentFixtures {
@@ -2950,9 +2950,9 @@ func TestSegment_HitPolyline(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(2.0, 5.0), Pt(tenth, -5.0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			_, sinkBool = through.HitPolyline(path)
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -3046,9 +3046,9 @@ func TestSegment_HitCubicBezier(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(8.0, tenth), Pt(-2.0, 0.0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			_, sinkBool = through.HitCubicBezier(wave)
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -3091,9 +3091,9 @@ func TestSegment_HitPolygon(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(-1, 1), Pt(5, 1))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			_, sinkBool = through.HitPolygon(notched)
-		}), 0)
+		}, 0)
 	})
 	t.Run("over the fixtures", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
@@ -3150,12 +3150,12 @@ func TestSegment_HitRectangle(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(-5, 1), Pt(5, 1))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			_, sinkBool = through.HitRectangle(rectangle)
-		}), 0)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		}, 0)
+		assertAllocations(t, func() {
 			_, sinkBool = through.HitRectangle(rectangle.Rotate(Pi / 5))
-		}), 0)
+		}, 0)
 	})
 	t.Run("over the fixtures", func(t *testing.T) {
 		for _, r := range rectFixtures {
@@ -3199,9 +3199,9 @@ func TestSegment_HitRegularPolygon(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(-3, 1), Pt(3, 1))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			_, sinkBool = through.HitRegularPolygon(diamond)
-		}), 0)
+		}, 0)
 	})
 	t.Run("over the fixtures", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
@@ -3242,9 +3242,9 @@ func TestSegment_HitBox(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(-5, 0), Pt(5, 0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			_, sinkBool = through.HitBox(box)
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -3356,9 +3356,9 @@ func TestSegment_HitEllipse(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through, turned := Seg(Pt(-10.0, tenth), Pt(10.0, 0.0)), Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0.3)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			_, sinkBool = through.HitEllipse(turned)
-		}), 0)
+		}, 0)
 	})
 }
 

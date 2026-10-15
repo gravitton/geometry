@@ -88,9 +88,9 @@ func TestCircleThrough(t *testing.T) {
 		assert.False(t, ok)
 	})
 	t.Run("allocates nothing", func(t *testing.T) {
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			_, sinkBool = CircleThrough(Pt(0, 0), Pt(6, 0), Pt(0, 8))
-		}), 0)
+		}, 0)
 	})
 	t.Run("three anchors of a circle give it back, in any order", func(t *testing.T) {
 		for _, c := range circleFixtures[1:] {
@@ -432,9 +432,9 @@ func TestCircle_DistanceToCircle(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		circle, other := Circ(Pt(0, 0), 1), Circ(Pt(3, 4), 2)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = circle.DistanceToCircle(other) > 0
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -485,9 +485,9 @@ func TestCircle_Support(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		circle, direction := Circ(Pt(1, 2), 5), Vec(tenth, 0.7)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = circle.Support(direction).X > 0
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -1186,12 +1186,12 @@ func TestCircle_IntersectionSegment(t *testing.T) {
 		unit := Circ(Pt(0, 0), 5)
 		through, apart := Seg(Pt(-10, 0), Pt(10, 0)), Seg(Pt(-10, 9), Pt(10, 9))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = unit.IntersectionSegment(through).Count > 0
-		}), 0)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		}, 0)
+		assertAllocations(t, func() {
 			sinkBool = unit.IntersectionSegment(apart).Count > 0
-		}), 0)
+		}, 0)
 	})
 	t.Run("tangent gives one point", func(t *testing.T) {
 		geomtest.AssertVertices(t, circle.IntersectionSegment(Seg(Pt(-2.0, 1.0), Pt(2.0, 1.0))).AppendTo(nil), []Point[float64]{Pt(0.0, 1.0)})
@@ -1380,12 +1380,12 @@ func TestCircle_IntersectionRay(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through, away := Ry(Pt(-10, 0), Vec(1, 0)), Ry(Pt(-10, 0), Vec(-1, 0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = circle.IntersectionRay(through).Count > 0
-		}), 0)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		}, 0)
+		assertAllocations(t, func() {
 			sinkBool = circle.IntersectionRay(away).Count > 0
-		}), 0)
+		}, 0)
 	})
 	t.Run("every point lies on the ray and the boundary, and exists exactly where IntersectsRay holds for a ray with a direction", func(t *testing.T) {
 		for _, c := range circleFixtures {
@@ -1425,12 +1425,12 @@ func TestCircle_IntersectionLine(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through, apart := Ln(Pt(-10, 0), Vec(1, 0)), Ln(Pt(-10, 0), Vec(0, 1))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = circle.IntersectionLine(through).Count > 0
-		}), 0)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		}, 0)
+		assertAllocations(t, func() {
 			sinkBool = circle.IntersectionLine(apart).Count > 0
-		}), 0)
+		}, 0)
 	})
 	t.Run("every point lies on the line and the boundary, and exists exactly where IntersectsLine holds for a line with a direction", func(t *testing.T) {
 		for _, c := range circleFixtures {
@@ -1640,9 +1640,9 @@ func TestCircle_Union(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		a, b := Circ(Pt(0, 0), 1), Circ(Pt(10, 0), 1)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = a.Union(b).Radius > 0
-		}), 0)
+		}, 0)
 	})
 	t.Run("contains both, the same whichever asks", func(t *testing.T) {
 		for _, a := range circleFixtures {
@@ -1778,12 +1778,12 @@ func TestCircle_AppendPolygon(t *testing.T) {
 		circle := Circ(Pt(0, 0), 50)
 		buffer := make([]Point[int], 0, 64)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkPoints = circle.Polygon(1).Points
-		}), 1)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		}, 1)
+		assertAllocations(t, func() {
 			sinkPoints = circle.AppendPolygon(buffer[:0], 1)
-		}), 0)
+		}, 0)
 	})
 }
 

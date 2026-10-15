@@ -194,11 +194,11 @@ func TestRegularPolygon_Vertices(t *testing.T) {
 	})
 	t.Run("ranging allocates nothing", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
-			geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			assertAllocations(t, func() {
 				for vertex := range rp.Vertices() {
 					sinkBool = vertex.IsZero()
 				}
-			}), 0, fmt.Sprintf("%s: ", rp))
+			}, 0, fmt.Sprintf("%s: ", rp))
 		}
 	})
 }
@@ -240,11 +240,11 @@ func TestRegularPolygon_Edges(t *testing.T) {
 	})
 	t.Run("ranging allocates nothing", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
-			geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+			assertAllocations(t, func() {
 				for edge := range rp.Edges() {
 					sinkBool = edge.IsZero()
 				}
-			}), 0, fmt.Sprintf("%s: ", rp))
+			}, 0, fmt.Sprintf("%s: ", rp))
 		}
 	})
 }
@@ -425,9 +425,9 @@ func TestRegularPolygon_BoundingCircle(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		rp := RegPol(Pt(1, 2), Sz(2, 3), 6, Pi/6, 0)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = rp.BoundingCircle().IsZero()
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -813,9 +813,9 @@ func TestRegularPolygon_Support(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		polygon, direction := RegPol(Pt(1.0, 2.0), Sz(2.0, 3.0), 7, 0.2, 0.1), Vec(tenth, 0.7)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = polygon.Support(direction).X > 0
-		}), 0)
+		}, 0)
 	})
 }
 

@@ -52,11 +52,11 @@ func TestPolyline_Edges(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		path := PolLn(cornerPath())
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			for edge := range path.Edges() {
 				sinkBool = edge.Start.X > 0
 			}
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -230,11 +230,11 @@ func TestPolyline_Every(t *testing.T) {
 		assert.Equal(t, count, 3)
 	})
 	t.Run("allocates nothing", func(t *testing.T) {
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			for point := range path.Every(tenth) {
 				sinkBool = point.X > 0
 			}
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -290,12 +290,12 @@ func TestPolyline_AppendSimplify(t *testing.T) {
 	t.Run("allocates once, and nothing into a buffer with room", func(t *testing.T) {
 		buffer := make([]Point[int], 0, 8)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkPoints = path.Simplify(0).Points
-		}), 1)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		}, 1)
+		assertAllocations(t, func() {
 			sinkPoints = path.AppendSimplify(buffer[:0], 0)
-		}), 0)
+		}, 0)
 	})
 }
 

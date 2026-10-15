@@ -230,9 +230,9 @@ func TestSector_DistanceToSector(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		other := Sect(Pt(10.0, tenth), 2.0, Pi/2, Pi)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = s.DistanceToSector(other) > 0
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -293,9 +293,9 @@ func TestSector_Support(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		direction := Vec(tenth, 1.0)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = s.Support(direction).X > 0
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -437,9 +437,9 @@ func TestSector_ContainsSegment(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		segment := Seg(Pt(tenth, 1.0), Pt(3.0, 3.0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = s.ContainsSegment(segment)
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -638,9 +638,9 @@ func TestSector_IntersectsSegment(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		segment := Seg(Pt(tenth, 6.0), Pt(6.0, 0.0))
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = s.IntersectsSegment(segment)
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -974,12 +974,12 @@ func TestSector_AppendPolygon(t *testing.T) {
 		sector := Sect(Pt(0, 0), 50, 0, 1.5)
 		buffer := make([]Point[int], 0, 64)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkPoints = sector.Polygon(tenth).Points
-		}), 1)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		}, 1)
+		assertAllocations(t, func() {
 			sinkPoints = sector.AppendPolygon(buffer[:0], tenth)
-		}), 0)
+		}, 0)
 	})
 }
 

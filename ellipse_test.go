@@ -568,9 +568,9 @@ func TestEllipse_Support(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		ellipse, direction := Ell(Pt(1, 2), Sz(4, 2), 0.3), Vec(tenth, 0.7)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkBool = ellipse.Support(direction).X > 0
-		}), 0)
+		}, 0)
 	})
 }
 
@@ -821,12 +821,12 @@ func TestEllipse_AppendPolygon(t *testing.T) {
 		ellipse := Ell(Pt(0, 0), Sz(50, 30), 0.5)
 		buffer := make([]Point[int], 0, 64)
 
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		assertAllocations(t, func() {
 			sinkPoints = ellipse.Polygon(1).Points
-		}), 1)
-		geomtest.AssertNumber(t, testing.AllocsPerRun(100, func() {
+		}, 1)
+		assertAllocations(t, func() {
 			sinkPoints = ellipse.AppendPolygon(buffer[:0], 1)
-		}), 0)
+		}, 0)
 	})
 }
 
