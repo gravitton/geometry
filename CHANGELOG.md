@@ -13,8 +13,15 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 
 ## [Unreleased](https://github.com/gravitton/geometry/compare/v1.17.0...main)
 
+### Added
+- `ErrDivisionByZero`, `ErrSingularMatrix`, `ErrNonFinite`, `ErrCountMismatch` and `ErrUnknownOrientation` – the sentinels every panic matches with `errors.Is`
+
 ### Changed
-- CI runs the tests under the race detector again and measures coverage in a second run; the allocation tests check nothing under the race detector, since it allocates on its own
+- Require `assert` v1.7.0 for the tests
+- **breaking** Every panic value is an `error` rather than a string; a `recover` that asserted a string must assert an `error`
+
+### Fixed
+- `Pair` methods read a `Count` below zero as no item and one above two as both, where they panicked
 
 ## [v1.17.0](https://github.com/gravitton/geometry/compare/v1.16.0...v1.17.0) (2026-10-15)
 

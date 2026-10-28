@@ -294,9 +294,9 @@ func TestEllipse_Unscale(t *testing.T) {
 		geomtest.AssertEllipse(t, Ell(Pt(1, 2), Sz(20, 8), 0).Unscale(-2), Ell(Pt(1, 2), Sz(10, 4), 0))
 	})
 	t.Run("a zero factor panics", func(t *testing.T) {
-		assert.Panics(t, func() {
+		assert.PanicsWith(t, func() {
 			Ell(Pt(1, 2), Sz(10, 4), 0).Unscale(0)
-		}, "geom: division by zero")
+		}, ErrDivisionByZero)
 	})
 }
 
@@ -305,9 +305,9 @@ func TestEllipse_UnscaleXY(t *testing.T) {
 		geomtest.AssertEllipse(t, Ell(Pt(1, 2), Sz(20, 2), 0).UnscaleXY(2, 0.5), Ell(Pt(1, 2), Sz(10, 4), 0))
 	})
 	t.Run("a zero factor panics", func(t *testing.T) {
-		assert.Panics(t, func() {
+		assert.PanicsWith(t, func() {
 			Ell(Pt(1, 2), Sz(10, 4), 0).UnscaleXY(1, 0)
-		}, "geom: division by zero")
+		}, ErrDivisionByZero)
 	})
 }
 
@@ -845,9 +845,9 @@ func TestEllipse_RegularPolygon(t *testing.T) {
 		}
 	})
 	t.Run("an orientation that is neither panics", func(t *testing.T) {
-		assert.Panics(t, func() {
+		assert.PanicsWith(t, func() {
 			e.RegularPolygon(6, OrientationNone)
-		})
+		}, ErrUnknownOrientation)
 	})
 	t.Run("every vertex lies on the boundary", func(t *testing.T) {
 		for vertex := range e.RegularPolygon(7, OrientationPointyTop).Vertices() {

@@ -369,12 +369,12 @@ func TestMatrix_Unscale(t *testing.T) {
 	t.Run("zero factor panics", func(t *testing.T) {
 		m := ScaleMatrix(2.0, 3.0)
 
-		assert.Panics(t, func() {
+		assert.PanicsWith(t, func() {
 			m.Unscale(0.0, 3.0)
-		}, "geom: division by zero")
-		assert.Panics(t, func() {
+		}, ErrDivisionByZero)
+		assert.PanicsWith(t, func() {
 			m.Unscale(2.0, 0.0)
-		}, "geom: division by zero")
+		}, ErrDivisionByZero)
 	})
 	t.Run("integer divides each column", func(t *testing.T) {
 		geomtest.AssertMatrix(t, ScaleMatrix(4, 6).Unscale(1, 1), ScaleMatrix(4, 6))
@@ -543,15 +543,15 @@ func TestMatrix_Inverse(t *testing.T) {
 		geomtest.AssertMatrix(t, TranslationMatrix[float32](5, 3).Inverse(), TranslationMatrix[float32](-5, -3))
 	})
 	t.Run("singular matrix panics", func(t *testing.T) {
-		assert.Panics(t, func() {
+		assert.PanicsWith(t, func() {
 			Mat(0.0, 0.0, 0.0, 0.0, 0.0, 0.0).Inverse()
-		}, "geom: inverse of a singular matrix")
-		assert.Panics(t, func() {
+		}, ErrSingularMatrix)
+		assert.PanicsWith(t, func() {
 			ScaleMatrix(1, 0).Inverse()
-		}, "geom: inverse of a singular matrix")
-		assert.Panics(t, func() {
+		}, ErrSingularMatrix)
+		assert.PanicsWith(t, func() {
 			Mat(0.1, 0.3, 0.0, 0.1, 0.3, 0.0).Inverse()
-		}, "geom: inverse of a singular matrix")
+		}, ErrSingularMatrix)
 	})
 	t.Run("negative zero prints as zero", func(t *testing.T) {
 		assert.Equal(t, ScaleMatrix(2.0, 4.0).Translate(1, 1).Inverse().String(), "[[0.50, 0.00, -1.00], [0.00, 0.25, -1.00]]")

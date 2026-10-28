@@ -10,8 +10,7 @@ import (
 // Reverse are different values over the same points, and a segment of zero length is the point both
 // ends are.
 //
-// It is a Shape with no inside, and the edge every outline is walked by. It moves, turns and scales
-// about its Midpoint.
+// It is a Shape with no inside. It moves, turns and scales about its Midpoint.
 type Segment[T Number] struct {
 	Start Point[T] `json:"s"`
 	End   Point[T] `json:"e"`

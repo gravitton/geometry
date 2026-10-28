@@ -594,12 +594,12 @@ func TestRectangle_Unscale(t *testing.T) {
 		geomtest.AssertRectangle(t, Rect(Pt(0.6, -0.25), Sz(1.8, 7.2), 0).UnscaleXY(-1.5, 2), Rect(Pt(0.6, -0.25), Sz(1.2, 3.6), 0))
 	})
 	t.Run("zero factor panics", func(t *testing.T) {
-		assert.Panics(t, func() {
+		assert.PanicsWith(t, func() {
 			Rect(Pt(1, 2), Sz(10, 20), 0).Unscale(0)
-		}, "geom: division by zero")
-		assert.Panics(t, func() {
+		}, ErrDivisionByZero)
+		assert.PanicsWith(t, func() {
 			Rect(Pt(1, 2), Sz(10, 20), 0).UnscaleXY(0, 2)
-		}, "geom: division by zero")
+		}, ErrDivisionByZero)
 	})
 }
 

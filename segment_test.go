@@ -277,12 +277,12 @@ func TestSegment_Unscale(t *testing.T) {
 		geomtest.AssertSegment(t, s.ScaleXY(2.0, 4.0).UnscaleXY(2.0, 4.0), s)
 	})
 	t.Run("zero factor panics", func(t *testing.T) {
-		assert.Panics(t, func() {
+		assert.PanicsWith(t, func() {
 			Seg(Pt(0.0, 0.0), Pt(8.0, 4.0)).Unscale(0)
-		}, "geom: division by zero")
-		assert.Panics(t, func() {
+		}, ErrDivisionByZero)
+		assert.PanicsWith(t, func() {
 			Seg(Pt(0.0, 0.0), Pt(8.0, 4.0)).UnscaleXY(0, 2)
-		}, "geom: division by zero")
+		}, ErrDivisionByZero)
 	})
 }
 

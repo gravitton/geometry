@@ -357,7 +357,7 @@ func (m Matrix[T]) Multiply(matrix Matrix[T]) Matrix[T] {
 func (m Matrix[T]) Inverse() Matrix[T] {
 	det := m.determinant()
 	if det == 0 {
-		panic("geom: inverse of a singular matrix")
+		panic(ErrSingularMatrix)
 	}
 
 	f := m.Float()

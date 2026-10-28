@@ -41,12 +41,12 @@ func TestCast(t *testing.T) {
 	})
 	t.Run("int panics on a non-finite value", func(t *testing.T) {
 		for _, value := range []float64{math.NaN(), math.Inf(1), math.Inf(-1)} {
-			assert.Panics(t, func() {
+			assert.PanicsWith(t, func() {
 				Cast[int](value)
-			}, fmt.Sprintf("%v: ", value))
-			assert.Panics(t, func() {
+			}, ErrNonFinite, fmt.Sprintf("%v: ", value))
+			assert.PanicsWith(t, func() {
 				Cast[namedInt8](value)
-			}, fmt.Sprintf("%v: ", value))
+			}, ErrNonFinite, fmt.Sprintf("%v: ", value))
 		}
 	})
 	t.Run("float keeps a non-finite value", func(t *testing.T) {

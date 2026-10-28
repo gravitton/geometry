@@ -132,12 +132,12 @@ func TestSize_Unscale(t *testing.T) {
 		geomtest.AssertSize(t, Sz(0.5, 2.5).UnscaleXY(2.5, 0.5), Sz(0.2, 5.0))
 	})
 	t.Run("zero factor panics", func(t *testing.T) {
-		assert.Panics(t, func() {
+		assert.PanicsWith(t, func() {
 			Sz(10, 20).Unscale(0)
-		}, "geom: division by zero")
-		assert.Panics(t, func() {
+		}, ErrDivisionByZero)
+		assert.PanicsWith(t, func() {
 			Sz(10, 20).UnscaleXY(0, 2)
-		}, "geom: division by zero")
+		}, ErrDivisionByZero)
 	})
 }
 

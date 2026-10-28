@@ -148,9 +148,9 @@ func TestCapsule_Unscale(t *testing.T) {
 		geomtest.AssertCapsule(t, Cap(Pt(-4, 0), Pt(4, 0), 4).Unscale(-2), Cap(Pt(2, 0), Pt(-2, 0), 2))
 	})
 	t.Run("a zero factor panics", func(t *testing.T) {
-		assert.Panics(t, func() {
+		assert.PanicsWith(t, func() {
 			Cap(Pt(-4, 0), Pt(4, 0), 4).Unscale(0)
-		}, "geom: division by zero")
+		}, ErrDivisionByZero)
 	})
 }
 

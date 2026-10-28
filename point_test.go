@@ -121,12 +121,12 @@ func TestPoint_Divide(t *testing.T) {
 		geomtest.AssertPoint(t, Pt(0.6, -0.25).DivideXY(-4, 0.5), Pt(-0.15, -0.5))
 	})
 	t.Run("zero factor panics", func(t *testing.T) {
-		assert.Panics(t, func() {
+		assert.PanicsWith(t, func() {
 			Pt(5, 10).Divide(0)
-		}, "geom: division by zero")
-		assert.Panics(t, func() {
+		}, ErrDivisionByZero)
+		assert.PanicsWith(t, func() {
 			Pt(0.6, -0.25).DivideXY(2, 0)
-		}, "geom: division by zero")
+		}, ErrDivisionByZero)
 	})
 }
 

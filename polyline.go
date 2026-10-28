@@ -82,7 +82,7 @@ func (p Polyline[T]) Transform[M Float](matrix Matrix[M]) Polyline[T] {
 // index, and extrapolated outside [0, 1]. It panics for paths of different point counts.
 func (p Polyline[T]) Lerp(polyline Polyline[T], t float64) Polyline[T] {
 	if len(p.Points) != len(polyline.Points) {
-		panic(fmt.Sprintf("geom: lerp between polylines of %d and %d points", len(p.Points), len(polyline.Points)))
+		panic(fmt.Errorf("%w: polylines of %d and %d points", ErrCountMismatch, len(p.Points), len(polyline.Points)))
 	}
 
 	return Polyline[T]{Polygon[T](p).mapPointsIndexed(func(i int, point Point[T]) Point[T] {

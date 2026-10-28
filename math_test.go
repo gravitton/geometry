@@ -77,12 +77,12 @@ func TestDivide(t *testing.T) {
 		geomtest.AssertNumber(t, Divide(1.0, 3.0), 1.0/3.0)
 	})
 	t.Run("zero scale panics", func(t *testing.T) {
-		assert.Panics(t, func() {
+		assert.PanicsWith(t, func() {
 			Divide(10, 0.0)
-		}, "geom: division by zero")
-		assert.Panics(t, func() {
+		}, ErrDivisionByZero)
+		assert.PanicsWith(t, func() {
 			Divide(2.5, 0.0)
-		}, "geom: division by zero")
+		}, ErrDivisionByZero)
 	})
 }
 

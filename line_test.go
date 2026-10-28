@@ -142,12 +142,12 @@ func TestLine_Unscale(t *testing.T) {
 		}
 	})
 	t.Run("zero factor panics", func(t *testing.T) {
-		assert.Panics(t, func() {
+		assert.PanicsWith(t, func() {
 			Ln(Pt(1, 2), Vec(3, 4)).Unscale(0)
-		})
-		assert.Panics(t, func() {
+		}, ErrDivisionByZero)
+		assert.PanicsWith(t, func() {
 			Ln(Pt(1, 2), Vec(3, 4)).UnscaleXY(1, 0)
-		})
+		}, ErrDivisionByZero)
 	})
 }
 

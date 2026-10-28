@@ -33,7 +33,7 @@ func Multiply[T Number](x T, factor float64) T {
 // Divide returns x divided by the factor. It panics for a zero factor.
 func Divide[T Number](x T, factor float64) T {
 	if factor == 0 {
-		panic("geom: division by zero")
+		panic(ErrDivisionByZero)
 	}
 
 	return Cast[T](float64(x) / factor)

@@ -8,8 +8,7 @@ import (
 // Size is a pair of extents, not a shape.
 //
 // A size is signed and never clamps or takes an extent absolute: a negative extent measures a
-// displacement the other way. A shape that stores a size takes it absolute, and AtLeastZero and Abs
-// are the two repairs.
+// displacement the other way. AtLeastZero and Abs are the two repairs.
 type Size[T Number] struct {
 	Width  T `json:"w"`
 	Height T `json:"h"`

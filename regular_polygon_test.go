@@ -496,12 +496,12 @@ func TestRegularPolygon_Unscale(t *testing.T) {
 		geomtest.AssertRegularPolygon(t, RegPol(Pt(1, 2), Sz(4, 4), 4, 0, 0).Unscale(-2), RegPol(Pt(1, 2), Sz(2, 2), 4, 0, 0))
 	})
 	t.Run("zero factor panics", func(t *testing.T) {
-		assert.Panics(t, func() {
+		assert.PanicsWith(t, func() {
 			RegPol(Pt(1, 2), Sz(4, 4), 4, 0, 0).Unscale(0)
-		}, "geom: division by zero")
-		assert.Panics(t, func() {
+		}, ErrDivisionByZero)
+		assert.PanicsWith(t, func() {
 			RegPol(Pt(1, 2), Sz(4, 4), 4, 0, 0).UnscaleXY(0, 2)
-		}, "geom: division by zero")
+		}, ErrDivisionByZero)
 	})
 }
 
@@ -679,7 +679,7 @@ func TestRegularPolygon_Lerp(t *testing.T) {
 	t.Run("a different vertex count panics", func(t *testing.T) {
 		assert.PanicsWith(t, func() {
 			a.Lerp(RegPol(Pt(10.0, 20.0), Sz(8.0, 4.0), 5, Pi/2, 0), 0.5)
-		}, "geom: lerp between polygons of 6 and 5 vertices")
+		}, ErrCountMismatch)
 	})
 	t.Run("the ends hold over the fixtures and the angle never turns more than half a turn", func(t *testing.T) {
 		for _, from := range regularPolygonFixtures {
@@ -1393,11 +1393,11 @@ func TestRegularPolygonOrientationPhase(t *testing.T) {
 	t.Run("an orientation that is neither panics", func(t *testing.T) {
 		assert.PanicsWith(t, func() {
 			RegularPolygonOrientationPhase(6, Orientation(99))
-		}, "geom: unknown orientation 99")
+		}, ErrUnknownOrientation)
 
 		assert.PanicsWith(t, func() {
 			RegularPolygonOrientationPhase(6, OrientationNone)
-		}, "geom: unknown orientation -1")
+		}, ErrUnknownOrientation)
 	})
 	t.Run("no vertices give the top phase instead of dividing by n", func(t *testing.T) {
 		geomtest.AssertNumber(t, RegularPolygonOrientationPhase(0, OrientationFlatTop), 270*DegToRad)

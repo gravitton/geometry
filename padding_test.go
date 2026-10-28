@@ -110,9 +110,9 @@ func TestPadding_Unscale(t *testing.T) {
 		geomtest.AssertPadding(t, Pad(4.5, 2.5, 1.5, 3.5).Scale(4).Unscale(4), Pad(4.5, 2.5, 1.5, 3.5))
 	})
 	t.Run("zero factor panics", func(t *testing.T) {
-		assert.Panics(t, func() {
+		assert.PanicsWith(t, func() {
 			Pad(4, 2, 1, 3).Unscale(0)
-		}, "geom: division by zero")
+		}, ErrDivisionByZero)
 	})
 }
 

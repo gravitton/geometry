@@ -333,7 +333,7 @@ func (rp RegularPolygon[T]) ShrinkXY(amountX, amountY T) RegularPolygon[T] {
 // absolute and the angles normalized to [0, 2π). It panics for polygons of different N.
 func (rp RegularPolygon[T]) Lerp(polygon RegularPolygon[T], t float64) RegularPolygon[T] {
 	if rp.N != polygon.N {
-		panic(fmt.Sprintf("geom: lerp between polygons of %d and %d vertices", rp.N, polygon.N))
+		panic(fmt.Errorf("%w: polygons of %d and %d vertices", ErrCountMismatch, rp.N, polygon.N))
 	}
 
 	return RegularPolygon[T]{
@@ -731,6 +731,6 @@ func RegularPolygonOrientationPhase(n int, orientation Orientation) float64 {
 	case OrientationPointyTop:
 		return top
 	default:
-		panic(fmt.Sprintf("geom: unknown orientation %d", orientation))
+		panic(fmt.Errorf("%w %d", ErrUnknownOrientation, orientation))
 	}
 }

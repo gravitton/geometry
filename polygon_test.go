@@ -414,12 +414,12 @@ func TestPolygon_Unscale(t *testing.T) {
 		assert.Zero(t, Pol[int](nil).UnscaleXY(2, 3))
 	})
 	t.Run("zero factor panics", func(t *testing.T) {
-		assert.Panics(t, func() {
+		assert.PanicsWith(t, func() {
 			Pol(squareVertices()).Unscale(0)
-		}, "geom: division by zero")
-		assert.Panics(t, func() {
+		}, ErrDivisionByZero)
+		assert.PanicsWith(t, func() {
 			Pol(squareVertices()).UnscaleXY(0, 2)
-		}, "geom: division by zero")
+		}, ErrDivisionByZero)
 	})
 }
 
@@ -610,7 +610,7 @@ func TestPolygon_Lerp(t *testing.T) {
 	t.Run("a different vertex count panics", func(t *testing.T) {
 		assert.PanicsWith(t, func() {
 			a.Lerp(Pol(triangleVertices()), 0.5)
-		}, "geom: lerp between polygons of 4 and 3 vertices")
+		}, ErrCountMismatch)
 	})
 	t.Run("towards a translation is a part of it over the fixtures", func(t *testing.T) {
 		for _, polygon := range polygonFixtures() {

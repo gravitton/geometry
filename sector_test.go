@@ -113,9 +113,9 @@ func TestSector_Unscale(t *testing.T) {
 		geomtest.AssertSector(t, Sect(Pt(1, 2), 10, 0.5, 1.5).Unscale(-2.5), Sect(Pt(1, 2), 4, 0.5, 1.5))
 	})
 	t.Run("a zero factor panics", func(t *testing.T) {
-		assert.Panics(t, func() {
+		assert.PanicsWith(t, func() {
 			Sect(Pt(1, 2), 10, 0.5, 1.5).Unscale(0)
-		}, "geom: division by zero")
+		}, ErrDivisionByZero)
 	})
 }
 

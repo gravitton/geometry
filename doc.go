@@ -81,15 +81,19 @@
 //
 // # Panics
 //
-// The only panics are for arguments with no meaning:
+// The only panics are for arguments with no meaning, and each panics with an error that
+// errors.Is matches to its sentinel:
 //
-//   - a zero factor to [Divide] and every method built on it, Unscale included;
-//   - a singular matrix to [Matrix.Inverse] (check [Matrix.IsInvertible]);
-//   - NaN or ±Inf stored into an integer T by [Cast], so through Multiply, Lerp, Rotate, Transform
-//     or Int of an integer value, and an integer [RegularPolygon] with a non-finite Angle or Phase;
-//   - an [Orientation] other than [OrientationFlatTop] or [OrientationPointyTop] to
-//     [RegularPolygonOrientationPhase] and every function built on it;
-//   - a differing vertex count to [Polygon.Lerp], [RegularPolygon.Lerp] and [Polyline.Lerp].
+//   - [ErrDivisionByZero] for a zero factor to [Divide] and every method built on it, Unscale
+//     included;
+//   - [ErrSingularMatrix] for a singular matrix to [Matrix.Inverse] (check [Matrix.IsInvertible]);
+//   - [ErrNonFinite] for NaN or ±Inf stored into an integer T by [Cast], so through Multiply, Lerp,
+//     Rotate, Transform or Int of an integer value, and an integer [RegularPolygon] with a
+//     non-finite Angle or Phase;
+//   - [ErrUnknownOrientation] for an [Orientation] other than [OrientationFlatTop] or
+//     [OrientationPointyTop] to [RegularPolygonOrientationPhase] and every function built on it;
+//   - [ErrCountMismatch] for a differing vertex count to [Polygon.Lerp], [RegularPolygon.Lerp] and
+//     [Polyline.Lerp].
 //
 // A float T carries NaN and ±Inf through. A finite value outside the range of an integer T stores
 // a platform-dependent value. Every other input returns a value, such as [DirectionNone] or an

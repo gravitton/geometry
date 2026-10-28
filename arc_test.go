@@ -153,9 +153,9 @@ func TestArc_Unscale(t *testing.T) {
 		geomtest.AssertArc(t, Ac(Pt(1, 2), 10, 0.5, 1.5).Unscale(-2.5), Ac(Pt(1, 2), 4, 0.5, 1.5))
 	})
 	t.Run("a zero factor panics", func(t *testing.T) {
-		assert.Panics(t, func() {
+		assert.PanicsWith(t, func() {
 			Ac(Pt(1, 2), 10, 0.5, 1.5).Unscale(0)
-		}, "geom: division by zero")
+		}, ErrDivisionByZero)
 	})
 }
 

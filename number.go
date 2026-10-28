@@ -11,7 +11,7 @@ import (
 func Cast[T Number](a float64) T {
 	if isInt[T]() {
 		if !IsFinite(a) {
-			panic("geom: cast of a non-finite value to an integer")
+			panic(ErrNonFinite)
 		}
 
 		return T(math.Round(a))

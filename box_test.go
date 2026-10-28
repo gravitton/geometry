@@ -363,12 +363,12 @@ func TestBox_Unscale(t *testing.T) {
 		geomtest.AssertBox(t, BoxFromMinMax(Pt(-0.5, -1.0), Pt(2.5, 5.0)).UnscaleXY(-1.5, 2), BoxFromMinMax(Pt(0.0, 0.5), Pt(2.0, 3.5)))
 	})
 	t.Run("zero factor panics", func(t *testing.T) {
-		assert.Panics(t, func() {
+		assert.PanicsWith(t, func() {
 			BoxFromMinMax(Pt(0, 0), Pt(2, 4)).Unscale(0)
-		})
-		assert.Panics(t, func() {
+		}, ErrDivisionByZero)
+		assert.PanicsWith(t, func() {
 			BoxFromMinMax(Pt(0, 0), Pt(2, 4)).UnscaleXY(1, 0)
-		})
+		}, ErrDivisionByZero)
 	})
 }
 

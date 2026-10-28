@@ -125,7 +125,7 @@ func TestPolyline_Lerp(t *testing.T) {
 	t.Run("a different point count panics", func(t *testing.T) {
 		assert.PanicsWith(t, func() {
 			a.Lerp(PolLn([]Point[float64]{Pt(1.0, 2.0)}), 0.5)
-		}, "geom: lerp between polylines of 3 and 1 points")
+		}, ErrCountMismatch)
 	})
 	t.Run("towards a translation is a part of it over the fixtures", func(t *testing.T) {
 		for _, path := range polylineFixtures() {

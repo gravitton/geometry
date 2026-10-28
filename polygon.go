@@ -303,7 +303,7 @@ func (p Polygon[T]) AppendShrink(dst []Point[T], amount float64) []Point[T] {
 // opposite ways twist through each other. It panics for polygons of different vertex counts.
 func (p Polygon[T]) Lerp(polygon Polygon[T], t float64) Polygon[T] {
 	if len(p.Points) != len(polygon.Points) {
-		panic(fmt.Sprintf("geom: lerp between polygons of %d and %d vertices", len(p.Points), len(polygon.Points)))
+		panic(fmt.Errorf("%w: polygons of %d and %d vertices", ErrCountMismatch, len(p.Points), len(polygon.Points)))
 	}
 
 	return Polygon[T]{p.mapPointsIndexed(func(i int, point Point[T]) Point[T] {

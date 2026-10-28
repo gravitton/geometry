@@ -279,9 +279,9 @@ func TestCircle_Unscale(t *testing.T) {
 		geomtest.AssertCircle(t, Circ(Pt(1, 2), 20).Unscale(-2), Circ(Pt(1, 2), 10))
 	})
 	t.Run("zero factor panics", func(t *testing.T) {
-		assert.Panics(t, func() {
+		assert.PanicsWith(t, func() {
 			Circ(Pt(1, 2), 10).Unscale(0)
-		}, "geom: division by zero")
+		}, ErrDivisionByZero)
 	})
 }
 
@@ -1803,9 +1803,9 @@ func TestCircle_RegularPolygon(t *testing.T) {
 		}
 	})
 	t.Run("an orientation with no meaning panics", func(t *testing.T) {
-		assert.Panics(t, func() {
+		assert.PanicsWith(t, func() {
 			c.RegularPolygon(6, OrientationNone)
-		})
+		}, ErrUnknownOrientation)
 	})
 }
 
