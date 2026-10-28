@@ -10,7 +10,8 @@ import (
 // the zero value so equal pairs compare equal with == where the items do. The items are a Point or
 // a Segment.
 //
-// The items are read by ranging All, or as Items[:Count] of a pair held in a variable.
+// The items are read by ranging All, or as Items[:Count] of a pair held in a variable. The methods
+// read a Count below zero as none and one above two as both items.
 type Pair[E interface {
 	Equal(E) bool
 	String() string
@@ -22,7 +23,7 @@ type Pair[E interface {
 // All returns an iterator over the items in order.
 func (p Pair[E]) All() iter.Seq[E] {
 	return func(yield func(E) bool) {
-		for i := range p.Count {
+		for i := range p.count() {
 			if !yield(p.Items[i]) {
 				return
 			}
@@ -30,14 +31,18 @@ func (p Pair[E]) All() iter.Seq[E] {
 	}
 }
 
+func (p Pair[E]) count() int {
+	return min(max(p.Count, 0), len(p.Items))
+}
+
 // Equal reports whether the pairs hold as many items, each equal by its own Equal to the one in its
 // place. The order counts.
 func (p Pair[E]) Equal(pair Pair[E]) bool {
-	if p.Count != pair.Count {
+	if p.count() != pair.count() {
 		return false
 	}
 
-	for i := range p.Count {
+	for i := range p.count() {
 		if !p.Items[i].Equal(pair.Items[i]) {
 			return false
 		}
@@ -49,17 +54,17 @@ func (p Pair[E]) Equal(pair Pair[E]) bool {
 // IsZero reports whether the pair is the zero value, one that holds no item, so the omitzero option
 // of encoding/json leaves it out.
 func (p Pair[E]) IsZero() bool {
-	return p.Count == 0
+	return p.count() == 0
 }
 
 // IsEmpty reports whether the pair holds no item.
 func (p Pair[E]) IsEmpty() bool {
-	return p.Count == 0
+	return p.count() == 0
 }
 
 // AppendTo appends the items to dst in order and returns the extended slice.
 func (p Pair[E]) AppendTo(dst []E) []E {
-	return append(dst, p.Items[:p.Count]...)
+	return append(dst, p.Items[:p.count()]...)
 }
 
 // String returns the pair as Pair(), Pair(item) or Pair(item;item), each item by its own String,
@@ -67,7 +72,7 @@ func (p Pair[E]) AppendTo(dst []E) []E {
 func (p Pair[E]) String() string {
 	buf := make([]byte, 0, stringSize)
 	buf = append(buf, "Pair("...)
-	for i := range p.Count {
+	for i := range p.count() {
 		if i > 0 {
 			buf = append(buf, ';')
 		}
@@ -82,7 +87,7 @@ func (p Pair[E]) String() string {
 
 // MarshalJSON implements json.Marshaler as the array of the items, empty for a pair of none.
 func (p Pair[E]) MarshalJSON() ([]byte, error) {
-	return json.Marshal(p.Items[:p.Count])
+	return json.Marshal(p.Items[:p.count()])
 }
 
 // UnmarshalJSON implements json.Unmarshaler from an array of at most two items, and an error that

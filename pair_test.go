@@ -30,6 +30,10 @@ func TestPair_All(t *testing.T) {
 
 		assert.Equal(t, count, 1)
 	})
+	t.Run("a count out of range yields none or both", func(t *testing.T) {
+		assert.Nil(t, slices.Collect(Pair[Point[int]]{[2]Point[int]{a, b}, -1}.All()))
+		geomtest.AssertVertices(t, slices.Collect(Pair[Point[int]]{[2]Point[int]{a, b}, 3}.All()), []Point[int]{a, b})
+	})
 	t.Run("the items are the slice Items[:Count]", func(t *testing.T) {
 		crossings := Circ(Pt(0, 0), 5).IntersectionCircle(Circ(Pt(6, 0), 5))
 
@@ -62,6 +66,10 @@ func TestPair_Equal(t *testing.T) {
 		assert.False(t, Pair[Point[int]]{[2]Point[int]{a}, 1}.Equal(Pair[Point[int]]{}))
 		assert.False(t, Pair[Point[int]]{[2]Point[int]{a}, 1}.Equal(Pair[Point[int]]{[2]Point[int]{b}, 1}))
 	})
+	t.Run("a count out of range compares as none or both", func(t *testing.T) {
+		assert.True(t, Pair[Point[int]]{[2]Point[int]{a, b}, 3}.Equal(Pair[Point[int]]{[2]Point[int]{a, b}, 2}))
+		assert.True(t, Pair[Point[int]]{[2]Point[int]{a}, -1}.Equal(Pair[Point[int]]{}))
+	})
 	t.Run("items equal within the tolerance are equal, where == tells them apart", func(t *testing.T) {
 		near, exact := Pair[Point[float64]]{[2]Point[float64]{Pt(1.0, 2.0+Delta/2)}, 1}, Pair[Point[float64]]{[2]Point[float64]{Pt(1.0, 2.0)}, 1}
 
@@ -81,6 +89,9 @@ func TestPair_IsZero(t *testing.T) {
 		assert.True(t, Pair[Point[int]]{}.IsZero())
 		assert.False(t, Circ(Pt(0, 0), 5).IntersectionCircle(Circ(Pt(6, 0), 5)).IsZero())
 	})
+	t.Run("a count below zero holds no item", func(t *testing.T) {
+		assert.True(t, Pair[Point[int]]{Count: -1}.IsZero())
+	})
 	t.Run("omitzero leaves an empty pair out", func(t *testing.T) {
 		type result struct {
 			Crossings Pair[Point[int]] `json:"c,omitzero"`
@@ -95,6 +106,7 @@ func TestPair_IsEmpty(t *testing.T) {
 	assert.True(t, Pair[Point[int]]{}.IsEmpty())
 	assert.True(t, Circ(Pt(0, 0), 5).IntersectionCircle(Circ(Pt(20, 0), 5)).IsEmpty())
 	assert.False(t, Circ(Pt(0, 0), 5).IntersectionCircle(Circ(Pt(6, 0), 5)).IsEmpty())
+	assert.True(t, Pair[Point[int]]{Count: -1}.IsEmpty())
 }
 
 func TestPair_AppendTo(t *testing.T) {
@@ -106,6 +118,10 @@ func TestPair_AppendTo(t *testing.T) {
 	})
 	t.Run("an empty pair leaves dst as it is", func(t *testing.T) {
 		assert.Nil(t, Pair[Point[int]]{}.AppendTo(nil))
+	})
+	t.Run("a count out of range appends none or both", func(t *testing.T) {
+		assert.Nil(t, Pair[Point[int]]{[2]Point[int]{a, b}, -1}.AppendTo(nil))
+		geomtest.AssertVertices(t, Pair[Point[int]]{[2]Point[int]{a, b}, 3}.AppendTo(nil), []Point[int]{a, b})
 	})
 	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
 		circle, other := Circ(Pt(0, 0), 5), Circ(Pt(6, 0), 5)
@@ -128,6 +144,10 @@ func TestPair_String(t *testing.T) {
 	t.Run("segments", func(t *testing.T) {
 		assert.Equal(t, Circ(Pt(0, 0), 2).OuterTangents(Circ(Pt(10, 0), 2)).String(), "Pair(Seg((0,2);(10,2));Seg((0,-2);(10,-2)))")
 	})
+	t.Run("a count out of range prints none or both", func(t *testing.T) {
+		assert.Equal(t, Pair[Point[int]]{[2]Point[int]{Pt(1, 2), Pt(3, 4)}, -1}.String(), "Pair()")
+		assert.Equal(t, Pair[Point[int]]{[2]Point[int]{Pt(1, 2), Pt(3, 4)}, 3}.String(), "Pair((1,2);(3,4))")
+	})
 }
 
 func TestPair_JSON(t *testing.T) {
@@ -137,6 +157,10 @@ func TestPair_JSON(t *testing.T) {
 		assert.JSON(t, Pair[Point[int]]{[2]Point[int]{a, b}, 2}, `[{"x":1,"y":2},{"x":3,"y":4}]`)
 		assert.JSON(t, Pair[Point[int]]{[2]Point[int]{a}, 1}, `[{"x":1,"y":2}]`)
 		assert.JSON(t, Pair[Point[int]]{}, `[]`)
+	})
+	t.Run("a count out of range encodes none or both", func(t *testing.T) {
+		assert.JSON(t, Pair[Point[int]]{[2]Point[int]{a, b}, -1}, `[]`)
+		assert.JSON(t, Pair[Point[int]]{[2]Point[int]{a, b}, 3}, `[{"x":1,"y":2},{"x":3,"y":4}]`)
 	})
 	t.Run("decodes an array of at most two items", func(t *testing.T) {
 		pair := Pair[Point[int]]{[2]Point[int]{b, a}, 2}
