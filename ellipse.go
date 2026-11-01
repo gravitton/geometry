@@ -139,16 +139,16 @@ func (e Ellipse[T]) localOffset(point Point[T]) Vector[float64] {
 	return point.Float().Subtract(e.Center.Float()).Rotate(-e.Angle)
 }
 
-// parametricAngle returns the parameter of the boundary point in the direction from the center,
-// which differs from the direction unless the ellipse is a circle. A degenerate ellipse keeps the
-// direction, so the point lands on its segment.
-func (e Ellipse[T]) parametricAngle(direction float64) float64 {
+// parametricAngle returns the parameter of the boundary point at the angle from the center, which
+// differs from the angle unless the ellipse is a circle. A degenerate ellipse keeps the angle, so
+// the point lands on its segment.
+func (e Ellipse[T]) parametricAngle(angle float64) float64 {
 	w, h := e.Radius.Float().XY()
 	if w == 0 || h == 0 {
-		return direction
+		return angle
 	}
 
-	sin, cos := math.Sincos(direction)
+	sin, cos := math.Sincos(angle)
 
 	return math.Atan2(w*sin, h*cos)
 }

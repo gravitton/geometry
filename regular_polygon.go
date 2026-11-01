@@ -216,10 +216,10 @@ func (rp RegularPolygon[T]) edge(i int) Segment[T] {
 	return Segment[T]{rp.vertex(i), rp.vertex((i + 1) % rp.N)}
 }
 
-// edgeIndex returns the index of the edge through which the ray in the direction, taken before the
-// turn, leaves the polygon, found from the parameter of that direction on the ellipse.
-func (rp RegularPolygon[T]) edgeIndex(direction float64) int {
-	parameter := NormalizeAngle(rp.Ellipse().parametricAngle(direction) - rp.Phase)
+// edgeIndex returns the index of the edge through which the ray at the angle, taken before the
+// turn, leaves the polygon, found from the parameter of that angle on the ellipse.
+func (rp RegularPolygon[T]) edgeIndex(angle float64) int {
+	parameter := NormalizeAngle(rp.Ellipse().parametricAngle(angle) - rp.Phase)
 
 	return int(parameter/rp.centralAngle()) % rp.N
 }

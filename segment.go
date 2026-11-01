@@ -1269,13 +1269,13 @@ func (s Segment[T]) hitAt(point Point[T], normal Vector[float64]) Hit[T] {
 }
 
 // faces reports whether the edge is turned toward the point at the vertex it shares with the
-// neighbour: the point lies strictly on the side of its line the neighbour does not run to, on
+// neighbor: the point lies strictly on the side of its line the neighbor does not run to, on
 // exact signs, so no winding is needed. At a convex corner that is the outer side; at a notch
 // neither edge faces.
-func (s Segment[T]) faces(point Point[T], neighbour Segment[T]) bool {
+func (s Segment[T]) faces(point Point[T], neighbor Segment[T]) bool {
 	line := s.Line()
 
-	return float64(line.side(point)*(line.side(neighbour.Start)+line.side(neighbour.End))) < 0
+	return float64(line.side(point)*(line.side(neighbor.Start)+line.side(neighbor.End))) < 0
 }
 
 // hitBezier returns the first hit of the segment on the curve, and false where there is none or

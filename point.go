@@ -277,14 +277,14 @@ func (p Point[T]) String() string {
 }
 
 // appendString appends the point as String prints it to buf and returns the extended buffer.
-func (p Point[T]) appendString(buf []byte) []byte {
-	buf = append(buf, '(')
-	buf = appendString(buf, p.X)
-	buf = append(buf, ',')
-	buf = appendString(buf, p.Y)
-	buf = append(buf, ')')
+func (p Point[T]) appendString(dst []byte) []byte {
+	dst = append(dst, '(')
+	dst = appendString(dst, p.X)
+	dst = append(dst, ',')
+	dst = appendString(dst, p.Y)
+	dst = append(dst, ')')
 
-	return buf
+	return dst
 }
 
 // minMaxOf returns the corners of the Bounds of the vertices, and two zero points for none.

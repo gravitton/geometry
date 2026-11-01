@@ -8,26 +8,26 @@ import (
 // Cast converts a float64 to T, rounding half away from zero for an integer T. It panics for a
 // non-finite value and an integer T; a float T keeps it. A finite value outside the range of an
 // integer T is not checked and stores an arbitrary value.
-func Cast[T Number](a float64) T {
+func Cast[T Number](value float64) T {
 	if isInt[T]() {
-		if !IsFinite(a) {
+		if !IsFinite(value) {
 			panic(ErrNonFinite)
 		}
 
-		return T(math.Round(a))
+		return T(math.Round(value))
 	}
 
-	return T(a)
+	return T(value)
 }
 
 // castUp converts a float64 to T as Cast does, but rounds up for an integer T: the cast of an
 // extent that must still reach what it was measured to, the radius of a BoundingCircle.
-func castUp[T Number](a float64) T {
+func castUp[T Number](value float64) T {
 	if isInt[T]() {
-		return Cast[T](math.Ceil(a))
+		return Cast[T](math.Ceil(value))
 	}
 
-	return Cast[T](a)
+	return Cast[T](value)
 }
 
 // Int converts a Number to int: an integer T by plain conversion, truncated where int is narrower
@@ -55,18 +55,18 @@ func String[T Number](value T) string {
 const stringSize = 128
 
 // appendString appends the number to buf as String prints it and returns the extended buffer.
-func appendString[T Number](buf []byte, value T) []byte {
+func appendString[T Number](dst []byte, value T) []byte {
 	if isInt[T]() {
-		return strconv.AppendInt(buf, int64(value), 10)
+		return strconv.AppendInt(dst, int64(value), 10)
 	}
 
-	start := len(buf)
-	buf = strconv.AppendFloat(buf, float64(value), 'f', 2, 64)
-	if string(buf[start:]) == "-0.00" {
-		return append(buf[:start], "0.00"...)
+	start := len(dst)
+	dst = strconv.AppendFloat(dst, float64(value), 'f', 2, 64)
+	if string(dst[start:]) == "-0.00" {
+		return append(dst[:start], "0.00"...)
 	}
 
-	return buf
+	return dst
 }
 
 // Parse returns s as T, and an error where it is no number T can hold. An integer T is read with

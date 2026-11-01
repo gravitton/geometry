@@ -339,9 +339,9 @@ func (p Polyline[T]) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements json.Unmarshaler. The points are decoded into a new slice, leaving one
 // the path shared untouched.
-func (p *Polyline[T]) UnmarshalJSON(bytes []byte) error {
+func (p *Polyline[T]) UnmarshalJSON(data []byte) error {
 	var points []Point[T]
-	if err := json.Unmarshal(bytes, &points); err != nil {
+	if err := json.Unmarshal(data, &points); err != nil {
 		return err
 	}
 

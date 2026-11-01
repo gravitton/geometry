@@ -232,10 +232,10 @@ func (s Size[T]) String() string {
 }
 
 // appendString appends the size as String prints it to buf and returns the extended buffer.
-func (s Size[T]) appendString(buf []byte) []byte {
-	buf = appendString(buf, s.Width)
-	buf = append(buf, 'x')
-	buf = appendString(buf, s.Height)
+func (s Size[T]) appendString(dst []byte) []byte {
+	dst = appendString(dst, s.Width)
+	dst = append(dst, 'x')
+	dst = appendString(dst, s.Height)
 
-	return buf
+	return dst
 }

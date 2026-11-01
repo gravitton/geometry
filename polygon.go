@@ -18,9 +18,9 @@ type Polygon[T Number] struct {
 	Points []Point[T]
 }
 
-// Pol is shorthand for Polygon{vertices}.
-func Pol[T Number](vertices []Point[T]) Polygon[T] {
-	return Polygon[T]{vertices}
+// Pol is shorthand for Polygon{points}.
+func Pol[T Number](points []Point[T]) Polygon[T] {
+	return Polygon[T]{points}
 }
 
 // Vertices returns an iterator over Points in order.
@@ -1578,9 +1578,9 @@ func (p Polygon[T]) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements json.Unmarshaler. The vertices are decoded into a fresh slice, so a
 // slice the polygon shared is left untouched.
-func (p *Polygon[T]) UnmarshalJSON(bytes []byte) error {
+func (p *Polygon[T]) UnmarshalJSON(data []byte) error {
 	var vertices []Point[T]
-	if err := json.Unmarshal(bytes, &vertices); err != nil {
+	if err := json.Unmarshal(data, &vertices); err != nil {
 		return err
 	}
 

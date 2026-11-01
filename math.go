@@ -25,18 +25,18 @@ const (
 	OneOverSqrt2 = 1 / math.Sqrt2
 )
 
-// Multiply returns x scaled by the factor.
-func Multiply[T Number](x T, factor float64) T {
-	return Cast[T](float64(x) * factor)
+// Multiply returns the value scaled by the factor.
+func Multiply[T Number](value T, factor float64) T {
+	return Cast[T](float64(value) * factor)
 }
 
-// Divide returns x divided by the factor. It panics for a zero factor.
-func Divide[T Number](x T, factor float64) T {
+// Divide returns the value divided by the factor. It panics for a zero factor.
+func Divide[T Number](value T, factor float64) T {
 	if factor == 0 {
 		panic(ErrDivisionByZero)
 	}
 
-	return Cast[T](float64(x) / factor)
+	return Cast[T](float64(value) / factor)
 }
 
 // ratio returns a divided by b in float64, or 0 for a zero b, where an Inf or NaN would poison
@@ -115,17 +115,17 @@ func Ceil[T Number](x T) T {
 	return T(math.Ceil(float64(x)))
 }
 
-// Snap returns the multiple of step nearest x, a tie rounded toward positive infinity as
+// Snap returns the multiple of step nearest the value, a tie rounded toward positive infinity as
 // RoundHalfUp does, so every cell of the lattice is as wide on both sides of zero. A step and its
-// negation give the same lattice, and a zero step leaves x as it is.
-func Snap[T Number](x, step T) T {
+// negation give the same lattice, and a zero step leaves the value as it is.
+func Snap[T Number](value, step T) T {
 	if step == 0 {
-		return x
+		return value
 	}
 
 	size := math.Abs(float64(step))
 
-	return Cast[T](RoundHalfUp(float64(x)/size) * size)
+	return Cast[T](RoundHalfUp(float64(value)/size) * size)
 }
 
 // Mod returns n wrapped into [0, m), or (m, 0] for a negative m, as a floored division gives it. It
@@ -403,11 +403,11 @@ func compareAngles(a, b Vector[float64]) int {
 
 // angleHalf returns 0 below the X axis, 1 above or along it, and 2 against it or for the zero
 // vector.
-func angleHalf(v Vector[float64]) int {
+func angleHalf(vector Vector[float64]) int {
 	switch {
-	case v.Y < 0:
+	case vector.Y < 0:
 		return 0
-	case v.Y > 0 || v.X > 0:
+	case vector.Y > 0 || vector.X > 0:
 		return 1
 	default:
 		return 2

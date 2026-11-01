@@ -441,12 +441,12 @@ func (v Vector[T]) String() string {
 }
 
 // appendString appends the vector as String prints it to buf and returns the extended buffer.
-func (v Vector[T]) appendString(buf []byte) []byte {
-	buf = append(buf, "⟨"...)
-	buf = appendString(buf, v.X)
-	buf = append(buf, ',')
-	buf = appendString(buf, v.Y)
-	buf = append(buf, "⟩"...)
+func (v Vector[T]) appendString(dst []byte) []byte {
+	dst = append(dst, "⟨"...)
+	dst = appendString(dst, v.X)
+	dst = append(dst, ',')
+	dst = appendString(dst, v.Y)
+	dst = append(dst, "⟩"...)
 
-	return buf
+	return dst
 }

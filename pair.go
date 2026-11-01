@@ -92,9 +92,9 @@ func (p Pair[E]) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements json.Unmarshaler from an array of at most two items, and an error that
 // leaves the pair unchanged for a longer one.
-func (p *Pair[E]) UnmarshalJSON(bytes []byte) error {
+func (p *Pair[E]) UnmarshalJSON(data []byte) error {
 	var items []E
-	if err := json.Unmarshal(bytes, &items); err != nil {
+	if err := json.Unmarshal(data, &items); err != nil {
 		return err
 	}
 
