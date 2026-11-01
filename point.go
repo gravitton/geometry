@@ -156,12 +156,12 @@ func (p Point[T]) RotateAround(pivot Point[T], angle float64) Point[T] {
 	return center.Add(p.Float().Subtract(center).Rotate(angle)).Cast[T]()
 }
 
-// MoveToward returns the point moved toward the target by at most the step, never past it: where
-// the distance left is at most the step, the result is the target exactly. A negative step moves
-// away and is not clamped, and a point at the target stays there. For integer T a step under half a
-// unit can leave the point in place.
-func (p Point[T]) MoveToward(target Point[T], step float64) Point[T] {
-	return p.Vector().MoveToward(target.Vector(), step).Point()
+// MoveToward returns the point moved toward the given one by at most the step, never past it: where
+// the distance left is at most the step, the result is the given point exactly. A negative step
+// moves away and is not clamped, and a point equal to the given one stays there. For integer T a
+// step under half a unit can leave the point in place.
+func (p Point[T]) MoveToward(point Point[T], step float64) Point[T] {
+	return p.Vector().MoveToward(point.Vector(), step).Point()
 }
 
 // AngleTo returns the angle in radians of the vector from this point to the given one.

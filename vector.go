@@ -227,17 +227,17 @@ func (v Vector[T]) RotateToward(angle, step float64) Vector[T] {
 	return v.Rotate(MoveTowardAngle(0, NormalizeAngle(angle-v.Angle()), step))
 }
 
-// MoveToward returns the vector moved toward the target by at most the step, direction and length
-// together, never past it: where the distance left is at most the step, the result is the target
-// exactly. A negative step moves away and is not clamped, and a vector at the target stays there.
-// For integer T a step under half a unit can leave the vector in place.
-func (v Vector[T]) MoveToward(target Vector[T], step float64) Vector[T] {
+// MoveToward returns the vector moved toward the given one by at most the step, direction and
+// length together, never past it: where the distance left is at most the step, the result is the
+// given vector exactly. A negative step moves away and is not clamped, and a vector equal to the
+// given one stays there. For integer T a step under half a unit can leave the vector in place.
+func (v Vector[T]) MoveToward(vector Vector[T], step float64) Vector[T] {
 	from := v.Float()
-	offset := target.Float().Subtract(from)
+	offset := vector.Float().Subtract(from)
 
 	distance := offset.Length()
 	if distance == 0 || step >= distance {
-		return target
+		return vector
 	}
 
 	return from.Add(offset.Multiply(step / distance)).Cast[T]()
