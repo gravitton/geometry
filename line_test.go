@@ -1098,6 +1098,14 @@ func TestLine_ClipSector(t *testing.T) {
 func TestLine_ClipPolygon(t *testing.T) {
 	notched := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(4.0, 4.0), Pt(2.0, 1.0), Pt(0.0, 4.0)})
 
+	t.Run("along a flat polygon gives the stretch they share", func(t *testing.T) {
+		flat := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(10.0, 0.0)})
+
+		geomtest.AssertSegments(t, Ln(Pt(0.0, 0.0), Vec(1.0, 0.0)).ClipPolygon(flat), []Segment[float64]{Seg(Pt(0.0, 0.0), Pt(10.0, 0.0))})
+		geomtest.AssertSegments(t, Ln(Pt(5.0, 0.0), Vec(-1.0, 0.0)).ClipPolygon(flat), []Segment[float64]{Seg(Pt(10.0, 0.0), Pt(0.0, 0.0))})
+		geomtest.AssertSegments(t, Ln(Pt(40.0, 0.0), Vec(2.0, 0.0)).ClipPolygon(flat), []Segment[float64]{Seg(Pt(0.0, 0.0), Pt(10.0, 0.0))})
+		assert.Nil(t, Ln(Pt(0.0, 1.0), Vec(1.0, 0.0)).ClipPolygon(flat))
+	})
 	t.Run("a concave polygon cuts the line into parts along the direction", func(t *testing.T) {
 		geomtest.AssertSegments(t, Ln(Pt(9.0, 3.0), Vec(1.0, 0.0)).ClipPolygon(notched), []Segment[float64]{
 			Seg(Pt(0.0, 3.0), Pt(2.0/3, 3.0)), Seg(Pt(10.0/3, 3.0), Pt(4.0, 3.0)),

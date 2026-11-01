@@ -145,13 +145,13 @@ func (s Size[T]) Transpose() Size[T] {
 }
 
 // Fit returns the largest size of the same aspect ratio that fits in the given one. A size with a
-// zero extent gives the zero size, and a negative extent gives a negative one: take Abs first.
+// zero extent gives the zero size, and a negative extent in either has no meaning: take Abs first.
 func (s Size[T]) Fit(size Size[T]) Size[T] {
 	return s.Scale(min(s.ratios(size)))
 }
 
 // Fill returns the smallest size of the same aspect ratio that covers the given one. A size with a
-// zero extent gives the zero size, and a negative extent gives a negative one: take Abs first.
+// zero extent gives the zero size, and a negative extent in either has no meaning: take Abs first.
 func (s Size[T]) Fill(size Size[T]) Size[T] {
 	return s.Scale(max(s.ratios(size)))
 }

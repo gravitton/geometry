@@ -469,7 +469,7 @@ func AssertContact[T geom.Number](t Testing, actual, expected geom.Contact[T], m
 	if !AssertNumber(t, actual.Depth, expected.Depth, prefixed(messages, "Depth: ")...) {
 		ok = false
 	}
-	if !AssertVertices(t, actual.Points.Items[:actual.Points.Count], expected.Points.Items[:expected.Points.Count], prefixed(messages, "Points.")...) {
+	if !AssertVertices(t, actual.Points.AppendTo(nil), expected.Points.AppendTo(nil), prefixed(messages, "Points.")...) {
 		ok = false
 	}
 

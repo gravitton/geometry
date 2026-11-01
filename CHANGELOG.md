@@ -23,6 +23,11 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 
 ### Fixed
 - `Pair` methods read a `Count` below zero as no item and one above two as both, where they panicked
+- `Contact.String` and `geomtest.AssertContact` read an out-of-range `Count` as `Pair` does, where they panicked
+- `Vector.AngleBetween` returns zero for the zero vector against any vector, where one with both components negative gave π
+- `EqualRelative` and `EpsilonRelative` keep the tolerance of `Epsilon` for an infinity, which equalled every value
+- `Mod` panics with `ErrDivisionByZero` for a zero `m`, where it panicked with a runtime error
+- `ClipPolygon` on `Segment`, `Ray` and `Line` gives the stretch along a flat polygon, where it gave none or a part of zero length
 
 ## [v1.17.0](https://github.com/gravitton/geometry/compare/v1.16.0...v1.17.0) (2026-10-15)
 

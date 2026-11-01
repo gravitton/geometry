@@ -395,6 +395,13 @@ func TestAssertContact(t *testing.T) {
 	t.Run("equal", func(t *testing.T) {
 		assertHelper(t, AssertContact, c, geom.Contact[int]{Normal: geom.Vec(0.0, -1.0), Depth: 0.5, Points: points}, true)
 	})
+	t.Run("a Count out of range reads as Pair does", func(t *testing.T) {
+		both := geom.Pair[geom.Point[int]]{Items: points.Items, Count: 3}
+		none := geom.Pair[geom.Point[int]]{Items: points.Items, Count: -1}
+
+		assertHelper(t, AssertContact, c, geom.Contact[int]{Normal: geom.Vec(0.0, -1.0), Depth: 0.5, Points: both}, true)
+		assertHelper(t, AssertContact, c, geom.Contact[int]{Normal: geom.Vec(0.0, -1.0), Depth: 0.5, Points: none}, false)
+	})
 	t.Run("normal differs", func(t *testing.T) {
 		assertHelper(t, AssertContact, c, geom.Contact[int]{Normal: geom.Vec(1.0, 0.0), Depth: 0.5, Points: points}, false)
 	})

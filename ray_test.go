@@ -1142,6 +1142,14 @@ func TestRay_ClipSector(t *testing.T) {
 func TestRay_ClipPolygon(t *testing.T) {
 	notched := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(4.0, 4.0), Pt(2.0, 1.0), Pt(0.0, 4.0)})
 
+	t.Run("along a flat polygon gives the stretch they share", func(t *testing.T) {
+		flat := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(10.0, 0.0)})
+
+		geomtest.AssertSegments(t, Ry(Pt(5.0, 0.0), Vec(1.0, 0.0)).ClipPolygon(flat), []Segment[float64]{Seg(Pt(5.0, 0.0), Pt(10.0, 0.0))})
+		geomtest.AssertSegments(t, Ry(Pt(0.0, 0.0), Vec(1.0, 0.0)).ClipPolygon(flat), []Segment[float64]{Seg(Pt(0.0, 0.0), Pt(10.0, 0.0))})
+		geomtest.AssertSegments(t, Ry(Pt(-5.0, 0.0), Vec(1.0, 0.0)).ClipPolygon(flat), []Segment[float64]{Seg(Pt(0.0, 0.0), Pt(10.0, 0.0))})
+		assert.Nil(t, Ry(Pt(-5.0, 0.0), Vec(-1.0, 0.0)).ClipPolygon(flat))
+	})
 	t.Run("a concave polygon cuts the ray into parts from Origin on", func(t *testing.T) {
 		geomtest.AssertSegments(t, Ry(Pt(-1.0, 3.0), Vec(1.0, 0.0)).ClipPolygon(notched), []Segment[float64]{
 			Seg(Pt(0.0, 3.0), Pt(2.0/3, 3.0)), Seg(Pt(10.0/3, 3.0), Pt(4.0, 3.0)),

@@ -114,9 +114,13 @@ type edgePass[T Number] struct {
 }
 
 // add folds one edge in, keeping its crossing where it lies beyond the reached point and noting a
-// touch where it is Equal to it.
+// touch where it is Equal to it. An edge the segment runs along has no crossing, so its Start stands
+// in where the segment holds it, or a flat outline would give the walk nowhere to stop.
 func (e *edgePass[T]) add(edge Segment[T]) {
 	point, ok := e.segment.IntersectionSegment(edge)
+	if !ok {
+		point, ok = edge.Start, e.segment.Contains(edge.Start)
+	}
 
 	switch {
 	case !ok:

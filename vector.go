@@ -297,6 +297,10 @@ func (v Vector[T]) Cross(vector Vector[T]) T {
 // AngleBetween returns the unsigned angle between the vectors in radians, in [0, π], and zero where
 // either is the zero vector.
 func (v Vector[T]) AngleBetween(vector Vector[T]) float64 {
+	if !v.hasDirection() || !vector.hasDirection() {
+		return 0
+	}
+
 	a, b := v.Float(), vector.Float()
 
 	return math.Atan2(math.Abs(a.Cross(b)), a.Dot(b))

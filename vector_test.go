@@ -641,6 +641,15 @@ func TestVector_AngleBetween(t *testing.T) {
 	})
 	t.Run("the zero vector is at angle zero", func(t *testing.T) {
 		geomtest.AssertNumber(t, Vec(0, 0).AngleBetween(Vec(1, 1)), 0.0)
+		assert.Equal(t, Vec(-3, -4).AngleBetween(Vec(0, 0)), 0.0)
+		assert.Equal(t, Vec(0, 0).AngleBetween(Vec(-3, -4)), 0.0)
+		assert.Equal(t, Vec(0, 0).AngleBetween(Vec(0, 0)), 0.0)
+	})
+	t.Run("the zero vector is at angle zero from every vector, either way", func(t *testing.T) {
+		for _, vector := range vectorFixtures {
+			assert.Equal(t, vector.AngleBetween(Vec(0.0, 0.0)), 0.0, vector.String())
+			assert.Equal(t, Vec(0.0, 0.0).AngleBetween(vector), 0.0, vector.String())
+		}
 	})
 	t.Run("within a half turn", func(t *testing.T) {
 		for _, a := range vectorFixtures {

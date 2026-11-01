@@ -260,6 +260,14 @@ func TestMod(t *testing.T) {
 	t.Run("defined integer types", func(t *testing.T) {
 		geomtest.AssertNumber(t, Mod(namedInt(12), 8), namedInt(4))
 	})
+	t.Run("a zero modulus panics", func(t *testing.T) {
+		assert.PanicsWith(t, func() {
+			Mod(5, 0)
+		}, ErrDivisionByZero)
+		assert.PanicsWith(t, func() {
+			Mod(namedInt(0), 0)
+		}, ErrDivisionByZero)
+	})
 	t.Run("a narrow T near the end of its range does not overflow", func(t *testing.T) {
 		geomtest.AssertNumber(t, Mod[int8](99, 100), 99)
 		geomtest.AssertNumber(t, Mod[int8](-1, 100), 99)
@@ -558,6 +566,17 @@ func TestEqualRelative(t *testing.T) {
 		assert.False(t, EqualRelative(1e6, 1e6+2.0))
 		assert.True(t, EqualRelative[float32](1e4, 1e4+0.05))
 	})
+	t.Run("an infinity equals only itself", func(t *testing.T) {
+		for _, value := range []float64{0, 1, -1, 1e300, -1e300, math.MaxFloat64} {
+			assert.False(t, EqualRelative(math.Inf(1), value), fmt.Sprint(value))
+			assert.False(t, EqualRelative(value, math.Inf(-1)), fmt.Sprint(value))
+		}
+
+		assert.False(t, EqualRelative(math.Inf(1), math.Inf(-1)))
+		assert.True(t, EqualRelative(math.Inf(1), math.Inf(1)))
+		assert.True(t, EqualRelative(math.Inf(-1), math.Inf(-1)))
+		assert.False(t, EqualRelative(float32(math.Inf(1)), 1))
+	})
 	t.Run("a full turn in float32 returns to its start", func(t *testing.T) {
 		v := Vec[float32](1000, 0)
 		for range 8 {
@@ -651,6 +670,11 @@ func TestEpsilonRelative(t *testing.T) {
 		geomtest.AssertNumber(t, EpsilonRelative(100.0, 0.0), 100*Delta)
 		geomtest.AssertNumber(t, EpsilonRelative(0.0, -100.0), 100*Delta)
 		geomtest.AssertNumber(t, EpsilonRelative[float32](100, 0), 100*Delta32)
+	})
+	t.Run("an infinity stays at Epsilon", func(t *testing.T) {
+		assert.Equal(t, EpsilonRelative(math.Inf(1), 1.0), Delta)
+		assert.Equal(t, EpsilonRelative(1.0, math.Inf(-1)), Delta)
+		assert.Equal(t, EpsilonRelative(float32(math.Inf(1)), 1), Delta32)
 	})
 	t.Run("int stays exact at any magnitude", func(t *testing.T) {
 		geomtest.AssertNumber(t, EpsilonRelative(5, 5), 0.0)

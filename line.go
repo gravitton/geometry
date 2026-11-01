@@ -353,7 +353,7 @@ func (l Line[T]) AppendClipSector(dst []Segment[T], sector Sector[T]) []Segment[
 }
 
 // ClipPolygon returns the parts of the line in the polygon, in order and each running along
-// Vector. A line along a flat polygon has none.
+// Vector.
 func (l Line[T]) ClipPolygon(polygon Polygon[T]) []Segment[T] {
 	return l.AppendClipPolygon(nil, polygon)
 }

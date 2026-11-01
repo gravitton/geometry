@@ -643,9 +643,7 @@ func (s Segment[T]) AppendClipSector(dst []Segment[T], sector Sector[T]) []Segme
 //
 // A part never starts or ends at a point the polygon does not contain, so a segment leaving the
 // boundary at a shallow angle without crossing it ends there; for integer T an end is rounded and
-// may lie just outside. There are parts exactly where
-// IntersectsPolygon holds, except for a flat polygon, its vertices on one line: a segment along
-// that line with both ends beyond the polygon has none.
+// may lie just outside. There are parts exactly where IntersectsPolygon holds.
 func (s Segment[T]) ClipPolygon(polygon Polygon[T]) []Segment[T] {
 	return s.AppendClipPolygon(nil, polygon)
 }

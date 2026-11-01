@@ -39,7 +39,7 @@ func (c Contact[T]) String() string {
 	buf = append(buf, ';')
 	buf = appendString(buf, c.Depth)
 
-	for i := range c.Points.Count {
+	for i := range c.Points.count() {
 		buf = append(buf, ';')
 		buf = c.Points.Items[i].appendString(buf)
 	}

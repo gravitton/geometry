@@ -2151,6 +2151,36 @@ func TestSegment_ClipPolygon(t *testing.T) {
 	t.Run("along an edge gives the part of the edge it covers", func(t *testing.T) {
 		geomtest.AssertSegments(t, Seg(Pt(-1, 0), Pt(3, 0)).ClipPolygon(square), []Segment[int]{Seg(Pt(0, 0), Pt(2, 0))})
 	})
+	t.Run("along a flat polygon gives the stretch they share", func(t *testing.T) {
+		flat := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(10.0, 0.0)})
+
+		geomtest.AssertSegments(t, Seg(Pt(-5.0, 0.0), Pt(15.0, 0.0)).ClipPolygon(flat), []Segment[float64]{Seg(Pt(0.0, 0.0), Pt(10.0, 0.0))})
+		geomtest.AssertSegments(t, Seg(Pt(15.0, 0.0), Pt(-5.0, 0.0)).ClipPolygon(flat), []Segment[float64]{Seg(Pt(10.0, 0.0), Pt(0.0, 0.0))})
+		geomtest.AssertSegments(t, Seg(Pt(5.0, 0.0), Pt(20.0, 0.0)).ClipPolygon(flat), []Segment[float64]{Seg(Pt(5.0, 0.0), Pt(10.0, 0.0))})
+		geomtest.AssertSegments(t, Seg(Pt(-5.0, 0.0), Pt(5.0, 0.0)).ClipPolygon(flat), []Segment[float64]{Seg(Pt(0.0, 0.0), Pt(5.0, 0.0))})
+		geomtest.AssertSegments(t, Seg(Pt(2.0, 0.0), Pt(8.0, 0.0)).ClipPolygon(flat), []Segment[float64]{Seg(Pt(2.0, 0.0), Pt(8.0, 0.0))})
+		assert.Nil(t, Seg(Pt(-5.0, 1.0), Pt(15.0, 1.0)).ClipPolygon(flat))
+		assert.Nil(t, Seg(Pt(11.0, 0.0), Pt(15.0, 0.0)).ClipPolygon(flat))
+	})
+	t.Run("along a flat polygon of more vertices than one pass holds", func(t *testing.T) {
+		points := make([]Point[int], 40)
+		for i := range points {
+			points[i] = Pt(i, 0)
+		}
+
+		geomtest.AssertSegments(t, Seg(Pt(-1, 0), Pt(50, 0)).ClipPolygon(Pol(points)), []Segment[int]{Seg(Pt(0, 0), Pt(39, 0))})
+	})
+	t.Run("has parts exactly where it intersects a flat polygon", func(t *testing.T) {
+		flat := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(10.0, 0.0)})
+
+		for x := -3.0; x <= 13; x++ {
+			for y := -3.0; y <= 13; y++ {
+				s := Seg(Pt(x, 0.0), Pt(y, 0.0))
+
+				assert.Equal(t, len(s.ClipPolygon(flat)) > 0, s.IntersectsPolygon(flat), s.String())
+			}
+		}
+	})
 	t.Run("apart and empty give none", func(t *testing.T) {
 		assert.Nil(t, Seg(Pt(3, -1), Pt(3, 3)).ClipPolygon(square))
 		assert.Nil(t, Seg(Pt(-1, 1), Pt(5, 1)).ClipPolygon(Pol[int](nil)))

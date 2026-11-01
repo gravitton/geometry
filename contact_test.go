@@ -129,6 +129,10 @@ func TestContact_String(t *testing.T) {
 		assert.Equal(t, Contact[float64]{Normal: Vec(0.6, 0.8), Depth: 0.25, Points: Pair[Point[float64]]{[2]Point[float64]{Pt(1.5, 2.0)}, 1}}.String(), "Contact(⟨0.60,0.80⟩;0.25;(1.50,2.00))")
 		assert.Equal(t, Contact[int]{}.String(), "Contact(⟨0.00,0.00⟩;0.00)")
 	})
+	t.Run("a Count out of range reads as Pair does", func(t *testing.T) {
+		assert.Equal(t, Contact[int]{Points: Pair[Point[int]]{[2]Point[int]{Pt(0, 1), Pt(4, 1)}, 3}}.String(), "Contact(⟨0.00,0.00⟩;0.00;(0,1);(4,1))")
+		assert.Equal(t, Contact[int]{Points: Pair[Point[int]]{[2]Point[int]{Pt(0, 1), Pt(4, 1)}, -1}}.String(), "Contact(⟨0.00,0.00⟩;0.00)")
+	})
 	t.Run("allocates the string alone", func(t *testing.T) {
 		contact := Contact[int]{Normal: Vec(0.0, -1.0), Depth: 1, Points: Pair[Point[int]]{[2]Point[int]{Pt(0, 1), Pt(4, 1)}, 2}}
 

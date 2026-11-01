@@ -131,6 +131,10 @@ func Snap[T Number](value, step T) T {
 // Mod returns n wrapped into [0, m), or (m, 0] for a negative m, as a floored division gives it. It
 // panics for a zero m.
 func Mod[T Integer](n, m T) T {
+	if m == 0 {
+		panic(ErrDivisionByZero)
+	}
+
 	remainder := n % m
 	if remainder != 0 && (remainder < 0) != (m < 0) {
 		remainder += m
@@ -292,9 +296,15 @@ func Epsilon[T Number]() float64 {
 }
 
 // EpsilonRelative returns the tolerance of EqualRelative: Epsilon of T scaled by the larger
-// magnitude of a and b, and never less than Epsilon of T.
+// magnitude of a and b, and never less than Epsilon of T. An infinity has no magnitude to scale by,
+// so the tolerance stays Epsilon of T and an infinity equals only itself.
 func EpsilonRelative[T Number](a, b T) float64 {
-	return Epsilon[T]() * max(1, math.Abs(float64(a)), math.Abs(float64(b)))
+	magnitude := max(1, math.Abs(float64(a)), math.Abs(float64(b)))
+	if math.IsInf(magnitude, 1) {
+		return Epsilon[T]()
+	}
+
+	return Epsilon[T]() * magnitude
 }
 
 // epsilonAt returns the boundary tolerance at the magnitude, the largest absolute coordinate a

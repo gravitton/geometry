@@ -341,8 +341,7 @@ func (r Ray[T]) AppendClipSector(dst []Segment[T], sector Sector[T]) []Segment[T
 	return r.reach(sector.minMax()).AppendClipSector(dst, sector)
 }
 
-// ClipPolygon returns the parts of the ray in the polygon, from Origin on. A ray along the line of
-// a flat polygon has none.
+// ClipPolygon returns the parts of the ray in the polygon, from Origin on.
 func (r Ray[T]) ClipPolygon(polygon Polygon[T]) []Segment[T] {
 	return r.AppendClipPolygon(nil, polygon)
 }
