@@ -15,6 +15,7 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 
 ### Added
 - `ErrDivisionByZero`, `ErrSingularMatrix`, `ErrNonFinite`, `ErrCountMismatch` and `ErrUnknownOrientation` – the sentinels every panic matches with `errors.Is`
+- `Direction.TurnsTo` returns the fewest eighth-turns from one direction to another, the inverse of `Turn`
 
 ### Changed
 - Require `assert` v1.7.0 for the tests

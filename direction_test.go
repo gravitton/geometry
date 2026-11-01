@@ -186,6 +186,45 @@ func TestDirection_Turn(t *testing.T) {
 	})
 }
 
+func TestDirection_TurnsTo(t *testing.T) {
+	t.Run("positive steps increase the angle", func(t *testing.T) {
+		assert.Equal(t, DirectionRight.TurnsTo(DirectionDown), 2)
+		assert.Equal(t, DirectionUp.TurnsTo(DirectionRight), 2)
+	})
+	t.Run("negative steps decrease it", func(t *testing.T) {
+		assert.Equal(t, DirectionRight.TurnsTo(DirectionUpRight), -1)
+		assert.Equal(t, DirectionRight.TurnsTo(DirectionDownLeft), 3)
+		assert.Equal(t, DirectionDownLeft.TurnsTo(DirectionRight), -3)
+	})
+	t.Run("itself is no step", func(t *testing.T) {
+		for _, direction := range Directions() {
+			assert.Equal(t, direction.TurnsTo(direction), 0, direction.String()+": ")
+		}
+	})
+	t.Run("the opposite is four steps", func(t *testing.T) {
+		for _, direction := range Directions() {
+			assert.Equal(t, direction.TurnsTo(direction.Opposite()), 4, direction.String()+": ")
+		}
+	})
+	t.Run("undoes Turn and takes the fewest steps", func(t *testing.T) {
+		for _, from := range Directions() {
+			for _, to := range Directions() {
+				turns := from.TurnsTo(to)
+				assert.Equal(t, from.Turn(turns), to, from.String()+" to "+to.String()+": ")
+				assert.True(t, turns >= -3 && turns <= 4, from.String()+" to "+to.String()+": ")
+			}
+		}
+	})
+	t.Run("wraps out of range values without overflow", func(t *testing.T) {
+		assert.Equal(t, Direction(math.MaxInt).TurnsTo(Direction(math.MinInt)), Direction(math.MaxInt%8).TurnsTo(Mod(Direction(math.MinInt), 8)))
+	})
+	t.Run("none takes no steps", func(t *testing.T) {
+		assert.Equal(t, DirectionNone.TurnsTo(DirectionUp), 0)
+		assert.Equal(t, DirectionUp.TurnsTo(DirectionNone), 0)
+		assert.Equal(t, DirectionNone.TurnsTo(DirectionNone), 0)
+	})
+}
+
 func TestDirection_IsNone(t *testing.T) {
 	t.Run("none", func(t *testing.T) {
 		assert.True(t, DirectionNone.IsNone())

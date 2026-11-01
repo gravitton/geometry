@@ -208,6 +208,16 @@ func (d Direction) Turn(steps int) Direction {
 	return Mod(d+Direction(steps), 8)
 }
 
+// TurnsTo returns the fewest steps Turn takes from the direction to the given one, from -3 to 4,
+// and 0 if either is DirectionNone.
+func (d Direction) TurnsTo(direction Direction) int {
+	if d.IsNone() || direction.IsNone() {
+		return 0
+	}
+
+	return int(Mod(direction.normalize()-d.normalize()+3, 8)) - 3
+}
+
 // IsNone reports whether the direction is DirectionNone.
 func (d Direction) IsNone() bool {
 	return d == DirectionNone
