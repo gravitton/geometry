@@ -453,9 +453,10 @@ every outline winds that way.
 
 ```go
 dir := geom.DirectionUp
-dir.Turn(2)                 // DirectionRight, two 45° steps
-dir.Vector(5.0)             // ⟨0,-5⟩
-geom.Vec(3, -7).Direction() // DirectionUpRight, the nearest of the eight
+dir.Turn(2)                     // DirectionRight, two 45° steps
+dir.TurnsTo(geom.DirectionLeft) // -2, the fewest steps there
+dir.Vector(5.0)                 // ⟨0,-5⟩
+geom.Vec(3, -7).Direction()     // DirectionUpRight, the nearest of the eight
 
 geom.DirectionFromAxes(up, down, left, right) // keyboard input to an 8-way direction
 ```
