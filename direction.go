@@ -293,7 +293,7 @@ func (d Direction) offset() Vector[int] {
 	return directionOffsets[d.normalize()]
 }
 
-// directionOffsets lists the lattice step of each direction, indexed by direction.
+// directionOffsets holds the lattice step of each direction, indexed by direction.
 var directionOffsets = [8]Vector[int]{
 	{1, 0},   // Right
 	{1, 1},   // DownRight
