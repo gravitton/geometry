@@ -21,8 +21,8 @@ import (
 // For integer T the vertices are rounded, and the rounded outline need not be convex. Contains
 // follows it exactly, but Contains<Kind> of a shape with vertices tests those points alone, so it
 // can admit a shape passing through a dent the rounding made, and Distance, Nearest, Collide and
-// Sweep take it by its supports, so a shape in such a dent is at no distance without intersecting
-// it.
+// Sweep take it by its supports, except Distance and Nearest against a Circle, so a shape in such
+// a dent is at no distance without intersecting it.
 type RegularPolygon[T Number] struct {
 	Center Point[T] `json:",embed"`
 	Radius Size[T]  `json:",embed"`
@@ -309,22 +309,26 @@ func (rp RegularPolygon[T]) Transform[M Float](matrix Matrix[M]) RegularPolygon[
 	return RegularPolygon[T]{rp.Center.Transform(matrix), stretch.Size().Cast[T](), rp.N, NormalizeAngle(after), NormalizeAngle(phase)}
 }
 
-// Grow returns the polygon with both semi-axes increased by the amount, clamped at zero.
+// Grow returns the polygon with both semi-axes increased by the amount, clamped at zero. A negative
+// amount shrinks it.
 func (rp RegularPolygon[T]) Grow(amount T) RegularPolygon[T] {
 	return RegularPolygon[T]{rp.Center, rp.Radius.Grow(amount).AtLeastZero(), rp.N, rp.Angle, rp.Phase}
 }
 
-// GrowXY returns the polygon with its semi-axes increased by the amounts, clamped at zero.
+// GrowXY returns the polygon with its semi-axes increased by the amounts, clamped at zero. A
+// negative amount shrinks that semi-axis.
 func (rp RegularPolygon[T]) GrowXY(amountX, amountY T) RegularPolygon[T] {
 	return RegularPolygon[T]{rp.Center, rp.Radius.GrowXY(amountX, amountY).AtLeastZero(), rp.N, rp.Angle, rp.Phase}
 }
 
-// Shrink returns the polygon with both semi-axes decreased by the amount, clamped at zero.
+// Shrink returns the polygon with both semi-axes decreased by the amount, clamped at zero. A
+// negative amount grows it.
 func (rp RegularPolygon[T]) Shrink(amount T) RegularPolygon[T] {
 	return RegularPolygon[T]{rp.Center, rp.Radius.Shrink(amount).AtLeastZero(), rp.N, rp.Angle, rp.Phase}
 }
 
-// ShrinkXY returns the polygon with its semi-axes decreased by the amounts, clamped at zero.
+// ShrinkXY returns the polygon with its semi-axes decreased by the amounts, clamped at zero. A
+// negative amount grows that semi-axis.
 func (rp RegularPolygon[T]) ShrinkXY(amountX, amountY T) RegularPolygon[T] {
 	return RegularPolygon[T]{rp.Center, rp.Radius.ShrinkXY(amountX, amountY).AtLeastZero(), rp.N, rp.Angle, rp.Phase}
 }
@@ -648,8 +652,8 @@ func (rp RegularPolygon[T]) IsAligned() bool {
 	return rp.Angle == 0
 }
 
-// Circle returns the circle about the center of the major semi-axis, through the vertices where the
-// semi-axes are equal and around them otherwise.
+// Circle returns the circle about the center with the major semi-axis as its radius, through the
+// vertices where the semi-axes are equal and around them otherwise.
 func (rp RegularPolygon[T]) Circle() Circle[T] {
 	return rp.Ellipse().Circle()
 }

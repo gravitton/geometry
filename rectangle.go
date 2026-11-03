@@ -370,27 +370,30 @@ func (r Rectangle[T]) Transform[M Float](matrix Matrix[M]) Rectangle[T] {
 }
 
 // Grow returns the rectangle with each extent increased by the amount, clamped at zero, so each
-// side moves out by half of it. For integer T an odd amount moves one side a unit farther than the
-// other; Outset moves a chosen side by a whole amount.
+// side moves out by half of it; a negative amount shrinks it. For integer T an odd amount moves one
+// side a unit farther than the other; Outset moves a chosen side by a whole amount.
 func (r Rectangle[T]) Grow(amount T) Rectangle[T] {
 	return Rectangle[T]{r.Center, r.Size.Grow(amount).AtLeastZero(), r.Angle}
 }
 
 // GrowXY returns the rectangle with its extents increased by the amounts along its own axes,
-// clamped at zero. For integer T an odd amount moves one side a unit farther than the other.
+// clamped at zero; a negative amount shrinks that extent. For integer T an odd amount moves one
+// side a unit farther than the other.
 func (r Rectangle[T]) GrowXY(amountX, amountY T) Rectangle[T] {
 	return Rectangle[T]{r.Center, r.Size.GrowXY(amountX, amountY).AtLeastZero(), r.Angle}
 }
 
 // Shrink returns the rectangle with each extent decreased by the amount, clamped at zero, so each
-// side moves in by half of it. For integer T an odd amount moves one side a unit farther than the
-// other; Inset moves a chosen side by a whole amount.
+// side moves in by half of it until that extent collapses onto its center; a negative amount grows
+// it. For integer T an odd amount moves one side a unit farther than the other; Inset moves a
+// chosen side by a whole amount.
 func (r Rectangle[T]) Shrink(amount T) Rectangle[T] {
 	return Rectangle[T]{r.Center, r.Size.Shrink(amount).AtLeastZero(), r.Angle}
 }
 
 // ShrinkXY returns the rectangle with its extents decreased by the amounts along its own axes,
-// clamped at zero. For integer T an odd amount moves one side a unit farther than the other.
+// clamped at zero; a negative amount grows that extent. For integer T an odd amount moves one side
+// a unit farther than the other.
 func (r Rectangle[T]) ShrinkXY(amountX, amountY T) Rectangle[T] {
 	return Rectangle[T]{r.Center, r.Size.ShrinkXY(amountX, amountY).AtLeastZero(), r.Angle}
 }

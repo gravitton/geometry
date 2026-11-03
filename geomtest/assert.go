@@ -1,6 +1,7 @@
 // Package geomtest provides test assertions for code built on package geom. Each compares the
-// values field by field, exactly for an integer T and within [geom.EpsilonRelative] for a float T,
-// reports every field that differs by its name, and returns whether the values are equal.
+// values field by field, exactly for an integer T and within [geom.EpsilonRelative] for a float T
+// or a float64 field, angles by [geom.EqualAngle], reports every field that differs by its name,
+// and returns whether the values are equal.
 package geomtest
 
 import (
@@ -234,6 +235,7 @@ func AssertSegment[T geom.Number](t Testing, actual, expected geom.Segment[T], m
 }
 
 // AssertSegments asserts that actual holds the expected segments in order, each by AssertSegment.
+// A different count fails without comparing the segments.
 func AssertSegments[T geom.Number](t Testing, actual, expected []geom.Segment[T], messages ...string) bool {
 	t.Helper()
 

@@ -33,13 +33,13 @@
 // The origin is top-left and +Y points down. Angles are in radians and positive counterclockwise
 // in math coordinates, which appears clockwise on screen. [Directions], [Rectangle.Vertices] and
 // [RegularPolygon.Vertices] wind by increasing angle. Each Direction has a canonical, a compass and
-// a corner name ([DirectionDownRight], [SouthEast], [BottomRight]).
+// an edge or corner name ([DirectionDownRight], [SouthEast], [BottomRight]).
 //
 // # Boundaries
 //
 // Every Contains and Intersects test is closed and tolerant: a point within the tolerance of a
 // boundary is on it, so a float rectangle contains the corners it was built from. The tolerance
-// is [Epsilon] of T near the origin, widens to two ulps of T far from it, and is zero for an
+// is [Epsilon] of T near the origin, widens to a few ulps of T far from it, and is zero for an
 // integer T. Related methods decide by the same comparison, so DistanceTo is zero exactly where
 // Contains holds, a pair gives the same answer from either side, and Intersection<Kind> gives
 // points exactly where Intersects<Kind> holds, except where no boundary is crossed: a shape
@@ -88,8 +88,8 @@
 //     included, and a zero m to [Mod];
 //   - [ErrSingularMatrix] for a singular matrix to [Matrix.Inverse] (check [Matrix.IsInvertible]);
 //   - [ErrNonFinite] for NaN or ±Inf stored into an integer T by [Cast], so through Multiply, Lerp,
-//     Rotate, Transform or Int of an integer value, and an integer [RegularPolygon] with a
-//     non-finite Angle or Phase;
+//     Rotate or Transform of an integer value and Int of a float one, and an integer
+//     [RegularPolygon] with a non-finite Angle or Phase;
 //   - [ErrUnknownOrientation] for an [Orientation] other than [OrientationFlatTop] or
 //     [OrientationPointyTop] to [RegularPolygonOrientationPhase] and every function built on it;
 //   - [ErrCountMismatch] for a differing vertex count to [Polygon.Lerp], [RegularPolygon.Lerp] and

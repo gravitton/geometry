@@ -138,8 +138,7 @@ func (p Point[T]) Midpoint(point Point[T]) Point[T] {
 	return Point[T]{Midpoint(p.X, point.X), Midpoint(p.Y, point.Y)}
 }
 
-// Transform returns the point mapped by the matrix. The matrix is float-only: convert an integer
-// one with Matrix.Float first.
+// Transform returns the point mapped by the matrix.
 func (p Point[T]) Transform[M Float](matrix Matrix[M]) Point[T] {
 	x, y := float64(p.X), float64(p.Y)
 	a, b, c := float64(matrix.A), float64(matrix.B), float64(matrix.C)

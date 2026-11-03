@@ -260,7 +260,8 @@ func (l Line[T]) IntersectionLine(line Line[T]) (Point[T], bool) {
 }
 
 // IntersectionPolyline returns the points where the line crosses the path, in order along Vector,
-// and none for an empty path.
+// and none for an empty path. A line along an edge crosses only the edges that meet it there, so a
+// stretch reaching an end of the path gives no point at that end.
 func (l Line[T]) IntersectionPolyline(polyline Polyline[T]) []Point[T] {
 	return l.AppendIntersectionPolyline(nil, polyline)
 }
@@ -372,7 +373,8 @@ func (l Line[T]) ClipRectangle(rectangle Rectangle[T]) (Segment[T], bool) {
 }
 
 // ClipRegularPolygon returns the part of the line in the regular polygon, running along Vector,
-// and false where they share no point, for an empty polygon, and for a line along a flat one.
+// and false where they share no point, for an empty polygon, and for a line along one whose
+// vertices are exactly collinear.
 func (l Line[T]) ClipRegularPolygon(polygon RegularPolygon[T]) (Segment[T], bool) {
 	return l.span(polygon.minMax()).ClipRegularPolygon(polygon)
 }

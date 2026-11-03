@@ -58,8 +58,9 @@ func (e Ellipse[T]) Foci() (Point[T], Point[T]) {
 
 // Anchor returns the point of the boundary in the direction from the center, named in the frame
 // before the turn, or the center for DirectionNone. A diagonal anchor lies where the diagonal
-// leaves the ellipse, and a degenerate ellipse answers with the point of its segment at the angle
-// of the direction, the center for a direction across it.
+// leaves the ellipse, and a degenerate ellipse answers with the point of its segment at the
+// parameter of the direction's angle: its end for a direction along it, the center for one across
+// it.
 func (e Ellipse[T]) Anchor(direction Direction) Point[T] {
 	if direction.IsNone() {
 		return e.Center
@@ -226,7 +227,7 @@ func (e Ellipse[T]) Resize(radius Size[T]) Ellipse[T] {
 
 // Transform returns the ellipse mapped by the matrix, exactly, since an affine map takes an ellipse
 // to an ellipse. A reflection mirrors the angle, and where the semi-axes come out swapped the angle
-// takes a quarter turn.
+// takes a quarter turn. The angle is normalized to [0, 2π).
 func (e Ellipse[T]) Transform[M Float](matrix Matrix[M]) Ellipse[T] {
 	after, stretch, _, _ := matrix.mapping(e.Angle, e.Radius.Float()).decomposition()
 

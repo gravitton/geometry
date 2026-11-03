@@ -17,7 +17,7 @@ import (
 // The points of an arc are no lattice points, so for integer T every distance to it is measured in
 // float64 and compared at no less than the float64 tolerance.
 //
-// An arc has no inside, so it is no Shape; segments, rays and lines are cast at it.
+// An arc has no inside, so it is no Shape.
 type Arc[T Number] struct {
 	Center Point[T] `json:",embed"`
 	Radius T        `json:"r"`
@@ -31,8 +31,8 @@ func Ac[T Number](center Point[T], radius T, angle, sweep float64) Arc[T] {
 }
 
 // ArcThrough returns the arc from a through b to c, and false where they lie on one line, two or
-// all of them being the same point included. The sweep is negative where the points run clockwise
-// in math coordinates. The radius must fit T.
+// all of them being the same point included. The angle is normalized to [0, 2π) and the sweep is
+// negative where the points run clockwise in math coordinates. The radius must fit T.
 func ArcThrough[T Number](a, b, c Point[T]) (Arc[T], bool) {
 	circle, ok := CircleThrough(a, b, c)
 	if !ok {
@@ -227,7 +227,7 @@ func (a Arc[T]) DistanceSquaredTo(point Point[T]) float64 {
 }
 
 // Nearest returns the point of the arc nearest to the given point, the point itself on the arc or
-// with a NaN coordinate, and Start for a tie between the ends or for the center.
+// with a NaN coordinate, and Start for the center and where both ends are exactly as near.
 func (a Arc[T]) Nearest(point Point[T]) Point[T] {
 	nearest, distanceSquared := a.nearest(point.Float())
 	if a.containsSquared(distanceSquared, point.magnitude()) || math.IsNaN(distanceSquared) {
@@ -238,7 +238,7 @@ func (a Arc[T]) Nearest(point Point[T]) Point[T] {
 }
 
 // NearestFraction returns the fraction along the arc of Nearest, from zero at Start to one at End,
-// and zero for a tie between the ends, for the center or for an arc of zero sweep.
+// and zero for the center, where both ends are exactly as near and for an arc of zero sweep.
 func (a Arc[T]) NearestFraction(point Point[T]) float64 {
 	return a.fraction(point.Float())
 }
@@ -248,20 +248,22 @@ func (a Arc[T]) Contains(point Point[T]) bool {
 	return a.DistanceSquaredTo(point) == 0
 }
 
-// IntersectionSegment returns the points where the segment crosses the arc, in order along the
-// segment.
+// IntersectionSegment returns the points where the segment crosses the arc, from Start to End: two,
+// one where it is tangent or crosses the arc once, and none where it misses.
 func (a Arc[T]) IntersectionSegment(segment Segment[T]) Pair[Point[T]] {
 	fractions, n := a.crossings(segment)
 
 	return segment.pointsAt(fractions[:n]...)
 }
 
-// IntersectionRay returns the points where the ray crosses the arc, from its Origin on.
+// IntersectionRay returns the points where the ray crosses the arc, from its Origin on: two, one
+// where it is tangent or crosses the arc once, and none where it misses.
 func (a Arc[T]) IntersectionRay(ray Ray[T]) Pair[Point[T]] {
 	return a.IntersectionSegment(ray.reach(a.minMax()))
 }
 
-// IntersectionLine returns the points where the line crosses the arc, in order along its Vector.
+// IntersectionLine returns the points where the line crosses the arc, in order along its Vector:
+// two, one where it is tangent or crosses the arc once, and none where it misses.
 func (a Arc[T]) IntersectionLine(line Line[T]) Pair[Point[T]] {
 	return a.IntersectionSegment(line.span(a.minMax()))
 }
@@ -307,9 +309,9 @@ func (a Arc[T]) nearest(point Point[float64]) (Point[float64], float64) {
 	return nearest, nearest.DistanceSquaredTo(point)
 }
 
-// fraction returns the fraction along the arc nearest to the point, with no tolerance: the swept
-// angle where the sweep covers the direction, else the nearer end, Start where both are exactly as
-// near.
+// fraction returns the fraction along the arc nearest to the point, with no tolerance: zero for the
+// center, the swept angle where the sweep covers the direction, else the nearer end, Start where
+// both are exactly as near.
 func (a Arc[T]) fraction(point Point[float64]) float64 {
 	offset := point.Subtract(a.Center.Float())
 	if !offset.hasDirection() {

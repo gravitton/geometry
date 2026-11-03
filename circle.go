@@ -514,8 +514,7 @@ func (c Circle[T]) fractions(segment Segment[T]) ([2]float64, int) {
 	}
 }
 
-// centerDistanceSquared returns the squared distance from the center to the point, the one value
-// every test of the circle compares with its radius.
+// centerDistanceSquared returns the squared distance from the center to the point.
 func (c Circle[T]) centerDistanceSquared(point Point[T]) float64 {
 	return c.Center.Float().DistanceSquaredTo(point.Float())
 }

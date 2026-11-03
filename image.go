@@ -34,7 +34,7 @@ func (p Point[T]) Point() image.Point {
 
 // Rectangle converts the rectangle to the half-open image.Rectangle of the Bounds of its Int, so it
 // spans exactly Size.Int pixels and keeps its width through sub-pixel positions. A turned
-// rectangle gives the box around its rounded vertices.
+// rectangle gives the box around the vertices of its Int.
 func (r Rectangle[T]) Rectangle() image.Rectangle {
 	bounds := r.Int().Bounds()
 

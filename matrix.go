@@ -112,6 +112,8 @@ func ReflectionMatrix[T Number](axis Axis) Matrix[T] {
 	}
 }
 
+// around returns the matrix conjugated by the translation to the pivot, so the pivot maps onto
+// itself, the translation rounded once.
 func (m Matrix[T]) around(pivotX, pivotY T) Matrix[T] {
 	f := m.Float()
 	x, y := float64(pivotX), float64(pivotY)
@@ -127,9 +129,9 @@ func (m Matrix[T]) Translation() Vector[T] {
 	return Vector[T]{m.C, m.F}
 }
 
-// Angle returns the angle in radians, in [-π, π], of the transformed X axis, the rotation of a
-// matrix built by TRSMatrix. A matrix that collapses the X axis gives the angle of its Y axis a
-// quarter turn back, and the zero matrix gives zero.
+// Angle returns the angle in radians, in (-π, π] a negative zero aside, of the transformed X axis,
+// the rotation of a matrix built by TRSMatrix. A matrix that collapses the X axis gives the angle
+// of its Y axis a quarter turn back, and the zero matrix gives zero.
 func (m Matrix[T]) Angle() float64 {
 	if m.A == 0 && m.D == 0 {
 		return math.Atan2(-float64(m.B), float64(m.E))

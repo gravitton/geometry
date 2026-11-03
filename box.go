@@ -230,27 +230,30 @@ func (b Box[T]) Resize(size Size[T]) Box[T] {
 }
 
 // Grow returns the box with each extent increased by the amount, clamped at zero, so each side
-// moves out by half of it. For integer T an odd amount moves one side a unit farther than the
-// other; Outset moves a chosen side by a whole amount.
+// moves out by half of it; a negative amount shrinks it. For integer T an odd amount moves one side
+// a unit farther than the other; Outset moves a chosen side by a whole amount.
 func (b Box[T]) Grow(amount T) Box[T] {
 	return b.Resize(b.Size().Grow(amount).AtLeastZero())
 }
 
-// GrowXY returns the box with its extents increased by the amounts, clamped at zero. For integer T
-// an odd amount moves one side a unit farther than the other.
+// GrowXY returns the box with its extents increased by the amounts, clamped at zero; a negative
+// amount shrinks that extent. For integer T an odd amount moves one side a unit farther than the
+// other.
 func (b Box[T]) GrowXY(amountX, amountY T) Box[T] {
 	return b.Resize(b.Size().GrowXY(amountX, amountY).AtLeastZero())
 }
 
 // Shrink returns the box with each extent decreased by the amount, clamped at zero, so each side
-// moves in by half of it until that extent collapses onto its Center. For integer T an odd amount
-// moves one side a unit farther than the other; Inset moves a chosen side by a whole amount.
+// moves in by half of it until that extent collapses onto its Center; a negative amount grows it.
+// For integer T an odd amount moves one side a unit farther than the other; Inset moves a chosen
+// side by a whole amount.
 func (b Box[T]) Shrink(amount T) Box[T] {
 	return b.Resize(b.Size().Shrink(amount).AtLeastZero())
 }
 
-// ShrinkXY returns the box with its extents decreased by the amounts, clamped at zero. For integer
-// T an odd amount moves one side a unit farther than the other.
+// ShrinkXY returns the box with its extents decreased by the amounts, clamped at zero; a negative
+// amount grows that extent. For integer T an odd amount moves one side a unit farther than the
+// other.
 func (b Box[T]) ShrinkXY(amountX, amountY T) Box[T] {
 	return b.Resize(b.Size().ShrinkXY(amountX, amountY).AtLeastZero())
 }

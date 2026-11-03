@@ -31,6 +31,7 @@ func (p Pair[E]) All() iter.Seq[E] {
 	}
 }
 
+// count returns Count clamped to the items the array holds.
 func (p Pair[E]) count() int {
 	return min(max(p.Count, 0), len(p.Items))
 }

@@ -235,7 +235,8 @@ func (p Polyline[T]) Contains(point Point[T]) bool {
 }
 
 // IntersectionSegment returns the points where the segment crosses the path, from the Start of the
-// segment to its End.
+// segment to its End. A segment along an edge crosses only the edges that meet it there, so a
+// stretch reaching an end of the path gives no point at that end.
 func (p Polyline[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
 	return segment.IntersectionPolyline(p)
 }

@@ -17,8 +17,7 @@ import (
 // The ends of the arc are no lattice points, so for integer T every distance to the sector is
 // measured in float64 and compared at no less than the float64 tolerance.
 //
-// Past half a turn the sector is not convex: its Support is that of its hull, and Intersects,
-// Distance, Nearest, Collide and Sweep take it as its two convex halves.
+// Past half a turn the sector is not convex, and its Support is that of its hull.
 type Sector[T Number] struct {
 	Center Point[T] `json:",embed"`
 	Radius T        `json:"r"`
@@ -235,7 +234,7 @@ func (s Sector[T]) Nearest(point Point[T]) Point[T] {
 }
 
 // Support returns the point of the sector farthest along the direction, whatever its length, and
-// Center for a zero direction. Past half a turn it is the Support of the hull.
+// Center for a zero direction.
 func (s Sector[T]) Support(direction Vector[float64]) Point[float64] {
 	arc, center := s.Arc(), s.Center.Float()
 	if direction.hasDirection() && arc.covers(direction.Angle()) {
@@ -457,7 +456,8 @@ func (s Sector[T]) IntersectsBox(box Box[T]) bool {
 
 // IntersectionSegment returns the points where the segment crosses the boundary, from Start to End:
 // at most two up to half a turn and up to four past it. A segment entirely inside crosses no
-// boundary, so it gives none while IntersectsSegment holds.
+// boundary, so it gives none while IntersectsSegment holds. A segment running along a radius gives
+// the ends of the stretch they share.
 func (s Sector[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
 	return segment.IntersectionSector(s)
 }

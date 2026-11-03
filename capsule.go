@@ -413,13 +413,14 @@ func (c Capsule[T]) IntersectionSegment(segment Segment[T]) Pair[Point[T]] {
 	return segment.pointsAt(fractions[:n]...)
 }
 
-// IntersectionRay returns the points where the ray crosses the boundary, from its Origin on.
+// IntersectionRay returns the points where the ray crosses the boundary, from its Origin on: two
+// where it passes through, one where it is tangent or starts inside, and none where it misses.
 func (c Capsule[T]) IntersectionRay(ray Ray[T]) Pair[Point[T]] {
 	return c.IntersectionSegment(ray.reach(c.minMax()))
 }
 
 // IntersectionLine returns the points where the line crosses the boundary, in order along its
-// Vector.
+// Vector: two where it passes through, one where it is tangent, and none where it misses.
 func (c Capsule[T]) IntersectionLine(line Line[T]) Pair[Point[T]] {
 	return c.IntersectionSegment(line.span(c.minMax()))
 }

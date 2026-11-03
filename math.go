@@ -309,9 +309,10 @@ func EpsilonRelative[T Number](a, b T) float64 {
 }
 
 // epsilonAt returns the boundary tolerance at the magnitude, the largest absolute coordinate a
-// comparison reads: Epsilon of T, or two ulps of T at that magnitude where wider, so a point
-// rounded into T far from the origin stays on the boundary it was computed on. It is zero for an
-// integer T, and NaN, which admits nothing, for the NaN magnitude of an infinite coordinate.
+// comparison reads: Epsilon of T, or the magnitude times twice the machine epsilon of T, two to
+// four ulps, where wider, so a point rounded into T far from the origin stays on the boundary it
+// was computed on. It is zero for an integer T, and NaN, which admits nothing, for the NaN
+// magnitude of an infinite coordinate.
 func epsilonAt[T Number](magnitude float64) float64 {
 	if isInt[T]() {
 		return 0
@@ -403,8 +404,8 @@ func EqualAngle(a, b float64) bool {
 	return EqualDelta(AngleDistance(a, b), 0, Delta)
 }
 
-// compareAngles orders two vectors by Vector.Angle without trigonometry: by the half plane each
-// lies in, then by the sign of their cross product.
+// compareAngles orders two vectors by Vector.Angle, the zero vector last with the -X axis, without
+// trigonometry: by the half plane each lies in, then by the sign of their cross product.
 func compareAngles(a, b Vector[float64]) int {
 	if halfA, halfB := angleHalf(a), angleHalf(b); halfA != halfB {
 		return halfA - halfB

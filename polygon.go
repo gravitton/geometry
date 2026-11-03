@@ -373,11 +373,11 @@ func (p Polygon[T]) AppendConvexHull(dst []Point[T]) []Point[T] {
 
 // Simplify returns the polygon without the vertices it needs no more to stay within the tolerance:
 // every dropped vertex lies within the tolerance of the edge that replaces it. At zero tolerance it
-// drops repeated vertices and those on the straight line between their kept neighbors, a fold back
-// along that line included. The kept vertices stay in order from the first kept one, so simplifying
-// again changes nothing; an outline within the tolerance of its least vertex by Point.Compare keeps
-// that vertex alone. A negative tolerance is taken absolute, and an empty polygon gives an empty
-// one.
+// drops repeated vertices and those on the segment between their kept neighbors, a fold back within
+// that segment included; the tip of a spike reaching past it is kept. The kept vertices stay in
+// order from the first kept one, so simplifying again changes nothing; an outline within the
+// tolerance of its least vertex by Point.Compare keeps that vertex alone. A negative tolerance is
+// taken absolute, and an empty polygon gives an empty one.
 func (p Polygon[T]) Simplify(tolerance float64) Polygon[T] {
 	return Polygon[T]{p.AppendSimplify(nil, tolerance)}
 }

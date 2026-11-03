@@ -108,7 +108,7 @@ func (p *edgeProbe[T]) meets(edge Segment[T]) bool {
 
 // edgeConvexity folds the edge directions of an outline into the test IsConvex makes: the sense of
 // the turns so far and how often the X component has changed sign, which an outline going around
-// once does exactly twice.
+// once does at most twice.
 type edgeConvexity struct {
 	first, previous Vector[float64]
 	turned          bool

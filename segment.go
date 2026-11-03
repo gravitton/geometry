@@ -461,7 +461,8 @@ func (s Segment[T]) IntersectionLine(line Line[T]) (Point[T], bool) {
 }
 
 // IntersectionPolyline returns the points where the segment crosses the path, from Start to End,
-// and none for an empty path.
+// and none for an empty path. A segment along an edge crosses only the edges that meet it there, so
+// a stretch reaching an end of the path gives no point at that end.
 func (s Segment[T]) IntersectionPolyline(polyline Polyline[T]) []Point[T] {
 	return s.AppendIntersectionPolyline(nil, polyline)
 }
@@ -544,7 +545,9 @@ func (s Segment[T]) IntersectionRectangle(rectangle Rectangle[T]) Pair[Point[T]]
 
 // IntersectionRegularPolygon returns the points where the segment crosses the boundary of the
 // regular polygon, from Start to End: the first and the last crossing. A segment entirely inside
-// gives none while IntersectsRegularPolygon holds, and an empty polygon gives none.
+// gives none while IntersectsRegularPolygon holds, and an empty polygon gives none. A segment along
+// an edge crosses only the edges at its ends, so one along the line of a polygon whose vertices are
+// exactly collinear crosses none.
 func (s Segment[T]) IntersectionRegularPolygon(polygon RegularPolygon[T]) Pair[Point[T]] {
 	span := edgeSpan[T]{segment: s}
 	for edge := range polygon.Edges() {
@@ -556,7 +559,7 @@ func (s Segment[T]) IntersectionRegularPolygon(polygon RegularPolygon[T]) Pair[P
 
 // IntersectionBox returns the points where the segment crosses the boundary of the box, from Start
 // to End: the first and the last crossing. A segment entirely inside gives none while IntersectsBox
-// holds.
+// holds, and a segment along an edge crosses only the edges at its ends.
 func (s Segment[T]) IntersectionBox(box Box[T]) Pair[Point[T]] {
 	span := edgeSpan[T]{segment: s}
 	corners := box.corners()
@@ -640,7 +643,8 @@ func (s Segment[T]) AppendClipSector(dst []Segment[T], sector Sector[T]) []Segme
 // such as at a reflex vertex, and a touch from outside is a part of zero length.
 //
 // A part never starts or ends at a point the polygon does not contain, so a segment leaving the
-// boundary at a shallow angle without crossing it ends there. There are parts exactly where
+// boundary at a shallow angle without crossing it ends there. A flat polygon, or a spike of no
+// width, gives the stretch the segment shares with it. There are parts exactly where
 // IntersectsPolygon holds.
 func (s Segment[T]) ClipPolygon(polygon Polygon[T]) []Segment[T] {
 	return s.AppendClipPolygon(nil, polygon)
@@ -699,8 +703,9 @@ func (s Segment[T]) ClipRectangle(rectangle Rectangle[T]) (Segment[T], bool) {
 
 // ClipRegularPolygon returns the part of the segment in the regular polygon, and false where they
 // share no point or the polygon is empty. A segment touching a vertex from outside is clipped to
-// that vertex. A flat polygon, of two vertices or a zero semi-axis, is the exception: a segment
-// along its line with an end beyond it has no part, while IntersectsRegularPolygon holds.
+// that vertex. A polygon whose vertices are exactly collinear, as with a zero semi-axis or two
+// vertices of an integer T, is the exception: a segment along its line with an end beyond it has
+// no part, while IntersectsRegularPolygon holds.
 func (s Segment[T]) ClipRegularPolygon(polygon RegularPolygon[T]) (Segment[T], bool) {
 	span := edgeSpan[T]{segment: s}
 	for edge := range polygon.Edges() {
@@ -849,20 +854,23 @@ func (s Segment[T]) HitSegment(segment Segment[T]) (Hit[T], bool) {
 }
 
 // HitRay returns where the segment first reaches the ray, a wall, and false where it does not or
-// Start lies on it.
+// Start lies on it. The normal is the perpendicular of the wall, turned to face the segment; a ray
+// running along the segment is met at its origin with the normal back along the segment.
 func (s Segment[T]) HitRay(ray Ray[T]) (Hit[T], bool) {
 	return s.HitSegment(ray.reach(s.minMax()))
 }
 
 // HitLine returns where the segment first reaches the line, a wall, and false where it does not or
-// Start lies on it.
+// Start lies on it. The normal is the perpendicular of the line, turned to face the segment.
 func (s Segment[T]) HitLine(line Line[T]) (Hit[T], bool) {
 	return s.HitSegment(line.span(s.minMax()))
 }
 
 // HitPolyline returns where the segment first reaches the path, a wall of several edges, and false
-// where it does not, Start lies on it or the path is empty. A point two edges share takes the edge
-// that faces Start, and the earlier in Edges where both do or neither does.
+// where it does not, Start lies on it or the path is empty. The normal is the perpendicular of the
+// edge hit, turned to face the segment, and back along the segment for an edge running along it. A
+// point two edges share takes the edge that faces Start, and the earlier in Edges where both do or
+// neither does.
 func (s Segment[T]) HitPolyline(polyline Polyline[T]) (Hit[T], bool) {
 	if polyline.Contains(s.Start) {
 		return Hit[T]{}, false
@@ -954,7 +962,9 @@ func (s Segment[T]) HitRegularPolygon(polygon RegularPolygon[T]) (Hit[T], bool) 
 }
 
 // HitBox returns where the segment first reaches the box from outside, and false where it does not
-// or Start lies in it.
+// or Start lies in it. The normal is the outward one of the edge hit. A corner takes the edge that
+// faces Start, and the earlier in Edges where both do; a segment along an edge gets the edge it
+// meets at the corner.
 func (s Segment[T]) HitBox(box Box[T]) (Hit[T], bool) {
 	if box.Contains(s.Start) {
 		return Hit[T]{}, false
@@ -1336,8 +1346,7 @@ func (s Segment[T]) IsZero() bool {
 	return s.Equal(Segment[T]{})
 }
 
-// IsPoint reports whether Start and End are equal, as in the part a Clip gives where a cast touches
-// a shape in passing.
+// IsPoint reports whether Start and End are equal.
 func (s Segment[T]) IsPoint() bool {
 	return s.Start.Equal(s.End)
 }

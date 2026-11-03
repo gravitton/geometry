@@ -252,7 +252,8 @@ func (r Ray[T]) IntersectionLine(line Line[T]) (Point[T], bool) {
 }
 
 // IntersectionPolyline returns the points where the ray crosses the path, from Origin on, and none
-// for an empty path.
+// for an empty path. A ray along an edge crosses only the edges that meet it there, so a stretch
+// reaching an end of the path gives no point at that end.
 func (r Ray[T]) IntersectionPolyline(polyline Polyline[T]) []Point[T] {
 	return r.AppendIntersectionPolyline(nil, polyline)
 }
@@ -364,8 +365,9 @@ func (r Ray[T]) ClipRectangle(rectangle Rectangle[T]) (Segment[T], bool) {
 }
 
 // ClipRegularPolygon returns the part of the ray in the regular polygon, and false where they share
-// no point, for an empty polygon, and for a ray along the line of a flat one. It starts at Origin
-// where the polygon contains it, else at the first point of the polygon the ray reaches.
+// no point, for an empty polygon, and for a ray along the line of one whose vertices are exactly
+// collinear. It starts at Origin where the polygon contains it, else at the first point of the
+// polygon the ray reaches.
 func (r Ray[T]) ClipRegularPolygon(polygon RegularPolygon[T]) (Segment[T], bool) {
 	return r.reach(polygon.minMax()).ClipRegularPolygon(polygon)
 }
@@ -391,25 +393,30 @@ func (r Ray[T]) HitCircle(circle Circle[T]) (Hit[T], bool) {
 }
 
 // HitCapsule returns where the ray first reaches the capsule from outside, and false where it does
-// not or Origin lies in it.
+// not or Origin lies in it. The normal points from the nearest point of the capsule's segment. A
+// capsule of zero radius is hit as its segment, and one of zero length as a circle.
 func (r Ray[T]) HitCapsule(capsule Capsule[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(capsule.minMax()).HitCapsule(capsule))
 }
 
 // HitSector returns where the ray first reaches the sector from outside, and false where it does
-// not or Origin lies in it.
+// not or Origin lies in it. The normal points from Center on the arc and is the perpendicular of a
+// radius on it, the one facing Origin where the radii meet at Center. An Origin in the notch of a
+// sector past half a turn reaches a radius.
 func (r Ray[T]) HitSector(sector Sector[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(sector.minMax()).HitSector(sector))
 }
 
 // HitArc returns where the ray first reaches the arc, a curved wall, and false where it does not or
-// Origin lies on it.
+// Origin lies on it. The normal is the direction from the center, turned to face the ray.
 func (r Ray[T]) HitArc(arc Arc[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(arc.minMax()).HitArc(arc))
 }
 
 // HitSegment returns where the ray first reaches the segment, a wall, and false where it does not
-// or Origin lies on it.
+// or Origin lies on it. The normal is the perpendicular of the wall, turned to face the ray. A wall
+// running along the ray is hit at the end it reaches first, as is a wall of zero length, and the
+// normal faces back along the ray.
 func (r Ray[T]) HitSegment(segment Segment[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(segment.minMax()).HitSegment(segment))
 }
@@ -435,7 +442,7 @@ func (r Ray[T]) HitRay(ray Ray[T]) (Hit[T], bool) {
 }
 
 // HitLine returns where the ray first reaches the line, a wall, and false where it does not or
-// Origin lies on it.
+// Origin lies on it. The normal is the perpendicular of the line, turned to face the ray.
 func (r Ray[T]) HitLine(line Line[T]) (Hit[T], bool) {
 	if line.Contains(r.Origin) {
 		return Hit[T]{}, false
@@ -450,7 +457,10 @@ func (r Ray[T]) HitLine(line Line[T]) (Hit[T], bool) {
 }
 
 // HitPolyline returns where the ray first reaches the path, a wall of several edges, and false
-// where it does not, Origin lies on it or the path is empty.
+// where it does not, Origin lies on it or the path is empty. The normal is the perpendicular of the
+// edge hit, turned to face the ray, and back along the ray for an edge running along it. A point
+// two edges share takes the edge that faces Origin, and the earlier in Edges where both do or
+// neither does.
 func (r Ray[T]) HitPolyline(polyline Polyline[T]) (Hit[T], bool) {
 	bounds := polyline.Bounds()
 
@@ -458,7 +468,8 @@ func (r Ray[T]) HitPolyline(polyline Polyline[T]) (Hit[T], bool) {
 }
 
 // HitQuadraticBezier returns where the ray first reaches the curve, a curved wall, and false where
-// it does not or Origin lies on it.
+// it does not or Origin lies on it. The normal is the perpendicular of the curve, turned to face
+// the ray.
 func (r Ray[T]) HitQuadraticBezier(curve QuadraticBezier[T]) (Hit[T], bool) {
 	bounds := curve.Bounds()
 
@@ -466,7 +477,8 @@ func (r Ray[T]) HitQuadraticBezier(curve QuadraticBezier[T]) (Hit[T], bool) {
 }
 
 // HitCubicBezier returns where the ray first reaches the curve, a curved wall, and false where it
-// does not or Origin lies on it.
+// does not or Origin lies on it. The normal is the perpendicular of the curve, turned to face the
+// ray.
 func (r Ray[T]) HitCubicBezier(curve CubicBezier[T]) (Hit[T], bool) {
 	bounds := curve.Bounds()
 
@@ -474,31 +486,41 @@ func (r Ray[T]) HitCubicBezier(curve CubicBezier[T]) (Hit[T], bool) {
 }
 
 // HitPolygon returns where the ray first reaches the polygon from outside, and false where it does
-// not, Origin lies in it or the polygon is empty.
+// not, Origin lies in it or the polygon is empty. The normal is that of the edge hit, turned to
+// face the ray, so the polygon may be wound either way. A vertex takes the edge that faces Origin,
+// and the earlier in Edges where both do or, in a notch, neither does. A spike of no width running
+// along the ray is not hit at its tip, though IntersectsPolygon holds.
 func (r Ray[T]) HitPolygon(polygon Polygon[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(polygon.minMax()).HitPolygon(polygon))
 }
 
 // HitRectangle returns where the ray first reaches the rectangle from outside, and false where it
-// does not or Origin lies in it.
+// does not or Origin lies in it. The normal is the outward one of the edge hit. A corner takes the
+// edge that faces Origin, so a ray touching it in passing gets the edge it passes, and the earlier
+// in Edges where both do; a ray along an edge gets the edge it meets at the corner.
 func (r Ray[T]) HitRectangle(rectangle Rectangle[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(rectangle.minMax()).HitRectangle(rectangle))
 }
 
 // HitRegularPolygon returns where the ray first reaches the regular polygon from outside, and false
-// where it does not, Origin lies in it or the polygon is empty.
+// where it does not, Origin lies in it or the polygon is empty. The normal is that of the edge hit,
+// turned to face the ray. A vertex takes the edge that faces Origin, and the earlier in Edges where
+// both do.
 func (r Ray[T]) HitRegularPolygon(polygon RegularPolygon[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(polygon.minMax()).HitRegularPolygon(polygon))
 }
 
 // HitBox returns where the ray first reaches the box from outside, and false where it does not or
-// Origin lies in it.
+// Origin lies in it. The normal is the outward one of the edge hit. A corner takes the edge that
+// faces Origin, and the earlier in Edges where both do; a ray along an edge gets the edge it meets
+// at the corner.
 func (r Ray[T]) HitBox(box Box[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(box.Min, box.Max).HitBox(box))
 }
 
 // HitEllipse returns where the ray first reaches the ellipse from outside, and false where it does
-// not or Origin lies in it.
+// not or Origin lies in it, with the perpendicular of the boundary as the normal. An ellipse with a
+// zero semi-axis is hit as the segment its other axis spans.
 func (r Ray[T]) HitEllipse(ellipse Ellipse[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(ellipse.minMax()).HitEllipse(ellipse))
 }
@@ -640,7 +662,7 @@ func (r Ray[T]) Float() Ray[float64] {
 	return Ray[float64]{r.Origin.Float(), r.Vector.Float()}
 }
 
-// String returns the ray by its origin and direction: Ray((x,y);⟨x,y⟩).
+// String returns the ray by its Origin and Vector: Ray((x,y);⟨x,y⟩).
 func (r Ray[T]) String() string {
 	buf := make([]byte, 0, stringSize)
 	buf = append(buf, "Ray("...)

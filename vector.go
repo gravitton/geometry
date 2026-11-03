@@ -25,13 +25,14 @@ func OneVector[T Number]() Vector[T] {
 	return Vector[T]{1, 1}
 }
 
-// VectorFromAngle returns the vector of the length at the angle in radians.
+// VectorFromAngle returns the vector of the length at the angle in radians. A negative length
+// points the other way.
 func VectorFromAngle[T Number](angle float64, length T) Vector[T] {
 	return VectorFromAngleSize(angle, SzU(length))
 }
 
 // VectorFromAngleSize returns the vector at the angle in radians on the ellipse with the size as
-// its semi-axes (width·cos, height·sin).
+// its semi-axes (width·cos, height·sin). A negative extent flips that component.
 func VectorFromAngleSize[T Number](angle float64, size Size[T]) Vector[T] {
 	sin, cos := math.Sincos(angle)
 
@@ -198,8 +199,7 @@ func (v Vector[T]) AtMost(length T) Vector[T] {
 	return v.Resize(float64(max(length, 0)))
 }
 
-// Transform returns the vector mapped by the matrix, without its translation. The matrix is
-// float-only: convert an integer one with Matrix.Float first.
+// Transform returns the vector mapped by the matrix, without its translation.
 func (v Vector[T]) Transform[M Float](matrix Matrix[M]) Vector[T] {
 	x, y := float64(v.X), float64(v.Y)
 	a, b := float64(matrix.A), float64(matrix.B)
