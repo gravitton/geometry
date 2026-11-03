@@ -7,9 +7,9 @@ import (
 // unionOutline gathers the outline of the union of two convex polygons, appended to dst after from:
 // the vertices of each outside the other and the crossings of their edges. It first averages the
 // points both share, a point inside both about which the boundary of each runs in the order of the
-// angle, then walks the first polygon, its vertices and the crossings along each edge, and puts each
-// vertex of the second where its angle falls. The angles are compared on the crossings before they
-// are rounded, so an integer crossing cannot pass a vertex beside it.
+// angle, then walks the first polygon, its vertices and the crossings along each edge, and puts
+// each vertex of the second where its angle falls. The angles are compared on the crossings before
+// they are rounded, so an integer crossing cannot pass a vertex beside it.
 type unionOutline[T Number] struct {
 	dst            []Point[T]
 	from           int
@@ -194,8 +194,8 @@ func (u *unionOutline[T]) precedes(a, b Point[float64]) bool {
 	return compareAngles(va, vb) < 0
 }
 
-// offset returns the point less the center, mirrored across X for a polygon wound clockwise, so its
-// walk runs the way angles grow.
+// offset returns the point less the center, mirrored across X for a polygon of
+// WindingCounterClockwise, so its walk runs the way angles grow.
 func (u *unionOutline[T]) offset(point Point[float64]) Vector[float64] {
 	offset := point.Subtract(u.center)
 	if u.mirrored {

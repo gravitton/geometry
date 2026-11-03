@@ -6,8 +6,9 @@ import (
 )
 
 // Sector is a slice of a disc: the area between the arc about Center from Angle through Sweep and
-// the two radii to its ends. The angles are in radians and the sweep is signed; a sweep of a full
-// turn or more is the whole disc, and a sweep of zero the single radius at Angle.
+// the two radii to its ends. The angles are in radians and the sweep is signed, positive
+// counterclockwise in math coordinates; a sweep of a full turn or more either way is the whole
+// disc, and a sweep of zero the single radius at Angle.
 //
 // The radius is never negative: constructors and changes take it absolute or clamp it at zero. A
 // negative radius written as a struct literal or decoded from JSON gives no meaningful answers
@@ -16,8 +17,8 @@ import (
 // The ends of the arc are no lattice points, so for integer T every distance to the sector is
 // measured in float64 and compared at no less than the float64 tolerance.
 //
-// Past half a turn the sector is not convex: its Support is that of its hull, and the package
-// functions over two shapes take it as its two convex halves.
+// Past half a turn the sector is not convex: its Support is that of its hull, and Intersects,
+// Distance, Nearest, Collide and Sweep take it as its two convex halves.
 type Sector[T Number] struct {
 	Center Point[T] `json:",embed"`
 	Radius T        `json:"r"`
@@ -31,7 +32,7 @@ func Sect[T Number](center Point[T], radius T, angle, sweep float64) Sector[T] {
 }
 
 // Centroid returns the center of the area, on the bisector of the sweep, Equal to Center for the
-// whole disc.
+// whole disc and two thirds along the radius for a sweep of zero.
 func (s Sector[T]) Centroid() Point[T] {
 	return s.Center.Float().Add(VectorFromAngle(s.Angle+float64(s.turn()/2), s.reach())).Cast[T]()
 }
@@ -178,14 +179,15 @@ func (s Sector[T]) Shrink(amount T) Sector[T] {
 }
 
 // Lerp returns the sector interpolated toward the given one, center, radius and sweep together and
-// the angle along the shorter way, normalized to [0, 2π), and extrapolated outside [0, 1]. The
-// radius is taken absolute.
+// the angle along the shorter arc, normalized to [0, 2π), and extrapolated outside [0, 1]. The
+// radius is taken absolute, so extrapolating past zero grows the sector again.
 func (s Sector[T]) Lerp(sector Sector[T], t float64) Sector[T] {
 	return Sector[T]{s.Center.Lerp(sector.Center, t), Abs(Lerp(s.Radius, sector.Radius, t)), NormalizeAngle(LerpAngle(s.Angle, sector.Angle, t)), Lerp(s.Sweep, sector.Sweep, t)}
 }
 
 // Canonical returns the sector with its radius taken absolute, its angle normalized to [0, 2π) and
-// its sweep held to a full turn. An angle within Delta of zero or a full turn becomes zero.
+// its sweep held to a full turn. An angle within Delta of zero or a full turn becomes zero; Rotate
+// and Lerp never snap.
 func (s Sector[T]) Canonical() Sector[T] {
 	return Sector[T]{s.Center, Abs(s.Radius), snapAngle(s.Angle), s.turn()}
 }
@@ -243,8 +245,7 @@ func (s Sector[T]) Support(direction Vector[float64]) Point[float64] {
 	return supportOf([]Point[float64]{center, arc.pointAt(0), arc.pointAt(1)}, direction)
 }
 
-// Contains reports whether the point lies in the sector. The tolerance is on the distance, never on
-// an angle, so it does not widen far from the center.
+// Contains reports whether the point lies in the sector.
 func (s Sector[T]) Contains(point Point[T]) bool {
 	return s.DistanceSquaredTo(point) == 0
 }
@@ -287,8 +288,7 @@ func (s Sector[T]) ContainsSector(sector Sector[T]) bool {
 	return s.containsArc(sector.Arc().Float())
 }
 
-// ContainsSegment reports whether the segment lies entirely in the sector, not leaving it through
-// the notch of a sector past half a turn.
+// ContainsSegment reports whether the segment lies entirely in the sector.
 func (s Sector[T]) ContainsSegment(segment Segment[T]) bool {
 	return s.containsSegment(segment.Float())
 }
@@ -455,24 +455,27 @@ func (s Sector[T]) IntersectsBox(box Box[T]) bool {
 	return false
 }
 
-// IntersectionSegment returns the points where the segment crosses the boundary, from Start to End.
+// IntersectionSegment returns the points where the segment crosses the boundary, from Start to End:
+// at most two up to half a turn and up to four past it. A segment entirely inside crosses no
+// boundary, so it gives none while IntersectsSegment holds.
 func (s Sector[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
 	return segment.IntersectionSector(s)
 }
 
-// IntersectionRay returns the points where the ray crosses the boundary, from its Origin on.
+// IntersectionRay returns the points where the ray crosses the boundary, from its Origin on: at
+// most two up to half a turn and up to four past it.
 func (s Sector[T]) IntersectionRay(ray Ray[T]) []Point[T] {
 	return ray.IntersectionSector(s)
 }
 
 // IntersectionLine returns the points where the line crosses the boundary, in order along its
-// Vector.
+// Vector: at most two up to half a turn and up to four past it.
 func (s Sector[T]) IntersectionLine(line Line[T]) []Point[T] {
 	return line.IntersectionSector(s)
 }
 
-// appendIntersectionSegment appends the points at the fractions crossings returns to dst: once where
-// two are Equal before or after rounding, and none inside a stretch the segment shares with a
+// appendIntersectionSegment appends the points at the fractions crossings returns to dst: once
+// where two are Equal before or after rounding, and none inside a stretch the segment shares with a
 // radius. Segment.AppendIntersectionSector and the ray and line forms call it.
 func (s Sector[T]) appendIntersectionSegment(dst []Point[T], segment Segment[T]) []Point[T] {
 	cast := segment.Float()
@@ -617,8 +620,8 @@ func (s Sector[T]) containsSupport(shape Shape[T]) bool {
 	return depth <= notch.tolerance()
 }
 
-// liesLeftOf reports whether the sector lies on the left of the line through the edge, the inside of
-// an outline wound as Vector.Normal turns: its support away from that side is on the line within
+// liesLeftOf reports whether the sector lies on the left of the line through the edge, the inside
+// of an outline wound as Vector.Normal turns: its support away from that side is on the line within
 // the tolerance or short of it. An edge with no direction has no side and holds anything.
 func (s Sector[T]) liesLeftOf(edge Segment[float64]) bool {
 	along := edge.Vector()
@@ -824,7 +827,8 @@ func (s Sector[T]) epsilon(magnitude float64) float64 {
 }
 
 // Equal reports whether the sectors have equal center, radius, angle and sweep. The angles are
-// compared with EqualAngle, the sweeps as numbers.
+// compared with EqualAngle, the sweeps as numbers, so the same points swept opposite ways are not
+// equal.
 func (s Sector[T]) Equal(sector Sector[T]) bool {
 	return s.Center.Equal(sector.Center) && Equal(s.Radius, sector.Radius) && EqualAngle(s.Angle, sector.Angle) && Equal(s.Sweep, sector.Sweep)
 }
@@ -855,9 +859,10 @@ func (s Sector[T]) Arc() Arc[T] {
 }
 
 // Polygon returns the sector as a polygon within the tolerance of it: Center and the arc as few
-// equal chords as keep within it, at most 1024 and at least three per full turn, wound like
-// Rectangle.Vertices whichever way the sector sweeps. The whole disc leaves out Center. A negative
-// tolerance is taken absolute.
+// equal chords as keep within it, at most 1024 and at least three per full turn, wound by
+// increasing angle whichever way the sector sweeps. The whole disc leaves out Center. A negative
+// tolerance is taken absolute. A sector of zero radius gives its center alone, and one of zero
+// sweep Center and the end of its radius.
 func (s Sector[T]) Polygon(tolerance float64) Polygon[T] {
 	return Polygon[T]{s.AppendPolygon(nil, tolerance)}
 }

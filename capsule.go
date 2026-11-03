@@ -84,13 +84,14 @@ func (c Capsule[T]) Translate(vector Vector[T]) Capsule[T] {
 	return Capsule[T]{c.Segment.Translate(vector), c.Radius}
 }
 
-// MoveTo returns the capsule moved so that the midpoint of its segment lies at the point.
+// MoveTo returns the capsule moved so that the midpoint of its segment lies at the point. For
+// integer T an odd span is placed within half a unit of it, so Centroid of the result can be a unit
+// off.
 func (c Capsule[T]) MoveTo(point Point[T]) Capsule[T] {
 	return Capsule[T]{c.Segment.MoveTo(point), c.Radius}
 }
 
-// Rotate returns the capsule turned by the angle in radians about the midpoint of its segment. For
-// integer T the ends are rounded, and only multiples of a quarter turn keep the length exactly.
+// Rotate returns the capsule turned by the angle in radians about the midpoint of its segment.
 func (c Capsule[T]) Rotate(angle float64) Capsule[T] {
 	return Capsule[T]{c.Segment.Rotate(angle), c.Radius}
 }
@@ -125,7 +126,7 @@ func (c Capsule[T]) Lerp(capsule Capsule[T], t float64) Capsule[T] {
 	return Capsule[T]{c.Segment.Lerp(capsule.Segment, t), Abs(Lerp(c.Radius, capsule.Radius, t))}
 }
 
-// Canonical returns the capsule with its radius taken absolute, the receiver when it already is.
+// Canonical returns the capsule with its radius taken absolute.
 func (c Capsule[T]) Canonical() Capsule[T] {
 	return Capsule[T]{c.Segment, Abs(c.Radius)}
 }
@@ -396,8 +397,8 @@ func (c Capsule[T]) IntersectsBox(box Box[T]) bool {
 // IntersectionSegment returns the points where the segment crosses the boundary, from Start to End:
 // two where it passes through, one where it is tangent or has one end inside, and none where it
 // misses. A segment entirely inside crosses no boundary, so it gives none while IntersectsSegment
-// holds. A capsule of zero length is crossed as its circle, and one of zero radius as its segment;
-// a segment running along that one gives the ends of the shared stretch.
+// holds. A segment running along a side gives the ends of the stretch they share. A capsule of zero
+// length is crossed as its circle, and one of zero radius as its segment.
 func (c Capsule[T]) IntersectionSegment(segment Segment[T]) Pair[Point[T]] {
 	if c.Segment.IsPoint() {
 		return Circle[T]{c.Segment.Start, c.Radius}.IntersectionSegment(segment)
@@ -492,10 +493,10 @@ func (c Capsule[T]) IsZero() bool {
 }
 
 // Polygon returns the capsule as a polygon within the tolerance of it: each half circle as few
-// equal chords as keep within it, at most 1024, joined by the two sides and wound like
-// Rectangle.Vertices. A negative tolerance is taken absolute, and a tolerance of the radius or more
-// leaves the four corners of the sides. A capsule of zero radius gives its two ends, and one of
-// zero length its circle in at least four chords.
+// equal chords as keep within it, at most 1024, joined by the two sides and wound by increasing
+// angle from the half circle about End. A negative tolerance is taken absolute, and a tolerance of
+// the radius or more leaves the four corners of the sides. A capsule of zero radius gives its two
+// ends, and one of zero length its circle in at least four chords.
 func (c Capsule[T]) Polygon(tolerance float64) Polygon[T] {
 	return Polygon[T]{c.AppendPolygon(nil, tolerance)}
 }

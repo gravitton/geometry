@@ -8,7 +8,8 @@ import (
 // Direction is one of the eight neighbor directions on a square lattice.
 //
 // Directions are numbered by increasing angle, counterclockwise in math coordinates, which is
-// clockwise as drawn on a screen with Y pointing down.
+// clockwise as drawn on a screen with Y pointing down. Any value but DirectionNone wraps into the
+// eight directions modulo eight.
 type Direction int
 
 const (
@@ -114,7 +115,7 @@ func DirectionFromAngle(angle float64) Direction {
 }
 
 // DirectionFromAxes returns the direction of the pressed axis inputs, opposite inputs canceling
-// each other.
+// each other, and DirectionNone where none remains.
 func DirectionFromAxes(left, right, up, down bool) Direction {
 	if left && right {
 		left, right = false, false
@@ -193,13 +194,13 @@ func (d Direction) normalize() Direction {
 	return Mod(d, 8)
 }
 
-// Opposite returns the direction turned by half a turn.
+// Opposite returns the direction turned by half a turn. DirectionNone stays as it is.
 func (d Direction) Opposite() Direction {
 	return d.Turn(4)
 }
 
 // Turn returns the direction advanced by steps eighth-turns of increasing angle, the sense of a
-// positive Vector.Rotate; negative steps go the other way.
+// positive Vector.Rotate; negative steps go the other way. DirectionNone stays as it is.
 func (d Direction) Turn(steps int) Direction {
 	if d.IsNone() {
 		return DirectionNone

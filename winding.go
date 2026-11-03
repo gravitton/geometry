@@ -9,7 +9,7 @@ import (
 type Winding int
 
 const (
-	// WindingClockwise runs clockwise on screen, the winding of Rectangle.Vertices.
+	// WindingClockwise runs clockwise on screen.
 	WindingClockwise Winding = iota
 	// WindingCounterClockwise runs counterclockwise on screen.
 	WindingCounterClockwise

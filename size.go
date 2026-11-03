@@ -186,7 +186,7 @@ func (s Size[T]) Equal(size Size[T]) bool {
 	return Equal(s.Width, size.Width) && Equal(s.Height, size.Height)
 }
 
-// IsZero reports whether both extents are zero.
+// IsZero reports whether both extents are zero within the tolerance of Equal.
 func (s Size[T]) IsZero() bool {
 	return s.Equal(Size[T]{})
 }
@@ -198,7 +198,7 @@ func (s Size[T]) IsPositive() bool {
 }
 
 // IsFinite reports whether both extents are neither NaN nor infinite, which Cast and Int need for
-// an integer type. An integer size always is.
+// an integer T. An integer size always is.
 func (s Size[T]) IsFinite() bool {
 	return IsFinite(s.Width) && IsFinite(s.Height)
 }
@@ -231,7 +231,7 @@ func (s Size[T]) String() string {
 	return string(buf)
 }
 
-// appendString appends the size as String prints it to buf and returns the extended buffer.
+// appendString appends the size as String prints it to dst and returns the extended slice.
 func (s Size[T]) appendString(dst []byte) []byte {
 	dst = appendString(dst, s.Width)
 	dst = append(dst, 'x')

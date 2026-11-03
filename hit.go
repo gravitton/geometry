@@ -5,8 +5,8 @@ package geom
 // there, facing the cast, and the Fraction of the cast at which the point lies, the argument
 // PointAt takes, or of the motion for Sweep.
 //
-// For integer T the point is rounded while the normal is not, and the fraction is that of the
-// rounded point, so PointAt of it can give a neighboring lattice point.
+// For integer T the point is rounded while the normal is not, and on a Segment or Ray the fraction
+// is that of the rounded point, so PointAt of it can give a neighboring lattice point.
 type Hit[T Number] struct {
 	Point    Point[T]        `json:"p"`
 	Normal   Vector[float64] `json:"n"`

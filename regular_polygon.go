@@ -8,20 +8,21 @@ import (
 
 // RegularPolygon is a polygon of N vertices equally spaced around a center.
 //
-// Radius holds the semi-axes of the Ellipse the vertices lie on, not the full extent a Rectangle
-// holds; Bounds gives the extent. Phase places the first vertex on that ellipse and
-// each next a step of 2π/n on, and Angle then turns the whole ring about the center. The two differ
-// only for unequal semi-axes, where the phase decides how the vertices sit against the stretch.
-// Every affine image of a regular polygon is one of these, so Transform keeps any matrix exactly.
+// Radius holds the semi-axes of the Ellipse the vertices lie on; Bounds gives the extent. Phase
+// places the first vertex on that ellipse and each next a step of 2π/n on, and Angle then turns the
+// whole ring about the center. The two differ only for unequal semi-axes, where the phase decides
+// how the vertices sit against the stretch. Every affine image of a regular polygon is one of
+// these, so for a float T Transform keeps any matrix exactly.
 //
-// The radius is never negative: constructors and changes take it absolute. A negative one written as
-// a struct literal or decoded from JSON mirrors the vertices until Canonical repairs it.
+// The radius is never negative: constructors and changes take it absolute or clamp it at zero. A
+// negative one written as a struct literal or decoded from JSON mirrors the vertices until
+// Canonical repairs it.
 //
 // For integer T the vertices are rounded, and the rounded outline need not be convex. Contains
-// follows it exactly, but the Contains<Kind> methods test the points of the other shape alone, so
-// they can admit a shape passing through a dent the rounding made, and Distance, Nearest, Collide
-// and Sweep take it by its supports, so a shape in such a dent is at no distance without
-// intersecting it.
+// follows it exactly, but Contains<Kind> of a shape with vertices tests those points alone, so it
+// can admit a shape passing through a dent the rounding made, and Distance, Nearest, Collide and
+// Sweep take it by its supports, so a shape in such a dent is at no distance without intersecting
+// it.
 type RegularPolygon[T Number] struct {
 	Center Point[T] `json:",embed"`
 	Radius Size[T]  `json:",embed"`
@@ -37,8 +38,8 @@ func RegPol[T Number](center Point[T], radius Size[T], n int, angle, phase float
 }
 
 // RegularPolygonWithOrientation returns the regular polygon with no turn and its first vertex
-// placed by RegularPolygonOrientationPhase, the radius taken absolute: Width is the semi-axis across
-// and Height the one up, for every n. It panics for an orientation that is neither
+// placed by RegularPolygonOrientationPhase, the radius taken absolute: Width is the semi-axis
+// across and Height the one up, for every n. It panics for an orientation that is neither
 // OrientationFlatTop nor OrientationPointyTop.
 func RegularPolygonWithOrientation[T Number](center Point[T], radius Size[T], n int, orientation Orientation) RegularPolygon[T] {
 	return RegPol(center, radius, n, 0, RegularPolygonOrientationPhase(n, orientation))
@@ -46,8 +47,7 @@ func RegularPolygonWithOrientation[T Number](center Point[T], radius Size[T], n 
 
 // Anchor returns the point where the ray from the center in the direction leaves the polygon, or
 // the center for DirectionNone. The direction is taken after the turn, so on a flat-top polygon Top
-// is the midpoint of the top edge, on a pointy-top one the top vertex. For integer T the point is
-// rounded once more and can lie off the edge between the rounded vertices. A polygon of fewer than
+// is the midpoint of the top edge, on a pointy-top one the top vertex. A polygon of fewer than
 // three vertices, or one flattened along the ray, anchors at its center.
 func (rp RegularPolygon[T]) Anchor(direction Direction) Point[T] {
 	if direction.IsNone() || rp.N < 3 {
@@ -82,7 +82,7 @@ func (rp RegularPolygon[T]) Vertices() iter.Seq[Point[T]] {
 
 // Edges returns an iterator over the edges in the order of Vertices, each from a vertex to the next
 // and the last closing back to the first: none for an empty polygon, and one of zero length for a
-// single vertex.
+// single vertex. Segment.Normal of an edge points inward.
 func (rp RegularPolygon[T]) Edges() iter.Seq[Segment[T]] {
 	return func(yield func(Segment[T]) bool) {
 		if rp.IsEmpty() {
@@ -166,8 +166,9 @@ func (rp RegularPolygon[T]) Bounds() Box[T] {
 }
 
 // BoundingCircle returns the circle about the center through the farthest vertex, the zero circle
-// for an empty polygon. It is the smallest enclosing circle only for equal semi-axes and at least
-// two vertices. For integer T the radius is rounded up, so it still contains the rounded vertices.
+// for an empty polygon. It is the smallest enclosing circle for equal semi-axes and at least two
+// vertices, and may be larger otherwise. For integer T the radius is rounded up, so it still
+// contains the rounded vertices.
 func (rp RegularPolygon[T]) BoundingCircle() Circle[T] {
 	if rp.IsEmpty() {
 		return Circle[T]{}
@@ -292,10 +293,11 @@ func (rp RegularPolygon[T]) Resize(radius Size[T]) RegularPolygon[T] {
 }
 
 // Transform returns the polygon mapped exactly by the matrix, a shear included: the center moves,
-// and the angle, semi-axes and phase are taken apart from the mapped ring again. A reflection
-// mirrors the phase, so the vertices still wind by increasing angle and, after the first, meet the
-// mapped ones in reverse order. Where the decomposition reads the semi-axes the other way round,
-// the phase takes a quarter turn.
+// and the angle, semi-axes and phase are those of the mapped ring. A reflection mirrors the phase,
+// so the vertices still wind by increasing angle and, after the first, meet the mapped ones in
+// reverse order. The semi-axes can come back swapped, the phase then taking a quarter turn. For
+// integer T the semi-axes are rounded, so the vertices can differ from the mapped ones by more than
+// a rounding.
 func (rp RegularPolygon[T]) Transform[M Float](matrix Matrix[M]) RegularPolygon[T] {
 	after, stretch, before, reflected := matrix.mapping(rp.Angle, rp.Radius.Float()).decomposition()
 
@@ -307,8 +309,7 @@ func (rp RegularPolygon[T]) Transform[M Float](matrix Matrix[M]) RegularPolygon[
 	return RegularPolygon[T]{rp.Center.Transform(matrix), stretch.Size().Cast[T](), rp.N, NormalizeAngle(after), NormalizeAngle(phase)}
 }
 
-// Grow returns the polygon with both semi-axes increased by the amount, clamped at zero, so each
-// extent of Bounds grows by about twice it.
+// Grow returns the polygon with both semi-axes increased by the amount, clamped at zero.
 func (rp RegularPolygon[T]) Grow(amount T) RegularPolygon[T] {
 	return RegularPolygon[T]{rp.Center, rp.Radius.Grow(amount).AtLeastZero(), rp.N, rp.Angle, rp.Phase}
 }
@@ -345,8 +346,8 @@ func (rp RegularPolygon[T]) Lerp(polygon RegularPolygon[T], t float64) RegularPo
 	}
 }
 
-// Canonical returns the polygon with its radius taken absolute and its angle and phase normalized to
-// [0, 2π), the receiver when they already are. An angle or phase within Delta of zero or a full
+// Canonical returns the polygon with its radius taken absolute and its angle and phase normalized
+// to [0, 2π), the receiver when they already are. An angle or phase within Delta of zero or a full
 // turn becomes exactly zero; Rotate never snaps. The phase is not reduced to one step, which would
 // renumber the vertices.
 func (rp RegularPolygon[T]) Canonical() RegularPolygon[T] {
@@ -689,9 +690,9 @@ func (rp RegularPolygon[T]) Float() RegularPolygon[float64] {
 	return RegularPolygon[float64]{rp.Center.Float(), rp.Radius.Float(), rp.N, rp.Angle, rp.Phase}
 }
 
-// String returns the polygon as RegPol((x,y);WxH;n), center, radius and vertex count, with the angle
-// appended as RegPol((x,y);WxH;n;a) for a turned polygon or a nonzero phase, and the phase after it
-// as RegPol((x,y);WxH;n;a;p) where it is not zero.
+// String returns the polygon as RegPol((x,y);WxH;n), center, radius and vertex count, with the
+// angle appended as RegPol((x,y);WxH;n;a) for a turned polygon or a nonzero phase, and the phase
+// after it as RegPol((x,y);WxH;n;a;p) where it is not zero.
 func (rp RegularPolygon[T]) String() string {
 	buf := make([]byte, 0, stringSize)
 	buf = append(buf, "RegPol("...)

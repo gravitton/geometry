@@ -21,8 +21,8 @@ func RectangleFromImage[T Number](rectangle image.Rectangle) Rectangle[T] {
 	return RectangleFromMin(PointFromImage[T](rectangle.Min), SizeFromImage[T](rectangle))
 }
 
-// BoxFromImage returns the box of an image.Rectangle, between its Min and Max. For an integer T it
-// keeps every extent, odd ones included, where RectangleFromImage halves it about a center.
+// BoxFromImage returns the box of an image.Rectangle, between its Min and Max, for every T, where a
+// float RectangleFromImage can come back a pixel off.
 func BoxFromImage[T Number](rectangle image.Rectangle) Box[T] {
 	return BoxFromMinMax(PointFromImage[T](rectangle.Min), PointFromImage[T](rectangle.Max))
 }
@@ -33,8 +33,8 @@ func (p Point[T]) Point() image.Point {
 }
 
 // Rectangle converts the rectangle to the half-open image.Rectangle of the Bounds of its Int, so it
-// spans exactly Size.Int pixels and keeps its width through sub-pixel positions. A rotated rectangle
-// gives the box around its rounded vertices.
+// spans exactly Size.Int pixels and keeps its width through sub-pixel positions. A turned
+// rectangle gives the box around its rounded vertices.
 func (r Rectangle[T]) Rectangle() image.Rectangle {
 	bounds := r.Int().Bounds()
 

@@ -239,7 +239,7 @@ func TestPolyline_Every(t *testing.T) {
 }
 
 func TestPolyline_Simplify(t *testing.T) {
-	t.Run("drops a point on the line between its neighbours and a repeated one", func(t *testing.T) {
+	t.Run("drops a point on the line between its neighbors and a repeated one", func(t *testing.T) {
 		geomtest.AssertPolyline(t, PolLn([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(4, 0), Pt(4, 0), Pt(4, 3)}).Simplify(0), PolLn(cornerPath()))
 	})
 	t.Run("drops a point within the tolerance", func(t *testing.T) {

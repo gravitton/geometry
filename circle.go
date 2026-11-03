@@ -9,7 +9,8 @@ import (
 //
 // The radius is never negative: constructors and changes take it absolute or clamp it at zero. A
 // negative radius written as a struct literal or decoded from JSON gives no meaningful answers
-// until Canonical repairs it.
+// until Canonical repairs it. A circle has no Transform, since a matrix takes it to an ellipse:
+// transform Ellipse() instead.
 type Circle[T Number] struct {
 	Center Point[T] `json:",embed"`
 	Radius T        `json:"r"`
@@ -48,8 +49,7 @@ func (c Circle[T]) Diameter() T {
 }
 
 // Anchor returns the point of the boundary in the direction from the center, or the center for
-// DirectionNone. For integer T a diagonal anchor is rounded like Direction.Vector and can lie just
-// outside a small circle.
+// DirectionNone.
 func (c Circle[T]) Anchor(direction Direction) Point[T] {
 	return c.Center.Add(direction.Vector(c.Radius))
 }
@@ -155,7 +155,7 @@ func (c Circle[T]) Lerp(circle Circle[T], t float64) Circle[T] {
 	return Circle[T]{c.Center.Lerp(circle.Center, t), Abs(Lerp(c.Radius, circle.Radius, t))}
 }
 
-// Canonical returns the circle with its radius taken absolute, the receiver when it already is.
+// Canonical returns the circle with its radius taken absolute.
 func (c Circle[T]) Canonical() Circle[T] {
 	return Circle[T]{c.Center, Abs(c.Radius)}
 }
@@ -365,7 +365,8 @@ func (c Circle[T]) IntersectsBox(box Box[T]) bool {
 
 // IntersectionCircle returns the points where the boundaries cross: two for overlapping circles,
 // one for tangent ones, and none for circles apart, nested or coincident, centers within the
-// tolerance of each other counting as coincident. The second is the mirror of the first across the
+// tolerance of each other counting as coincident. The first lies on the side counterclockwise in
+// math coordinates of the direction toward the given circle, the second is its mirror across the
 // line of centers.
 func (c Circle[T]) IntersectionCircle(circle Circle[T]) Pair[Point[T]] {
 	center := c.Center.Float()
@@ -394,9 +395,10 @@ func (c Circle[T]) IntersectionCircle(circle Circle[T]) Pair[Point[T]] {
 }
 
 // IntersectionSegment returns the points where the segment crosses the boundary, from Start to End:
-// two where it passes through, one where it is tangent or ends inside, and none where it misses. A
-// segment entirely inside crosses no boundary, so it gives none while IntersectsSegment holds. An
-// endpoint on the boundary is one of the points, so a segment and its Reverse give the same points.
+// two where it passes through, one where it is tangent or has one end inside, and none where it
+// misses. A segment entirely inside crosses no boundary, so it gives none while IntersectsSegment
+// holds. An endpoint on the boundary is one of the points, so a segment and its Reverse give the
+// same points.
 func (c Circle[T]) IntersectionSegment(segment Segment[T]) Pair[Point[T]] {
 	fractions, n := c.fractions(segment)
 
@@ -416,8 +418,9 @@ func (c Circle[T]) IntersectionLine(line Line[T]) Pair[Point[T]] {
 }
 
 // Tangents returns the points where the lines through the point touch the circle: two for a point
-// outside, the point itself on the boundary, and none inside. The second is the mirror of the first
-// across the line from the center to the point.
+// outside, the point itself on the boundary, and none inside. The first lies on the side
+// counterclockwise in math coordinates of the direction toward the point, the second is its mirror
+// across the line from the center to the point. A circle of zero radius gives its center alone.
 func (c Circle[T]) Tangents(point Point[T]) Pair[Point[T]] {
 	distanceSquared := c.centerDistanceSquared(point)
 	magnitude := point.magnitude()
@@ -437,8 +440,9 @@ func (c Circle[T]) Tangents(point Point[T]) Pair[Point[T]] {
 
 // OuterTangents returns the segments that touch both circles on the same side, each from its point
 // on this circle to its point on the given one: two unless one circle lies within the other or the
-// centers coincide, which give none. The second is the mirror of the first across the line of
-// centers. A circle of zero radius is touched at its center, and two of them are joined by one
+// centers coincide, which give none. The first starts on the side counterclockwise in math
+// coordinates of the direction toward the given circle, the second is its mirror across the line
+// of centers. A circle of zero radius is touched at its center, and two of them are joined by one
 // segment.
 func (c Circle[T]) OuterTangents(circle Circle[T]) Pair[Segment[T]] {
 	return c.tangents(circle, float64(circle.Radius))
@@ -446,8 +450,9 @@ func (c Circle[T]) OuterTangents(circle Circle[T]) Pair[Segment[T]] {
 
 // InnerTangents returns the segments that touch the circles on opposite sides and cross between
 // them, each from its point on this circle to its point on the given one: two for circles that
-// share no point, and none otherwise, touching circles included. The second is the mirror of the
-// first across the line of centers. Two circles of zero radius are joined by one segment.
+// share no point, and none otherwise, touching circles included. The first starts on the side
+// counterclockwise in math coordinates of the direction toward the given circle, the second is its
+// mirror across the line of centers. Two circles of zero radius are joined by one segment.
 func (c Circle[T]) InnerTangents(circle Circle[T]) Pair[Segment[T]] {
 	return c.tangents(circle, -float64(circle.Radius))
 }
@@ -625,9 +630,9 @@ func (c Circle[T]) Arc(angle, sweep float64) Arc[T] {
 }
 
 // Polygon returns the circle as a polygon within the tolerance of it: as few equal chords as keep
-// within it, at least three and at most 1024, from the point at angle zero and wound like
-// Rectangle.Vertices. A negative tolerance is taken absolute, and a circle of zero radius gives its
-// center alone. RegularPolygon chooses the vertex count instead.
+// within it, at least three and at most 1024, from the point at angle zero and wound by increasing
+// angle. A negative tolerance is taken absolute, and a circle of zero radius gives its center
+// alone. RegularPolygon chooses the vertex count instead.
 func (c Circle[T]) Polygon(tolerance float64) Polygon[T] {
 	return Polygon[T]{c.AppendPolygon(nil, tolerance)}
 }
@@ -654,14 +659,13 @@ func (c Circle[T]) AppendPolygon(dst []Point[T], tolerance float64) []Point[T] {
 }
 
 // RegularPolygon returns the regular polygon of n vertices inscribed in the circle, its first
-// vertex placed by RegularPolygonOrientationPhase. It panics for an orientation that is neither
-// OrientationFlatTop nor OrientationPointyTop.
+// vertex placed by RegularPolygonOrientationPhase. It is empty for n below one. It panics for an
+// orientation that is neither OrientationFlatTop nor OrientationPointyTop.
 func (c Circle[T]) RegularPolygon(n int, orientation Orientation) RegularPolygon[T] {
 	return RegularPolygon[T]{c.Center, SzU(c.Radius), n, 0, RegularPolygonOrientationPhase(n, orientation)}
 }
 
-// Ellipse returns the circle as an Ellipse of equal semi-axes and no angle. A circle has no
-// Transform, since a matrix takes it to an ellipse: transform Ellipse() instead.
+// Ellipse returns the circle as an Ellipse of equal semi-axes and no angle.
 func (c Circle[T]) Ellipse() Ellipse[T] {
 	return Ellipse[T]{c.Center, SzU(c.Radius), 0}
 }

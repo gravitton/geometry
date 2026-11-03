@@ -13,7 +13,8 @@ import (
 //
 // The vertex count is not checked: a polygon of fewer than three vertices encloses no area, and
 // every method still answers for it. Pol keeps the slice it is given, and every method returning a
-// Polygon allocates a new one; a nil Points stays nil through all of them.
+// Polygon allocates a new one; a nil Points stays nil through all of them. A slice given to an
+// Append method must not share memory with Points.
 type Polygon[T Number] struct {
 	Points []Point[T]
 }
@@ -30,6 +31,7 @@ func (p Polygon[T]) Vertices() iter.Seq[Point[T]] {
 
 // Edges returns an iterator over the edges in order, each from a vertex to the next and the last
 // closing back to the first: none for an empty polygon, and one of zero length for a single vertex.
+// Segment.Normal of an edge points inward for WindingClockwise.
 func (p Polygon[T]) Edges() iter.Seq[Segment[T]] {
 	return edgesOf(p.Points)
 }
@@ -238,7 +240,7 @@ func (p Polygon[T]) ScaleXY(factorX, factorY float64) Polygon[T] {
 }
 
 // Unscale returns the polygon scaled about its Centroid by the inverse of the factor. It panics for
-// a zero factor.
+// a zero factor, unless the polygon is empty.
 func (p Polygon[T]) Unscale(factor float64) Polygon[T] {
 	center := p.Centroid()
 
@@ -248,7 +250,7 @@ func (p Polygon[T]) Unscale(factor float64) Polygon[T] {
 }
 
 // UnscaleXY returns the polygon scaled about its Centroid by the inverses of the factors. It panics
-// for a zero factor.
+// for a zero factor, unless the polygon is empty.
 func (p Polygon[T]) UnscaleXY(factorX, factorY float64) Polygon[T] {
 	center := p.Centroid()
 
@@ -265,10 +267,10 @@ func (p Polygon[T]) Transform[M Float](matrix Matrix[M]) Polygon[T] {
 }
 
 // Grow returns the polygon with every edge moved out along its normal by the amount, each vertex
-// along the bisector of its corner, a repeated vertex given once. A corner turning straight back,
-// and a polygon of one point, stay where they are. A negative amount gives Shrink. A polygon that
-// is not convex by IsConvex is grown only while the amount is less than its narrowest notch, past
-// which the moved edges cross each other.
+// along the bisector of its corner, a repeated vertex given once. A corner turning straight back
+// stays where it is, and a polygon of one point, however repeated, is given as it is. A negative
+// amount gives Shrink. A polygon that is not convex by IsConvex is grown only while the amount is
+// less than its narrowest notch, past which the moved edges cross each other.
 func (p Polygon[T]) Grow(amount float64) Polygon[T] {
 	return Polygon[T]{p.AppendGrow(nil, amount)}
 }
@@ -324,8 +326,9 @@ func (p Polygon[T]) Reverse() Polygon[T] {
 // from the least vertex by Point.Compare, and an empty polygon for an empty one. Its vertices are
 // vertices of the polygon, with those on an edge of the hull or repeating another dropped, so
 // collinear vertices give the two ends of their line and a single point gives itself. For integer T
-// and float32 the turns are exact, so the hull is convex by IsConvex and the hull of a hull is
-// itself; for float64 a vertex within rounding of the line through its neighbours may be kept.
+// and float32 the turns are exact, so a hull enclosing an area is convex by IsConvex and the hull
+// of a hull is itself; for float64 a vertex within rounding of the line through its neighbors may
+// be kept.
 func (p Polygon[T]) ConvexHull() Polygon[T] {
 	return Polygon[T]{p.AppendConvexHull(nil)}
 }
@@ -368,19 +371,18 @@ func (p Polygon[T]) AppendConvexHull(dst []Point[T]) []Point[T] {
 	return dst[:from+n]
 }
 
-// Simplify returns the polygon without the vertices it needs no more to stay within the tolerance,
-// by Ramer–Douglas–Peucker: every dropped vertex lies within the tolerance of the edge that
-// replaces it. At zero tolerance it drops repeated vertices and those on the straight line between
-// their kept neighbours, a fold back along that line included. The kept vertices stay in order from
-// the first kept one, so simplifying again changes nothing; an outline within the tolerance of its
-// least vertex by Point.Compare keeps that vertex alone. A negative tolerance is taken absolute,
-// and an empty polygon gives an empty one.
+// Simplify returns the polygon without the vertices it needs no more to stay within the tolerance:
+// every dropped vertex lies within the tolerance of the edge that replaces it. At zero tolerance it
+// drops repeated vertices and those on the straight line between their kept neighbors, a fold back
+// along that line included. The kept vertices stay in order from the first kept one, so simplifying
+// again changes nothing; an outline within the tolerance of its least vertex by Point.Compare keeps
+// that vertex alone. A negative tolerance is taken absolute, and an empty polygon gives an empty
+// one.
 func (p Polygon[T]) Simplify(tolerance float64) Polygon[T] {
 	return Polygon[T]{p.AppendSimplify(nil, tolerance)}
 }
 
 // AppendSimplify appends the vertices of Simplify(tolerance) to dst and returns the extended slice.
-// dst must not share memory with Points.
 func (p Polygon[T]) AppendSimplify(dst []Point[T], tolerance float64) []Point[T] {
 	if p.IsEmpty() {
 		return dst
@@ -488,8 +490,8 @@ func (p Polygon[T]) mapPointsIndexed[R any](fn func(int, Point[T]) R) []R {
 
 // grow appends the vertices with every edge moved out by the amount, each vertex by the sum of the
 // unit normals of its two edges scaled to lie on both. Segment.Normal points into a polygon unless
-// reversed, so the amount is negated then. A vertex opening a zero-length edge is skipped, and a
-// polygon with no edge of any length is appended as it is.
+// reversed, so the amount is negated unless reversed. A vertex opening a zero-length edge is
+// skipped, and a polygon with no edge of any length is appended as it is.
 func (p Polygon[T]) grow(dst []Point[T], amount float64, reversed bool) []Point[T] {
 	if !reversed {
 		amount = -amount
@@ -671,7 +673,8 @@ func (p Polygon[T]) ContainsCircle(circle Circle[T]) bool {
 	return p.walk(circle.Center).clears(circle)
 }
 
-// ContainsCapsule reports whether the capsule lies entirely in the polygon.
+// ContainsCapsule reports whether the capsule lies entirely in the polygon. The polygon is taken to
+// be simple: a self-intersecting one is left wherever its edges cross.
 func (p Polygon[T]) ContainsCapsule(capsule Capsule[T]) bool {
 	if !p.ContainsSegment(capsule.Segment) {
 		return false
@@ -709,15 +712,16 @@ func (p Polygon[T]) ContainsSector(sector Sector[T]) bool {
 }
 
 // ContainsSegment reports whether the segment lies entirely in the polygon. The polygon is taken to
-// be simple: a self-intersecting one is left wherever its edges cross, so it does not contain
-// itself.
+// be simple: a self-intersecting one is left wherever its edges cross.
 func (p Polygon[T]) ContainsSegment(segment Segment[T]) bool {
 	a, b := p.minMax()
 
 	return p.containsWithin(segment.Start, a, b) && p.containsWithin(segment.End, a, b) && p.keeps(segment, p.twiceArea())
 }
 
-// ContainsPolygon reports whether the given polygon lies entirely in this one.
+// ContainsPolygon reports whether the given polygon lies entirely in this one. This one is taken to
+// be simple: a self-intersecting one is left wherever its edges cross, so it does not contain
+// itself.
 func (p Polygon[T]) ContainsPolygon(polygon Polygon[T]) bool {
 	if polygon.IsEmpty() {
 		return false
@@ -735,7 +739,8 @@ func (p Polygon[T]) ContainsPolygon(polygon Polygon[T]) bool {
 	return true
 }
 
-// ContainsRectangle reports whether the rectangle lies entirely in the polygon.
+// ContainsRectangle reports whether the rectangle lies entirely in the polygon. The polygon is
+// taken to be simple: a self-intersecting one is left wherever its edges cross.
 func (p Polygon[T]) ContainsRectangle(rectangle Rectangle[T]) bool {
 	a, b := p.minMax()
 	twiceArea := p.twiceArea()
@@ -749,7 +754,8 @@ func (p Polygon[T]) ContainsRectangle(rectangle Rectangle[T]) bool {
 	return true
 }
 
-// ContainsRegularPolygon reports whether the regular polygon lies entirely in the polygon.
+// ContainsRegularPolygon reports whether the regular polygon lies entirely in the polygon. The
+// polygon is taken to be simple: a self-intersecting one is left wherever its edges cross.
 func (p Polygon[T]) ContainsRegularPolygon(polygon RegularPolygon[T]) bool {
 	if polygon.IsEmpty() {
 		return false
@@ -767,7 +773,8 @@ func (p Polygon[T]) ContainsRegularPolygon(polygon RegularPolygon[T]) bool {
 	return true
 }
 
-// ContainsBox reports whether the box lies entirely in the polygon.
+// ContainsBox reports whether the box lies entirely in the polygon. The polygon is taken to be
+// simple: a self-intersecting one is left wherever its edges cross.
 func (p Polygon[T]) ContainsBox(box Box[T]) bool {
 	a, b := p.minMax()
 	twiceArea := p.twiceArea()
@@ -964,7 +971,7 @@ func (p Polygon[T]) IntersectionLine(line Line[T]) []Point[T] {
 // is convex by IsConvex. One that is not convex, or this one where both are, is cut to the other,
 // so the result keeps the winding and the vertices of the one cut. A common part of several pieces
 // comes back as one outline joined along the cutting edges, polygons that only touch share a point
-// or a stretch, and a polygon enclosing no area cuts everything away.
+// or a stretch, and a polygon enclosing no area is cut to the stretch of it in the other.
 func (p Polygon[T]) ClipPolygon(polygon Polygon[T]) (Polygon[T], bool) {
 	points := p.AppendClipPolygon(nil, polygon)
 
@@ -1001,7 +1008,8 @@ func (p Polygon[T]) AppendClipPolygon(dst []Point[T], polygon Polygon[T]) []Poin
 
 // ClipRectangle returns the part of the polygon in the rectangle, and false where there is none or
 // the rectangle has a zero width or height. The polygon need not be convex, and the result keeps
-// its winding and vertices.
+// its winding and vertices. A common part of several pieces comes back as one outline joined along
+// the cutting edges, and a polygon that only touches gives that point or stretch.
 func (p Polygon[T]) ClipRectangle(rectangle Rectangle[T]) (Polygon[T], bool) {
 	points := p.AppendClipRectangle(nil, rectangle)
 
@@ -1025,7 +1033,9 @@ func (p Polygon[T]) AppendClipRectangle(dst []Point[T], rectangle Rectangle[T]) 
 
 // ClipRegularPolygon returns the part of the polygon in the regular polygon, and false where there
 // is none or the regular polygon encloses no area, with fewer than three vertices or a zero
-// semi-axis. The polygon need not be convex, and the result keeps its winding and vertices.
+// semi-axis. The polygon need not be convex, and the result keeps its winding and vertices. A
+// common part of several pieces comes back as one outline joined along the cutting edges, and a
+// polygon that only touches gives that point or stretch.
 func (p Polygon[T]) ClipRegularPolygon(polygon RegularPolygon[T]) (Polygon[T], bool) {
 	points := p.AppendClipRegularPolygon(nil, polygon)
 
@@ -1049,7 +1059,8 @@ func (p Polygon[T]) AppendClipRegularPolygon(dst []Point[T], polygon RegularPoly
 
 // ClipBox returns the part of the polygon in the box, and false where there is none or the box has
 // a zero width or height. The polygon need not be convex, and the result keeps its winding and
-// vertices.
+// vertices. A common part of several pieces comes back as one outline joined along the cutting
+// edges, and a polygon that only touches gives that point or stretch.
 func (p Polygon[T]) ClipBox(box Box[T]) (Polygon[T], bool) {
 	points := p.AppendClipBox(nil, box)
 
@@ -1107,10 +1118,11 @@ func (p Polygon[T]) AppendSplit(front, back []Point[T], line Line[T]) ([]Point[T
 
 // Union returns the outline of the area the polygons cover together, and false where either is not
 // convex or they share no area, touching included. The outline keeps the winding of this polygon
-// and starts at its first vertex outside the given one; where one contains the other it has that
-// one's vertices, in this winding. A vertex on the boundary of the other polygon gives way to the
-// crossing beside it. For an integer type the outline is placed as for float64 and its crossings
-// rounded once, so where the polygons overlap by less than a unit it can touch itself.
+// and starts at its first vertex outside the given one, else at the given one's first vertex
+// outside this one, else at the first crossing; where one contains the other it has that one's
+// vertices, in this winding. A vertex on the boundary of the other polygon gives way to the
+// crossing beside it. For integer T, where the polygons overlap by less than a unit the outline can
+// touch itself.
 func (p Polygon[T]) Union(polygon Polygon[T]) (Polygon[T], bool) {
 	points := p.AppendUnion(nil, polygon)
 
@@ -1317,7 +1329,7 @@ func (p Polygon[T]) walk(point Point[T]) edgeWalk[T] {
 // polygon between them. It leaves by properly crossing an edge, by running through a vertex into
 // the outside, or by running from an endpoint inside an edge to its outer side, each on exact signs
 // in the sense of twiceArea. An endpoint at a vertex is left to the vertex, and a repeated vertex
-// is skipped, so a vertex is judged by its distinct neighbours, never by the zero direction of a
+// is skipped, so a vertex is judged by its distinct neighbors, never by the zero direction of a
 // repeat.
 func (p Polygon[T]) keeps(segment Segment[T], twiceArea float64) bool {
 	previous := p.Points[0]
@@ -1428,7 +1440,7 @@ func (p Polygon[T]) IsEmpty() bool {
 
 // IsConvex reports whether the polygon is convex and simple: it encloses an area, turns the same
 // way at every vertex in either winding, and goes around once, so a star turning one way throughout
-// is not convex. A repeated vertex is skipped and one on the line between its neighbours is
+// is not convex. A repeated vertex is skipped and one on the line between its neighbors is
 // allowed, but an edge doubling back is not. The turns are exact signs with no tolerance, so a
 // float vertex a rounding error inside that line makes the polygon concave.
 func (p Polygon[T]) IsConvex() bool {
@@ -1443,8 +1455,8 @@ func (p Polygon[T]) IsConvex() bool {
 }
 
 // IsSimple reports whether the outline goes around without touching itself: no two edges share a
-// point other than neighbours at their vertex, and no edge doubles back onto the one before. A
-// repeated vertex is skipped, so the edges either side of it are neighbours. An empty polygon is
+// point other than neighbors at their vertex, and no edge doubles back onto the one before. A
+// repeated vertex is skipped, so the edges either side of it are neighbors. An empty polygon is
 // simple and one enclosing no area is not; a NaN vertex meets no edge. The cost grows with the
 // square of the vertex count.
 func (p Polygon[T]) IsSimple() bool {
@@ -1529,7 +1541,8 @@ func (p Polygon[T]) edge(i int) Segment[T] {
 }
 
 // Polyline returns the outline as a closed path, from the first vertex around and back to it, so
-// IsClosed holds. An empty polygon gives an empty path, a nil Points a nil one.
+// IsClosed holds. An empty polygon instead gives an empty path, which is not closed, a nil Points a
+// nil one.
 func (p Polygon[T]) Polyline() Polyline[T] {
 	if p.IsEmpty() {
 		return Polyline[T](p)

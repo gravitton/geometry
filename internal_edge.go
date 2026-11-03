@@ -17,7 +17,7 @@ func edgesOf[T Number](vertices []Point[T]) iter.Seq[Segment[T]] {
 	}
 }
 
-// edgeWalk folds the edges of a closed outline into the walk of a shape: the squared distance to
+// edgeWalk folds the edges of an outline or path into the walk of a shape: the squared distance to
 // the nearest edge, starting infinite, that edge, unless the point lies on one, which stops the
 // walk at zero, and the even-odd parity of a ray from the point. A shape starts it as a literal and
 // steps its own Edges, since an iterator passed in would allocate.

@@ -206,8 +206,8 @@ func (r Ray[T]) IntersectionSector(sector Sector[T]) []Point[T] {
 	return r.AppendIntersectionSector(nil, sector)
 }
 
-// AppendIntersectionSector appends the points of IntersectionSector to dst and returns the extended
-// slice.
+// AppendIntersectionSector appends the points of IntersectionSector(sector) to dst and returns the
+// extended slice.
 func (r Ray[T]) AppendIntersectionSector(dst []Point[T], sector Sector[T]) []Point[T] {
 	return r.reach(sector.minMax()).AppendIntersectionSector(dst, sector)
 }
@@ -251,13 +251,14 @@ func (r Ray[T]) IntersectionLine(line Line[T]) (Point[T], bool) {
 	return r.IntersectionRay(behind)
 }
 
-// IntersectionPolyline returns the points where the ray crosses the path, from Origin on.
+// IntersectionPolyline returns the points where the ray crosses the path, from Origin on, and none
+// for an empty path.
 func (r Ray[T]) IntersectionPolyline(polyline Polyline[T]) []Point[T] {
 	return r.AppendIntersectionPolyline(nil, polyline)
 }
 
-// AppendIntersectionPolyline appends the points of IntersectionPolyline to dst and returns the
-// extended slice.
+// AppendIntersectionPolyline appends the points of IntersectionPolyline(polyline) to dst and
+// returns the extended slice.
 func (r Ray[T]) AppendIntersectionPolyline(dst []Point[T], polyline Polyline[T]) []Point[T] {
 	bounds := polyline.Bounds()
 
@@ -276,8 +277,8 @@ func (r Ray[T]) IntersectionCubicBezier(curve CubicBezier[T]) []Point[T] {
 	return r.AppendIntersectionCubicBezier(nil, curve)
 }
 
-// AppendIntersectionCubicBezier appends the points of IntersectionCubicBezier to dst and returns
-// the extended slice.
+// AppendIntersectionCubicBezier appends the points of IntersectionCubicBezier(curve) to dst and
+// returns the extended slice.
 func (r Ray[T]) AppendIntersectionCubicBezier(dst []Point[T], curve CubicBezier[T]) []Point[T] {
 	bounds := curve.Bounds()
 
@@ -285,13 +286,13 @@ func (r Ray[T]) AppendIntersectionCubicBezier(dst []Point[T], curve CubicBezier[
 }
 
 // IntersectionPolygon returns the points where the ray crosses the boundary of the polygon, from
-// Origin on.
+// Origin on, and none for an empty polygon.
 func (r Ray[T]) IntersectionPolygon(polygon Polygon[T]) []Point[T] {
 	return r.AppendIntersectionPolygon(nil, polygon)
 }
 
-// AppendIntersectionPolygon appends the points of IntersectionPolygon to dst and returns the
-// extended slice.
+// AppendIntersectionPolygon appends the points of IntersectionPolygon(polygon) to dst and returns
+// the extended slice.
 func (r Ray[T]) AppendIntersectionPolygon(dst []Point[T], polygon Polygon[T]) []Point[T] {
 	return r.reach(polygon.minMax()).AppendIntersectionPolygon(dst, polygon)
 }
@@ -303,7 +304,7 @@ func (r Ray[T]) IntersectionRectangle(rectangle Rectangle[T]) Pair[Point[T]] {
 }
 
 // IntersectionRegularPolygon returns the points where the ray crosses the boundary of the regular
-// polygon, from Origin on.
+// polygon, from Origin on, and none for an empty polygon.
 func (r Ray[T]) IntersectionRegularPolygon(polygon RegularPolygon[T]) Pair[Point[T]] {
 	return r.reach(polygon.minMax()).IntersectionRegularPolygon(polygon)
 }
@@ -326,7 +327,9 @@ func (r Ray[T]) ClipCircle(circle Circle[T]) (Segment[T], bool) {
 	return r.reach(circle.minMax()).ClipCircle(circle)
 }
 
-// ClipCapsule returns the part of the ray in the capsule, and false where they share no point.
+// ClipCapsule returns the part of the ray in the capsule, and false where they share no point. It
+// starts at Origin where the capsule contains it, else at the first point of the capsule the ray
+// reaches.
 func (r Ray[T]) ClipCapsule(capsule Capsule[T]) (Segment[T], bool) {
 	return r.reach(capsule.minMax()).ClipCapsule(capsule)
 }
@@ -336,33 +339,39 @@ func (r Ray[T]) ClipSector(sector Sector[T]) []Segment[T] {
 	return r.AppendClipSector(nil, sector)
 }
 
-// AppendClipSector appends the parts of ClipSector to dst and returns the extended slice.
+// AppendClipSector appends the parts of ClipSector(sector) to dst and returns the extended slice.
 func (r Ray[T]) AppendClipSector(dst []Segment[T], sector Sector[T]) []Segment[T] {
 	return r.reach(sector.minMax()).AppendClipSector(dst, sector)
 }
 
-// ClipPolygon returns the parts of the ray in the polygon, from Origin on.
+// ClipPolygon returns the parts of the ray in the polygon, from Origin on, and none for an empty
+// polygon.
 func (r Ray[T]) ClipPolygon(polygon Polygon[T]) []Segment[T] {
 	return r.AppendClipPolygon(nil, polygon)
 }
 
-// AppendClipPolygon appends the parts of ClipPolygon to dst and returns the extended slice.
+// AppendClipPolygon appends the parts of ClipPolygon(polygon) to dst and returns the extended
+// slice.
 func (r Ray[T]) AppendClipPolygon(dst []Segment[T], polygon Polygon[T]) []Segment[T] {
 	return r.reach(polygon.minMax()).AppendClipPolygon(dst, polygon)
 }
 
 // ClipRectangle returns the part of the ray in the rectangle, and false where they share no point.
+// It starts at Origin where the rectangle contains it, else at the first point of the rectangle the
+// ray reaches.
 func (r Ray[T]) ClipRectangle(rectangle Rectangle[T]) (Segment[T], bool) {
 	return r.reach(rectangle.minMax()).ClipRectangle(rectangle)
 }
 
 // ClipRegularPolygon returns the part of the ray in the regular polygon, and false where they share
-// no point, for an empty polygon, and for a ray along the line of a flat one.
+// no point, for an empty polygon, and for a ray along the line of a flat one. It starts at Origin
+// where the polygon contains it, else at the first point of the polygon the ray reaches.
 func (r Ray[T]) ClipRegularPolygon(polygon RegularPolygon[T]) (Segment[T], bool) {
 	return r.reach(polygon.minMax()).ClipRegularPolygon(polygon)
 }
 
-// ClipBox returns the part of the ray in the box, and false where they share no point.
+// ClipBox returns the part of the ray in the box, and false where they share no point. It starts at
+// Origin where the box contains it, else at the first point of the box the ray reaches.
 func (r Ray[T]) ClipBox(box Box[T]) (Segment[T], bool) {
 	return r.reach(box.Min, box.Max).ClipBox(box)
 }
@@ -374,39 +383,40 @@ func (r Ray[T]) ClipEllipse(ellipse Ellipse[T]) (Segment[T], bool) {
 	return r.reach(ellipse.minMax()).ClipEllipse(ellipse)
 }
 
-// HitCircle returns where the ray first reaches the circle from outside, with the normal pointing
-// from the center, and false where it does not or Origin is inside.
+// HitCircle returns where the ray first reaches the circle from outside, and false where it does
+// not or Origin lies in it. The normal points from the center, and back along the ray for a circle
+// of zero radius.
 func (r Ray[T]) HitCircle(circle Circle[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(circle.minMax()).HitCircle(circle))
 }
 
 // HitCapsule returns where the ray first reaches the capsule from outside, and false where it does
-// not or Origin is inside.
+// not or Origin lies in it.
 func (r Ray[T]) HitCapsule(capsule Capsule[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(capsule.minMax()).HitCapsule(capsule))
 }
 
 // HitSector returns where the ray first reaches the sector from outside, and false where it does
-// not or Origin is inside.
+// not or Origin lies in it.
 func (r Ray[T]) HitSector(sector Sector[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(sector.minMax()).HitSector(sector))
 }
 
-// HitArc returns where the ray first reaches the arc, and false where it does not or Origin lies on
-// the arc.
+// HitArc returns where the ray first reaches the arc, a curved wall, and false where it does not or
+// Origin lies on it.
 func (r Ray[T]) HitArc(arc Arc[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(arc.minMax()).HitArc(arc))
 }
 
-// HitSegment returns where the ray first reaches the segment as a wall, and false where it does not
-// or Origin lies on the segment.
+// HitSegment returns where the ray first reaches the segment, a wall, and false where it does not
+// or Origin lies on it.
 func (r Ray[T]) HitSegment(segment Segment[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(segment.minMax()).HitSegment(segment))
 }
 
-// HitRay returns where the ray first reaches the given one as a wall, and false where it does not
-// or Origin lies on the wall. A wall running along the ray is met at its origin with the normal
-// back along the ray, as is a wall of zero Vector.
+// HitRay returns where the ray first reaches the given one, a wall, and false where it does not or
+// Origin lies on it. A wall running along the ray is met at its origin with the normal back along
+// the ray, as is a wall of zero Vector.
 func (r Ray[T]) HitRay(ray Ray[T]) (Hit[T], bool) {
 	if ray.Contains(r.Origin) {
 		return Hit[T]{}, false
@@ -424,8 +434,8 @@ func (r Ray[T]) HitRay(ray Ray[T]) (Hit[T], bool) {
 	}
 }
 
-// HitLine returns where the ray first reaches the line as a wall, and false where it does not or
-// Origin lies on the line.
+// HitLine returns where the ray first reaches the line, a wall, and false where it does not or
+// Origin lies on it.
 func (r Ray[T]) HitLine(line Line[T]) (Hit[T], bool) {
 	if line.Contains(r.Origin) {
 		return Hit[T]{}, false
@@ -439,24 +449,24 @@ func (r Ray[T]) HitLine(line Line[T]) (Hit[T], bool) {
 	return r.HitRay(behind)
 }
 
-// HitPolyline returns where the ray first reaches the path as a wall, and false where it does not
-// or Origin lies on the path.
+// HitPolyline returns where the ray first reaches the path, a wall of several edges, and false
+// where it does not, Origin lies on it or the path is empty.
 func (r Ray[T]) HitPolyline(polyline Polyline[T]) (Hit[T], bool) {
 	bounds := polyline.Bounds()
 
 	return r.rescale(r.reach(bounds.Min, bounds.Max).HitPolyline(polyline))
 }
 
-// HitQuadraticBezier returns where the ray first reaches the curve as a wall, and false where it
-// does not or Origin lies on it.
+// HitQuadraticBezier returns where the ray first reaches the curve, a curved wall, and false where
+// it does not or Origin lies on it.
 func (r Ray[T]) HitQuadraticBezier(curve QuadraticBezier[T]) (Hit[T], bool) {
 	bounds := curve.Bounds()
 
 	return r.rescale(r.reach(bounds.Min, bounds.Max).HitQuadraticBezier(curve))
 }
 
-// HitCubicBezier returns where the ray first reaches the curve as a wall, and false where it does
-// not or Origin lies on it.
+// HitCubicBezier returns where the ray first reaches the curve, a curved wall, and false where it
+// does not or Origin lies on it.
 func (r Ray[T]) HitCubicBezier(curve CubicBezier[T]) (Hit[T], bool) {
 	bounds := curve.Bounds()
 
@@ -464,31 +474,31 @@ func (r Ray[T]) HitCubicBezier(curve CubicBezier[T]) (Hit[T], bool) {
 }
 
 // HitPolygon returns where the ray first reaches the polygon from outside, and false where it does
-// not or Origin is inside.
+// not, Origin lies in it or the polygon is empty.
 func (r Ray[T]) HitPolygon(polygon Polygon[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(polygon.minMax()).HitPolygon(polygon))
 }
 
 // HitRectangle returns where the ray first reaches the rectangle from outside, and false where it
-// does not or Origin is inside.
+// does not or Origin lies in it.
 func (r Ray[T]) HitRectangle(rectangle Rectangle[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(rectangle.minMax()).HitRectangle(rectangle))
 }
 
 // HitRegularPolygon returns where the ray first reaches the regular polygon from outside, and false
-// where it does not, Origin is inside, or the polygon is empty.
+// where it does not, Origin lies in it or the polygon is empty.
 func (r Ray[T]) HitRegularPolygon(polygon RegularPolygon[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(polygon.minMax()).HitRegularPolygon(polygon))
 }
 
 // HitBox returns where the ray first reaches the box from outside, and false where it does not or
-// Origin is inside.
+// Origin lies in it.
 func (r Ray[T]) HitBox(box Box[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(box.Min, box.Max).HitBox(box))
 }
 
 // HitEllipse returns where the ray first reaches the ellipse from outside, and false where it does
-// not or Origin is inside.
+// not or Origin lies in it.
 func (r Ray[T]) HitEllipse(ellipse Ellipse[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(ellipse.minMax()).HitEllipse(ellipse))
 }
@@ -598,8 +608,8 @@ func (r Ray[T]) touch(ray Ray[T]) (Point[T], bool) {
 	}
 }
 
-// Equal reports whether the rays have equal origin and direction. Rays of the same points with
-// directions of different lengths are not equal.
+// Equal reports whether the rays have equal Origin and Vector. Rays of the same points with Vectors
+// of different lengths are not equal.
 func (r Ray[T]) Equal(ray Ray[T]) bool {
 	return r.Origin.Equal(ray.Origin) && r.Vector.Equal(ray.Vector)
 }

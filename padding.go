@@ -75,7 +75,7 @@ func (p Padding[T]) Equal(padding Padding[T]) bool {
 	return Equal(p.Left, padding.Left) && Equal(p.Right, padding.Right) && Equal(p.Top, padding.Top) && Equal(p.Bottom, padding.Bottom)
 }
 
-// IsZero reports whether every amount is zero.
+// IsZero reports whether every amount is zero within the tolerance of Equal.
 func (p Padding[T]) IsZero() bool {
 	return p.Equal(Padding[T]{})
 }

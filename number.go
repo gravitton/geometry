@@ -7,7 +7,7 @@ import (
 
 // Cast converts a float64 to T, rounding half away from zero for an integer T. It panics for a
 // non-finite value and an integer T; a float T keeps it. A finite value outside the range of an
-// integer T is not checked and stores an arbitrary value.
+// integer T is not checked and stores a platform-dependent value.
 func Cast[T Number](value float64) T {
 	if isInt[T]() {
 		if !IsFinite(value) {
@@ -54,7 +54,7 @@ func String[T Number](value T) string {
 // allocation.
 const stringSize = 128
 
-// appendString appends the number to buf as String prints it and returns the extended buffer.
+// appendString appends the number to dst as String prints it and returns the extended slice.
 func appendString[T Number](dst []byte, value T) []byte {
 	if isInt[T]() {
 		return strconv.AppendInt(dst, int64(value), 10)

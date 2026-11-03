@@ -18,10 +18,11 @@ import (
 // Support, which sees a shape as convex, so a non-convex Polygon is taken edge by edge and a Sector
 // past half a turn as its two halves. Such a pair is measured in float64, two shapes touching
 // within the tolerance may answer either way, and for an integer T only outlines meeting on the
-// lattice touch.
+// lattice touch. An empty polygon, here and in the functions that take shapes, is a Polygon or a
+// RegularPolygon of no vertices.
 //
 // Ray and Line have no Bounds and no Support, so they are no Shape: they test shapes by their own
-// methods and through Raycast.
+// methods, and a Ray also through Raycast.
 type Shape[T Number] interface {
 	Bounds() Box[T]
 	DistanceTo(point Point[T]) float64
@@ -33,11 +34,6 @@ type Shape[T Number] interface {
 
 // Distance returns the distance between the nearest points of the shapes, zero where Intersects
 // holds.
-func Distance[T Number](a, b Shape[T]) float64 {
-	return math.Sqrt(DistanceSquared(a, b))
-}
-
-// DistanceSquared returns the square of Distance.
 //
 // Two of a kind with a distance of their own are measured by it: Circle, Capsule, Sector, Segment
 // and Box. A Circle against any other shape is the distance from its center less its radius, a
@@ -48,6 +44,11 @@ func Distance[T Number](a, b Shape[T]) float64 {
 //
 // Both arguments escape to the heap, and a non-convex polygon allocates for every edge it is
 // measured by.
+func Distance[T Number](a, b Shape[T]) float64 {
+	return math.Sqrt(DistanceSquared(a, b))
+}
+
+// DistanceSquared returns the square of Distance.
 func DistanceSquared[T Number](a, b Shape[T]) float64 {
 	switch kind := a.(type) {
 	case Circle[T]:
@@ -178,11 +179,11 @@ func Nearest[T Number](a, b Shape[T]) (Point[T], Point[T]) {
 //
 // Where the outer shape is a kind of this package with a Contains method naming the kind of the
 // inner one, it decides. Any other pair, an Ellipse or a shape of another package on either side,
-// is decided by the supports, so a shape touching the other from inside may answer either way. A round shape that nears the
-// boundary of the other all the way round is taken not to lie in it: an Ellipse holds one Equal to
-// it, but not one a little smaller or the same ellipse turned by a half turn, and shapes clear of
-// each other by a small part of their size are decided correctly. A shape in the notch of a
-// non-convex Polygon or of a Sector past half a turn is not held.
+// is decided by the supports, so a shape touching the other from inside may answer either way. A
+// round shape that nears the boundary of the other all the way round is taken not to lie in it: an
+// Ellipse holds one Equal to it, but not one a little smaller or the same ellipse turned by a half
+// turn, and shapes clear of each other by a small part of their size are decided correctly. A shape
+// in the notch of a non-convex Polygon or of a Sector past half a turn is not held.
 //
 // Both arguments escape to the heap.
 func Contains[T Number](outer, inner Shape[T]) bool {
@@ -228,13 +229,8 @@ func Contains[T Number](outer, inner Shape[T]) bool {
 	return containsSupport(outer, inner)
 }
 
-// Intersects reports whether the shapes share a point, the same whichever is given first.
-//
-// Two kinds of this package with an Intersects method for each other are decided by it. Any other
-// pair is decided from what the two are: an empty polygon intersects nothing, a Circle by its
-// radius on the distance of the other to its center, a non-convex Polygon edge by edge or one
-// within the other, so a notch is not filled in, a Sector past half a turn as its two halves, and
-// any other two by their supports.
+// Intersects reports whether the shapes share a point. An empty polygon intersects nothing, and the
+// notch of a non-convex Polygon or of a Sector past half a turn is not filled in.
 //
 // Both arguments escape to the heap, so a loop that knows its types calls the named method instead.
 // A pointer to a shape of this package counts as a shape of another package.
@@ -290,7 +286,8 @@ func Intersects[T Number](a, b Shape[T]) bool {
 // second shape they meet at. Shapes that only touch have a normal and no depth, and two single
 // points have neither. The points are the two ends of the shared stretch where both sides are flat,
 // a side within a thousandth of a radian of facing the normal counting as flat, and one point
-// otherwise. Swapping the shapes gives the opposite normal and the same depth.
+// otherwise. Swapping the shapes gives the opposite normal and the same depth, except for a shape
+// in the very middle of another.
 //
 // The normal and depth are measured on the supports to within the tolerance. A shape deep within
 // another has many ways out of nearly one length, and one is returned: of equally short ways the
@@ -299,9 +296,10 @@ func Intersects[T Number](a, b Shape[T]) bool {
 // A non-convex Polygon meets edge by edge, so a shape in a notch is parted from the sides of the
 // notch: the contact is the deepest with the edges the other crosses, which may leave the two
 // overlapping at another edge, and a shape inside crossing no edge parts from the hull. Of two such
-// polygons the one first by Point.Compare is walked, and each edge crossed allocates. A Sector past
-// half a turn meets as its two halves, the deeper of the two, so a shape lying deep across the cut
-// between them is parted from one half into the other. Both shapes escape to the heap.
+// polygons the edges of one meet, the same one whichever is given first, and each edge crossed
+// allocates. A Sector past half a turn meets as its two halves, the deeper of the two, so a shape
+// lying deep across the cut between them is parted from one half into the other. Both shapes escape
+// to the heap.
 func Collide[T Number](a, b Shape[T]) (Contact[T], bool) {
 	if !Intersects(a, b) {
 		return Contact[T]{}, false
@@ -463,8 +461,8 @@ type intersector[T Number] interface {
 }
 
 // container is a shape with a Contains method for each of the eight kinds Contains dispatches on,
-// which every shape with an area but Ellipse has. Contains reads it only on a kind isKind names, so a
-// shape of another package with the same methods is not taken for one.
+// which every shape with an area but Ellipse has. Contains reads it only on a kind isKind names, so
+// a shape of another package with the same methods is not taken for one.
 type container[T Number] interface {
 	ContainsCircle(circle Circle[T]) bool
 	ContainsCapsule(capsule Capsule[T]) bool
@@ -554,8 +552,8 @@ func eitherNonConvex[T Number](a, b Shape[T]) (Polygon[T], Shape[T], bool) {
 	return polygon, a, ok
 }
 
-// nonConvex returns the shape as a polygon that is not IsConvex, notched or too small to enclose an
-// area, whose Support, that of its hull, would fill it in.
+// nonConvex returns the shape as a polygon that is not IsConvex, notched, self-crossing or
+// enclosing no area, whose Support, that of its hull, would fill it in.
 func nonConvex[T Number](shape Shape[T]) (Polygon[T], bool) {
 	polygon, ok := shape.(Polygon[T])
 

@@ -55,7 +55,8 @@ func (v Vector[T]) LengthSquared() T {
 	return Cast[T](float64(x*x) + float64(y*y))
 }
 
-// Angle returns the angle of the vector in radians.
+// Angle returns the angle of the vector in radians, in (-π, π] and zero for the zero vector, a
+// negative zero aside.
 func (v Vector[T]) Angle() float64 {
 	return math.Atan2(float64(v.Y), float64(v.X))
 }
@@ -230,7 +231,7 @@ func (v Vector[T]) RotateToward(angle, step float64) Vector[T] {
 // MoveToward returns the vector moved toward the given one by at most the step, direction and
 // length together, never past it: where the distance left is at most the step, the result is the
 // given vector exactly. A negative step moves away and is not clamped, and a vector equal to the
-// given one stays there. For integer T a step under half a unit can leave the vector in place.
+// given one stays there. For integer T a step below half a unit leaves the vector where it is.
 func (v Vector[T]) MoveToward(vector Vector[T], step float64) Vector[T] {
 	from := v.Float()
 	offset := vector.Float().Subtract(from)
@@ -280,14 +281,15 @@ func (v Vector[T]) Normal() Vector[T] {
 	return Vector[T]{-v.Y, v.X}
 }
 
-// Dot returns the dot product of the vectors, exactly zero for perpendicular ones.
+// Dot returns the dot product of the vectors, zero for perpendicular ones, exactly for an
+// integer T.
 func (v Vector[T]) Dot(vector Vector[T]) T {
 	a, b := v.Float(), vector.Float()
 
 	return Cast[T](float64(a.X*b.X) + float64(a.Y*b.Y))
 }
 
-// Cross returns the cross product of the vectors, exactly zero for parallel ones.
+// Cross returns the cross product of the vectors, zero for parallel ones, exactly for an integer T.
 func (v Vector[T]) Cross(vector Vector[T]) T {
 	a, b := v.Float(), vector.Float()
 
@@ -347,13 +349,14 @@ func (v Vector[T]) Equal(vector Vector[T]) bool {
 	return Equal(v.X, vector.X) && Equal(v.Y, vector.Y)
 }
 
-// IsZero reports whether the vector is the zero vector.
+// IsZero reports whether the vector is the zero vector within the tolerance of Equal, so one that
+// is IsZero can still have a direction.
 func (v Vector[T]) IsZero() bool {
 	return v.Equal(Vector[T]{})
 }
 
 // IsFinite reports whether both components are neither NaN nor infinite, which Cast and Int need
-// for an integer type. An integer vector always is.
+// for an integer T. An integer vector always is.
 func (v Vector[T]) IsFinite() bool {
 	return IsFinite(v.X) && IsFinite(v.Y)
 }
@@ -363,8 +366,8 @@ func (v Vector[T]) IsOne() bool {
 	return v.Equal(Vector[T]{1, 1})
 }
 
-// IsUp reports whether the vector runs up on screen, its Y negative, exactly. A diagonal is up and
-// to a side at once; Direction names the nearest one.
+// IsUp reports whether the vector runs up on screen, its Y negative. A diagonal is up and to a side
+// at once; Direction names the nearest one.
 func (v Vector[T]) IsUp() bool {
 	return v.Y < 0
 }
@@ -444,7 +447,7 @@ func (v Vector[T]) String() string {
 	return string(buf)
 }
 
-// appendString appends the vector as String prints it to buf and returns the extended buffer.
+// appendString appends the vector as String prints it to dst and returns the extended slice.
 func (v Vector[T]) appendString(dst []byte) []byte {
 	dst = append(dst, "⟨"...)
 	dst = appendString(dst, v.X)

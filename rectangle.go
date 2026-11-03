@@ -8,16 +8,17 @@ import (
 
 // Rectangle is a rectangle of a center and a size, turned by Angle radians about the center.
 //
-// The size is never negative: constructors and changes take it absolute. A negative extent written
-// as a struct literal or decoded from JSON gives no meaningful answers until Canonical repairs it.
+// The size is never negative: constructors and changes take it absolute or clamp it at zero. A
+// negative extent written as a struct literal or decoded from JSON gives no meaningful answers
+// until Canonical repairs it.
 //
 // Width, Height and the named corners are those of the rectangle's own frame before the turn, so
 // TopLeft is the corner that was top-left wherever the turn has put it. Bounds is the axis-aligned
 // extent of the vertices, whose corners are TopLeft and BottomRight only while the rectangle is not
-// rotated. For integer T a rectangle of width w spans w+1 lattice columns from TopLeft to
+// turned. For integer T a rectangle of width w spans w+1 lattice columns from TopLeft to
 // BottomRight inclusive, while the image.Rectangle that Rectangle returns is half-open and spans w
-// pixels. A
-// rotated rectangle has each corner rounded onto the lattice, and its edges join those corners.
+// pixels. A turned rectangle has each corner rounded onto the lattice, and its edges join those
+// corners.
 type Rectangle[T Number] struct {
 	Center Point[T] `json:",embed"`
 	Size   Size[T]  `json:",embed"`
@@ -29,8 +30,8 @@ func Rect[T Number](center Point[T], size Size[T], angle float64) Rectangle[T] {
 	return Rectangle[T]{center, size.Abs(), angle}
 }
 
-// RectangleFromCenter returns the aligned rectangle with its center at the point and the size, taken
-// absolute.
+// RectangleFromCenter returns the aligned rectangle with its center at the point and the size,
+// taken absolute.
 func RectangleFromCenter[T Number](center Point[T], size Size[T]) Rectangle[T] {
 	return Rectangle[T]{center, size.Abs(), 0}
 }
@@ -102,8 +103,7 @@ func (r Rectangle[T]) BottomLeft() Point[T] {
 
 // Anchor returns the point of the boundary in the direction from the center, in the frame before
 // the turn: a corner for a diagonal, the midpoint of an edge for a cardinal, and the center for
-// DirectionNone. For integer T an edge midpoint of a rotated rectangle is rounded once and can lie
-// just off the edge between the rounded corners.
+// DirectionNone.
 func (r Rectangle[T]) Anchor(direction Direction) Point[T] {
 	a, b := r.localMinMax()
 
@@ -142,7 +142,7 @@ func (r Rectangle[T]) Vertices() iter.Seq[Point[T]] {
 }
 
 // Edges returns an iterator over the edges in the order of Vertices, each from a corner to the next
-// and the last closing back to TopLeft.
+// and the last closing back to TopLeft. Segment.Normal of an edge points inward.
 func (r Rectangle[T]) Edges() iter.Seq[Segment[T]] {
 	return func(yield func(Segment[T]) bool) {
 		corners := r.corners()
@@ -303,8 +303,8 @@ func (r Rectangle[T]) AlignTo(direction Direction, point Point[T]) Rectangle[T] 
 
 // Clamp returns the rectangle moved by the least distance that brings it within the given one, the
 // receiver when it already lies within. On an axis of the given rectangle along which it is the
-// larger, it is centered on it instead. For integer T the move of a rotated pair is rounded once,
-// so the corners can land a unit past the edges.
+// larger, it is centered on it instead. For integer T the corners of a turned pair can land a unit
+// past the edges.
 func (r Rectangle[T]) Clamp(rectangle Rectangle[T]) Rectangle[T] {
 	if r.IsAligned() && rectangle.IsAligned() {
 		return r.Translate(r.Bounds().clampOffset(rectangle.Bounds()))
@@ -582,10 +582,10 @@ func (r Rectangle[T]) IntersectsPolygon(polygon Polygon[T]) bool {
 }
 
 // IntersectsRectangle reports whether the rectangles share a point. Two rectangles of the same
-// angle, or whole quarter turns apart, are measured in a frame they share, as ClipRectangle and Union are,
-// so they can differ from IntersectsPolygon on their Polygon forms: by a unit for integer T, within
-// the tolerance for float T. Far from the origin that frame can miss a touch ContainsRectangle
-// admits.
+// angle, or whole quarter turns apart, are measured in a frame they share, as ClipRectangle and
+// Union are, so they can differ from IntersectsPolygon on their Polygon forms: by a unit for
+// integer T, within the tolerance for float T. Far from the origin that frame can miss a touch
+// ContainsRectangle admits.
 func (r Rectangle[T]) IntersectsRectangle(rectangle Rectangle[T]) bool {
 	if r.IsAligned() && rectangle.IsAligned() {
 		return r.Bounds().IntersectsBox(rectangle.Bounds())
@@ -676,8 +676,9 @@ func (r Rectangle[T]) IntersectionLine(line Line[T]) Pair[Point[T]] {
 
 // ClipRectangle returns the rectangle common to both, and false where the common part is no
 // rectangle: where they share no point, or where their angles are not whole quarter turns apart,
-// though IntersectsRectangle may hold. Touching rectangles clip to a zero width or height. For
-// integer T the result of a rotated pair is rounded through the frame they share.
+// though IntersectsRectangle may hold. The result is turned as the one with the lesser center by
+// Point.Compare, then the lesser angle. Rectangles touching at an edge clip to a zero width or
+// height, and at a corner to the zero-sized rectangle there.
 func (r Rectangle[T]) ClipRectangle(rectangle Rectangle[T]) (Rectangle[T], bool) {
 	if !r.IntersectsRectangle(rectangle) {
 		return Rectangle[T]{}, false
@@ -698,10 +699,10 @@ func (r Rectangle[T]) ClipRectangle(rectangle Rectangle[T]) (Rectangle[T], bool)
 	}
 }
 
-// Union returns the smallest rectangle containing both, turned as one of them for two whole quarter
-// turns apart, and otherwise the aligned rectangle of the union of their Bounds. For integer
-// T the union of a rotated pair is rounded through the frame they share and need not enclose their
-// rounded corners.
+// Union returns the smallest rectangle containing both, for two whole quarter turns apart turned as
+// the one with the lesser center by Point.Compare, then the lesser angle, and otherwise the aligned
+// rectangle of the union of their Bounds. For integer T the union of a turned pair need not enclose
+// their rounded corners.
 func (r Rectangle[T]) Union(rectangle Rectangle[T]) Rectangle[T] {
 	if !(r.IsAligned() && rectangle.IsAligned()) && r.parallel(rectangle) {
 		frame := r.sharedFrame(rectangle)
@@ -826,7 +827,7 @@ func (r Rectangle[T]) Float() Rectangle[float64] {
 }
 
 // String returns the rectangle as Rect((x,y);WxH), center then size, with the angle appended as
-// Rect((x,y);WxH;a) for a rotated rectangle.
+// Rect((x,y);WxH;a) for a turned rectangle.
 func (r Rectangle[T]) String() string {
 	buf := make([]byte, 0, stringSize)
 	buf = append(buf, "Rect("...)

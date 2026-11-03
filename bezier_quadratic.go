@@ -3,9 +3,8 @@ package geom
 // QuadraticBezier is a curve from Start to End, leaving Start toward Control and reaching End from
 // it. It lies within the triangle of the three points and does not pass through Control in general.
 //
-// The curve is no Shape: Polyline flattens it to the path that measures it, and segments, rays and
-// lines are cast at it as a wall. It has no center, so it moves by Translate and turns and scales
-// by Transform alone.
+// The curve is no Shape: Polyline flattens it to the path that measures it. It has no center, so it
+// moves by Translate and turns and scales by Transform alone.
 type QuadraticBezier[T Number] struct {
 	Start   Point[T] `json:"s"`
 	Control Point[T] `json:"c"`
@@ -37,7 +36,7 @@ func (b QuadraticBezier[T]) Bounds() Box[T] {
 }
 
 // casteljau returns the points of de Casteljau's construction at the parameter: the two between
-// neighbouring points, and the point of the curve between those.
+// neighboring points, and the point of the curve between those.
 func (b QuadraticBezier[T]) casteljau(t float64) ([2]Point[float64], Point[float64]) {
 	start, control, end := b.Start.Float(), b.Control.Float(), b.End.Float()
 	first := [2]Point[float64]{start.Lerp(control, t), control.Lerp(end, t)}
@@ -50,7 +49,7 @@ func (b QuadraticBezier[T]) Translate(vector Vector[T]) QuadraticBezier[T] {
 	return QuadraticBezier[T]{b.Start.Add(vector), b.Control.Add(vector), b.End.Add(vector)}
 }
 
-// Transform returns the curve mapped by the matrix, exactly, by mapping its three points.
+// Transform returns the curve with the matrix applied to its three points.
 func (b QuadraticBezier[T]) Transform[M Float](matrix Matrix[M]) QuadraticBezier[T] {
 	return QuadraticBezier[T]{b.Start.Transform(matrix), b.Control.Transform(matrix), b.End.Transform(matrix)}
 }
@@ -75,8 +74,8 @@ func (b QuadraticBezier[T]) PointAt(t float64) Point[T] {
 	return point.Cast[T]()
 }
 
-// TangentAt returns the derivative of the curve at the parameter, zero at an end that the control
-// point lies on.
+// TangentAt returns the derivative of the curve at the parameter, zero at a cusp and at an end that
+// the control point lies on.
 func (b QuadraticBezier[T]) TangentAt(t float64) Vector[float64] {
 	first, _ := b.casteljau(t)
 
@@ -84,7 +83,8 @@ func (b QuadraticBezier[T]) TangentAt(t float64) Vector[float64] {
 }
 
 // Split returns the curve cut at the parameter, from Start to PointAt(t) and from there to End. For
-// integer T the new points are rounded, so the halves only approximate the curve.
+// integer T the new points are rounded, so the parts only approximate the curve. Outside [0, 1] one
+// part runs past an end and the other back over it.
 func (b QuadraticBezier[T]) Split(t float64) (QuadraticBezier[T], QuadraticBezier[T]) {
 	first, point := b.casteljau(t)
 	middle := point.Cast[T]()
@@ -92,7 +92,8 @@ func (b QuadraticBezier[T]) Split(t float64) (QuadraticBezier[T], QuadraticBezie
 	return QuadraticBezier[T]{b.Start, first[0].Cast[T](), middle}, QuadraticBezier[T]{middle, first[1].Cast[T](), b.End}
 }
 
-// IntersectionSegment returns the points where the segment crosses the curve, from Start to End.
+// IntersectionSegment returns the points where the segment crosses the curve, from the Start of the
+// segment to its End.
 func (b QuadraticBezier[T]) IntersectionSegment(segment Segment[T]) Pair[Point[T]] {
 	return segment.IntersectionQuadraticBezier(b)
 }
@@ -108,8 +109,7 @@ func (b QuadraticBezier[T]) IntersectionLine(line Line[T]) Pair[Point[T]] {
 	return line.IntersectionQuadraticBezier(b)
 }
 
-// Equal reports whether the curves have equal points in the same places, so a curve and its Reverse
-// differ.
+// Equal reports whether the curves have equal Start, Control and End.
 func (b QuadraticBezier[T]) Equal(curve QuadraticBezier[T]) bool {
 	return b.Start.Equal(curve.Start) && b.Control.Equal(curve.Control) && b.End.Equal(curve.End)
 }
@@ -119,9 +119,10 @@ func (b QuadraticBezier[T]) IsZero() bool {
 	return b.Equal(QuadraticBezier[T]{})
 }
 
-// Polyline returns the curve flattened to a path within the tolerance of it, from Start to End, as
-// CubicBezier.Polyline flattens the cubic of the same curve. A negative tolerance is taken
-// absolute.
+// Polyline returns the curve flattened to a path within the tolerance of it, from Start to End,
+// with more points where it bends, one edge where it is straight and one point where it has no
+// length. A negative tolerance is taken absolute, and the curve is halved at most ten times, so the
+// path has at most 1024 edges.
 func (b QuadraticBezier[T]) Polyline(tolerance float64) Polyline[T] {
 	return Polyline[T]{b.AppendPolyline(nil, tolerance)}
 }

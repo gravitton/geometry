@@ -159,12 +159,13 @@ func (p Point[T]) RotateAround(pivot Point[T], angle float64) Point[T] {
 // MoveToward returns the point moved toward the given one by at most the step, never past it: where
 // the distance left is at most the step, the result is the given point exactly. A negative step
 // moves away and is not clamped, and a point equal to the given one stays there. For integer T a
-// step under half a unit can leave the point in place.
+// step below half a unit leaves the point where it is.
 func (p Point[T]) MoveToward(point Point[T], step float64) Point[T] {
 	return p.Vector().MoveToward(point.Vector(), step).Point()
 }
 
-// AngleTo returns the angle in radians of the vector from this point to the given one.
+// AngleTo returns the angle in radians of the vector from this point to the given one, as
+// Vector.Angle gives it.
 func (p Point[T]) AngleTo(point Point[T]) float64 {
 	return point.Float().Subtract(p.Float()).Angle()
 }
@@ -237,13 +238,13 @@ func (p Point[T]) Compare(point Point[T]) int {
 	return cmp.Compare(p.Y, point.Y)
 }
 
-// IsZero reports whether the point is the origin.
+// IsZero reports whether the point is the origin within the tolerance of Equal.
 func (p Point[T]) IsZero() bool {
 	return p.Equal(Point[T]{})
 }
 
 // IsFinite reports whether both coordinates are neither NaN nor infinite, which Cast and Int need
-// for an integer type. An integer point always is.
+// for an integer T. An integer point always is.
 func (p Point[T]) IsFinite() bool {
 	return IsFinite(p.X) && IsFinite(p.Y)
 }
@@ -276,7 +277,7 @@ func (p Point[T]) String() string {
 	return string(buf)
 }
 
-// appendString appends the point as String prints it to buf and returns the extended buffer.
+// appendString appends the point as String prints it to dst and returns the extended slice.
 func (p Point[T]) appendString(dst []byte) []byte {
 	dst = append(dst, '(')
 	dst = appendString(dst, p.X)

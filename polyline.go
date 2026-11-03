@@ -128,8 +128,8 @@ func (p Polyline[T]) PointAt(t float64) Point[T] {
 // Every returns an iterator over the points a step apart along the path, from the first point on,
 // in one walk. The last point is among them only where a whole number of steps reaches it. A step
 // that is not positive yields the first point alone, and an empty path nothing. Each point is
-// placed at its count of steps, so rounding does not accumulate. The walk ends at the edge where the
-// length of the path stops being finite.
+// placed at its count of steps, so rounding does not accumulate. The walk ends at the edge where
+// the length of the path stops being finite.
 func (p Polyline[T]) Every(step float64) iter.Seq[Point[T]] {
 	return func(yield func(Point[T]) bool) {
 		if p.IsEmpty() {
@@ -167,8 +167,8 @@ func (p Polyline[T]) Every(step float64) iter.Seq[Point[T]] {
 }
 
 // Simplify returns the path with the points within the tolerance of the path through the others
-// removed, by Ramer–Douglas–Peucker, keeping the first and the last. The kept points stay in order,
-// so simplifying again changes nothing. A negative tolerance is taken absolute.
+// removed, keeping the first and the last. The kept points stay in order, and simplifying again
+// changes nothing. A negative tolerance is taken absolute.
 func (p Polyline[T]) Simplify(tolerance float64) Polyline[T] {
 	return Polyline[T]{p.AppendSimplify(nil, tolerance)}
 }
@@ -234,7 +234,8 @@ func (p Polyline[T]) Contains(point Point[T]) bool {
 	return p.DistanceSquaredTo(point) == 0
 }
 
-// IntersectionSegment returns the points where the segment crosses the path, from Start to End.
+// IntersectionSegment returns the points where the segment crosses the path, from the Start of the
+// segment to its End.
 func (p Polyline[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
 	return segment.IntersectionPolyline(p)
 }

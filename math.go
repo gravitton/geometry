@@ -49,8 +49,8 @@ func ratio[T Number](a, b T) float64 {
 	return float64(a) / float64(b)
 }
 
-// Abs returns the absolute value, computed in T, so integers stay exact; the most negative integer
-// of T has no positive counterpart and is returned as it is.
+// Abs returns the absolute value; the most negative integer of T has no positive counterpart and is
+// returned as it is.
 func Abs[T Number](x T) T {
 	if x < 0 {
 		return -x
@@ -59,7 +59,7 @@ func Abs[T Number](x T) T {
 	return x
 }
 
-// Sign returns 1 for a positive x, -1 for a negative one and 0 for zero.
+// Sign returns 1 for a positive x, -1 for a negative one and 0 for zero and NaN.
 func Sign[T Number](x T) T {
 	switch {
 	case x > 0:
@@ -149,7 +149,8 @@ func IsFinite[T Number](x T) bool {
 	return math.Abs(float64(x)) <= math.MaxFloat64
 }
 
-// Clamp returns the value limited to [min, max].
+// Clamp returns the value limited to [min, max]. With min above max, a value below min gives min
+// and any other gives max.
 func Clamp[T Number](value, min, max T) T {
 	if value < min {
 		return min
@@ -366,8 +367,8 @@ func AngleDistance(a, b float64) float64 {
 }
 
 // LerpAngle returns the angle interpolated from a toward b at t along the shorter arc, extrapolated
-// outside [0, 1] and measured from a, not normalized. Angles half a turn apart turn toward
-// increasing angle.
+// outside [0, 1] and measured from a, not normalized. Angles whose difference is exactly π turn
+// toward increasing angle; rounding can send a nearly opposite pair either way.
 func LerpAngle(a, b, t float64) float64 {
 	delta := NormalizeAngle(b - a)
 	if delta > math.Pi {
@@ -379,8 +380,9 @@ func LerpAngle(a, b, t float64) float64 {
 
 // MoveTowardAngle returns the angle turned toward the target by at most step along the shorter arc,
 // the target itself, as given, once it is within reach, and otherwise measured from the angle, not
-// normalized. Angles half a turn apart turn toward increasing angle. A negative step turns away and
-// is not clamped, and an angle at the target stays there.
+// normalized. Angles whose difference is exactly π turn toward increasing angle; rounding can send
+// a nearly opposite pair either way. A negative step turns away and is not clamped, and an angle at
+// the target stays there.
 func MoveTowardAngle(angle, target, step float64) float64 {
 	delta := NormalizeAngle(target - angle)
 	if delta > math.Pi {

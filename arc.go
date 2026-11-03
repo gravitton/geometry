@@ -5,10 +5,10 @@ import (
 	"slices"
 )
 
-// Arc is the part of the circle about Center from Angle through Sweep, both in radians, in the
-// sense of Vector.Rotate for a positive sweep, so the direction it is drawn in is part of the
-// value. A sweep of a full turn or more either way is the whole circle, and a sweep of zero the
-// single point at Angle. It is a curve with no inside.
+// Arc is the part of the circle about Center from Angle through Sweep, both in radians,
+// counterclockwise in math coordinates for a positive sweep, so the direction it is drawn in is
+// part of the value. A sweep of a full turn or more either way is the whole circle, and a sweep of
+// zero the single point at Angle.
 //
 // The radius is never negative: constructors and changes take it absolute or clamp it at zero. A
 // negative radius written as a struct literal or decoded from JSON gives no meaningful answers
@@ -17,8 +17,7 @@ import (
 // The points of an arc are no lattice points, so for integer T every distance to it is measured in
 // float64 and compared at no less than the float64 tolerance.
 //
-// An arc is no Shape, since its Support would be that of its hull; segments, rays and lines are
-// cast at it.
+// An arc has no inside, so it is no Shape; segments, rays and lines are cast at it.
 type Arc[T Number] struct {
 	Center Point[T] `json:",embed"`
 	Radius T        `json:"r"`
@@ -32,7 +31,8 @@ func Ac[T Number](center Point[T], radius T, angle, sweep float64) Arc[T] {
 }
 
 // ArcThrough returns the arc from a through b to c, and false where they lie on one line, two or
-// all of them being the same point included.
+// all of them being the same point included. The sweep is negative where the points run clockwise
+// in math coordinates. The radius must fit T.
 func ArcThrough[T Number](a, b, c Point[T]) (Arc[T], bool) {
 	circle, ok := CircleThrough(a, b, c)
 	if !ok {
@@ -168,19 +168,21 @@ func (a Arc[T]) Shrink(amount T) Arc[T] {
 }
 
 // Lerp returns the arc interpolated toward the given one, center, radius and sweep together and the
-// angle along the shorter way, normalized to [0, 2π), and extrapolated outside [0, 1]. The radius
-// is taken absolute.
+// angle along the shorter arc, normalized to [0, 2π), and extrapolated outside [0, 1]. The radius
+// is taken absolute, so extrapolating past zero grows the arc again.
 func (a Arc[T]) Lerp(arc Arc[T], t float64) Arc[T] {
 	return Arc[T]{a.Center.Lerp(arc.Center, t), Abs(Lerp(a.Radius, arc.Radius, t)), NormalizeAngle(LerpAngle(a.Angle, arc.Angle, t)), Lerp(a.Sweep, arc.Sweep, t)}
 }
 
 // Canonical returns the arc with its radius taken absolute, its angle normalized to [0, 2π) and its
-// sweep held to a full turn. An angle within Delta of zero or a full turn becomes zero.
+// sweep held to a full turn. An angle within Delta of zero or a full turn becomes zero; Rotate and
+// Lerp never snap.
 func (a Arc[T]) Canonical() Arc[T] {
 	return Arc[T]{a.Center, Abs(a.Radius), snapAngle(a.Angle), a.turn()}
 }
 
-// Reverse returns the arc over the same points drawn the other way, from End back to Start.
+// Reverse returns the arc over the same points drawn the other way, from End back to Start, the
+// sweep held to a full turn and the angle normalized to [0, 2π).
 func (a Arc[T]) Reverse() Arc[T] {
 	return Arc[T]{a.Center, a.Radius, NormalizeAngle(a.Angle + a.turn()), -a.turn()}
 }
@@ -200,7 +202,8 @@ func (a Arc[T]) TangentAt(t float64) Vector[float64] {
 }
 
 // Split returns the arcs from Start to PointAt(t) and from there to End, the sweep first held to a
-// full turn. Outside [0, 1] one runs past an end and the other back over it.
+// full turn and the angle of the second normalized to [0, 2π). Outside [0, 1] one runs past an end
+// and the other back over it.
 func (a Arc[T]) Split(t float64) (Arc[T], Arc[T]) {
 	turn := a.turn()
 	first := float64(t * turn)
@@ -224,7 +227,7 @@ func (a Arc[T]) DistanceSquaredTo(point Point[T]) float64 {
 }
 
 // Nearest returns the point of the arc nearest to the given point, the point itself on the arc or
-// with a NaN coordinate.
+// with a NaN coordinate, and Start for a tie between the ends or for the center.
 func (a Arc[T]) Nearest(point Point[T]) Point[T] {
 	nearest, distanceSquared := a.nearest(point.Float())
 	if a.containsSquared(distanceSquared, point.magnitude()) || math.IsNaN(distanceSquared) {
@@ -235,18 +238,18 @@ func (a Arc[T]) Nearest(point Point[T]) Point[T] {
 }
 
 // NearestFraction returns the fraction along the arc of Nearest, from zero at Start to one at End,
-// and zero for an arc of zero sweep.
+// and zero for a tie between the ends, for the center or for an arc of zero sweep.
 func (a Arc[T]) NearestFraction(point Point[T]) float64 {
 	return a.fraction(point.Float())
 }
 
-// Contains reports whether the point lies on the arc. The tolerance is on the distance, never on an
-// angle, so it does not widen far from the center.
+// Contains reports whether the point lies on the arc.
 func (a Arc[T]) Contains(point Point[T]) bool {
 	return a.DistanceSquaredTo(point) == 0
 }
 
-// IntersectionSegment returns the points where the segment crosses the arc, from Start to End.
+// IntersectionSegment returns the points where the segment crosses the arc, in order along the
+// segment.
 func (a Arc[T]) IntersectionSegment(segment Segment[T]) Pair[Point[T]] {
 	fractions, n := a.crossings(segment)
 
@@ -323,8 +326,8 @@ func (a Arc[T]) fraction(point Point[float64]) float64 {
 	return 0
 }
 
-// covers reports whether the sweep passes the angle, with no tolerance, since every caller measures
-// a distance that is the same either side of an end.
+// covers reports whether the sweep passes the angle, with no tolerance, since a point either side
+// of an end answers the same within rounding.
 func (a Arc[T]) covers(angle float64) bool {
 	return a.swept(angle) <= math.Abs(a.turn())
 }
@@ -375,7 +378,8 @@ func (a Arc[T]) Sector() Sector[T] {
 }
 
 // Polyline returns the arc as a polyline within the tolerance of it, from Start to End: as few
-// equal chords as keep within it, at most 1024. A negative tolerance is taken absolute.
+// equal chords as keep within it, at most 1024. A negative tolerance is taken absolute, and an arc
+// of no length gives one point.
 func (a Arc[T]) Polyline(tolerance float64) Polyline[T] {
 	return Polyline[T]{a.AppendPolyline(nil, tolerance)}
 }

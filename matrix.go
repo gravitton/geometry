@@ -9,8 +9,8 @@ import (
 //
 // Translate, Rotate, RotateAround, Shear and Reflect compose the matrix with the constructor of the
 // same name on the right, applied first, and their Pre forms on the left, applied last. Scale,
-// ScaleAround and Unscale take float64 factors, where ScaleMatrix and ScaleMatrixAround take T, so an
-// integer matrix can be scaled by a half.
+// ScaleAround, Unscale and the Pre forms of the scales take float64 factors, where ScaleMatrix and
+// ScaleMatrixAround take T, so an integer matrix can be scaled by a half.
 //
 // For integer T, translation, integer scaling, reflection and quarter turns are exact. Any other
 // rotation rounds into a different matrix, and Inverse and Unscale do unless the result is integer.
@@ -45,8 +45,8 @@ func TranslationMatrix[T Number](deltaX, deltaY T) Matrix[T] {
 }
 
 // RotationMatrix returns the matrix that rotates by the angle in radians about the origin. For
-// integer T any angle but a multiple of a quarter turn rounds into a matrix that scales and shears
-// as well.
+// integer T the sine and cosine are rounded, so the result is a multiple of a quarter turn, or an
+// odd multiple of an eighth turn scaled by √2.
 func RotationMatrix[T Number](angle float64) Matrix[T] {
 	sin, cos := math.Sincos(angle)
 
@@ -57,8 +57,8 @@ func RotationMatrix[T Number](angle float64) Matrix[T] {
 }
 
 // RotationMatrixAround returns the matrix that rotates by the angle in radians about the pivot,
-// equal to the bit to the chain of translations and RotationMatrix. For integer T the pivot maps
-// exactly onto itself.
+// equal to the chain of translations and RotationMatrix. For integer T the pivot maps exactly onto
+// itself.
 func RotationMatrixAround[T Number](pivotX, pivotY T, angle float64) Matrix[T] {
 	return RotationMatrix[T](angle).around(pivotX, pivotY)
 }
@@ -71,16 +71,16 @@ func ScaleMatrix[T Number](factorX, factorY T) Matrix[T] {
 	}
 }
 
-// ScaleMatrixAround returns the matrix that scales by the factors about the pivot, equal to the bit
-// to the chain of translations and ScaleMatrix. The pivot maps onto itself.
+// ScaleMatrixAround returns the matrix that scales by the factors about the pivot, equal to the
+// chain of translations and ScaleMatrix. The pivot maps onto itself.
 func ScaleMatrixAround[T Number](pivotX, pivotY, factorX, factorY T) Matrix[T] {
 	return ScaleMatrix(factorX, factorY).around(pivotX, pivotY)
 }
 
 // TRSMatrix returns the matrix that scales, then rotates by the angle in radians, then translates
 // (TranslationMatrix·RotationMatrix·ScaleMatrix). Translation, Angle and Scaling read back parts
-// that compose the same matrix: a negative X factor comes back as a half turn and a negative Y
-// factor. For integer T each entry is rounded once.
+// that compose the same matrix: a negative X factor comes back as a half turn and the Y factor
+// negated. For integer T each entry is rounded once.
 func TRSMatrix[T Number](deltaX, deltaY T, angle float64, factorX, factorY T) Matrix[T] {
 	sin, cos := math.Sincos(angle)
 
@@ -127,9 +127,9 @@ func (m Matrix[T]) Translation() Vector[T] {
 	return Vector[T]{m.C, m.F}
 }
 
-// Angle returns the angle in radians of the transformed X axis, the rotation of a matrix built by
-// TRSMatrix. A matrix that collapses the X axis gives the angle of its Y axis a quarter turn back,
-// and the zero matrix gives zero.
+// Angle returns the angle in radians, in [-π, π], of the transformed X axis, the rotation of a
+// matrix built by TRSMatrix. A matrix that collapses the X axis gives the angle of its Y axis a
+// quarter turn back, and the zero matrix gives zero.
 func (m Matrix[T]) Angle() float64 {
 	if m.A == 0 && m.D == 0 {
 		return math.Atan2(-float64(m.B), float64(m.E))
@@ -275,8 +275,7 @@ func (m Matrix[T]) Scale(factorX, factorY float64) Matrix[T] {
 }
 
 // ScaleAround returns the matrix composed with a scale by the factors about the pivot on the right
-// (m·S), so the pivot keeps its place before the current transform. Each entry is rounded once, and
-// for float64 it equals the product with ScaleMatrixAround to the bit.
+// (m·S), so the pivot keeps its place before the current transform. Each entry is rounded once.
 func (m Matrix[T]) ScaleAround(pivotX, pivotY T, factorX, factorY float64) Matrix[T] {
 	f := m.Float()
 	x, y := pivotOffset(pivotX, factorX), pivotOffset(pivotY, factorY)
@@ -333,7 +332,8 @@ func (m Matrix[T]) Reflect(axis Axis) Matrix[T] {
 	return m.Multiply(ReflectionMatrix[T](axis))
 }
 
-// PreReflect returns the matrix composed with ReflectionMatrix on the left (F·m).
+// PreReflect returns the matrix composed with ReflectionMatrix on the left (F·m), unchanged for
+// AxisNone.
 func (m Matrix[T]) PreReflect(axis Axis) Matrix[T] {
 	return ReflectionMatrix[T](axis).Multiply(m)
 }
@@ -385,7 +385,7 @@ func (m Matrix[T]) Equal(matrix Matrix[T]) bool {
 	return Equal(m.A, matrix.A) && Equal(m.B, matrix.B) && Equal(m.C, matrix.C) && Equal(m.D, matrix.D) && Equal(m.E, matrix.E) && Equal(m.F, matrix.F)
 }
 
-// IsZero reports whether every component is zero.
+// IsZero reports whether every component is zero within the tolerance of Equal.
 func (m Matrix[T]) IsZero() bool {
 	return m.Equal(Matrix[T]{})
 }

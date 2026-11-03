@@ -17,9 +17,8 @@ const bezierDepth = 32
 // Control2. It lies within the hull of the four points and passes through neither control point in
 // general.
 //
-// The curve is no Shape: Polyline flattens it to the path that measures it, and segments, rays and
-// lines are cast at it as a wall. It has no center, so it moves by Translate and turns and scales
-// by Transform alone.
+// The curve is no Shape: Polyline flattens it to the path that measures it. It has no center, so it
+// moves by Translate and turns and scales by Transform alone.
 type CubicBezier[T Number] struct {
 	Start    Point[T] `json:"s"`
 	Control1 Point[T] `json:"c"`
@@ -51,7 +50,7 @@ func (b CubicBezier[T]) Bounds() Box[T] {
 }
 
 // extrema returns the parameters at which the curve turns back along X and along Y, two per axis,
-// NaN where there is none and unclamped to the curve.
+// NaN or infinite where there is none and unclamped to the curve.
 func (b CubicBezier[T]) extrema() [4]float64 {
 	first, second, third := b.Control1.Float().Subtract(b.Start.Float()), b.Control2.Float().Subtract(b.Control1.Float()), b.End.Float().Subtract(b.Control2.Float())
 
@@ -72,7 +71,7 @@ func (CubicBezier[T]) roots(first, second, third float64) (float64, float64) {
 }
 
 // casteljau returns the points of de Casteljau's construction at the parameter: the three between
-// neighbouring points, the two between those, and the point of the curve between the two.
+// neighboring points, the two between those, and the point of the curve between the two.
 func (b CubicBezier[T]) casteljau(t float64) ([3]Point[float64], [2]Point[float64], Point[float64]) {
 	start, control1, control2, end := b.Start.Float(), b.Control1.Float(), b.Control2.Float(), b.End.Float()
 
@@ -87,7 +86,7 @@ func (b CubicBezier[T]) Translate(vector Vector[T]) CubicBezier[T] {
 	return CubicBezier[T]{b.Start.Add(vector), b.Control1.Add(vector), b.Control2.Add(vector), b.End.Add(vector)}
 }
 
-// Transform returns the curve mapped by the matrix, exactly, by mapping its four points.
+// Transform returns the curve with the matrix applied to its four points.
 func (b CubicBezier[T]) Transform[M Float](matrix Matrix[M]) CubicBezier[T] {
 	return CubicBezier[T]{b.Start.Transform(matrix), b.Control1.Transform(matrix), b.Control2.Transform(matrix), b.End.Transform(matrix)}
 }
@@ -121,7 +120,8 @@ func (b CubicBezier[T]) TangentAt(t float64) Vector[float64] {
 }
 
 // Split returns the curve cut at the parameter, from Start to PointAt(t) and from there to End. For
-// integer T the new points are rounded, so the halves only approximate the curve.
+// integer T the new points are rounded, so the parts only approximate the curve. Outside [0, 1] one
+// part runs past an end and the other back over it.
 func (b CubicBezier[T]) Split(t float64) (CubicBezier[T], CubicBezier[T]) {
 	first, second, point := b.casteljau(t)
 	middle := point.Cast[T]()
@@ -129,7 +129,8 @@ func (b CubicBezier[T]) Split(t float64) (CubicBezier[T], CubicBezier[T]) {
 	return CubicBezier[T]{b.Start, first[0].Cast[T](), second[0].Cast[T](), middle}, CubicBezier[T]{middle, second[1].Cast[T](), first[2].Cast[T](), b.End}
 }
 
-// IntersectionSegment returns the points where the segment crosses the curve, from Start to End.
+// IntersectionSegment returns the points where the segment crosses the curve, from the Start of the
+// segment to its End.
 func (b CubicBezier[T]) IntersectionSegment(segment Segment[T]) []Point[T] {
 	return segment.IntersectionCubicBezier(b)
 }
@@ -161,8 +162,7 @@ func (b CubicBezier[T]) appendIntersectionSegment(dst []Point[T], segment Segmen
 	return dst
 }
 
-// Equal reports whether the curves have equal points in the same places, so a curve and its Reverse
-// differ.
+// Equal reports whether the curves have equal Start, Control1, Control2 and End.
 func (b CubicBezier[T]) Equal(curve CubicBezier[T]) bool {
 	return b.Start.Equal(curve.Start) && b.Control1.Equal(curve.Control1) && b.Control2.Equal(curve.Control2) && b.End.Equal(curve.End)
 }

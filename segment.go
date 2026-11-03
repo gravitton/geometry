@@ -36,9 +36,8 @@ func (s Segment[T]) Direction() Direction {
 	return s.Float().Vector().Direction()
 }
 
-// Normal returns Vector turned a quarter turn in the sense of Vector.Rotate, of the same length. On
-// an edge of a Rectangle, or of a polygon wound the same way, it points inward. A segment of zero
-// length gives the zero vector.
+// Normal returns Vector turned a quarter turn in the sense of Vector.Rotate, of the same length. A
+// segment of zero length gives the zero vector.
 func (s Segment[T]) Normal() Vector[T] {
 	return s.Vector().Normal()
 }
@@ -95,8 +94,8 @@ func (s Segment[T]) magnitude() float64 {
 	return max(s.Start.magnitude(), s.End.magnitude())
 }
 
-// cross returns Start × End, the shoelace term of the edge. It is exact for parallel vectors, so a
-// degenerate edge adds exactly zero.
+// cross returns Start × End, the shoelace term of the edge. It is exactly zero for equal points, so
+// a degenerate edge adds nothing.
 func (s Segment[T]) cross() float64 {
 	return s.Start.Vector().Float().Cross(s.End.Vector().Float())
 }
@@ -120,7 +119,7 @@ func (s Segment[T]) Rotate(angle float64) Segment[T] {
 }
 
 // Scale returns the segment scaled by the factor about its Midpoint. A zero factor collapses it
-// onto the midpoint.
+// onto the midpoint, and a negative factor swaps the ends.
 func (s Segment[T]) Scale(factor float64) Segment[T] {
 	return s.ScaleXY(factor, factor)
 }
@@ -135,8 +134,8 @@ func (s Segment[T]) ScaleXY(factorX, factorY float64) Segment[T] {
 	return Segment[T]{start.Cast[T](), end.Cast[T]()}
 }
 
-// Unscale returns the segment scaled by the inverse of the factor about its Midpoint. It panics for
-// a zero factor.
+// Unscale returns the segment scaled by the inverse of the factor about its Midpoint. A negative
+// factor swaps the ends. It panics for a zero factor.
 func (s Segment[T]) Unscale(factor float64) Segment[T] {
 	return s.UnscaleXY(factor, factor)
 }
@@ -285,7 +284,7 @@ func (s Segment[T]) IntersectsSector(sector Sector[T]) bool {
 	return sector.IntersectsSegment(s)
 }
 
-// IntersectsSegment reports whether the segments share a point, collinear overlap included.
+// IntersectsSegment reports whether the segments share a point.
 func (s Segment[T]) IntersectsSegment(segment Segment[T]) bool {
 	return s.DistanceSquaredToSegment(segment) == 0
 }
@@ -396,20 +395,19 @@ func (s Segment[T]) IntersectsBox(box Box[T]) bool {
 	return false
 }
 
-// IntersectsEllipse reports whether the segment and the ellipse share a point: Start lies in it or
-// the segment reaches its boundary, as IntersectionEllipse finds it.
+// IntersectsEllipse reports whether the segment and the ellipse share a point.
 func (s Segment[T]) IntersectsEllipse(ellipse Ellipse[T]) bool {
 	return ellipse.Contains(s.Start) || !s.IntersectionEllipse(ellipse).IsEmpty()
 }
 
 // IntersectionCircle returns the points where the segment crosses the boundary of the circle, from
-// Start to End.
+// Start to End. A segment entirely inside gives none while IntersectsCircle holds.
 func (s Segment[T]) IntersectionCircle(circle Circle[T]) Pair[Point[T]] {
 	return circle.IntersectionSegment(s)
 }
 
 // IntersectionCapsule returns the points where the segment crosses the boundary of the capsule,
-// from Start to End.
+// from Start to End. A segment entirely inside gives none while IntersectsCapsule holds.
 func (s Segment[T]) IntersectionCapsule(capsule Capsule[T]) Pair[Point[T]] {
 	return capsule.IntersectionSegment(s)
 }
@@ -440,10 +438,10 @@ func (s Segment[T]) IntersectionArc(arc Arc[T]) Pair[Point[T]] {
 //
 // An endpoint of one segment on the other is the answer, even where rounding finds a proper
 // crossing beside it, so a segment passing a vertex meets both edges at that vertex. Segments
-// running along each other share a stretch, and the endpoint returned is one of the given segment
-// before one of this one, so the two orders can name different ends of it. Far from the origin a
-// crossing is placed to a few ulps of the length of the segments, so a long segment may not
-// contain it within the tolerance.
+// nearly along each other can share a stretch; the endpoint returned is then one of the given
+// segment before one of this one, so the two orders can name different ends of it. Far from the
+// origin a crossing is placed to a few ulps of the length of the segments, so a long segment may
+// not contain it within the tolerance.
 func (s Segment[T]) IntersectionSegment(segment Segment[T]) (Point[T], bool) {
 	point, ok := s.intersectionSegment(segment)
 
@@ -480,7 +478,9 @@ func (s Segment[T]) AppendIntersectionPolyline(dst []Point[T], polyline Polyline
 }
 
 // IntersectionQuadraticBezier returns the points where the segment crosses the curve, from Start to
-// End.
+// End, two at most, each within the tolerance of the curve. A segment along a straight curve gives
+// an end of the stretch they share or none, and one touching a bend over a stretch without crossing
+// it can give two points where there is one touch.
 func (s Segment[T]) IntersectionQuadraticBezier(curve QuadraticBezier[T]) Pair[Point[T]] {
 	cast := bezierCast{segment: s.Float(), curve: curve.Float().CubicBezier()}
 	cast.step(cast.curve, 0, 1, bezierDepth)
@@ -497,9 +497,9 @@ func (s Segment[T]) IntersectionQuadraticBezier(curve QuadraticBezier[T]) Pair[P
 }
 
 // IntersectionCubicBezier returns the points where the segment crosses the curve, from Start to
-// End, three at most, each within the tolerance of the curve. A segment along a straight curve gives
-// an end of the stretch they share or none, and one touching a bend over a stretch without crossing
-// it can give two points where there is one touch.
+// End, three at most, each within the tolerance of the curve. A segment along a straight curve
+// gives an end of the stretch they share or none, and one touching a bend over a stretch without
+// crossing it can give two points where there is one touch.
 func (s Segment[T]) IntersectionCubicBezier(curve CubicBezier[T]) []Point[T] {
 	return s.AppendIntersectionCubicBezier(nil, curve)
 }
@@ -514,14 +514,13 @@ func (s Segment[T]) AppendIntersectionCubicBezier(dst []Point[T], curve CubicBez
 // from Start to End. A segment entirely inside gives none while IntersectsPolygon holds, a segment
 // along an edge crosses only the edges at its ends, and an empty polygon gives none. Each edge
 // takes the tolerance of its own coordinates, so an endpoint near a corner can give a point of a
-// long edge beside the crossing of its shorter neighbour.
+// long edge beside the crossing of its shorter neighbor.
 func (s Segment[T]) IntersectionPolygon(polygon Polygon[T]) []Point[T] {
 	return s.AppendIntersectionPolygon(nil, polygon)
 }
 
 // AppendIntersectionPolygon appends the points of IntersectionPolygon(polygon) to dst and returns
-// the extended slice. The points already in dst are left as they are: none is compared with the
-// appended ones or ordered with them.
+// the extended slice.
 func (s Segment[T]) AppendIntersectionPolygon(dst []Point[T], polygon Polygon[T]) []Point[T] {
 	e := edgeIntersections[T]{segment: s, points: dst, from: len(dst)}
 	for edge := range polygon.Edges() {
@@ -532,9 +531,8 @@ func (s Segment[T]) AppendIntersectionPolygon(dst []Point[T], polygon Polygon[T]
 }
 
 // IntersectionRectangle returns the points where the segment crosses the boundary of the rectangle,
-// from Start to End: the first and the last crossing, the ends ClipRectangle clips to. A segment
-// entirely inside gives none while IntersectsRectangle holds, and a segment along an edge crosses
-// only the edges at its ends.
+// from Start to End: the first and the last crossing. A segment entirely inside gives none while
+// IntersectsRectangle holds, and a segment along an edge crosses only the edges at its ends.
 func (s Segment[T]) IntersectionRectangle(rectangle Rectangle[T]) Pair[Point[T]] {
 	span := edgeSpan[T]{segment: s}
 	for edge := range rectangle.Edges() {
@@ -545,9 +543,8 @@ func (s Segment[T]) IntersectionRectangle(rectangle Rectangle[T]) Pair[Point[T]]
 }
 
 // IntersectionRegularPolygon returns the points where the segment crosses the boundary of the
-// regular polygon, from Start to End: the first and the last crossing, the ends ClipRegularPolygon
-// clips to. A segment entirely inside gives none while IntersectsRegularPolygon holds, and an empty
-// polygon gives none.
+// regular polygon, from Start to End: the first and the last crossing. A segment entirely inside
+// gives none while IntersectsRegularPolygon holds, and an empty polygon gives none.
 func (s Segment[T]) IntersectionRegularPolygon(polygon RegularPolygon[T]) Pair[Point[T]] {
 	span := edgeSpan[T]{segment: s}
 	for edge := range polygon.Edges() {
@@ -558,7 +555,8 @@ func (s Segment[T]) IntersectionRegularPolygon(polygon RegularPolygon[T]) Pair[P
 }
 
 // IntersectionBox returns the points where the segment crosses the boundary of the box, from Start
-// to End: the first and the last crossing.
+// to End: the first and the last crossing. A segment entirely inside gives none while IntersectsBox
+// holds.
 func (s Segment[T]) IntersectionBox(box Box[T]) Pair[Point[T]] {
 	span := edgeSpan[T]{segment: s}
 	corners := box.corners()
@@ -570,11 +568,11 @@ func (s Segment[T]) IntersectionBox(box Box[T]) Pair[Point[T]] {
 }
 
 // IntersectionEllipse returns the points where the segment crosses the boundary of the ellipse,
-// from Start to End: two where it passes through, one where it is tangent or ends inside, and none
-// where it misses. A segment entirely inside crosses no boundary, so it gives none while
+// from Start to End: two where it passes through, one where it is tangent or has one end inside,
+// and none where it misses. A segment entirely inside crosses no boundary, so it gives none while
 // IntersectsEllipse holds. An endpoint on the boundary is one of the points, so a segment and its
-// Reverse give the same points. An ellipse with a zero semi-axis is crossed as the segment its other
-// axis spans.
+// Reverse give the same points. An ellipse with a zero semi-axis is crossed as the segment its
+// other axis spans, and a segment running along it gives the ends of the shared stretch.
 func (s Segment[T]) IntersectionEllipse(ellipse Ellipse[T]) Pair[Point[T]] {
 	fractions, n := ellipse.fractions(s)
 
@@ -642,8 +640,8 @@ func (s Segment[T]) AppendClipSector(dst []Segment[T], sector Sector[T]) []Segme
 // such as at a reflex vertex, and a touch from outside is a part of zero length.
 //
 // A part never starts or ends at a point the polygon does not contain, so a segment leaving the
-// boundary at a shallow angle without crossing it ends there; for integer T an end is rounded and
-// may lie just outside. There are parts exactly where IntersectsPolygon holds.
+// boundary at a shallow angle without crossing it ends there. There are parts exactly where
+// IntersectsPolygon holds.
 func (s Segment[T]) ClipPolygon(polygon Polygon[T]) []Segment[T] {
 	return s.AppendClipPolygon(nil, polygon)
 }
@@ -712,7 +710,9 @@ func (s Segment[T]) ClipRegularPolygon(polygon RegularPolygon[T]) (Segment[T], b
 	return s.clipConvex(span.crossings(), polygon.Contains(s.Start), polygon.Contains(s.End))
 }
 
-// ClipBox returns the part of the segment in the box, and false where they share no point.
+// ClipBox returns the part of the segment in the box, and false where they share no point. A
+// segment along an edge is clipped to the stretch of the edge it covers, and one touching a corner
+// from outside to that corner.
 func (s Segment[T]) ClipBox(box Box[T]) (Segment[T], bool) {
 	span := edgeSpan[T]{segment: s}
 	corners := box.corners()
@@ -861,8 +861,8 @@ func (s Segment[T]) HitLine(line Line[T]) (Hit[T], bool) {
 }
 
 // HitPolyline returns where the segment first reaches the path, a wall of several edges, and false
-// where it does not or Start lies on it. A point two edges share takes the edge that faces Start,
-// and the earlier in Edges where both do or neither does.
+// where it does not, Start lies on it or the path is empty. A point two edges share takes the edge
+// that faces Start, and the earlier in Edges where both do or neither does.
 func (s Segment[T]) HitPolyline(polyline Polyline[T]) (Hit[T], bool) {
 	if polyline.Contains(s.Start) {
 		return Hit[T]{}, false
@@ -1100,8 +1100,8 @@ func (s Segment[T]) crossing(segment Segment[T]) (Point[float64], bool) {
 	return point, 0 <= projection && projection <= direction.LengthSquared()
 }
 
-// parallel reports whether the segments run in the same direction. A segment of zero length is
-// parallel to nothing, so its point can still be found on the other.
+// parallel reports whether the segments have the same line direction, either way. A segment of
+// zero length is parallel to nothing, so its point can still be found on the other.
 func (s Segment[T]) parallel(segment Segment[T]) bool {
 	a, b := s.Float().Vector(), segment.Float().Vector()
 
@@ -1220,7 +1220,7 @@ func (s Segment[T]) compareDistance(a, b Point[T]) int {
 // clipConvex returns the part of the segment in a convex shape, from the crossings of its boundary
 // in order from Start and whether the shape contains Start and End: the whole segment where it
 // contains both, otherwise the first to the last crossing with a contained endpoint replacing its
-// neighbour, and false where it contains neither and nothing crosses.
+// neighbor, and false where it contains neither and nothing crosses.
 func (s Segment[T]) clipConvex(crossings []Point[T], start, end bool) (Segment[T], bool) {
 	if start && end {
 		return s, true
@@ -1308,9 +1308,9 @@ func (s Segment[T]) fraction(point Point[T]) float64 {
 }
 
 // crossesRay reports whether a ray from the point along +X crosses the segment, the step of the
-// even-odd rule of Polygon.Contains. An endpoint on the ray counts only as the lower one, so a
-// vertex is counted once. Each side is tested by its own sign of a cross product, so a NaN crosses
-// nothing.
+// even-odd rule of Polygon.Contains. An endpoint on the ray counts only as the end of lesser Y, so
+// a vertex is counted once. Each side is tested by its own sign of a cross product, so a NaN
+// crosses nothing.
 func (s Segment[T]) crossesRay(point Point[T]) bool {
 	start, end, p := s.Start.Float(), s.End.Float(), point.Float()
 

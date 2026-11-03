@@ -114,8 +114,8 @@ type edgePass[T Number] struct {
 }
 
 // add folds one edge in, keeping its crossing where it lies beyond the reached point and noting a
-// touch where it is Equal to it. An edge the segment runs along has no crossing, so its Start stands
-// in where the segment holds it, or a flat outline would give the walk nowhere to stop.
+// touch where it is Equal to it. An edge the segment runs along has no crossing, so its Start
+// stands in where the segment holds it, or a flat outline would give the walk nowhere to stop.
 func (e *edgePass[T]) add(edge Segment[T]) {
 	point, ok := e.segment.IntersectionSegment(edge)
 	if !ok {
@@ -182,7 +182,7 @@ func (e *edgePass[T]) precedes(a, b Point[T]) bool {
 
 // bezierCast gathers the hits of a segment at a Bezier curve in order from its Start, each normal
 // the perpendicular of the curve where it is hit, a point two pieces share held once. A cubic is
-// crossed three times at most; the rest of the room holds a crossing both neighbouring pieces find,
+// crossed three times at most; the rest of the room holds a crossing both neighboring pieces find,
 // and the last slot takes the farthest hit when there is no room, outside count.
 //
 // Pieces met one after another along the curve are a run. Where the chords of a run only touch the

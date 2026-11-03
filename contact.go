@@ -5,7 +5,8 @@ package geom
 // of the second shape they meet at, two where flat sides lie against each other and one otherwise.
 //
 // Shapes that only touch have a depth of zero, and two single points have no normal. A Polygon that
-// is not convex meets by its deepest edge alone, as Collide describes.
+// is not convex, or a Sector past half a turn, meets by its deepest edge or half alone, as Collide
+// describes.
 type Contact[T Number] struct {
 	Normal Vector[float64] `json:"n"`
 	Depth  float64         `json:"d"`
@@ -14,7 +15,8 @@ type Contact[T Number] struct {
 
 // Separation returns the shortest vector that moves the first shape out of the second until they
 // only touch (Normal·Depth); its opposite moves the second out of the first. Against a Polygon that
-// is not convex it parts them from one edge, so they may still overlap at another.
+// is not convex, or a Sector past half a turn, it parts them from one edge or half, so they may
+// still overlap at another.
 func (c Contact[T]) Separation() Vector[float64] {
 	return c.Normal.Multiply(c.Depth)
 }

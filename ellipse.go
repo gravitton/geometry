@@ -19,10 +19,8 @@ import (
 // For integer T a turned ellipse is measured and compared at no less than the tolerance of float64,
 // since its frame places no lattice points.
 //
-// The ellipse has no vertices, and no Intersects method for a shape but Segment. Intersects,
-// Distance, Collide and Sweep test it against any other by its Support, or by its distance to the
-// center of a Circle; Segment, Ray and Line cross, clip and hit it in closed form, and
-// RegularPolygon and Polygon give its outline.
+// The ellipse has no vertices, and no Intersects method for a shape but Segment: the package
+// functions test it against any other, and Polygon and RegularPolygon give its outline.
 type Ellipse[T Number] struct {
 	Center Point[T] `json:",embed"`
 	Radius Size[T]  `json:",embed"`
@@ -60,7 +58,8 @@ func (e Ellipse[T]) Foci() (Point[T], Point[T]) {
 
 // Anchor returns the point of the boundary in the direction from the center, named in the frame
 // before the turn, or the center for DirectionNone. A diagonal anchor lies where the diagonal
-// leaves the ellipse, and a degenerate ellipse answers with the point of its segment.
+// leaves the ellipse, and a degenerate ellipse answers with the point of its segment at the angle
+// of the direction, the center for a direction across it.
 func (e Ellipse[T]) Anchor(direction Direction) Point[T] {
 	if direction.IsNone() {
 		return e.Center
@@ -191,8 +190,8 @@ func (e Ellipse[T]) AlignTo(direction Direction, point Point[T]) Ellipse[T] {
 	return e.Translate(point.Subtract(e.Anchor(direction)))
 }
 
-// Rotate returns the ellipse turned by the angle in radians about its center, the stored angle
-// normalized to [0, 2π).
+// Rotate returns the ellipse turned by the angle in radians about its center, the angle normalized
+// to [0, 2π).
 func (e Ellipse[T]) Rotate(angle float64) Ellipse[T] {
 	return Ellipse[T]{e.Center, e.Radius, NormalizeAngle(e.Angle + angle)}
 }
@@ -257,14 +256,14 @@ func (e Ellipse[T]) ShrinkXY(amountX, amountY T) Ellipse[T] {
 }
 
 // Lerp returns the ellipse interpolated toward the given one, center and semi-axes together and the
-// angle along the shorter arc by LerpAngle, normalized to [0, 2π), and extrapolated outside [0, 1].
-// The radius is taken absolute, so extrapolating past a zero semi-axis grows the ellipse again.
+// angle along the shorter arc, normalized to [0, 2π), and extrapolated outside [0, 1]. The radius
+// is taken absolute, so extrapolating past zero grows the ellipse again.
 func (e Ellipse[T]) Lerp(ellipse Ellipse[T], t float64) Ellipse[T] {
 	return Ellipse[T]{e.Center.Lerp(ellipse.Center, t), e.Radius.Lerp(ellipse.Radius, t).Abs(), NormalizeAngle(LerpAngle(e.Angle, ellipse.Angle, t))}
 }
 
-// Canonical returns the ellipse with its radius taken absolute and its angle normalized to [0, 2π),
-// an angle within Delta of zero or a full turn becoming exactly zero. Rotate and Lerp never snap.
+// Canonical returns the ellipse with its radius taken absolute and its angle normalized to [0, 2π).
+// An angle within Delta of zero or a full turn becomes zero; Rotate and Lerp never snap.
 func (e Ellipse[T]) Canonical() Ellipse[T] {
 	return Ellipse[T]{e.Center, e.Radius.Abs(), snapAngle(e.Angle)}
 }
@@ -323,18 +322,22 @@ func (e Ellipse[T]) IntersectsLine(line Line[T]) bool {
 	return line.IntersectsEllipse(e)
 }
 
-// IntersectionSegment returns the points where the segment crosses the boundary, from Start to End.
+// IntersectionSegment returns the points where the segment crosses the boundary, from Start to End:
+// two where it passes through, one where it is tangent or has one end inside, and none where it
+// misses. A segment entirely inside crosses no boundary, so it gives none while IntersectsSegment
+// holds.
 func (e Ellipse[T]) IntersectionSegment(segment Segment[T]) Pair[Point[T]] {
 	return segment.IntersectionEllipse(e)
 }
 
-// IntersectionRay returns the points where the ray crosses the boundary, from Origin on.
+// IntersectionRay returns the points where the ray crosses the boundary, from its Origin on: two
+// where it passes through, one where it is tangent or starts inside, and none where it misses.
 func (e Ellipse[T]) IntersectionRay(ray Ray[T]) Pair[Point[T]] {
 	return ray.IntersectionEllipse(e)
 }
 
 // IntersectionLine returns the points where the line crosses the boundary, in order along its
-// Vector.
+// Vector: two where it passes through, one where it is tangent, and none where it misses.
 func (e Ellipse[T]) IntersectionLine(line Line[T]) Pair[Point[T]] {
 	return line.IntersectionEllipse(e)
 }
@@ -469,7 +472,7 @@ func (e Ellipse[T]) fractions(segment Segment[T]) ([2]float64, int) {
 // reach of Support along its normal, so the miss compares two lengths as it does for a circle. A
 // chord whose ends would compare Equal is a tangent and gives one fraction twice: the middle of the
 // chord, or for a line passing outside within the tolerance, its point nearest the boundary. A line
-// along a zero semi-axis runs along the segment of the other.
+// along the segment of a degenerate ellipse gives the ends of that segment.
 func (e Ellipse[T]) chord(segment Segment[T]) (float64, float64, bool) {
 	cast := segment.Float()
 	direction := cast.Vector().Rotate(-e.Angle)
@@ -558,8 +561,8 @@ func (e Ellipse[T]) epsilon(magnitude float64) float64 {
 	return max(epsilonAt[T](magnitude), epsilonAt[float64](magnitude))
 }
 
-// normal returns the perpendicular of the boundary at the point, the gradient of the quadratic form,
-// of any length.
+// normal returns the perpendicular of the boundary at the point, the gradient of the quadratic
+// form, of any length.
 func (e Ellipse[T]) normal(point Point[float64]) Vector[float64] {
 	w, h := e.Radius.Float().XY()
 	local := point.Subtract(e.Center.Float()).Rotate(-e.Angle)
@@ -567,12 +570,13 @@ func (e Ellipse[T]) normal(point Point[float64]) Vector[float64] {
 	return Vector[float64]{float64(local.X * float64(h*h)), float64(local.Y * float64(w*w))}.Rotate(e.Angle)
 }
 
-// Equal reports whether the ellipses have equal center and radius and an angle equal by EqualAngle.
+// Equal reports whether the ellipses have equal center, radius and angle. The angles are compared
+// with EqualAngle.
 func (e Ellipse[T]) Equal(ellipse Ellipse[T]) bool {
 	return e.Center.Equal(ellipse.Center) && e.Radius.Equal(ellipse.Radius) && EqualAngle(e.Angle, ellipse.Angle)
 }
 
-// IsZero reports whether the ellipse is the zero value, an angle of a full turn included.
+// IsZero reports whether the ellipse is the zero value.
 func (e Ellipse[T]) IsZero() bool {
 	return e.Equal(Ellipse[T]{})
 }
@@ -595,9 +599,9 @@ func (e Ellipse[T]) Circle() Circle[T] {
 
 // Polygon returns the ellipse as a polygon within the tolerance of it: equal steps of the parameter
 // from the end of the width semi-axis, as many as the circle of the major semi-axis needs, at least
-// three and at most 1024, wound like Rectangle.Vertices. A negative tolerance is taken
-// absolute, and an ellipse of no extent gives its center alone. RegularPolygon chooses the vertex
-// count instead.
+// three and at most 1024, wound by increasing angle. A negative tolerance is taken absolute, an
+// ellipse of no extent gives its center alone, and a zero semi-axis the segment there and back.
+// RegularPolygon chooses the vertex count instead.
 func (e Ellipse[T]) Polygon(tolerance float64) Polygon[T] {
 	return Polygon[T]{e.AppendPolygon(nil, tolerance)}
 }
@@ -625,14 +629,13 @@ func (e Ellipse[T]) AppendPolygon(dst []Point[T], tolerance float64) []Point[T] 
 
 // RegularPolygon returns the regular polygon of n vertices inscribed in the ellipse, of its center,
 // semi-axes and angle, its first vertex placed by RegularPolygonOrientationPhase before the
-// stretch. It is empty for n below one, and the only polygon that RegularPolygon.Ellipse converts
-// back exactly. It panics for an orientation that is neither OrientationFlatTop nor
-// OrientationPointyTop.
+// stretch. It is empty for n below one, and RegularPolygon.Ellipse converts it back exactly. It
+// panics for an orientation that is neither OrientationFlatTop nor OrientationPointyTop.
 //
 // For the polygon whose edges touch the ellipse, scale it first by the circumradius over the
 // apothem:
 //
-//	e.Scale(1 / math.Cos(Pi / float64(n))).RegularPolygon(n, orientation)
+//	e.Scale(1 / math.Cos(math.Pi / float64(n))).RegularPolygon(n, orientation)
 func (e Ellipse[T]) RegularPolygon(n int, orientation Orientation) RegularPolygon[T] {
 	return RegularPolygon[T]{e.Center, e.Radius, n, e.Angle, RegularPolygonOrientationPhase(n, orientation)}
 }

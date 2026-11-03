@@ -220,8 +220,8 @@ func (l Line[T]) IntersectionSector(sector Sector[T]) []Point[T] {
 	return l.AppendIntersectionSector(nil, sector)
 }
 
-// AppendIntersectionSector appends the points of IntersectionSector to dst and returns the extended
-// slice.
+// AppendIntersectionSector appends the points of IntersectionSector(sector) to dst and returns the
+// extended slice.
 func (l Line[T]) AppendIntersectionSector(dst []Point[T], sector Sector[T]) []Point[T] {
 	return l.span(sector.minMax()).AppendIntersectionSector(dst, sector)
 }
@@ -259,14 +259,14 @@ func (l Line[T]) IntersectionLine(line Line[T]) (Point[T], bool) {
 	return l.touch(line)
 }
 
-// IntersectionPolyline returns the points where the line crosses the path, in order along
-// Vector.
+// IntersectionPolyline returns the points where the line crosses the path, in order along Vector,
+// and none for an empty path.
 func (l Line[T]) IntersectionPolyline(polyline Polyline[T]) []Point[T] {
 	return l.AppendIntersectionPolyline(nil, polyline)
 }
 
-// AppendIntersectionPolyline appends the points of IntersectionPolyline to dst and returns the
-// extended slice.
+// AppendIntersectionPolyline appends the points of IntersectionPolyline(polyline) to dst and
+// returns the extended slice.
 func (l Line[T]) AppendIntersectionPolyline(dst []Point[T], polyline Polyline[T]) []Point[T] {
 	bounds := polyline.Bounds()
 
@@ -287,8 +287,8 @@ func (l Line[T]) IntersectionCubicBezier(curve CubicBezier[T]) []Point[T] {
 	return l.AppendIntersectionCubicBezier(nil, curve)
 }
 
-// AppendIntersectionCubicBezier appends the points of IntersectionCubicBezier to dst and returns
-// the extended slice.
+// AppendIntersectionCubicBezier appends the points of IntersectionCubicBezier(curve) to dst and
+// returns the extended slice.
 func (l Line[T]) AppendIntersectionCubicBezier(dst []Point[T], curve CubicBezier[T]) []Point[T] {
 	bounds := curve.Bounds()
 
@@ -296,13 +296,13 @@ func (l Line[T]) AppendIntersectionCubicBezier(dst []Point[T], curve CubicBezier
 }
 
 // IntersectionPolygon returns the points where the line crosses the boundary of the polygon, in
-// order along Vector.
+// order along Vector, and none for an empty polygon.
 func (l Line[T]) IntersectionPolygon(polygon Polygon[T]) []Point[T] {
 	return l.AppendIntersectionPolygon(nil, polygon)
 }
 
-// AppendIntersectionPolygon appends the points of IntersectionPolygon to dst and returns the
-// extended slice.
+// AppendIntersectionPolygon appends the points of IntersectionPolygon(polygon) to dst and returns
+// the extended slice.
 func (l Line[T]) AppendIntersectionPolygon(dst []Point[T], polygon Polygon[T]) []Point[T] {
 	return l.span(polygon.minMax()).AppendIntersectionPolygon(dst, polygon)
 }
@@ -314,7 +314,7 @@ func (l Line[T]) IntersectionRectangle(rectangle Rectangle[T]) Pair[Point[T]] {
 }
 
 // IntersectionRegularPolygon returns the points where the line crosses the boundary of the regular
-// polygon, in order along Vector.
+// polygon, in order along Vector, and none for an empty polygon.
 func (l Line[T]) IntersectionRegularPolygon(polygon RegularPolygon[T]) Pair[Point[T]] {
 	return l.span(polygon.minMax()).IntersectionRegularPolygon(polygon)
 }
@@ -337,7 +337,8 @@ func (l Line[T]) ClipCircle(circle Circle[T]) (Segment[T], bool) {
 	return l.span(circle.minMax()).ClipCircle(circle)
 }
 
-// ClipCapsule returns the part of the line in the capsule, and false where they share no point.
+// ClipCapsule returns the part of the line in the capsule, running along Vector, and false where
+// they share no point.
 func (l Line[T]) ClipCapsule(capsule Capsule[T]) (Segment[T], bool) {
 	return l.span(capsule.minMax()).ClipCapsule(capsule)
 }
@@ -347,18 +348,19 @@ func (l Line[T]) ClipSector(sector Sector[T]) []Segment[T] {
 	return l.AppendClipSector(nil, sector)
 }
 
-// AppendClipSector appends the parts of ClipSector to dst and returns the extended slice.
+// AppendClipSector appends the parts of ClipSector(sector) to dst and returns the extended slice.
 func (l Line[T]) AppendClipSector(dst []Segment[T], sector Sector[T]) []Segment[T] {
 	return l.span(sector.minMax()).AppendClipSector(dst, sector)
 }
 
 // ClipPolygon returns the parts of the line in the polygon, in order and each running along
-// Vector.
+// Vector, and none for an empty polygon.
 func (l Line[T]) ClipPolygon(polygon Polygon[T]) []Segment[T] {
 	return l.AppendClipPolygon(nil, polygon)
 }
 
-// AppendClipPolygon appends the parts of ClipPolygon to dst and returns the extended slice.
+// AppendClipPolygon appends the parts of ClipPolygon(polygon) to dst and returns the extended
+// slice.
 func (l Line[T]) AppendClipPolygon(dst []Segment[T], polygon Polygon[T]) []Segment[T] {
 	return l.span(polygon.minMax()).AppendClipPolygon(dst, polygon)
 }
@@ -466,8 +468,8 @@ func (l Line[T]) touch(line Line[T]) (Point[T], bool) {
 	}
 }
 
-// Equal reports whether the lines have equal origin and direction. Lines of the same points with
-// another origin or a direction of another length are not equal.
+// Equal reports whether the lines have equal Origin and Vector. Lines of the same points with
+// another Origin or a Vector of another length are not equal.
 func (l Line[T]) Equal(line Line[T]) bool {
 	return l.Origin.Equal(line.Origin) && l.Vector.Equal(line.Vector)
 }

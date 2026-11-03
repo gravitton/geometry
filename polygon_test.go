@@ -784,7 +784,7 @@ func TestPolygon_AppendConvexHull(t *testing.T) {
 }
 
 func TestPolygon_Simplify(t *testing.T) {
-	t.Run("drops a vertex on the line between its neighbours", func(t *testing.T) {
+	t.Run("drops a vertex on the line between its neighbors", func(t *testing.T) {
 		geomtest.AssertPolygon(t, Pol([]Point[int]{Pt(0, 0), Pt(1, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2)}).Simplify(0), Pol(squareVertices()))
 	})
 	t.Run("drops a repeated vertex", func(t *testing.T) {
@@ -2255,11 +2255,11 @@ func TestPolygon_IsSimple(t *testing.T) {
 		assert.False(t, Pol(star).IsSimple())
 		assert.False(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 2), Pt(2, 0), Pt(0, 2)}).IsSimple())
 	})
-	t.Run("a vertex on an edge that is no neighbour is not", func(t *testing.T) {
+	t.Run("a vertex on an edge that is no neighbor is not", func(t *testing.T) {
 		assert.False(t, Pol([]Point[int]{Pt(0, 0), Pt(6, 0), Pt(6, 4), Pt(3, 0), Pt(0, 4)}).IsSimple())
 		assert.False(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(1, 1), Pt(2, 2), Pt(0, 2), Pt(1, 1)}).IsSimple())
 	})
-	t.Run("a vertex within the tolerance of an edge that is no neighbour is not", func(t *testing.T) {
+	t.Run("a vertex within the tolerance of an edge that is no neighbor is not", func(t *testing.T) {
 		assert.False(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(6.0, 0.0), Pt(6.0, 4.0), Pt(3.0, Delta/2), Pt(0.0, 4.0)}).IsSimple())
 		assert.True(t, Pol([]Point[float64]{Pt(0.0, 0.0), Pt(6.0, 0.0), Pt(6.0, 4.0), Pt(3.0, 2*Delta), Pt(0.0, 4.0)}).IsSimple())
 	})

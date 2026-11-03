@@ -5,8 +5,7 @@ import (
 	"math"
 )
 
-// Box is an axis-aligned box between a minimum and a maximum corner, the box Bounds returns on
-// every shape. It never turns; Rectangle is the shape that can.
+// Box is an axis-aligned box between a minimum and a maximum corner.
 //
 // Min is never past Max on either axis: the constructors order the corners. A box with Min past Max
 // written as a struct literal or decoded from JSON gives no meaningful answers until Canonical
@@ -64,8 +63,8 @@ func (b Box[T]) Size() Size[T] {
 }
 
 // Anchor returns the point of the boundary in the direction from the center: a corner for a
-// diagonal, the midpoint of an edge for a cardinal, and the Center for DirectionNone. Top is the side
-// of Min.Y, as drawn on a screen with Y pointing down.
+// diagonal, the midpoint of an edge for a cardinal, and the Center for DirectionNone. Top is the
+// side of Min.Y, as drawn on a screen with Y pointing down.
 func (b Box[T]) Anchor(direction Direction) Point[T] {
 	center := b.Center()
 
@@ -104,7 +103,7 @@ func (b Box[T]) Vertices() iter.Seq[Point[T]] {
 }
 
 // Edges returns an iterator over the edges in the order of Vertices, each from a corner to the next
-// and the last closing back to Min.
+// and the last closing back to Min. Segment.Normal of an edge points inward.
 func (b Box[T]) Edges() iter.Seq[Segment[T]] {
 	return func(yield func(Segment[T]) bool) {
 		corners := b.corners()
@@ -192,8 +191,8 @@ func (b Box[T]) AlignTo(direction Direction, point Point[T]) Box[T] {
 }
 
 // Clamp returns the box moved by the least distance that brings it within the given one, the
-// receiver when it already lies exactly within. On an axis along which it is the larger, it is
-// centered on the given box instead.
+// receiver when it already lies within. On an axis along which it is the larger, it is centered on
+// the given box instead.
 func (b Box[T]) Clamp(box Box[T]) Box[T] {
 	return b.Translate(b.clampOffset(box))
 }
@@ -231,7 +230,8 @@ func (b Box[T]) Resize(size Size[T]) Box[T] {
 }
 
 // Grow returns the box with each extent increased by the amount, clamped at zero, so each side
-// moves out by half of it. For integer T an odd amount moves one side a unit farther than the other; Outset moves a chosen side by a whole amount.
+// moves out by half of it. For integer T an odd amount moves one side a unit farther than the
+// other; Outset moves a chosen side by a whole amount.
 func (b Box[T]) Grow(amount T) Box[T] {
 	return b.Resize(b.Size().Grow(amount).AtLeastZero())
 }
@@ -243,14 +243,14 @@ func (b Box[T]) GrowXY(amountX, amountY T) Box[T] {
 }
 
 // Shrink returns the box with each extent decreased by the amount, clamped at zero, so each side
-// moves in by half of it and the box collapses onto its Center. For integer T an odd amount moves
-// one side a unit farther than the other; Inset moves a chosen side by a whole amount.
+// moves in by half of it until that extent collapses onto its Center. For integer T an odd amount
+// moves one side a unit farther than the other; Inset moves a chosen side by a whole amount.
 func (b Box[T]) Shrink(amount T) Box[T] {
 	return b.Resize(b.Size().Shrink(amount).AtLeastZero())
 }
 
-// ShrinkXY returns the box with its extents decreased by the amounts, clamped at zero. For integer T
-// an odd amount moves one side a unit farther than the other.
+// ShrinkXY returns the box with its extents decreased by the amounts, clamped at zero. For integer
+// T an odd amount moves one side a unit farther than the other.
 func (b Box[T]) ShrinkXY(amountX, amountY T) Box[T] {
 	return b.Resize(b.Size().ShrinkXY(amountX, amountY).AtLeastZero())
 }
@@ -552,8 +552,8 @@ func (b Box[T]) Polygon() Polygon[T] {
 }
 
 // Rectangle returns the box as a rectangle with no angle, the inverse of Rectangle.Bounds for a
-// rectangle that is not rotated. For float T its corners, placed again from the center and the
-// size, can move by an ulp.
+// rectangle that is not turned. For float T its corners, placed again from the center and the size,
+// can move by an ulp.
 func (b Box[T]) Rectangle() Rectangle[T] {
 	return Rectangle[T]{b.Center(), b.Size(), 0}
 }

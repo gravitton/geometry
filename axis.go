@@ -50,7 +50,7 @@ func (a Axis) Perpendicular() Axis {
 }
 
 // Direction returns the direction along the axis with the sign: positive is DirectionRight on the
-// horizontal axis and DirectionDown on the vertical one.
+// horizontal axis and DirectionDown on the vertical one. AxisNone gives DirectionNone.
 func (a Axis) Direction(positive bool) Direction {
 	direction := a.direction()
 	if !positive {
