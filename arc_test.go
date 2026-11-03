@@ -340,6 +340,12 @@ func TestArc_Nearest(t *testing.T) {
 	})
 	t.Run("the center is given the start", func(t *testing.T) {
 		geomtest.AssertPoint(t, a.Nearest(Pt(0.0, 0.0)), Pt(5.0, 0.0))
+		assert.Equal(t, Ac(Pt(0.0, 0.0), 7.3, 0, 0.3).Nearest(Pt(0.0, 0.0)), Ac(Pt(0.0, 0.0), 7.3, 0, 0.3).Start())
+	})
+	t.Run("the center of every arc is given its start", func(t *testing.T) {
+		for _, a := range arcFixtures {
+			assert.Equal(t, a.Nearest(a.Center), a.Start(), a.String())
+		}
 	})
 	t.Run("int is rounded once", func(t *testing.T) {
 		geomtest.AssertPoint(t, Ac(Pt(0, 0), 5, 0, Pi/2).Nearest(Pt(7, 7)), Pt(4, 4))
@@ -364,6 +370,12 @@ func TestArc_NearestFraction(t *testing.T) {
 		geomtest.AssertNumber(t, a.NearestFraction(Pt(-5.0, 0.0)), 1.0)
 		geomtest.AssertNumber(t, a.NearestFraction(Pt(0.0, -3.0)), 0.0)
 		geomtest.AssertNumber(t, a.NearestFraction(Pt(0.0, 0.0)), 0.0)
+		assert.Equal(t, Ac(Pt(0.0, 0.0), 7.3, 0, 0.3).NearestFraction(Pt(0.0, 0.0)), 0.0)
+	})
+	t.Run("the center of every arc is at fraction zero", func(t *testing.T) {
+		for _, a := range arcFixtures {
+			assert.Equal(t, a.NearestFraction(a.Center), 0.0, a.String())
+		}
 	})
 	t.Run("a sweep the other way counts from its own start", func(t *testing.T) {
 		geomtest.AssertNumber(t, a.Reverse().NearestFraction(Pt(0.0, 9.0)), 0.0)
@@ -593,6 +605,10 @@ func TestArc_String(t *testing.T) {
 	t.Run("float", func(t *testing.T) {
 		assert.Equal(t, Ac(Pt(1.5, 2), 0.25, 0, 3).String(), "Arc((1.50,2.00);0.25;0.00;3.00)")
 	})
+	t.Run("a zero sweep is left out, and the angle with it where that is zero too", func(t *testing.T) {
+		assert.Equal(t, Ac(Pt(1, 2), 5, 0.5, 0).String(), "Arc((1,2);5;0.50)")
+		assert.Equal(t, Ac(Pt(1, 2), 5, 0, 0).String(), "Arc((1,2);5)")
+	})
 	t.Run("allocates the string alone", func(t *testing.T) {
 		assertStringAllocation(t, Ac(Pt(1, 2), 5, 0.5, -1.5).String)
 	})
@@ -608,6 +624,10 @@ func TestArc_JSON(t *testing.T) {
 	})
 	t.Run("an angle of zero is left out", func(t *testing.T) {
 		assert.JSON(t, Ac(Pt(1, 2), 5, 0, 1.5), `{"x":1,"y":2,"r":5,"s":1.5}`)
+	})
+	t.Run("a sweep of zero is left out", func(t *testing.T) {
+		assert.JSON(t, Ac(Pt(1, 2), 5, 0.5, 0), `{"x":1,"y":2,"r":5,"a":0.5}`)
+		assert.JSON(t, Ac(Pt(1, 2), 5, 0, 0), `{"x":1,"y":2,"r":5}`)
 	})
 	t.Run("round-trip", func(t *testing.T) {
 		for _, arc := range arcFixtures {

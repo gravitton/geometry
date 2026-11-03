@@ -19,6 +19,7 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 
 ### Changed
 - Require `assert` v1.7.0 for the tests
+- `Sector` and `Arc` leave a zero sweep out of their JSON, and their `String` drops trailing zeros as `RegularPolygon.String` does
 - **breaking** Every panic value is an `error` rather than a string; a `recover` that asserted a string must assert an `error`
 
 ### Fixed
@@ -28,6 +29,7 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 - `EqualRelative` and `EpsilonRelative` keep the tolerance of `Epsilon` for an infinity, which equalled every value
 - `Mod` panics with `ErrDivisionByZero` for a zero `m`, where it panicked with a runtime error
 - `ClipPolygon` on `Segment`, `Ray` and `Line` gives the stretch along a flat polygon, where it gave none or a part of zero length
+- `Arc.Nearest` and `Arc.NearestFraction` give Start for the center, where rounding could give End
 
 ## [v1.17.0](https://github.com/gravitton/geometry/compare/v1.16.0...v1.17.0) (2026-10-15)
 

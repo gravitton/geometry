@@ -22,7 +22,7 @@ type Arc[T Number] struct {
 	Center Point[T] `json:",embed"`
 	Radius T        `json:"r"`
 	Angle  float64  `json:"a,omitzero"`
-	Sweep  float64  `json:"s"`
+	Sweep  float64  `json:"s,omitzero"`
 }
 
 // Ac is shorthand for Arc{center, radius, angle, sweep}, with the radius taken absolute.
@@ -311,12 +311,14 @@ func (a Arc[T]) nearest(point Point[float64]) (Point[float64], float64) {
 // angle where the sweep covers the direction, else the nearer end, Start where both are exactly as
 // near.
 func (a Arc[T]) fraction(point Point[float64]) float64 {
-	turn := math.Abs(a.turn())
+	offset := point.Subtract(a.Center.Float())
+	if !offset.hasDirection() {
+		return 0
+	}
 
-	if offset := point.Subtract(a.Center.Float()); offset.hasDirection() {
-		if swept := a.swept(offset.Angle()); swept <= turn {
-			return ratio(swept, turn)
-		}
+	turn := math.Abs(a.turn())
+	if swept := a.swept(offset.Angle()); swept <= turn {
+		return ratio(swept, turn)
 	}
 
 	if a.pointAt(1).DistanceSquaredTo(point) < a.pointAt(0).DistanceSquaredTo(point) {
@@ -432,17 +434,23 @@ func (a Arc[T]) pieces(tolerance float64) float64 {
 	return pieces
 }
 
-// String returns the arc by its center, radius, angle and sweep: Arc((x,y);r;a;s).
+// String returns the arc as Arc((x,y);r), center and radius, with the angle appended as
+// Arc((x,y);r;a) for a turned arc or a nonzero sweep, and the sweep after it as
+// Arc((x,y);r;a;s) where it is not zero.
 func (a Arc[T]) String() string {
 	buf := make([]byte, 0, stringSize)
 	buf = append(buf, "Arc("...)
 	buf = a.Center.appendString(buf)
 	buf = append(buf, ';')
 	buf = appendString(buf, a.Radius)
-	buf = append(buf, ';')
-	buf = appendString(buf, a.Angle)
-	buf = append(buf, ';')
-	buf = appendString(buf, a.Sweep)
+	if a.Sweep != 0 || a.Angle != 0 {
+		buf = append(buf, ';')
+		buf = appendString(buf, a.Angle)
+	}
+	if a.Sweep != 0 {
+		buf = append(buf, ';')
+		buf = appendString(buf, a.Sweep)
+	}
 	buf = append(buf, ')')
 
 	return string(buf)
