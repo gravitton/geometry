@@ -1007,6 +1007,13 @@ func TestSector_String(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		assert.Equal(t, Sect(Pt(1, 2), 5, 0.5, -1.5).String(), "Sect((1,2);5;0.50;-1.50)")
 	})
+	t.Run("a zero angle prints before a sweep", func(t *testing.T) {
+		assert.Equal(t, Sect(Pt(1, 2), 5, 0, 1.5).String(), "Sect((1,2);5;0.00;1.50)")
+	})
+	t.Run("a zero sweep is left out, and the angle with it where that is zero too", func(t *testing.T) {
+		assert.Equal(t, Sect(Pt(1, 2), 5, 0.5, 0).String(), "Sect((1,2);5;0.50)")
+		assert.Equal(t, Sect(Pt(1, 2), 5, 0, 0).String(), "Sect((1,2);5)")
+	})
 	t.Run("allocates the string alone", func(t *testing.T) {
 		assertStringAllocation(t, Sect(Pt(1, 2), 5, 0.5, -1.5).String)
 	})
@@ -1019,6 +1026,11 @@ func TestSector_JSON(t *testing.T) {
 		var s Sector[int]
 		assert.NoError(t, json.Unmarshal([]byte(`{"x":1,"y":2,"r":5,"a":0.5,"s":-1.5}`), &s))
 		geomtest.AssertSector(t, s, Sect(Pt(1, 2), 5, 0.5, -1.5))
+	})
+	t.Run("an angle and a sweep of zero are left out", func(t *testing.T) {
+		assert.JSON(t, Sect(Pt(1, 2), 5, 0, 1.5), `{"x":1,"y":2,"r":5,"s":1.5}`)
+		assert.JSON(t, Sect(Pt(1, 2), 5, 0.5, 0), `{"x":1,"y":2,"r":5,"a":0.5}`)
+		assert.JSON(t, Sect(Pt(1, 2), 5, 0, 0), `{"x":1,"y":2,"r":5}`)
 	})
 	t.Run("round-trip", func(t *testing.T) {
 		for _, sector := range sectorFixtures() {

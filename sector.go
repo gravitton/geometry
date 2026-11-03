@@ -23,7 +23,7 @@ type Sector[T Number] struct {
 	Center Point[T] `json:",embed"`
 	Radius T        `json:"r"`
 	Angle  float64  `json:"a,omitzero"`
-	Sweep  float64  `json:"s"`
+	Sweep  float64  `json:"s,omitzero"`
 }
 
 // Sect is shorthand for Sector{center, radius, angle, sweep}, with the radius taken absolute.
@@ -908,17 +908,23 @@ func (s Sector[T]) Float() Sector[float64] {
 	return Sector[float64]{s.Center.Float(), float64(s.Radius), s.Angle, s.Sweep}
 }
 
-// String returns the sector in the form of its constructor: Sect((x,y);r;a;s).
+// String returns the sector as Sect((x,y);r), center and radius, with the angle appended as
+// Sect((x,y);r;a) for a turned sector or a nonzero sweep, and the sweep after it as
+// Sect((x,y);r;a;s) where it is not zero.
 func (s Sector[T]) String() string {
 	buf := make([]byte, 0, stringSize)
 	buf = append(buf, "Sect("...)
 	buf = s.Center.appendString(buf)
 	buf = append(buf, ';')
 	buf = appendString(buf, s.Radius)
-	buf = append(buf, ';')
-	buf = appendString(buf, s.Angle)
-	buf = append(buf, ';')
-	buf = appendString(buf, s.Sweep)
+	if s.Sweep != 0 || s.Angle != 0 {
+		buf = append(buf, ';')
+		buf = appendString(buf, s.Angle)
+	}
+	if s.Sweep != 0 {
+		buf = append(buf, ';')
+		buf = appendString(buf, s.Sweep)
+	}
 	buf = append(buf, ')')
 
 	return string(buf)
