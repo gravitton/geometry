@@ -474,8 +474,9 @@ type container[T Number] interface {
 	ContainsBox(box Box[T]) bool
 }
 
-// isKind reports whether the shape is one of the kinds this package names, the only shapes
-// Intersects and Contains read named methods of.
+// isKind reports whether the shape is one of the kinds this package names with the methods of an
+// intersector or a container, the only shapes Intersects and Contains read named methods of. An
+// Ellipse has neither, so it is not among them.
 func isKind[T Number](shape Shape[T]) bool {
 	switch shape.(type) {
 	case Circle[T]:
@@ -493,8 +494,6 @@ func isKind[T Number](shape Shape[T]) bool {
 	case RegularPolygon[T]:
 		return true
 	case Box[T]:
-		return true
-	case Ellipse[T]:
 		return true
 	default:
 		return false
