@@ -9,6 +9,7 @@
 </a>
 
 [![Latest Stable Version][ico-release]][link-release]
+[![Go Version][ico-go-version]][link-go]
 [![Build Status][ico-workflow]][link-workflow]
 [![Coverage Status][ico-coverage]][link-coverage]
 [![Go Dev Reference][ico-go-dev-reference]][link-go-dev-reference]
@@ -578,14 +579,16 @@ Full reference: [pkg.go.dev][link-go-dev-reference].
 The MIT License (MIT). Please see [License File][link-licence] for more information.
 
 
-[ico-license]:              https://img.shields.io/github/license/gravitton/geometry.svg?style=flat-square&color=blue
+[ico-license]:              https://img.shields.io/github/license/gravitton/geometry.svg?style=flat-square&color=lightgrey
 [ico-workflow]:             https://img.shields.io/github/actions/workflow/status/gravitton/geometry/main.yml?branch=main&style=flat-square
-[ico-release]:              https://img.shields.io/github/v/release/gravitton/geometry?style=flat-square&color=blue
-[ico-go-dev-reference]:     https://img.shields.io/badge/go.dev-reference-blue?style=flat-square
+[ico-release]:              https://img.shields.io/github/v/release/gravitton/geometry?style=flat-square&color=e8883a
+[ico-go-version]:           https://img.shields.io/github/go-mod/go-version/gravitton/geometry?style=flat-square&color=007d9c
+[ico-go-dev-reference]:     https://img.shields.io/badge/go.dev-reference-007d9c?style=flat-square
 [ico-coverage]:             https://img.shields.io/coverallsCoverage/github/gravitton/geometry?style=flat-square
 
 [link-author]:              https://github.com/gravitton
 [link-release]:             https://github.com/gravitton/geometry/releases
+[link-go]:                  https://go.dev/doc/devel/release
 [link-contributors]:        https://github.com/gravitton/geometry/contributors
 [link-licence]:             ./LICENSE.md
 [link-changelog]:           ./CHANGELOG.md
