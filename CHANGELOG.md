@@ -21,7 +21,7 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 - Require `assert` v1.7.0 for the tests
 - `Sector` and `Arc` leave a zero sweep out of their JSON, and their `String` drops trailing zeros as `RegularPolygon.String` does
 - **breaking** Every panic value is an `error` rather than a string; a `recover` that asserted a string must assert an `error`
-- CI runs the shared workflow of `gravitton/.github`, with the same steps
+- CI runs the shared workflow of `gravitton/.github`, with the same steps, and can be started by hand
 
 ### Fixed
 - `Pair` methods read a `Count` below zero as no item and one above two as both, where they panicked
