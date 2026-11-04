@@ -88,8 +88,9 @@
 //     included, and a zero m to [Mod];
 //   - [ErrSingularMatrix] for a singular matrix to [Matrix.Inverse] (check [Matrix.IsInvertible]);
 //   - [ErrNonFinite] for NaN or ±Inf stored into an integer T by [Cast], so through Multiply, Lerp,
-//     Rotate or Transform of an integer value and Int of a float one, and an integer
-//     [RegularPolygon] with a non-finite Angle or Phase;
+//     Rotate or Transform of an integer value and Int of a float one, an integer [Sector] or [Arc]
+//     with a non-finite Angle or a NaN Sweep, and an integer [RegularPolygon] with a non-finite
+//     Angle or Phase;
 //   - [ErrUnknownOrientation] for an [Orientation] other than [OrientationFlatTop] or
 //     [OrientationPointyTop] to [RegularPolygonOrientationPhase] and every function built on it;
 //   - [ErrCountMismatch] for a differing vertex count to [Polygon.Lerp], [RegularPolygon.Lerp] and

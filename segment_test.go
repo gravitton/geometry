@@ -1924,6 +1924,7 @@ func TestSegment_IntersectionEllipse(t *testing.T) {
 		geomtest.AssertVertices(t, Seg(Pt(0.0, -3.0), Pt(0.0, 3.0)).IntersectionEllipse(flat).AppendTo(nil), []Point[float64]{Pt(0.0, 0.0)})
 		geomtest.AssertVertices(t, Seg(Pt(-6.0, 0.0), Pt(6.0, 0.0)).IntersectionEllipse(flat).AppendTo(nil), []Point[float64]{Pt(-4.0, 0.0), Pt(4.0, 0.0)})
 		geomtest.AssertVertices(t, Seg(Pt(4.0+1e-12, -3.0), Pt(4.0+1e-12, 3.0)).IntersectionEllipse(flat).AppendTo(nil), []Point[float64]{Pt(4.0, 0.0)})
+		geomtest.AssertVertices(t, Seg(Pt(2.0, -2.0), Pt(-2.0, -6.0)).IntersectionEllipse(Ell(Pt(0.0, -4.0), Sz(2.0, 0.0), Pi/4)).AppendTo(nil), []Point[float64]{Pt(math.Sqrt2, -4+math.Sqrt2), Pt(-math.Sqrt2, -4-math.Sqrt2)})
 		geomtest.AssertVertices(t, Seg(Pt(0.0, 0.0), Pt(2.0, 2.0)).IntersectionEllipse(Ell(Pt(1.0, 1.0), Sz(0.0, 0.0), 0)).AppendTo(nil), []Point[float64]{Pt(1.0, 1.0)})
 		geomtest.AssertVertices(t, Seg(Pt(-1.0, 1.0), Pt(3.0, 1.0)).IntersectionEllipse(Ell(Pt(1.0, 1.0), Sz(0.0, 0.0), 0)).AppendTo(nil), []Point[float64]{Pt(1.0, 1.0)})
 	})
@@ -2501,6 +2502,30 @@ func TestSegment_ClipEllipse(t *testing.T) {
 	})
 	t.Run("apart gives none", func(t *testing.T) {
 		assert.Nil(t, partsOf(Seg(Pt(-8.0, 3.0), Pt(8.0, 3.0)).ClipEllipse(ellipse)))
+	})
+	t.Run("along a turned degenerate ellipse gives the stretch they share", func(t *testing.T) {
+		flat := Ell(Pt(0.0, -4.0), Sz(2.0, 0.0), Pi/4)
+
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(2.0, -2.0), Pt(-2.0, -6.0)).ClipEllipse(flat)), []Segment[float64]{Seg(Pt(math.Sqrt2, -4+math.Sqrt2), Pt(-math.Sqrt2, -4-math.Sqrt2))})
+		geomtest.AssertSegments(t, partsOf(Seg(Pt(-1.0, 5.0), Pt(5.0, -1.0)).ClipEllipse(Ell(Pt(4.0, 0.0), Sz(3.0, 0.0), 7*Pi/4))), []Segment[float64]{Seg(Pt(4-1.5*math.Sqrt2, 1.5*math.Sqrt2), Pt(5.0, -1.0))})
+	})
+	t.Run("along a degenerate ellipse at any angle gives its segment", func(t *testing.T) {
+		center := Pt(1.0, -2.0)
+		for step := range 16 {
+			angle := float64(step) * Pi / 8
+			axis := Vec(math.Cos(angle), math.Sin(angle))
+			for _, size := range []Size[float64]{Sz(3.0, 0.0), Sz(0.0, 3.0)} {
+				along := axis
+				if size.Width == 0 {
+					along = axis.Normal()
+				}
+
+				flat := Ell(center, size, angle)
+				segment := Seg(center.Add(along.Multiply(5.0)), center.Add(along.Multiply(-5.0)))
+
+				geomtest.AssertSegments(t, partsOf(segment.ClipEllipse(flat)), []Segment[float64]{Seg(center.Add(along.Multiply(3.0)), center.Add(along.Multiply(-3.0)))}, fmt.Sprintf("%s → %s: ", segment, flat))
+			}
+		}
 	})
 	t.Run("int rounds the crossings", func(t *testing.T) {
 		geomtest.AssertSegments(t, partsOf(Seg(Pt(-10, 1), Pt(10, 1)).ClipEllipse(Ell(Pt(0, 0), Sz(4, 2), 0))), []Segment[int]{Seg(Pt(-3, 1), Pt(3, 1))})

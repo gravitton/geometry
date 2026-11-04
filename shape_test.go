@@ -940,6 +940,27 @@ func TestContains(t *testing.T) {
 		assert.False(t, Contains[float64](Pol(reverse(polygon.Points)), Ell(Pt(3.0, 2.5), Sz(2.5, 1.0), 0)))
 		assert.True(t, Contains[float64](Ell(Pt(3.0, 3.0), Sz(10.0, 10.0), 0), polygon))
 	})
+	t.Run("an int shape outside a polygon that is not convex is not held, though the middle of its supports rounds inside", func(t *testing.T) {
+		polygon := Pol([]Point[int]{Pt(4, 0), Pt(3, 5), Pt(-4, -3), Pt(8, 0), Pt(9, 6), Pt(5, 7)})
+
+		assert.False(t, Contains[int](polygon, foreignShape[int]{Sect(Pt(9, 1), 2, 4.01, 0.55)}))
+	})
+	t.Run("an int shape lies within a polygon that is not convex as its float64 copy does", func(t *testing.T) {
+		polygon := Pol([]Point[int]{Pt(4, 0), Pt(3, 5), Pt(-4, -3), Pt(8, 0), Pt(9, 6), Pt(5, 7)})
+
+		for x := -4; x <= 10; x++ {
+			for y := -3; y <= 7; y++ {
+				for _, angle := range []float64{0, 1.59, 3.31, 4.01} {
+					for radius := 1; radius <= 3; radius++ {
+						sector := Sect(Pt(x, y), radius, angle, 0.55)
+						message := fmt.Sprintf("%v → %v: ", polygon, sector)
+
+						assert.Equal(t, Contains[int](polygon, foreignShape[int]{sector}), Contains[float64](polygon.Float(), foreignShape[float64]{sector.Float()}), message)
+					}
+				}
+			}
+		}
+	})
 	t.Run("the notch of a sector past half a turn is not filled in", func(t *testing.T) {
 		sector := notchedSector()
 
@@ -1115,6 +1136,31 @@ func TestIntersects(t *testing.T) {
 		assert.True(t, Intersects[float64](polygon, Ell(Pt(3.0, 5.0), Sz(1.5, 1.0), 0)))
 		assert.True(t, Intersects[float64](Ell(Pt(1.0, 1.0), Sz(0.5, 0.25), 1.0), polygon))
 		assert.True(t, Intersects[float64](Ell(Pt(3.0, 3.0), Sz(10.0, 10.0), 0), polygon))
+	})
+	t.Run("an int shape within a polygon that is not convex is met, though its point nearest a vertex rounds outside", func(t *testing.T) {
+		polygon := Pol([]Point[int]{Pt(-8, -7), Pt(-20, 9), Pt(6, 0), Pt(5, 16), Pt(19, 18), Pt(-16, 20), Pt(-9, 10)})
+		ellipse := Ell(Pt(-1, 6), Sz(4, 3), 0.19)
+
+		assert.True(t, Intersects[int](polygon, ellipse))
+		assert.True(t, Intersects[int](ellipse, polygon))
+		assert.Equal(t, Distance[int](polygon, ellipse), 0.0)
+	})
+	t.Run("an int shape meets a polygon that is not convex as its float64 copy does", func(t *testing.T) {
+		polygon := Pol([]Point[int]{Pt(-8, -7), Pt(-20, 9), Pt(6, 0), Pt(5, 16), Pt(19, 18), Pt(-16, 20), Pt(-9, 10)})
+
+		for x := -20; x <= 20; x++ {
+			for y := -8; y <= 20; y++ {
+				for _, angle := range []float64{0, 0.19, 2.27, 5.2} {
+					for _, size := range []Size[int]{Sz(1, 0), Sz(1, 2), Sz(4, 3)} {
+						ellipse := Ell(Pt(x, y), size, angle)
+						message := fmt.Sprintf("%v → %v: ", polygon, ellipse)
+
+						assert.Equal(t, Intersects[int](polygon, ellipse), Intersects[float64](polygon.Float(), ellipse.Float()), message)
+						assert.Equal(t, Intersects[int](polygon, foreignShape[int]{ellipse}), Intersects[int](polygon, ellipse), message+"foreign: ")
+					}
+				}
+			}
+		}
 	})
 	t.Run("the notch of a sector past half a turn is not filled in", func(t *testing.T) {
 		sector := notchedSector()

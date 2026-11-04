@@ -1171,14 +1171,14 @@ func (p Polygon[T]) containsSupport(shape Shape[T]) bool {
 
 	middle := shape.Support(Vector[float64]{1, 0}).Lerp(shape.Support(Vector[float64]{-1, 0}), 0.5)
 
-	return p.Contains(middle.Cast[T]())
+	return p.containsPoint(middle, 0)
 }
 
 // intersectsSupport reports whether the polygon, one with a vertex, and a shape no Intersects
 // method names share a point: a vertex inside the shape, a point of the shape inside the polygon,
 // or an edge meeting the shape by their supports, so a notch is not filled in.
 func (p Polygon[T]) intersectsSupport(shape Shape[T]) bool {
-	if shape.Contains(p.Points[0]) || p.Contains(shape.Nearest(p.Points[0])) {
+	if shape.Contains(p.Points[0]) || p.containsPoint(shape.Support(Vector[float64]{1, 0}), 0) {
 		return true
 	}
 

@@ -63,7 +63,17 @@ func TestArcThrough(t *testing.T) {
 }
 
 func TestArc_Start(t *testing.T) {
-	geomtest.AssertPoint(t, quarterArc().Start(), Pt(5.0, 0.0))
+	t.Run("at the angle", func(t *testing.T) {
+		geomtest.AssertPoint(t, quarterArc().Start(), Pt(5.0, 0.0))
+	})
+	t.Run("int with a non-finite angle or a NaN sweep panics", func(t *testing.T) {
+		assert.PanicsWith(t, func() {
+			Ac(Pt(0, 0), 3, math.Inf(1), 1).Start()
+		}, ErrNonFinite)
+		assert.PanicsWith(t, func() {
+			Ac(Pt(0, 0), 3, 0, math.NaN()).Bounds()
+		}, ErrNonFinite)
+	})
 }
 
 func TestArc_End(t *testing.T) {

@@ -473,7 +473,7 @@ func (e Ellipse[T]) fractions(segment Segment[T]) ([2]float64, int) {
 // reach of Support along its normal, so the miss compares two lengths as it does for a circle. A
 // chord whose ends would compare Equal is a tangent and gives one fraction twice: the middle of the
 // chord, or for a line passing outside within the tolerance, its point nearest the boundary. A line
-// along the segment of a degenerate ellipse gives the ends of that segment.
+// along the segment of a degenerate ellipse, within the tolerance, gives the ends of that segment.
 func (e Ellipse[T]) chord(segment Segment[T]) (float64, float64, bool) {
 	cast := segment.Float()
 	direction := cast.Vector().Rotate(-e.Angle)
@@ -498,7 +498,8 @@ func (e Ellipse[T]) chord(segment Segment[T]) (float64, float64, bool) {
 	}
 
 	along := -offset.Dot(direction) / lengthSquared
-	if across == 0 {
+	area := float64(w * h)
+	if area == 0 && lessOrEqualSquared(widthSquared, 0, epsilon) {
 		reach := math.Hypot(float64(direction.X*w), float64(direction.Y*h)) / lengthSquared
 		if lessOrEqualSquared(4*float64(reach*reach)*lengthSquared, 0, epsilon) {
 			return along, along, true
@@ -510,7 +511,6 @@ func (e Ellipse[T]) chord(segment Segment[T]) (float64, float64, bool) {
 	ox, oy := float64(offset.X*h), float64(offset.Y*w)
 	middle := -(float64(ox*x) + float64(oy*y)) / across
 
-	area := float64(w * h)
 	halfSquared := float64(area*area) * max(widthSquared-gapSquared, 0) / float64(widthSquared*widthSquared)
 	if lessOrEqualSquared(4*halfSquared, 0, epsilon) {
 		if gapSquared <= widthSquared {

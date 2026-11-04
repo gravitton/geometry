@@ -76,6 +76,14 @@ func TestSector_Bounds(t *testing.T) {
 	t.Run("the whole disc", func(t *testing.T) {
 		geomtest.AssertBox(t, Sect(Pt(1.0, 2.0), 5.0, 1, 2*Pi).Bounds(), Circ(Pt(1.0, 2.0), 5.0).Bounds())
 	})
+	t.Run("int with a non-finite angle or a NaN sweep panics", func(t *testing.T) {
+		assert.PanicsWith(t, func() {
+			Sect(Pt(10, 6), 9, math.Inf(-1), 0).Bounds()
+		}, ErrNonFinite)
+		assert.PanicsWith(t, func() {
+			Sect(Pt(0, 0), 3, 0, math.NaN()).Bounds()
+		}, ErrNonFinite)
+	})
 }
 
 func TestSector_BoundingCircle(t *testing.T) {
