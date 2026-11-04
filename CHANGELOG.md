@@ -32,6 +32,7 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 - `Arc.Nearest` and `Arc.NearestFraction` give Start for the center, where rounding could give End
 - `Intersects`, `Contains`, `Distance` and `Nearest` of an integer polygon that is not convex against an `Ellipse` or a shape of another package read the shape's point unrounded, where rounding it to the lattice could miss a shape within the polygon or hold one outside it
 - `ClipEllipse` and `IntersectionEllipse` on `Segment`, `Ray` and `Line` give the stretch along a turned degenerate ellipse, where rounding of the turn read it as a tangent at the center
+- `Polygon.Union` gives one corner where a vertex lies a rounding off a vertex of the other polygon or off its own neighbour, where one order of the polygons gave an outline crossing itself with the corner twice
 - The package doc names the `ErrNonFinite` panic of an integer `Sector` or `Arc` with a non-finite `Angle` or a NaN `Sweep`
 
 ## [v1.17.0](https://github.com/gravitton/geometry/compare/v1.16.0...v1.17.0) (2026-10-15)

@@ -2057,6 +2057,53 @@ func TestPolygon_Union(t *testing.T) {
 		assert.True(t, ok)
 		assert.True(t, union.IsSimple(), union.String())
 	})
+	t.Run("a corner a rounding off the other's is one corner, in either order", func(t *testing.T) {
+		for _, pair := range [][2]Polygon[float64]{
+			{Pol([]Point[float64]{Pt(-2.0, 4.0), Pt(-3.0, 0.0), Pt(2.0, -4.0)}), Pol([]Point[float64]{Pt(2.0000000000000004, -4.0), Pt(4.0, 1.0), Pt(1.0, -4.0)})},
+			{Pol([]Point[float64]{Pt(4.0, -4.0), Pt(-1.0, 0.0), Pt(4.0, -1.0)}), Pol([]Point[float64]{Pt(3.9999999999999996, -1.0), Pt(-3.0, -3.0), Pt(-1.0, -4.0)})},
+			{Pol([]Point[float64]{Pt(-4.000000000000001, -1.0000000000000002), Pt(-4.0, -0.9999999999999997), Pt(2.0, 3.0), Pt(-3.0, 3.0)}), Pol([]Point[float64]{Pt(-4.0, -1.0), Pt(5.0, 2.0), Pt(2.0, 3.0), Pt(1.0, 3.0)})},
+			{Pol([]Point[float64]{Pt(-4.0, -2.0), Pt(5.0, 3.0), Pt(-4.0, 2.0)}), Pol([]Point[float64]{Pt(-4.0, -2.0), Pt(-3.9999999999999996, -1.9999999999999998), Pt(4.0, 3.0), Pt(-1.0, 2.0)})},
+		} {
+			a, b := pair[0], pair[1]
+			shared, _ := a.ClipPolygon(b)
+			area := a.Area() + b.Area() - shared.Area()
+
+			for _, order := range [][2]Polygon[float64]{{a, b}, {b, a}, {a.Reverse(), b}, {a, b.Reverse()}} {
+				union, ok := order[0].Union(order[1])
+				message := fmt.Sprintf("%s ∪ %s: ", order[0], order[1])
+
+				assert.True(t, ok, message)
+				assert.True(t, union.IsSimple(), message+union.String())
+				geomtest.AssertNumber(t, union.Area(), area, message)
+			}
+		}
+	})
+	t.Run("corners moved by a few roundings give the union of the corners unmoved", func(t *testing.T) {
+		a := Pol([]Point[float64]{Pt(-3.0, 0.0), Pt(2.0, -4.0), Pt(1.0, 3.0)})
+		b := Pol([]Point[float64]{Pt(2.0, -4.0), Pt(5.0, 1.0), Pt(1.0, 3.0), Pt(-1.0, -2.0)})
+		exact, _ := a.Union(b)
+
+		for _, dx := range []int{-3, -1, 0, 1, 3} {
+			for _, dy := range []int{-3, -1, 0, 1, 3} {
+				for corner := range 2 {
+					points := slices.Clone(b.Points)
+					shared := []int{0, 2}[corner]
+					points[shared] = Pt(nextafter(points[shared].X, dx), nextafter(points[shared].Y, dy))
+					moved := Pol(points)
+
+					for _, order := range [][2]Polygon[float64]{{a, moved}, {moved, a}, {a.Reverse(), moved}, {moved.Reverse(), a}} {
+						union, ok := order[0].Union(order[1])
+						message := fmt.Sprintf("%s ∪ %s: ", order[0], order[1])
+
+						assert.True(t, ok, message)
+						assert.True(t, union.IsSimple(), message+union.String())
+						assert.Equal(t, len(union.Points), len(exact.Points), message+union.String())
+						geomtest.AssertNumber(t, union.Area(), exact.Area(), message)
+					}
+				}
+			}
+		}
+	})
 	t.Run("int is the float union with its crossings rounded", func(t *testing.T) {
 		for x := -3; x <= 3; x++ {
 			for y := -3; y <= 3; y++ {
@@ -2118,6 +2165,18 @@ func roundedOutline(polygon Polygon[float64]) Polygon[int] {
 	}
 
 	return Pol(points)
+}
+
+func nextafter(value float64, steps int) float64 {
+	toward := math.Inf(1)
+	if steps < 0 {
+		toward, steps = math.Inf(-1), -steps
+	}
+	for range steps {
+		value = math.Nextafter(value, toward)
+	}
+
+	return value
 }
 
 func TestPolygon_AppendUnion(t *testing.T) {

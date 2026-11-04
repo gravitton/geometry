@@ -131,16 +131,17 @@ func (u *unionOutline[T]) orient() {
 }
 
 // cross adds the crossings along the edge of the first polygon in order from its start, each found
-// as the nearest past the one before. Its end is left to the edge that starts there.
+// as the nearest past the one before. Its end, and a crossing Equal to it, is left to the edge that
+// starts there.
 func (u *unionOutline[T]) cross(edge Segment[T]) {
-	start, along := edge.Start.Float(), edge.Float().Vector()
+	start, end, along := edge.Start.Float(), edge.End.Float(), edge.Float().Vector()
 	reach := along.LengthSquared()
 
 	last := -1.0
 	for {
 		nearest, found := Point[float64]{}, reach
 		for other := range u.b.Edges() {
-			if point, ok := edge.intersectionSegment(other); ok {
+			if point, ok := edge.intersectionSegment(other); ok && !point.Equal(end) {
 				if at := point.Subtract(start).Dot(along); last < at && at < found {
 					nearest, found = point, at
 				}
@@ -186,12 +187,23 @@ func (u *unionOutline[T]) append(point Point[T]) {
 // precedes reports whether the angle of a comes before that of b, both measured from the reference
 // the way the first polygon winds.
 func (u *unionOutline[T]) precedes(a, b Point[float64]) bool {
-	va, vb := u.offset(a), u.offset(b)
+	va, vb := u.measured(a), u.measured(b)
 	if wrapA, wrapB := compareAngles(va, u.reference) < 0, compareAngles(vb, u.reference) < 0; wrapA != wrapB {
 		return wrapB
 	}
 
 	return compareAngles(va, vb) < 0
+}
+
+// measured returns the offset the angle of the point is read from: the reference for a point Equal
+// to the first vertex of the first polygon, so a rounding cannot carry it a whole turn on, else its
+// own offset.
+func (u *unionOutline[T]) measured(point Point[float64]) Vector[float64] {
+	if point.Equal(u.a.Points[0].Float()) {
+		return u.reference
+	}
+
+	return u.offset(point)
 }
 
 // offset returns the point less the center, mirrored across X for a polygon of
