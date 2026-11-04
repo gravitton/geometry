@@ -9,10 +9,10 @@
 </a>
 
 [![Latest Stable Version][ico-release]][link-release]
-[![Go Version][ico-go-version]][link-go]
 [![Build Status][ico-workflow]][link-workflow]
 [![Coverage Status][ico-coverage]][link-coverage]
 [![Go Dev Reference][ico-go-dev-reference]][link-go-dev-reference]
+[![Go Version][ico-go-version]][link-go]
 [![Software License][ico-license]][link-licence]
 
 Generic, immutable 2D geometry library for game development
