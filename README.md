@@ -15,7 +15,7 @@
 [![Go Version][ico-go-version]][link-go]
 [![Software License][ico-license]][link-licence]
 
-Generic, immutable 2D geometry library for game development
+Generic, immutable 2D geometry: shapes, paths, collisions and raycasts
 
 <hr>
 
@@ -27,9 +27,9 @@ Generic, immutable 2D geometry library for game development
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/hero-light.svg">
   <img alt="One map of walls, rough ground, a scout and a goal, drawn three times: the scout's view, cast by rays that stop at the walls, and one ray reflected until it reaches the goal, with the normal where it lands; the scout swept toward the goal until it hits a wall, with the normal of the hit; and a curved route to the goal, a first try crossing a wall where IntersectionSegment finds it, the second clear of the walls" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/hero-light.svg">
 </picture>
+<br>
+<sub>Every picture in this README is drawn from what the package returns for the call beside it.</sub>
 </p>
-
-Every picture in this README is drawn from what the package returns for the call beside it.
 
 ## Features
 
@@ -586,12 +586,10 @@ The MIT License (MIT). Please see [License File][link-licence] for more informat
 [ico-go-dev-reference]:     https://img.shields.io/badge/go.dev-reference-007d9c?style=flat-square
 [ico-coverage]:             https://img.shields.io/coverallsCoverage/github/gravitton/geometry?style=flat-square
 
-[link-author]:              https://github.com/gravitton
 [link-release]:             https://github.com/gravitton/geometry/releases
 [link-go]:                  https://go.dev/doc/devel/release
 [link-contributors]:        https://github.com/gravitton/geometry/contributors
 [link-licence]:             ./LICENSE.md
-[link-changelog]:           ./CHANGELOG.md
 [link-workflow]:            https://github.com/gravitton/geometry/actions
 [link-go-dev-reference]:    https://pkg.go.dev/github.com/gravitton/geometry
 [link-coverage]:            https://coveralls.io/github/gravitton/geometry
