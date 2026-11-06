@@ -1,123 +1,123 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="960" height="259" viewBox="0 0 960 259" role="img">
-<g transform="translate(18.7 15.6) scale(20) translate(0.066 -0.000)">
-<line x1="0.000" y1="0.000" x2="0.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="1.000" y1="0.000" x2="1.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="2.000" y1="0.000" x2="2.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="3.000" y1="0.000" x2="3.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="4.000" y1="0.000" x2="4.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="5.000" y1="0.000" x2="5.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="6.000" y1="0.000" x2="6.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="7.000" y1="0.000" x2="7.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="8.000" y1="0.000" x2="8.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="9.000" y1="0.000" x2="9.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="10.000" y1="0.000" x2="10.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="0.000" y1="0.000" x2="10.000" y2="0.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="0.000" y1="1.000" x2="10.000" y2="1.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="2.000" x2="10.000" y2="2.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="3.000" x2="10.000" y2="3.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="4.000" x2="10.000" y2="4.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="5.000" x2="10.000" y2="5.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="0.000" y1="6.000" x2="10.000" y2="6.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="7.000" x2="10.000" y2="7.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="8.000" x2="10.000" y2="8.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="9.000" x2="10.000" y2="9.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="10.000" x2="10.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
-<polygon points="3.000,1.536 7.000,1.536 9.000,5.000 7.000,8.464 3.000,8.464 1.000,5.000" fill="#cfe4f3" stroke="#2f7fb8" stroke-width="0.100" stroke-linejoin="round"/>
-<text x="2.560" y="0.984" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="0.600" text-anchor="middle" fill="#8a8178" stroke="#fdfbf9" stroke-width="0.200" stroke-linejoin="round" paint-order="stroke">0</text>
-<text x="7.440" y="0.984" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="0.600" text-anchor="middle" fill="#8a8178" stroke="#fdfbf9" stroke-width="0.200" stroke-linejoin="round" paint-order="stroke">1</text>
-<text x="9.880" y="5.210" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="0.600" text-anchor="middle" fill="#8a8178" stroke="#fdfbf9" stroke-width="0.200" stroke-linejoin="round" paint-order="stroke">2</text>
-<text x="7.440" y="9.436" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="0.600" text-anchor="middle" fill="#8a8178" stroke="#fdfbf9" stroke-width="0.200" stroke-linejoin="round" paint-order="stroke">3</text>
-<text x="2.560" y="9.436" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="0.600" text-anchor="middle" fill="#8a8178" stroke="#fdfbf9" stroke-width="0.200" stroke-linejoin="round" paint-order="stroke">4</text>
-<text x="0.120" y="5.210" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="0.600" text-anchor="middle" fill="#8a8178" stroke="#fdfbf9" stroke-width="0.200" stroke-linejoin="round" paint-order="stroke">5</text>
-<circle cx="5.000" cy="1.536" r="0.200" fill="#e8883a"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="255" viewBox="0 0 960 255" role="img">
+<g transform="translate(32.0 15.6)">
+<line x1="0.0" y1="0.0" x2="0.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="1" stroke-linecap="round"/>
+<line x1="20.0" y1="0.0" x2="20.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="40.0" y1="0.0" x2="40.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="60.0" y1="0.0" x2="60.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="80.0" y1="0.0" x2="80.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="100.0" y1="0.0" x2="100.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="1" stroke-linecap="round"/>
+<line x1="120.0" y1="0.0" x2="120.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="140.0" y1="0.0" x2="140.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="160.0" y1="0.0" x2="160.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="180.0" y1="0.0" x2="180.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="200.0" y1="0.0" x2="200.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="1" stroke-linecap="round"/>
+<line x1="0.0" y1="0.0" x2="200.0" y2="0.0" fill="none" stroke="#cfc7be" stroke-width="1" stroke-linecap="round"/>
+<line x1="0.0" y1="20.0" x2="200.0" y2="20.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="40.0" x2="200.0" y2="40.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="60.0" x2="200.0" y2="60.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="80.0" x2="200.0" y2="80.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="100.0" x2="200.0" y2="100.0" fill="none" stroke="#cfc7be" stroke-width="1" stroke-linecap="round"/>
+<line x1="0.0" y1="120.0" x2="200.0" y2="120.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="140.0" x2="200.0" y2="140.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="160.0" x2="200.0" y2="160.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="180.0" x2="200.0" y2="180.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="200.0" x2="200.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="1" stroke-linecap="round"/>
+<polygon points="60.0,30.7 140.0,30.7 180.0,100.0 140.0,169.3 60.0,169.3 20.0,100.0" fill="#cfe4f3" stroke="#2f7fb8" stroke-width="2" stroke-linejoin="round"/>
+<text x="51.2" y="19.7" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" text-anchor="middle" stroke="#fdfbf9" stroke-width="4" stroke-linejoin="round" paint-order="stroke" fill="#8a8178">0</text>
+<text x="148.8" y="19.7" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" text-anchor="middle" stroke="#fdfbf9" stroke-width="4" stroke-linejoin="round" paint-order="stroke" fill="#8a8178">1</text>
+<text x="197.6" y="104.2" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" text-anchor="middle" stroke="#fdfbf9" stroke-width="4" stroke-linejoin="round" paint-order="stroke" fill="#8a8178">2</text>
+<text x="148.8" y="188.7" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" text-anchor="middle" stroke="#fdfbf9" stroke-width="4" stroke-linejoin="round" paint-order="stroke" fill="#8a8178">3</text>
+<text x="51.2" y="188.7" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" text-anchor="middle" stroke="#fdfbf9" stroke-width="4" stroke-linejoin="round" paint-order="stroke" fill="#8a8178">4</text>
+<text x="2.4" y="104.2" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" text-anchor="middle" stroke="#fdfbf9" stroke-width="4" stroke-linejoin="round" paint-order="stroke" fill="#8a8178">5</text>
+<circle cx="100.0" cy="30.7" r="4" fill="#e8883a" stroke="none"/>
 </g>
-<text x="120.0" y="239.2" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" text-anchor="middle" fill="#8a8178">FlatTop</text>
-<g transform="translate(261.3 12.0) scale(20) translate(-0.000 0.180)">
-<line x1="0.000" y1="0.000" x2="0.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="1.000" y1="0.000" x2="1.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="2.000" y1="0.000" x2="2.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="3.000" y1="0.000" x2="3.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="4.000" y1="0.000" x2="4.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="5.000" y1="0.000" x2="5.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="6.000" y1="0.000" x2="6.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="7.000" y1="0.000" x2="7.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="8.000" y1="0.000" x2="8.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="9.000" y1="0.000" x2="9.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="10.000" y1="0.000" x2="10.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="0.000" y1="0.000" x2="10.000" y2="0.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="0.000" y1="1.000" x2="10.000" y2="1.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="2.000" x2="10.000" y2="2.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="3.000" x2="10.000" y2="3.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="4.000" x2="10.000" y2="4.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="5.000" x2="10.000" y2="5.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="0.000" y1="6.000" x2="10.000" y2="6.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="7.000" x2="10.000" y2="7.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="8.000" x2="10.000" y2="8.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="9.000" x2="10.000" y2="9.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="10.000" x2="10.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
-<polygon points="5.000,1.000 8.464,3.000 8.464,7.000 5.000,9.000 1.536,7.000 1.536,3.000" fill="#cfe4f3" stroke="#2f7fb8" stroke-width="0.100" stroke-linejoin="round"/>
-<text x="5.000" y="0.330" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="0.600" text-anchor="middle" fill="#8a8178" stroke="#fdfbf9" stroke-width="0.200" stroke-linejoin="round" paint-order="stroke">0</text>
-<text x="9.226" y="2.770" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="0.600" text-anchor="middle" fill="#8a8178" stroke="#fdfbf9" stroke-width="0.200" stroke-linejoin="round" paint-order="stroke">1</text>
-<text x="9.226" y="7.650" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="0.600" text-anchor="middle" fill="#8a8178" stroke="#fdfbf9" stroke-width="0.200" stroke-linejoin="round" paint-order="stroke">2</text>
-<text x="5.000" y="10.090" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="0.600" text-anchor="middle" fill="#8a8178" stroke="#fdfbf9" stroke-width="0.200" stroke-linejoin="round" paint-order="stroke">3</text>
-<text x="0.774" y="7.650" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="0.600" text-anchor="middle" fill="#8a8178" stroke="#fdfbf9" stroke-width="0.200" stroke-linejoin="round" paint-order="stroke">4</text>
-<text x="0.774" y="2.770" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="0.600" text-anchor="middle" fill="#8a8178" stroke="#fdfbf9" stroke-width="0.200" stroke-linejoin="round" paint-order="stroke">5</text>
-<circle cx="5.000" cy="1.000" r="0.200" fill="#e8883a"/>
+<text x="132.0" y="239.2" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" text-anchor="middle" fill="#8a8178">FlatTop</text>
+<g transform="translate(265.3 15.6)">
+<line x1="0.0" y1="0.0" x2="0.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="1" stroke-linecap="round"/>
+<line x1="20.0" y1="0.0" x2="20.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="40.0" y1="0.0" x2="40.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="60.0" y1="0.0" x2="60.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="80.0" y1="0.0" x2="80.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="100.0" y1="0.0" x2="100.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="1" stroke-linecap="round"/>
+<line x1="120.0" y1="0.0" x2="120.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="140.0" y1="0.0" x2="140.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="160.0" y1="0.0" x2="160.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="180.0" y1="0.0" x2="180.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="200.0" y1="0.0" x2="200.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="1" stroke-linecap="round"/>
+<line x1="0.0" y1="0.0" x2="200.0" y2="0.0" fill="none" stroke="#cfc7be" stroke-width="1" stroke-linecap="round"/>
+<line x1="0.0" y1="20.0" x2="200.0" y2="20.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="40.0" x2="200.0" y2="40.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="60.0" x2="200.0" y2="60.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="80.0" x2="200.0" y2="80.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="100.0" x2="200.0" y2="100.0" fill="none" stroke="#cfc7be" stroke-width="1" stroke-linecap="round"/>
+<line x1="0.0" y1="120.0" x2="200.0" y2="120.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="140.0" x2="200.0" y2="140.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="160.0" x2="200.0" y2="160.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="180.0" x2="200.0" y2="180.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="200.0" x2="200.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="1" stroke-linecap="round"/>
+<polygon points="100.0,20.0 169.3,60.0 169.3,140.0 100.0,180.0 30.7,140.0 30.7,60.0" fill="#cfe4f3" stroke="#2f7fb8" stroke-width="2" stroke-linejoin="round"/>
+<text x="100.0" y="6.6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" text-anchor="middle" stroke="#fdfbf9" stroke-width="4" stroke-linejoin="round" paint-order="stroke" fill="#8a8178">0</text>
+<text x="184.5" y="55.4" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" text-anchor="middle" stroke="#fdfbf9" stroke-width="4" stroke-linejoin="round" paint-order="stroke" fill="#8a8178">1</text>
+<text x="184.5" y="153.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" text-anchor="middle" stroke="#fdfbf9" stroke-width="4" stroke-linejoin="round" paint-order="stroke" fill="#8a8178">2</text>
+<text x="100.0" y="201.8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" text-anchor="middle" stroke="#fdfbf9" stroke-width="4" stroke-linejoin="round" paint-order="stroke" fill="#8a8178">3</text>
+<text x="15.5" y="153.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" text-anchor="middle" stroke="#fdfbf9" stroke-width="4" stroke-linejoin="round" paint-order="stroke" fill="#8a8178">4</text>
+<text x="15.5" y="55.4" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" text-anchor="middle" stroke="#fdfbf9" stroke-width="4" stroke-linejoin="round" paint-order="stroke" fill="#8a8178">5</text>
+<circle cx="100.0" cy="20.0" r="4" fill="#e8883a" stroke="none"/>
 </g>
-<text x="361.3" y="239.2" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" text-anchor="middle" fill="#8a8178">PointyTop</text>
-<g transform="translate(501.3 15.6) scale(20) translate(-0.000 -0.000)">
-<line x1="0.000" y1="0.000" x2="0.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="1.000" y1="0.000" x2="1.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="2.000" y1="0.000" x2="2.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="3.000" y1="0.000" x2="3.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="4.000" y1="0.000" x2="4.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="5.000" y1="0.000" x2="5.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="6.000" y1="0.000" x2="6.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="7.000" y1="0.000" x2="7.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="8.000" y1="0.000" x2="8.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="9.000" y1="0.000" x2="9.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="10.000" y1="0.000" x2="10.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="0.000" y1="0.000" x2="10.000" y2="0.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="0.000" y1="1.000" x2="10.000" y2="1.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="2.000" x2="10.000" y2="2.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="3.000" x2="10.000" y2="3.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="4.000" x2="10.000" y2="4.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="5.000" x2="10.000" y2="5.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="0.000" y1="6.000" x2="10.000" y2="6.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="7.000" x2="10.000" y2="7.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="8.000" x2="10.000" y2="8.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="9.000" x2="10.000" y2="9.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="10.000" x2="10.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
-<polygon points="9.500,5.000 9.423,5.459 9.196,5.903 8.826,6.316 8.326,6.684 7.712,6.995 7.006,7.238 6.231,7.405 5.415,7.489 4.585,7.489 3.769,7.405 2.994,7.238 2.288,6.995 1.674,6.684 1.174,6.316 0.804,5.903 0.577,5.459 0.500,5.000 0.577,4.541 0.804,4.097 1.174,3.684 1.674,3.316 2.288,3.005 2.994,2.762 3.769,2.595 4.585,2.511 5.415,2.511 6.231,2.595 7.006,2.762 7.712,3.005 8.326,3.316 8.826,3.684 9.196,4.097 9.423,4.541" fill="none" stroke="#8a8178" stroke-width="0.075" stroke-dasharray="0.250 0.200" stroke-linejoin="round"/>
-<polygon points="2.750,2.835 7.250,2.835 9.500,5.000 7.250,7.165 2.750,7.165 0.500,5.000" fill="#cfe4f3" stroke="#2f7fb8" stroke-width="0.100" stroke-linejoin="round"/>
+<text x="365.3" y="239.2" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" text-anchor="middle" fill="#8a8178">PointyTop</text>
+<g transform="translate(497.3 15.6)">
+<line x1="0.0" y1="0.0" x2="0.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="1" stroke-linecap="round"/>
+<line x1="20.0" y1="0.0" x2="20.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="40.0" y1="0.0" x2="40.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="60.0" y1="0.0" x2="60.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="80.0" y1="0.0" x2="80.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="100.0" y1="0.0" x2="100.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="1" stroke-linecap="round"/>
+<line x1="120.0" y1="0.0" x2="120.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="140.0" y1="0.0" x2="140.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="160.0" y1="0.0" x2="160.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="180.0" y1="0.0" x2="180.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="200.0" y1="0.0" x2="200.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="1" stroke-linecap="round"/>
+<line x1="0.0" y1="0.0" x2="200.0" y2="0.0" fill="none" stroke="#cfc7be" stroke-width="1" stroke-linecap="round"/>
+<line x1="0.0" y1="20.0" x2="200.0" y2="20.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="40.0" x2="200.0" y2="40.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="60.0" x2="200.0" y2="60.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="80.0" x2="200.0" y2="80.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="100.0" x2="200.0" y2="100.0" fill="none" stroke="#cfc7be" stroke-width="1" stroke-linecap="round"/>
+<line x1="0.0" y1="120.0" x2="200.0" y2="120.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="140.0" x2="200.0" y2="140.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="160.0" x2="200.0" y2="160.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="180.0" x2="200.0" y2="180.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="200.0" x2="200.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="1" stroke-linecap="round"/>
+<polygon points="190.0,100.0 188.5,109.2 183.9,118.1 176.5,126.3 166.5,133.7 154.2,139.9 140.1,144.8 124.6,148.1 108.3,149.8 91.7,149.8 75.4,148.1 59.9,144.8 45.8,139.9 33.5,133.7 23.5,126.3 16.1,118.1 11.5,109.2 10.0,100.0 11.5,90.8 16.1,81.9 23.5,73.7 33.5,66.3 45.8,60.1 59.9,55.2 75.4,51.9 91.7,50.2 108.3,50.2 124.6,51.9 140.1,55.2 154.2,60.1 166.5,66.3 176.5,73.7 183.9,81.9 188.5,90.8" fill="none" stroke="#8a8178" stroke-width="1.5" stroke-dasharray="5 4" stroke-linejoin="round"/>
+<polygon points="55.0,56.7 145.0,56.7 190.0,100.0 145.0,143.3 55.0,143.3 10.0,100.0" fill="#cfe4f3" stroke="#2f7fb8" stroke-width="2" stroke-linejoin="round"/>
 </g>
-<text x="601.3" y="239.2" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" text-anchor="middle" fill="#8a8178">Sz(4.5, 2.5)</text>
-<g transform="translate(741.3 15.6) scale(20) translate(-0.000 -0.000)">
-<line x1="0.000" y1="0.000" x2="0.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="1.000" y1="0.000" x2="1.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="2.000" y1="0.000" x2="2.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="3.000" y1="0.000" x2="3.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="4.000" y1="0.000" x2="4.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="5.000" y1="0.000" x2="5.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="6.000" y1="0.000" x2="6.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="7.000" y1="0.000" x2="7.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="8.000" y1="0.000" x2="8.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="9.000" y1="0.000" x2="9.000" y2="10.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="10.000" y1="0.000" x2="10.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="0.000" y1="0.000" x2="10.000" y2="0.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="0.000" y1="1.000" x2="10.000" y2="1.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="2.000" x2="10.000" y2="2.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="3.000" x2="10.000" y2="3.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="4.000" x2="10.000" y2="4.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="5.000" x2="10.000" y2="5.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="0.000" y1="6.000" x2="10.000" y2="6.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="7.000" x2="10.000" y2="7.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="8.000" x2="10.000" y2="8.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="9.000" x2="10.000" y2="9.000" stroke="#cfc7be" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="10.000" x2="10.000" y2="10.000" stroke="#cfc7be" stroke-width="0.050" stroke-linecap="round"/>
-<polygon points="9.500,5.000 6.391,7.378 1.359,6.469 1.359,3.531 6.391,2.622" fill="none" stroke="#cfc7be" stroke-width="0.075" stroke-linejoin="round"/>
-<polygon points="8.714,6.412 3.731,7.399 0.502,5.071 3.489,2.645 8.564,3.474" fill="none" stroke="#e8883a" stroke-width="0.100" stroke-linejoin="round"/>
-<polygon points="8.714,7.541 4.805,7.748 1.166,4.157 2.825,1.732 7.490,3.823" fill="#cfe4f3" stroke="#2f7fb8" stroke-width="0.100" stroke-linejoin="round"/>
+<text x="597.3" y="239.2" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" text-anchor="middle" fill="#8a8178">Sz(4.5, 2.5)</text>
+<g transform="translate(729.3 15.6)">
+<line x1="0.0" y1="0.0" x2="0.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="1" stroke-linecap="round"/>
+<line x1="20.0" y1="0.0" x2="20.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="40.0" y1="0.0" x2="40.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="60.0" y1="0.0" x2="60.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="80.0" y1="0.0" x2="80.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="100.0" y1="0.0" x2="100.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="1" stroke-linecap="round"/>
+<line x1="120.0" y1="0.0" x2="120.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="140.0" y1="0.0" x2="140.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="160.0" y1="0.0" x2="160.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="180.0" y1="0.0" x2="180.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="200.0" y1="0.0" x2="200.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="1" stroke-linecap="round"/>
+<line x1="0.0" y1="0.0" x2="200.0" y2="0.0" fill="none" stroke="#cfc7be" stroke-width="1" stroke-linecap="round"/>
+<line x1="0.0" y1="20.0" x2="200.0" y2="20.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="40.0" x2="200.0" y2="40.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="60.0" x2="200.0" y2="60.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="80.0" x2="200.0" y2="80.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="100.0" x2="200.0" y2="100.0" fill="none" stroke="#cfc7be" stroke-width="1" stroke-linecap="round"/>
+<line x1="0.0" y1="120.0" x2="200.0" y2="120.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="140.0" x2="200.0" y2="140.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="160.0" x2="200.0" y2="160.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="180.0" x2="200.0" y2="180.0" fill="none" stroke="#cfc7be" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="200.0" x2="200.0" y2="200.0" fill="none" stroke="#cfc7be" stroke-width="1" stroke-linecap="round"/>
+<polygon points="190.0,100.0 127.8,147.6 27.2,129.4 27.2,70.6 127.8,52.4" fill="none" stroke="#cfc7be" stroke-width="1.5" stroke-linejoin="round"/>
+<polygon points="174.3,128.2 74.6,148.0 10.0,101.4 69.8,52.9 171.3,69.5" fill="none" stroke="#e8883a" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="174.3,150.8 96.1,155.0 23.3,83.1 56.5,34.6 149.8,76.5" fill="#cfe4f3" stroke="#2f7fb8" stroke-width="2" stroke-linejoin="round"/>
 </g>
-<text x="841.3" y="239.2" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" text-anchor="middle" fill="#8a8178">phase or angle 0.6</text>
+<text x="829.3" y="239.2" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" text-anchor="middle" fill="#8a8178">phase or angle 0.6</text>
 </svg>

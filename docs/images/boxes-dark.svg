@@ -1,59 +1,59 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="960" height="324" viewBox="0 0 960 324" role="img">
-<g transform="translate(221.8 12.0) scale(20) translate(-0.000 -0.000)">
-<line x1="0.000" y1="0.000" x2="0.000" y2="15.000" stroke="#5a524b" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="1.000" y1="0.000" x2="1.000" y2="15.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="2.000" y1="0.000" x2="2.000" y2="15.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="3.000" y1="0.000" x2="3.000" y2="15.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="4.000" y1="0.000" x2="4.000" y2="15.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="5.000" y1="0.000" x2="5.000" y2="15.000" stroke="#5a524b" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="6.000" y1="0.000" x2="6.000" y2="15.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="7.000" y1="0.000" x2="7.000" y2="15.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="8.000" y1="0.000" x2="8.000" y2="15.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="9.000" y1="0.000" x2="9.000" y2="15.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="10.000" y1="0.000" x2="10.000" y2="15.000" stroke="#5a524b" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="11.000" y1="0.000" x2="11.000" y2="15.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="12.000" y1="0.000" x2="12.000" y2="15.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="13.000" y1="0.000" x2="13.000" y2="15.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="14.000" y1="0.000" x2="14.000" y2="15.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="15.000" y1="0.000" x2="15.000" y2="15.000" stroke="#5a524b" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="16.000" y1="0.000" x2="16.000" y2="15.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="17.000" y1="0.000" x2="17.000" y2="15.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="18.000" y1="0.000" x2="18.000" y2="15.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="19.000" y1="0.000" x2="19.000" y2="15.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="20.000" y1="0.000" x2="20.000" y2="15.000" stroke="#5a524b" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="21.000" y1="0.000" x2="21.000" y2="15.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="22.000" y1="0.000" x2="22.000" y2="15.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="23.000" y1="0.000" x2="23.000" y2="15.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="24.000" y1="0.000" x2="24.000" y2="15.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="25.000" y1="0.000" x2="25.000" y2="15.000" stroke="#5a524b" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="0.000" y1="0.000" x2="25.000" y2="0.000" stroke="#5a524b" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="0.000" y1="1.000" x2="25.000" y2="1.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="2.000" x2="25.000" y2="2.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="3.000" x2="25.000" y2="3.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="4.000" x2="25.000" y2="4.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="5.000" x2="25.000" y2="5.000" stroke="#5a524b" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="0.000" y1="6.000" x2="25.000" y2="6.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="7.000" x2="25.000" y2="7.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="8.000" x2="25.000" y2="8.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="9.000" x2="25.000" y2="9.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="10.000" x2="25.000" y2="10.000" stroke="#5a524b" stroke-width="0.050" stroke-linecap="round"/>
-<line x1="0.000" y1="11.000" x2="25.000" y2="11.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="12.000" x2="25.000" y2="12.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="13.000" x2="25.000" y2="13.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="14.000" x2="25.000" y2="14.000" stroke="#5a524b" stroke-width="0.020" stroke-linecap="round"/>
-<line x1="0.000" y1="15.000" x2="25.000" y2="15.000" stroke="#5a524b" stroke-width="0.050" stroke-linecap="round"/>
-<polygon points="0.000,0.000 20.000,0.000 20.000,12.000 0.000,12.000" fill="#221d19" stroke="#a39a90" stroke-width="0.100" stroke-linejoin="round"/>
-<polygon points="1.000,1.000 19.000,1.000 19.000,11.000 1.000,11.000" fill="none" stroke="#5a524b" stroke-width="0.075" stroke-dasharray="0.250 0.200" stroke-linejoin="round"/>
-<polygon points="0.000,0.000 6.000,0.000 6.000,2.000 0.000,2.000" fill="#234a66" stroke="#6bb4e3" stroke-width="0.100" stroke-linejoin="round"/>
-<polygon points="14.000,0.000 20.000,0.000 20.000,2.000 14.000,2.000" fill="#70451f" stroke="#e8883a" stroke-width="0.100" stroke-linejoin="round"/>
-<polygon points="17.000,8.000 24.000,8.000 24.000,11.000 17.000,11.000" fill="none" stroke="#a39a90" stroke-width="0.075" stroke-dasharray="0.250 0.200" stroke-linejoin="round"/>
-<polygon points="13.000,8.000 20.000,8.000 20.000,11.000 13.000,11.000" fill="#70451f" stroke="#e8883a" stroke-width="0.100" stroke-linejoin="round"/>
-<polygon points="17.000,8.000 20.000,8.000 20.000,11.000 17.000,11.000" fill="none" stroke="#7cc46a" stroke-width="0.125" stroke-linejoin="round"/>
-<text x="10.000" y="12.910" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="0.600" text-anchor="middle" fill="#f0e9e2" stroke="#221d19" stroke-width="0.200" stroke-linejoin="round" paint-order="stroke">view</text>
-<text x="3.000" y="1.210" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="0.600" text-anchor="middle" fill="#f0e9e2" stroke="#221d19" stroke-width="0.200" stroke-linejoin="round" paint-order="stroke">hud</text>
-<text x="17.000" y="2.910" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="0.600" text-anchor="middle" fill="#e8883a" stroke="#221d19" stroke-width="0.200" stroke-linejoin="round" paint-order="stroke">hud.AlignTo(TopRight, …)</text>
-<text x="24.700" y="9.710" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="0.600" text-anchor="start" fill="#f0e9e2" stroke="#221d19" stroke-width="0.200" stroke-linejoin="round" paint-order="stroke">tip</text>
-<text x="16.500" y="7.510" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="0.600" text-anchor="middle" fill="#e8883a" stroke="#221d19" stroke-width="0.200" stroke-linejoin="round" paint-order="stroke">tip.Clamp(view)</text>
-<text x="18.500" y="12.910" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="0.600" text-anchor="middle" fill="#7cc46a" stroke="#221d19" stroke-width="0.200" stroke-linejoin="round" paint-order="stroke">view.ClipBox(tip)</text>
+<g transform="translate(221.8 12.0)">
+<line x1="0.0" y1="0.0" x2="0.0" y2="300.0" fill="none" stroke="#5a524b" stroke-width="1" stroke-linecap="round"/>
+<line x1="20.0" y1="0.0" x2="20.0" y2="300.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="40.0" y1="0.0" x2="40.0" y2="300.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="60.0" y1="0.0" x2="60.0" y2="300.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="80.0" y1="0.0" x2="80.0" y2="300.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="100.0" y1="0.0" x2="100.0" y2="300.0" fill="none" stroke="#5a524b" stroke-width="1" stroke-linecap="round"/>
+<line x1="120.0" y1="0.0" x2="120.0" y2="300.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="140.0" y1="0.0" x2="140.0" y2="300.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="160.0" y1="0.0" x2="160.0" y2="300.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="180.0" y1="0.0" x2="180.0" y2="300.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="200.0" y1="0.0" x2="200.0" y2="300.0" fill="none" stroke="#5a524b" stroke-width="1" stroke-linecap="round"/>
+<line x1="220.0" y1="0.0" x2="220.0" y2="300.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="240.0" y1="0.0" x2="240.0" y2="300.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="260.0" y1="0.0" x2="260.0" y2="300.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="280.0" y1="0.0" x2="280.0" y2="300.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="300.0" y1="0.0" x2="300.0" y2="300.0" fill="none" stroke="#5a524b" stroke-width="1" stroke-linecap="round"/>
+<line x1="320.0" y1="0.0" x2="320.0" y2="300.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="340.0" y1="0.0" x2="340.0" y2="300.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="360.0" y1="0.0" x2="360.0" y2="300.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="380.0" y1="0.0" x2="380.0" y2="300.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="400.0" y1="0.0" x2="400.0" y2="300.0" fill="none" stroke="#5a524b" stroke-width="1" stroke-linecap="round"/>
+<line x1="420.0" y1="0.0" x2="420.0" y2="300.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="440.0" y1="0.0" x2="440.0" y2="300.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="460.0" y1="0.0" x2="460.0" y2="300.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="480.0" y1="0.0" x2="480.0" y2="300.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="500.0" y1="0.0" x2="500.0" y2="300.0" fill="none" stroke="#5a524b" stroke-width="1" stroke-linecap="round"/>
+<line x1="0.0" y1="0.0" x2="500.0" y2="0.0" fill="none" stroke="#5a524b" stroke-width="1" stroke-linecap="round"/>
+<line x1="0.0" y1="20.0" x2="500.0" y2="20.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="40.0" x2="500.0" y2="40.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="60.0" x2="500.0" y2="60.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="80.0" x2="500.0" y2="80.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="100.0" x2="500.0" y2="100.0" fill="none" stroke="#5a524b" stroke-width="1" stroke-linecap="round"/>
+<line x1="0.0" y1="120.0" x2="500.0" y2="120.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="140.0" x2="500.0" y2="140.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="160.0" x2="500.0" y2="160.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="180.0" x2="500.0" y2="180.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="200.0" x2="500.0" y2="200.0" fill="none" stroke="#5a524b" stroke-width="1" stroke-linecap="round"/>
+<line x1="0.0" y1="220.0" x2="500.0" y2="220.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="240.0" x2="500.0" y2="240.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="260.0" x2="500.0" y2="260.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="280.0" x2="500.0" y2="280.0" fill="none" stroke="#5a524b" stroke-width="0.4" stroke-linecap="round"/>
+<line x1="0.0" y1="300.0" x2="500.0" y2="300.0" fill="none" stroke="#5a524b" stroke-width="1" stroke-linecap="round"/>
+<polygon points="0.0,0.0 400.0,0.0 400.0,240.0 0.0,240.0" fill="#221d19" stroke="#a39a90" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="20.0,20.0 380.0,20.0 380.0,220.0 20.0,220.0" fill="none" stroke="#5a524b" stroke-width="1.5" stroke-dasharray="5 4" stroke-linejoin="round"/>
+<polygon points="0.0,0.0 120.0,0.0 120.0,40.0 0.0,40.0" fill="#234a66" stroke="#6bb4e3" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="280.0,0.0 400.0,0.0 400.0,40.0 280.0,40.0" fill="#70451f" stroke="#e8883a" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="340.0,160.0 480.0,160.0 480.0,220.0 340.0,220.0" fill="none" stroke="#a39a90" stroke-width="1.5" stroke-dasharray="5 4" stroke-linejoin="round"/>
+<polygon points="260.0,160.0 400.0,160.0 400.0,220.0 260.0,220.0" fill="#70451f" stroke="#e8883a" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="340.0,160.0 400.0,160.0 400.0,220.0 340.0,220.0" fill="none" stroke="#7cc46a" stroke-width="2.5" stroke-linejoin="round"/>
+<text x="200.0" y="258.2" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" text-anchor="middle" stroke="#221d19" stroke-width="4" stroke-linejoin="round" paint-order="stroke" fill="#f0e9e2">view</text>
+<text x="60.0" y="24.2" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" text-anchor="middle" stroke="#221d19" stroke-width="4" stroke-linejoin="round" paint-order="stroke" fill="#f0e9e2">hud</text>
+<text x="340.0" y="58.2" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" text-anchor="middle" stroke="#221d19" stroke-width="4" stroke-linejoin="round" paint-order="stroke" fill="#e8883a">hud.AlignTo(TopRight, …)</text>
+<text x="494.0" y="194.2" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" text-anchor="start" stroke="#221d19" stroke-width="4" stroke-linejoin="round" paint-order="stroke" fill="#f0e9e2">tip</text>
+<text x="330.0" y="150.2" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" text-anchor="middle" stroke="#221d19" stroke-width="4" stroke-linejoin="round" paint-order="stroke" fill="#e8883a">tip.Clamp(view)</text>
+<text x="370.0" y="258.2" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" text-anchor="middle" stroke="#221d19" stroke-width="4" stroke-linejoin="round" paint-order="stroke" fill="#7cc46a">view.ClipBox(tip)</text>
 </g>
 </svg>
