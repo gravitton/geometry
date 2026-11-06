@@ -7,7 +7,10 @@ import (
 	geom "github.com/gravitton/geometry"
 )
 
-const tileSize = 0.9
+const (
+	tileSize = 0.9
+	bodySize = 0.3
+)
 
 var heroMap = []string{
 	"...............",
@@ -33,16 +36,26 @@ type world struct {
 func hero(t theme) []*panel {
 	w := worldOf(heroMap)
 
-	return []*panel{w.view(t), w.sweep(t), w.clearance(t)}
+	return []*panel{w.view(t), w.sweep(t), w.curve(t)}
 }
 
 func (w world) view(t theme) *panel {
-	p := w.backdrop(t, "Raycast(ray, wall)")
+	p := w.backdrop(t, "Raycast(ray, wall), Reflect(normal)")
 	light := geom.Pol(sight(geom.Sect(w.scout, 6*tileSize, 0, 2*math.Pi), w.bounds, w.solids()))
 	p.area(light.Points, style{fill: t.accentSoft})
 	w.edges(p)
 	w.draw(p)
-	p.fill(geom.RegPol(w.scout, geom.SzU(0.35), 5, 0, -math.Pi/2), t.accent, t.accent)
+	angle, hits := w.aim()
+	from := w.scout
+	for _, hit := range hits {
+		p.line(from, hit.Point, style{stroke: t.accent, width: 2})
+		p.dot(hit.Point, t.accent)
+		from = hit.Point
+	}
+	last := hits[len(hits)-1]
+	p.arrow(last.Point, last.Point.Add(last.Normal.Multiply(0.9)), t.leaf, false)
+	p.fill(geom.Circ(w.goal, bodySize), t.cool, t.cool)
+	p.fill(geom.RegPol(w.scout, geom.SzU(0.35), 5, 0, angle), t.accent, t.accent)
 
 	return p
 }
@@ -50,7 +63,7 @@ func (w world) view(t theme) *panel {
 func (w world) sweep(t theme) *panel {
 	p := w.backdrop(t, "Sweep(scout, motion, wall)")
 	w.draw(p)
-	scout := geom.Circ(w.scout, 0.3)
+	scout := geom.Circ(w.scout, bodySize)
 	motion := w.goal.Subtract(w.scout)
 	p.arrow(w.scout, w.goal, t.muted, true)
 	if hit, ok := sweep(scout, motion, w.walls); ok {
@@ -59,19 +72,30 @@ func (w world) sweep(t theme) *panel {
 		p.dot(hit.Point, t.accent)
 	}
 	p.fill(scout, t.accent, t.accent)
-	p.fill(geom.Circ(w.goal, 0.3), t.cool, t.cool)
+	p.fill(geom.Circ(w.goal, bodySize), t.cool, t.cool)
 
 	return p
 }
 
-func (w world) clearance(t theme) *panel {
-	p := w.backdrop(t, "wall.Grow(radius)")
-	for _, wall := range w.walls {
-		p.area(wall.Grow(0.3).Polygon().Points, style{fill: t.coolSoft, stroke: t.cool, width: 1, dashed: true})
-	}
+func (w world) curve(t theme) *panel {
+	p := w.backdrop(t, "curve.IntersectionSegment(edge)")
 	w.draw(p)
-	p.fill(geom.Circ(w.scout, 0.3), t.accent, t.accent)
-	p.fill(geom.Circ(w.goal, 0.3), t.cool, t.cool)
+	blocked := geom.CubBez(w.scout, geom.Pt(6.0, 1.2), geom.Pt(9.6, 1.6), w.goal)
+	p.path(blocked.Polyline(tolerance).Points, style{stroke: t.muted, width: 1.5, dashed: true})
+	for _, wall := range w.walls {
+		for edge := range wall.Edges() {
+			for _, at := range blocked.IntersectionSegment(edge) {
+				p.dot(at, t.accent)
+			}
+		}
+	}
+	clear := geom.CubBez(w.scout, geom.Pt(8.4, 5.2), geom.Pt(9.6, 2.8), w.goal)
+	p.path([]point{clear.Start, clear.Control1, clear.Control2, clear.End}, style{stroke: t.muted, width: 1, dashed: true})
+	p.path(clear.Polyline(tolerance).Points, style{stroke: t.cool, width: 2.5})
+	p.ring(clear.Control1, t.muted)
+	p.ring(clear.Control2, t.muted)
+	p.fill(geom.Circ(w.scout, bodySize), t.accent, t.accent)
+	p.fill(geom.Circ(w.goal, bodySize), t.cool, t.cool)
 
 	return p
 }
@@ -107,6 +131,16 @@ func (w world) solids() []geom.Shape[float64] {
 	}
 
 	return solids
+}
+
+func (w world) fence() []geom.Shape[float64] {
+	b := w.bounds
+	return []geom.Shape[float64]{
+		geom.Bx(geom.Pt(b.Min.X-1, b.Min.Y-1), geom.Pt(b.Max.X+1, b.Min.Y)),
+		geom.Bx(geom.Pt(b.Min.X-1, b.Max.Y), geom.Pt(b.Max.X+1, b.Max.Y+1)),
+		geom.Bx(geom.Pt(b.Min.X-1, b.Min.Y), geom.Pt(b.Min.X, b.Max.Y)),
+		geom.Bx(geom.Pt(b.Max.X, b.Min.Y), geom.Pt(b.Max.X+1, b.Max.Y)),
+	}
 }
 
 func worldOf(rows []string) world {
@@ -163,4 +197,48 @@ func sweep(body geom.Circle[float64], motion geom.Vector[float64], walls []geom.
 	}
 
 	return nearest, found
+}
+
+func raycast(ray geom.Ray[float64], solids []geom.Shape[float64]) (geom.Hit[float64], bool) {
+	nearest, found := geom.Hit[float64]{}, false
+	for _, solid := range solids {
+		if hit, ok := geom.Raycast(ray, solid); ok && (!found || hit.Fraction < nearest.Fraction) {
+			nearest, found = hit, true
+		}
+	}
+
+	return nearest, found
+}
+
+func (w world) aim() (float64, []geom.Hit[float64]) {
+	for bounces := 2; bounces <= 4; bounces++ {
+		for step := range 3600 {
+			angle := float64(step) * 2 * math.Pi / 3600
+			hits := w.reflect(geom.Ry(w.scout, geom.VectorFromAngle(angle, 1.0)), bounces)
+			if len(hits) == bounces+1 && geom.Circ(w.goal, bodySize).Contains(hits[bounces].Point) {
+				return angle, hits
+			}
+		}
+	}
+
+	panic(fmt.Sprintf("diagrams: no ray from %s reaches the goal at %s in four bounces", w.scout, w.goal))
+}
+
+func (w world) reflect(ray geom.Ray[float64], bounces int) []geom.Hit[float64] {
+	goal := geom.Circ(w.goal, bodySize)
+	targets := append(append(w.solids(), w.fence()...), goal)
+	hits := make([]geom.Hit[float64], 0, bounces+1)
+	for range bounces + 1 {
+		hit, ok := raycast(ray, targets)
+		if !ok {
+			break
+		}
+		hits = append(hits, hit)
+		if goal.Contains(hit.Point) {
+			break
+		}
+		ray = geom.Ry(hit.Point.Add(hit.Normal.Multiply(0.01)), ray.Vector.Reflect(hit.Normal))
+	}
+
+	return hits
 }

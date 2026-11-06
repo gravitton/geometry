@@ -25,7 +25,7 @@ Generic, immutable 2D geometry library for game development
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/hero-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/hero-light.svg">
-  <img alt="One map of walls, rough ground, a scout and a goal, drawn three times: the scout's view, cast by rays that stop at the walls; the scout swept toward the goal until it hits a wall, with the normal of the hit; and the walls grown by the scout's radius" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/hero-light.svg">
+  <img alt="One map of walls, rough ground, a scout and a goal, drawn three times: the scout's view, cast by rays that stop at the walls, and one ray reflected until it reaches the goal, with the normal where it lands; the scout swept toward the goal until it hits a wall, with the normal of the hit; and a curved route to the goal, a first try crossing a wall where IntersectionSegment finds it, the second clear of the walls" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/hero-light.svg">
 </picture>
 </p>
 
