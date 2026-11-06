@@ -25,11 +25,11 @@ Generic, immutable 2D geometry library for game development
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/hero-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/hero-light.svg">
-  <img alt="A tile platformer level: a RegularPolygon sentry with a short Sector showing its facing lights the level with a view built from Raycasts that stop at the Box walls and the Polygon spikes in the pit, its facing ray reflected off the floor at the hit normal; a Capsule hero hides in a pillar's shadow; Circle coins are filled where the light Contains them and outlined in the dark" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/hero-light.svg">
+  <img alt="One map of walls, rough ground, a scout and a goal, drawn three times: the scout's view, cast by rays that stop at the walls; the scout swept toward the goal until it hits a wall, with the normal of the hit; and the walls grown by the scout's radius" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/hero-light.svg">
 </picture>
 </p>
 
-Every picture in this README is drawn from the package's own results: each point is what the code beside it returns.
+Every picture in this README is drawn from what the package returns for the call beside it.
 
 ## Features
 

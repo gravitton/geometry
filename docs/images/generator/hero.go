@@ -1,104 +1,138 @@
 package main
 
 import (
+	"fmt"
 	"math"
 
 	geom "github.com/gravitton/geometry"
 )
 
-const tileSize = 1.5
+const tileSize = 0.9
 
-func hero(t theme) []*panel {
-	p := newPanel(t, "")
-	scene := geom.Bx(geom.Pt(0.0, 0.0), geom.Pt(45.0, 15.0))
-	cells, walls := tilesOf([]string{
-		"..............................",
-		"..............................",
-		"..............................",
-		".............######...........",
-		"..............................",
-		".....####.....................",
-		"..............................",
-		"....................#.........",
-		"#...................#........#",
-		"###########....###############",
-	})
-
-	spikes := geom.Pol([]point{
-		geom.Pt(16.5, 15.0), geom.Pt(16.5, 14.4), geom.Pt(17.25, 13.65), geom.Pt(18.0, 14.4), geom.Pt(18.75, 13.65),
-		geom.Pt(19.5, 14.4), geom.Pt(20.25, 13.65), geom.Pt(21.0, 14.4), geom.Pt(21.75, 13.65), geom.Pt(22.5, 14.4),
-		geom.Pt(22.5, 15.0),
-	})
-	solids := []geom.Shape[float64]{spikes}
-	for _, wall := range walls {
-		solids = append(solids, wall)
-	}
-
-	view := geom.Sect(geom.Pt(39.75, 2.25), 48.0, math.Pi/2+0.25, math.Pi/2-0.15)
-	facing := view.Angle + view.Sweep/2
-	drone := geom.RegPol(view.Center, geom.SzU(0.7), 5, 0, facing)
-	light := geom.Pol(sight(view, scene, solids))
-	look := geom.Ry(view.Center, geom.VectorFromAngle(facing, 1.0))
-
-	hero := geom.Cap(geom.Pt(29.25, 12.15), geom.Pt(29.25, 13.05), 0.45)
-	coins := []geom.Circle[float64]{
-		geom.Circ(geom.Pt(35.25, 12.75), 0.375),
-		geom.Circ(geom.Pt(36.75, 12.75), 0.375),
-		geom.Circ(geom.Pt(38.25, 12.75), 0.375),
-	}
-
-	for _, cell := range cells {
-		p.area(cell.Polygon().Points, style{fill: t.cell})
-	}
-	p.area(light.Points, style{fill: t.accentSoft})
-	for _, cell := range cells {
-		p.area(cell.Polygon().Points, style{stroke: t.edge, width: 1})
-	}
-	vision := geom.Sect(view.Center, 6.0, view.Angle, view.Sweep)
-	p.area(vision.Polygon(tolerance).Points, style{stroke: t.accent, width: 1, dashed: true})
-	for _, wall := range walls {
-		p.area(wall.Polygon().Points, style{fill: t.wall, stroke: t.cell, width: 1.5})
-	}
-	p.area(spikes.Points, style{fill: t.coolSoft, stroke: t.cool, width: 1.5})
-
-	if hit, ok := raycast(look, solids); ok {
-		p.line(look.Origin, hit.Point, style{stroke: t.accent, width: 2})
-		bounce := geom.Ry(hit.Point.Add(hit.Normal.Multiply(0.01)), look.Vector.Reflect(hit.Normal))
-		if next, ok := raycast(bounce, solids); ok {
-			p.line(hit.Point, next.Point, style{stroke: t.accent, width: 2, dashed: true})
-		} else if exit, ok := bounce.ClipBox(scene); ok {
-			p.line(hit.Point, exit.End, style{stroke: t.accent, width: 2, dashed: true})
-		}
-		p.arrow(hit.Point, hit.Point.Add(hit.Normal.Multiply(1.5)), t.leaf, false)
-		p.dot(hit.Point, t.accent)
-	}
-	for _, coin := range coins {
-		if light.Contains(coin.Center) {
-			p.fill(coin, t.accent, t.accent)
-		} else {
-			p.fill(coin, "none", t.accent)
-		}
-	}
-	p.fill(hero, t.coolSoft, t.cool)
-	p.fill(drone, t.accent, t.accent)
-
-	return []*panel{p}
+var heroMap = []string{
+	"...............",
+	"..#.....#......",
+	"..#.....#....G.",
+	"..#..~~.#......",
+	"....S~~........",
+	"..#..~~...##...",
+	"..#.......#....",
+	"..........#....",
+	"...............",
 }
 
-func tilesOf(rows []string) (cells, walls []geom.Box[float64]) {
+type world struct {
+	bounds geom.Box[float64]
+	ground []geom.Box[float64]
+	rough  []geom.Box[float64]
+	walls  []geom.Box[float64]
+	scout  point
+	goal   point
+}
+
+func hero(t theme) []*panel {
+	w := worldOf(heroMap)
+
+	return []*panel{w.view(t), w.sweep(t), w.clearance(t)}
+}
+
+func (w world) view(t theme) *panel {
+	p := w.backdrop(t, "Raycast(ray, wall)")
+	light := geom.Pol(sight(geom.Sect(w.scout, 6*tileSize, 0, 2*math.Pi), w.bounds, w.solids()))
+	p.area(light.Points, style{fill: t.accentSoft})
+	w.edges(p)
+	w.draw(p)
+	p.fill(geom.RegPol(w.scout, geom.SzU(0.35), 5, 0, -math.Pi/2), t.accent, t.accent)
+
+	return p
+}
+
+func (w world) sweep(t theme) *panel {
+	p := w.backdrop(t, "Sweep(scout, motion, wall)")
+	w.draw(p)
+	scout := geom.Circ(w.scout, 0.3)
+	motion := w.goal.Subtract(w.scout)
+	p.arrow(w.scout, w.goal, t.muted, true)
+	if hit, ok := sweep(scout, motion, w.walls); ok {
+		p.fill(scout.Translate(motion.Multiply(hit.Fraction)), t.accentSoft, t.accent)
+		p.arrow(hit.Point, hit.Point.Add(hit.Normal.Multiply(1.2)), t.leaf, false)
+		p.dot(hit.Point, t.accent)
+	}
+	p.fill(scout, t.accent, t.accent)
+	p.fill(geom.Circ(w.goal, 0.3), t.cool, t.cool)
+
+	return p
+}
+
+func (w world) clearance(t theme) *panel {
+	p := w.backdrop(t, "wall.Grow(radius)")
+	for _, wall := range w.walls {
+		p.area(wall.Grow(0.3).Polygon().Points, style{fill: t.coolSoft, stroke: t.cool, width: 1, dashed: true})
+	}
+	w.draw(p)
+	p.fill(geom.Circ(w.scout, 0.3), t.accent, t.accent)
+	p.fill(geom.Circ(w.goal, 0.3), t.cool, t.cool)
+
+	return p
+}
+
+func (w world) backdrop(t theme, caption string) *panel {
+	p := newPanel(t, caption)
+	for _, cell := range w.ground {
+		p.area(cell.Polygon().Points, style{fill: t.cell, stroke: t.edge, width: 1})
+	}
+	for _, cell := range w.rough {
+		p.area(cell.Polygon().Points, style{fill: t.leafSoft, stroke: t.edge, width: 1})
+	}
+
+	return p
+}
+
+func (w world) edges(p *panel) {
+	for _, cell := range append(append([]geom.Box[float64]{}, w.ground...), w.rough...) {
+		p.area(cell.Polygon().Points, style{stroke: p.theme.edge, width: 1})
+	}
+}
+
+func (w world) draw(p *panel) {
+	for _, wall := range w.walls {
+		p.area(wall.Polygon().Points, style{fill: p.theme.wall, stroke: p.theme.cell, width: 1})
+	}
+}
+
+func (w world) solids() []geom.Shape[float64] {
+	solids := make([]geom.Shape[float64], len(w.walls))
+	for i, wall := range w.walls {
+		solids[i] = wall
+	}
+
+	return solids
+}
+
+func worldOf(rows []string) world {
 	size := geom.SzU(tileSize)
+	w := world{bounds: geom.Bx(geom.Pt(0.0, 0.0), geom.Pt(float64(len(rows[0]))*tileSize, float64(len(rows))*tileSize))}
 	for y, row := range rows {
 		for x, tile := range row {
 			box := geom.BoxFromMin(geom.Pt(float64(x)*tileSize, float64(y)*tileSize), size)
-			if tile == '#' {
-				walls = append(walls, box)
-			} else {
-				cells = append(cells, box)
+			switch tile {
+			case '#':
+				w.walls = append(w.walls, box)
+			case '~':
+				w.rough = append(w.rough, box)
+			case 'S':
+				w.ground, w.scout = append(w.ground, box), box.Center()
+			case 'G':
+				w.ground, w.goal = append(w.ground, box), box.Center()
+			case '.':
+				w.ground = append(w.ground, box)
+			default:
+				panic(fmt.Sprintf("diagrams: unknown tile %q on the hero map", tile))
 			}
 		}
 	}
 
-	return cells, walls
+	return w
 }
 
 func sight(view geom.Sector[float64], scene geom.Box[float64], solids []geom.Shape[float64]) []point {
@@ -120,10 +154,10 @@ func sight(view geom.Sector[float64], scene geom.Box[float64], solids []geom.Sha
 	return outline
 }
 
-func raycast(ray geom.Ray[float64], solids []geom.Shape[float64]) (geom.Hit[float64], bool) {
+func sweep(body geom.Circle[float64], motion geom.Vector[float64], walls []geom.Box[float64]) (geom.Hit[float64], bool) {
 	nearest, found := geom.Hit[float64]{}, false
-	for _, solid := range solids {
-		if hit, ok := geom.Raycast(ray, solid); ok && (!found || hit.Fraction < nearest.Fraction) {
+	for _, wall := range walls {
+		if hit, ok := geom.Sweep[float64](body, motion, wall); ok && (!found || hit.Fraction < nearest.Fraction) {
 			nearest, found = hit, true
 		}
 	}
