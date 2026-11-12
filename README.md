@@ -569,6 +569,11 @@ geomtest.AssertRectangle(t, got, want, "after inset")
 
 Full reference: [pkg.go.dev][link-go-dev-reference].
 
+## Resources
+
+- [Go libraries for 2D games: geometry, hexagon and grid][link-post-libraries]
+- [What generics over number types cost in Go][link-post-generics]
+
 ## Credits
 
 - [Tomáš Novotný](https://github.com/tomas-novotny)
@@ -593,3 +598,5 @@ The MIT License (MIT). Please see [License File][link-licence] for more informat
 [link-workflow]:            https://github.com/gravitton/geometry/actions
 [link-go-dev-reference]:    https://pkg.go.dev/github.com/gravitton/geometry
 [link-coverage]:            https://coveralls.io/github/gravitton/geometry
+[link-post-libraries]:      https://gravitton.github.io/blog/posts/gravitton-libraries/
+[link-post-generics]:       https://gravitton.github.io/blog/posts/generic-numbers/
