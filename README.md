@@ -573,6 +573,7 @@ Full reference: [pkg.go.dev][link-go-dev-reference].
 
 - [Go libraries for 2D games: geometry, hexagon and grid][link-post-libraries]
 - [What generics over number types cost in Go][link-post-generics]
+- [Closed boundaries within a tolerance in a Go geometry library][link-post-boundaries]
 
 ## Credits
 
@@ -600,3 +601,4 @@ The MIT License (MIT). Please see [License File][link-licence] for more informat
 [link-coverage]:            https://coveralls.io/github/gravitton/geometry
 [link-post-libraries]:      https://gravitton.github.io/blog/posts/gravitton-libraries/
 [link-post-generics]:       https://gravitton.github.io/blog/posts/generic-numbers/
+[link-post-boundaries]:     https://gravitton.github.io/blog/posts/closed-boundaries/
