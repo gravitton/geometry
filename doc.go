@@ -109,7 +109,8 @@
 //
 // # Performance
 //
-// Methods that store two coordinates through Cast exceed the inlining budget; a profile-guided
+// Cast exceeds the inlining budget on amd64. On every architecture so do the methods that store
+// two coordinates through it, and some that store one, such as Vector.Cross. A profile-guided
 // build (go build -pgo) inlines them where the profile marks them hot.
 //
 // # JSON
