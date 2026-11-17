@@ -71,7 +71,8 @@
 // two methods placing the same point by different roundings, as a turned shape, a ray or a line
 // does, can disagree within the tolerance of a boundary. int8 and int16 compile and never panic
 // or hang, but carry no promise of precision. The extent of a shape must fit T, and the square of
-// a length must stay finite, so a segment or direction past about 1e150 measures nothing.
+// a length must stay finite and normal, so a segment or direction longer than about 1e150 or
+// shorter than about 1e-150 measures nothing.
 //
 // # Matrices
 //
