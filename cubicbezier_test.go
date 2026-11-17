@@ -23,7 +23,8 @@ func TestCubicBezier_Bounds(t *testing.T) {
 	t.Run("a curve turning back along both axes", func(t *testing.T) {
 		bounds := CubBez(Pt(0.0, 0.0), Pt(20.0, 0.0), Pt(-14.0, 6.0), Pt(6.0, 6.0)).Bounds()
 
-		assert.True(t, bounds.Min.X < 0 && bounds.Max.X > 6, bounds.String())
+		assert.Less(t, bounds.Min.X, 0, bounds.String())
+		assert.Greater(t, bounds.Max.X, 6, bounds.String())
 		geomtest.AssertNumber(t, bounds.Min.Y, 0.0)
 		geomtest.AssertNumber(t, bounds.Max.Y, 6.0)
 	})
@@ -197,10 +198,10 @@ func TestCubicBezier_IntersectionSegment(t *testing.T) {
 
 					for _, point := range points {
 						assert.True(t, s.Contains(point), message+point.String())
-						assert.True(t, path.DistanceTo(point) <= 1e-5, message+point.String())
+						assert.LessOrEqual(t, path.DistanceTo(point), 1e-5, message+point.String())
 					}
 					assertOrdered(t, s, points, message)
-					assert.True(t, len(points) <= 3, message)
+					assert.LessOrEqual(t, len(points), 3, message)
 				}
 			}
 		}
@@ -294,7 +295,7 @@ func TestCubicBezier_Polyline(t *testing.T) {
 		geomtest.AssertPolyline(t, CubBez(Pt(1, 2), Pt(1, 2), Pt(1, 2), Pt(1, 2)).Polyline(0.01), PolLn([]Point[int]{Pt(1, 2)}))
 	})
 	t.Run("a finer tolerance gives more points", func(t *testing.T) {
-		assert.True(t, len(archCurve().Polyline(0.01).Points) > len(archCurve().Polyline(0.5).Points))
+		assert.Greater(t, len(archCurve().Polyline(0.01).Points), len(archCurve().Polyline(0.5).Points))
 		assert.Equal(t, len(archCurve().Polyline(-0.5).Points), len(archCurve().Polyline(0.5).Points))
 	})
 	t.Run("a tolerance that cannot be met stops at the depth", func(t *testing.T) {
@@ -307,7 +308,7 @@ func TestCubicBezier_Polyline(t *testing.T) {
 		geomtest.AssertPoint(t, path.Points[0], Pt(0, 0))
 		geomtest.AssertPoint(t, path.Points[len(path.Points)-1], Pt(8, 0))
 		for i := 1; i < len(path.Points); i++ {
-			assert.True(t, path.Points[i] != path.Points[i-1], path.String())
+			assert.NotEqual(t, path.Points[i], path.Points[i-1], path.String())
 			assert.True(t, LessOrEqual(archCurve().Polyline(0.25).DistanceTo(path.Points[i].Float()), 1), path.String())
 		}
 	})
@@ -318,7 +319,7 @@ func TestCubicBezier_Polyline(t *testing.T) {
 				message := fmt.Sprintf("%s ±%v: ", curve, tolerance)
 
 				assert.Equal(t, path.Points[0], curve.Start, message)
-				assert.True(t, path.Points[len(path.Points)-1].Equal(curve.End), message)
+				geomtest.AssertPoint(t, path.Points[len(path.Points)-1], curve.End, message)
 				for i := range 257 {
 					point := curve.PointAt(float64(i) / 256)
 
@@ -336,7 +337,7 @@ func TestCubicBezier_Polyline(t *testing.T) {
 
 		quarter := CubBez(Pt(4.0, 0.0), Pt(4.0, 4*kappa), Pt(4*kappa, 4.0), Pt(0.0, 4.0))
 
-		assert.True(t, math.Abs(quarter.Polyline(1e-4).Length()-2*Pi) < 1e-2)
+		assert.EqualDelta(t, quarter.Polyline(1e-4).Length(), 2*Pi, 1e-2)
 	})
 }
 
@@ -431,7 +432,8 @@ func TestCubicBezier_Properties(t *testing.T) {
 		for _, curve := range cubicFixtures {
 			bounds, reached := curve.Bounds(), Pol(curve.Polyline(1e-6).Points).Bounds()
 
-			assert.True(t, bounds.Min.DistanceTo(reached.Min) < 1e-4 && bounds.Max.DistanceTo(reached.Max) < 1e-4, fmt.Sprintf("%s: %s ≠ %s", curve, bounds, reached))
+			assert.Less(t, bounds.Min.DistanceTo(reached.Min), 1e-4, fmt.Sprintf("%s: %s ≠ %s", curve, bounds, reached))
+			assert.Less(t, bounds.Max.DistanceTo(reached.Max), 1e-4, fmt.Sprintf("%s: %s ≠ %s", curve, bounds, reached))
 		}
 	})
 	t.Run("int bounds hold the curve", func(t *testing.T) {

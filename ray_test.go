@@ -279,7 +279,7 @@ func TestRay_Nearest(t *testing.T) {
 
 				assert.Equal(t, nearest.Equal(p), r.Contains(p), message)
 				assert.True(t, r.Contains(nearest), message)
-				assert.True(t, r.Nearest(nearest).Equal(nearest), message)
+				geomtest.AssertPoint(t, r.Nearest(nearest), nearest, message)
 				geomtest.AssertNumber(t, p.DistanceSquaredTo(nearest), r.DistanceSquaredTo(p), message)
 			}
 		}
@@ -1008,7 +1008,7 @@ func TestRay_IntersectionRectangle(t *testing.T) {
 								origin := corner.Add(direction.Multiply(-20000)).Add(Vec(direction.Y, -direction.X).Multiply(float64(step) * 0.002))
 								r := Ry(origin, direction)
 
-								assert.True(t, len(r.IntersectionRectangle(rect).AppendTo(nil)) <= 2, fmt.Sprintf("%s → %s: ", r, rect))
+								assert.LessOrEqual(t, len(r.IntersectionRectangle(rect).AppendTo(nil)), 2, fmt.Sprintf("%s → %s: ", r, rect))
 							}
 						}
 					}
@@ -1172,7 +1172,7 @@ func TestRay_ClipPolygon(t *testing.T) {
 	t.Run("a NaN direction ends the pass", func(t *testing.T) {
 		square := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(10.0, 0.0), Pt(10.0, 10.0), Pt(0.0, 10.0)})
 
-		assert.True(t, len(Ry(Pt(1.0, 1.0), Vec(math.NaN(), 1.0)).ClipPolygon(square)) <= 1)
+		assert.LessOrEqual(t, len(Ry(Pt(1.0, 1.0), Vec(math.NaN(), 1.0)).ClipPolygon(square)), 1)
 	})
 }
 
@@ -1871,8 +1871,8 @@ func TestRay_Properties(t *testing.T) {
 	t.Run("translate and move to keep the direction", func(t *testing.T) {
 		for _, r := range rayFixtures {
 			for _, p := range pointFixtures {
-				assert.True(t, r.MoveTo(p).Vector.Equal(r.Vector), fmt.Sprintf("%s → %s: ", r, p))
-				assert.True(t, r.Translate(p.Vector()).Vector.Equal(r.Vector), fmt.Sprintf("%s → %s: ", r, p))
+				geomtest.AssertVector(t, r.MoveTo(p).Vector, r.Vector, fmt.Sprintf("%s → %s: ", r, p))
+				geomtest.AssertVector(t, r.Translate(p.Vector()).Vector, r.Vector, fmt.Sprintf("%s → %s: ", r, p))
 			}
 		}
 	})

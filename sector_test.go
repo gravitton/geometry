@@ -156,8 +156,8 @@ func TestSector_Lerp(t *testing.T) {
 	t.Run("ends on the two sectors", func(t *testing.T) {
 		for _, a := range sectorFixtures() {
 			for _, b := range sectorFixtures() {
-				assert.True(t, a.Lerp(b, 0).Equal(a), fmt.Sprintf("%s -> %s: ", a, b))
-				assert.True(t, a.Lerp(b, 1).Equal(b), fmt.Sprintf("%s -> %s: ", a, b))
+				geomtest.AssertSector(t, a.Lerp(b, 0), a, fmt.Sprintf("%s -> %s: ", a, b))
+				geomtest.AssertSector(t, a.Lerp(b, 1), b, fmt.Sprintf("%s -> %s: ", a, b))
 			}
 		}
 	})
@@ -228,7 +228,8 @@ func TestSector_DistanceToSector(t *testing.T) {
 				geomtest.AssertNumber(t, distance, Distance[float64](a, b), message)
 
 				outlines := Distance[float64](sectorOutline(a, 257), sectorOutline(b, 257))
-				assert.True(t, distance <= outlines+Delta && outlines <= distance+sagitta(a, 257)+sagitta(b, 257)+Delta, message)
+				assert.LessOrEqual(t, distance, outlines+Delta, message)
+				assert.LessOrEqual(t, outlines, distance+sagitta(a, 257)+sagitta(b, 257)+Delta, message)
 			}
 		}
 	})
@@ -819,7 +820,7 @@ func TestSector_IntersectionSegment(t *testing.T) {
 						assert.True(t, segment.Contains(point) && sector.Contains(point), message+point.String())
 					}
 					assertOrdered(t, segment, points, message)
-					assert.True(t, len(points) <= sectorCrossingsAtMost(sector), message)
+					assert.LessOrEqual(t, len(points), sectorCrossingsAtMost(sector), message)
 					for i := 1; i < len(points); i++ {
 						assert.False(t, points[i].Equal(points[i-1]), message)
 					}
@@ -1075,13 +1076,13 @@ func TestSector_Properties(t *testing.T) {
 
 			outline := sectorOutline(s, 4096)
 
-			assert.True(t, math.Abs(s.Area()-outline.Area()) <= 1e-5*s.Area(), fmt.Sprintf("%s: %v ≠ %v", s, s.Area(), outline.Area()))
-			assert.True(t, math.Abs(s.Inertia()-outline.Inertia()) <= 1e-5*s.Inertia(), fmt.Sprintf("%s: %v ≠ %v", s, s.Inertia(), outline.Inertia()))
-			assert.True(t, s.Centroid().DistanceTo(outline.Centroid()) <= 1e-5*s.Radius, fmt.Sprintf("%s: %v ≠ %v", s, s.Centroid(), outline.Centroid()))
+			assert.EqualDelta(t, s.Area(), outline.Area(), 1e-5*s.Area(), fmt.Sprintf("%s: %v ≠ %v", s, s.Area(), outline.Area()))
+			assert.EqualDelta(t, s.Inertia(), outline.Inertia(), 1e-5*s.Inertia(), fmt.Sprintf("%s: %v ≠ %v", s, s.Inertia(), outline.Inertia()))
+			assert.LessOrEqual(t, s.Centroid().DistanceTo(outline.Centroid()), 1e-5*s.Radius, fmt.Sprintf("%s: %v ≠ %v", s, s.Centroid(), outline.Centroid()))
 			assert.True(t, s.Contains(s.Centroid()), s.String())
 
 			for _, point := range pointFixtures {
-				assert.True(t, math.Abs(s.DistanceTo(point)-outline.DistanceTo(point)) <= 1e-5*s.Radius, fmt.Sprintf("%s → %s: %v ≠ %v", s, point, s.DistanceTo(point), outline.DistanceTo(point)))
+				assert.EqualDelta(t, s.DistanceTo(point), outline.DistanceTo(point), 1e-5*s.Radius, fmt.Sprintf("%s → %s: %v ≠ %v", s, point, s.DistanceTo(point), outline.DistanceTo(point)))
 				assert.True(t, !outline.Contains(point) || s.Contains(point), fmt.Sprintf("%s → %s: ", s, point))
 			}
 		}
@@ -1127,7 +1128,7 @@ func TestSector_Properties(t *testing.T) {
 	t.Run("scale and unscale are inverse", func(t *testing.T) {
 		for _, s := range sectorFixtures() {
 			for _, factor := range []float64{0.5, 2.5, -3} {
-				assert.True(t, s.Scale(factor).Unscale(factor).Equal(s), fmt.Sprintf("%s ×%v: ", s, factor))
+				geomtest.AssertSector(t, s.Scale(factor).Unscale(factor), s, fmt.Sprintf("%s ×%v: ", s, factor))
 			}
 		}
 	})

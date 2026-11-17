@@ -211,7 +211,8 @@ func TestDirection_TurnsTo(t *testing.T) {
 			for _, to := range Directions() {
 				turns := from.TurnsTo(to)
 				assert.Equal(t, from.Turn(turns), to, from.String()+" to "+to.String()+": ")
-				assert.True(t, turns >= -3 && turns <= 4, from.String()+" to "+to.String()+": ")
+				assert.GreaterOrEqual(t, turns, -3, from.String()+" to "+to.String()+": ")
+				assert.LessOrEqual(t, turns, 4, from.String()+" to "+to.String()+": ")
 			}
 		}
 	})

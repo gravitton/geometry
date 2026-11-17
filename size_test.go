@@ -569,7 +569,7 @@ func TestSize_Properties(t *testing.T) {
 	t.Run("scale and unscale are inverse", func(t *testing.T) {
 		for _, size := range sizeFixtures {
 			for _, factor := range []float64{0.5, 1, 2.5, -3} {
-				assert.True(t, size.Scale(factor).Unscale(factor).Equal(size), fmt.Sprintf("%s ×%v: ", size, factor))
+				geomtest.AssertSize(t, size.Scale(factor).Unscale(factor), size, fmt.Sprintf("%s ×%v: ", size, factor))
 			}
 		}
 	})
@@ -577,8 +577,10 @@ func TestSize_Properties(t *testing.T) {
 		for _, size := range sizeFixtures {
 			floor, ceil := size.Floor(), size.Ceil()
 
-			assert.True(t, floor.Width <= size.Width && size.Width <= ceil.Width, fmt.Sprintf("%s: ", size))
-			assert.True(t, floor.Height <= size.Height && size.Height <= ceil.Height, fmt.Sprintf("%s: ", size))
+			assert.LessOrEqual(t, floor.Width, size.Width, fmt.Sprintf("%s: ", size))
+			assert.LessOrEqual(t, size.Width, ceil.Width, fmt.Sprintf("%s: ", size))
+			assert.LessOrEqual(t, floor.Height, size.Height, fmt.Sprintf("%s: ", size))
+			assert.LessOrEqual(t, size.Height, ceil.Height, fmt.Sprintf("%s: ", size))
 			round := size.Round()
 			assert.True(t, Equal(round.Width, floor.Width) || Equal(round.Width, ceil.Width), fmt.Sprintf("%s: ", size))
 			assert.True(t, Equal(round.Height, floor.Height) || Equal(round.Height, ceil.Height), fmt.Sprintf("%s: ", size))
@@ -587,9 +589,9 @@ func TestSize_Properties(t *testing.T) {
 	t.Run("lerp ends on the two sizes", func(t *testing.T) {
 		for _, a := range sizeFixtures {
 			for _, b := range sizeFixtures {
-				assert.True(t, a.Lerp(b, 0).Equal(a), fmt.Sprintf("%s → %s: ", a, b))
-				assert.True(t, a.Lerp(b, 1).Equal(b), fmt.Sprintf("%s → %s: ", a, b))
-				assert.True(t, a.Lerp(b, 0.5).Equal(b.Lerp(a, 0.5)), fmt.Sprintf("%s → %s: ", a, b))
+				geomtest.AssertSize(t, a.Lerp(b, 0), a, fmt.Sprintf("%s → %s: ", a, b))
+				geomtest.AssertSize(t, a.Lerp(b, 1), b, fmt.Sprintf("%s → %s: ", a, b))
+				geomtest.AssertSize(t, a.Lerp(b, 0.5), b.Lerp(a, 0.5), fmt.Sprintf("%s → %s: ", a, b))
 			}
 		}
 	})
@@ -599,25 +601,25 @@ func TestSize_Properties(t *testing.T) {
 				continue // shrink clamps to zero, so the growth is not recoverable
 			}
 
-			assert.True(t, size.Grow(1).Shrink(1).Equal(size), fmt.Sprintf("%s: ", size))
+			geomtest.AssertSize(t, size.Grow(1).Shrink(1), size, fmt.Sprintf("%s: ", size))
 		}
 	})
 	t.Run("at least and at most bound each other", func(t *testing.T) {
 		for _, a := range sizeFixtures {
 			for _, b := range sizeFixtures {
-				assert.True(t, a.AtLeast(b).Equal(b.AtLeast(a)), fmt.Sprintf("%s → %s: ", a, b))
-				assert.True(t, a.AtMost(b).Equal(b.AtMost(a)), fmt.Sprintf("%s → %s: ", a, b))
+				geomtest.AssertSize(t, a.AtLeast(b), b.AtLeast(a), fmt.Sprintf("%s → %s: ", a, b))
+				geomtest.AssertSize(t, a.AtMost(b), b.AtMost(a), fmt.Sprintf("%s → %s: ", a, b))
 
 				atLeast, atMost := a.AtLeast(b), a.AtMost(b)
-				assert.True(t, atMost.Width <= atLeast.Width, fmt.Sprintf("%s → %s: ", a, b))
-				assert.True(t, atMost.Height <= atLeast.Height, fmt.Sprintf("%s → %s: ", a, b))
+				assert.LessOrEqual(t, atMost.Width, atLeast.Width, fmt.Sprintf("%s → %s: ", a, b))
+				assert.LessOrEqual(t, atMost.Height, atLeast.Height, fmt.Sprintf("%s → %s: ", a, b))
 			}
 		}
 	})
 	t.Run("fit factor is at most fill factor", func(t *testing.T) {
 		for _, a := range positiveSizeFixtures() {
 			for _, b := range positiveSizeFixtures() {
-				assert.True(t, a.FitFactor(b) <= a.FillFactor(b), fmt.Sprintf("%s → %s: ", a, b))
+				assert.LessOrEqual(t, a.FitFactor(b), a.FillFactor(b), fmt.Sprintf("%s → %s: ", a, b))
 			}
 		}
 	})
@@ -642,7 +644,7 @@ func assertSizeRoundTrip[T Number](t *testing.T, size Size[T]) {
 
 	parsed, err := ParseSize[T](size.String())
 	if assert.NoError(t, err) {
-		assert.True(t, parsed.Equal(size), fmt.Sprintf("%s: ", size))
+		geomtest.AssertSize(t, parsed, size, fmt.Sprintf("%s: ", size))
 	}
 }
 

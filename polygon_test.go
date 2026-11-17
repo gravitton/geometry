@@ -617,9 +617,9 @@ func TestPolygon_Lerp(t *testing.T) {
 			for _, vector := range vectorFixtures {
 				moved := polygon.Translate(vector)
 
-				assert.True(t, polygon.Lerp(moved, 0).Equal(polygon), fmt.Sprintf("%s → %s: ", polygon, vector))
-				assert.True(t, polygon.Lerp(moved, 1).Equal(moved), fmt.Sprintf("%s → %s: ", polygon, vector))
-				assert.True(t, polygon.Lerp(moved, 0.25).Equal(polygon.Translate(vector.Multiply(0.25))), fmt.Sprintf("%s → %s: ", polygon, vector))
+				geomtest.AssertPolygon(t, polygon.Lerp(moved, 0), polygon, fmt.Sprintf("%s → %s: ", polygon, vector))
+				geomtest.AssertPolygon(t, polygon.Lerp(moved, 1), moved, fmt.Sprintf("%s → %s: ", polygon, vector))
+				geomtest.AssertPolygon(t, polygon.Lerp(moved, 0.25), polygon.Translate(vector.Multiply(0.25)), fmt.Sprintf("%s → %s: ", polygon, vector))
 			}
 		}
 	})
@@ -716,7 +716,7 @@ func TestPolygon_ConvexHull(t *testing.T) {
 			for _, vertex := range hull.Points {
 				assert.Contains(t, p.Points, vertex, message)
 			}
-			assert.True(t, hull.ConvexHull().Equal(hull), message)
+			geomtest.AssertPolygon(t, hull.ConvexHull(), hull, message)
 			if len(hull.Points) >= 3 {
 				assert.True(t, hull.IsConvex(), message)
 				assert.Equal(t, hull.Winding(), WindingClockwise, message)
@@ -755,7 +755,7 @@ func FuzzPolygon_ConvexHull(f *testing.F) {
 		}
 		assert.Contains(t, hull.Points, slices.MinFunc(polygon.Points, Point[float64].Compare), message)
 		assert.Contains(t, hull.Points, slices.MaxFunc(polygon.Points, Point[float64].Compare), message)
-		assert.True(t, hull.ConvexHull().Equal(hull), message)
+		geomtest.AssertPolygon(t, hull.ConvexHull(), hull, message)
 	})
 }
 
@@ -866,7 +866,7 @@ func TestPolygon_Simplify(t *testing.T) {
 				simplified := p.Simplify(tolerance)
 				message := fmt.Sprintf("%s ~%v → %s: ", p, tolerance, simplified)
 
-				assert.True(t, simplified.Simplify(tolerance).Equal(simplified), message)
+				geomtest.AssertPolygon(t, simplified.Simplify(tolerance), simplified, message)
 				for _, vertex := range p.Points {
 					assert.True(t, slices.ContainsFunc(slices.Collect(simplified.Edges()), func(edge Segment[float64]) bool {
 						return edge.DistanceSquaredTo(vertex) <= (tolerance+Delta)*(tolerance+Delta)
@@ -880,7 +880,7 @@ func TestPolygon_Simplify(t *testing.T) {
 						i++
 					}
 
-					assert.True(t, i < len(p.Points), message+vertex.String()+" in order: ")
+					assert.Less(t, i, len(p.Points), message+vertex.String()+" in order: ")
 					i++
 				}
 			}
@@ -955,12 +955,12 @@ func TestPolygon_Triangulate(t *testing.T) {
 	t.Run("a self-intersecting polygon stops where no ear is left", func(t *testing.T) {
 		bowtie := Pol([]Point[int]{Pt(0, 0), Pt(6, 6), Pt(6, 0), Pt(0, 2)})
 
-		assert.True(t, len(bowtie.Triangulate()) < 3*(len(bowtie.Points)-2))
+		assert.Less(t, len(bowtie.Triangulate()), 3*(len(bowtie.Points)-2))
 	})
 	t.Run("a NaN vertex ends the clipping", func(t *testing.T) {
 		polygon := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(math.NaN(), 2.0), Pt(4.0, 4.0), Pt(0.0, 4.0)})
 
-		assert.True(t, len(polygon.Triangulate()) < 3*(len(polygon.Points)-2))
+		assert.Less(t, len(polygon.Triangulate()), 3*(len(polygon.Points)-2))
 	})
 	t.Run("allocates once", func(t *testing.T) {
 		notched := Pol(notchedVertices())
@@ -2490,7 +2490,7 @@ func TestPolygon_JSON(t *testing.T) {
 
 			var decoded Polygon[float64]
 			assert.NoError(t, json.Unmarshal(data, &decoded))
-			assert.True(t, decoded.Equal(polygon), fmt.Sprintf("%s: ", polygon))
+			geomtest.AssertPolygon(t, decoded, polygon, fmt.Sprintf("%s: ", polygon))
 		}
 	})
 }
@@ -2501,9 +2501,9 @@ func TestPolygon_Properties(t *testing.T) {
 			for _, vector := range vectorFixtures {
 				moved := polygon.Translate(vector)
 
-				assert.True(t, moved.Centroid().Equal(polygon.Centroid().Add(vector)), fmt.Sprintf("%s → %s: ", polygon, vector))
+				geomtest.AssertPoint(t, moved.Centroid(), polygon.Centroid().Add(vector), fmt.Sprintf("%s → %s: ", polygon, vector))
 				for i, vertex := range moved.Points {
-					assert.True(t, vertex.Equal(polygon.Points[i].Add(vector)), fmt.Sprintf("%s → %s: ", polygon, vector))
+					geomtest.AssertPoint(t, vertex, polygon.Points[i].Add(vector), fmt.Sprintf("%s → %s: ", polygon, vector))
 				}
 			}
 		}
@@ -2511,7 +2511,7 @@ func TestPolygon_Properties(t *testing.T) {
 	t.Run("move to centers where asked", func(t *testing.T) {
 		for _, polygon := range polygonFixtures() {
 			for _, point := range pointFixtures {
-				assert.True(t, polygon.MoveTo(point).Centroid().Equal(point), fmt.Sprintf("%s → %s: ", polygon, point))
+				geomtest.AssertPoint(t, polygon.MoveTo(point).Centroid(), point, fmt.Sprintf("%s → %s: ", polygon, point))
 			}
 		}
 	})
@@ -2520,14 +2520,14 @@ func TestPolygon_Properties(t *testing.T) {
 			for _, factor := range []float64{0.5, 1, 2.5, -3} {
 				scaled := polygon.Scale(factor)
 
-				assert.True(t, scaled.Centroid().Equal(polygon.Centroid()), fmt.Sprintf("%s ×%v: ", polygon, factor))
+				geomtest.AssertPoint(t, scaled.Centroid(), polygon.Centroid(), fmt.Sprintf("%s ×%v: ", polygon, factor))
 			}
 		}
 	})
 	t.Run("scale by one is the identity", func(t *testing.T) {
 		for _, polygon := range polygonFixtures() {
-			assert.True(t, polygon.Scale(1).Equal(polygon), fmt.Sprintf("%s: ", polygon))
-			assert.True(t, polygon.ScaleXY(1, 1).Equal(polygon), fmt.Sprintf("%s: ", polygon))
+			geomtest.AssertPolygon(t, polygon.Scale(1), polygon, fmt.Sprintf("%s: ", polygon))
+			geomtest.AssertPolygon(t, polygon.ScaleXY(1, 1), polygon, fmt.Sprintf("%s: ", polygon))
 		}
 	})
 	t.Run("centroid of a triangle is the average of the vertices", func(t *testing.T) {
@@ -2542,7 +2542,7 @@ func TestPolygon_Properties(t *testing.T) {
 			}
 
 			expected := sum.Divide(3)
-			assert.True(t, polygon.Centroid().Equal(expected), fmt.Sprintf("%s: ", polygon))
+			geomtest.AssertPoint(t, polygon.Centroid(), expected, fmt.Sprintf("%s: ", polygon))
 		}
 	})
 	t.Run("centroid lies within the bounds", func(t *testing.T) {

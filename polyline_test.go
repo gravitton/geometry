@@ -131,7 +131,7 @@ func TestPolyline_Lerp(t *testing.T) {
 		for _, path := range polylineFixtures() {
 			moved := path.Translate(Vec(3.0, -2.0))
 
-			assert.True(t, path.Lerp(moved, 0.25).Equal(path.Translate(Vec(0.75, -0.5))), path.String())
+			geomtest.AssertPolyline(t, path.Lerp(moved, 0.25), path.Translate(Vec(0.75, -0.5)), path.String())
 		}
 	})
 }
@@ -267,7 +267,7 @@ func TestPolyline_Simplify(t *testing.T) {
 
 				geomtest.AssertPolyline(t, simplified.Simplify(tolerance), simplified, message)
 				for _, point := range simplified.Points {
-					assert.True(t, slices.Contains(path.Points, point), message+point.String())
+					assert.Contains(t, path.Points, point, message+point.String())
 				}
 				for _, point := range path.Points {
 					assert.True(t, LessOrEqual(simplified.DistanceTo(point), tolerance), message+point.String())
@@ -585,7 +585,7 @@ func TestPolyline_JSON(t *testing.T) {
 
 			var decoded Polyline[float64]
 			assert.NoError(t, json.Unmarshal(data, &decoded))
-			assert.True(t, decoded.Equal(path), path.String())
+			geomtest.AssertPolyline(t, decoded, path, path.String())
 		}
 	})
 }
@@ -619,7 +619,7 @@ func TestPolyline_Properties(t *testing.T) {
 				assert.Equal(t, nearest.Equal(point), path.Contains(point), message)
 				assert.True(t, path.Contains(nearest), message)
 				geomtest.AssertNumber(t, point.DistanceTo(nearest), path.DistanceTo(point), message)
-				assert.True(t, path.PointAt(path.NearestFraction(point)).Equal(nearest), message)
+				geomtest.AssertPoint(t, path.PointAt(path.NearestFraction(point)), nearest, message)
 			}
 		}
 	})
@@ -672,7 +672,7 @@ func TestPolyline_Properties(t *testing.T) {
 				assert.Length(t, points, int(path.Length()/step)+1)
 				for i, point := range points {
 					assert.True(t, path.Contains(point), message+point.String())
-					assert.True(t, point.Equal(path.PointAt(ratioOf(float64(i)*step, path.Length()))), message+point.String())
+					geomtest.AssertPoint(t, point, path.PointAt(ratioOf(float64(i)*step, path.Length())), message+point.String())
 				}
 			}
 		}

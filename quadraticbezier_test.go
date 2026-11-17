@@ -225,7 +225,7 @@ func TestQuadraticBezier_Polyline(t *testing.T) {
 		geomtest.AssertPolyline(t, QuadBez(Pt(0.0, 0.0), Pt(1.0, 1.0), Pt(3.0, 3.0)).Polyline(0.01), PolLn([]Point[float64]{Pt(0.0, 0.0), Pt(3.0, 3.0)}))
 	})
 	t.Run("a finer tolerance gives more points", func(t *testing.T) {
-		assert.True(t, len(cornerCurve().Polyline(0.01).Points) > len(cornerCurve().Polyline(0.5).Points))
+		assert.Greater(t, len(cornerCurve().Polyline(0.01).Points), len(cornerCurve().Polyline(0.5).Points))
 	})
 	t.Run("int halves the curve as it is, not as its rounded cubic", func(t *testing.T) {
 		path := QuadBez(Pt(0, 0), Pt(4, 4), Pt(8, 0)).Polyline(0.1)
@@ -241,7 +241,7 @@ func TestQuadraticBezier_Polyline(t *testing.T) {
 				message := fmt.Sprintf("%s ±%v: ", curve, tolerance)
 
 				assert.Equal(t, path.Points[0], curve.Start, message)
-				assert.True(t, path.Points[len(path.Points)-1].Equal(curve.End), message)
+				geomtest.AssertPoint(t, path.Points[len(path.Points)-1], curve.End, message)
 				for i := range 257 {
 					point := curve.PointAt(float64(i) / 256)
 

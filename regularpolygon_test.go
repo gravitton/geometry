@@ -690,7 +690,7 @@ func TestRegularPolygon_Lerp(t *testing.T) {
 
 				geomtest.AssertRegularPolygon(t, from.Lerp(to, 0), from, fmt.Sprintf("%s → %s: ", from, to))
 				geomtest.AssertRegularPolygon(t, from.Lerp(to, 1), to, fmt.Sprintf("%s → %s: ", from, to))
-				assert.True(t, AngleDistance(from.Lerp(to, 0.5).Angle, from.Angle) <= Pi/2+Delta, fmt.Sprintf("%s → %s: ", from, to))
+				assert.LessOrEqual(t, AngleDistance(from.Lerp(to, 0.5).Angle, from.Angle), Pi/2+Delta, fmt.Sprintf("%s → %s: ", from, to))
 			}
 		}
 	})
@@ -718,7 +718,7 @@ func TestRegularPolygon_Canonical(t *testing.T) {
 	t.Run("snaps a residue of turning back to exactly zero, where Rotate does not", func(t *testing.T) {
 		drifted := RegPol(Pt(0.0, 0.0), SzU(2.0), 4, 0, 0).Rotate(0.1).Rotate(0.2).Rotate(-0.3)
 
-		assert.True(t, drifted.Angle != 0)
+		assert.NotEqual(t, drifted.Angle, 0)
 		assert.Equal(t, drifted.Canonical().Angle, 0.0)
 		assert.Equal(t, RegularPolygon[int]{Pt(0, 0), SzU(2), 4, -Delta / 2, 0}.Canonical().Angle, 0.0)
 		assert.Equal(t, RegularPolygon[int]{Pt(0, 0), SzU(2), 4, 2 * Delta, 0}.Canonical().Angle, 2*Delta)
@@ -1405,7 +1405,7 @@ func TestRegularPolygonOrientationPhase(t *testing.T) {
 		geomtest.AssertNumber(t, RegularPolygonOrientationPhase(0, OrientationPointyTop), 270*DegToRad)
 
 		empty := RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 0, OrientationFlatTop)
-		assert.True(t, empty.Equal(empty))
+		geomtest.AssertRegularPolygon(t, empty, empty)
 	})
 }
 
@@ -1451,7 +1451,7 @@ func TestRegularPolygon_Properties(t *testing.T) {
 			vertices := slices.Collect(rp.Vertices())
 
 			for i := range vertices {
-				assert.True(t, rotated[i].Equal(vertices[(i+1)%rp.N]), fmt.Sprintf("%s #%d: ", rp, i))
+				geomtest.AssertPoint(t, rotated[i], vertices[(i+1)%rp.N], fmt.Sprintf("%s #%d: ", rp, i))
 			}
 		}
 	})
@@ -1460,8 +1460,8 @@ func TestRegularPolygon_Properties(t *testing.T) {
 			for _, vector := range vectorFixtures {
 				moved := rp.Translate(vector)
 
-				assert.True(t, moved.Center.Equal(rp.Center.Add(vector)), fmt.Sprintf("%s → %s: ", rp, vector))
-				assert.True(t, moved.Radius.Equal(rp.Radius), fmt.Sprintf("%s → %s: ", rp, vector))
+				geomtest.AssertPoint(t, moved.Center, rp.Center.Add(vector), fmt.Sprintf("%s → %s: ", rp, vector))
+				geomtest.AssertSize(t, moved.Radius, rp.Radius, fmt.Sprintf("%s → %s: ", rp, vector))
 				geomtest.AssertNumber(t, moved.Angle, rp.Angle, fmt.Sprintf("%s → %s: ", rp, vector))
 			}
 		}
@@ -1471,8 +1471,10 @@ func TestRegularPolygon_Properties(t *testing.T) {
 			bounds := rp.Bounds()
 
 			for vertex := range rp.Vertices() {
-				assert.True(t, vertex.X >= bounds.Min.X-Delta && vertex.X <= bounds.Max.X+Delta, fmt.Sprintf("%s: ", rp))
-				assert.True(t, vertex.Y >= bounds.Min.Y-Delta && vertex.Y <= bounds.Max.Y+Delta, fmt.Sprintf("%s: ", rp))
+				assert.GreaterOrEqual(t, vertex.X, bounds.Min.X-Delta, fmt.Sprintf("%s: ", rp))
+				assert.LessOrEqual(t, vertex.X, bounds.Max.X+Delta, fmt.Sprintf("%s: ", rp))
+				assert.GreaterOrEqual(t, vertex.Y, bounds.Min.Y-Delta, fmt.Sprintf("%s: ", rp))
+				assert.LessOrEqual(t, vertex.Y, bounds.Max.Y+Delta, fmt.Sprintf("%s: ", rp))
 			}
 		}
 	})

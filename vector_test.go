@@ -51,7 +51,7 @@ func TestVectorFromAngleSize(t *testing.T) {
 	t.Run("square size matches the angle constructor", func(t *testing.T) {
 		for _, angle := range []float64{0, Pi / 6, Pi / 4, 2, -1.5} {
 			ellipse, circle := VectorFromAngleSize(angle, SzU(7.0)), VectorFromAngle(angle, 7.0)
-			assert.True(t, ellipse.Equal(circle), fmt.Sprintf("%v rad: ", angle))
+			geomtest.AssertVector(t, ellipse, circle, fmt.Sprintf("%v rad: ", angle))
 		}
 	})
 	t.Run("integer rounds after scaling", func(t *testing.T) {
@@ -306,8 +306,8 @@ func TestVector_Slerp(t *testing.T) {
 	t.Run("the ends and the length hold over the fixtures", func(t *testing.T) {
 		for _, from := range vectorFixtures {
 			for _, to := range vectorFixtures {
-				assert.True(t, from.Slerp(to, 0).Equal(from), fmt.Sprintf("%s → %s: ", from, to))
-				assert.True(t, from.Slerp(to, 1).Equal(to), fmt.Sprintf("%s → %s: ", from, to))
+				geomtest.AssertVector(t, from.Slerp(to, 0), from, fmt.Sprintf("%s → %s: ", from, to))
+				geomtest.AssertVector(t, from.Slerp(to, 1), to, fmt.Sprintf("%s → %s: ", from, to))
 				geomtest.AssertNumber(t, from.Slerp(to, 0.5).Length(), (from.Length()+to.Length())/2, fmt.Sprintf("%s → %s: ", from, to))
 			}
 		}
@@ -656,7 +656,8 @@ func TestVector_AngleBetween(t *testing.T) {
 			for _, b := range vectorFixtures {
 				angle := a.AngleBetween(b)
 
-				assert.True(t, angle >= 0 && angle <= Pi, fmt.Sprintf("%s to %s: %v", a, b, angle))
+				assert.GreaterOrEqual(t, angle, 0, fmt.Sprintf("%s to %s: %v", a, b, angle))
+				assert.LessOrEqual(t, angle, Pi, fmt.Sprintf("%s to %s: %v", a, b, angle))
 				geomtest.AssertNumber(t, angle, b.AngleBetween(a), fmt.Sprintf("%s to %s: ", a, b))
 			}
 		}
@@ -1056,13 +1057,13 @@ func TestVector_Properties(t *testing.T) {
 	t.Run("add and subtract are inverse", func(t *testing.T) {
 		for _, a := range vectorFixtures {
 			for _, b := range vectorFixtures {
-				assert.True(t, a.Add(b).Subtract(b).Equal(a), fmt.Sprintf("%s → %s: ", a, b))
+				geomtest.AssertVector(t, a.Add(b).Subtract(b), a, fmt.Sprintf("%s → %s: ", a, b))
 			}
 		}
 	})
 	t.Run("negate is its own inverse", func(t *testing.T) {
 		for _, vector := range vectorFixtures {
-			assert.True(t, vector.Negate().Negate().Equal(vector), fmt.Sprintf("%s: ", vector))
+			geomtest.AssertVector(t, vector.Negate().Negate(), vector, fmt.Sprintf("%s: ", vector))
 		}
 	})
 	t.Run("dot with itself is the squared length", func(t *testing.T) {
@@ -1077,7 +1078,7 @@ func TestVector_Properties(t *testing.T) {
 
 			geomtest.AssertNumber(t, vector.Dot(normal), 0, fmt.Sprintf("%s: ", vector))
 			geomtest.AssertNumber(t, normal.Length(), vector.Length(), fmt.Sprintf("%s: ", vector))
-			assert.True(t, normal.Equal(vector.Rotate(Pi/2)), fmt.Sprintf("%s: ", vector))
+			geomtest.AssertVector(t, normal, vector.Rotate(Pi/2), fmt.Sprintf("%s: ", vector))
 		}
 	})
 	t.Run("rotate preserves the length", func(t *testing.T) {
@@ -1097,7 +1098,7 @@ func TestVector_Properties(t *testing.T) {
 			unit := integer.Normalize()
 
 			assert.True(t, unit.IsNormalized(), fmt.Sprintf("%s: ", integer))
-			assert.True(t, unit.Dot(integer) > 0, fmt.Sprintf("%s: ", integer))
+			assert.Greater(t, unit.Dot(integer), 0, fmt.Sprintf("%s: ", integer))
 		}
 	})
 	t.Run("normalize keeps the angle at unit length", func(t *testing.T) {
@@ -1113,7 +1114,7 @@ func TestVector_Properties(t *testing.T) {
 	t.Run("angle and length reconstruct the vector", func(t *testing.T) {
 		for _, vector := range vectorFixtures {
 			rebuilt := VectorFromAngle(vector.Angle(), vector.Length())
-			assert.True(t, rebuilt.Equal(vector), fmt.Sprintf("%s: ", vector))
+			geomtest.AssertVector(t, rebuilt, vector, fmt.Sprintf("%s: ", vector))
 		}
 	})
 	t.Run("cross is antisymmetric", func(t *testing.T) {
@@ -1126,7 +1127,7 @@ func TestVector_Properties(t *testing.T) {
 	})
 	t.Run("identity matrix leaves the vector untouched", func(t *testing.T) {
 		for _, vector := range vectorFixtures {
-			assert.True(t, vector.Transform(IdentityMatrix[float64]()).Equal(vector), fmt.Sprintf("%s: ", vector))
+			geomtest.AssertVector(t, vector.Transform(IdentityMatrix[float64]()), vector, fmt.Sprintf("%s: ", vector))
 		}
 	})
 }

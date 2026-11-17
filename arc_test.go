@@ -201,8 +201,8 @@ func TestArc_Lerp(t *testing.T) {
 	t.Run("ends on the two arcs", func(t *testing.T) {
 		for _, a := range arcFixtures {
 			for _, b := range arcFixtures {
-				assert.True(t, a.Lerp(b, 0).Equal(a), fmt.Sprintf("%s -> %s: ", a, b))
-				assert.True(t, a.Lerp(b, 1).Equal(b), fmt.Sprintf("%s -> %s: ", a, b))
+				geomtest.AssertArc(t, a.Lerp(b, 0), a, fmt.Sprintf("%s -> %s: ", a, b))
+				geomtest.AssertArc(t, a.Lerp(b, 1), b, fmt.Sprintf("%s -> %s: ", a, b))
 			}
 		}
 	})
@@ -397,8 +397,9 @@ func TestArc_NearestFraction(t *testing.T) {
 				fraction := a.NearestFraction(point)
 				message := fmt.Sprintf("%s → %s: ", a, point)
 
-				assert.True(t, fraction >= 0 && fraction <= 1, message)
-				assert.True(t, a.PointAt(fraction).Equal(a.Nearest(point)), message)
+				assert.GreaterOrEqual(t, fraction, 0, message)
+				assert.LessOrEqual(t, fraction, 1, message)
+				geomtest.AssertPoint(t, a.PointAt(fraction), a.Nearest(point), message)
 			}
 		}
 	})
@@ -528,7 +529,7 @@ func TestArc_Polyline(t *testing.T) {
 		geomtest.AssertPolyline(t, quarterArc().Polyline(0.5), PolLn([]Point[float64]{Pt(5.0, 0.0), Pt(5/math.Sqrt2, 5/math.Sqrt2), Pt(0.0, 5.0)}))
 	})
 	t.Run("a finer tolerance gives more points, either sign", func(t *testing.T) {
-		assert.True(t, len(quarterArc().Polyline(0.01).Points) > len(quarterArc().Polyline(0.5).Points))
+		assert.Greater(t, len(quarterArc().Polyline(0.01).Points), len(quarterArc().Polyline(0.5).Points))
 		assert.Equal(t, len(quarterArc().Polyline(-0.5).Points), 3)
 	})
 	t.Run("a tolerance that cannot be met stops at a thousand edges", func(t *testing.T) {
@@ -546,7 +547,7 @@ func TestArc_Polyline(t *testing.T) {
 		geomtest.AssertPoint(t, path.Points[0], Pt(2, 0))
 		geomtest.AssertPoint(t, path.Points[len(path.Points)-1], Pt(-2, 0))
 		for i := 1; i < len(path.Points); i++ {
-			assert.True(t, path.Points[i] != path.Points[i-1], path.String())
+			assert.NotEqual(t, path.Points[i], path.Points[i-1], path.String())
 		}
 	})
 	t.Run("the path lies on the arc and the arc within the tolerance of it", func(t *testing.T) {
@@ -555,7 +556,8 @@ func TestArc_Polyline(t *testing.T) {
 				path := a.Polyline(tolerance)
 				message := fmt.Sprintf("%s ±%v: ", a, tolerance)
 
-				assert.True(t, path.Points[0].Equal(a.Start()) && path.Points[len(path.Points)-1].Equal(a.End()), message)
+				geomtest.AssertPoint(t, path.Points[0], a.Start(), message)
+				geomtest.AssertPoint(t, path.Points[len(path.Points)-1], a.End(), message)
 				for _, point := range path.Points {
 					assert.True(t, a.Contains(point), message+point.String())
 				}
@@ -673,7 +675,7 @@ func TestArc_Properties(t *testing.T) {
 				points[i] = a.PointAt(float64(i) / 2048)
 			}
 
-			assert.True(t, math.Abs(a.Length()-PolLn(points).Length()) <= 1e-5*(1+a.Length()), a.String())
+			assert.EqualDelta(t, a.Length(), PolLn(points).Length(), 1e-5*(1+a.Length()), a.String())
 		}
 	})
 	t.Run("the nearest point is on the arc and at the distance, no point of it nearer", func(t *testing.T) {
@@ -718,7 +720,7 @@ func TestArc_Properties(t *testing.T) {
 	t.Run("scale and unscale are inverse", func(t *testing.T) {
 		for _, a := range arcFixtures {
 			for _, factor := range []float64{0.5, 2.5, -3} {
-				assert.True(t, a.Scale(factor).Unscale(factor).Equal(a), fmt.Sprintf("%s ×%v: ", a, factor))
+				geomtest.AssertArc(t, a.Scale(factor).Unscale(factor), a, fmt.Sprintf("%s ×%v: ", a, factor))
 			}
 		}
 	})

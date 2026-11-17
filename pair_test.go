@@ -40,8 +40,8 @@ func TestPair_All(t *testing.T) {
 		geomtest.AssertVertices(t, crossings.Items[:crossings.Count], slices.Collect(crossings.All()))
 	})
 	t.Run("pairs of equal items compare equal", func(t *testing.T) {
-		assert.True(t, Circ(Pt(0, 0), 5).Tangents(Pt(5, 0)) == Pair[Point[int]]{[2]Point[int]{Pt(5, 0)}, 1})
-		assert.True(t, Circ(Pt(0, 0), 5).Tangents(Pt(1, 0)) == Pair[Point[int]]{})
+		assert.Equal(t, Circ(Pt(0, 0), 5).Tangents(Pt(5, 0)), Pair[Point[int]]{[2]Point[int]{Pt(5, 0)}, 1})
+		assert.Equal(t, Circ(Pt(0, 0), 5).Tangents(Pt(1, 0)), Pair[Point[int]]{})
 	})
 	t.Run("ranging a result allocates nothing", func(t *testing.T) {
 		circle, other := Circ(Pt(0.0, 0.0), 5.0), Circ(Pt(6.0, 0.0), 5.0)
@@ -74,7 +74,7 @@ func TestPair_Equal(t *testing.T) {
 		near, exact := Pair[Point[float64]]{[2]Point[float64]{Pt(1.0, 2.0+Delta/2)}, 1}, Pair[Point[float64]]{[2]Point[float64]{Pt(1.0, 2.0)}, 1}
 
 		assert.True(t, near.Equal(exact))
-		assert.False(t, near == exact)
+		assert.NotEqual(t, near, exact)
 	})
 	t.Run("segments are compared by their own Equal", func(t *testing.T) {
 		tangents := Circ(Pt(0.0, 0.0), 2.0).OuterTangents(Circ(Pt(10.0, 0.0), 2.0))
@@ -166,7 +166,7 @@ func TestPair_JSON(t *testing.T) {
 		pair := Pair[Point[int]]{[2]Point[int]{b, a}, 2}
 
 		assert.NoError(t, json.Unmarshal([]byte(`[{"x":1,"y":2}]`), &pair))
-		assert.True(t, pair == Pair[Point[int]]{[2]Point[int]{a}, 1})
+		assert.Equal(t, pair, Pair[Point[int]]{[2]Point[int]{a}, 1})
 
 		assert.NoError(t, json.Unmarshal([]byte(`[]`), &pair))
 		assert.True(t, pair.IsEmpty())
@@ -176,7 +176,7 @@ func TestPair_JSON(t *testing.T) {
 
 		assert.Error(t, json.Unmarshal([]byte(`[{"x":1,"y":2},{"x":3,"y":4},{"x":5,"y":6}]`), &pair))
 		assert.Error(t, json.Unmarshal([]byte(`[{"x":"one"}]`), &pair))
-		assert.True(t, pair == Pair[Point[int]]{[2]Point[int]{a, b}, 2})
+		assert.Equal(t, pair, Pair[Point[int]]{[2]Point[int]{a, b}, 2})
 	})
 	t.Run("round-trip of segments", func(t *testing.T) {
 		tangents := Circ(Pt(0.0, 0.0), 2.0).OuterTangents(Circ(Pt(10.0, 0.0), 2.0))

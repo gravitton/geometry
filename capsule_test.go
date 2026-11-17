@@ -67,8 +67,8 @@ func TestCapsule_Inertia(t *testing.T) {
 		for _, c := range capsuleFixtures {
 			outline := outlineOf(c, 4096)
 
-			assert.True(t, math.Abs(c.Area()-outline.Area()) <= 1e-5*c.Area(), fmt.Sprintf("%s: %v ≠ %v", c, c.Area(), outline.Area()))
-			assert.True(t, math.Abs(c.Inertia()-outline.Inertia()) <= 1e-5*c.Inertia(), fmt.Sprintf("%s: %v ≠ %v", c, c.Inertia(), outline.Inertia()))
+			assert.EqualDelta(t, c.Area(), outline.Area(), 1e-5*c.Area(), fmt.Sprintf("%s: %v ≠ %v", c, c.Area(), outline.Area()))
+			assert.EqualDelta(t, c.Inertia(), outline.Inertia(), 1e-5*c.Inertia(), fmt.Sprintf("%s: %v ≠ %v", c, c.Inertia(), outline.Inertia()))
 		}
 	})
 }
@@ -181,8 +181,8 @@ func TestCapsule_Lerp(t *testing.T) {
 	t.Run("ends on the two capsules", func(t *testing.T) {
 		for _, a := range capsuleFixtures {
 			for _, b := range capsuleFixtures {
-				assert.True(t, a.Lerp(b, 0).Equal(a), fmt.Sprintf("%s -> %s: ", a, b))
-				assert.True(t, a.Lerp(b, 1).Equal(b), fmt.Sprintf("%s -> %s: ", a, b))
+				geomtest.AssertCapsule(t, a.Lerp(b, 0), a, fmt.Sprintf("%s -> %s: ", a, b))
+				geomtest.AssertCapsule(t, a.Lerp(b, 1), b, fmt.Sprintf("%s -> %s: ", a, b))
 			}
 		}
 	})
@@ -229,7 +229,7 @@ func TestCapsule_DistanceSquaredTo(t *testing.T) {
 		assert.Equal(t, c.DistanceSquaredTo(Pt(5.0, 2.0+Delta/2)), 0.0)
 	})
 	t.Run("int has no tolerance", func(t *testing.T) {
-		assert.True(t, Cap(Pt(0, 0), Pt(10, 0), 2).DistanceSquaredTo(Pt(5, 3)) > 0)
+		assert.Greater(t, Cap(Pt(0, 0), Pt(10, 0), 2).DistanceSquaredTo(Pt(5, 3)), 0)
 	})
 }
 
@@ -252,7 +252,7 @@ func TestCapsule_DistanceToCapsule(t *testing.T) {
 
 				assert.Equal(t, a.DistanceToCapsule(b) == 0, a.IntersectsCapsule(b), message)
 				geomtest.AssertNumber(t, a.DistanceToCapsule(b), b.DistanceToCapsule(a), message)
-				assert.True(t, a.DistanceToCapsule(b) >= 0, message)
+				assert.GreaterOrEqual(t, a.DistanceToCapsule(b), 0, message)
 			}
 		}
 	})
@@ -866,7 +866,7 @@ func TestCapsule_Polygon(t *testing.T) {
 				}
 
 				assert.True(t, polygon.Area() == 0 || polygon.Winding() == WindingClockwise && polygon.IsConvex(), message)
-				assert.True(t, polygon.Area() <= c.Area()+Delta, message)
+				assert.LessOrEqual(t, polygon.Area(), c.Area()+Delta, message)
 			}
 		}
 	})
@@ -1021,13 +1021,13 @@ func TestCapsule_Properties(t *testing.T) {
 	t.Run("scale and unscale are inverse", func(t *testing.T) {
 		for _, c := range capsuleFixtures {
 			for _, factor := range []float64{0.5, 1, 2.5, -3} {
-				assert.True(t, c.Scale(factor).Unscale(factor).Equal(c), fmt.Sprintf("%s ×%v: ", c, factor))
+				geomtest.AssertCapsule(t, c.Scale(factor).Unscale(factor), c, fmt.Sprintf("%s ×%v: ", c, factor))
 			}
 		}
 	})
 	t.Run("grow and shrink are inverse", func(t *testing.T) {
 		for _, c := range capsuleFixtures {
-			assert.True(t, c.Grow(1).Shrink(1).Equal(c), fmt.Sprintf("%s: ", c))
+			geomtest.AssertCapsule(t, c.Grow(1).Shrink(1), c, fmt.Sprintf("%s: ", c))
 		}
 	})
 	t.Run("a grown capsule contains the points within the amount of it", func(t *testing.T) {

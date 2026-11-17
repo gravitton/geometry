@@ -577,8 +577,9 @@ func TestSegment_NearestFraction(t *testing.T) {
 				fraction := s.NearestFraction(p)
 				message := fmt.Sprintf("%s → %s: ", s, p)
 
-				assert.True(t, fraction >= 0 && fraction <= 1, message)
-				assert.True(t, s.PointAt(fraction).Equal(s.Nearest(p)), message)
+				assert.GreaterOrEqual(t, fraction, 0, message)
+				assert.LessOrEqual(t, fraction, 1, message)
+				geomtest.AssertPoint(t, s.PointAt(fraction), s.Nearest(p), message)
 			}
 
 			if s.IsPoint() {
@@ -1734,7 +1735,7 @@ func TestSegment_IntersectionRectangle(t *testing.T) {
 				for edge := range r.Edges() {
 					s := Seg(edge.PointAt(-0.5), edge.PointAt(1.5))
 
-					assert.True(t, len(s.IntersectionRectangle(r).AppendTo(nil)) <= 2, fmt.Sprintf("%s → %s: ", s, r))
+					assert.LessOrEqual(t, len(s.IntersectionRectangle(r).AppendTo(nil)), 2, fmt.Sprintf("%s → %s: ", s, r))
 				}
 			}
 		}
@@ -1759,7 +1760,7 @@ func FuzzSegment_IntersectionRectangle(f *testing.F) {
 		s, r := Seg(Pt(x1, y1), Pt(x2, y2)), Rect(Pt(cx, cy), Sz(w, h), 0)
 		points := s.IntersectionRectangle(r).AppendTo(nil)
 
-		assert.True(t, len(points) <= 2, fmt.Sprintf("%s → %s: at most two crossings, got %d: ", s, r, len(points)))
+		assert.LessOrEqual(t, len(points), 2, fmt.Sprintf("%s → %s: at most two crossings, got %d: ", s, r, len(points)))
 
 		for _, p := range points {
 			assert.True(t, s.Contains(p), fmt.Sprintf("%s → %s: %s on the segment: ", s, r, p))
@@ -2654,13 +2655,15 @@ func TestSegment_HitCapsule(t *testing.T) {
 				hit, ok := cast.HitCapsule(Cap(wall.Start, wall.End, 0.0))
 				expected, found := cast.HitSegment(wall)
 
-				assert.True(t, hit == expected && ok == found, fmt.Sprintf("%s → %s: ", cast, wall))
+				assert.Equal(t, hit, expected, fmt.Sprintf("%s → %s: ", cast, wall))
+				assert.Equal(t, ok, found, fmt.Sprintf("%s → %s: ", cast, wall))
 			}
 			for _, c := range circleFixtures {
 				hit, ok := cast.HitCapsule(Cap(c.Center, c.Center, c.Radius))
 				expected, found := cast.HitCircle(c)
 
-				assert.True(t, hit == expected && ok == found, fmt.Sprintf("%s → %s: ", cast, c))
+				assert.Equal(t, hit, expected, fmt.Sprintf("%s → %s: ", cast, c))
+				assert.Equal(t, ok, found, fmt.Sprintf("%s → %s: ", cast, c))
 			}
 		}
 	})
@@ -3034,7 +3037,8 @@ func TestSegment_HitQuadraticBezier(t *testing.T) {
 				hit, ok := s.HitQuadraticBezier(q)
 				expected, found := s.HitCubicBezier(q.CubicBezier())
 
-				assert.True(t, hit == expected && ok == found, fmt.Sprintf("%s → %s: ", s, q))
+				assert.Equal(t, hit, expected, fmt.Sprintf("%s → %s: ", s, q))
+				assert.Equal(t, ok, found, fmt.Sprintf("%s → %s: ", s, q))
 			}
 		}
 	})
@@ -3565,7 +3569,7 @@ func TestSegment_Properties(t *testing.T) {
 	t.Run("scale and unscale are inverse", func(t *testing.T) {
 		for _, s := range segmentFixtures {
 			for _, factor := range []float64{0.5, 1, 2.5, -3} {
-				assert.True(t, s.Scale(factor).Unscale(factor).Equal(s), fmt.Sprintf("%s x%v: ", s, factor))
+				geomtest.AssertSegment(t, s.Scale(factor).Unscale(factor), s, fmt.Sprintf("%s x%v: ", s, factor))
 			}
 		}
 	})
@@ -3587,13 +3591,13 @@ func TestSegment_Properties(t *testing.T) {
 	})
 	t.Run("reverse is its own inverse", func(t *testing.T) {
 		for _, segment := range segmentFixtures {
-			assert.True(t, segment.Reverse().Reverse().Equal(segment), fmt.Sprintf("%s: ", segment))
+			geomtest.AssertSegment(t, segment.Reverse().Reverse(), segment, fmt.Sprintf("%s: ", segment))
 		}
 	})
 	t.Run("reverse keeps the length and midpoint", func(t *testing.T) {
 		for _, segment := range segmentFixtures {
 			geomtest.AssertNumber(t, segment.Reverse().Length(), segment.Length(), fmt.Sprintf("%s: ", segment))
-			assert.True(t, segment.Reverse().Midpoint().Equal(segment.Midpoint()), fmt.Sprintf("%s: ", segment))
+			geomtest.AssertPoint(t, segment.Reverse().Midpoint(), segment.Midpoint(), fmt.Sprintf("%s: ", segment))
 		}
 	})
 	t.Run("length is the vector length", func(t *testing.T) {
@@ -3612,7 +3616,7 @@ func TestSegment_Properties(t *testing.T) {
 	t.Run("translate keeps the vector", func(t *testing.T) {
 		for _, segment := range segmentFixtures {
 			for _, vector := range vectorFixtures {
-				assert.True(t, segment.Translate(vector).Vector().Equal(segment.Vector()), fmt.Sprintf("%s → %s: ", segment, vector))
+				geomtest.AssertVector(t, segment.Translate(vector).Vector(), segment.Vector(), fmt.Sprintf("%s → %s: ", segment, vector))
 			}
 		}
 	})
@@ -3621,8 +3625,8 @@ func TestSegment_Properties(t *testing.T) {
 			for _, point := range pointFixtures {
 				moved := segment.MoveTo(point)
 
-				assert.True(t, moved.Midpoint().Equal(point), fmt.Sprintf("%s → %s: ", segment, point))
-				assert.True(t, moved.Vector().Equal(segment.Vector()), fmt.Sprintf("%s → %s: ", segment, point))
+				geomtest.AssertPoint(t, moved.Midpoint(), point, fmt.Sprintf("%s → %s: ", segment, point))
+				geomtest.AssertVector(t, moved.Vector(), segment.Vector(), fmt.Sprintf("%s → %s: ", segment, point))
 			}
 		}
 	})
@@ -3631,8 +3635,8 @@ func TestSegment_Properties(t *testing.T) {
 			bounds := segment.Bounds()
 			start, end := segment.Start, segment.End
 
-			assert.True(t, bounds.Min.Equal(Pt(min(start.X, end.X), min(start.Y, end.Y))), fmt.Sprintf("%s: ", segment))
-			assert.True(t, bounds.Max.Equal(Pt(max(start.X, end.X), max(start.Y, end.Y))), fmt.Sprintf("%s: ", segment))
+			geomtest.AssertPoint(t, bounds.Min, Pt(min(start.X, end.X), min(start.Y, end.Y)), fmt.Sprintf("%s: ", segment))
+			geomtest.AssertPoint(t, bounds.Max, Pt(max(start.X, end.X), max(start.Y, end.Y)), fmt.Sprintf("%s: ", segment))
 		}
 	})
 	t.Run("vertices are the endpoints", func(t *testing.T) {

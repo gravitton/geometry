@@ -142,7 +142,7 @@ func TestShape(t *testing.T) {
 		for _, shape := range shapes {
 			for _, p := range pointFixtures {
 				assert.Equal(t, shape.DistanceTo(p) == 0, shape.Contains(p), fmt.Sprintf("%s → %s: ", shape, p))
-				assert.True(t, shape.DistanceSquaredTo(p) >= 0, fmt.Sprintf("%s → %s: ", shape, p))
+				assert.GreaterOrEqual(t, shape.DistanceSquaredTo(p), 0, fmt.Sprintf("%s → %s: ", shape, p))
 			}
 		}
 	})
@@ -240,8 +240,8 @@ func TestOutline(t *testing.T) {
 			vertices, edges := slices.Collect(shape.Vertices()), slices.Collect(shape.Edges())
 
 			for i, edge := range edges {
-				assert.True(t, edge.Start.Equal(vertices[i]), fmt.Sprintf("%s #%d: ", shape, i))
-				assert.True(t, edge.End.Equal(vertices[(i+1)%len(vertices)]), fmt.Sprintf("%s #%d: ", shape, i))
+				geomtest.AssertPoint(t, edge.Start, vertices[i], fmt.Sprintf("%s #%d: ", shape, i))
+				geomtest.AssertPoint(t, edge.End, vertices[(i+1)%len(vertices)], fmt.Sprintf("%s #%d: ", shape, i))
 			}
 		}
 	})
@@ -486,8 +486,8 @@ func TestBody(t *testing.T) {
 			bounds := s.Bounds()
 			reach := max(bounds.Min.DistanceSquaredTo(s.Centroid()), bounds.Max.DistanceSquaredTo(s.Centroid()))
 
-			assert.True(t, s.Inertia() > 0, fmt.Sprintf("%v: ", s))
-			assert.True(t, s.Inertia() < s.Area()*reach, fmt.Sprintf("%v: ", s))
+			assert.Greater(t, s.Inertia(), 0, fmt.Sprintf("%v: ", s))
+			assert.Less(t, s.Inertia(), s.Area()*reach, fmt.Sprintf("%v: ", s))
 		}
 	})
 }
@@ -582,8 +582,8 @@ func TestDistance(t *testing.T) {
 		circle, ellipse := Circ(Pt(-5, -1), 2), Ell(Pt(-2, 3), Sz(3, 3), 4.71238898038469)
 
 		assert.False(t, Intersects[int](circle, ellipse))
-		assert.True(t, Distance[int](circle, ellipse) > 0)
-		assert.True(t, Distance[int](ellipse, circle) > 0)
+		assert.Greater(t, Distance[int](circle, ellipse), 0)
+		assert.Greater(t, Distance[int](ellipse, circle), 0)
 	})
 	t.Run("a point as a segment is at the distance the shape gives it", func(t *testing.T) {
 		for _, a := range shapeFixtures() {
@@ -623,8 +623,8 @@ func TestDistance(t *testing.T) {
 	t.Run("a NaN coordinate is at no distance from nothing", func(t *testing.T) {
 		ellipse := Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)
 
-		assert.False(t, Distance[float64](ellipse, Ell(Pt(math.NaN(), 0.0), Sz(4.0, 2.0), 0)) == 0)
-		assert.False(t, Distance[float64](Circ(Pt(math.NaN(), 0.0), 1.0), ellipse) == 0)
+		assert.NotEqual(t, Distance[float64](ellipse, Ell(Pt(math.NaN(), 0.0), Sz(4.0, 2.0), 0)), 0)
+		assert.NotEqual(t, Distance[float64](Circ(Pt(math.NaN(), 0.0), 1.0), ellipse), 0)
 	})
 	t.Run("allocates nothing for shapes held as Shape", func(t *testing.T) {
 		var rectangle, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Rotate(0.3), Ell(Pt(9.0, 0.0), Sz(2.0, 1.0), 0.2)
@@ -763,8 +763,8 @@ func TestNearest(t *testing.T) {
 				first, second := Nearest(a, b)
 				message := fmt.Sprintf("%v → %v: %v, %v", a, b, first, second)
 
-				assert.True(t, a.DistanceTo(first) <= 1e-9, message)
-				assert.True(t, b.DistanceTo(second) <= 1e-9, message)
+				assert.LessOrEqual(t, a.DistanceTo(first), 1e-9, message)
+				assert.LessOrEqual(t, b.DistanceTo(second), 1e-9, message)
 				assert.True(t, EqualDelta(first.DistanceTo(second), Distance(a, b), 1e-5), message)
 				assert.True(t, !Intersects(a, b) || first == second, message)
 			}
@@ -779,8 +779,8 @@ func TestNearest(t *testing.T) {
 					first, second := Nearest(a, b)
 					message := fmt.Sprintf("%v → %v: %v, %v", a, b, first, second)
 
-					assert.True(t, a.DistanceTo(first) < 0.5, message)
-					assert.True(t, b.DistanceTo(second) < 0.5, message)
+					assert.Less(t, a.DistanceTo(first), 0.5, message)
+					assert.Less(t, b.DistanceTo(second), 0.5, message)
 					assert.True(t, EqualDelta(first.DistanceTo(second), Distance(a, b), 0.5), message)
 				}
 			}
@@ -1275,13 +1275,13 @@ func TestCollide(t *testing.T) {
 		assert.True(t, contact.Normal.Subtract(Vec(0.0, -1.0)).LessOrEqual(1e-3), fmt.Sprint(contact))
 		assert.True(t, EqualDelta(contact.Depth, 0.5, 1e-5), fmt.Sprint(contact))
 		assert.Equal(t, contact.Points.Count, 1)
-		assert.True(t, contact.Points.Items[0].DistanceTo(Pt(2.0, 1.5)) < 1e-2, fmt.Sprint(contact))
+		assert.Less(t, contact.Points.Items[0].DistanceTo(Pt(2.0, 1.5)), 1e-2, fmt.Sprint(contact))
 
 		contact, ok = Collide[float64](Circ(Pt(0.0, 0.0), 1.0), Circ(Pt(1.5, 0.0), 1.0))
 
 		assert.True(t, ok)
 		assert.Equal(t, contact.Points.Count, 1)
-		assert.True(t, contact.Points.Items[0].DistanceTo(Pt(0.5, 0.0)) < 1e-2, fmt.Sprint(contact))
+		assert.Less(t, contact.Points.Items[0].DistanceTo(Pt(0.5, 0.0)), 1e-2, fmt.Sprint(contact))
 	})
 	t.Run("shapes that only touch have a normal and no depth", func(t *testing.T) {
 		contact, ok := Collide[float64](BoxFromMinMax(Pt(0.0, 0.0), Pt(4.0, 1.5)), ground)
@@ -1340,10 +1340,10 @@ func TestCollide(t *testing.T) {
 				}
 
 				assert.True(t, contact.Normal.IsNormalized() || contact.Normal.IsZero(), message)
-				assert.True(t, contact.Points.Count >= 1, message)
+				assert.GreaterOrEqual(t, contact.Points.Count, 1, message)
 				for point := range contact.Points.All() {
 					assert.True(t, b.Contains(point), message+point.String())
-					assert.True(t, a.DistanceTo(point) <= contact.Depth+1e-3, message+point.String())
+					assert.LessOrEqual(t, a.DistanceTo(point), contact.Depth+1e-3, message+point.String())
 				}
 			}
 		}
@@ -1356,7 +1356,7 @@ func TestCollide(t *testing.T) {
 				message := fmt.Sprintf("%v → %v: %v, %v", a, b, contact.Normal, reverse.Normal)
 
 				geomtest.AssertNumber(t, contact.Depth, reverse.Depth, message)
-				assert.True(t, contact.Normal == reverse.Normal.Negate() || contact.Normal == reverse.Normal, message)
+				assert.Contains(t, []Vector[float64]{reverse.Normal.Negate(), reverse.Normal}, contact.Normal, message)
 			}
 		}
 	})
@@ -1476,9 +1476,9 @@ func TestCollide(t *testing.T) {
 				}
 
 				geomtest.AssertNumber(t, contact.Depth, reverse.Depth, message)
-				assert.True(t, contact.Normal == reverse.Normal.Negate() || contact.Normal == reverse.Normal, message)
+				assert.Contains(t, []Vector[float64]{reverse.Normal.Negate(), reverse.Normal}, contact.Normal, message)
 				assert.True(t, contact.Normal.IsNormalized() || contact.Normal.IsZero(), message)
-				assert.True(t, contact.Points.Count >= 1, message)
+				assert.GreaterOrEqual(t, contact.Points.Count, 1, message)
 				for point := range contact.Points.All() {
 					assert.True(t, b.Contains(point), message+point.String())
 				}
@@ -1505,7 +1505,7 @@ func TestCollide(t *testing.T) {
 					assert.Equal(t, ok, Intersects(a, b), message)
 					assert.True(t, !ok || contact.Depth >= 0, message)
 					for point := range contact.Points.All() {
-						assert.True(t, b.DistanceTo(point) < 0.5, message+point.String())
+						assert.Less(t, b.DistanceTo(point), 0.5, message+point.String())
 					}
 				}
 			}
@@ -1610,7 +1610,8 @@ func FuzzCollide(f *testing.F) {
 		assert.Equal(t, Intersects(b, a), intersects, message)
 		assert.Equal(t, ok, intersects, message)
 		assert.Equal(t, Distance(a, b) == 0, intersects, message)
-		assert.True(t, contact.Depth >= 0 && contact.Points.Count <= 2, message)
+		assert.GreaterOrEqual(t, contact.Depth, 0, message)
+		assert.LessOrEqual(t, contact.Points.Count, 2, message)
 		assert.True(t, !ok || contact.Points.Count >= 1, message)
 	})
 }
@@ -1640,7 +1641,7 @@ func TestSweep(t *testing.T) {
 		contact, _ := Collide[float64](box.Translate(motion.Multiply(hit.Fraction)), rectangle)
 
 		assert.True(t, ok)
-		assert.True(t, contact.Depth <= Delta, fmt.Sprint(hit, contact))
+		assert.LessOrEqual(t, contact.Depth, Delta, fmt.Sprint(hit, contact))
 	})
 	t.Run("int rounds the point", func(t *testing.T) {
 		hit, ok := Sweep[int](BoxFromMinMax(Pt(0, 0), Pt(1, 1)), Vec(10, 0), BoxFromMinMax(Pt(5, -1), Pt(6, 3)))
@@ -1757,10 +1758,11 @@ func TestSweep(t *testing.T) {
 					message := fmt.Sprintf("%v + %s → %v: %v", a, motion, b, hit)
 					step := motion.Resize(1e-3)
 
-					assert.True(t, hit.Fraction >= 0 && hit.Fraction <= 1, message)
+					assert.GreaterOrEqual(t, hit.Fraction, 0, message)
+					assert.LessOrEqual(t, hit.Fraction, 1, message)
 					assert.True(t, hit.Normal.IsNormalized(), message)
-					assert.True(t, hit.Normal.Dot(motion) < 0, message)
-					assert.True(t, b.DistanceTo(hit.Point) < 1e-3, message)
+					assert.Less(t, hit.Normal.Dot(motion), 0, message)
+					assert.Less(t, b.DistanceTo(hit.Point), 1e-3, message)
 					assert.False(t, Intersects[float64](translated(a, motion.Multiply(hit.Fraction).Subtract(step)), b), message)
 				}
 			}
@@ -1789,7 +1791,7 @@ func TestSweep(t *testing.T) {
 
 			assert.True(t, ok)
 			assert.True(t, EqualDelta(hit.Fraction, 0.4, 1e-2), fmt.Sprint(hit))
-			assert.True(t, wall.DistanceTo(hit.Point) < 0.1, fmt.Sprint(hit))
+			assert.Less(t, wall.DistanceTo(hit.Point), 0.1, fmt.Sprint(hit))
 		}
 	})
 	t.Run("int shapes far from the origin stop as they do near it", func(t *testing.T) {
@@ -1827,7 +1829,7 @@ func assertPointSweep(t *testing.T, start Point[float64], motion Vector[float64]
 	assert.Equal(t, swept, ok, message)
 	if swept && ok {
 		assert.True(t, EqualDelta(hit.Fraction, expected.Fraction, 1e-4), message+fmt.Sprint(hit, expected))
-		assert.True(t, hit.Point.DistanceTo(expected.Point) < 1e-3, message+fmt.Sprint(hit, expected))
+		assert.Less(t, hit.Point.DistanceTo(expected.Point), 1e-3, message+fmt.Sprint(hit, expected))
 	}
 }
 
@@ -1853,47 +1855,56 @@ func TestRaycast(t *testing.T) {
 			for _, c := range circleFixtures {
 				expected, found := ray.HitCircle(c)
 				hit, ok := Raycast[float64](ray, c)
-				assert.True(t, hit == expected && ok == found, fmt.Sprintf("%v → %v: ", ray, c))
+				assert.Equal(t, hit, expected, fmt.Sprintf("%v → %v: ", ray, c))
+				assert.Equal(t, ok, found, fmt.Sprintf("%v → %v: ", ray, c))
 			}
 			for _, c := range capsuleFixtures {
 				expected, found := ray.HitCapsule(c)
 				hit, ok := Raycast[float64](ray, c)
-				assert.True(t, hit == expected && ok == found, fmt.Sprintf("%v → %v: ", ray, c))
+				assert.Equal(t, hit, expected, fmt.Sprintf("%v → %v: ", ray, c))
+				assert.Equal(t, ok, found, fmt.Sprintf("%v → %v: ", ray, c))
 			}
 			for _, s := range sectorFixtures() {
 				expected, found := ray.HitSector(s)
 				hit, ok := Raycast[float64](ray, s)
-				assert.True(t, hit == expected && ok == found, fmt.Sprintf("%v → %v: ", ray, s))
+				assert.Equal(t, hit, expected, fmt.Sprintf("%v → %v: ", ray, s))
+				assert.Equal(t, ok, found, fmt.Sprintf("%v → %v: ", ray, s))
 			}
 			for _, s := range segmentFixtures {
 				expected, found := ray.HitSegment(s)
 				hit, ok := Raycast[float64](ray, s)
-				assert.True(t, hit == expected && ok == found, fmt.Sprintf("%v → %v: ", ray, s))
+				assert.Equal(t, hit, expected, fmt.Sprintf("%v → %v: ", ray, s))
+				assert.Equal(t, ok, found, fmt.Sprintf("%v → %v: ", ray, s))
 			}
 			for _, p := range polygonFixtures() {
 				expected, found := ray.HitPolygon(p)
 				hit, ok := Raycast[float64](ray, p)
-				assert.True(t, hit == expected && ok == found, fmt.Sprintf("%v → %v: ", ray, p))
+				assert.Equal(t, hit, expected, fmt.Sprintf("%v → %v: ", ray, p))
+				assert.Equal(t, ok, found, fmt.Sprintf("%v → %v: ", ray, p))
 			}
 			for _, r := range rectFixtures {
 				expected, found := ray.HitRectangle(r)
 				hit, ok := Raycast[float64](ray, r)
-				assert.True(t, hit == expected && ok == found, fmt.Sprintf("%v → %v: ", ray, r))
+				assert.Equal(t, hit, expected, fmt.Sprintf("%v → %v: ", ray, r))
+				assert.Equal(t, ok, found, fmt.Sprintf("%v → %v: ", ray, r))
 			}
 			for _, rp := range regularPolygonFixtures {
 				expected, found := ray.HitRegularPolygon(rp)
 				hit, ok := Raycast[float64](ray, rp)
-				assert.True(t, hit == expected && ok == found, fmt.Sprintf("%v → %v: ", ray, rp))
+				assert.Equal(t, hit, expected, fmt.Sprintf("%v → %v: ", ray, rp))
+				assert.Equal(t, ok, found, fmt.Sprintf("%v → %v: ", ray, rp))
 			}
 			for _, b := range boxFixtures {
 				expected, found := ray.HitBox(b)
 				hit, ok := Raycast[float64](ray, b)
-				assert.True(t, hit == expected && ok == found, fmt.Sprintf("%v → %v: ", ray, b))
+				assert.Equal(t, hit, expected, fmt.Sprintf("%v → %v: ", ray, b))
+				assert.Equal(t, ok, found, fmt.Sprintf("%v → %v: ", ray, b))
 			}
 			for _, e := range ellipseFixtures {
 				expected, found := ray.HitEllipse(e)
 				hit, ok := Raycast[float64](ray, e)
-				assert.True(t, hit == expected && ok == found, fmt.Sprintf("%v → %v: ", ray, e))
+				assert.Equal(t, hit, expected, fmt.Sprintf("%v → %v: ", ray, e))
+				assert.Equal(t, ok, found, fmt.Sprintf("%v → %v: ", ray, e))
 			}
 		}
 	})
@@ -1921,7 +1932,7 @@ func TestRaycast(t *testing.T) {
 
 		assert.True(t, ok)
 		assert.True(t, EqualDelta(hit.Fraction, expected.Fraction, 1e-5), fmt.Sprint(hit, expected))
-		assert.True(t, hit.Point.DistanceTo(expected.Point) < 1e-4, fmt.Sprint(hit, expected))
+		assert.Less(t, hit.Point.DistanceTo(expected.Point), 1e-4, fmt.Sprint(hit, expected))
 		assert.True(t, hit.Normal.Subtract(expected.Normal).LessOrEqual(1e-4), fmt.Sprint(hit, expected))
 	})
 	t.Run("a shape known by its support around the origin of the ray is not hit", func(t *testing.T) {
@@ -1949,9 +1960,10 @@ func TestRaycast(t *testing.T) {
 
 				hit, ok := Raycast[float64](ray, ellipse)
 				assert.True(t, ok, message)
-				assert.True(t, about.Fraction-1e-5 <= hit.Fraction && hit.Fraction <= within.Fraction+1e-5, message+fmt.Sprint(about.Fraction, hit.Fraction, within.Fraction))
+				assert.LessOrEqual(t, about.Fraction-1e-5, hit.Fraction, message+fmt.Sprint(about.Fraction, hit.Fraction, within.Fraction))
+				assert.LessOrEqual(t, hit.Fraction, within.Fraction+1e-5, message+fmt.Sprint(about.Fraction, hit.Fraction, within.Fraction))
 				assert.True(t, hit.Normal.IsNormalized(), message)
-				assert.True(t, ellipse.DistanceTo(hit.Point) < 1e-3, message)
+				assert.Less(t, ellipse.DistanceTo(hit.Point), 1e-3, message)
 			}
 		}
 	})
@@ -2033,7 +2045,7 @@ func assertNearest[T Number](t *testing.T, shape Shape[T], point Point[T]) {
 
 	assert.Equal(t, nearest.Equal(point), shape.Contains(point), message)
 	assert.True(t, shape.Contains(nearest), message)
-	assert.True(t, shape.Nearest(nearest).Equal(nearest), message)
+	geomtest.AssertPoint(t, shape.Nearest(nearest), nearest, message)
 	geomtest.AssertNumber(t, float64(point.DistanceSquaredTo(nearest)), shape.DistanceSquaredTo(point), message)
 }
 
@@ -2146,7 +2158,7 @@ func assertShapeHit[T Number](t *testing.T, cast caster[T], hit Hit[T], ok, cont
 		return
 	}
 
-	assert.True(t, hit.Point.Equal(crossings[0]), message+hit.Point.String()+" is the first crossing: ")
+	geomtest.AssertPoint(t, hit.Point, crossings[0], message+hit.Point.String()+" is the first crossing: ")
 	assertFacing(t, cast, hit, message)
 }
 
@@ -2177,7 +2189,8 @@ func assertFacing[T Number](t *testing.T, cast caster[T], hit Hit[T], message st
 
 	assert.True(t, hit.Normal.IsNormalized(), message+hit.Normal.String()+" is a unit: ")
 	assert.True(t, LessOrEqual(hit.Normal.Dot(direction.Normalize()), 0), message+hit.Normal.String()+" faces the cast: ")
-	assert.True(t, hit.Fraction >= 0 && cast.PointAt(hit.Fraction).Equal(hit.Point), message+"PointAt of the fraction: ")
+	assert.GreaterOrEqual(t, hit.Fraction, 0, message+"PointAt of the fraction: ")
+	geomtest.AssertPoint(t, cast.PointAt(hit.Fraction), hit.Point, message+"PointAt of the fraction: ")
 }
 
 // assertReversed asserts that a segment and its Reverse cross a boundary at the same points,

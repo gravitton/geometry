@@ -246,15 +246,15 @@ func TestPadding_Properties(t *testing.T) {
 
 			geomtest.AssertNumber(t, width, padding.Width(), fmt.Sprintf("%s: ", padding))
 			geomtest.AssertNumber(t, height, padding.Height(), fmt.Sprintf("%s: ", padding))
-			assert.True(t, padding.Size().Equal(Sz(padding.Width(), padding.Height())), fmt.Sprintf("%s: ", padding))
+			geomtest.AssertSize(t, padding.Size(), Sz(padding.Width(), padding.Height()), fmt.Sprintf("%s: ", padding))
 		}
 	})
 	t.Run("lerp ends on the two paddings", func(t *testing.T) {
 		for _, a := range paddingFixtures {
 			for _, b := range paddingFixtures {
-				assert.True(t, a.Lerp(b, 0).Equal(a), fmt.Sprintf("%s -> %s: ", a, b))
-				assert.True(t, a.Lerp(b, 1).Equal(b), fmt.Sprintf("%s -> %s: ", a, b))
-				assert.True(t, a.Lerp(b, 0.5).Equal(b.Lerp(a, 0.5)), fmt.Sprintf("%s -> %s: ", a, b))
+				geomtest.AssertPadding(t, a.Lerp(b, 0), a, fmt.Sprintf("%s -> %s: ", a, b))
+				geomtest.AssertPadding(t, a.Lerp(b, 1), b, fmt.Sprintf("%s -> %s: ", a, b))
+				geomtest.AssertPadding(t, a.Lerp(b, 0.5), b.Lerp(a, 0.5), fmt.Sprintf("%s -> %s: ", a, b))
 			}
 		}
 	})

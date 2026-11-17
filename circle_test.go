@@ -422,7 +422,7 @@ func TestCircle_DistanceToCircle(t *testing.T) {
 
 				assert.Equal(t, a.DistanceToCircle(b) == 0, a.IntersectsCircle(b), message)
 				geomtest.AssertNumber(t, a.DistanceToCircle(b), b.DistanceToCircle(a), message)
-				assert.True(t, a.DistanceToCircle(b) >= 0, message)
+				assert.GreaterOrEqual(t, a.DistanceToCircle(b), 0, message)
 			}
 		}
 	})
@@ -1098,7 +1098,7 @@ func TestCircle_IntersectionCircle(t *testing.T) {
 			for _, b := range circleFixtures {
 				points := a.IntersectionCircle(b).AppendTo(nil)
 
-				assert.True(t, len(points) <= 2, fmt.Sprintf("%s → %s: at most two points: ", a, b))
+				assert.LessOrEqual(t, len(points), 2, fmt.Sprintf("%s → %s: at most two points: ", a, b))
 				if len(points) > 0 {
 					assert.True(t, a.IntersectsCircle(b), fmt.Sprintf("%s → %s: ", a, b))
 				}
@@ -1150,7 +1150,7 @@ func FuzzCircle_IntersectionCircle(f *testing.F) {
 		a, b := Circ(Pt(x1, y1), r1), Circ(Pt(x2, y2), r2)
 		points := a.IntersectionCircle(b).AppendTo(nil)
 
-		assert.True(t, len(points) <= 2, fmt.Sprintf("%s → %s: at most two crossings, got %d: ", a, b, len(points)))
+		assert.LessOrEqual(t, len(points), 2, fmt.Sprintf("%s → %s: at most two crossings, got %d: ", a, b, len(points)))
 
 		for _, p := range points {
 			assert.True(t, touches(a, p), fmt.Sprintf("%s → %s: %s on the first: ", a, b, p))
@@ -1284,7 +1284,7 @@ func TestCircle_IntersectionSegment(t *testing.T) {
 			for _, c := range circleFixtures {
 				points := c.IntersectionSegment(s).AppendTo(nil)
 
-				assert.True(t, len(points) <= 2, fmt.Sprintf("%s → %s: at most two crossings: ", s, c))
+				assert.LessOrEqual(t, len(points), 2, fmt.Sprintf("%s → %s: at most two crossings: ", s, c))
 				for _, p := range points {
 					assert.True(t, s.Contains(p), fmt.Sprintf("%s → %s: %s on the segment: ", s, c, p))
 					assert.True(t, touches(c, p), fmt.Sprintf("%s → %s: %s on the boundary: ", s, c, p))
@@ -1320,7 +1320,7 @@ func TestCircle_IntersectionSegment(t *testing.T) {
 					s, c := s.Cast[float32]().Translate(offset), c.Cast[float32]().Translate(offset)
 					points := c.IntersectionSegment(s).AppendTo(nil)
 
-					assert.True(t, len(points) <= 2, fmt.Sprintf("%s → %s: at most two crossings: ", s, c))
+					assert.LessOrEqual(t, len(points), 2, fmt.Sprintf("%s → %s: at most two crossings: ", s, c))
 					for _, p := range points {
 						assert.True(t, s.Contains(p), fmt.Sprintf("%s → %s: %s on the segment: ", s, c, p))
 						assert.True(t, touches(c, p), fmt.Sprintf("%s → %s: %s on the boundary: ", s, c, p))
@@ -1348,7 +1348,7 @@ func FuzzCircle_IntersectionSegment(f *testing.F) {
 		s, c := Seg(Pt(x1, y1), Pt(x2, y2)), Circ(Pt(cx, cy), r)
 		points := c.IntersectionSegment(s).AppendTo(nil)
 
-		assert.True(t, len(points) <= 2, fmt.Sprintf("%s → %s: at most two crossings, got %d: ", s, c, len(points)))
+		assert.LessOrEqual(t, len(points), 2, fmt.Sprintf("%s → %s: at most two crossings, got %d: ", s, c, len(points)))
 
 		for _, p := range points {
 			assert.True(t, s.Contains(p), fmt.Sprintf("%s → %s: %s on the segment: ", s, c, p))
@@ -1397,7 +1397,7 @@ func TestCircle_IntersectionRay(t *testing.T) {
 					assert.True(t, r.Contains(point), message+point.String()+" on the ray: ")
 					assert.True(t, touches(c, point), message+point.String()+" on the boundary: ")
 				}
-				assert.True(t, len(points) <= 2, message)
+				assert.LessOrEqual(t, len(points), 2, message)
 				if r.Vector != (Vector[float64]{}) {
 					assert.Equal(t, len(points) > 0, c.IntersectsRay(r), message)
 				}
@@ -1442,7 +1442,7 @@ func TestCircle_IntersectionLine(t *testing.T) {
 					assert.True(t, l.Contains(point), message+point.String()+" on the line: ")
 					assert.True(t, touches(c, point), message+point.String()+" on the boundary: ")
 				}
-				assert.True(t, len(points) <= 2, message)
+				assert.LessOrEqual(t, len(points), 2, message)
 				if l.Vector != (Vector[float64]{}) {
 					assert.Equal(t, len(points) > 0, c.IntersectsLine(l), message)
 				}
@@ -1910,15 +1910,15 @@ func TestCircle_Properties(t *testing.T) {
 	t.Run("lerp ends on the two circles", func(t *testing.T) {
 		for _, a := range circleFixtures {
 			for _, b := range circleFixtures {
-				assert.True(t, a.Lerp(b, 0).Equal(a), fmt.Sprintf("%s -> %s: ", a, b))
-				assert.True(t, a.Lerp(b, 1).Equal(b), fmt.Sprintf("%s -> %s: ", a, b))
+				geomtest.AssertCircle(t, a.Lerp(b, 0), a, fmt.Sprintf("%s -> %s: ", a, b))
+				geomtest.AssertCircle(t, a.Lerp(b, 1), b, fmt.Sprintf("%s -> %s: ", a, b))
 			}
 		}
 	})
 	t.Run("scale and unscale are inverse", func(t *testing.T) {
 		for _, c := range circleFixtures {
 			for _, factor := range []float64{0.5, 1, 2.5, -3} {
-				assert.True(t, c.Scale(factor).Unscale(factor).Equal(c), fmt.Sprintf("%s ×%v: ", c, factor))
+				geomtest.AssertCircle(t, c.Scale(factor).Unscale(factor), c, fmt.Sprintf("%s ×%v: ", c, factor))
 			}
 		}
 	})
@@ -1933,8 +1933,8 @@ func TestCircle_Properties(t *testing.T) {
 		for _, c := range circleFixtures {
 			bounds := c.Bounds()
 
-			assert.True(t, bounds.Center().Equal(c.Center), fmt.Sprintf("%s: ", c))
-			assert.True(t, bounds.Size().Equal(SzU(c.Diameter())), fmt.Sprintf("%s: ", c))
+			geomtest.AssertPoint(t, bounds.Center(), c.Center, fmt.Sprintf("%s: ", c))
+			geomtest.AssertSize(t, bounds.Size(), SzU(c.Diameter()), fmt.Sprintf("%s: ", c))
 		}
 	})
 	t.Run("every anchor is on the boundary", func(t *testing.T) {
@@ -1961,7 +1961,7 @@ func TestCircle_Properties(t *testing.T) {
 		for _, c := range circleFixtures {
 			for _, point := range pointFixtures {
 				geomtest.AssertNumber(t, c.MoveTo(point).Radius, c.Radius, fmt.Sprintf("%s → %s: ", c, point))
-				assert.True(t, c.MoveTo(point).Center.Equal(point), fmt.Sprintf("%s → %s: ", c, point))
+				geomtest.AssertPoint(t, c.MoveTo(point).Center, point, fmt.Sprintf("%s → %s: ", c, point))
 				geomtest.AssertNumber(t, c.Translate(point.Vector()).Radius, c.Radius, fmt.Sprintf("%s → %s: ", c, point))
 			}
 		}
@@ -1972,7 +1972,7 @@ func TestCircle_Properties(t *testing.T) {
 				continue // shrink clamps to zero, so the growth is not recoverable
 			}
 
-			assert.True(t, c.Grow(1).Shrink(1).Equal(c), fmt.Sprintf("%s: ", c))
+			geomtest.AssertCircle(t, c.Grow(1).Shrink(1), c, fmt.Sprintf("%s: ", c))
 		}
 	})
 }
@@ -2001,7 +2001,7 @@ func assertTangents(t *testing.T, a, b Circle[float64], tangents, reversed []Seg
 
 	message := fmt.Sprintf("%s → %s: ", a, b)
 
-	assert.True(t, len(tangents) <= 2, message)
+	assert.LessOrEqual(t, len(tangents), 2, message)
 	assert.Length(t, reversed, len(tangents), message)
 
 	for i, s := range tangents {

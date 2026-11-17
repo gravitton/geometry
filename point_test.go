@@ -498,7 +498,7 @@ func TestPoint_Compare(t *testing.T) {
 
 				for _, c := range points {
 					if a.Compare(b) < 0 && b.Compare(c) < 0 {
-						assert.True(t, a.Compare(c) < 0)
+						assert.Less(t, a.Compare(c), 0)
 					}
 				}
 			}
@@ -518,7 +518,7 @@ func TestPoint_Compare(t *testing.T) {
 		// within Delta, so Equal reports true while Compare still orders them
 		a, b := Pt(0.0, 0.0), Pt(0.0, Delta/2)
 
-		assert.True(t, a.Equal(b))
+		geomtest.AssertPoint(t, a, b)
 		assert.Equal(t, a.Compare(b), -1)
 	})
 }
@@ -674,14 +674,14 @@ func TestPoint_Properties(t *testing.T) {
 	t.Run("add and subtract are inverse", func(t *testing.T) {
 		for _, a := range pointFixtures {
 			for _, b := range pointFixtures {
-				assert.True(t, a.Add(b.Subtract(a)).Equal(b), fmt.Sprintf("%s → %s: ", a, b))
+				geomtest.AssertPoint(t, a.Add(b.Subtract(a)), b, fmt.Sprintf("%s → %s: ", a, b))
 			}
 		}
 	})
 	t.Run("midpoint is lerp at one half", func(t *testing.T) {
 		for _, a := range pointFixtures {
 			for _, b := range pointFixtures {
-				assert.True(t, a.Midpoint(b).Equal(a.Lerp(b, 0.5)), fmt.Sprintf("%s → %s: ", a, b))
+				geomtest.AssertPoint(t, a.Midpoint(b), a.Lerp(b, 0.5), fmt.Sprintf("%s → %s: ", a, b))
 			}
 		}
 	})
@@ -699,9 +699,9 @@ func TestPoint_Properties(t *testing.T) {
 				chebyshev, euclidean := a.ChebyshevDistanceTo(b), a.DistanceTo(b)
 				octile, manhattan := a.OctileDistanceTo(b), a.ManhattanDistanceTo(b)
 
-				assert.True(t, chebyshev <= euclidean+Delta, fmt.Sprintf("%s → %s: chebyshev ≤ euclidean: ", a, b))
-				assert.True(t, euclidean <= octile+Delta, fmt.Sprintf("%s → %s: euclidean ≤ octile: ", a, b))
-				assert.True(t, octile <= manhattan+Delta, fmt.Sprintf("%s → %s: octile ≤ manhattan: ", a, b))
+				assert.LessOrEqual(t, chebyshev, euclidean+Delta, fmt.Sprintf("%s → %s: chebyshev ≤ euclidean: ", a, b))
+				assert.LessOrEqual(t, euclidean, octile+Delta, fmt.Sprintf("%s → %s: euclidean ≤ octile: ", a, b))
+				assert.LessOrEqual(t, octile, manhattan+Delta, fmt.Sprintf("%s → %s: octile ≤ manhattan: ", a, b))
 			}
 		}
 	})
@@ -720,14 +720,14 @@ func TestPoint_Properties(t *testing.T) {
 		for _, a := range pointFixtures {
 			for _, b := range pointFixtures {
 				if a.Compare(b) == 0 {
-					assert.True(t, a.Equal(b), fmt.Sprintf("%s → %s: ", a, b))
+					geomtest.AssertPoint(t, a, b, fmt.Sprintf("%s → %s: ", a, b))
 				}
 			}
 		}
 	})
 	t.Run("identity matrix leaves the point untouched", func(t *testing.T) {
 		for _, point := range pointFixtures {
-			assert.True(t, point.Transform(IdentityMatrix[float64]()).Equal(point), fmt.Sprintf("%s: ", point))
+			geomtest.AssertPoint(t, point.Transform(IdentityMatrix[float64]()), point, fmt.Sprintf("%s: ", point))
 		}
 	})
 }

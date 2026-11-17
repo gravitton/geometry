@@ -752,8 +752,8 @@ func TestMatrix_Properties(t *testing.T) {
 		identity := IdentityMatrix[float64]()
 
 		for _, matrix := range matrixFixtures {
-			assert.True(t, matrix.Multiply(identity).Equal(matrix), fmt.Sprintf("%s: ", matrix))
-			assert.True(t, identity.Multiply(matrix).Equal(matrix), fmt.Sprintf("%s: ", matrix))
+			geomtest.AssertMatrix(t, matrix.Multiply(identity), matrix, fmt.Sprintf("%s: ", matrix))
+			geomtest.AssertMatrix(t, identity.Multiply(matrix), matrix, fmt.Sprintf("%s: ", matrix))
 		}
 	})
 	t.Run("multiply is associative", func(t *testing.T) {
@@ -761,7 +761,7 @@ func TestMatrix_Properties(t *testing.T) {
 			for _, b := range matrixFixtures {
 				for _, c := range matrixFixtures {
 					left, right := a.Multiply(b).Multiply(c), a.Multiply(b.Multiply(c))
-					assert.True(t, left.Equal(right), fmt.Sprintf("%s → %s → %s: ", a, b, c))
+					geomtest.AssertMatrix(t, left, right, fmt.Sprintf("%s → %s → %s: ", a, b, c))
 				}
 			}
 		}
@@ -772,7 +772,7 @@ func TestMatrix_Properties(t *testing.T) {
 				continue
 			}
 
-			assert.True(t, matrix.Multiply(matrix.Inverse()).Equal(IdentityMatrix[float64]()), fmt.Sprintf("%s: ", matrix))
+			geomtest.AssertMatrix(t, matrix.Multiply(matrix.Inverse()), IdentityMatrix[float64](), fmt.Sprintf("%s: ", matrix))
 		}
 	})
 	t.Run("determinant is multiplicative", func(t *testing.T) {
@@ -785,12 +785,12 @@ func TestMatrix_Properties(t *testing.T) {
 	})
 	t.Run("translate and untranslate are inverse", func(t *testing.T) {
 		for _, matrix := range matrixFixtures {
-			assert.True(t, matrix.Translate(5, 3).Untranslate(5, 3).Equal(matrix), fmt.Sprintf("%s: ", matrix))
+			geomtest.AssertMatrix(t, matrix.Translate(5, 3).Untranslate(5, 3), matrix, fmt.Sprintf("%s: ", matrix))
 		}
 	})
 	t.Run("scale and unscale are inverse", func(t *testing.T) {
 		for _, matrix := range matrixFixtures {
-			assert.True(t, matrix.Scale(2, 4).Unscale(2, 4).Equal(matrix), fmt.Sprintf("%s: ", matrix))
+			geomtest.AssertMatrix(t, matrix.Scale(2, 4).Unscale(2, 4), matrix, fmt.Sprintf("%s: ", matrix))
 		}
 	})
 	t.Run("multiplication composes point transforms", func(t *testing.T) {
@@ -800,7 +800,7 @@ func TestMatrix_Properties(t *testing.T) {
 					composed := point.Transform(a.Multiply(b))
 					stepwise := point.Transform(b).Transform(a)
 
-					assert.True(t, composed.Equal(stepwise), fmt.Sprintf("%s → %s on %s: ", a, b, point))
+					geomtest.AssertPoint(t, composed, stepwise, fmt.Sprintf("%s → %s on %s: ", a, b, point))
 				}
 			}
 		}

@@ -620,7 +620,7 @@ func TestLessOrEqual(t *testing.T) {
 		low := 0.1
 		recomputed := (low + 0.6/2) - 0.6/2
 
-		assert.False(t, low >= recomputed)
+		assert.Less(t, low, recomputed)
 		assert.True(t, LessOrEqual(recomputed, low))
 	})
 }
@@ -768,7 +768,7 @@ func TestLerpAngle(t *testing.T) {
 	t.Run("never turns more than half a turn", func(t *testing.T) {
 		for _, a := range []float64{0, 1, -2, Pi, 5, 2 * Pi, 100} {
 			for _, b := range []float64{0, 1, -2, Pi, 5, 2 * Pi, 100} {
-				assert.True(t, math.Abs(LerpAngle(a, b, 1)-a) <= Pi+Delta, fmt.Sprintf("%v → %v: ", a, b))
+				assert.EqualDelta(t, LerpAngle(a, b, 1), a, Pi+Delta, fmt.Sprintf("%v → %v: ", a, b))
 				assert.True(t, EqualAngle(LerpAngle(a, b, 1), b), fmt.Sprintf("%v → %v: ", a, b))
 			}
 		}
@@ -817,7 +817,7 @@ func TestMoveTowardAngle(t *testing.T) {
 				for range 8 {
 					angle = MoveTowardAngle(angle, b, 0.5)
 
-					assert.True(t, AngleDistance(angle, b) <= max(distance-0.5, 0)+Delta, fmt.Sprintf("%v → %v: ", a, b))
+					assert.LessOrEqual(t, AngleDistance(angle, b), max(distance-0.5, 0)+Delta, fmt.Sprintf("%v → %v: ", a, b))
 					distance = AngleDistance(angle, b)
 				}
 

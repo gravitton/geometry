@@ -474,7 +474,7 @@ func TestEllipse_DistanceSquaredTo(t *testing.T) {
 		assert.Equal(t, e.DistanceSquaredTo(Pt(0.0, 3.0+Delta/2)), 0.0)
 	})
 	t.Run("int has no tolerance", func(t *testing.T) {
-		assert.True(t, Ell(Pt(0, 0), Sz(5, 3), 0).DistanceSquaredTo(Pt(0, 4)) > 0)
+		assert.Greater(t, Ell(Pt(0, 0), Sz(5, 3), 0).DistanceSquaredTo(Pt(0, 4)), 0)
 	})
 }
 
@@ -525,7 +525,7 @@ func TestEllipse_Nearest(t *testing.T) {
 				for i := range 720 {
 					sample := boundaryAt(e, float64(i)*Pi/360)
 
-					assert.True(t, nearest <= point.DistanceSquaredTo(sample)+Delta, fmt.Sprintf("%s → %s: ", e, point))
+					assert.LessOrEqual(t, nearest, point.DistanceSquaredTo(sample)+Delta, fmt.Sprintf("%s → %s: ", e, point))
 				}
 			}
 		}
@@ -947,8 +947,8 @@ func TestEllipse_Properties(t *testing.T) {
 		for _, e := range ellipseFixtures {
 			major := float64(e.SemiMajor())
 
-			assert.True(t, e.Perimeter() >= 4*major*(1-1e-3), fmt.Sprintf("%s: ", e))
-			assert.True(t, e.Perimeter() <= 2*Pi*major+Delta, fmt.Sprintf("%s: ", e))
+			assert.GreaterOrEqual(t, e.Perimeter(), 4*major*(1-1e-3), fmt.Sprintf("%s: ", e))
+			assert.LessOrEqual(t, e.Perimeter(), 2*Pi*major+Delta, fmt.Sprintf("%s: ", e))
 		}
 	})
 	t.Run("every anchor is on the boundary in its direction", func(t *testing.T) {
@@ -1004,21 +1004,21 @@ func TestEllipse_Properties(t *testing.T) {
 	t.Run("lerp ends on the two ellipses", func(t *testing.T) {
 		for _, a := range ellipseFixtures {
 			for _, b := range ellipseFixtures {
-				assert.True(t, a.Lerp(b, 0).Equal(a), fmt.Sprintf("%s -> %s: ", a, b))
-				assert.True(t, a.Lerp(b, 1).Equal(b), fmt.Sprintf("%s -> %s: ", a, b))
+				geomtest.AssertEllipse(t, a.Lerp(b, 0), a, fmt.Sprintf("%s -> %s: ", a, b))
+				geomtest.AssertEllipse(t, a.Lerp(b, 1), b, fmt.Sprintf("%s -> %s: ", a, b))
 			}
 		}
 	})
 	t.Run("scale and unscale are inverse", func(t *testing.T) {
 		for _, e := range ellipseFixtures {
 			for _, factor := range []float64{0.5, 1, 2.5, -3} {
-				assert.True(t, e.Scale(factor).Unscale(factor).Equal(e), fmt.Sprintf("%s ×%v: ", e, factor))
+				geomtest.AssertEllipse(t, e.Scale(factor).Unscale(factor), e, fmt.Sprintf("%s ×%v: ", e, factor))
 			}
 		}
 	})
 	t.Run("a full turn is the same ellipse", func(t *testing.T) {
 		for _, e := range ellipseFixtures {
-			assert.True(t, e.Rotate(2*Pi).Equal(e), fmt.Sprintf("%s: ", e))
+			geomtest.AssertEllipse(t, e.Rotate(2*Pi), e, fmt.Sprintf("%s: ", e))
 		}
 	})
 	t.Run("the identity transform leaves the ellipse", func(t *testing.T) {
@@ -1032,7 +1032,7 @@ func TestEllipse_Properties(t *testing.T) {
 				continue // shrink clamps to zero, so the growth is not recoverable
 			}
 
-			assert.True(t, e.Grow(1).Shrink(1).Equal(e), fmt.Sprintf("%s: ", e))
+			geomtest.AssertEllipse(t, e.Grow(1).Shrink(1), e, fmt.Sprintf("%s: ", e))
 		}
 	})
 	t.Run("the circle around holds the boundary", func(t *testing.T) {

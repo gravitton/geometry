@@ -354,7 +354,7 @@ func TestLine_Nearest(t *testing.T) {
 
 				assert.Equal(t, nearest.Equal(p), l.Contains(p), message)
 				assert.True(t, l.Contains(nearest), message)
-				assert.True(t, l.Nearest(nearest).Equal(nearest), message)
+				geomtest.AssertPoint(t, l.Nearest(nearest), nearest, message)
 				geomtest.AssertNumber(t, p.DistanceSquaredTo(nearest), l.DistanceSquaredTo(p), message)
 			}
 		}
@@ -1395,8 +1395,8 @@ func TestLine_Properties(t *testing.T) {
 	t.Run("translate and move to keep the direction", func(t *testing.T) {
 		for _, l := range lineFixtures {
 			for _, p := range pointFixtures {
-				assert.True(t, l.MoveTo(p).Vector.Equal(l.Vector), fmt.Sprintf("%s → %s: ", l, p))
-				assert.True(t, l.Translate(p.Vector()).Vector.Equal(l.Vector), fmt.Sprintf("%s → %s: ", l, p))
+				geomtest.AssertVector(t, l.MoveTo(p).Vector, l.Vector, fmt.Sprintf("%s → %s: ", l, p))
+				geomtest.AssertVector(t, l.Translate(p.Vector()).Vector, l.Vector, fmt.Sprintf("%s → %s: ", l, p))
 			}
 		}
 	})

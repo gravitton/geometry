@@ -495,9 +495,9 @@ func TestRectangle_Clamp(t *testing.T) {
 
 				geomtest.AssertSize(t, clamped.Size, r.Size, message)
 				geomtest.AssertAngle(t, clamped.Angle, r.Angle, message)
-				assert.True(t, clamped.Clamp(container).Equal(clamped), message)
+				geomtest.AssertRectangle(t, clamped.Clamp(container), clamped, message)
 				if within(r, container) {
-					assert.True(t, clamped.Equal(r), message)
+					geomtest.AssertRectangle(t, clamped, r, message)
 				}
 				if EqualAngle(r.Angle, container.Angle) && r.Width() <= container.Width() && r.Height() <= container.Height() {
 					assert.True(t, within(clamped, container), message)
@@ -942,7 +942,7 @@ func TestRectangle_Support(t *testing.T) {
 	t.Run("int corners are the rounded ones", func(t *testing.T) {
 		rectangle := Rect(Pt(0, 0), Sz(4, 2), 0).Rotate(Pi / 6)
 
-		assert.True(t, slices.Contains(slices.Collect(rectangle.Vertices()), rectangle.Support(Vec(1.0, 0.0)).Int()))
+		assert.Contains(t, slices.Collect(rectangle.Vertices()), rectangle.Support(Vec(1.0, 0.0)).Int())
 	})
 	t.Run("allocates nothing", func(t *testing.T) {
 		rectangle, direction := Rect(Pt(0, 0), Sz(4, 2), 0).Rotate(Pi/6), Vec(tenth, 0.7)
@@ -1824,7 +1824,7 @@ func TestRectangle_Properties(t *testing.T) {
 		for _, r := range rectFixtures {
 			bounds := r.Bounds()
 
-			assert.True(t, bounds.Min.Midpoint(bounds.Max).Equal(r.Center), fmt.Sprintf("%s: ", r))
+			geomtest.AssertPoint(t, bounds.Min.Midpoint(bounds.Max), r.Center, fmt.Sprintf("%s: ", r))
 			if !r.IsAligned() {
 				continue
 			}
@@ -1861,16 +1861,16 @@ func TestRectangle_Properties(t *testing.T) {
 	t.Run("lerp ends on the two rectangles", func(t *testing.T) {
 		for _, a := range rectFixtures {
 			for _, b := range rectFixtures {
-				assert.True(t, a.Lerp(b, 0).Equal(a), fmt.Sprintf("%s -> %s: ", a, b))
-				assert.True(t, a.Lerp(b, 1).Equal(b), fmt.Sprintf("%s -> %s: ", a, b))
+				geomtest.AssertRectangle(t, a.Lerp(b, 0), a, fmt.Sprintf("%s -> %s: ", a, b))
+				geomtest.AssertRectangle(t, a.Lerp(b, 1), b, fmt.Sprintf("%s -> %s: ", a, b))
 			}
 		}
 	})
 	t.Run("scale and unscale are inverse", func(t *testing.T) {
 		for _, r := range rectFixtures {
 			for _, factor := range []float64{0.5, 1, 2.5, -3} {
-				assert.True(t, r.Scale(factor).Unscale(factor).Equal(r), fmt.Sprintf("%s ×%v: ", r, factor))
-				assert.True(t, r.ScaleXY(factor, 2).UnscaleXY(factor, 2).Equal(r), fmt.Sprintf("%s ×%v: ", r, factor))
+				geomtest.AssertRectangle(t, r.Scale(factor).Unscale(factor), r, fmt.Sprintf("%s ×%v: ", r, factor))
+				geomtest.AssertRectangle(t, r.ScaleXY(factor, 2).UnscaleXY(factor, 2), r, fmt.Sprintf("%s ×%v: ", r, factor))
 			}
 		}
 	})
@@ -1878,7 +1878,7 @@ func TestRectangle_Properties(t *testing.T) {
 		for _, r := range rectFixtures {
 			bounds := r.Bounds()
 
-			assert.True(t, bounds.Equal(r.Polygon().Bounds()), fmt.Sprintf("%s: ", r))
+			geomtest.AssertBox(t, bounds, r.Polygon().Bounds(), fmt.Sprintf("%s: ", r))
 			assert.Equal(t, bounds.Rectangle().Equal(r), r.IsAligned(), fmt.Sprintf("%s: ", r))
 		}
 	})
@@ -1886,8 +1886,8 @@ func TestRectangle_Properties(t *testing.T) {
 		for _, r := range rectFixtures {
 			turned := r.Rotate(Pi / 3)
 
-			assert.True(t, turned.Center.Equal(r.Center), fmt.Sprintf("%s: ", r))
-			assert.True(t, turned.Size.Equal(r.Size), fmt.Sprintf("%s: ", r))
+			geomtest.AssertPoint(t, turned.Center, r.Center, fmt.Sprintf("%s: ", r))
+			geomtest.AssertSize(t, turned.Size, r.Size, fmt.Sprintf("%s: ", r))
 			assert.True(t, EqualAngle(turned.Angle, r.Angle+Pi/3), fmt.Sprintf("%s: ", r))
 		}
 	})
@@ -1896,8 +1896,8 @@ func TestRectangle_Properties(t *testing.T) {
 			for _, vector := range vectorFixtures {
 				moved := r.Translate(vector)
 
-				assert.True(t, moved.Size.Equal(r.Size), fmt.Sprintf("%s → %s: ", r, vector))
-				assert.True(t, moved.Center.Equal(r.Center.Add(vector)), fmt.Sprintf("%s → %s: ", r, vector))
+				geomtest.AssertSize(t, moved.Size, r.Size, fmt.Sprintf("%s → %s: ", r, vector))
+				geomtest.AssertPoint(t, moved.Center, r.Center.Add(vector), fmt.Sprintf("%s → %s: ", r, vector))
 			}
 		}
 	})
@@ -1906,8 +1906,8 @@ func TestRectangle_Properties(t *testing.T) {
 			for _, point := range pointFixtures {
 				moved := r.MoveTo(point)
 
-				assert.True(t, moved.Size.Equal(r.Size), fmt.Sprintf("%s → %s: ", r, point))
-				assert.True(t, moved.Center.Equal(point), fmt.Sprintf("%s → %s: ", r, point))
+				geomtest.AssertSize(t, moved.Size, r.Size, fmt.Sprintf("%s → %s: ", r, point))
+				geomtest.AssertPoint(t, moved.Center, point, fmt.Sprintf("%s → %s: ", r, point))
 			}
 		}
 	})
@@ -1917,7 +1917,7 @@ func TestRectangle_Properties(t *testing.T) {
 				continue // shrink clamps to zero, so the growth is not recoverable
 			}
 
-			assert.True(t, r.Grow(1).Shrink(1).Equal(r), fmt.Sprintf("%s: ", r))
+			geomtest.AssertRectangle(t, r.Grow(1).Shrink(1), r, fmt.Sprintf("%s: ", r))
 		}
 	})
 
@@ -1929,8 +1929,8 @@ func TestRectangle_Properties(t *testing.T) {
 			assert.Length(t, edges, 4, fmt.Sprintf("%s: ", r))
 
 			for i, edge := range edges {
-				assert.True(t, edge.Start.Equal(vertices[i]), fmt.Sprintf("%s: ", r))
-				assert.True(t, edge.End.Equal(vertices[(i+1)%4]), fmt.Sprintf("%s: ", r))
+				geomtest.AssertPoint(t, edge.Start, vertices[i], fmt.Sprintf("%s: ", r))
+				geomtest.AssertPoint(t, edge.End, vertices[(i+1)%4], fmt.Sprintf("%s: ", r))
 			}
 		}
 	})
