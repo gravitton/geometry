@@ -13,6 +13,9 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 
 ## [Unreleased](https://github.com/gravitton/geometry/compare/v1.18.0...main)
 
+### Added
+- `Size.FitFactor` and `Size.FillFactor` return the factors `Fit` and `Fill` scale a size by, the largest that fits it in another and the smallest that covers it
+
 ## [v1.18.0](https://github.com/gravitton/geometry/compare/v1.17.0...v1.18.0) (2026-11-04)
 
 ### Added

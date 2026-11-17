@@ -159,8 +159,10 @@ geom.MoveToward(volume, 1.0, fade*dt)         // and on any number
 
 ```go
 screen, slot := geom.Sz(16.0, 9.0), geom.SzU(6.0)
-screen.Fit(slot)  // 6x3.38, the largest of the same ratio inside
-screen.Fill(slot) // 10.67x6, the smallest of the same ratio around
+screen.Fit(slot)        // 6x3.38, the largest of the same ratio inside
+screen.Fill(slot)       // 10.67x6, the smallest of the same ratio around
+screen.FitFactor(slot)  // 0.375, the factor Fit scales by
+screen.FillFactor(slot) // 0.67, the factor Fill scales by
 
 geom.PadXY(1.0, 0.5).Size() // 2x1, the horizontal and vertical total
 ```

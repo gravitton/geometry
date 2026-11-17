@@ -144,18 +144,16 @@ func (s Size[T]) Transpose() Size[T] {
 	return Size[T]{s.Height, s.Width}
 }
 
-// Fit returns the largest size of the same aspect ratio that fits in the given one. A size with a
-// zero extent of its own gives the zero size, and a negative extent in either has no meaning: take
-// Abs first.
+// Fit returns the size scaled by FitFactor, the largest of the same aspect ratio that fits in the
+// given one.
 func (s Size[T]) Fit(size Size[T]) Size[T] {
-	return s.Scale(min(s.ratios(size)))
+	return s.Scale(s.FitFactor(size))
 }
 
-// Fill returns the smallest size of the same aspect ratio that covers the given one. A size with a
-// zero extent of its own gives the zero size, and a negative extent in either has no meaning: take
-// Abs first.
+// Fill returns the size scaled by FillFactor, the smallest of the same aspect ratio that covers the
+// given one.
 func (s Size[T]) Fill(size Size[T]) Size[T] {
-	return s.Scale(max(s.ratios(size)))
+	return s.Scale(s.FillFactor(size))
 }
 
 // AtLeast returns the size with each extent raised to at least the one of the given size.
@@ -173,8 +171,22 @@ func (s Size[T]) AtLeastZero() Size[T] {
 	return Size[T]{max(s.Width, 0), max(s.Height, 0)}
 }
 
+// FitFactor returns the factor Fit scales the size by: the largest that fits it in the given one,
+// and zero for a size with a zero extent of its own. A negative extent in either has no meaning:
+// take Abs first.
+func (s Size[T]) FitFactor(size Size[T]) float64 {
+	return min(s.ratios(size))
+}
+
+// FillFactor returns the factor Fill scales the size by: the smallest that makes it cover the
+// given one, and zero for a size with a zero extent of its own. A negative extent in either has no
+// meaning: take Abs first.
+func (s Size[T]) FillFactor(size Size[T]) float64 {
+	return max(s.ratios(size))
+}
+
 // ratios returns the factors that scale the width and the height onto the given size, both zero
-// where either extent is zero, so Fit and Fill agree on the zero size.
+// where either extent is zero, so FitFactor and FillFactor agree on the zero size.
 func (s Size[T]) ratios(size Size[T]) (float64, float64) {
 	if s.Width == 0 || s.Height == 0 {
 		return 0, 0

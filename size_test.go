@@ -334,6 +334,52 @@ func TestSize_AtLeastZero(t *testing.T) {
 	})
 }
 
+func TestSize_FitFactor(t *testing.T) {
+	t.Run("wide into square is limited by width", func(t *testing.T) {
+		assert.Equal(t, Sz(1920, 1080).FitFactor(SzU(960)), 0.5)
+	})
+	t.Run("tall into square is limited by height", func(t *testing.T) {
+		assert.Equal(t, Sz(300, 600).FitFactor(SzU(200)), 1.0/3)
+	})
+	t.Run("scales up as well as down", func(t *testing.T) {
+		assert.Equal(t, Sz(4.0, 2.0).FitFactor(Sz(10.0, 10.0)), 2.5)
+	})
+	t.Run("a zero extent gives zero", func(t *testing.T) {
+		assert.Equal(t, Sz(0, 5).FitFactor(SzU(10)), 0.0)
+		assert.Equal(t, Sz(5, 0).FitFactor(SzU(10)), 0.0)
+	})
+	t.Run("is the factor Fit scales by", func(t *testing.T) {
+		for _, s := range positiveSizeFixtures() {
+			for _, target := range positiveSizeFixtures() {
+				geomtest.AssertSize(t, s.Scale(s.FitFactor(target)), s.Fit(target), fmt.Sprintf("%s into %s: ", s, target))
+			}
+		}
+	})
+}
+
+func TestSize_FillFactor(t *testing.T) {
+	t.Run("wide over square is limited by height", func(t *testing.T) {
+		assert.Equal(t, Sz(1920, 1080).FillFactor(SzU(540)), 0.5)
+	})
+	t.Run("tall over square is limited by width", func(t *testing.T) {
+		assert.Equal(t, Sz(300, 600).FillFactor(SzU(100)), 1.0/3)
+	})
+	t.Run("scales up as well as down", func(t *testing.T) {
+		assert.Equal(t, Sz(4.0, 2.0).FillFactor(Sz(10.0, 10.0)), 5.0)
+	})
+	t.Run("a zero extent gives zero", func(t *testing.T) {
+		assert.Equal(t, Sz(0, 5).FillFactor(SzU(10)), 0.0)
+		assert.Equal(t, Sz(5, 0).FillFactor(SzU(10)), 0.0)
+	})
+	t.Run("is the factor Fill scales by", func(t *testing.T) {
+		for _, s := range positiveSizeFixtures() {
+			for _, target := range positiveSizeFixtures() {
+				geomtest.AssertSize(t, s.Scale(s.FillFactor(target)), s.Fill(target), fmt.Sprintf("%s over %s: ", s, target))
+			}
+		}
+	})
+}
+
 func TestSize_Equal(t *testing.T) {
 	t.Run("same size", func(t *testing.T) {
 		assert.True(t, Sz(1, 2).Equal(Sz(1, 2)))
@@ -565,6 +611,13 @@ func TestSize_Properties(t *testing.T) {
 				atLeast, atMost := a.AtLeast(b), a.AtMost(b)
 				assert.True(t, atMost.Width <= atLeast.Width, fmt.Sprintf("%s → %s: ", a, b))
 				assert.True(t, atMost.Height <= atLeast.Height, fmt.Sprintf("%s → %s: ", a, b))
+			}
+		}
+	})
+	t.Run("fit factor is at most fill factor", func(t *testing.T) {
+		for _, a := range positiveSizeFixtures() {
+			for _, b := range positiveSizeFixtures() {
+				assert.True(t, a.FitFactor(b) <= a.FillFactor(b), fmt.Sprintf("%s → %s: ", a, b))
 			}
 		}
 	})
