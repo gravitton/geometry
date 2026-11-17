@@ -15,12 +15,18 @@ import (
 // For integer T, translation, integer scaling, reflection and quarter turns are exact. Any other
 // rotation rounds into a different matrix, and Inverse and Unscale do unless the result is integer.
 type Matrix[T Number] struct {
-	A T `json:"a"` // scale X
-	B T `json:"b"` // shear X (contribution of y to x')
-	C T `json:"c"` // translate X
-	D T `json:"d"` // shear Y (contribution of x to y')
-	E T `json:"e"` // scale Y
-	F T `json:"f"` // translate Y
+	// A is the weight of x in x'.
+	A T `json:"a"`
+	// B is the weight of y in x'.
+	B T `json:"b"`
+	// C is the translation along X.
+	C T `json:"c"`
+	// D is the weight of x in y'.
+	D T `json:"d"`
+	// E is the weight of y in y'.
+	E T `json:"e"`
+	// F is the translation along Y.
+	F T `json:"f"`
 }
 
 // Mat is shorthand for Matrix{a, b, c, d, e, f}.

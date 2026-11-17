@@ -1,16 +1,16 @@
 package geom
 
-// Contact is how two overlapping shapes meet, the result of Collide: the unit Normal that parts
-// them, from the second shape toward the first, the Depth they overlap by along it, and the Points
-// of the second shape they meet at, two where flat sides lie against each other and one otherwise.
-//
-// Shapes that only touch have a depth of zero, and two single points have no normal. A Polygon that
-// is not convex, or a Sector past half a turn, meets by its deepest edge or half alone, as Collide
-// describes.
+// Contact is how two overlapping shapes meet, the result of Collide. A Polygon that is not convex,
+// or a Sector past half a turn, meets by its deepest edge or half alone, as Collide describes.
 type Contact[T Number] struct {
+	// Normal is the unit normal that parts the shapes, from the second toward the first, and none
+	// between two single points.
 	Normal Vector[float64] `json:"n"`
-	Depth  float64         `json:"d"`
-	Points Pair[Point[T]]  `json:"p"`
+	// Depth is how far the shapes overlap along the normal, zero for shapes that only touch.
+	Depth float64 `json:"d"`
+	// Points are the points of the second shape where the shapes meet, two where flat sides lie
+	// against each other and one otherwise.
+	Points Pair[Point[T]] `json:"p"`
 }
 
 // Separation returns the shortest vector that moves the first shape out of the second until they
