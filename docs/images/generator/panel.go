@@ -14,18 +14,24 @@ const (
 
 type panel struct {
 	canvas
+	cell float64
 }
 
 func newPanel(t theme, caption string) *panel {
-	return &panel{canvas: newCanvas(t, caption)}
+	return &panel{canvas: newCanvas(t, caption), cell: unit}
 }
 
 func paper(t theme, caption string, area geom.Box[float64]) *panel {
+	return paperOf(t, caption, area, unit)
+}
+
+func paperOf(t theme, caption string, area geom.Box[float64], cell float64) *panel {
 	if !area.Min.IsZero() || math.Mod(area.Max.X, 5) != 0 || math.Mod(area.Max.Y, 5) != 0 {
 		panic(fmt.Sprintf("diagrams: paper %s is not a multiple of 5 from the origin", area))
 	}
 
 	p := newPanel(t, caption)
+	p.cell = cell
 	for x := area.Min.X; x <= area.Max.X; x++ {
 		p.line(geom.Pt(x, area.Min.Y), geom.Pt(x, area.Max.Y), style{stroke: t.edge, width: ruleWidth(x)})
 	}
@@ -45,31 +51,31 @@ func ruleWidth(at float64) float64 {
 }
 
 func (p *panel) area(points []point, s style) {
-	p.polygon(scaledOf(points), s)
+	p.polygon(p.scaledOf(points), s)
 }
 
 func (p *panel) path(points []point, s style) {
-	p.polyline(scaledOf(points), s)
+	p.polyline(p.scaledOf(points), s)
 }
 
 func (p *panel) line(a, b point, s style) {
-	p.canvas.line(scaled(a), scaled(b), s)
+	p.canvas.line(p.scaled(a), p.scaled(b), s)
 }
 
 func (p *panel) dot(at point, color string) {
-	p.circle(scaled(at), 4, style{fill: color})
+	p.circle(p.scaled(at), 4, style{fill: color})
 }
 
 func (p *panel) ring(at point, color string) {
-	p.circle(scaled(at), 4, style{fill: p.theme.cell, stroke: color, width: 1.5})
+	p.circle(p.scaled(at), 4, style{fill: p.theme.cell, stroke: color, width: 1.5})
 }
 
 func (p *panel) arrow(from, to point, color string, dashed bool) {
-	p.canvas.arrow(scaled(from), scaled(to), style{stroke: color, width: 2, dashed: dashed})
+	p.canvas.arrow(p.scaled(from), p.scaled(to), style{stroke: color, width: 2, dashed: dashed})
 }
 
 func (p *panel) text(at point, anchor, text, color string) {
-	p.canvas.text(scaled(at), font{size: 12, anchor: anchor, halo: true}, span{text, color})
+	p.canvas.text(p.scaled(at), font{size: 12, anchor: anchor, halo: true}, span{text, color})
 }
 
 func (p *panel) named(at point, text string, dx, dy float64) {
@@ -102,14 +108,14 @@ func (p *panel) beam(part geom.Segment[float64], ok bool, color string, dashed b
 	}
 }
 
-func scaled(at point) point {
-	return at.Multiply(unit)
+func (p *panel) scaled(at point) point {
+	return at.Multiply(p.cell)
 }
 
-func scaledOf(points []point) []point {
+func (p *panel) scaledOf(points []point) []point {
 	result := make([]point, len(points))
 	for i, at := range points {
-		result[i] = scaled(at)
+		result[i] = p.scaled(at)
 	}
 
 	return result

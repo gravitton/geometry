@@ -332,6 +332,48 @@ r.ClipRectangle(geom.Rect(geom.Pt(6.5, 6.0), geom.Sz(4.0, 3.0), 0.3)) // the ove
 geom.Intersects[float64](a, r) // the same answers for two shapes of any kind
 ```
 
+### Closed boundaries
+
+Every boundary test is closed and tolerant: the edge is inside, and so is a point within a tolerance of it, chosen
+by the coordinate type. A rectangle contains the corners it was built from, even where its own corners round away
+from them.
+
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/corners-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/corners-light.svg">
+  <img alt="Both corners of a rectangle magnified a hundred trillion times: the top-left corner it returns lies right of and below the corner it was built from, which an exact test puts outside, and the bottom-right corner lies below its given corner, which stays inside; Contains is true for both" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/corners-light.svg">
+</picture>
+</p>
+
+```go
+low, high := geom.Pt(851.43, 30.29), geom.Pt(1274.32, 989.16)
+rectangle := geom.RectangleFromMinMax(low, high)
+rectangle.TopLeft()      // 1.1e-13 right of low and 2.1e-14 below it
+rectangle.BottomRight()  // 1.1e-13 below high
+rectangle.Contains(low)  // true
+rectangle.Contains(high) // true
+```
+
+`DistanceTo` is zero exactly where `Contains` is true:
+
+```go
+rectangle := geom.RectangleFromMinMax(geom.Pt(0.0, 0.0), geom.Pt(10.0, 10.0))
+rectangle.Contains(geom.Pt(10+5e-7, 5.0))   // true
+rectangle.DistanceTo(geom.Pt(10+5e-7, 5.0)) // 0
+rectangle.Contains(geom.Pt(10+5e-6, 5.0))   // false
+rectangle.DistanceTo(geom.Pt(10+5e-6, 5.0)) // 5e-06
+```
+
+Shapes that touch intersect, and their common part has no area:
+
+```go
+left := geom.RectangleFromMinMax(geom.Pt(0.0, 0.0), geom.Pt(10.0, 10.0))
+right := geom.RectangleFromMinMax(geom.Pt(10.0, 0.0), geom.Pt(20.0, 10.0))
+left.IntersectsRectangle(right) // true
+left.ClipRectangle(right)       // Rect((10,5);0x10), true: the shared edge
+```
+
 ### Casts
 
 `Hit<Kind>` on a segment or a ray is the first point of the boundary it reaches from outside, with the unit normal
@@ -355,6 +397,29 @@ ball := geom.Circ(geom.Pt(2.0, 2.0), 1.0)
 block := geom.Bx(geom.Pt(8.0, 4.0), geom.Pt(11.0, 9.0))
 hit, ok = geom.Sweep[float64](ball, geom.Vec(11.0, 5.0), block) // Fraction 0.45: where the ball first touches
 geom.Raycast[float64](ray, wall)                                // a Hit on a shape of any kind
+```
+
+A sweep finds what two position tests miss: a bullet that is clear of a thin wall at the start of the frame and at its
+end.
+
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/tunnelling-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/tunnelling-light.svg">
+  <img alt="A bullet drawn at the start and at the end of its flight on either side of a thin wall, both clear of it, and the bullet swept into the wall and stopped against it, with the normal of the hit" src="https://raw.githubusercontent.com/gravitton/geometry/refs/heads/main/docs/images/tunnelling-light.svg">
+</picture>
+</p>
+
+```go
+wall := geom.Bx(geom.Pt(20.0, 0.0), geom.Pt(22.0, 10.0))
+bullet := geom.Circ(geom.Pt(0.0, 5.0), 0.5)
+flight := geom.Vec(50.0, 0.0)
+
+bullet.IntersectsBox(wall)                   // false
+bullet.Translate(flight).IntersectsBox(wall) // false
+
+hit, ok := geom.Sweep[float64](bullet, flight, wall) // Hit((20,5);⟨-1,0⟩;0.39), true
+bullet.Translate(flight.Multiply(hit.Fraction))      // Circ((19.5,5);0.5), stopped at the wall
 ```
 
 ### Lines

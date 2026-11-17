@@ -20,7 +20,9 @@ var figures = []figure{
 	{"polygons", polygons},
 	{"regular-polygons", regularPolygons},
 	{"intersections", intersections},
+	{"corners", corners},
 	{"casts", casts},
+	{"tunnelling", tunnelling},
 	{"lines", lines},
 	{"collisions", collisions},
 	{"curves", curves},
@@ -378,6 +380,53 @@ func intersections(t theme) []*panel {
 	return []*panel{circles, clipPolygon, clipSector, clipRectangle}
 }
 
+func corners(t theme) []*panel {
+	const magnified = 1e14
+
+	low := geom.Pt(851.43, 30.29)
+	high := geom.Pt(1274.32, 989.16)
+	rectangle := geom.RectangleFromMinMax(low, high)
+	topLeft, bottomRight := rectangle.TopLeft(), rectangle.BottomRight()
+	area := geom.Bx(geom.Pt(0.0, 0.0), geom.Pt(15.0, 15.0))
+
+	exact := func(at point) string {
+		if topLeft.X <= at.X && at.X <= bottomRight.X && topLeft.Y <= at.Y && at.Y <= bottomRight.Y {
+			return "inside"
+		}
+
+		return "outside"
+	}
+	magnify := func(at, given, origin point) point {
+		return origin.Add(at.Subtract(given).Multiply(magnified))
+	}
+
+	first := paper(t, "rectangle.TopLeft()", area)
+	given := geom.Pt(1.0, 1.0)
+	corner := magnify(topLeft, low, given)
+	first.area([]point{corner, geom.Pt(area.Max.X, corner.Y), area.Max, geom.Pt(corner.X, area.Max.Y)}, style{fill: t.coolSoft})
+	first.line(corner, geom.Pt(area.Max.X, corner.Y), style{stroke: t.cool, width: 2.5})
+	first.line(corner, geom.Pt(corner.X, area.Max.Y), style{stroke: t.cool, width: 2.5})
+	first.line(given, corner, style{stroke: t.muted, width: 1, dashed: true})
+	first.ring(given, t.ink)
+	first.named(given, "low", 0.6, 0.9)
+	first.result(corner, "TopLeft()", -0.6, 1.0)
+	first.note = fmt.Sprintf("low is %s by an exact test, and Contains(low) is %t", exact(low), rectangle.Contains(low))
+
+	second := paper(t, "rectangle.BottomRight()", area)
+	given = geom.Pt(13.0, 1.0)
+	corner = magnify(bottomRight, high, given)
+	second.area([]point{area.Min, geom.Pt(corner.X, area.Min.Y), corner, geom.Pt(area.Min.X, corner.Y)}, style{fill: t.coolSoft})
+	second.line(corner, geom.Pt(corner.X, area.Min.Y), style{stroke: t.cool, width: 2.5})
+	second.line(corner, geom.Pt(area.Min.X, corner.Y), style{stroke: t.cool, width: 2.5})
+	second.line(given, corner, style{stroke: t.muted, width: 1, dashed: true})
+	second.ring(given, t.ink)
+	second.named(given, "high", -0.6, 0.9)
+	second.result(corner, "BottomRight()", -0.6, 1.0)
+	second.note = fmt.Sprintf("high is %s by an exact test, and Contains(high) is %t", exact(high), rectangle.Contains(high))
+
+	return []*panel{first, second}
+}
+
 func casts(t theme) []*panel {
 	area := geom.Bx(geom.Pt(0.0, 0.0), geom.Pt(15.0, 10.0))
 
@@ -412,6 +461,33 @@ func casts(t theme) []*panel {
 	}
 
 	return []*panel{raycast, sweep}
+}
+
+func tunnelling(t theme) []*panel {
+	p := paperOf(t, "Sweep(bullet, flight, wall)", geom.Bx(geom.Pt(0.0, 0.0), geom.Pt(55.0, 10.0)), 16)
+	wall := geom.Bx(geom.Pt(20.0, 0.0), geom.Pt(22.0, 10.0))
+	bullet := geom.Circ(geom.Pt(0.0, 5.0), 0.5)
+	flight := geom.Vec(50.0, 0.0)
+	end := bullet.Translate(flight)
+	p.note = fmt.Sprintf("IntersectsBox is %t at the start of the frame and %t at its end", bullet.IntersectsBox(wall), end.IntersectsBox(wall))
+
+	p.fill(wall, t.coolSoft, t.cool)
+	p.arrow(bullet.Center, end.Center, t.muted, true)
+	p.fill(bullet, t.cell, t.muted)
+	p.fill(end, t.cell, t.muted)
+	p.named(bullet.Center, "start", 0.2, 1.4)
+	p.named(end.Center, "end", -0.2, 1.4)
+
+	if hit, ok := geom.Sweep[float64](bullet, flight, wall); ok {
+		at := bullet.Translate(flight.Multiply(hit.Fraction))
+		p.fill(at, t.accentSoft, t.accent)
+		p.arrow(hit.Point, hit.Point.Add(hit.Normal.Multiply(2)), t.leaf, false)
+		p.dot(hit.Point, t.accent)
+		p.text(at.Center.AddXY(-0.2, 1.6), "end", fmt.Sprintf("Fraction %.2f", hit.Fraction), t.accent)
+		p.text(hit.Point.Add(hit.Normal.Multiply(1)).AddXY(0, -1.0), "middle", "Normal", t.leaf)
+	}
+
+	return []*panel{p}
 }
 
 func lines(t theme) []*panel {
