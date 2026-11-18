@@ -22,6 +22,9 @@ var tenth = 0.1
 // escapes as it does for any caller.
 var sinkPoints []Point[int]
 
+// sinkFloatPoints is the sinkPoints of a float64 result.
+var sinkFloatPoints []Point[float64]
+
 // sinkSegments is the sinkPoints of the methods returning segments.
 var sinkSegments []Segment[int]
 

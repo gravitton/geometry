@@ -574,10 +574,14 @@ func TestPolygon_AppendShrink(t *testing.T) {
 		assert.Nil(t, square.AppendShrink(nil, 3))
 	})
 	t.Run("a buffer with room for the cuts allocates nothing", func(t *testing.T) {
-		buffer := make([]Point[int], 0, 2*len(square.Points)+2)
+		buffer, floats := make([]Point[int], 0, 2*len(square.Points)+2), make([]Point[float64], 0, 2*len(square.Points)+2)
+		floatSquare := square.Float()
 
 		assertAllocations(t, func() {
 			sinkPoints = square.AppendShrink(buffer[:0], 1)
+		}, 0)
+		assertAllocations(t, func() {
+			sinkFloatPoints = floatSquare.AppendShrink(floats[:0], 1)
 		}, 0)
 	})
 	t.Run("matches Shrink after the points in dst", func(t *testing.T) {
@@ -1665,6 +1669,19 @@ func TestPolygon_ClipPolygon(t *testing.T) {
 		assert.True(t, ok)
 		geomtest.AssertPolygon(t, part, Pol([]Point[int]{Pt(2, 0), Pt(4, 0), Pt(4, 4), Pt(2, 4)}))
 	})
+	t.Run("an int polygon at a sharp corner is rounded once, the same from either side", func(t *testing.T) {
+		a := Pol([]Point[int]{Pt(19, 27), Pt(19, 26), Pt(26, 6), Pt(29, 28)})
+		b := Pol([]Point[int]{Pt(2, 5), Pt(3, 1), Pt(25, 22)})
+		ab, _ := a.ClipPolygon(b)
+		ba, _ := b.ClipPolygon(a)
+
+		geomtest.AssertVertices(t, ab.Points, []Point[int]{Pt(21, 19), Pt(22, 19), Pt(25, 22)})
+		geomtest.AssertVertices(t, ba.Points, ab.Points)
+		for _, vertex := range ab.Points {
+			assert.LessOrEqual(t, Distance[int](Circ(vertex, 0), a), 0.5, vertex.String()+": ")
+			assert.LessOrEqual(t, Distance[int](Circ(vertex, 0), b), 0.5, vertex.String()+": ")
+		}
+	})
 	t.Run("polygons apart have no part", func(t *testing.T) {
 		_, ok := square.ClipPolygon(Pol([]Point[int]{Pt(10, 10), Pt(12, 10), Pt(12, 12)}))
 
@@ -1693,7 +1710,8 @@ func TestPolygon_AppendClipPolygon(t *testing.T) {
 		assert.Nil(t, square.AppendClipPolygon(nil, Pol([]Point[int]{Pt(10, 10), Pt(12, 10), Pt(12, 12)})))
 	})
 	t.Run("a buffer with room allocates nothing and a convex polygon allocates once", func(t *testing.T) {
-		buffer := make([]Point[int], 0, 2*(len(square.Points)+len(triangle.Points)))
+		buffer, floats := make([]Point[int], 0, 2*(len(square.Points)+len(triangle.Points))), make([]Point[float64], 0, 2*(len(square.Points)+len(triangle.Points)))
+		floatSquare, floatRegion := square.Float(), triangle.Float()
 
 		assertAllocations(t, func() {
 			sinkPoints = square.AppendClipPolygon(buffer[:0], triangle)
@@ -1701,6 +1719,9 @@ func TestPolygon_AppendClipPolygon(t *testing.T) {
 		assertAllocations(t, func() {
 			sinkPoints = square.AppendClipPolygon(nil, triangle)
 		}, 1)
+		assertAllocations(t, func() {
+			sinkFloatPoints = floatSquare.AppendClipPolygon(floats[:0], floatRegion)
+		}, 0)
 	})
 }
 
@@ -1742,7 +1763,8 @@ func TestPolygon_AppendClipRectangle(t *testing.T) {
 		geomtest.AssertVertices(t, square.AppendClipRectangle([]Point[int]{Pt(9, 9)}, rectangle), []Point[int]{Pt(9, 9), Pt(2, 2), Pt(4, 2), Pt(4, 4), Pt(2, 4)})
 	})
 	t.Run("a buffer with room allocates nothing and a convex polygon allocates once", func(t *testing.T) {
-		buffer := make([]Point[int], 0, 16)
+		buffer, floats := make([]Point[int], 0, 16), make([]Point[float64], 0, 16)
+		floatSquare, floatRegion := square.Float(), rectangle.Float()
 
 		assertAllocations(t, func() {
 			sinkPoints = square.AppendClipRectangle(buffer[:0], rectangle)
@@ -1750,6 +1772,9 @@ func TestPolygon_AppendClipRectangle(t *testing.T) {
 		assertAllocations(t, func() {
 			sinkPoints = square.AppendClipRectangle(nil, rectangle)
 		}, 1)
+		assertAllocations(t, func() {
+			sinkFloatPoints = floatSquare.AppendClipRectangle(floats[:0], floatRegion)
+		}, 0)
 	})
 }
 
@@ -1805,6 +1830,12 @@ func TestPolygon_ClipBox(t *testing.T) {
 	square := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(0, 4)})
 	notched := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(2, 1), Pt(0, 4)})
 
+	t.Run("an int polygon whose last corner rounds onto its first gives it once", func(t *testing.T) {
+		clipped, ok := Pol([]Point[int]{Pt(15, 18), Pt(10, 7), Pt(13, 26)}).ClipBox(Bx(Pt(12, 13), Pt(23, 25)))
+
+		assert.True(t, ok)
+		geomtest.AssertVertices(t, clipped.Points, []Point[int]{Pt(13, 25), Pt(15, 18), Pt(13, 13), Pt(12, 13), Pt(12, 20)})
+	})
 	t.Run("is the part a viewport shows", func(t *testing.T) {
 		part, ok := square.ClipBox(Bx(Pt(2, 2), Pt(6, 6)))
 
@@ -1862,7 +1893,8 @@ func TestPolygon_AppendClipBox(t *testing.T) {
 		geomtest.AssertVertices(t, square.AppendClipBox([]Point[int]{Pt(9, 9)}, box), []Point[int]{Pt(9, 9), Pt(2, 2), Pt(4, 2), Pt(4, 4), Pt(2, 4)})
 	})
 	t.Run("a buffer with room allocates nothing and a convex polygon allocates once", func(t *testing.T) {
-		buffer := make([]Point[int], 0, 16)
+		buffer, floats := make([]Point[int], 0, 16), make([]Point[float64], 0, 16)
+		floatSquare, floatRegion := square.Float(), box.Float()
 
 		assertAllocations(t, func() {
 			sinkPoints = square.AppendClipBox(buffer[:0], box)
@@ -1870,6 +1902,9 @@ func TestPolygon_AppendClipBox(t *testing.T) {
 		assertAllocations(t, func() {
 			sinkPoints = square.AppendClipBox(nil, box)
 		}, 1)
+		assertAllocations(t, func() {
+			sinkFloatPoints = floatSquare.AppendClipBox(floats[:0], floatRegion)
+		}, 0)
 	})
 }
 

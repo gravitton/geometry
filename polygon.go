@@ -287,8 +287,8 @@ func (p Polygon[T]) AppendGrow(dst []Point[T], amount float64) []Point[T] {
 
 // Shrink returns the polygon with every edge moved in along its normal by the amount, Grow by its
 // negative. A convex polygon is cut to the inner side of each moved edge, so an edge the others
-// close over is dropped and a polygon shrunk past its middle is empty; for integer T both the moved
-// edges and the corners are rounded. A polygon that is not convex has each vertex moved along the
+// close over is dropped and a polygon shrunk past its middle is empty; for integer T the corners
+// are rounded once. A polygon that is not convex has each vertex moved along the
 // bisector of its corner instead, and is shrunk only while the amount is less than its narrowest
 // neck, past which the moved edges cross each other.
 func (p Polygon[T]) Shrink(amount float64) Polygon[T] {
@@ -530,10 +530,9 @@ func (p Polygon[T]) shrink(dst []Point[T], amount float64, reversed bool) []Poin
 		amount = -amount
 	}
 
-	clip := edgeClip[T]{dst: slices.Grow(dst, 2*len(p.Points)+2), from: len(dst), points: p.Points, reversed: reversed}
+	clip := newEdgeClip(dst, p.Points, reversed, 2*len(p.Points)+2)
 	for edge := range p.Edges() {
-		inward := edge.Float().Normal().Normalize().Multiply(amount)
-		clip.add(edge.Translate(inward.Cast[T]()))
+		clip.shift(edge, edge.Float().Normal().Normalize().Multiply(amount))
 	}
 
 	if points := clip.result(); len(points) > len(dst) {
@@ -993,12 +992,7 @@ func (p Polygon[T]) AppendClipPolygon(dst []Point[T], polygon Polygon[T]) []Poin
 		return dst
 	}
 
-	clip := edgeClip[T]{
-		dst:      slices.Grow(dst, 2*(len(outline.Points)+len(region.Points))),
-		from:     len(dst),
-		points:   outline.Points,
-		reversed: region.twiceArea() < 0,
-	}
+	clip := newEdgeClip(dst, outline.Points, region.twiceArea() < 0, 2*(len(outline.Points)+len(region.Points)))
 	for edge := range region.Edges() {
 		clip.add(edge)
 	}
@@ -1023,7 +1017,7 @@ func (p Polygon[T]) AppendClipRectangle(dst []Point[T], rectangle Rectangle[T]) 
 		return dst
 	}
 
-	clip := edgeClip[T]{dst: slices.Grow(dst, 2*(len(p.Points)+4)), from: len(dst), points: p.Points}
+	clip := newEdgeClip(dst, p.Points, false, 2*(len(p.Points)+4))
 	for edge := range rectangle.Edges() {
 		clip.add(edge)
 	}
@@ -1049,7 +1043,7 @@ func (p Polygon[T]) AppendClipRegularPolygon(dst []Point[T], polygon RegularPoly
 		return dst
 	}
 
-	clip := edgeClip[T]{dst: slices.Grow(dst, 2*(len(p.Points)+polygon.N)), from: len(dst), points: p.Points}
+	clip := newEdgeClip(dst, p.Points, false, 2*(len(p.Points)+polygon.N))
 	for edge := range polygon.Edges() {
 		clip.add(edge)
 	}
@@ -1073,7 +1067,7 @@ func (p Polygon[T]) AppendClipBox(dst []Point[T], box Box[T]) []Point[T] {
 		return dst
 	}
 
-	clip := edgeClip[T]{dst: slices.Grow(dst, 2*(len(p.Points)+4)), from: len(dst), points: p.Points}
+	clip := newEdgeClip(dst, p.Points, false, 2*(len(p.Points)+4))
 	corners := box.corners()
 	for edge := range edgesOf(corners[:]) {
 		clip.add(edge)
