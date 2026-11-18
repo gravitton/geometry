@@ -373,8 +373,7 @@ func (l Line[T]) ClipRectangle(rectangle Rectangle[T]) (Segment[T], bool) {
 }
 
 // ClipRegularPolygon returns the part of the line in the regular polygon, running along Vector,
-// and false where they share no point, for an empty polygon, and for a line along one whose
-// vertices are exactly collinear.
+// and false where they share no point or the polygon is empty.
 func (l Line[T]) ClipRegularPolygon(polygon RegularPolygon[T]) (Segment[T], bool) {
 	return l.span(polygon.minMax()).ClipRegularPolygon(polygon)
 }

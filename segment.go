@@ -443,7 +443,7 @@ func (s Segment[T]) IntersectionArc(arc Arc[T]) Pair[Point[T]] {
 // origin a crossing is placed to a few ulps of the length of the segments, so a long segment may
 // not contain it within the tolerance.
 func (s Segment[T]) IntersectionSegment(segment Segment[T]) (Point[T], bool) {
-	point, ok := s.intersectionSegment(segment)
+	point, ok, _ := s.intersectionSegment(segment)
 
 	return point.Cast[T](), ok
 }
@@ -546,10 +546,10 @@ func (s Segment[T]) IntersectionRectangle(rectangle Rectangle[T]) Pair[Point[T]]
 // IntersectionRegularPolygon returns the points where the segment crosses the boundary of the
 // regular polygon, from Start to End: the first and the last crossing. A segment entirely inside
 // gives none while IntersectsRegularPolygon holds, and an empty polygon gives none. A segment along
-// an edge crosses only the edges at its ends, so one along the line of a polygon whose vertices are
-// exactly collinear crosses none.
+// an edge crosses only the edges at its ends, and one along the line of a polygon whose vertices are
+// exactly collinear crosses it at the nearest and the farthest of them it holds.
 func (s Segment[T]) IntersectionRegularPolygon(polygon RegularPolygon[T]) Pair[Point[T]] {
-	span := edgeSpan[T]{segment: s}
+	span := edgeSpan[T]{segment: s, along: true}
 	for edge := range polygon.Edges() {
 		span.add(edge)
 	}
@@ -704,10 +704,9 @@ func (s Segment[T]) ClipRectangle(rectangle Rectangle[T]) (Segment[T], bool) {
 // ClipRegularPolygon returns the part of the segment in the regular polygon, and false where they
 // share no point or the polygon is empty. A segment touching a vertex from outside is clipped to
 // that vertex. A polygon whose vertices are exactly collinear, as with a zero semi-axis or two
-// vertices of an integer T, is the exception: a segment along its line with an end beyond it has
-// no part, while IntersectsRegularPolygon holds.
+// vertices of an integer T, gives the stretch a segment along its line shares with it.
 func (s Segment[T]) ClipRegularPolygon(polygon RegularPolygon[T]) (Segment[T], bool) {
-	span := edgeSpan[T]{segment: s}
+	span := edgeSpan[T]{segment: s, along: true}
 	for edge := range polygon.Edges() {
 		span.add(edge)
 	}
@@ -912,14 +911,15 @@ func (s Segment[T]) HitCubicBezier(curve CubicBezier[T]) (Hit[T], bool) {
 // HitPolygon returns where the segment first reaches the polygon from outside, and false where it
 // does not, Start lies in it or the polygon is empty. The normal is that of the edge hit, turned to
 // face the segment, so the polygon may be wound either way. A vertex takes the edge that faces
-// Start, and the earlier in Edges where both do or, in a notch, neither does. A spike of no width
-// running along the segment is not hit at its tip, though IntersectsPolygon holds.
+// Start, and the earlier in Edges where both do or, in a notch, neither does. The tip of a spike of
+// no width running along the segment is hit facing the segment, as is a vertex of an outline of no
+// area, but a vertex another edge crosses takes that edge.
 func (s Segment[T]) HitPolygon(polygon Polygon[T]) (Hit[T], bool) {
 	if polygon.Contains(s.Start) {
 		return Hit[T]{}, false
 	}
 
-	span := edgeSpan[T]{segment: s}
+	span := edgeSpan[T]{segment: s, along: true}
 	for edge := range polygon.Edges() {
 		span.add(edge)
 	}
@@ -947,13 +947,14 @@ func (s Segment[T]) HitRectangle(rectangle Rectangle[T]) (Hit[T], bool) {
 // HitRegularPolygon returns where the segment first reaches the regular polygon from outside, and
 // false where it does not, Start lies in it or the polygon is empty. The normal is that of the edge
 // hit, turned to face the segment. A vertex takes the edge that faces Start, and the earlier in
-// Edges where both do.
+// Edges where both do. A polygon whose vertices are exactly collinear is hit at the vertex a
+// segment along its line reaches first, facing the segment.
 func (s Segment[T]) HitRegularPolygon(polygon RegularPolygon[T]) (Hit[T], bool) {
 	if polygon.Contains(s.Start) {
 		return Hit[T]{}, false
 	}
 
-	span := edgeSpan[T]{segment: s}
+	span := edgeSpan[T]{segment: s, along: true}
 	for edge := range polygon.Edges() {
 		span.add(edge)
 	}
@@ -1043,23 +1044,24 @@ func (s Segment[T]) foot(point Point[T]) Point[T] {
 }
 
 // intersectionSegment returns IntersectionSegment before it is rounded, the crossing where the
-// segments properly cross and the endpoint where one touches the other.
-func (s Segment[T]) intersectionSegment(segment Segment[T]) (Point[float64], bool) {
+// segments properly cross and the endpoint where one touches the other, and whether they are
+// exactly parallel, where it gives none.
+func (s Segment[T]) intersectionSegment(segment Segment[T]) (Point[float64], bool, bool) {
 	if point, ok := s.crossing(segment); ok {
 		if endpoint, ok := s.touch(segment); ok {
-			return endpoint.Float(), true
+			return endpoint.Float(), true, false
 		}
 
-		return point, true
+		return point, true, false
 	}
 
 	if s.parallel(segment) {
-		return Point[float64]{}, false
+		return Point[float64]{}, false, true
 	}
 
 	endpoint, ok := s.touch(segment)
 
-	return endpoint.Float(), ok
+	return endpoint.Float(), ok, false
 }
 
 // crosses reports whether the segments properly cross, each with its ends on opposite sides of the
@@ -1116,6 +1118,32 @@ func (s Segment[T]) parallel(segment Segment[T]) bool {
 	a, b := s.Float().Vector(), segment.Float().Vector()
 
 	return a.hasDirection() && b.hasDirection() && a.Cross(b) == 0
+}
+
+// alongVertices returns the endpoints of the parallel segment this one holds, the nearer Start
+// first, the same one twice where it holds one, and false where it holds neither. A segment off the
+// line by any amount holds neither, which one cross product decides before any distance is
+// measured.
+func (s Segment[T]) alongVertices(segment Segment[T]) (Point[T], Point[T], bool) {
+	if s.Line().side(segment.Start) != 0 {
+		return Point[T]{}, Point[T]{}, false
+	}
+
+	start, end := s.Contains(segment.Start), s.Contains(segment.End)
+	switch {
+	case start && end:
+		if s.compareDistance(segment.End, segment.Start) < 0 {
+			return segment.End, segment.Start, true
+		}
+
+		return segment.Start, segment.End, true
+	case start:
+		return segment.Start, segment.Start, true
+	case end:
+		return segment.End, segment.End, true
+	default:
+		return Point[T]{}, Point[T]{}, false
+	}
 }
 
 // touch returns the endpoint of either segment that lies on the other, and false where there is

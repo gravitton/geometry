@@ -24,6 +24,7 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 - An integer `RegularPolygon` its rounding dented is measured to its outline by `Intersects`, `Distance`, `Nearest`, `Collide` and `Sweep` against a shape known by its supports, where a shape in the dent was at no distance without intersecting it
 - An integer `Polygon.Clip<Kind>` and `Shrink` round their corners once, where each cut rounded the outline the last one left, so a corner landed several units outside both polygons and the two orders of a pair differed
 - `Arc` and `Sector` measure a point the sweep covers along its direction from the center, so a segment crossing the arc reaches it at any radius, where past a radius of about a billion `HitSector` missed some; off the arc `Nearest` is `PointAt(NearestFraction)` within the tolerance rather than exactly, and the distance takes about 40% less time
+- `HitPolygon` of a segment or a ray reaches the tip of a spike of no width running along it, and `HitRegularPolygon`, `IntersectionRegularPolygon` and `ClipRegularPolygon` meet a regular polygon whose vertices are exactly collinear along its line, the hit facing the cast, where they gave nothing
 
 ## [v1.19.0](https://github.com/gravitton/geometry/compare/v1.18.0...v1.19.0) (2026-11-18)
 

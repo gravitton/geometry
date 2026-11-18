@@ -47,24 +47,49 @@ type edgeSpan[T Number] struct {
 	ends    [2]Point[T]
 	edge    Segment[T]
 	crossed bool
+	along   bool
 }
 
 // add folds one edge in, keeping its crossing where it comes before the first or after the last. A
 // vertex crossed by two edges goes to the edge that faces Start, the earlier one where both or
-// neither do.
+// neither do. Where along is set, for an outline that can have a spike of no width, an edge exactly
+// along the segment crosses it at the vertices of it the segment holds, the nearest Start first,
+// with no normal of its own, so the tip of a spike is reached and a vertex another edge crosses goes
+// to that edge.
 func (e *edgeSpan[T]) add(edge Segment[T]) {
-	point, ok := e.segment.IntersectionSegment(edge)
+	crossing, ok, parallel := e.segment.intersectionSegment(edge)
+	if parallel && e.along {
+		if near, far, ok := e.segment.alongVertices(edge); ok {
+			e.fold(near, far, Segment[T]{near, near})
+		}
 
+		return
+	}
+
+	if ok {
+		point := crossing.Cast[T]()
+		e.fold(point, point, edge)
+	}
+}
+
+// fold keeps the near point where it comes before the first crossing, with its edge, and the far
+// one where it comes after the last.
+func (e *edgeSpan[T]) fold(near, far Point[T], edge Segment[T]) {
 	switch {
-	case !ok:
 	case !e.crossed:
-		e.ends, e.edge, e.crossed = [2]Point[T]{point, point}, edge, true
-	case e.segment.compareDistance(point, e.ends[0]) < 0:
-		e.ends[0], e.edge = point, edge
-	case point == e.ends[0] && edge.faces(e.segment.Start, e.edge) && !e.edge.faces(e.segment.Start, edge):
+		e.ends, e.edge, e.crossed = [2]Point[T]{near, far}, edge, true
+
+		return
+	case e.segment.compareDistance(near, e.ends[0]) < 0:
+		e.ends[0], e.edge = near, edge
+	case near == e.ends[0] && e.edge.Start == e.edge.End && edge.Start != edge.End:
 		e.edge = edge
-	case e.segment.compareDistance(point, e.ends[1]) > 0:
-		e.ends[1] = point
+	case near == e.ends[0] && edge.faces(e.segment.Start, e.edge) && !e.edge.faces(e.segment.Start, edge):
+		e.edge = edge
+	}
+
+	if e.segment.compareDistance(far, e.ends[1]) > 0 {
+		e.ends[1] = far
 	}
 }
 

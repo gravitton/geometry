@@ -1231,6 +1231,12 @@ func TestRay_ClipRectangle(t *testing.T) {
 func TestRay_ClipRegularPolygon(t *testing.T) {
 	hexagon := RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop)
 
+	t.Run("along a flat polygon gives the stretch they share", func(t *testing.T) {
+		clipped, ok := Ry(Pt(10, 0), Vec(-1, 0)).ClipRegularPolygon(RegPol(Pt(0, 0), Sz(4, 0), 4, 0, 0))
+
+		assert.True(t, ok)
+		geomtest.AssertSegment(t, clipped, Seg(Pt(4, 0), Pt(-4, 0)))
+	})
 	t.Run("passing through gives the part between the crossings", func(t *testing.T) {
 		geomtest.AssertSegments(t, partsOf(Ry(Pt(-20.0, 0.0), Vec(1.0, 0.0)).ClipRegularPolygon(hexagon)), []Segment[float64]{Seg(Pt(-10.0, 0.0), Pt(10.0, 0.0))})
 	})
@@ -1579,6 +1585,12 @@ func TestRay_HitCubicBezier(t *testing.T) {
 func TestRay_HitPolygon(t *testing.T) {
 	notched := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(2, 1), Pt(0, 4)})
 
+	t.Run("the tip of a spike of no width along the ray is hit, facing it", func(t *testing.T) {
+		hit, ok := Ry(Pt(4, 10), Vec(0, -5)).HitPolygon(Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(4, 6), Pt(4, 4), Pt(0, 4)}))
+
+		assert.True(t, ok)
+		geomtest.AssertHit(t, hit, Hit[int]{Pt(4, 6), Vec(0.0, 1.0), 0.8})
+	})
 	t.Run("from outside is the first edge reached", func(t *testing.T) {
 		hit, ok := Ry(Pt(2, 6), Vec(0, -1)).HitPolygon(notched)
 		assertHit(t, hit, ok, Hit[int]{Point: Pt(2, 1), Normal: Vec(-3/math.Sqrt(13), 2/math.Sqrt(13)), Fraction: 5})

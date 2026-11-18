@@ -39,7 +39,7 @@ func (u *unionOutline[T]) gather() {
 	}
 	for edge := range u.a.Edges() {
 		for other := range u.b.Edges() {
-			if point, ok := edge.intersectionSegment(other); ok {
+			if point, ok, _ := edge.intersectionSegment(other); ok {
 				u.share(point)
 				u.begin(point.Cast[T]())
 			}
@@ -141,7 +141,7 @@ func (u *unionOutline[T]) cross(edge Segment[T]) {
 	for {
 		nearest, found := Point[float64]{}, reach
 		for other := range u.b.Edges() {
-			if point, ok := edge.intersectionSegment(other); ok && !point.Equal(end) {
+			if point, ok, _ := edge.intersectionSegment(other); ok && !point.Equal(end) {
 				if at := point.Subtract(start).Dot(along); last < at && at < found {
 					nearest, found = point, at
 				}

@@ -2412,6 +2412,18 @@ func TestSegment_ClipRectangle(t *testing.T) {
 func TestSegment_ClipRegularPolygon(t *testing.T) {
 	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0, 0)
 
+	t.Run("along a flat polygon gives the stretch they share", func(t *testing.T) {
+		flat := RegPol(Pt(0, 0), Sz(4, 0), 4, 0, 0)
+
+		clipped, ok := Seg(Pt(10, 0), Pt(-10, 0)).ClipRegularPolygon(flat)
+		assert.True(t, ok)
+		geomtest.AssertSegment(t, clipped, Seg(Pt(4, 0), Pt(-4, 0)))
+
+		clipped, ok = Seg(Pt(10, 0), Pt(0, 0)).ClipRegularPolygon(flat)
+		assert.True(t, ok)
+		geomtest.AssertSegment(t, clipped, Seg(Pt(4, 0), Pt(0, 0)))
+		assert.Equal(t, Seg(Pt(10, 0), Pt(-10, 0)).IntersectionRegularPolygon(flat), Pair[Point[int]]{[2]Point[int]{Pt(4, 0), Pt(-4, 0)}, 2})
+	})
 	t.Run("passing through gives the part between the crossings", func(t *testing.T) {
 		geomtest.AssertSegments(t, partsOf(Seg(Pt(-3, 0), Pt(3, 0)).ClipRegularPolygon(diamond)), []Segment[int]{Seg(Pt(-2, 0), Pt(2, 0))})
 	})
@@ -3125,6 +3137,24 @@ func TestSegment_HitPolygon(t *testing.T) {
 	square := Pol(squareVertices())
 	notched := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(2, 1), Pt(0, 4)})
 
+	t.Run("the tip of a spike of no width along the segment is hit, facing it", func(t *testing.T) {
+		hit, ok := Seg(Pt(4, 10), Pt(4, 5)).HitPolygon(Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(4, 6), Pt(4, 4), Pt(0, 4)}))
+
+		assert.True(t, ok)
+		geomtest.AssertHit(t, hit, Hit[int]{Pt(4, 6), Vec(0.0, 1.0), 0.8})
+	})
+	t.Run("a corner along the segment takes the edge it crosses, in either order of the edges", func(t *testing.T) {
+		segment := Seg(Pt(-5.0, 1.0), Pt(5.0, 1.0))
+		for _, polygon := range []Polygon[float64]{
+			Pol([]Point[float64]{Pt(2.0, 1.0), Pt(-2.0, 1.0), Pt(-2.0, -1.0), Pt(2.0, -1.0)}),
+			Pol([]Point[float64]{Pt(-2.0, 1.0), Pt(-2.0, -1.0), Pt(2.0, -1.0), Pt(2.0, 1.0)}),
+		} {
+			hit, ok := segment.HitPolygon(polygon)
+
+			assert.True(t, ok)
+			geomtest.AssertHit(t, hit, Hit[float64]{Pt(-2.0, 1.0), Vec(-1.0, 0.0), 0.3}, polygon.String()+": ")
+		}
+	})
 	t.Run("from outside is the first crossing, with the normal of its edge", func(t *testing.T) {
 		hit, ok := Seg(Pt(-1, 1), Pt(5, 1)).HitPolygon(square)
 		assertHit(t, hit, ok, Hit[int]{Point: Pt(0, 1), Normal: Vec(-1.0, 0.0), Fraction: 1.0 / 6})
@@ -3239,6 +3269,12 @@ func TestSegment_HitRectangle(t *testing.T) {
 func TestSegment_HitRegularPolygon(t *testing.T) {
 	diamond := RegPol(Pt(0, 0), Sz(2, 2), 4, 0, 0)
 
+	t.Run("a flat polygon along the segment is hit at the vertex it reaches first, facing it", func(t *testing.T) {
+		hit, ok := Seg(Pt(10, 0), Pt(-10, 0)).HitRegularPolygon(RegPol(Pt(0, 0), Sz(4, 0), 4, 0, 0))
+
+		assert.True(t, ok)
+		geomtest.AssertHit(t, hit, Hit[int]{Pt(4, 0), Vec(1.0, 0.0), 0.3})
+	})
 	t.Run("from outside is the first crossing, with the normal of its edge", func(t *testing.T) {
 		hit, ok := Seg(Pt(-3, 1), Pt(3, 1)).HitRegularPolygon(diamond)
 		assertHit(t, hit, ok, Hit[int]{Point: Pt(-1, 1), Normal: Vec(-Sqrt2/2, Sqrt2/2), Fraction: 1.0 / 3})

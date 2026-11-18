@@ -365,9 +365,8 @@ func (r Ray[T]) ClipRectangle(rectangle Rectangle[T]) (Segment[T], bool) {
 }
 
 // ClipRegularPolygon returns the part of the ray in the regular polygon, and false where they share
-// no point, for an empty polygon, and for a ray along the line of one whose vertices are exactly
-// collinear. It starts at Origin where the polygon contains it, else at the first point of the
-// polygon the ray reaches.
+// no point or the polygon is empty. It starts at Origin where the polygon contains it, else at the
+// first point of the polygon the ray reaches.
 func (r Ray[T]) ClipRegularPolygon(polygon RegularPolygon[T]) (Segment[T], bool) {
 	return r.reach(polygon.minMax()).ClipRegularPolygon(polygon)
 }
@@ -488,8 +487,9 @@ func (r Ray[T]) HitCubicBezier(curve CubicBezier[T]) (Hit[T], bool) {
 // HitPolygon returns where the ray first reaches the polygon from outside, and false where it does
 // not, Origin lies in it or the polygon is empty. The normal is that of the edge hit, turned to
 // face the ray, so the polygon may be wound either way. A vertex takes the edge that faces Origin,
-// and the earlier in Edges where both do or, in a notch, neither does. A spike of no width running
-// along the ray is not hit at its tip, though IntersectsPolygon holds.
+// and the earlier in Edges where both do or, in a notch, neither does. The tip of a spike of no width
+// running along the ray is hit facing the ray, as is a vertex of an outline of no area, but a vertex
+// another edge crosses takes that edge.
 func (r Ray[T]) HitPolygon(polygon Polygon[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(polygon.minMax()).HitPolygon(polygon))
 }
@@ -505,7 +505,8 @@ func (r Ray[T]) HitRectangle(rectangle Rectangle[T]) (Hit[T], bool) {
 // HitRegularPolygon returns where the ray first reaches the regular polygon from outside, and false
 // where it does not, Origin lies in it or the polygon is empty. The normal is that of the edge hit,
 // turned to face the ray. A vertex takes the edge that faces Origin, and the earlier in Edges where
-// both do.
+// both do. A polygon whose vertices are exactly collinear is hit at the vertex a ray along its line
+// reaches first, facing the ray.
 func (r Ray[T]) HitRegularPolygon(polygon RegularPolygon[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(polygon.minMax()).HitRegularPolygon(polygon))
 }

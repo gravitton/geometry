@@ -1182,6 +1182,12 @@ func TestLine_ClipRectangle(t *testing.T) {
 func TestLine_ClipRegularPolygon(t *testing.T) {
 	hexagon := RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop)
 
+	t.Run("along a flat polygon gives the stretch they share", func(t *testing.T) {
+		clipped, ok := Ln(Pt(10, 0), Vec(-1, 0)).ClipRegularPolygon(RegPol(Pt(0, 0), Sz(4, 0), 4, 0, 0))
+
+		assert.True(t, ok)
+		geomtest.AssertSegment(t, clipped, Seg(Pt(4, 0), Pt(-4, 0)))
+	})
 	t.Run("passing through gives the part between the crossings", func(t *testing.T) {
 		geomtest.AssertSegments(t, partsOf(Ln(Pt(20.0, 0.0), Vec(1.0, 0.0)).ClipRegularPolygon(hexagon)), []Segment[float64]{Seg(Pt(-10.0, 0.0), Pt(10.0, 0.0))})
 	})
