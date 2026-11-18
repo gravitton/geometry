@@ -20,9 +20,8 @@ import (
 //
 // For integer T the vertices are rounded, and the rounded outline need not be convex. Contains
 // follows it exactly, but Contains<Kind> of a shape with vertices tests those points alone, so it
-// can admit a shape passing through a dent the rounding made, and Distance, Nearest, Collide and
-// Sweep take it by its supports, except Distance and Nearest against a Circle, so a shape in such
-// a dent is at no distance without intersecting it.
+// can admit a shape passing through a dent the rounding made. Where the outline is dented, the
+// functions taking any two shapes walk its Polygon edge by edge, which allocates.
 type RegularPolygon[T Number] struct {
 	Center Point[T] `json:",embed"`
 	Radius Size[T]  `json:",embed"`
@@ -650,6 +649,26 @@ func (rp RegularPolygon[T]) IsEmpty() bool {
 // does not turn the frame, so an aligned polygon may have any phase.
 func (rp RegularPolygon[T]) IsAligned() bool {
 	return rp.Angle == 0
+}
+
+// isConvex reports whether the outline of the vertices as stored is convex, as Polygon.IsConvex
+// does for its Polygon, without building it. Rounding moves each vertex by at most half a diagonal
+// of the lattice, so a polygon whose vertices stand farther than a diagonal from the line through
+// their neighbors, the shortest semi-axis times one less the cosine of a step, cannot be dented and
+// is convex without the walk.
+func (rp RegularPolygon[T]) isConvex() bool {
+	if rp.N >= 3 && float64(min(rp.Radius.Width, rp.Radius.Height))*(1-math.Cos(2*math.Pi/float64(rp.N))) > math.Sqrt2 {
+		return true
+	}
+
+	c := edgeConvexity{}
+	for edge := range rp.Edges() {
+		if !c.step(edge.Float().Vector()) {
+			return false
+		}
+	}
+
+	return c.result()
 }
 
 // Circle returns the circle about the center with the major semi-axis as its radius, through the

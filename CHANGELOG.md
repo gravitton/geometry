@@ -21,6 +21,7 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 
 ### Fixed
 - Shapes measured by their supports touch whichever is given first where the gap is within the tolerance, where a long flat ellipse resting on a rectangle touched it from one side only
+- An integer `RegularPolygon` its rounding dented is measured to its outline by `Intersects`, `Distance`, `Nearest`, `Collide` and `Sweep` against a shape known by its supports, where a shape in the dent was at no distance without intersecting it
 
 ## [v1.19.0](https://github.com/gravitton/geometry/compare/v1.18.0...v1.19.0) (2026-11-18)
 

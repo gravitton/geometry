@@ -1259,6 +1259,20 @@ func TestRegularPolygon_Polygon(t *testing.T) {
 	rp := RegPol(Pt(0.0, 0.0), Sz(1.0, 1.0), 5, 0, 0)
 	p := rp.Polygon()
 
+	t.Run("an int polygon whose vertices stand more than a diagonal of the lattice from their neighbors' chord stays convex", func(t *testing.T) {
+		for n := 3; n <= 12; n++ {
+			step := 1 - math.Cos(2*math.Pi/float64(n))
+			radius := int(math.Ceil(math.Sqrt2/step)) + 1
+			for _, size := range []Size[int]{Sz(radius, radius), Sz(radius, 3*radius), Sz(5*radius, radius)} {
+				for k := range 60 {
+					angle, phase := float64(k)*0.37, float64(k)*0.71
+					polygon := RegularPolygon[int]{Pt(k%7, -k%5), size, n, angle, phase}
+
+					assert.True(t, polygon.Polygon().IsConvex(), polygon.String()+": ")
+				}
+			}
+		}
+	})
 	t.Run("carries the vertices", func(t *testing.T) {
 		geomtest.AssertVertices(t, p.Points, slices.Collect(rp.Vertices()))
 	})

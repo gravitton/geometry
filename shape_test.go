@@ -535,6 +535,21 @@ func TestDistance(t *testing.T) {
 		geomtest.AssertNumber(t, Distance[float64](BoxFromMinMax(Pt(2.5, 4.0), Pt(3.5, 5.0)), polygon), 0.5)
 		geomtest.AssertNumber(t, Distance[float64](polygon, Pol([]Point[float64]{Pt(2.5, 4.0), Pt(3.5, 4.0), Pt(3.0, 3.0)})), 0.5)
 	})
+	t.Run("an int regular polygon its rounding dented is measured to its outline", func(t *testing.T) {
+		dented := RegularPolygon[int]{Pt(3, 1), Sz(4, 1), 6, 1.9159734899425116, 0.8317173387958766}
+		other := RegularPolygon[int]{Pt(1, -3), Sz(3, 3), 6, 5.427216010486167, 0.5816309704405594}
+
+		assert.False(t, dented.Polygon().IsConvex())
+		assert.False(t, Intersects[int](dented, other))
+		assert.Equal(t, Distance[int](dented, other), Distance[int](dented.Polygon(), other))
+		assert.Equal(t, Distance[int](other, dented), Distance[int](dented, other))
+	})
+	t.Run("a small int regular polygon its rounding left convex is measured by its supports", func(t *testing.T) {
+		small, ellipse := RegPol(Pt(0, 0), Sz(2, 2), 6, 0, 0), Ell(Pt(9, 0), Sz(3, 2), 0)
+
+		assert.True(t, small.Polygon().IsConvex())
+		assert.Equal(t, Distance[int](small, ellipse), Distance[int](small.Polygon(), ellipse))
+	})
 	t.Run("a shape in the notch of a sector past half a turn is measured to its radii", func(t *testing.T) {
 		sector, box := notchedSector(), BoxFromMinMax(Pt(2.0, -0.5), Pt(3.0, 0.5))
 

@@ -15,8 +15,8 @@ import (
 // and one. A pair of this package's kinds with a named method is decided by it, and Intersects,
 // Distance and Nearest take a Circle against any other shape by the distance of that shape to its
 // center. Any other pair, an Ellipse or a shape of another package among them, is known by its
-// Support, which sees a shape as convex, so a non-convex Polygon is taken edge by edge and a Sector
-// past half a turn as its two halves. Such a pair is measured in float64, two shapes touching
+// Support, which sees a shape as convex, so a non-convex Polygon, and an integer RegularPolygon its
+// rounding dented, is taken edge by edge and a Sector past half a turn as its two halves. Such a pair is measured in float64, two shapes touching
 // within the tolerance may answer either way, and for an integer T only outlines meeting on the
 // lattice touch. An empty polygon, here and in the functions that take shapes, is a Polygon or a
 // RegularPolygon of no vertices.
@@ -552,11 +552,20 @@ func eitherNonConvex[T Number](a, b Shape[T]) (Polygon[T], Shape[T], bool) {
 }
 
 // nonConvex returns the shape as a polygon that is not IsConvex, notched, self-crossing or
-// enclosing no area, whose Support, that of its hull, would fill it in.
+// enclosing no area, whose Support, that of its hull, would fill it in: a Polygon, or an integer
+// RegularPolygon whose rounding dented it, as its Polygon. A float one is convex to within
+// rounding, so it is never walked.
 func nonConvex[T Number](shape Shape[T]) (Polygon[T], bool) {
-	polygon, ok := shape.(Polygon[T])
+	switch kind := shape.(type) {
+	case Polygon[T]:
+		return kind, !kind.IsConvex()
+	case RegularPolygon[T]:
+		if isInt[T]() && !kind.isConvex() {
+			return kind.Polygon(), true
+		}
+	}
 
-	return polygon, ok && !polygon.IsConvex()
+	return Polygon[T]{}, false
 }
 
 // eitherReflex returns whichever shape is a sector past half a turn, the first where both are, with
