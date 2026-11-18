@@ -1285,6 +1285,23 @@ func TestSegment_IntersectionSegment(t *testing.T) {
 		assert.True(t, ok)
 		geomtest.AssertPoint(t, point, Pt(5.0, 0.0))
 	})
+	t.Run("a short segment crossed by one far longer lies on both", func(t *testing.T) {
+		pairs := [][2]Segment[float64]{
+			{Seg(Pt(0.08759855224449486, 1.3154261301995316), Pt(0.22582423381349903, -1.5379935630551897)), Seg(Pt(-7.615524122720842e+09, 9.751267412838818e+09), Pt(7.615524122978636e+09, -9.751267412738838e+09))},
+			{Seg(Pt(-1.1263261221339267, 1.0313519716228274), Pt(-0.7517767537221332, -0.43891590741360753)), Seg(Pt(-8.648175328705627e+09, 3.1481443658440433e+09), Pt(8.648175328652885e+09, -3.1481443650874906e+09))},
+			{Seg(Pt(1.3729747747072354, -1.5071924432624648), Pt(-1.6965648294725644, 0.6061385109175803)), Seg(Pt(9.118494918118673e+09, -1.2896670936469223e+09), Pt(-9.118494917777256e+09, 1.2896670931167421e+09))},
+		}
+		for _, pair := range pairs {
+			for _, order := range [][2]Segment[float64]{pair, {pair[1], pair[0]}} {
+				point, ok := order[0].IntersectionSegment(order[1])
+				message := fmt.Sprintf("%s → %s: ", order[0], order[1])
+
+				assert.True(t, ok, message)
+				assert.True(t, order[0].Contains(point), message)
+				assert.True(t, order[1].Contains(point), message)
+			}
+		}
+	})
 	t.Run("the same point in either order", func(t *testing.T) {
 		for _, a := range segmentFixtures {
 			for _, b := range segmentFixtures {
@@ -1322,7 +1339,7 @@ func TestSegment_IntersectionSegment(t *testing.T) {
 			message := fmt.Sprintf("%s → %s: ", pair[0], pair[1])
 
 			assert.True(t, ok, message)
-			geomtest.AssertPoint(t, point, Pt(1572874, 1048583), message)
+			geomtest.AssertPoint(t, point, Pt(1572875, 1048583), message)
 		}
 	})
 }

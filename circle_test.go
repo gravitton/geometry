@@ -1086,6 +1086,16 @@ func TestCircle_IntersectionCircle(t *testing.T) {
 			}
 		}
 	})
+	t.Run("circles whose radius squared twice overflows cross on both boundaries", func(t *testing.T) {
+		a, b := Circ(Pt(0.0, 0.0), 5e100), Circ(Pt(6e100, 0.0), 5e100)
+		points := a.IntersectionCircle(b).AppendTo(nil)
+
+		assert.Length(t, points, 2)
+		for _, p := range points {
+			assert.True(t, touches(a, p), fmt.Sprintf("%s on a: ", p))
+			assert.True(t, touches(b, p), fmt.Sprintf("%s on b: ", p))
+		}
+	})
 	t.Run("int rounds the points", func(t *testing.T) {
 		geomtest.AssertVertices(t, Circ(Pt(0, 0), 5).IntersectionCircle(Circ(Pt(6, 0), 5)).AppendTo(nil), []Point[int]{Pt(3, 4), Pt(3, -4)})
 		geomtest.AssertVertices(t, Circ(Pt(0, 0), 2).IntersectionCircle(Circ(Pt(3, 0), 2)).AppendTo(nil), []Point[int]{Pt(2, 1), Pt(2, -1)})

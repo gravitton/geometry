@@ -389,7 +389,9 @@ func (c Circle[T]) IntersectionCircle(circle Circle[T]) Pair[Point[T]] {
 	}
 
 	along := (float64(r1*r1) - float64(r2*r2) + distanceSquared) / (2 * distance)
-	half := math.Sqrt(max(float64((outer-distance)*(outer+distance))*float64((distance-inner)*(distance+inner)), 0)) / (2 * distance)
+	outerGap := float64((outer-distance)*(outer+distance)) / (2 * distance)
+	innerGap := float64((distance-inner)*(distance+inner)) / (2 * distance)
+	half := math.Sqrt(max(float64(outerGap*innerGap), 0))
 
 	return c.chordPoints(direction, along, half)
 }

@@ -1078,10 +1078,12 @@ func (s Segment[T]) crosses(segment Segment[T]) bool {
 // line, so a point that projects outside the other segment is no crossing and is left to the
 // endpoints.
 //
-// The point is placed by the numerator times each component, divided once, so an integer crossing
-// on a half unit is exact. Past the exact range the product rounds, so the pair is first put in one
-// canonical order, each from its lesser endpoint by Point.Compare and the lesser segment first, and
-// the answer is the same from either side and for a Reverse.
+// The point is placed along the shorter segment, since the error of a placement grows with the
+// length it is placed along and a short segment far from the origin has a tolerance too narrow
+// for the error of a long one. It is placed by the numerator times each component, divided once,
+// so an integer crossing on a half unit is exact. Past the exact range the product rounds, so the
+// pair is first put in one canonical order, each from its lesser endpoint by Point.Compare and the
+// lesser segment first, and the answer is the same from either side and for a Reverse.
 func (s Segment[T]) crossing(segment Segment[T]) (Point[float64], bool) {
 	if s.End.Compare(s.Start) < 0 {
 		s = s.Reverse()
@@ -1106,10 +1108,15 @@ func (s Segment[T]) crossing(segment Segment[T]) (Point[float64], bool) {
 		return Point[float64]{}, false
 	}
 
+	alongSquared, directionSquared := along.LengthSquared(), direction.LengthSquared()
+	if directionSquared < alongSquared {
+		a, b, along, direction, numerator, directionSquared = b, a, direction, along, other, alongSquared
+	}
+
 	point := Point[float64]{a.Start.X + float64(numerator*along.X)/denominator, a.Start.Y + float64(numerator*along.Y)/denominator}
 	projection := point.Subtract(b.Start).Dot(direction)
 
-	return point, 0 <= projection && projection <= direction.LengthSquared()
+	return point, 0 <= projection && projection <= directionSquared
 }
 
 // parallel reports whether the segments have the same line direction, either way. A segment of
