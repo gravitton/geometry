@@ -302,11 +302,35 @@ func (a Arc[T]) holds(point Point[float64]) bool {
 }
 
 // nearest returns the point of the arc nearest to the given point and the squared distance to it,
-// with no tolerance, so off the arc Nearest is exactly PointAt of NearestFraction.
+// with no tolerance: Start for the center, the nearer end where the sweep misses the direction the
+// point lies in, Start where both are exactly as near, and otherwise the point along that
+// direction, its gap as Circle measures it. Measured along it, they hold at any radius, where a
+// point rebuilt from the angle is off by its few ulps times the radius, so off the arc Nearest is
+// PointAt of NearestFraction within the tolerance.
 func (a Arc[T]) nearest(point Point[float64]) (Point[float64], float64) {
-	nearest := a.pointAt(a.fraction(point))
+	center := a.Center.Float()
+	offset := point.Subtract(center)
+	if !offset.hasDirection() {
+		start := a.pointAt(0)
 
-	return nearest, nearest.DistanceSquaredTo(point)
+		return start, start.DistanceSquaredTo(point)
+	}
+
+	if !a.covers(offset.Angle()) {
+		start, end := a.pointAt(0), a.pointAt(1)
+		toStart, toEnd := start.DistanceSquaredTo(point), end.DistanceSquaredTo(point)
+		if toEnd < toStart {
+			return end, toEnd
+		}
+
+		return start, toStart
+	}
+
+	distanceSquared, radius := offset.LengthSquared(), float64(a.Radius)
+	distance := math.Sqrt(distanceSquared)
+	gap := (distanceSquared - float64(radius*radius)) / (distance + radius)
+
+	return center.Add(offset.Multiply(radius / distance)), gap * gap
 }
 
 // fraction returns the fraction along the arc nearest to the point, with no tolerance: zero for the

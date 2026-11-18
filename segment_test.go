@@ -2702,6 +2702,16 @@ func TestSegment_HitSector(t *testing.T) {
 	sector := Sect(Pt(0.0, 0.0), 5.0, 0, Pi/2)
 	notched := Sect(Pt(0.0, 0.0), 5.0, Pi/4, 3*Pi/2)
 
+	t.Run("a sector of a radius of a billion is reached where the segment crosses its arc", func(t *testing.T) {
+		sector := Sect(Pt(4.718737301206588e+08, -1.3542872140684524e+08), 1e9, 3.786167792881512, 2.030024896860011)
+		segment := Seg(Pt(1.0963417936003017e+09, -9.164790693223767e+08), Pt(1.0963417928004012e+09, -9.164790593544202e+08))
+
+		hit, ok := segment.HitSector(sector)
+
+		assert.True(t, ok)
+		assert.True(t, segment.IntersectsSector(sector))
+		assert.LessOrEqual(t, sector.DistanceTo(hit.Point), 1e-6*1e9, hit.String()+": ")
+	})
 	t.Run("the arc, with the direction from the center", func(t *testing.T) {
 		hit, ok := Seg(Pt(3.0, 10.0), Pt(3.0, 0.0)).HitSector(sector)
 		assertHit(t, hit, ok, Hit[float64]{Point: Pt(3.0, 4.0), Normal: Vec(0.6, 0.8), Fraction: 0.6})
