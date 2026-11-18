@@ -105,7 +105,7 @@ func DistanceSquared[T Number](a, b Shape[T]) float64 {
 
 	difference := minkowski[T]{a: a, b: b}
 
-	return difference.nearest(difference.precision()).point.LengthSquared()
+	return difference.nearest(difference.precision(), difference.tolerance()).point.LengthSquared()
 }
 
 // Nearest returns the points Distance is measured between: the point of the first shape nearest the
@@ -164,7 +164,7 @@ func Nearest[T Number](a, b Shape[T]) (Point[T], Point[T]) {
 	}
 
 	difference := minkowski[T]{a: a, b: b}
-	nearest := difference.nearest(difference.precision())
+	nearest := difference.nearest(difference.precision(), difference.tolerance())
 	if intersects {
 		point := nearest.from.Cast[T]()
 

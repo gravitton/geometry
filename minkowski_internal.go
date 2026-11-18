@@ -63,13 +63,19 @@ func (m minkowski[T]) precision() float64 {
 // intersects reports whether the shapes share a point within the tolerance, the one every other
 // answer of the difference takes, so a round shape touching on the lattice is met from either side.
 func (m minkowski[T]) intersects() bool {
-	return lessOrEqualSquared(m.nearest(m.precision()).point.LengthSquared(), 0, m.tolerance())
+	tolerance := m.tolerance()
+
+	return lessOrEqualSquared(m.nearest(m.precision(), tolerance).point.LengthSquared(), 0, tolerance)
 }
 
 // nearest returns the point of the difference nearest the origin, zero where it holds the origin,
 // by the Gilbert–Johnson–Keerthi walk: it stops on a support already held or one reaching no nearer
 // within the precision, the bound on how far the gap may still close. A NaN ends it at once.
-func (m minkowski[T]) nearest(precision float64) minkowskiVertex {
+//
+// It never stops on the precision while the gap may lie either side of the tolerance, its bound
+// from the support within it and the gap held past it, since where the walk stops would then
+// decide the answer, and the walk of a shape swapped with the other stops elsewhere.
+func (m minkowski[T]) nearest(precision, tolerance float64) minkowskiVertex {
 	simplex := minkowskiSimplex{}
 	simplex.add(m.support(Vector[float64]{1, 0}))
 
@@ -78,7 +84,10 @@ func (m minkowski[T]) nearest(precision float64) minkowskiVertex {
 		next := m.support(nearest.point.Negate())
 
 		distanceSquared := nearest.point.LengthSquared()
-		if simplex.holds(next) || !(distanceSquared-float64(nearest.point.Dot(next.point)) > float64(precision*math.Sqrt(distanceSquared))) {
+		distance, reach := math.Sqrt(distanceSquared), float64(nearest.point.Dot(next.point))
+		closing := distanceSquared-reach > float64(precision*distance)
+		undecided := distance > tolerance && reach <= float64(tolerance*distance)
+		if simplex.holds(next) || !(closing || undecided) {
 			break
 		}
 
@@ -130,7 +139,7 @@ func (m minkowski[T]) sweep(motion Vector[float64]) (Hit[T], bool) {
 	start := m.offset
 
 	fraction := 0.0
-	nearest := m.nearest(precision)
+	nearest := m.nearest(precision, tolerance)
 	for range sweepSteps {
 		normal := nearest.point.Normalize()
 
@@ -142,7 +151,7 @@ func (m minkowski[T]) sweep(motion Vector[float64]) (Hit[T], bool) {
 		fraction = min(fraction+nearest.point.Length()/approach, 1)
 
 		m.offset = start.Add(motion.Multiply(fraction))
-		nearest = m.nearest(precision)
+		nearest = m.nearest(precision, tolerance)
 		if lessOrEqualSquared(nearest.point.LengthSquared(), 0, tolerance) {
 			return Hit[T]{nearest.from.Cast[T](), normal, fraction}, true
 		}

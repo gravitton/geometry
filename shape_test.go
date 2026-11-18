@@ -1035,6 +1035,13 @@ func BenchmarkContains(b *testing.B) {
 }
 
 func TestIntersects(t *testing.T) {
+	t.Run("a long flat ellipse resting on a rectangle touches it from either side", func(t *testing.T) {
+		ellipse := Ell(Pt(99.9979746639703, -41.0), Sz(402.0, 1.0), -math.Pi)
+		rectangle := Rect(Pt(133.9998212774638, 0.0), Sz(67.0, 80.0), 0)
+
+		assert.True(t, Intersects[float64](ellipse, rectangle))
+		assert.True(t, Intersects[float64](rectangle, ellipse))
+	})
 	t.Run("a circle is tested against any shape by its radius", func(t *testing.T) {
 		shape := foreignShape[float64]{Rect(Pt(0.0, 0.0), Sz(2.0, 2.0), 0)}
 
