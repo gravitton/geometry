@@ -7,20 +7,18 @@ and this project follows [Semantic Versioning](http://semver.org/spec/v2.0.0.htm
 
 **a breaking change may ship in a minor release.** Breaking changes are avoided where the cost is reasonable, but a
 Go major version changes the import path for every user, and for a package with a small user base that is often the
-more expensive of the two. A breaking change is marked **breaking** in its entry, and every release that has one
-lists them under **Breaking** at the top of its section. Renames land as a rename; no deprecated alias is kept.
+more expensive of the two. A breaking change opens its entry with **breaking**, and a release summarized by theme
+opens with a **Breaking** group. Renames land as a rename; no deprecated alias is kept.
 
 
 ## [Unreleased](https://github.com/gravitton/geometry/compare/v1.19.0...main)
-
-### Breaking
-- `Mod` is `FloorMod`, named for its rounding beside `FloorDiv`
 
 ### Added
 - `FloorDiv[T Integer](n, m T) T` – the quotient of a floored division, the one whose remainder `FloorMod` returns
 - `Circle.Matrix`, `Capsule.Matrix`, `Rectangle.Matrix`, `RegularPolygon.Matrix`, `Box.Matrix` and `Ellipse.Matrix` return the matrix that maps the square of side one centered on the origin onto the frame around the shape
 
 ### Changed
+- **breaking** `Mod` is `FloorMod`, named for its rounding beside `FloorDiv`
 - `Point.Compare` is within the inlining budget, so a direct call is inlined and a sort by it pays one call a comparison where it paid two
 
 ### Fixed
@@ -111,6 +109,7 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.17.0.md](docs
 ### Changed
 - The `geomtest` helpers take `geomtest.Testing`, declared in the package with the `Helper` and `Errorf` methods they call, rather than `assert.Testing`, so no signature names the assertion library; a `*testing.T` and any `assert.Testing` still pass as they are
 - `String` on every type and the package `String` append into a buffer on the stack rather than going through `fmt.Sprintf`, so each allocates the string it returns and nothing else, a polygon of many vertices its growing buffer besides; the text printed is unchanged
+
 ### Removed
 - **breaking** `Triangle`, `Square` and `Hexagon` – `RegularPolygonWithOrientation` with 3, 4 or 6 vertices; `Square` of unequal semi-axes drew a rhombus or a rectangle rather than a square, and the three took generic names at package level
 
@@ -206,7 +205,6 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.14.0.md](docs
 - Every boundary is one squared-distance comparison, and every closed shape walks its own `Edges` through the shared `edge.go` accumulators
 - Every shape pair is held by one shape and delegated to from the other, in the order `Circle`, `Segment`, `Polygon`, `Rectangle`, `RegularPolygon`
 - Only a method whose result is a slice allocates: the outline iterators and the intersection walks allocate nothing, and `Circle.IntersectionSegment` allocates its result once
-- Every earlier release with a breaking change opens with a **Breaking** group
 
 ### Fixed
 - A point with a NaN coordinate is inside no shape, where it was inside every rectangle and polygon
@@ -246,18 +244,18 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.13.0.md](docs
 
 
 ## [v1.12.0](https://github.com/gravitton/geometry/compare/v1.11.0...v1.12.0) (2026-08-26)
+
 ### Added
 - `Point.Compare(point) int` – orders points by X and then by Y in the `cmp.Compare` convention, for `slices.SortFunc` and `slices.BinarySearchFunc`. The comparison is exact and does not apply the `Delta` tolerance `Point.Equal` uses, since a tolerant comparison is not transitive and would leave a sort no valid ordering
 
 
 ## [v1.11.0](https://github.com/gravitton/geometry/compare/v1.10.0...v1.11.0) (2026-08-26)
-### Breaking
-- `Direction` constants are renumbered to run by increasing angle — `Right`, `DownRight`, `Down`, `DownLeft`, `Left`, `UpLeft`, `Up`, `UpRight` — so a positive `Rotate` step turns the same way as a positive `Vector.Rotate` angle: counterclockwise in math coordinates, clockwise as drawn on a screen with Y pointing down. Previously the order ran the opposite way and `DirectionFromAngle` negated its input to compensate (**breaking**)
-- `Directions`, `CardinalDirections`, and `DiagonalDirections` follow the new order (**breaking**)
-- `Rectangle.Vertices` and `Rectangle.Edges` now wind by increasing angle, matching `Directions` and `RegularPolygon.Vertices` — clockwise as drawn on a screen with Y pointing down. `Rectangle.Polygon()` winds the same way as a result (**breaking**)
-- `Rectangle.TopEdge`, `RightEdge`, `BottomEdge`, and `LeftEdge` are reversed so the edges still form a closed chain in the new winding (**breaking**)
 
 ### Changed
+- **breaking** `Direction` constants are renumbered to run by increasing angle — `Right`, `DownRight`, `Down`, `DownLeft`, `Left`, `UpLeft`, `Up`, `UpRight` — so a positive `Rotate` step turns the same way as a positive `Vector.Rotate` angle: counterclockwise in math coordinates, clockwise as drawn on a screen with Y pointing down. Previously the order ran the opposite way and `DirectionFromAngle` negated its input to compensate
+- **breaking** `Directions`, `CardinalDirections`, and `DiagonalDirections` follow the new order
+- **breaking** `Rectangle.Vertices` and `Rectangle.Edges` now wind by increasing angle, matching `Directions` and `RegularPolygon.Vertices` — clockwise as drawn on a screen with Y pointing down. `Rectangle.Polygon()` winds the same way as a result
+- **breaking** `Rectangle.TopEdge`, `RightEdge`, `BottomEdge`, and `LeftEdge` are reversed so the edges still form a closed chain in the new winding
 - `DirectionFromAngle` no longer negates its argument, now that direction numbering follows the angle directly
 
 ### Fixed
@@ -267,13 +265,6 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.13.0.md](docs
 
 
 ## [v1.10.0](https://github.com/gravitton/geometry/compare/v1.9.0...v1.10.0) (2026-08-26)
-### Breaking
-- `Direction[T](x T) T` renamed to `Sign[T](x T) T`, freeing the name for the new `Direction` type (**breaking**)
-- `Line.Direction() Vector[T]` renamed to `Line.Vector()`, since it returns the start-to-end vector rather than a `Direction` (**breaking**)
-- `Line.Reversed()` renamed to `Line.Reverse()`, matching the imperative naming of every other immutable method (**breaking**)
-- `DirectionFromAxes(up, down, left, right bool)` now returns `Direction` instead of `Vector[float64]` (**breaking**)
-- `RectFromMin`, `RectFromMax`, `RectFromMinMax`, `RectFromSize`, `RectFromImage` renamed to `RectangleFrom…`, so every `From` constructor uses its full type name like `PointFromImage` and `VectorFromAngle` (**breaking**)
-- `UpVector`, `DownVector`, `LeftVector`, `RightVector`, `UpLeftVector`, `UpRightVector`, `DownLeftVector`, `DownRightVector` removed – superseded by `DirectionX.Unit[T]()` (**breaking**)
 
 ### Added
 - `Integer` and `Float` constraints – split out of `Number`, which is now `Integer | Float`
@@ -291,8 +282,16 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.13.0.md](docs
 - `VectorFromAngleSize[T](angle float64, size Size[T]) Vector[T]` – returns the point at the given angle on an ellipse with the given semi-axes, `(width*cos, height*sin)`; `VectorFromAngle` is now the square-size case of it
 
 ### Changed
+- **breaking** `Direction[T](x T) T` renamed to `Sign[T](x T) T`, freeing the name for the new `Direction` type
+- **breaking** `Line.Direction() Vector[T]` renamed to `Line.Vector()`, since it returns the start-to-end vector rather than a `Direction`
+- **breaking** `Line.Reversed()` renamed to `Line.Reverse()`, matching the imperative naming of every other immutable method
+- **breaking** `DirectionFromAxes(up, down, left, right bool)` now returns `Direction` instead of `Vector[float64]`
+- **breaking** `RectFromMin`, `RectFromMax`, `RectFromMinMax`, `RectFromSize`, `RectFromImage` renamed to `RectangleFrom…`, so every `From` constructor uses its full type name like `PointFromImage` and `VectorFromAngle`
 - Require Go 1.27
 - `Assert*` helpers take `assert.Testing` instead of `*testing.T`, matching the interface `gravitton/assert` already uses; existing calls passing `*testing.T` are unaffected
+
+### Removed
+- **breaking** `UpVector`, `DownVector`, `LeftVector`, `RightVector`, `UpLeftVector`, `UpRightVector`, `DownLeftVector`, `DownRightVector` removed – superseded by `DirectionX.Unit[T]()`
 
 ### Fixed
 - `Matrix.Int()` now rounds to the nearest integer via `Cast` instead of truncating toward zero, matching every other `Int()` conversion
@@ -300,23 +299,27 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.13.0.md](docs
 
 
 ## [v1.9.0](https://github.com/gravitton/geometry/compare/v1.8.1...v1.9.0) (2026-05-29)
+
 ### Added
 - `Parse[T Number](s string) (T, error)` – parses a string into any `Number` type using `strconv.ParseInt` (with correct bit size) for integer types and `strconv.ParseFloat` for float types
 - `ParseSize[T Number](s string) (Size[T], error)` – parses a size string in `"WxH"` form into `Size[T]`
 
 
 ## [v1.8.1](https://github.com/gravitton/geometry/compare/v1.8.0...v1.8.1) (2026-05-22)
+
 ### Fixed
 - `RegularPolygonOrientationAngle` with `PointyTop` now returns `-π/2` instead of `π/2`, correctly placing the first vertex at the visual top in the library's +Y-down coordinate system
 
 
 ## [v1.8.0](https://github.com/gravitton/geometry/compare/v1.7.0...v1.8.0) (2026-05-12)
+
 ### Added
 - `DirectionFromAxes(up, down, left, right bool) Vector[float64]` – returns the unit direction vector for the given axis inputs; cancels opposite directions, normalizes diagonals
 - `Line.Vertices() []Point[T]` – returns `[Start, End]` as a slice
 
 
 ## [v1.7.0](https://github.com/gravitton/geometry/compare/v1.6.0...v1.7.0) (2026-05-09)
+
 ### Added
 - `RectFromMax` – constructor for `Rectangle` from max (bottom-right) point and size
 - `Direction[T](x T) T` – returns the sign of a number: `1`, `-1`, or `0`
@@ -326,14 +329,16 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.13.0.md](docs
 
 
 ## [v1.6.0](https://github.com/gravitton/geometry/compare/v1.5.0...v1.6.0) (2026-05-03)
-### Breaking
-- `Matrix[T Number]` — `Matrix` is now generic over the full `Number` constraint (was restricted to `float64`), so every use of the bare type name takes a type argument (**breaking**)
 
 ### Added
 - `RegPolWithOrientation` – constructor for `RegularPolygon` with orientation
 
+### Changed
+- **breaking** `Matrix[T Number]` — `Matrix` is now generic over the full `Number` constraint (was restricted to `float64`), so every use of the bare type name takes a type argument
+
 
 ## [v1.5.0](https://github.com/gravitton/geometry/compare/v1.4.0...v1.5.0) (2026-04-25)
+
 ### Added
 - `Point.ChebyshevDistanceTo(point Point[T]) T` — returns the Chebyshev (chessboard) distance: `max(|dx|, |dy|)`
 - `Point.OctileDistanceTo(point Point[T]) float64` — returns the Octile distance for grid pathfinding where diagonals cost √2: `max(dx, dy) + (√2-1) * min(dx, dy)`
@@ -344,11 +349,13 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.13.0.md](docs
 
 
 ## [v1.4.0](https://github.com/gravitton/geometry/compare/v1.3.0...v1.4.0) (2026-04-25)
+
 ### Added
 - `Point.ManhattanDistanceTo(point Point[T]) T` — returns the Manhattan (taxicab) distance between two points
 
 
 ## [v1.3.0](https://github.com/gravitton/geometry/compare/v1.2.0...v1.3.0) (2026-04-25)
+
 ### Added
 - `NormalizeAngle(angle float64) float64` utility function — normalizes any angle to `[0, 2π)`
 - `GOEXPERIMENT=jsonv2` requirement documented in `README.md`; `json:",inline"` struct tags are intentional and valid under jsonv2
@@ -364,9 +371,6 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.13.0.md](docs
 
 
 ## [v1.2.0](https://github.com/gravitton/geometry/compare/v1.1.1...v1.2.0) (2026-04-19)
-### Breaking
-- Renamed `PointTop` → `PointyTop` in `RegularPolygon` orientation constants (**breaking**)
-- `Shrink` and `ShrinkXY` now clamp to `0` — negative dimensions are no longer possible (**breaking**)
 
 ### Added
 - `Point.Abs()`, `Point.Round()`, `Point.Floor()`, `Point.Ceil()` methods
@@ -377,6 +381,8 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.13.0.md](docs
 - `Polygon.UnmarshalJSON` support
 
 ### Changed
+- **breaking** Renamed `PointTop` → `PointyTop` in `RegularPolygon` orientation constants
+- **breaking** `Shrink` and `ShrinkXY` now clamp to `0` — negative dimensions are no longer possible
 - Updated minimum Go version to 1.26
 
 ### Fixed
@@ -385,16 +391,19 @@ Every entry, with breaking changes marked, is in [docs/releases/v1.13.0.md](docs
 
 
 ## [v1.1.1](https://github.com/gravitton/geometry/compare/v1.1.0...v1.1.1) (2025-10-27)
+
 ### Fixed
 - Move Assert helper methods to `geom` package
 
 
 ## [v1.1.0](https://github.com/gravitton/geometry/compare/v1.0.0...v1.1.0) (2025-10-27)
+
 ### Updated
 - Make Assert helper methods public
 
 
-## v1.0.0 (2025-10-17)
+## [v1.0.0](https://github.com/gravitton/geometry/commits/v1.0.0) (2025-10-17)
+
 ### Added
 - Added new generic geometry primitives:
   - `Point`
