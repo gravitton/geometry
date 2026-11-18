@@ -899,6 +899,30 @@ func TestCapsule_AppendPolygon(t *testing.T) {
 	})
 }
 
+func TestCapsule_Matrix(t *testing.T) {
+	t.Run("maps onto the rectangle around the capsule", func(t *testing.T) {
+		geomtest.AssertMatrix(t, Cap(Pt(1.0, 2.0), Pt(5.0, 2.0), 1.5).Matrix(), Mat(7.0, 0, 3, 0, 3, 2))
+	})
+	t.Run("its X axis runs from Start to End", func(t *testing.T) {
+		m := Cap(Pt(0.0, 0.0), Pt(0.0, 4.0), 1.0).Matrix()
+
+		geomtest.AssertPoint(t, Pt(0.5, 0.0).Transform(m), Pt(0.0, 5.0))
+		geomtest.AssertPoint(t, Pt(-0.5, 0.0).Transform(m), Pt(0.0, -1.0))
+		geomtest.AssertPoint(t, Pt(0.0, 0.5).Transform(m), Pt(-1.0, 2.0))
+	})
+	t.Run("a segment of zero length is not turned", func(t *testing.T) {
+		geomtest.AssertMatrix(t, Cap(Pt(1.0, 1.0), Pt(1.0, 1.0), 2.0).Matrix(), Mat(4.0, 0, 1, 0, 4, 1))
+	})
+	t.Run("int", func(t *testing.T) {
+		geomtest.AssertMatrix(t, Cap(Pt(1, 2), Pt(4, 2), 1).Matrix(), Mat(5.0, 0, 2.5, 0, 2, 2))
+	})
+	t.Run("frames the capsule", func(t *testing.T) {
+		for _, capsule := range capsuleFixtures {
+			assertFrame(t, capsule, capsule.Matrix(), capsule.String())
+		}
+	})
+}
+
 func TestCapsule_Cast(t *testing.T) {
 	c := Cap(Pt(1.5, -2.5), Pt(3.5, 1.5), 1.5)
 

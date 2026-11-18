@@ -1734,6 +1734,34 @@ func TestRectangle_Polygon(t *testing.T) {
 	})
 }
 
+func TestRectangle_Matrix(t *testing.T) {
+	t.Run("maps onto the rectangle", func(t *testing.T) {
+		geomtest.AssertMatrix(t, Rect(Pt(1.0, 2.0), Sz(4.0, 2.0), 0).Matrix(), Mat(4.0, 0, 1, 0, 2, 2))
+	})
+	t.Run("turns with it", func(t *testing.T) {
+		r := Rect(Pt(1.0, 2.0), Sz(4.0, 2.0), Pi/2)
+
+		geomtest.AssertPoint(t, Pt(0.5, 0.0).Transform(r.Matrix()), Pt(1.0, 4.0))
+	})
+	t.Run("an int rectangle of odd extent maps onto its corners", func(t *testing.T) {
+		r := Rect(Pt(2, 2), Sz(3, 3), 0)
+
+		geomtest.AssertMatrix(t, r.Matrix(), Mat(3.0, 0, 2.5, 0, 3, 2.5))
+		geomtest.AssertMatrix(t, r.Matrix(), BoxFromMinMax(r.TopLeft(), r.BottomRight()).Matrix())
+	})
+	t.Run("maps the square of side one onto the vertices", func(t *testing.T) {
+		square := Rect(Pt(0.0, 0.0), SzU(1.0), 0).Polygon()
+		for _, rect := range rectFixtures {
+			geomtest.AssertVertices(t, square.Transform(rect.Matrix()).Points, slices.Collect(rect.Vertices()), rect.String())
+		}
+	})
+	t.Run("frames the rectangle", func(t *testing.T) {
+		for _, rect := range rectFixtures {
+			assertFrame(t, rect, rect.Matrix(), rect.String())
+		}
+	})
+}
+
 func TestRectangle_Cast(t *testing.T) {
 	r := Rect(Pt(1.5, -2.5), Sz(3.5, 4.5), 0).Rotate(Pi / 6)
 

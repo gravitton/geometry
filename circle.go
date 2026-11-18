@@ -669,6 +669,15 @@ func (c Circle[T]) Ellipse() Ellipse[T] {
 	return Ellipse[T]{c.Center, SzU(c.Radius), 0}
 }
 
+// Matrix returns the matrix that maps the square of side one centered on the origin onto the square
+// around the circle.
+func (c Circle[T]) Matrix() Matrix[float64] {
+	f := c.Float()
+	diameter := float64(2 * f.Radius)
+
+	return Matrix[float64]{diameter, 0, f.Center.X, 0, diameter, f.Center.Y}
+}
+
 // Cast converts the circle to a Circle of another number type, rounding as Cast does.
 func (c Circle[T]) Cast[R Number]() Circle[R] {
 	return Circle[R]{c.Center.Cast[R](), Cast[R](float64(c.Radius))}

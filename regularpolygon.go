@@ -679,6 +679,11 @@ func (rp RegularPolygon[T]) Ellipse() Ellipse[T] {
 	return Ellipse[T]{rp.Center, rp.Radius, rp.Angle}
 }
 
+// Matrix returns the Matrix of the Ellipse the vertices lie on, which Phase does not turn.
+func (rp RegularPolygon[T]) Matrix() Matrix[float64] {
+	return rp.Ellipse().Matrix()
+}
+
 // Cast converts the polygon to a RegularPolygon of another number type, rounding as Cast does.
 func (rp RegularPolygon[T]) Cast[R Number]() RegularPolygon[R] {
 	return RegularPolygon[R]{rp.Center.Cast[R](), rp.Radius.Cast[R](), rp.N, rp.Angle, rp.Phase}

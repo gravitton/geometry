@@ -13,6 +13,9 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 
 ## [Unreleased](https://github.com/gravitton/geometry/compare/v1.19.0...main)
 
+### Added
+- `Circle.Matrix`, `Capsule.Matrix`, `Rectangle.Matrix`, `RegularPolygon.Matrix`, `Box.Matrix` and `Ellipse.Matrix` return the matrix that maps the square of side one centered on the origin onto the frame around the shape
+
 ## [v1.19.0](https://github.com/gravitton/geometry/compare/v1.18.0...v1.19.0) (2026-11-18)
 
 ### Added

@@ -550,7 +550,9 @@ m.Angle()          // π/4, read back from the matrix
 ```
 
 `Translate`, `Rotate`, `RotateAround`, `Scale`, `ScaleAround`, `Shear` and `Reflect` compose with their constructor on
-the right, applied first, and their `Pre` forms on the left, applied last.
+the right, applied first, and their `Pre` forms on the left, applied last. `Circle`, `Capsule`, `Rectangle`,
+`RegularPolygon`, `Box` and `Ellipse` give the `Matrix` that maps the square of side one centered on the origin onto
+the frame around them.
 
 ### Numbers
 

@@ -561,6 +561,14 @@ func (b Box[T]) Rectangle() Rectangle[T] {
 	return Rectangle[T]{b.Center(), b.Size(), 0}
 }
 
+// Matrix returns the matrix that maps the square of side one centered on the origin onto the box.
+func (b Box[T]) Matrix() Matrix[float64] {
+	f := b.Float()
+	center, size := f.Center(), f.Size()
+
+	return Matrix[float64]{size.Width, 0, center.X, 0, size.Height, center.Y}
+}
+
 // Cast converts the box to a Box of another number type, rounding each corner as Cast does.
 func (b Box[T]) Cast[R Number]() Box[R] {
 	return Box[R]{b.Min.Cast[R](), b.Max.Cast[R]()}

@@ -1830,6 +1830,28 @@ func TestCircle_Ellipse(t *testing.T) {
 	})
 }
 
+func TestCircle_Matrix(t *testing.T) {
+	t.Run("maps onto the square around the circle", func(t *testing.T) {
+		geomtest.AssertMatrix(t, Circ(Pt(1.0, 2.0), 3.0).Matrix(), Mat(6.0, 0, 1, 0, 6, 2))
+	})
+	t.Run("int", func(t *testing.T) {
+		geomtest.AssertMatrix(t, Circ(Pt(1, 2), 3).Matrix(), Mat(6.0, 0, 1, 0, 6, 2))
+	})
+	t.Run("a zero radius collapses both axes", func(t *testing.T) {
+		geomtest.AssertMatrix(t, Circ(Pt(1.0, 2.0), 0.0).Matrix(), Mat(0.0, 0, 1, 0, 0, 2))
+	})
+	t.Run("agrees with the Ellipse", func(t *testing.T) {
+		for _, circle := range circleFixtures {
+			geomtest.AssertMatrix(t, circle.Matrix(), circle.Ellipse().Matrix(), circle.String())
+		}
+	})
+	t.Run("frames the circle", func(t *testing.T) {
+		for _, circle := range circleFixtures {
+			assertFrame(t, circle, circle.Matrix(), circle.String())
+		}
+	})
+}
+
 func TestCircle_Cast(t *testing.T) {
 	c := Circ(Pt(1.5, -2.5), 3.5)
 

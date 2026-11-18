@@ -529,6 +529,16 @@ func (c Capsule[T]) AppendPolygon(dst []Point[T], tolerance float64) []Point[T] 
 	return dst
 }
 
+// Matrix returns the matrix that maps the square of side one centered on the origin onto the
+// rectangle around the capsule, its X axis turned from Start toward End, and not turned for a
+// segment of zero length.
+func (c Capsule[T]) Matrix() Matrix[float64] {
+	f := c.Float()
+	center, diameter := f.Segment.Midpoint(), float64(2*f.Radius)
+
+	return TRSMatrix(center.X, center.Y, f.Segment.Angle(), f.Segment.Length()+diameter, diameter)
+}
+
 // Cast converts the capsule to a Capsule of another number type, rounding as Cast does.
 func (c Capsule[T]) Cast[R Number]() Capsule[R] {
 	return Capsule[R]{c.Segment.Cast[R](), Cast[R](float64(c.Radius))}

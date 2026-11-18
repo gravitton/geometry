@@ -2059,6 +2059,27 @@ func assertBoundingCircle[T Number](t *testing.T, circle Circle[T], vertices ite
 	}
 }
 
+// assertFrame asserts that the matrix maps the square of side one centered on the origin onto a
+// frame around the shape: its translation is the middle of Bounds, and the shape reaches half of
+// each axis it gives out from there, both ways.
+func assertFrame(t *testing.T, shape Shape[float64], matrix Matrix[float64], message string) {
+	t.Helper()
+
+	center := Pt(matrix.C, matrix.F)
+	geomtest.AssertPoint(t, center, shape.Bounds().Center(), message)
+
+	for _, axis := range []Vector[float64]{{matrix.A, matrix.D}, {matrix.B, matrix.E}} {
+		if axis.IsZero() {
+			continue
+		}
+		for _, direction := range []Vector[float64]{axis, axis.Negate()} {
+			reach := shape.Support(direction).Subtract(center).Dot(direction) / direction.Dot(direction)
+
+			geomtest.AssertNumber(t, reach, 0.5, fmt.Sprintf("%s → %v: ", message, direction))
+		}
+	}
+}
+
 // assertCrossings asserts the properties the boundary crossings of a segment, a ray or a line
 // have on every outline, given its edges: each point lies on the cast and on an edge by
 // Contains, they follow one another along the cast, and there is one only where the pair

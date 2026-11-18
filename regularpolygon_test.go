@@ -1288,6 +1288,31 @@ func TestRegularPolygon_Ellipse(t *testing.T) {
 	})
 }
 
+func TestRegularPolygon_Matrix(t *testing.T) {
+	t.Run("maps onto the rectangle around the ellipse", func(t *testing.T) {
+		geomtest.AssertMatrix(t, RegPol(Pt(1.0, 2.0), Sz(3.0, 2.0), 6, 0, Pi/6).Matrix(), Mat(6.0, 0, 1, 0, 4, 2))
+	})
+	t.Run("the phase does not turn it", func(t *testing.T) {
+		rp := RegPol(Pt(1.0, 2.0), Sz(3.0, 2.0), 6, Pi/4, 0)
+
+		geomtest.AssertMatrix(t, rp.Matrix(), RegPol(Pt(1.0, 2.0), Sz(3.0, 2.0), 6, Pi/4, Pi/6).Matrix())
+	})
+	t.Run("agrees with the Ellipse", func(t *testing.T) {
+		for _, polygon := range regularPolygonFixtures {
+			geomtest.AssertMatrix(t, polygon.Matrix(), polygon.Ellipse().Matrix(), polygon.String())
+		}
+	})
+	t.Run("holds the vertices in the frame", func(t *testing.T) {
+		square := BoxFromMinMax(Pt(-0.5, -0.5), Pt(0.5, 0.5))
+		for _, polygon := range regularPolygonFixtures {
+			inverse := polygon.Matrix().Inverse()
+			for vertex := range polygon.Vertices() {
+				assert.True(t, square.Contains(vertex.Transform(inverse)), fmt.Sprintf("%v → %v: ", polygon, vertex))
+			}
+		}
+	})
+}
+
 func TestRegularPolygon_Cast(t *testing.T) {
 	rp := RegPol(Pt(1.5, -2.5), Sz(3.5, 4.5), 6, Pi/6, 0)
 

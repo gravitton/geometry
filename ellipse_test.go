@@ -867,6 +867,23 @@ func TestEllipse_RegularPolygon(t *testing.T) {
 	})
 }
 
+func TestEllipse_Matrix(t *testing.T) {
+	t.Run("maps onto the rectangle around the ellipse", func(t *testing.T) {
+		geomtest.AssertMatrix(t, Ell(Pt(1.0, 2.0), Sz(3.0, 1.0), 0).Matrix(), Mat(6.0, 0, 1, 0, 2, 2))
+	})
+	t.Run("turns with it", func(t *testing.T) {
+		m := Ell(Pt(1.0, 2.0), Sz(3.0, 1.0), Pi/2).Matrix()
+
+		geomtest.AssertPoint(t, Pt(0.5, 0.0).Transform(m), Pt(1.0, 5.0))
+		geomtest.AssertPoint(t, Pt(0.0, 0.5).Transform(m), Pt(0.0, 2.0))
+	})
+	t.Run("frames the ellipse", func(t *testing.T) {
+		for _, ellipse := range ellipseFixtures {
+			assertFrame(t, ellipse, ellipse.Matrix(), ellipse.String())
+		}
+	})
+}
+
 func TestEllipse_Cast(t *testing.T) {
 	e := Ell(Pt(1.5, -2.5), Sz(3.5, 1.5), 1.0)
 

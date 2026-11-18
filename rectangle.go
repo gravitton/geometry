@@ -812,6 +812,17 @@ func (r Rectangle[T]) Polygon() Polygon[T] {
 	return Polygon[T]{corners[:]}
 }
 
+// Matrix returns the matrix that maps the square of side one centered on the origin onto the
+// rectangle, turned with it. For integer T it maps onto the corners, so an odd extent puts the
+// middle half a unit past Center.
+func (r Rectangle[T]) Matrix() Matrix[float64] {
+	a, b := r.localMinMax()
+	center := r.Center.Float().Add(a.Float().Add(b.Float()).Divide(2).Rotate(r.Angle))
+	size := r.Size.Float()
+
+	return TRSMatrix(center.X, center.Y, r.Angle, size.Width, size.Height)
+}
+
 // Cast converts the rectangle to a Rectangle of another number type, rounding as Cast does and
 // keeping the angle.
 func (r Rectangle[T]) Cast[R Number]() Rectangle[R] {

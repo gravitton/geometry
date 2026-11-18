@@ -1115,6 +1115,25 @@ func TestBox_Rectangle(t *testing.T) {
 	})
 }
 
+func TestBox_Matrix(t *testing.T) {
+	t.Run("maps onto the box", func(t *testing.T) {
+		geomtest.AssertMatrix(t, BoxFromMinMax(Pt(0.0, 0.5), Pt(2.0, 3.5)).Matrix(), Mat(2.0, 0, 1, 0, 3, 2))
+	})
+	t.Run("int takes the middle untruncated", func(t *testing.T) {
+		geomtest.AssertMatrix(t, BoxFromMinMax(Pt(1, 2), Pt(4, 7)).Matrix(), Mat(3.0, 0, 2.5, 0, 5, 4.5))
+	})
+	t.Run("agrees with the Rectangle", func(t *testing.T) {
+		for _, box := range boxFixtures {
+			geomtest.AssertMatrix(t, box.Matrix(), box.Rectangle().Matrix(), box.String())
+		}
+	})
+	t.Run("frames the box", func(t *testing.T) {
+		for _, box := range boxFixtures {
+			assertFrame(t, box, box.Matrix(), box.String())
+		}
+	})
+}
+
 func TestBox_Cast(t *testing.T) {
 	geomtest.AssertBox(t, BoxFromMinMax(Pt(0.4, -1.5), Pt(2.5, 3.6)).Cast[int](), BoxFromMinMax(Pt(0, -2), Pt(3, 4)))
 }

@@ -641,6 +641,15 @@ func (e Ellipse[T]) RegularPolygon(n int, orientation Orientation) RegularPolygo
 	return RegularPolygon[T]{e.Center, e.Radius, n, e.Angle, RegularPolygonOrientationPhase(n, orientation)}
 }
 
+// Matrix returns the matrix that maps the square of side one centered on the origin onto the
+// rectangle around the ellipse, turned with it.
+func (e Ellipse[T]) Matrix() Matrix[float64] {
+	f := e.Float()
+	diameter := f.Radius.Scale(2)
+
+	return TRSMatrix(f.Center.X, f.Center.Y, f.Angle, diameter.Width, diameter.Height)
+}
+
 // Cast converts the ellipse to an Ellipse of another number type, rounding as Cast does.
 func (e Ellipse[T]) Cast[R Number]() Ellipse[R] {
 	return Ellipse[R]{e.Center.Cast[R](), e.Radius.Cast[R](), e.Angle}
