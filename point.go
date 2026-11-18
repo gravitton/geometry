@@ -1,7 +1,6 @@
 package geom
 
 import (
-	"cmp"
 	"fmt"
 	"math"
 	"strings"
@@ -230,11 +229,37 @@ func (p Point[T]) Equal(point Point[T]) bool {
 // by Y, as cmp.Compare does. It applies no tolerance, so points Equal holds for can order apart,
 // and a NaN coordinate sorts first.
 func (p Point[T]) Compare(point Point[T]) int {
-	if c := cmp.Compare(p.X, point.X); c != 0 {
-		return c
+	if p.X != point.X {
+		if p.X < point.X {
+			return -1
+		}
+		if p.X > point.X {
+			return +1
+		}
+		if point.X == point.X {
+			return -1
+		}
+		if p.X == p.X {
+			return +1
+		}
 	}
 
-	return cmp.Compare(p.Y, point.Y)
+	if p.Y != point.Y {
+		if p.Y < point.Y {
+			return -1
+		}
+		if p.Y > point.Y {
+			return +1
+		}
+		if point.Y == point.Y {
+			return -1
+		}
+		if p.Y == p.Y {
+			return +1
+		}
+	}
+
+	return 0
 }
 
 // IsZero reports whether the point is the origin within the tolerance of Equal.

@@ -1,6 +1,7 @@
 package geom_test
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -521,6 +522,34 @@ func TestPoint_Compare(t *testing.T) {
 		geomtest.AssertPoint(t, a, b)
 		assert.Equal(t, a.Compare(b), -1)
 	})
+	t.Run("agrees with cmp.Compare at NaN, infinities and zeros", func(t *testing.T) {
+		values := []float64{math.NaN(), math.Inf(-1), -1, math.Copysign(0, -1), 0, 1, math.Inf(1)}
+		for _, ax := range values {
+			for _, ay := range values {
+				for _, bx := range values {
+					for _, by := range values {
+						a, b := Pt(ax, ay), Pt(bx, by)
+
+						assert.Equal(t, a.Compare(b), compareReference(a, b), fmt.Sprintf("%s, %s: ", a, b))
+					}
+				}
+			}
+		}
+	})
+}
+
+func FuzzPoint_Compare(f *testing.F) {
+	f.Add(0.0, 0.0, 0.0, 0.0)
+	f.Add(1.0, math.NaN(), 1.0, 2.0)
+	f.Add(math.NaN(), 0.0, math.Inf(-1), 0.0)
+
+	f.Fuzz(func(t *testing.T, ax, ay, bx, by float64) {
+		a, b := Pt(ax, ay), Pt(bx, by)
+		c, d := Pt(int(ax), int(ay)), Pt(int(bx), int(by))
+
+		assert.Equal(t, a.Compare(b), compareReference(a, b), fmt.Sprintf("%s, %s: ", a, b))
+		assert.Equal(t, c.Compare(d), compareReference(c, d), fmt.Sprintf("%s, %s: ", c, d))
+	})
 }
 
 func TestPoint_IsZero(t *testing.T) {
@@ -800,4 +829,12 @@ func ExamplePoint_Compare() {
 func ExamplePoint_DistanceTo() {
 	fmt.Printf("%.2f\n", Pt(0.0, 0.0).DistanceTo(Pt(3.0, 4.0)))
 	// Output: 5.00
+}
+
+func compareReference[T Number](a, b Point[T]) int {
+	if c := cmp.Compare(a.X, b.X); c != 0 {
+		return c
+	}
+
+	return cmp.Compare(a.Y, b.Y)
 }
