@@ -1770,6 +1770,7 @@ func TestSweep(t *testing.T) {
 					assert.True(t, hit.Normal.IsNormalized(), message)
 					assert.Less(t, hit.Normal.Dot(motion), 0, message)
 					assert.Less(t, b.DistanceTo(hit.Point), 1e-3, message)
+					assert.Less(t, translated(a, motion.Multiply(hit.Fraction)).DistanceTo(hit.Point), 1e-6, message)
 					assert.False(t, Intersects[float64](translated(a, motion.Multiply(hit.Fraction).Subtract(step)), b), message)
 				}
 			}
@@ -1941,6 +1942,17 @@ func TestRaycast(t *testing.T) {
 		assert.True(t, EqualDelta(hit.Fraction, expected.Fraction, 1e-5), fmt.Sprint(hit, expected))
 		assert.Less(t, hit.Point.DistanceTo(expected.Point), 1e-4, fmt.Sprint(hit, expected))
 		assert.True(t, hit.Normal.Subtract(expected.Normal).LessOrEqual(1e-4), fmt.Sprint(hit, expected))
+	})
+	t.Run("a shape known by its support is reached on its boundary at a slant", func(t *testing.T) {
+		capsule := Cap(Pt(-4.152972857710424, -4.659436932484095), Pt(4.014685869580649, 3.13077979663118), 3.0610762704694663)
+		ray := Ry(Pt(-1.903043006844483, 2.2377881991700734), Vec(4.957536309243875, 3.4651057535366037))
+
+		expected, _ := ray.HitCapsule(capsule)
+		hit, ok := Raycast[float64](ray, foreignShape[float64]{capsule})
+
+		assert.True(t, ok)
+		assert.True(t, EqualDelta(hit.Fraction, expected.Fraction, 1e-6), fmt.Sprint(hit, expected))
+		assert.Less(t, capsule.DistanceTo(hit.Point), 1e-6, fmt.Sprint(hit, expected))
 	})
 	t.Run("a shape known by its support around the origin of the ray is not hit", func(t *testing.T) {
 		_, ok := Raycast[float64](Ry(Pt(1.0, 0.0), Vec(2.0, 0.0)), foreignShape[float64]{Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0)})
