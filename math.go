@@ -128,9 +128,9 @@ func Snap[T Number](value, step T) T {
 	return Cast[T](RoundHalfUp(float64(value)/size) * size)
 }
 
-// Mod returns n wrapped into [0, m), or (m, 0] for a negative m, as a floored division gives it. It
-// panics for a zero m.
-func Mod[T Integer](n, m T) T {
+// FloorMod returns the remainder of a floored division, n wrapped into [0, m), or (m, 0] for a
+// negative m. It panics for a zero m.
+func FloorMod[T Integer](n, m T) T {
 	if m == 0 {
 		panic(ErrDivisionByZero)
 	}
@@ -141,6 +141,22 @@ func Mod[T Integer](n, m T) T {
 	}
 
 	return remainder
+}
+
+// FloorDiv returns n divided by m rounded toward negative infinity, the quotient whose remainder
+// FloorMod returns, so FloorDiv(n, m)·m + FloorMod(n, m) is n. The most negative T divided by -1
+// overflows back to itself, as the / operator does. It panics for a zero m.
+func FloorDiv[T Integer](n, m T) T {
+	if m == 0 {
+		panic(ErrDivisionByZero)
+	}
+
+	quotient := n / m
+	if n%m != 0 && (n < 0) != (m < 0) {
+		quotient--
+	}
+
+	return quotient
 }
 
 // IsFinite reports whether x is neither NaN nor infinite, the values Cast and Int take into an

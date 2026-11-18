@@ -85,7 +85,7 @@
 // errors.Is matches to its sentinel:
 //
 //   - [ErrDivisionByZero] for a zero factor to [Divide] and every method built on it, Unscale
-//     included, and a zero m to [Mod];
+//     included, and a zero m to [FloorMod] and [FloorDiv];
 //   - [ErrSingularMatrix] for a singular matrix to [Matrix.Inverse] (check [Matrix.IsInvertible]);
 //   - [ErrNonFinite] for NaN or ±Inf stored into an integer T by [Cast], so through Multiply, Lerp,
 //     Rotate or Transform of an integer value and Int of a float one, an integer [Sector] or [Arc]

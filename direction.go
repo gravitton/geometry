@@ -111,7 +111,7 @@ func DirectionFromAngle(angle float64) Direction {
 		return DirectionNone
 	}
 
-	return Mod(Direction(math.Round(NormalizeAngle(angle)/(Pi/4))), 8)
+	return FloorMod(Direction(math.Round(NormalizeAngle(angle)/(Pi/4))), 8)
 }
 
 // DirectionFromAxes returns the direction of the pressed axis inputs, opposite inputs canceling
@@ -191,7 +191,7 @@ func (d Direction) normalize() Direction {
 		return DirectionNone
 	}
 
-	return Mod(d, 8)
+	return FloorMod(d, 8)
 }
 
 // Opposite returns the direction turned by half a turn. DirectionNone stays as it is.
@@ -206,7 +206,7 @@ func (d Direction) Turn(steps int) Direction {
 		return DirectionNone
 	}
 
-	return Mod(d+Direction(steps), 8)
+	return FloorMod(d+Direction(steps), 8)
 }
 
 // TurnsTo returns the fewest steps Turn takes from the direction to the given one, from -3 to 4,
@@ -216,7 +216,7 @@ func (d Direction) TurnsTo(direction Direction) int {
 		return 0
 	}
 
-	return int(Mod(direction.normalize()-d.normalize()+3, 8)) - 3
+	return int(FloorMod(direction.normalize()-d.normalize()+3, 8)) - 3
 }
 
 // IsNone reports whether the direction is DirectionNone.

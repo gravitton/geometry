@@ -241,41 +241,97 @@ func ExampleSnap() {
 	// 7.5
 }
 
-func TestMod(t *testing.T) {
+func TestFloorMod(t *testing.T) {
 	t.Run("non-negative operands", func(t *testing.T) {
-		geomtest.AssertNumber(t, Mod(5, 8), 5)
-		geomtest.AssertNumber(t, Mod(8, 8), 0)
-		geomtest.AssertNumber(t, Mod(9, 8), 1)
-		geomtest.AssertNumber(t, Mod(0, 8), 0)
-		geomtest.AssertNumber(t, Mod(7, 6), 1)
+		geomtest.AssertNumber(t, FloorMod(5, 8), 5)
+		geomtest.AssertNumber(t, FloorMod(8, 8), 0)
+		geomtest.AssertNumber(t, FloorMod(9, 8), 1)
+		geomtest.AssertNumber(t, FloorMod(0, 8), 0)
+		geomtest.AssertNumber(t, FloorMod(7, 6), 1)
 	})
 	t.Run("negative operands stay in range", func(t *testing.T) {
-		geomtest.AssertNumber(t, Mod(-1, 8), 7)
-		geomtest.AssertNumber(t, Mod(-8, 8), 0)
-		geomtest.AssertNumber(t, Mod(-9, 8), 7)
-		geomtest.AssertNumber(t, Mod(-1, 6), 5)
+		geomtest.AssertNumber(t, FloorMod(-1, 8), 7)
+		geomtest.AssertNumber(t, FloorMod(-8, 8), 0)
+		geomtest.AssertNumber(t, FloorMod(-9, 8), 7)
+		geomtest.AssertNumber(t, FloorMod(-1, 6), 5)
 	})
 	t.Run("a negative modulus wraps into (m, 0]", func(t *testing.T) {
-		geomtest.AssertNumber(t, Mod(3, -5), -2)
-		geomtest.AssertNumber(t, Mod(-3, -5), -3)
-		geomtest.AssertNumber(t, Mod(5, -5), 0)
+		geomtest.AssertNumber(t, FloorMod(3, -5), -2)
+		geomtest.AssertNumber(t, FloorMod(-3, -5), -3)
+		geomtest.AssertNumber(t, FloorMod(5, -5), 0)
 	})
 	t.Run("defined integer types", func(t *testing.T) {
-		geomtest.AssertNumber(t, Mod(namedInt(12), 8), namedInt(4))
+		geomtest.AssertNumber(t, FloorMod(namedInt(12), 8), namedInt(4))
 	})
 	t.Run("a zero modulus panics", func(t *testing.T) {
 		assert.PanicsWith(t, func() {
-			Mod(5, 0)
+			FloorMod(5, 0)
 		}, ErrDivisionByZero)
 		assert.PanicsWith(t, func() {
-			Mod(namedInt(0), 0)
+			FloorMod(namedInt(0), 0)
 		}, ErrDivisionByZero)
 	})
 	t.Run("a narrow T near the end of its range does not overflow", func(t *testing.T) {
-		geomtest.AssertNumber(t, Mod[int8](99, 100), 99)
-		geomtest.AssertNumber(t, Mod[int8](-1, 100), 99)
-		geomtest.AssertNumber(t, Mod[int8](-128, 127), 126)
-		geomtest.AssertNumber(t, Mod[int8](100, -128), -28)
+		geomtest.AssertNumber(t, FloorMod[int8](99, 100), 99)
+		geomtest.AssertNumber(t, FloorMod[int8](-1, 100), 99)
+		geomtest.AssertNumber(t, FloorMod[int8](-128, 127), 126)
+		geomtest.AssertNumber(t, FloorMod[int8](100, -128), -28)
+	})
+}
+
+func TestFloorDiv(t *testing.T) {
+	t.Run("non-negative operands", func(t *testing.T) {
+		geomtest.AssertNumber(t, FloorDiv(5, 8), 0)
+		geomtest.AssertNumber(t, FloorDiv(8, 8), 1)
+		geomtest.AssertNumber(t, FloorDiv(17, 8), 2)
+		geomtest.AssertNumber(t, FloorDiv(0, 8), 0)
+	})
+	t.Run("a negative quotient rounds down", func(t *testing.T) {
+		geomtest.AssertNumber(t, FloorDiv(-1, 8), -1)
+		geomtest.AssertNumber(t, FloorDiv(-8, 8), -1)
+		geomtest.AssertNumber(t, FloorDiv(-9, 8), -2)
+		geomtest.AssertNumber(t, FloorDiv(3, -5), -1)
+		geomtest.AssertNumber(t, FloorDiv(5, -5), -1)
+	})
+	t.Run("two negative operands", func(t *testing.T) {
+		geomtest.AssertNumber(t, FloorDiv(-3, -5), 0)
+		geomtest.AssertNumber(t, FloorDiv(-10, -5), 2)
+	})
+	t.Run("the quotient of FloorMod", func(t *testing.T) {
+		for n := -20; n <= 20; n++ {
+			for _, m := range []int{-7, -3, -1, 1, 2, 3, 8} {
+				assert.Equal(t, FloorDiv(n, m)*m+FloorMod(n, m), n, fmt.Sprint(n, " by ", m, ": "))
+			}
+		}
+	})
+	t.Run("defined integer types", func(t *testing.T) {
+		geomtest.AssertNumber(t, FloorDiv(namedInt(-12), 8), namedInt(-2))
+	})
+	t.Run("a zero divisor panics", func(t *testing.T) {
+		assert.PanicsWith(t, func() {
+			FloorDiv(5, 0)
+		}, ErrDivisionByZero)
+	})
+	t.Run("a narrow T near the end of its range", func(t *testing.T) {
+		geomtest.AssertNumber(t, FloorDiv[int8](-128, 127), -2)
+		geomtest.AssertNumber(t, FloorDiv[int8](127, -128), -1)
+		geomtest.AssertNumber(t, FloorDiv[int8](-128, -1), -128)
+	})
+}
+
+func FuzzFloorDiv(f *testing.F) {
+	f.Add(int32(0), int32(1))
+	f.Add(int32(-9), int32(8))
+	f.Add(int32(7), int32(-3))
+	f.Add(int32(math.MinInt32), int32(math.MaxInt32))
+
+	f.Fuzz(func(t *testing.T, n, m int32) {
+		if m == 0 {
+			t.Skip()
+		}
+
+		want := int64(math.Floor(float64(n) / float64(m)))
+		assert.Equal(t, int64(FloorDiv(int64(n), int64(m))), want, fmt.Sprint(n, " by ", m, ": "))
 	})
 }
 

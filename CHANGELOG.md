@@ -13,7 +13,11 @@ lists them under **Breaking** at the top of its section. Renames land as a renam
 
 ## [Unreleased](https://github.com/gravitton/geometry/compare/v1.19.0...main)
 
+### Breaking
+- `Mod` is `FloorMod`, named for its rounding beside `FloorDiv`
+
 ### Added
+- `FloorDiv[T Integer](n, m T) T` – the quotient of a floored division, the one whose remainder `FloorMod` returns
 - `Circle.Matrix`, `Capsule.Matrix`, `Rectangle.Matrix`, `RegularPolygon.Matrix`, `Box.Matrix` and `Ellipse.Matrix` return the matrix that maps the square of side one centered on the origin onto the frame around the shape
 
 ### Changed
