@@ -11,7 +11,9 @@ more expensive of the two. A breaking change opens its entry with **breaking**, 
 opens with a **Breaking** group. Renames land as a rename; no deprecated alias is kept.
 
 
-## [Unreleased](https://github.com/gravitton/geometry/compare/v1.19.0...main)
+## [Unreleased](https://github.com/gravitton/geometry/compare/v1.20.0...main)
+
+## [v1.20.0](https://github.com/gravitton/geometry/compare/v1.19.0...v1.20.0) (2026-11-18)
 
 ### Added
 - `FloorDiv[T Integer](n, m T) T` – the quotient of a floored division, the one whose remainder `FloorMod` returns
