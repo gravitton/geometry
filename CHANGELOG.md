@@ -11,7 +11,9 @@ more expensive of the two. A breaking change is marked **breaking** in its entry
 lists them under **Breaking** at the top of its section. Renames land as a rename; no deprecated alias is kept.
 
 
-## [Unreleased](https://github.com/gravitton/geometry/compare/v1.18.0...main)
+## [Unreleased](https://github.com/gravitton/geometry/compare/v1.19.0...main)
+
+## [v1.19.0](https://github.com/gravitton/geometry/compare/v1.18.0...v1.19.0) (2026-11-18)
 
 ### Added
 - `Size.FitFactor` and `Size.FillFactor` return the factors `Fit` and `Fill` scale a size by, the largest that fits it in another and the smallest that covers it
