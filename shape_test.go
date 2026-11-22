@@ -88,6 +88,43 @@ type intersector[T Number] interface {
 	IntersectsBox(box Box[T]) bool
 }
 
+var (
+	_ Shape[int]       = Circle[int]{}
+	_ Shape[int]       = Capsule[int]{}
+	_ Shape[int]       = Sector[int]{}
+	_ Shape[int]       = Segment[int]{}
+	_ Shape[int]       = Polygon[int]{}
+	_ Shape[int]       = Rectangle[int]{}
+	_ Shape[int]       = RegularPolygon[int]{}
+	_ Shape[int]       = Box[int]{}
+	_ Shape[int]       = Ellipse[int]{}
+	_ intersector[int] = Circle[int]{}
+	_ intersector[int] = Capsule[int]{}
+	_ intersector[int] = Sector[int]{}
+	_ intersector[int] = Segment[int]{}
+	_ intersector[int] = Ray[int]{}
+	_ intersector[int] = Line[int]{}
+	_ intersector[int] = Polygon[int]{}
+	_ intersector[int] = Rectangle[int]{}
+	_ intersector[int] = RegularPolygon[int]{}
+	_ intersector[int] = Box[int]{}
+	_ container[int]   = Circle[int]{}
+	_ container[int]   = Capsule[int]{}
+	_ container[int]   = Sector[int]{}
+	_ container[int]   = Polygon[int]{}
+	_ container[int]   = Rectangle[int]{}
+	_ container[int]   = RegularPolygon[int]{}
+	_ container[int]   = Box[int]{}
+	_ body[int]        = Circle[int]{}
+	_ body[int]        = Capsule[int]{}
+	_ body[int]        = Sector[int]{}
+	_ body[int]        = Polygon[int]{}
+	_ body[int]        = Rectangle[int]{}
+	_ body[int]        = RegularPolygon[int]{}
+	_ body[int]        = Box[int]{}
+	_ body[int]        = Ellipse[int]{}
+)
+
 func TestShape(t *testing.T) {
 	shapes := []Shape[float64]{
 		Circ(Pt(1.0, 1.0), 2.0),
@@ -2394,41 +2431,6 @@ type foreignShape[T Number] struct {
 }
 
 var (
-	_ Shape[int]       = Circle[int]{}
-	_ Shape[int]       = Capsule[int]{}
-	_ Shape[int]       = Sector[int]{}
-	_ Shape[int]       = Segment[int]{}
-	_ Shape[int]       = Polygon[int]{}
-	_ Shape[int]       = Rectangle[int]{}
-	_ Shape[int]       = RegularPolygon[int]{}
-	_ Shape[int]       = Box[int]{}
-	_ Shape[int]       = Ellipse[int]{}
-	_ intersector[int] = Circle[int]{}
-	_ intersector[int] = Capsule[int]{}
-	_ intersector[int] = Sector[int]{}
-	_ intersector[int] = Segment[int]{}
-	_ intersector[int] = Ray[int]{}
-	_ intersector[int] = Line[int]{}
-	_ intersector[int] = Polygon[int]{}
-	_ intersector[int] = Rectangle[int]{}
-	_ intersector[int] = RegularPolygon[int]{}
-	_ intersector[int] = Box[int]{}
-	_ container[int]   = Circle[int]{}
-	_ container[int]   = Capsule[int]{}
-	_ container[int]   = Sector[int]{}
-	_ container[int]   = Polygon[int]{}
-	_ container[int]   = Rectangle[int]{}
-	_ container[int]   = RegularPolygon[int]{}
-	_ container[int]   = Box[int]{}
-	_ body[int]        = Circle[int]{}
-	_ body[int]        = Capsule[int]{}
-	_ body[int]        = Sector[int]{}
-	_ body[int]        = Polygon[int]{}
-	_ body[int]        = Rectangle[int]{}
-	_ body[int]        = RegularPolygon[int]{}
-	_ body[int]        = Box[int]{}
-	_ body[int]        = Ellipse[int]{}
-
 	// farOffsets move the float32 fixtures to where an ulp of float32 exceeds Delta32, so a point
 	// rounded into T stays on the boundary it was computed on only by the tolerance epsilonAt
 	// widens with the coordinates.
