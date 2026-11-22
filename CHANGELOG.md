@@ -11,7 +11,9 @@ more expensive of the two. A breaking change opens its entry with **breaking**, 
 opens with a **Breaking** group. Renames land as a rename; no deprecated alias is kept.
 
 
-## [Unreleased](https://github.com/gravitton/geometry/compare/v1.20.0...main)
+## [Unreleased](https://github.com/gravitton/geometry/compare/v1.20.1...main)
+
+## [v1.20.1](https://github.com/gravitton/geometry/compare/v1.20.0...v1.20.1) (2026-11-22)
 
 ### Changed
 - Require `assert` v1.9.0 for the tests
