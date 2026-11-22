@@ -117,7 +117,7 @@ func TestBox_Vertices(t *testing.T) {
 		}
 	})
 	t.Run("ranging allocates nothing", func(t *testing.T) {
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			for vertex := range box.Vertices() {
 				sinkBool = vertex.IsZero()
 			}
@@ -141,7 +141,7 @@ func TestBox_Edges(t *testing.T) {
 		}
 	})
 	t.Run("ranging allocates nothing", func(t *testing.T) {
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			for edge := range box.Edges() {
 				sinkBool = edge.IsZero()
 			}
@@ -599,7 +599,7 @@ func TestBox_DistanceToBox(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		other := BoxFromMinMax(Pt(5, 6), Pt(7, 8))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = box.DistanceToBox(other) > 0
 		}, 0)
 	})
@@ -647,7 +647,7 @@ func TestBox_Support(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		direction := Vec(tenth, 0.7)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = box.Support(direction).X > 0
 		}, 0)
 	})
@@ -1084,7 +1084,7 @@ func TestBox_Polygon(t *testing.T) {
 		geomtest.AssertPolygon(t, box.Polygon(), box.Rectangle().Polygon())
 	})
 	t.Run("allocates once", func(t *testing.T) {
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = box.Polygon().Points
 		}, 1)
 	})
@@ -1229,6 +1229,16 @@ func TestBox_Immutable(t *testing.T) {
 	geomtest.AssertBox(t, box, BoxFromMinMax(Pt(1, 2), Pt(4, 7)))
 }
 
+func ExampleBx() {
+	fmt.Println(Bx(Pt(0, 2), Pt(4, 0)))
+	// Output: (0,0)-(4,2)
+}
+
+func ExampleBoxFromMinMax() {
+	fmt.Println(BoxFromMinMax(Pt(4, 2), Pt(0, 0)))
+	// Output: (0,0)-(4,2)
+}
+
 // boxFixtures span square, portrait, landscape, degenerate, and off-origin boxes.
 var boxFixtures = []Box[float64]{
 	{},
@@ -1239,14 +1249,4 @@ var boxFixtures = []Box[float64]{
 	BoxFromMin(Pt(0.0, 0.0), Sz(10.0, 20.0)),
 	BoxFromMinMax(Pt(-2.0, -4.0), Pt(6.0, 2.0)),
 	BoxFromMinMax(Pt(3.0, 3.0), Pt(3.0, 5.0)),
-}
-
-func ExampleBx() {
-	fmt.Println(Bx(Pt(0, 2), Pt(4, 0)))
-	// Output: (0,0)-(4,2)
-}
-
-func ExampleBoxFromMinMax() {
-	fmt.Println(BoxFromMinMax(Pt(4, 2), Pt(0, 0)))
-	// Output: (0,0)-(4,2)
 }

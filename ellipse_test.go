@@ -358,25 +358,6 @@ func TestEllipse_Transform(t *testing.T) {
 	})
 }
 
-// assertTransformed checks that the Transform of the ellipse is its image under the matrix: the
-// matrix takes points around the boundary into it, and its inverse takes points around the
-// boundary of the Transform back into the ellipse, so each holds the other, and the center
-// lands on the center.
-func assertTransformed(t *testing.T, e Ellipse[float64], m Matrix[float64], message string) {
-	t.Helper()
-
-	transformed, inverse := e.Transform(m), m.Inverse()
-
-	geomtest.AssertPoint(t, transformed.Center, e.Center.Transform(m), message)
-	for i := range 16 {
-		forward := boundaryAt(e, float64(i)*Pi/8).Transform(m)
-		back := boundaryAt(transformed, float64(i)*Pi/8).Transform(inverse)
-
-		assert.True(t, transformed.Contains(forward), message+forward.String()+" into the transform: ")
-		assert.True(t, e.Contains(back), message+back.String()+" back into the ellipse: ")
-	}
-}
-
 func TestEllipse_Grow(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		geomtest.AssertEllipse(t, Ell(Pt(1, 2), Sz(10, 4), 0).Grow(2), Ell(Pt(1, 2), Sz(12, 6), 0))
@@ -568,7 +549,7 @@ func TestEllipse_Support(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		ellipse, direction := Ell(Pt(1, 2), Sz(4, 2), 0.3), Vec(tenth, 0.7)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = ellipse.Support(direction).X > 0
 		}, 0)
 	})
@@ -804,15 +785,6 @@ func TestEllipse_Polygon(t *testing.T) {
 	})
 }
 
-// boundaryGap returns how far the point lies from the boundary of the ellipse along the ray
-// from its center, which is no less than its distance to the boundary.
-func boundaryGap(e Ellipse[float64], point Point[float64]) float64 {
-	offset := point.Subtract(e.Center).Rotate(-e.Angle)
-	scaled := Vec(offset.X/e.Radius.Width, offset.Y/e.Radius.Height)
-
-	return math.Abs(offset.Length() * (1/scaled.Length() - 1))
-}
-
 func TestEllipse_AppendPolygon(t *testing.T) {
 	t.Run("appends after the points already there", func(t *testing.T) {
 		geomtest.AssertVertices(t, Ell(Pt(0, 0), Sz(4, 2), 0).AppendPolygon([]Point[int]{Pt(9, 9)}, 1.5), []Point[int]{Pt(9, 9), Pt(4, 0), Pt(0, 2), Pt(-4, 0), Pt(0, -2)})
@@ -821,10 +793,10 @@ func TestEllipse_AppendPolygon(t *testing.T) {
 		ellipse := Ell(Pt(0, 0), Sz(50, 30), 0.5)
 		buffer := make([]Point[int], 0, 64)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = ellipse.Polygon(1).Points
 		}, 1)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = ellipse.AppendPolygon(buffer[:0], 1)
 		}, 0)
 	})
@@ -1120,13 +1092,45 @@ func TestEllipse_Immutable(t *testing.T) {
 	geomtest.AssertEllipse(t, e, Ell(Pt(1, 2), Sz(10, 4), 0))
 }
 
-// ellipseFixtures span the degenerate, circular, turned and off-origin cases.
+func ExampleEll() {
+	fmt.Println(Ell(Pt(10, 16), Sz(5, 2), 0))
+	// Output: Ell((10,16);5x2)
+}
+
+// assertTransformed checks that the Transform of the ellipse is its image under the matrix: the
+// matrix takes points around the boundary into it, and its inverse takes points around the
+// boundary of the Transform back into the ellipse, so each holds the other, and the center
+// lands on the center.
+func assertTransformed(t *testing.T, e Ellipse[float64], m Matrix[float64], message string) {
+	t.Helper()
+
+	transformed, inverse := e.Transform(m), m.Inverse()
+
+	geomtest.AssertPoint(t, transformed.Center, e.Center.Transform(m), message)
+	for i := range 16 {
+		forward := boundaryAt(e, float64(i)*Pi/8).Transform(m)
+		back := boundaryAt(transformed, float64(i)*Pi/8).Transform(inverse)
+
+		assert.True(t, transformed.Contains(forward), message+forward.String()+" into the transform: ")
+		assert.True(t, e.Contains(back), message+back.String()+" back into the ellipse: ")
+	}
+}
+
+// boundaryGap returns how far the point lies from the boundary of the ellipse along the ray
+// from its center, which is no less than its distance to the boundary.
+func boundaryGap(e Ellipse[float64], point Point[float64]) float64 {
+	offset := point.Subtract(e.Center).Rotate(-e.Angle)
+	scaled := Vec(offset.X/e.Radius.Width, offset.Y/e.Radius.Height)
+
+	return math.Abs(offset.Length() * (1/scaled.Length() - 1))
+}
 
 // boundaryAt returns the point of the ellipse boundary at the parameter.
 func boundaryAt(e Ellipse[float64], parameter float64) Point[float64] {
 	return e.Center.Add(VectorFromAngleSize(parameter, e.Radius).Rotate(e.Angle))
 }
 
+// ellipseFixtures span the degenerate, circular, turned and off-origin cases.
 var ellipseFixtures = []Ellipse[float64]{
 	Ell(Pt(0.0, 0.0), Sz(0.0, 0.0), 0),
 	Ell(Pt(0.0, 0.0), SzU(1.0), 0),
@@ -1134,9 +1138,4 @@ var ellipseFixtures = []Ellipse[float64]{
 	Ell(Pt(1.0, 2.0), Sz(10.0, 4.0), Pi/6),
 	Ell(Pt(-3.5, 0.25), Sz(2.0, 7.0), Pi/2),
 	Ell(Pt(12.5, -0.1), Sz(3.0, 0.0), 1.0),
-}
-
-func ExampleEll() {
-	fmt.Println(Ell(Pt(10, 16), Sz(5, 2), 0))
-	// Output: Ell((10,16);5x2)
 }

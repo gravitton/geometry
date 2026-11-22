@@ -848,18 +848,6 @@ func TestMatrix_Immutable(t *testing.T) {
 	geomtest.AssertMatrix(t, m, Mat(1.0, 2.0, 3.0, 4.0, 5.0, 6.0))
 }
 
-// matrixFixtures span identity, translation, scale, rotation, and a general affine transform.
-var matrixFixtures = []Matrix[float64]{
-	IdentityMatrix[float64](),
-	TranslationMatrix(5.0, 3.0),
-	TranslationMatrix(-2.5, 0.75),
-	ScaleMatrix(2.0, 3.0),
-	ScaleMatrix(-1.0, 0.5),
-	RotationMatrix[float64](Pi / 6),
-	RotationMatrix[float64](-Pi / 2),
-	Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6),
-}
-
 func ExampleMat() {
 	fmt.Println(Mat(1, 0, 5, 0, 1, 3))
 	// Output: [[1, 0, 5], [0, 1, 3]]
@@ -878,4 +866,16 @@ func ExampleRotationMatrixAround() {
 func ExampleScaleMatrixAround() {
 	fmt.Println(ScaleMatrixAround(1, 2, 2, 3))
 	// Output: [[2, 0, -1], [0, 3, -4]]
+}
+
+// matrixFixtures span identity, translation, scale, rotation, and a general affine transform.
+var matrixFixtures = []Matrix[float64]{
+	IdentityMatrix[float64](),
+	TranslationMatrix(5.0, 3.0),
+	TranslationMatrix(-2.5, 0.75),
+	ScaleMatrix(2.0, 3.0),
+	ScaleMatrix(-1.0, 0.5),
+	RotationMatrix[float64](Pi / 6),
+	RotationMatrix[float64](-Pi / 2),
+	Mat(1.1, 2.3, 3.3, 4.4, 5.5, 6.6),
 }

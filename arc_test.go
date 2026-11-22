@@ -478,7 +478,7 @@ func TestArc_IntersectionSegment(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(3.0, 10.0), Pt(tenth, -10.0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = a.IntersectionSegment(through).Count > 0
 		}, 0)
 	})
@@ -581,10 +581,10 @@ func TestArc_AppendPolyline(t *testing.T) {
 	t.Run("allocates once, and nothing into a buffer with room", func(t *testing.T) {
 		arc, buffer := Ac(Pt(0, 0), 50, 0, Pi), make([]Point[int], 0, 64)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = arc.Polyline(tenth).Points
 		}, 1)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = arc.AppendPolyline(buffer[:0], 1)
 		}, 0)
 	})
@@ -753,6 +753,11 @@ func TestArc_Immutable(t *testing.T) {
 	geomtest.AssertArc(t, a, Ac(Pt(1, 2), 5, 0.5, 1.5))
 }
 
+func ExampleAc() {
+	fmt.Println(Ac(Pt(1, 2), 5, 0, 1.5))
+	// Output: Arc((1,2);5;0.00;1.50)
+}
+
 // quarterArc returns the arc of radius five about the origin from the X axis a quarter turn on.
 func quarterArc() Arc[float64] {
 	return Ac(Pt(0.0, 0.0), 5.0, 0, Pi/2)
@@ -768,9 +773,4 @@ var arcFixtures = []Arc[float64]{
 	Ac(Pt(0.6, -0.25), 1.2, 1, 2*Pi),
 	Ac(Pt(12.5, -0.1), 0.5, 3, 0),
 	Ac(Pt(1.0, 2.0), 3.0, 0, -Pi/3),
-}
-
-func ExampleAc() {
-	fmt.Println(Ac(Pt(1, 2), 5, 0, 1.5))
-	// Output: Arc((1,2);5;0.00;1.50)
 }

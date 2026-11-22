@@ -498,7 +498,7 @@ func TestRay_IntersectsPolygon(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Ry(Pt(-2, 2), Vec(1, 0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = through.IntersectsPolygon(square)
 		}, 0)
 	})
@@ -632,7 +632,7 @@ func TestRay_AppendIntersectionSector(t *testing.T) {
 	t.Run("appends to a buffer with room without allocating", func(t *testing.T) {
 		buffer := make([]Point[float64], 0, 4)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = len(through.AppendIntersectionSector(buffer[:0], sector)) > 0
 		}, 0)
 	})
@@ -891,7 +891,7 @@ func TestRay_AppendIntersectionCubicBezier(t *testing.T) {
 	t.Run("appends to a buffer with room without allocating", func(t *testing.T) {
 		buffer := make([]Point[float64], 0, 4)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = len(through.AppendIntersectionCubicBezier(buffer[:0], curve)) > 0
 		}, 0)
 	})
@@ -922,10 +922,10 @@ func TestRay_IntersectionPolygon(t *testing.T) {
 	t.Run("allocates the result alone", func(t *testing.T) {
 		through, away := Ry(Pt(-2, 2), Vec(1, 0)), Ry(Pt(-2, 2), Vec(-1, 0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = through.IntersectionPolygon(square)
 		}, 1)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = away.IntersectionPolygon(square)
 		}, 0)
 	})
@@ -959,7 +959,7 @@ func TestRay_AppendIntersectionPolygon(t *testing.T) {
 	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
 		buffer := make([]Point[int], 0, 2)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = through.AppendIntersectionPolygon(buffer[:0], square)
 		}, 0)
 	})
@@ -1094,7 +1094,7 @@ func TestRay_ClipCircle(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Ry(Pt(-10, 0), Vec(1, 0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.ClipCircle(circle)
 		}, 0)
 	})
@@ -1187,7 +1187,7 @@ func TestRay_AppendClipPolygon(t *testing.T) {
 	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
 		buffer := make([]Segment[int], 0, 1)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkSegments = through.AppendClipPolygon(buffer[:0], square)
 		}, 0)
 	})
@@ -1215,7 +1215,7 @@ func TestRay_ClipRectangle(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Ry(Pt(-5.0, 0.0), Vec(1.0, 0.0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.ClipRectangle(rectangle)
 		}, 0)
 	})
@@ -1247,7 +1247,7 @@ func TestRay_ClipRegularPolygon(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Ry(Pt(-20.0, 0.0), Vec(1.0, 0.0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.ClipRegularPolygon(hexagon)
 		}, 0)
 	})
@@ -1277,7 +1277,7 @@ func TestRay_ClipBox(t *testing.T) {
 		through := Ry(Pt(-5.0, 0.5), Vec(1.0, 0.0))
 		box := Bx(Pt(-2.0, -2.0), Pt(2.0, 2.0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.ClipBox(box)
 		}, 0)
 	})
@@ -1298,7 +1298,7 @@ func TestRay_ClipEllipse(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Ry(Pt(-8.0, 0.0), Vec(1.0, 0.0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.ClipEllipse(ellipse)
 		}, 0)
 	})
@@ -1340,7 +1340,7 @@ func TestRay_HitCircle(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Ry(Pt(-10, 0), Vec(1, 0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.HitCircle(circle)
 		}, 0)
 	})
@@ -1384,7 +1384,7 @@ func TestRay_HitCapsule(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Ry(Pt(5.0, 10.0), Vec(tenth, -1.0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.HitCapsule(capsule)
 		}, 0)
 	})
@@ -1420,7 +1420,7 @@ func TestRay_HitSector(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Ry(Pt(3.0, 10.0), Vec(tenth, -1.0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.HitSector(sector)
 		}, 0)
 	})
@@ -1458,7 +1458,7 @@ func TestRay_HitSegment(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		wall := Seg(Pt(0, -1), Pt(0, 1))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = ray.HitSegment(wall)
 		}, 0)
 	})
@@ -1505,7 +1505,7 @@ func TestRay_HitRay(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		wall := Ry(Pt(0, -4), Vec(0, 1))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = ray.HitRay(wall)
 		}, 0)
 	})
@@ -1609,7 +1609,7 @@ func TestRay_HitPolygon(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Ry(Pt(2, 6), Vec(0, -1))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.HitPolygon(notched)
 		}, 0)
 	})
@@ -1641,7 +1641,7 @@ func TestRay_HitRectangle(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Ry(Pt(-5, 1), Vec(1, 0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.HitRectangle(rectangle)
 		}, 0)
 	})
@@ -1672,7 +1672,7 @@ func TestRay_HitRegularPolygon(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Ry(Pt(-3, 1), Vec(1, 0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.HitRegularPolygon(diamond)
 		}, 0)
 	})
@@ -1712,7 +1712,7 @@ func TestRay_HitBox(t *testing.T) {
 		through := Ry(Pt(-5.0, 0.5), Vec(1.0, 0.0))
 		box := Bx(Pt(-2.0, -2.0), Pt(2.0, 2.0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.HitBox(box)
 		}, 0)
 	})
@@ -1752,7 +1752,7 @@ func TestRay_HitEllipse(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through, turned := Ry(Pt(-10.0, tenth), Vec(1.0, 0.0)), Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0.3)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.HitEllipse(turned)
 		}, 0)
 	})
@@ -1909,6 +1909,16 @@ func TestRay_Immutable(t *testing.T) {
 	geomtest.AssertRay(t, r, Ry(Pt(1, 2), Vec(3, 5)))
 }
 
+func ExampleRy() {
+	fmt.Println(Ry(Pt(1, 2), Vec(3, 4)))
+	// Output: Ray((1,2);⟨3,4⟩)
+}
+
+func ExampleRayThrough() {
+	fmt.Println(RayThrough(Pt(1, 2), Pt(4, 6)))
+	// Output: Ray((1,2);⟨3,4⟩)
+}
+
 // far returns a segment along the ray reaching well past every fixture, the ray as a caller
 // without one would cast it.
 func far[T Number](r Ray[T]) Segment[T] {
@@ -1926,14 +1936,4 @@ var rayFixtures = []Ray[float64]{
 	Ry(Pt(0.6, -0.25), Vec(0.0, -1.0)),
 	Ry(Pt(-3.5, 7.0), Vec(0.3, -0.2)),
 	Ry(Pt(12.5, -0.1), Vec(-13.0, 12.85)),
-}
-
-func ExampleRy() {
-	fmt.Println(Ry(Pt(1, 2), Vec(3, 4)))
-	// Output: Ray((1,2);⟨3,4⟩)
-}
-
-func ExampleRayThrough() {
-	fmt.Println(RayThrough(Pt(1, 2), Pt(4, 6)))
-	// Output: Ray((1,2);⟨3,4⟩)
 }

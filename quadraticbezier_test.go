@@ -183,7 +183,7 @@ func TestQuadraticBezier_IntersectionSegment(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(-1.0, 1.5), Pt(5.0, 1.5+tenth))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = curve.IntersectionSegment(through).Count > 0
 		}, 0)
 	})
@@ -262,10 +262,10 @@ func TestQuadraticBezier_AppendPolyline(t *testing.T) {
 	t.Run("allocates once, and nothing into a buffer with room", func(t *testing.T) {
 		curve, buffer := QuadBez(Pt(0, 0), Pt(40, 40), Pt(80, 0)), make([]Point[int], 0, 64)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = curve.Polyline(tenth).Points
 		}, 1)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = curve.AppendPolyline(buffer[:0], 1)
 		}, 0)
 	})
@@ -363,6 +363,11 @@ func TestQuadraticBezier_Immutable(t *testing.T) {
 	geomtest.AssertQuadraticBezier(t, curve, QuadBez(Pt(0, 0), Pt(4, 4), Pt(8, 0)))
 }
 
+func ExampleQuadBez() {
+	fmt.Println(QuadBez(Pt(0, 0), Pt(4, 4), Pt(8, 0)))
+	// Output: QuadBez((0,0);(4,4);(8,0))
+}
+
 // cornerCurve returns the curve that rounds the corner above the middle of its two ends, eight
 // apart along X.
 func cornerCurve() QuadraticBezier[float64] {
@@ -378,9 +383,4 @@ var quadraticFixtures = []QuadraticBezier[float64]{
 	QuadBez(Pt(0.0, 0.0), Pt(6.0, 2.0), Pt(0.0, 4.0)),
 	QuadBez(Pt(1.0, 1.0), Pt(5.0, 3.0), Pt(1.0, 1.0)),
 	QuadBez(Pt(12.5, -0.1), Pt(-0.5, 12.75), Pt(0.6, -0.25)),
-}
-
-func ExampleQuadBez() {
-	fmt.Println(QuadBez(Pt(0, 0), Pt(4, 4), Pt(8, 0)))
-	// Output: QuadBez((0,0);(4,4);(8,0))
 }

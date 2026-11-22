@@ -784,32 +784,6 @@ func TestPoint_Immutable(t *testing.T) {
 	geomtest.AssertPoint(t, p2, Pt(3, -3))
 }
 
-// distanceFixtures feeds every DistanceTo variant, which all measure the same geometry.
-var distanceFixtures = []struct {
-	name                                             string
-	a, b                                             Point[float64]
-	euclidean, squared, manhattan, chebyshev, octile float64
-}{
-	{"diagonal step", Pt(1.0, 2.0), Pt(2.0, 3.0), Sqrt2, 2, 2, 1, Sqrt2},
-	{"cardinal step", Pt(1.0, 2.0), Pt(4.0, 2.0), 3, 9, 3, 3, 3},
-	{"knight move", Pt(0.0, 0.0), Pt(1.0, 2.0), math.Sqrt(5), 5, 3, 2, 1 + Sqrt2},
-	{"fractional", Pt(0.6, -0.25), Pt(0.5, -0.35), math.Sqrt(0.02), 0.02, 0.2, 0.1, 0.1 * Sqrt2},
-	{"negative direction", Pt(2.0, 3.0), Pt(1.0, 2.0), Sqrt2, 2, 2, 1, Sqrt2},
-	{"same point", Pt(0.6, -0.25), Pt(0.6, -0.25), 0, 0, 0, 0, 0},
-}
-
-// pointFixtures span the quadrants, the axes, and the diagonal.
-var pointFixtures = []Point[float64]{
-	Pt(0.0, 0.0),
-	Pt(1.0, 2.0),
-	Pt(-3.5, 0.25),
-	Pt(12.5, -0.1),
-	Pt(-1.0, -1.0),
-	Pt(0.6, -0.25),
-	Pt(7.0, 7.0),
-	Pt(-0.5, 12.75),
-}
-
 func ExamplePt() {
 	fmt.Println(Pt(3, 4))
 	fmt.Println(Pt(1.5, -0.25))
@@ -838,3 +812,31 @@ func compareReference[T Number](a, b Point[T]) int {
 
 	return cmp.Compare(a.Y, b.Y)
 }
+
+var (
+	// distanceFixtures feeds every DistanceTo variant, which all measure the same geometry.
+	distanceFixtures = []struct {
+		name                                             string
+		a, b                                             Point[float64]
+		euclidean, squared, manhattan, chebyshev, octile float64
+	}{
+		{"diagonal step", Pt(1.0, 2.0), Pt(2.0, 3.0), Sqrt2, 2, 2, 1, Sqrt2},
+		{"cardinal step", Pt(1.0, 2.0), Pt(4.0, 2.0), 3, 9, 3, 3, 3},
+		{"knight move", Pt(0.0, 0.0), Pt(1.0, 2.0), math.Sqrt(5), 5, 3, 2, 1 + Sqrt2},
+		{"fractional", Pt(0.6, -0.25), Pt(0.5, -0.35), math.Sqrt(0.02), 0.02, 0.2, 0.1, 0.1 * Sqrt2},
+		{"negative direction", Pt(2.0, 3.0), Pt(1.0, 2.0), Sqrt2, 2, 2, 1, Sqrt2},
+		{"same point", Pt(0.6, -0.25), Pt(0.6, -0.25), 0, 0, 0, 0, 0},
+	}
+
+	// pointFixtures span the quadrants, the axes, and the diagonal.
+	pointFixtures = []Point[float64]{
+		Pt(0.0, 0.0),
+		Pt(1.0, 2.0),
+		Pt(-3.5, 0.25),
+		Pt(12.5, -0.1),
+		Pt(-1.0, -1.0),
+		Pt(0.6, -0.25),
+		Pt(7.0, 7.0),
+		Pt(-0.5, 12.75),
+	}
+)

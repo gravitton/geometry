@@ -227,7 +227,7 @@ func TestRectangle_Vertices(t *testing.T) {
 	})
 	t.Run("ranging allocates nothing", func(t *testing.T) {
 		for _, r := range rectFixtures {
-			assertAllocations(t, func() {
+			assert.Allocates(t, func() {
 				for vertex := range r.Vertices() {
 					sinkBool = vertex.IsZero()
 				}
@@ -291,7 +291,7 @@ func TestRectangle_Edges(t *testing.T) {
 	})
 	t.Run("ranging allocates nothing", func(t *testing.T) {
 		for _, r := range rectFixtures {
-			assertAllocations(t, func() {
+			assert.Allocates(t, func() {
 				for edge := range r.Edges() {
 					sinkBool = edge.IsZero()
 				}
@@ -393,7 +393,7 @@ func TestRectangle_BoundingCircle(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		r := Rect(Pt(1, 2), Sz(2, 3), 0).Rotate(Pi / 6)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = r.BoundingCircle().IsZero()
 		}, 0)
 	})
@@ -531,17 +531,6 @@ func TestRectangle_Clamp(t *testing.T) {
 			}
 		}
 	})
-}
-
-// within reports whether every vertex of the rectangle lies within the other.
-func within[T Number](r, container Rectangle[T]) bool {
-	for vertex := range r.Vertices() {
-		if !container.Contains(vertex) {
-			return false
-		}
-	}
-
-	return true
 }
 
 func TestRectangle_Rotate(t *testing.T) {
@@ -947,7 +936,7 @@ func TestRectangle_Support(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		rectangle, direction := Rect(Pt(0, 0), Sz(4, 2), 0).Rotate(Pi/6), Vec(tenth, 0.7)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = rectangle.Support(direction).X > 0
 		}, 0)
 	})
@@ -1578,14 +1567,6 @@ func TestRectangle_ClipRectangle(t *testing.T) {
 	})
 }
 
-// quarterTurnsApart reports whether the angles are whole quarter turns apart, where two rectangles
-// share a frame.
-func quarterTurnsApart(a, b float64) bool {
-	turn := AngleDistance(a, b)
-
-	return EqualAngle(turn, 0) || EqualAngle(turn, Pi/2) || EqualAngle(turn, Pi)
-}
-
 func TestRectangle_Union(t *testing.T) {
 	rectangle := Rect(Pt(0, 0), Sz(4, 4), 0)
 
@@ -1993,6 +1974,30 @@ func TestRectangle_Immutable(t *testing.T) {
 	geomtest.AssertRectangle(t, r, Rect(Pt(1, 2), Sz(2, 3), 0))
 }
 
+func ExampleRect() {
+	fmt.Println(Rect(Pt(1, 2), Sz(2, 3), 0))
+	// Output: Rect((1,2);2x3)
+}
+
+// quarterTurnsApart reports whether the angles are whole quarter turns apart, where two rectangles
+// share a frame.
+func quarterTurnsApart(a, b float64) bool {
+	turn := AngleDistance(a, b)
+
+	return EqualAngle(turn, 0) || EqualAngle(turn, Pi/2) || EqualAngle(turn, Pi)
+}
+
+// within reports whether every vertex of the rectangle lies within the other.
+func within[T Number](r, container Rectangle[T]) bool {
+	for vertex := range r.Vertices() {
+		if !container.Contains(vertex) {
+			return false
+		}
+	}
+
+	return true
+}
+
 // rectFixtures span square, portrait, landscape, degenerate, and off-origin rectangles.
 var rectFixtures = []Rectangle[float64]{
 	Rect(Pt(0.0, 0.0), Sz(0.0, 0.0), 0),
@@ -2005,9 +2010,4 @@ var rectFixtures = []Rectangle[float64]{
 	Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Rotate(Pi / 2),
 	Rect(Pt(1.0, 2.0), Sz(2.0, 3.0), 0).Rotate(Pi / 6),
 	Rect(Pt(-3.5, 0.25), Sz(7.0, 1.0), 0).Rotate(-Pi / 4),
-}
-
-func ExampleRect() {
-	fmt.Println(Rect(Pt(1, 2), Sz(2, 3), 0))
-	// Output: Rect((1,2);2x3)
 }

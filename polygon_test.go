@@ -31,7 +31,7 @@ func TestPolygon_Vertices(t *testing.T) {
 	})
 	t.Run("ranging allocates nothing", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
-			assertAllocations(t, func() {
+			assert.Allocates(t, func() {
 				for vertex := range p.Vertices() {
 					sinkBool = vertex.IsZero()
 				}
@@ -67,7 +67,7 @@ func TestPolygon_Edges(t *testing.T) {
 	})
 	t.Run("ranging allocates nothing", func(t *testing.T) {
 		for _, p := range polygonFixtures() {
-			assertAllocations(t, func() {
+			assert.Allocates(t, func() {
 				for edge := range p.Edges() {
 					sinkBool = edge.IsZero()
 				}
@@ -224,7 +224,7 @@ func TestPolygon_Winding(t *testing.T) {
 		assert.Equal(t, Pol([]Point[int]{Pt(0, 0), Pt(2, 2), Pt(2, 0), Pt(0, 2)}).Winding(), WindingNone)
 	})
 	t.Run("allocates nothing", func(t *testing.T) {
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = square.Winding().IsNone()
 		}, 0)
 	})
@@ -279,7 +279,7 @@ func TestPolygon_BoundingCircle(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		polygon := Pol(notchedVertices())
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = polygon.BoundingCircle().IsZero()
 		}, 0)
 	})
@@ -474,7 +474,7 @@ func TestPolygon_Grow(t *testing.T) {
 		geomtest.AssertPolygon(t, point.Shrink(1), point)
 	})
 	t.Run("allocates the result alone", func(t *testing.T) {
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = square.Grow(1).Points
 		}, 1)
 	})
@@ -509,7 +509,7 @@ func TestPolygon_AppendGrow(t *testing.T) {
 	t.Run("a buffer with room for every vertex allocates nothing", func(t *testing.T) {
 		buffer := make([]Point[int], 0, len(square.Points))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = square.AppendGrow(buffer[:0], 1)
 		}, 0)
 	})
@@ -577,10 +577,10 @@ func TestPolygon_AppendShrink(t *testing.T) {
 		buffer, floats := make([]Point[int], 0, 2*len(square.Points)+2), make([]Point[float64], 0, 2*len(square.Points)+2)
 		floatSquare := square.Float()
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = square.AppendShrink(buffer[:0], 1)
 		}, 0)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkFloatPoints = floatSquare.AppendShrink(floats[:0], 1)
 		}, 0)
 	})
@@ -705,7 +705,7 @@ func TestPolygon_ConvexHull(t *testing.T) {
 		assert.Zero(t, Polygon[int]{}.ConvexHull())
 	})
 	t.Run("allocates once", func(t *testing.T) {
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = dart.ConvexHull().Points
 		}, 1)
 	})
@@ -776,7 +776,7 @@ func TestPolygon_AppendConvexHull(t *testing.T) {
 	t.Run("a buffer with room for every vertex allocates nothing", func(t *testing.T) {
 		buffer := make([]Point[int], 0, len(dart.Points))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = dart.AppendConvexHull(buffer[:0])
 		}, 0)
 	})
@@ -860,7 +860,7 @@ func TestPolygon_Simplify(t *testing.T) {
 	t.Run("allocates once", func(t *testing.T) {
 		square := Pol([]Point[int]{Pt(0, 0), Pt(1, 0), Pt(2, 0), Pt(2, 2), Pt(0, 2)})
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = square.Simplify(0).Points
 		}, 1)
 	})
@@ -907,7 +907,7 @@ func TestPolygon_AppendSimplify(t *testing.T) {
 	t.Run("a buffer with room for every vertex allocates nothing", func(t *testing.T) {
 		buffer := make([]Point[int], 0, len(turned.Points))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = turned.AppendSimplify(buffer[:0], 0)
 		}, 0)
 	})
@@ -969,7 +969,7 @@ func TestPolygon_Triangulate(t *testing.T) {
 	t.Run("allocates once", func(t *testing.T) {
 		notched := Pol(notchedVertices())
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkInts = notched.Triangulate()
 		}, 1)
 	})
@@ -978,27 +978,6 @@ func TestPolygon_Triangulate(t *testing.T) {
 			assertTriangles(t, p, p.Triangulate(), fmt.Sprintf("%s: ", p))
 		}
 	})
-}
-
-// assertTriangles asserts that the triangles fill the simple polygon: each of three indices
-// into its vertices, wound as the polygon is with an area, its centroid within the polygon, and
-// together as large as the polygon.
-func assertTriangles[T Number](t *testing.T, p Polygon[T], triangles []int, message string) {
-	t.Helper()
-
-	assert.Equal(t, len(triangles)%3, 0, message)
-
-	area := 0.0
-	for i := 0; i+2 < len(triangles); i += 3 {
-		a, b, c := p.Points[triangles[i]], p.Points[triangles[i+1]], p.Points[triangles[i+2]]
-		triangle := Pol([]Point[T]{a, b, c})
-
-		assert.Equal(t, triangle.Winding(), p.Winding(), message)
-		assert.True(t, p.Float().Contains(triangle.Float().Centroid()), message)
-		area += triangle.Area()
-	}
-
-	geomtest.AssertNumber(t, area, p.Area(), message)
 }
 
 func BenchmarkPolygon_Triangulate(b *testing.B) {
@@ -1021,7 +1000,7 @@ func TestPolygon_AppendTriangulate(t *testing.T) {
 	t.Run("a buffer with room for three indices per vertex past the second allocates nothing", func(t *testing.T) {
 		buffer := make([]int, 0, 3*(len(notched.Points)-2))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkInts = notched.AppendTriangulate(buffer[:0])
 		}, 0)
 	})
@@ -1137,7 +1116,7 @@ func TestPolygon_Support(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		polygon, direction := Pol(squareVertices()), Vec(tenth, 0.7)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = polygon.Support(direction).X > 0
 		}, 0)
 	})
@@ -1390,7 +1369,7 @@ func TestPolygon_ContainsRegularPolygon(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		inside := RegPol(Pt(2, 2), Sz(1, 1), 6, Pi/5, 0)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = notched.ContainsRegularPolygon(inside)
 		}, 0)
 	})
@@ -1713,13 +1692,13 @@ func TestPolygon_AppendClipPolygon(t *testing.T) {
 		buffer, floats := make([]Point[int], 0, 2*(len(square.Points)+len(triangle.Points))), make([]Point[float64], 0, 2*(len(square.Points)+len(triangle.Points)))
 		floatSquare, floatRegion := square.Float(), triangle.Float()
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = square.AppendClipPolygon(buffer[:0], triangle)
 		}, 0)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = square.AppendClipPolygon(nil, triangle)
 		}, 1)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkFloatPoints = floatSquare.AppendClipPolygon(floats[:0], floatRegion)
 		}, 0)
 	})
@@ -1766,13 +1745,13 @@ func TestPolygon_AppendClipRectangle(t *testing.T) {
 		buffer, floats := make([]Point[int], 0, 16), make([]Point[float64], 0, 16)
 		floatSquare, floatRegion := square.Float(), rectangle.Float()
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = square.AppendClipRectangle(buffer[:0], rectangle)
 		}, 0)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = square.AppendClipRectangle(nil, rectangle)
 		}, 1)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkFloatPoints = floatSquare.AppendClipRectangle(floats[:0], floatRegion)
 		}, 0)
 	})
@@ -1820,7 +1799,7 @@ func TestPolygon_AppendClipRegularPolygon(t *testing.T) {
 	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
 		buffer := make([]Point[float64], 0, 16)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = len(square.AppendClipRegularPolygon(buffer[:0], diamond)) > 0
 		}, 0)
 	})
@@ -1896,13 +1875,13 @@ func TestPolygon_AppendClipBox(t *testing.T) {
 		buffer, floats := make([]Point[int], 0, 16), make([]Point[float64], 0, 16)
 		floatSquare, floatRegion := square.Float(), box.Float()
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = square.AppendClipBox(buffer[:0], box)
 		}, 0)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = square.AppendClipBox(nil, box)
 		}, 1)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkFloatPoints = floatSquare.AppendClipBox(floats[:0], floatRegion)
 		}, 0)
 	})
@@ -1985,18 +1964,6 @@ func TestPolygon_Split(t *testing.T) {
 	})
 }
 
-// assertPolygonSplit checks a part Split gives: no larger than the polygon, every vertex within
-// it and on the line or on the side of it the part was kept on.
-func assertPolygonSplit(t *testing.T, p, part Polygon[float64], line Line[float64], side int, message string) {
-	t.Helper()
-
-	assert.True(t, LessOrEqual(part.Area(), p.Area()), message)
-	for _, vertex := range part.Points {
-		assert.True(t, p.Contains(vertex), message+vertex.String())
-		assert.True(t, line.Vector.IsZero() || line.Contains(vertex) || line.Side(vertex) == side, message+vertex.String())
-	}
-}
-
 func TestPolygon_AppendSplit(t *testing.T) {
 	square := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(0, 4)})
 	line := Ln(Pt(2, 0), Vec(0, 1))
@@ -2010,10 +1977,10 @@ func TestPolygon_AppendSplit(t *testing.T) {
 	t.Run("buffers with room allocate nothing and Split allocates once", func(t *testing.T) {
 		front, back := make([]Point[int], 0, 8), make([]Point[int], 0, 8)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints, sinkPoints = square.AppendSplit(front[:0], back[:0], line)
 		}, 0)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			front, back := square.Split(line)
 			sinkPoints, sinkPoints = front.Points, back.Points
 		}, 1)
@@ -2193,27 +2160,6 @@ func TestPolygon_Union(t *testing.T) {
 	})
 }
 
-func roundedOutline(polygon Polygon[float64]) Polygon[int] {
-	points := slices.Compact(polygon.Int().Points)
-	if last := len(points) - 1; last > 0 && points[last] == points[0] {
-		points = points[:last]
-	}
-
-	return Pol(points)
-}
-
-func nextafter(value float64, steps int) float64 {
-	toward := math.Inf(1)
-	if steps < 0 {
-		toward, steps = math.Inf(-1), -steps
-	}
-	for range steps {
-		value = math.Nextafter(value, toward)
-	}
-
-	return value
-}
-
 func TestPolygon_AppendUnion(t *testing.T) {
 	square := Pol([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 4), Pt(0, 4)})
 	shifted := Pol([]Point[int]{Pt(2, 2), Pt(6, 2), Pt(6, 6), Pt(2, 6)})
@@ -2229,10 +2175,10 @@ func TestPolygon_AppendUnion(t *testing.T) {
 	t.Run("a buffer with room allocates nothing and Union allocates once", func(t *testing.T) {
 		buffer := make([]Point[int], 0, 2*(len(square.Points)+len(shifted.Points)))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = square.AppendUnion(buffer[:0], shifted)
 		}, 0)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			union, _ := square.Union(shifted)
 			sinkPoints = union.Points
 		}, 1)
@@ -2321,7 +2267,7 @@ func TestPolygon_IsConvex(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		square := Pol(squareVertices())
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = square.IsConvex()
 		}, 0)
 	})
@@ -2380,7 +2326,7 @@ func TestPolygon_IsSimple(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		square := Pol(squareVertices())
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = square.IsSimple()
 		}, 0)
 	})
@@ -2429,7 +2375,7 @@ func TestPolygon_Polyline(t *testing.T) {
 	t.Run("allocates once", func(t *testing.T) {
 		polygon := Pol(squareVertices())
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = polygon.Polyline().Points
 		}, 1)
 	})
@@ -2600,6 +2546,44 @@ func TestPolygon_Immutable(t *testing.T) {
 	geomtest.AssertVertices(t, p.Points, []Point[int]{Pt(0, 0), Pt(2, 0)})
 }
 
+func ExamplePol() {
+	fmt.Println(Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(2, 2)}))
+	// Output: Pol((0,0);(2,0);(2,2))
+}
+
+// assertTriangles asserts that the triangles fill the simple polygon: each of three indices
+// into its vertices, wound as the polygon is with an area, its centroid within the polygon, and
+// together as large as the polygon.
+func assertTriangles[T Number](t *testing.T, p Polygon[T], triangles []int, message string) {
+	t.Helper()
+
+	assert.Equal(t, len(triangles)%3, 0, message)
+
+	area := 0.0
+	for i := 0; i+2 < len(triangles); i += 3 {
+		a, b, c := p.Points[triangles[i]], p.Points[triangles[i+1]], p.Points[triangles[i+2]]
+		triangle := Pol([]Point[T]{a, b, c})
+
+		assert.Equal(t, triangle.Winding(), p.Winding(), message)
+		assert.True(t, p.Float().Contains(triangle.Float().Centroid()), message)
+		area += triangle.Area()
+	}
+
+	geomtest.AssertNumber(t, area, p.Area(), message)
+}
+
+// assertPolygonSplit checks a part Split gives: no larger than the polygon, every vertex within
+// it and on the line or on the side of it the part was kept on.
+func assertPolygonSplit(t *testing.T, p, part Polygon[float64], line Line[float64], side int, message string) {
+	t.Helper()
+
+	assert.True(t, LessOrEqual(part.Area(), p.Area()), message)
+	for _, vertex := range part.Points {
+		assert.True(t, p.Contains(vertex), message+vertex.String())
+		assert.True(t, line.Vector.IsZero() || line.Contains(vertex) || line.Side(vertex) == side, message+vertex.String())
+	}
+}
+
 // assertPolygonClipped checks the part a Clip method of Polygon returns over the fixtures: there is one
 // exactly where it is expected, where the polygon and the region intersect and the region can
 // cut, and its vertices lie within both, around no more area than either.
@@ -2612,6 +2596,27 @@ func assertPolygonClipped(t *testing.T, p, part Polygon[float64], ok, expected b
 	for _, vertex := range part.Points {
 		assert.True(t, p.Contains(vertex) && within(vertex), message+vertex.String())
 	}
+}
+
+func roundedOutline(polygon Polygon[float64]) Polygon[int] {
+	points := slices.Compact(polygon.Int().Points)
+	if last := len(points) - 1; last > 0 && points[last] == points[0] {
+		points = points[:last]
+	}
+
+	return Pol(points)
+}
+
+func nextafter(value float64, steps int) float64 {
+	toward := math.Inf(1)
+	if steps < 0 {
+		toward, steps = math.Inf(-1), -steps
+	}
+	for range steps {
+		value = math.Nextafter(value, toward)
+	}
+
+	return value
 }
 
 // squareVertices and triangleVertices build fresh slices, so a test that mutates one
@@ -2653,10 +2658,6 @@ func outlineFixtures() []Polygon[float64] {
 	return polygons
 }
 
-func triangleVertices() []Point[float64] {
-	return []Point[float64]{Pt(0.0, 0.0), Pt(2.5, 0.5), Pt(2.0, 1.0)}
-}
-
 // polygonFixtures span a triangle, a square, and a degenerate two-vertex polygon.
 func polygonFixtures() []Polygon[float64] {
 	return []Polygon[float64]{
@@ -2667,12 +2668,11 @@ func polygonFixtures() []Polygon[float64] {
 	}
 }
 
+func triangleVertices() []Point[float64] {
+	return []Point[float64]{Pt(0.0, 0.0), Pt(2.5, 0.5), Pt(2.0, 1.0)}
+}
+
 // benchPolygon is a 64-gon, large enough for the edge walk to dominate.
 func benchPolygon() Polygon[float64] {
 	return RegPol(Pt(0.0, 0.0), SzU(100.0), 64, 0, 0).Polygon()
-}
-
-func ExamplePol() {
-	fmt.Println(Pol([]Point[int]{Pt(0, 0), Pt(2, 0), Pt(2, 2)}))
-	// Output: Pol((0,0);(2,0);(2,2))
 }

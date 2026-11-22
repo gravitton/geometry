@@ -88,7 +88,7 @@ func TestCircleThrough(t *testing.T) {
 		assert.False(t, ok)
 	})
 	t.Run("allocates nothing", func(t *testing.T) {
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = CircleThrough(Pt(0, 0), Pt(6, 0), Pt(0, 8))
 		}, 0)
 	})
@@ -432,7 +432,7 @@ func TestCircle_DistanceToCircle(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		circle, other := Circ(Pt(0, 0), 1), Circ(Pt(3, 4), 2)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = circle.DistanceToCircle(other) > 0
 		}, 0)
 	})
@@ -485,7 +485,7 @@ func TestCircle_Support(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		circle, direction := Circ(Pt(1, 2), 5), Vec(tenth, 0.7)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = circle.Support(direction).X > 0
 		}, 0)
 	})
@@ -1196,10 +1196,10 @@ func TestCircle_IntersectionSegment(t *testing.T) {
 		unit := Circ(Pt(0, 0), 5)
 		through, apart := Seg(Pt(-10, 0), Pt(10, 0)), Seg(Pt(-10, 9), Pt(10, 9))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = unit.IntersectionSegment(through).Count > 0
 		}, 0)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = unit.IntersectionSegment(apart).Count > 0
 		}, 0)
 	})
@@ -1390,10 +1390,10 @@ func TestCircle_IntersectionRay(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through, away := Ry(Pt(-10, 0), Vec(1, 0)), Ry(Pt(-10, 0), Vec(-1, 0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = circle.IntersectionRay(through).Count > 0
 		}, 0)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = circle.IntersectionRay(away).Count > 0
 		}, 0)
 	})
@@ -1435,10 +1435,10 @@ func TestCircle_IntersectionLine(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through, apart := Ln(Pt(-10, 0), Vec(1, 0)), Ln(Pt(-10, 0), Vec(0, 1))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = circle.IntersectionLine(through).Count > 0
 		}, 0)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = circle.IntersectionLine(apart).Count > 0
 		}, 0)
 	})
@@ -1650,7 +1650,7 @@ func TestCircle_Union(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		a, b := Circ(Pt(0, 0), 1), Circ(Pt(10, 0), 1)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = a.Union(b).Radius > 0
 		}, 0)
 	})
@@ -1788,10 +1788,10 @@ func TestCircle_AppendPolygon(t *testing.T) {
 		circle := Circ(Pt(0, 0), 50)
 		buffer := make([]Point[int], 0, 64)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = circle.Polygon(1).Points
 		}, 1)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = circle.AppendPolygon(buffer[:0], 1)
 		}, 0)
 	})
@@ -2022,7 +2022,10 @@ func TestCircle_Immutable(t *testing.T) {
 	geomtest.AssertCircle(t, c, Circ(Pt(1, 2), 10))
 }
 
-// circleFixtures span the degenerate, unit, and off-origin cases.
+func ExampleCirc() {
+	fmt.Println(Circ(Pt(10, 16), 5))
+	// Output: Circ((10,16);5)
+}
 
 // assertTangents asserts the properties the tangents between two circles have, outer and inner
 // alike: at most two, each from the boundary of a to the boundary of b and at a right angle to
@@ -2058,15 +2061,6 @@ func touches[T Number](circle Circle[T], point Point[T]) bool {
 	return circle.IntersectionSegment(Seg(point, point)).Count == 1
 }
 
-var circleFixtures = []Circle[float64]{
-	Circ(Pt(0.0, 0.0), 0.0),
-	Circ(Pt(0.0, 0.0), 1.0),
-	Circ(Pt(1.0, 2.0), 10.0),
-	Circ(Pt(0.6, -0.25), 1.2),
-	Circ(Pt(-3.5, 0.25), 7.0),
-	Circ(Pt(12.5, -0.1), 0.5),
-}
-
 // grazingSegments returns the segments a crossing of the circle is decided on within the
 // tolerance: each starts a tenth of Delta inside the boundary, in one of the eight directions
 // from the center, and runs along the tangent there, which puts the start in the middle of a
@@ -2086,7 +2080,12 @@ func grazingSegments(circle Circle[float64]) []Segment[float64] {
 	return segments
 }
 
-func ExampleCirc() {
-	fmt.Println(Circ(Pt(10, 16), 5))
-	// Output: Circ((10,16);5)
+// circleFixtures span the degenerate, unit, and off-origin cases.
+var circleFixtures = []Circle[float64]{
+	Circ(Pt(0.0, 0.0), 0.0),
+	Circ(Pt(0.0, 0.0), 1.0),
+	Circ(Pt(1.0, 2.0), 10.0),
+	Circ(Pt(0.6, -0.25), 1.2),
+	Circ(Pt(-3.5, 0.25), 7.0),
+	Circ(Pt(12.5, -0.1), 0.5),
 }

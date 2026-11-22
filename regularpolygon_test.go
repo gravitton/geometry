@@ -86,27 +86,6 @@ func TestRegularPolygonWithOrientation(t *testing.T) {
 	})
 }
 
-// assertSteppedFromTop checks that the polygon has the vertices of the polygon stepped around
-// the axis-aligned ellipse of the size from the angle that places its top, a vertex there for
-// OrientationPointyTop and half a step before it for OrientationFlatTop, in whatever order.
-func assertSteppedFromTop(t *testing.T, polygon RegularPolygon[float64], size Size[float64], orientation Orientation, message string) {
-	t.Helper()
-
-	start := 3 * Pi / 2
-	if orientation == OrientationFlatTop {
-		start -= Pi / float64(polygon.N)
-	}
-
-	vertices := slices.Collect(polygon.Vertices())
-	assert.Equal(t, len(vertices), polygon.N, message)
-
-	for i := range polygon.N {
-		expected := polygon.Center.Add(VectorFromAngleSize(start+float64(i)*2*Pi/float64(polygon.N), size))
-
-		assert.True(t, slices.ContainsFunc(vertices, expected.Equal), message+expected.String()+": ")
-	}
-}
-
 func TestRegularPolygon_Anchor(t *testing.T) {
 	t.Run("a flat-top hexagon anchors the top edge midpoint", func(t *testing.T) {
 		hex := RegularPolygonWithOrientation(Pt(0.0, 0.0), SzU(10.0), 6, OrientationFlatTop)
@@ -194,7 +173,7 @@ func TestRegularPolygon_Vertices(t *testing.T) {
 	})
 	t.Run("ranging allocates nothing", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
-			assertAllocations(t, func() {
+			assert.Allocates(t, func() {
 				for vertex := range rp.Vertices() {
 					sinkBool = vertex.IsZero()
 				}
@@ -240,7 +219,7 @@ func TestRegularPolygon_Edges(t *testing.T) {
 	})
 	t.Run("ranging allocates nothing", func(t *testing.T) {
 		for _, rp := range regularPolygonFixtures {
-			assertAllocations(t, func() {
+			assert.Allocates(t, func() {
 				for edge := range rp.Edges() {
 					sinkBool = edge.IsZero()
 				}
@@ -425,7 +404,7 @@ func TestRegularPolygon_BoundingCircle(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		rp := RegPol(Pt(1, 2), Sz(2, 3), 6, Pi/6, 0)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = rp.BoundingCircle().IsZero()
 		}, 0)
 	})
@@ -813,7 +792,7 @@ func TestRegularPolygon_Support(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		polygon, direction := RegPol(Pt(1.0, 2.0), Sz(2.0, 3.0), 7, 0.2, 0.1), Vec(tenth, 0.7)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = polygon.Support(direction).X > 0
 		}, 0)
 	})
@@ -1559,6 +1538,32 @@ func TestRegularPolygon_Immutable(t *testing.T) {
 	geomtest.AssertRegularPolygon(t, rp, RegPol(Pt(0, 1), Sz(2, 3), 4, 0, 0))
 }
 
+func ExampleRegPol() {
+	fmt.Println(RegPol(Pt(1, 2), Sz(2, 2), 4, 0, 0))
+	// Output: RegPol((1,2);2x2;4)
+}
+
+// assertSteppedFromTop checks that the polygon has the vertices of the polygon stepped around
+// the axis-aligned ellipse of the size from the angle that places its top, a vertex there for
+// OrientationPointyTop and half a step before it for OrientationFlatTop, in whatever order.
+func assertSteppedFromTop(t *testing.T, polygon RegularPolygon[float64], size Size[float64], orientation Orientation, message string) {
+	t.Helper()
+
+	start := 3 * Pi / 2
+	if orientation == OrientationFlatTop {
+		start -= Pi / float64(polygon.N)
+	}
+
+	vertices := slices.Collect(polygon.Vertices())
+	assert.Equal(t, len(vertices), polygon.N, message)
+
+	for i := range polygon.N {
+		expected := polygon.Center.Add(VectorFromAngleSize(start+float64(i)*2*Pi/float64(polygon.N), size))
+
+		assert.True(t, slices.ContainsFunc(vertices, expected.Equal), message+expected.String()+": ")
+	}
+}
+
 // assertOrientation checks the top of a polygon RegularPolygonWithOrientation made: a single
 // vertex above the center for OrientationPointyTop, and two vertices level with each other
 // either side of it for OrientationFlatTop.
@@ -1602,9 +1607,4 @@ var regularPolygonFixtures = []RegularPolygon[float64]{
 	RegularPolygonWithOrientation(Pt(1.0, 2.0), Sz(4.0, 2.0), 4, OrientationFlatTop),
 	RegPol(Pt(1.0, -2.0), Sz(6.0, 3.0), 7, Pi/5, Pi/9),
 	RegPol(Pt(-2.0, 4.0), Sz(5.0, 1.5), 6, 2*Pi/3, Pi/11),
-}
-
-func ExampleRegPol() {
-	fmt.Println(RegPol(Pt(1, 2), Sz(2, 2), 4, 0, 0))
-	// Output: RegPol((1,2);2x2;4)
 }

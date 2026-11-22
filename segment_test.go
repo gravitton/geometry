@@ -108,7 +108,7 @@ func TestSegment_Vertices(t *testing.T) {
 	t.Run("ranging allocates nothing", func(t *testing.T) {
 		s := Seg(Pt(1, 2), Pt(3, 5))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			for vertex := range s.Vertices() {
 				sinkBool = vertex.IsZero()
 			}
@@ -126,7 +126,7 @@ func TestSegment_Edges(t *testing.T) {
 		geomtest.AssertSegment(t, edges[0], s)
 	})
 	t.Run("ranging allocates nothing", func(t *testing.T) {
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			for edge := range s.Edges() {
 				sinkBool = edge.IsZero()
 			}
@@ -622,7 +622,7 @@ func TestSegment_Support(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		direction := Vec(tenth, 0.7)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = segment.Support(direction).X > 0
 		}, 0)
 	})
@@ -1082,7 +1082,7 @@ func TestSegment_AppendIntersectionSector(t *testing.T) {
 	t.Run("appends to a buffer with room without allocating", func(t *testing.T) {
 		buffer := make([]Point[float64], 0, 4)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = len(through.AppendIntersectionSector(buffer[:0], sector)) > 0
 		}, 0)
 	})
@@ -1527,7 +1527,7 @@ func TestSegment_AppendIntersectionCubicBezier(t *testing.T) {
 	t.Run("appends to a buffer with room without allocating", func(t *testing.T) {
 		buffer := make([]Point[float64], 0, 4)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = len(through.AppendIntersectionCubicBezier(buffer[:0], wave)) > 0
 		}, 0)
 	})
@@ -1564,10 +1564,10 @@ func TestSegment_IntersectionPolygon(t *testing.T) {
 	t.Run("allocates the result alone", func(t *testing.T) {
 		through, apart := Seg(Pt(-1, 1), Pt(5, 1)), Seg(Pt(3, -1), Pt(3, 3))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = through.IntersectionPolygon(square)
 		}, 1)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = apart.IntersectionPolygon(square)
 		}, 0)
 	})
@@ -1636,7 +1636,7 @@ func TestSegment_AppendIntersectionPolygon(t *testing.T) {
 	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
 		buffer := make([]Point[int], 0, 2)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = through.AppendIntersectionPolygon(buffer[:0], square)
 		}, 0)
 	})
@@ -1687,13 +1687,13 @@ func TestSegment_IntersectionRectangle(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through, apart := Seg(Pt(-5, 1), Pt(5, 1)), Seg(Pt(3, -5), Pt(3, 5))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = through.IntersectionRectangle(rectangle).Count > 0
 		}, 0)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = through.IntersectionRectangle(rectangle.Rotate(Pi/5)).Count > 0
 		}, 0)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = apart.IntersectionRectangle(rectangle).Count > 0
 		}, 0)
 	})
@@ -1815,10 +1815,10 @@ func TestSegment_IntersectionRegularPolygon(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through, apart := Seg(Pt(-3, 0), Pt(3, 0)), Seg(Pt(5, 0), Pt(6, 0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = through.IntersectionRegularPolygon(diamond).Count > 0
 		}, 0)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = apart.IntersectionRegularPolygon(diamond).Count > 0
 		}, 0)
 	})
@@ -1956,7 +1956,7 @@ func TestSegment_IntersectionEllipse(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(-8.0, 1.0), Pt(8.0, 1.0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = through.IntersectionEllipse(ellipse).IsEmpty()
 		}, 0)
 	})
@@ -2009,7 +2009,7 @@ func TestSegment_ClipCircle(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		unit, through := Circ(Pt(0, 0), 5), Seg(Pt(-10, 0), Pt(10, 0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.ClipCircle(unit)
 		}, 0)
 	})
@@ -2052,7 +2052,7 @@ func TestSegment_ClipCapsule(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(5.0, 10.0), Pt(tenth, -10.0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.ClipCapsule(capsule)
 		}, 0)
 	})
@@ -2093,7 +2093,7 @@ func TestSegment_ClipSector(t *testing.T) {
 	t.Run("appends to a buffer with room without allocating", func(t *testing.T) {
 		buffer, through := make([]Segment[float64], 0, 4), Seg(Pt(3.0, 10.0), Pt(tenth, -10.0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = len(through.AppendClipSector(buffer[:0], notched)) > 0
 		}, 0)
 	})
@@ -2207,10 +2207,10 @@ func TestSegment_ClipPolygon(t *testing.T) {
 	t.Run("allocates the result alone", func(t *testing.T) {
 		through, apart := Seg(Pt(-1, 1), Pt(5, 1)), Seg(Pt(3, -1), Pt(3, 3))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkSegments = through.ClipPolygon(square)
 		}, 1)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkSegments = apart.ClipPolygon(square)
 		}, 0)
 	})
@@ -2265,17 +2265,6 @@ func TestSegment_ClipPolygon(t *testing.T) {
 	})
 }
 
-// reversedParts returns the parts of a clipped segment as its Reverse would give them: in the
-// opposite order, each running the other way.
-func reversedParts[T Number](parts []Segment[T]) []Segment[T] {
-	reversed := make([]Segment[T], len(parts))
-	for i, part := range parts {
-		reversed[len(parts)-1-i] = part.Reverse()
-	}
-
-	return reversed
-}
-
 func FuzzSegment_ClipPolygon(f *testing.F) {
 	f.Add(0.0, 0.0, 8.0, -1.5e-6)
 	f.Add(-1.0, 3.0, 5.0, 3.0)
@@ -2321,7 +2310,7 @@ func TestSegment_AppendClipPolygon(t *testing.T) {
 	t.Run("a buffer with room allocates nothing", func(t *testing.T) {
 		buffer := make([]Segment[int], 0, 1)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkSegments = through.AppendClipPolygon(buffer[:0], square)
 		}, 0)
 	})
@@ -2348,7 +2337,7 @@ func TestSegment_AppendClipPolygon(t *testing.T) {
 		}
 
 		geomtest.AssertSegments(t, across.Reverse().AppendClipPolygon(buffer[:0], Pol(comb)), parts)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkSegments = across.AppendClipPolygon(buffer[:0], Pol(comb))
 		}, 0)
 	})
@@ -2393,10 +2382,10 @@ func TestSegment_ClipRectangle(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(-5, 1), Pt(5, 1))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.ClipRectangle(rectangle)
 		}, 0)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.ClipRectangle(rectangle.Rotate(Pi / 5))
 		}, 0)
 	})
@@ -2460,7 +2449,7 @@ func TestSegment_ClipRegularPolygon(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(-3, 0), Pt(3, 0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.ClipRegularPolygon(diamond)
 		}, 0)
 	})
@@ -2510,7 +2499,7 @@ func TestSegment_ClipBox(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(-5, 0), Pt(5, 0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.ClipBox(box)
 		}, 0)
 	})
@@ -2563,7 +2552,7 @@ func TestSegment_ClipEllipse(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(-8.0, 1.0), Pt(8.0, 1.0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.ClipEllipse(ellipse)
 		}, 0)
 	})
@@ -2631,7 +2620,7 @@ func TestSegment_HitCircle(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		unit, through := Circ(Pt(0, 0), 5), Seg(Pt(-10, 0), Pt(10, 0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.HitCircle(unit)
 		}, 0)
 	})
@@ -2721,7 +2710,7 @@ func TestSegment_HitCapsule(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(5.0, 10.0), Pt(tenth, -10.0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.HitCapsule(capsule)
 		}, 0)
 	})
@@ -2817,7 +2806,7 @@ func TestSegment_HitSector(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(3.0, 10.0), Pt(tenth, -10.0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.HitSector(sector)
 		}, 0)
 	})
@@ -2865,7 +2854,7 @@ func TestSegment_HitArc(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(3.0, 10.0), Pt(tenth, -10.0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.HitArc(arc)
 		}, 0)
 	})
@@ -2933,7 +2922,7 @@ func TestSegment_HitSegment(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		wall := Seg(Pt(0.0, -1.0), Pt(0.0, 1.0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.HitSegment(wall)
 		}, 0)
 	})
@@ -3047,7 +3036,7 @@ func TestSegment_HitPolyline(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(2.0, 5.0), Pt(tenth, -5.0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.HitPolyline(path)
 		}, 0)
 	})
@@ -3144,7 +3133,7 @@ func TestSegment_HitCubicBezier(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(8.0, tenth), Pt(-2.0, 0.0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.HitCubicBezier(wave)
 		}, 0)
 	})
@@ -3207,7 +3196,7 @@ func TestSegment_HitPolygon(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(-1, 1), Pt(5, 1))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.HitPolygon(notched)
 		}, 0)
 	})
@@ -3266,10 +3255,10 @@ func TestSegment_HitRectangle(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(-5, 1), Pt(5, 1))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.HitRectangle(rectangle)
 		}, 0)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.HitRectangle(rectangle.Rotate(Pi / 5))
 		}, 0)
 	})
@@ -3321,7 +3310,7 @@ func TestSegment_HitRegularPolygon(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(-3, 1), Pt(3, 1))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.HitRegularPolygon(diamond)
 		}, 0)
 	})
@@ -3364,7 +3353,7 @@ func TestSegment_HitBox(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(-5, 0), Pt(5, 0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.HitBox(box)
 		}, 0)
 	})
@@ -3478,7 +3467,7 @@ func TestSegment_HitEllipse(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through, turned := Seg(Pt(-10.0, tenth), Pt(10.0, 0.0)), Ell(Pt(0.0, 0.0), Sz(4.0, 2.0), 0.3)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = through.HitEllipse(turned)
 		}, 0)
 	})
@@ -3720,14 +3709,9 @@ func TestSegment_Immutable(t *testing.T) {
 	geomtest.AssertSegment(t, s, Seg(Pt(1, 2), Pt(3, 5)))
 }
 
-// partsOf gives the part a convex Clip method returns as the parts ClipPolygon would, so both
-// are checked alike: the part alone where it exists, and nil where it does not.
-func partsOf[T Number](part Segment[T], ok bool) []Segment[T] {
-	if !ok {
-		return nil
-	}
-
-	return []Segment[T]{part}
+func ExampleSeg() {
+	fmt.Println(Seg(Pt(1, 2), Pt(3, 5)))
+	// Output: Seg((1,2);(3,5))
 }
 
 // assertHit checks that a Hit method found the hit expected of it.
@@ -3736,6 +3720,27 @@ func assertHit[T Number](t *testing.T, hit Hit[T], ok bool, expected Hit[T]) {
 
 	assert.True(t, ok)
 	geomtest.AssertHit(t, hit, expected)
+}
+
+// reversedParts returns the parts of a clipped segment as its Reverse would give them: in the
+// opposite order, each running the other way.
+func reversedParts[T Number](parts []Segment[T]) []Segment[T] {
+	reversed := make([]Segment[T], len(parts))
+	for i, part := range parts {
+		reversed[len(parts)-1-i] = part.Reverse()
+	}
+
+	return reversed
+}
+
+// partsOf gives the part a convex Clip method returns as the parts ClipPolygon would, so both
+// are checked alike: the part alone where it exists, and nil where it does not.
+func partsOf[T Number](part Segment[T], ok bool) []Segment[T] {
+	if !ok {
+		return nil
+	}
+
+	return []Segment[T]{part}
 }
 
 // ellipseCasts returns the segments the ellipse fixtures are crossed by: every one between two
@@ -3759,9 +3764,4 @@ var segmentFixtures = []Segment[float64]{
 	Seg(Pt(-3.5, 0.25), Pt(-3.5, 7.0)),
 	Seg(Pt(2.0, 2.0), Pt(-4.0, 2.0)),
 	Seg(Pt(12.5, -0.1), Pt(-0.5, 12.75)),
-}
-
-func ExampleSeg() {
-	fmt.Println(Seg(Pt(1, 2), Pt(3, 5)))
-	// Output: Seg((1,2);(3,5))
 }

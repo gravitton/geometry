@@ -73,17 +73,6 @@ func TestCapsule_Inertia(t *testing.T) {
 	})
 }
 
-// outlineOf returns the polygon of n points of the capsule boundary, its Support in n
-// directions around: the outline the mass properties are checked against.
-func outlineOf(c Capsule[float64], n int) Polygon[float64] {
-	points := make([]Point[float64], n)
-	for i := range points {
-		points[i] = c.Support(VectorFromAngle(2*Pi*float64(i)/float64(n), 1.0))
-	}
-
-	return Pol(points)
-}
-
 func TestCapsule_Bounds(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		geomtest.AssertBox(t, Cap(Pt(0, 0), Pt(10, 0), 2).Bounds(), Bx(Pt(-2, -2), Pt(12, 2)))
@@ -269,7 +258,7 @@ func TestCapsule_DistanceToCapsule(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		other := Cap(Pt(0, 7), Pt(10, 7), 1)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = c.DistanceToCapsule(other) > 0
 		}, 0)
 	})
@@ -333,7 +322,7 @@ func TestCapsule_Support(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		capsule, direction := Cap(Pt(1, 2), Pt(4, 2), 2), Vec(tenth, 0.7)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = capsule.Support(direction).X > 0
 		}, 0)
 	})
@@ -743,52 +732,10 @@ func TestCapsule_IntersectionSegment(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		through := Seg(Pt(5.0, 10.0), Pt(tenth, -10.0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = capsule.IntersectionSegment(through).Count > 0
 		}, 0)
 	})
-}
-
-// assertGrazes asserts, over the capsules and the segments of a small lattice moved by the
-// offset, where tangents and ends on the boundary are common, that a segment crosses a capsule
-// where the two intersect, unless it lies within, has a part inside exactly there, and hits it
-// from outside at the first of the crossings.
-func assertGrazes[T Number](t *testing.T, offset Vector[T]) {
-	t.Helper()
-
-	var lattice []Point[T]
-	for _, x := range []T{-2, 0, 1, 3} {
-		for _, y := range []T{-2, 0, 1, 3} {
-			lattice = append(lattice, Pt(x, y).Add(offset))
-		}
-	}
-
-	for _, radius := range []T{0, 1, 2} {
-		for i, a := range lattice {
-			for _, b := range lattice[i:] {
-				c := Cap(a, b, radius)
-
-				for _, start := range lattice {
-					for _, end := range lattice {
-						s := Seg(start, end)
-						points := c.IntersectionSegment(s)
-						intersects := c.IntersectsSegment(s)
-						message := fmt.Sprintf("%s → %s: ", c, s)
-
-						assert.True(t, points.Count == 0 || intersects, message)
-						assert.True(t, points.Count > 0 || !intersects || c.Contains(start) && c.Contains(end), message)
-
-						_, clipped := s.ClipCapsule(c)
-						assert.Equal(t, clipped, intersects, message)
-
-						hit, ok := s.HitCapsule(c)
-						assert.Equal(t, ok, !c.Contains(start) && intersects, message)
-						assert.True(t, !ok || hit.Point == points.Items[0], message)
-					}
-				}
-			}
-		}
-	}
 }
 
 func TestCapsule_IntersectionRay(t *testing.T) {
@@ -890,10 +837,10 @@ func TestCapsule_AppendPolygon(t *testing.T) {
 		whole := Cap(Pt(0, 0), Pt(100, 0), 20)
 		buffer := make([]Point[int], 0, 64)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = whole.Polygon(tenth).Points
 		}, 1)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = whole.AppendPolygon(buffer[:0], tenth)
 		}, 0)
 	})
@@ -1106,6 +1053,64 @@ func TestCapsule_Immutable(t *testing.T) {
 	geomtest.AssertCapsule(t, c, Cap(Pt(0, 0), Pt(10, 0), 2))
 }
 
+func ExampleCap() {
+	fmt.Println(Cap(Pt(0, 0), Pt(10, 0), 2))
+	// Output: Cap((0,0);(10,0);2)
+}
+
+// assertGrazes asserts, over the capsules and the segments of a small lattice moved by the
+// offset, where tangents and ends on the boundary are common, that a segment crosses a capsule
+// where the two intersect, unless it lies within, has a part inside exactly there, and hits it
+// from outside at the first of the crossings.
+func assertGrazes[T Number](t *testing.T, offset Vector[T]) {
+	t.Helper()
+
+	var lattice []Point[T]
+	for _, x := range []T{-2, 0, 1, 3} {
+		for _, y := range []T{-2, 0, 1, 3} {
+			lattice = append(lattice, Pt(x, y).Add(offset))
+		}
+	}
+
+	for _, radius := range []T{0, 1, 2} {
+		for i, a := range lattice {
+			for _, b := range lattice[i:] {
+				c := Cap(a, b, radius)
+
+				for _, start := range lattice {
+					for _, end := range lattice {
+						s := Seg(start, end)
+						points := c.IntersectionSegment(s)
+						intersects := c.IntersectsSegment(s)
+						message := fmt.Sprintf("%s → %s: ", c, s)
+
+						assert.True(t, points.Count == 0 || intersects, message)
+						assert.True(t, points.Count > 0 || !intersects || c.Contains(start) && c.Contains(end), message)
+
+						_, clipped := s.ClipCapsule(c)
+						assert.Equal(t, clipped, intersects, message)
+
+						hit, ok := s.HitCapsule(c)
+						assert.Equal(t, ok, !c.Contains(start) && intersects, message)
+						assert.True(t, !ok || hit.Point == points.Items[0], message)
+					}
+				}
+			}
+		}
+	}
+}
+
+// outlineOf returns the polygon of n points of the capsule boundary, its Support in n
+// directions around: the outline the mass properties are checked against.
+func outlineOf(c Capsule[float64], n int) Polygon[float64] {
+	points := make([]Point[float64], n)
+	for i := range points {
+		points[i] = c.Support(VectorFromAngle(2*Pi*float64(i)/float64(n), 1.0))
+	}
+
+	return Pol(points)
+}
+
 // capsuleFixtures span the point, the circle, the segment, and upright, lying and slanted
 // capsules off the origin.
 var capsuleFixtures = []Capsule[float64]{
@@ -1115,9 +1120,4 @@ var capsuleFixtures = []Capsule[float64]{
 	Cap(Pt(1.0, 2.0), Pt(5.0, 2.0), 1.5),
 	Cap(Pt(-3.5, 0.25), Pt(-3.5, 7.0), 2.0),
 	Cap(Pt(12.5, -0.1), Pt(-0.5, 12.75), 0.5),
-}
-
-func ExampleCap() {
-	fmt.Println(Cap(Pt(0, 0), Pt(10, 0), 2))
-	// Output: Cap((0,0);(10,0);2)
 }

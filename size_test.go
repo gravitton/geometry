@@ -639,15 +639,6 @@ func TestSize_Properties(t *testing.T) {
 	})
 }
 
-func assertSizeRoundTrip[T Number](t *testing.T, size Size[T]) {
-	t.Helper()
-
-	parsed, err := ParseSize[T](size.String())
-	if assert.NoError(t, err) {
-		geomtest.AssertSize(t, parsed, size, fmt.Sprintf("%s: ", size))
-	}
-}
-
 func TestSize_Immutable(t *testing.T) {
 	s := Sz(2, 3)
 
@@ -665,15 +656,27 @@ func TestSize_Immutable(t *testing.T) {
 	geomtest.AssertSize(t, s, Sz(2, 3))
 }
 
-// sizeFixtures span square, portrait, landscape, zero, and negative dimensions.
-var sizeFixtures = []Size[float64]{
-	Sz(0.0, 0.0),
-	Sz(1.0, 2.0),
-	Sz(7.0, 7.0),
-	Sz(0.4, -0.25),
-	Sz(12.5, -0.1),
-	Sz(-3.5, 0.25),
-	Sz(100.0, -34.25),
+func ExampleSz() {
+	fmt.Println(Sz(16, 32))
+	fmt.Println(Sz(1.5, -0.25))
+	// Output:
+	// 16x32
+	// 1.50x-0.25
+}
+
+func ExampleParseSize() {
+	size, err := ParseSize[int]("16x32")
+	fmt.Println(size, err)
+	// Output: 16x32 <nil>
+}
+
+func assertSizeRoundTrip[T Number](t *testing.T, size Size[T]) {
+	t.Helper()
+
+	parsed, err := ParseSize[T](size.String())
+	if assert.NoError(t, err) {
+		geomtest.AssertSize(t, parsed, size, fmt.Sprintf("%s: ", size))
+	}
 }
 
 // positiveSizeFixtures are the fixtures with no negative extent, the sizes Fit and Fill are defined
@@ -689,16 +692,13 @@ func positiveSizeFixtures() []Size[float64] {
 	return sizes
 }
 
-func ExampleSz() {
-	fmt.Println(Sz(16, 32))
-	fmt.Println(Sz(1.5, -0.25))
-	// Output:
-	// 16x32
-	// 1.50x-0.25
-}
-
-func ExampleParseSize() {
-	size, err := ParseSize[int]("16x32")
-	fmt.Println(size, err)
-	// Output: 16x32 <nil>
+// sizeFixtures span square, portrait, landscape, zero, and negative dimensions.
+var sizeFixtures = []Size[float64]{
+	Sz(0.0, 0.0),
+	Sz(1.0, 2.0),
+	Sz(7.0, 7.0),
+	Sz(0.4, -0.25),
+	Sz(12.5, -0.1),
+	Sz(-3.5, 0.25),
+	Sz(100.0, -34.25),
 }

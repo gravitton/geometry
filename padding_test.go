@@ -265,6 +265,14 @@ func TestPadding_Properties(t *testing.T) {
 	})
 }
 
+func ExamplePad() {
+	fmt.Println(Pad(5, 4, 2, 3))
+	fmt.Println(PadU(1.5))
+	// Output:
+	// Pad(5;4;2;3)
+	// Pad(1.50;1.50;1.50;1.50)
+}
+
 // paddingFixtures span uniform, per-axis, zero, and negative edges.
 var paddingFixtures = []Padding[float64]{
 	Pad(0.0, 0.0, 0.0, 0.0),
@@ -273,12 +281,4 @@ var paddingFixtures = []Padding[float64]{
 	PadU(20.0),
 	PadXY(20.0, 10.0),
 	Pad(12.75, 0.25, -1.5, -0.5),
-}
-
-func ExamplePad() {
-	fmt.Println(Pad(5, 4, 2, 3))
-	fmt.Println(PadU(1.5))
-	// Output:
-	// Pad(5;4;2;3)
-	// Pad(1.50;1.50;1.50;1.50)
 }

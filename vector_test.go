@@ -1161,18 +1161,6 @@ func TestVector_Immutable(t *testing.T) {
 	geomtest.AssertVector(t, v2, Vec(3, -3))
 }
 
-// vectorFixtures span the quadrants, the axes, and the diagonal.
-var vectorFixtures = []Vector[float64]{
-	Vec(0.0, 0.0),
-	Vec(1.0, 2.0),
-	Vec(-3.5, 0.25),
-	Vec(12.5, -0.1),
-	Vec(-1.0, -1.0),
-	Vec(0.6, -0.25),
-	Vec(7.0, 7.0),
-	Vec(-0.5, 12.75),
-}
-
 func ExampleVec() {
 	fmt.Println(Vec(3, 4))
 	fmt.Println(Vec(1.5, -0.25))
@@ -1184,4 +1172,16 @@ func ExampleVec() {
 func ExampleVector_Length() {
 	fmt.Printf("%.2f\n", Vec(3.0, 4.0).Length())
 	// Output: 5.00
+}
+
+// vectorFixtures span the quadrants, the axes, and the diagonal.
+var vectorFixtures = []Vector[float64]{
+	Vec(0.0, 0.0),
+	Vec(1.0, 2.0),
+	Vec(-3.5, 0.25),
+	Vec(12.5, -0.1),
+	Vec(-1.0, -1.0),
+	Vec(0.6, -0.25),
+	Vec(7.0, 7.0),
+	Vec(-0.5, 12.75),
 }

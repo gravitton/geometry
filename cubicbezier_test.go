@@ -351,10 +351,10 @@ func TestCubicBezier_AppendPolyline(t *testing.T) {
 	t.Run("allocates once, and nothing into a buffer with room", func(t *testing.T) {
 		curve, buffer := CubBez(Pt(0, 0), Pt(0, 40), Pt(80, 40), Pt(80, 0)), make([]Point[int], 0, 64)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = curve.Polyline(tenth).Points
 		}, 1)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = curve.AppendPolyline(buffer[:0], 1)
 		}, 0)
 	})
@@ -460,28 +460,30 @@ func TestCubicBezier_Immutable(t *testing.T) {
 	geomtest.AssertCubicBezier(t, curve, CubBez(Pt(0, 0), Pt(0, 4), Pt(8, 4), Pt(8, 0)))
 }
 
+func ExampleCubBez() {
+	fmt.Println(CubBez(Pt(0, 0), Pt(0, 4), Pt(8, 4), Pt(8, 0)))
+	// Output: CubBez((0,0);(0,4);(8,4);(8,0))
+}
+
 // archCurve returns the curve that rises from the origin and comes back down eight along X,
 // its control points above its ends.
 func archCurve() CubicBezier[float64] {
 	return CubBez(Pt(0.0, 0.0), Pt(0.0, 4.0), Pt(8.0, 4.0), Pt(8.0, 0.0))
 }
 
-// curveFractions are the parameters the properties of a curve are checked at.
-var curveFractions = []float64{0, 0.1, 0.35, 0.5, 0.8, 1}
+var (
+	// curveFractions are the parameters the properties of a curve are checked at.
+	curveFractions = []float64{0, 0.1, 0.35, 0.5, 0.8, 1}
 
-// cubicFixtures span a point, a straight curve, an arch, an S, a loop crossing itself, a curve
-// closing on its start and one off the origin.
-var cubicFixtures = []CubicBezier[float64]{
-	CubBez(Pt(1.0, 2.0), Pt(1.0, 2.0), Pt(1.0, 2.0), Pt(1.0, 2.0)),
-	CubBez(Pt(0.0, 0.0), Pt(1.0, 1.0), Pt(2.0, 2.0), Pt(3.0, 3.0)),
-	CubBez(Pt(0.0, 0.0), Pt(0.0, 4.0), Pt(8.0, 4.0), Pt(8.0, 0.0)),
-	CubBez(Pt(-3.5, 0.25), Pt(2.0, 6.0), Pt(1.0, -6.0), Pt(7.0, 1.0)),
-	CubBez(Pt(0.0, 0.0), Pt(10.0, 6.0), Pt(-4.0, 6.0), Pt(6.0, 0.0)),
-	CubBez(Pt(1.0, 1.0), Pt(5.0, 1.0), Pt(1.0, 5.0), Pt(1.0, 1.0)),
-	CubBez(Pt(12.5, -0.1), Pt(12.0, 3.0), Pt(-0.5, 12.75), Pt(0.6, -0.25)),
-}
-
-func ExampleCubBez() {
-	fmt.Println(CubBez(Pt(0, 0), Pt(0, 4), Pt(8, 4), Pt(8, 0)))
-	// Output: CubBez((0,0);(0,4);(8,4);(8,0))
-}
+	// cubicFixtures span a point, a straight curve, an arch, an S, a loop crossing itself, a curve
+	// closing on its start and one off the origin.
+	cubicFixtures = []CubicBezier[float64]{
+		CubBez(Pt(1.0, 2.0), Pt(1.0, 2.0), Pt(1.0, 2.0), Pt(1.0, 2.0)),
+		CubBez(Pt(0.0, 0.0), Pt(1.0, 1.0), Pt(2.0, 2.0), Pt(3.0, 3.0)),
+		CubBez(Pt(0.0, 0.0), Pt(0.0, 4.0), Pt(8.0, 4.0), Pt(8.0, 0.0)),
+		CubBez(Pt(-3.5, 0.25), Pt(2.0, 6.0), Pt(1.0, -6.0), Pt(7.0, 1.0)),
+		CubBez(Pt(0.0, 0.0), Pt(10.0, 6.0), Pt(-4.0, 6.0), Pt(6.0, 0.0)),
+		CubBez(Pt(1.0, 1.0), Pt(5.0, 1.0), Pt(1.0, 5.0), Pt(1.0, 1.0)),
+		CubBez(Pt(12.5, -0.1), Pt(12.0, 3.0), Pt(-0.5, 12.75), Pt(0.6, -0.25)),
+	}
+)

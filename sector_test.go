@@ -239,7 +239,7 @@ func TestSector_DistanceToSector(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		other := Sect(Pt(10.0, tenth), 2.0, Pi/2, Pi)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = s.DistanceToSector(other) > 0
 		}, 0)
 	})
@@ -302,7 +302,7 @@ func TestSector_Support(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		direction := Vec(tenth, 1.0)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = s.Support(direction).X > 0
 		}, 0)
 	})
@@ -446,7 +446,7 @@ func TestSector_ContainsSegment(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		segment := Seg(Pt(tenth, 1.0), Pt(3.0, 3.0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = s.ContainsSegment(segment)
 		}, 0)
 	})
@@ -647,7 +647,7 @@ func TestSector_IntersectsSegment(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		segment := Seg(Pt(tenth, 6.0), Pt(6.0, 0.0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = s.IntersectsSegment(segment)
 		}, 0)
 	})
@@ -839,56 +839,6 @@ func TestSector_IntersectionSegment(t *testing.T) {
 	})
 }
 
-// sectorCrossingsAtMost returns how many points a segment can cross the boundary of the sector at:
-// two up to half a turn and for the whole disc, four through the notch between.
-func sectorCrossingsAtMost[T Number](sector Sector[T]) int {
-	if sweep := math.Abs(sector.Sweep); sweep > Pi && sweep < 2*Pi {
-		return 4
-	}
-
-	return 2
-}
-
-// assertSectorGrazes asserts, over the sectors and the segments of a small lattice moved by the
-// offset, where tangents, corners and ends on the boundary are common, that a segment crosses a
-// sector where the two intersect, unless it lies within, has a part inside exactly there, and
-// hits it from outside at the first of the crossings.
-func assertSectorGrazes[T Number](t *testing.T, offset Vector[T]) {
-	t.Helper()
-
-	var lattice []Point[T]
-	for _, x := range []T{-2, 0, 1, 3} {
-		for _, y := range []T{-2, 0, 1, 3} {
-			lattice = append(lattice, Pt(x, y).Add(offset))
-		}
-	}
-
-	for _, radius := range []T{0, 1, 2} {
-		for _, sweep := range []float64{0, Pi / 2, -3 * Pi / 4, 3 * Pi / 2, 2 * Pi} {
-			for i, center := range lattice {
-				sector := Sect(center, radius, float64(i)*Pi/4, sweep)
-
-				for _, start := range lattice {
-					for _, end := range lattice {
-						s := Seg(start, end)
-						points := sector.IntersectionSegment(s)
-						intersects := sector.IntersectsSegment(s)
-						message := fmt.Sprintf("%s → %s: ", sector, s)
-
-						assert.True(t, len(points) == 0 || intersects, message)
-						assert.True(t, len(points) > 0 || !intersects || sector.Contains(start) && sector.Contains(end), message)
-						assert.Equal(t, len(s.ClipSector(sector)) > 0, intersects, message)
-
-						hit, ok := s.HitSector(sector)
-						assert.Equal(t, ok, !sector.Contains(start) && intersects, message)
-						assert.True(t, !ok || hit.Point == points[0], message)
-					}
-				}
-			}
-		}
-	}
-}
-
 func TestSector_IntersectionRay(t *testing.T) {
 	s := quarterSector()
 
@@ -983,10 +933,10 @@ func TestSector_AppendPolygon(t *testing.T) {
 		sector := Sect(Pt(0, 0), 50, 0, 1.5)
 		buffer := make([]Point[int], 0, 64)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = sector.Polygon(tenth).Points
 		}, 1)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = sector.AppendPolygon(buffer[:0], tenth)
 		}, 0)
 	})
@@ -1165,6 +1115,61 @@ func TestSector_Immutable(t *testing.T) {
 	geomtest.AssertSector(t, s, Sect(Pt(1, 2), 5, 0.5, 1.5))
 }
 
+func ExampleSect() {
+	fmt.Println(Sect(Pt(1, 2), 5, 0, 1.5))
+	// Output: Sect((1,2);5;0.00;1.50)
+}
+
+// assertSectorGrazes asserts, over the sectors and the segments of a small lattice moved by the
+// offset, where tangents, corners and ends on the boundary are common, that a segment crosses a
+// sector where the two intersect, unless it lies within, has a part inside exactly there, and
+// hits it from outside at the first of the crossings.
+func assertSectorGrazes[T Number](t *testing.T, offset Vector[T]) {
+	t.Helper()
+
+	var lattice []Point[T]
+	for _, x := range []T{-2, 0, 1, 3} {
+		for _, y := range []T{-2, 0, 1, 3} {
+			lattice = append(lattice, Pt(x, y).Add(offset))
+		}
+	}
+
+	for _, radius := range []T{0, 1, 2} {
+		for _, sweep := range []float64{0, Pi / 2, -3 * Pi / 4, 3 * Pi / 2, 2 * Pi} {
+			for i, center := range lattice {
+				sector := Sect(center, radius, float64(i)*Pi/4, sweep)
+
+				for _, start := range lattice {
+					for _, end := range lattice {
+						s := Seg(start, end)
+						points := sector.IntersectionSegment(s)
+						intersects := sector.IntersectsSegment(s)
+						message := fmt.Sprintf("%s → %s: ", sector, s)
+
+						assert.True(t, len(points) == 0 || intersects, message)
+						assert.True(t, len(points) > 0 || !intersects || sector.Contains(start) && sector.Contains(end), message)
+						assert.Equal(t, len(s.ClipSector(sector)) > 0, intersects, message)
+
+						hit, ok := s.HitSector(sector)
+						assert.Equal(t, ok, !sector.Contains(start) && intersects, message)
+						assert.True(t, !ok || hit.Point == points[0], message)
+					}
+				}
+			}
+		}
+	}
+}
+
+// sectorCrossingsAtMost returns how many points a segment can cross the boundary of the sector at:
+// two up to half a turn and for the whole disc, four through the notch between.
+func sectorCrossingsAtMost[T Number](sector Sector[T]) int {
+	if sweep := math.Abs(sector.Sweep); sweep > Pi && sweep < 2*Pi {
+		return 4
+	}
+
+	return 2
+}
+
 // quarterSector returns the sector of radius five about the origin from the X axis a quarter
 // turn on.
 func quarterSector() Sector[float64] {
@@ -1205,9 +1210,4 @@ func sectorOutline(s Sector[float64], n int) Polygon[float64] {
 // arc at most, the height of the arc over one of its chords.
 func sagitta(s Sector[float64], n int) float64 {
 	return s.Radius * (1 - math.Cos(math.Min(math.Abs(s.Sweep), 2*Pi)/float64(2*(n-1))))
-}
-
-func ExampleSect() {
-	fmt.Println(Sect(Pt(1, 2), 5, 0, 1.5))
-	// Output: Sect((1,2);5;0.00;1.50)
 }

@@ -52,7 +52,7 @@ func TestPolyline_Edges(t *testing.T) {
 	t.Run("allocates nothing", func(t *testing.T) {
 		path := PolLn(cornerPath())
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			for edge := range path.Edges() {
 				sinkBool = edge.Start.X > 0
 			}
@@ -230,7 +230,7 @@ func TestPolyline_Every(t *testing.T) {
 		assert.Equal(t, count, 3)
 	})
 	t.Run("allocates nothing", func(t *testing.T) {
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			for point := range path.Every(tenth) {
 				sinkBool = point.X > 0
 			}
@@ -290,10 +290,10 @@ func TestPolyline_AppendSimplify(t *testing.T) {
 	t.Run("allocates once, and nothing into a buffer with room", func(t *testing.T) {
 		buffer := make([]Point[int], 0, 8)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = path.Simplify(0).Points
 		}, 1)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkPoints = path.AppendSimplify(buffer[:0], 0)
 		}, 0)
 	})
@@ -742,16 +742,6 @@ func TestPolyline_Properties(t *testing.T) {
 	})
 }
 
-// ratioOf returns a divided by b, or zero for a zero b, the fraction of a length a path of no
-// length has.
-func ratioOf(a, b float64) float64 {
-	if b == 0 {
-		return 0
-	}
-
-	return a / b
-}
-
 func TestPolyline_Immutable(t *testing.T) {
 	points := cornerPath()
 	path := PolLn(points)
@@ -764,6 +754,21 @@ func TestPolyline_Immutable(t *testing.T) {
 	path.AppendSimplify(nil, 10)
 
 	geomtest.AssertVertices(t, points, cornerPath())
+}
+
+func ExamplePolLn() {
+	fmt.Println(PolLn([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 3)}))
+	// Output: PolLn((0,0);(4,0);(4,3))
+}
+
+// ratioOf returns a divided by b, or zero for a zero b, the fraction of a length a path of no
+// length has.
+func ratioOf(a, b float64) float64 {
+	if b == 0 {
+		return 0
+	}
+
+	return a / b
 }
 
 // cornerPath returns the points of a path along X and then along Y, of whole lengths.
@@ -782,9 +787,4 @@ func polylineFixtures() []Polyline[float64] {
 		PolLn([]Point[float64]{Pt(-3.5, 0.25), Pt(-1.0, 2.0), Pt(-1.0, 2.0), Pt(2.0, 2.0), Pt(5.0, 2.0), Pt(7.0, -1.0)}),
 		PolLn([]Point[float64]{Pt(0.0, 0.0), Pt(2.0, 0.0), Pt(2.0, 2.0), Pt(0.0, 2.0), Pt(0.0, 0.0)}),
 	}
-}
-
-func ExamplePolLn() {
-	fmt.Println(PolLn([]Point[int]{Pt(0, 0), Pt(4, 0), Pt(4, 3)}))
-	// Output: PolLn((0,0);(4,0);(4,3))
 }

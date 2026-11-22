@@ -10,55 +10,6 @@ import (
 	"github.com/gravitton/geometry/geomtest"
 )
 
-// negativeZero is -0.0; writing it as a literal would fold to +0.0 at compile time.
-var negativeZero = math.Copysign(0, -1)
-
-// tenth is 0.1 read at run time: a test pinning exact bits takes an operand from it, since the
-// compiler folds arithmetic on literals into a constant, computed without the fused multiply-add
-// the test guards against.
-var tenth = 0.1
-
-// sinkPoints is a shared slice variable used to store results in allocation tests, so the result
-// escapes as it does for any caller.
-var sinkPoints []Point[int]
-
-// sinkFloatPoints is the sinkPoints of a float64 result.
-var sinkFloatPoints []Point[float64]
-
-// sinkSegments is the sinkPoints of the methods returning segments.
-var sinkSegments []Segment[int]
-
-// sinkInts is the sinkPoints of the methods returning indices.
-var sinkInts []int
-
-// sinkBool is a shared boolean variable used to store results in benchmarking tests.
-var sinkBool bool
-
-// sinkString is the sinkPoints of the String methods.
-var sinkString string
-
-// assertStringAllocation asserts that the String method allocates the string it returns and
-// nothing else.
-func assertStringAllocation(t *testing.T, stringer func() string) {
-	t.Helper()
-
-	assertAllocations(t, func() {
-		sinkString = stringer()
-	}, 1)
-}
-
-// assertAllocations asserts that f allocates the expected number of times on average. It checks
-// nothing under the race detector, which allocates on its own.
-func assertAllocations(t *testing.T, f func(), expected float64, messages ...string) {
-	t.Helper()
-
-	if race {
-		return
-	}
-
-	geomtest.AssertNumber(t, testing.AllocsPerRun(100, f), expected, messages...)
-}
-
 func TestMultiply(t *testing.T) {
 	t.Run("int rounds", func(t *testing.T) {
 		geomtest.AssertNumber(t, Multiply(5, 2.0), 10)
@@ -231,14 +182,6 @@ func TestSnap(t *testing.T) {
 		assert.True(t, math.IsNaN(Snap(math.NaN(), 2)))
 		assert.True(t, math.IsInf(Snap(math.Inf(-1), 2), -1))
 	})
-}
-
-func ExampleSnap() {
-	fmt.Println(Snap(37, 16))
-	fmt.Println(Snap(7.4, 2.5))
-	// Output:
-	// 32
-	// 7.5
 }
 
 func TestFloorMod(t *testing.T) {
@@ -903,3 +846,50 @@ func TestEqualAngle(t *testing.T) {
 		assert.False(t, EqualAngle(0, math.NaN()))
 	})
 }
+
+func ExampleSnap() {
+	fmt.Println(Snap(37, 16))
+	fmt.Println(Snap(7.4, 2.5))
+	// Output:
+	// 32
+	// 7.5
+}
+
+// assertStringAllocation asserts that the String method allocates the string it returns and
+// nothing else.
+func assertStringAllocation(t *testing.T, stringer func() string) {
+	t.Helper()
+
+	assert.Allocates(t, func() {
+		sinkString = stringer()
+	}, 1)
+}
+
+var (
+	// negativeZero is -0.0; writing it as a literal would fold to +0.0 at compile time.
+	negativeZero = math.Copysign(0, -1)
+
+	// tenth is 0.1 read at run time: a test pinning exact bits takes an operand from it, since the
+	// compiler folds arithmetic on literals into a constant, computed without the fused multiply-add
+	// the test guards against.
+	tenth = 0.1
+
+	// sinkPoints is a shared slice variable used to store results in allocation tests, so the result
+	// escapes as it does for any caller.
+	sinkPoints []Point[int]
+
+	// sinkFloatPoints is the sinkPoints of a float64 result.
+	sinkFloatPoints []Point[float64]
+
+	// sinkSegments is the sinkPoints of the methods returning segments.
+	sinkSegments []Segment[int]
+
+	// sinkInts is the sinkPoints of the methods returning indices.
+	sinkInts []int
+
+	// sinkBool is a shared boolean variable used to store results in benchmarking tests.
+	sinkBool bool
+
+	// sinkString is the sinkPoints of the String methods.
+	sinkString string
+)

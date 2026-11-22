@@ -12,43 +12,6 @@ import (
 	"github.com/gravitton/geometry/geomtest"
 )
 
-var (
-	_ Shape[int]       = Circle[int]{}
-	_ Shape[int]       = Capsule[int]{}
-	_ Shape[int]       = Sector[int]{}
-	_ Shape[int]       = Segment[int]{}
-	_ Shape[int]       = Polygon[int]{}
-	_ Shape[int]       = Rectangle[int]{}
-	_ Shape[int]       = RegularPolygon[int]{}
-	_ Shape[int]       = Box[int]{}
-	_ Shape[int]       = Ellipse[int]{}
-	_ intersector[int] = Circle[int]{}
-	_ intersector[int] = Capsule[int]{}
-	_ intersector[int] = Sector[int]{}
-	_ intersector[int] = Segment[int]{}
-	_ intersector[int] = Ray[int]{}
-	_ intersector[int] = Line[int]{}
-	_ intersector[int] = Polygon[int]{}
-	_ intersector[int] = Rectangle[int]{}
-	_ intersector[int] = RegularPolygon[int]{}
-	_ intersector[int] = Box[int]{}
-	_ container[int]   = Circle[int]{}
-	_ container[int]   = Capsule[int]{}
-	_ container[int]   = Sector[int]{}
-	_ container[int]   = Polygon[int]{}
-	_ container[int]   = Rectangle[int]{}
-	_ container[int]   = RegularPolygon[int]{}
-	_ container[int]   = Box[int]{}
-	_ body[int]        = Circle[int]{}
-	_ body[int]        = Capsule[int]{}
-	_ body[int]        = Sector[int]{}
-	_ body[int]        = Polygon[int]{}
-	_ body[int]        = Rectangle[int]{}
-	_ body[int]        = RegularPolygon[int]{}
-	_ body[int]        = Box[int]{}
-	_ body[int]        = Ellipse[int]{}
-)
-
 // outline is a shape whose boundary is a chain of straight edges, each starting where the
 // previous one ends, the last closing back to the first on a closed shape.
 type outline[T Number] interface {
@@ -255,22 +218,6 @@ func TestOutline(t *testing.T) {
 	})
 }
 
-// closed reports whether the last edge returns to the first vertex, through the interface as
-// a caller would.
-func closed[T Number](shape outline[T]) bool {
-	var first, last Point[T]
-	for vertex := range shape.Vertices() {
-		first = vertex
-
-		break
-	}
-	for edge := range shape.Edges() {
-		last = edge.End
-	}
-
-	return first.Equal(last)
-}
-
 func TestIntersector(t *testing.T) {
 	shapes := []intersector[float64]{
 		Circ(Pt(1.0, 1.0), 2.0),
@@ -414,54 +361,6 @@ func TestContainer(t *testing.T) {
 			}
 		}
 	})
-}
-
-// intersectsKind tests a against b by the method of a naming the kind of b, the rays and the
-// lines included, which Intersects does not take.
-func intersectsKind[T Number](a, b intersector[T]) bool {
-	switch kind := b.(type) {
-	case Circle[T]:
-		return a.IntersectsCircle(kind)
-	case Capsule[T]:
-		return a.IntersectsCapsule(kind)
-	case Sector[T]:
-		return a.IntersectsSector(kind)
-	case Segment[T]:
-		return a.IntersectsSegment(kind)
-	case Ray[T]:
-		return a.IntersectsRay(kind)
-	case Line[T]:
-		return a.IntersectsLine(kind)
-	case Polygon[T]:
-		return a.IntersectsPolygon(kind)
-	case Rectangle[T]:
-		return a.IntersectsRectangle(kind)
-	case RegularPolygon[T]:
-		return a.IntersectsRegularPolygon(kind)
-	case Box[T]:
-		return a.IntersectsBox(kind)
-	default:
-		panic(fmt.Sprintf("intersectsKind: no method for %T", b))
-	}
-}
-
-// farIntersectors returns the fixtures of every kind with the Intersects methods, cast to float32
-// and moved by the offset: the far shapes but the ellipse, the rays and the lines.
-func farIntersectors(offset Vector[float32]) []intersector[float32] {
-	var shapes []intersector[float32]
-	for _, shape := range farShapes(offset) {
-		if kind, ok := shape.(intersector[float32]); ok {
-			shapes = append(shapes, kind)
-		}
-	}
-	for _, r := range rayFixtures {
-		shapes = append(shapes, r.Cast[float32]().Translate(offset))
-	}
-	for _, l := range lineFixtures {
-		shapes = append(shapes, l.Cast[float32]().Translate(offset))
-	}
-
-	return shapes
 }
 
 func TestBody(t *testing.T) {
@@ -644,7 +543,7 @@ func TestDistance(t *testing.T) {
 	t.Run("allocates nothing for shapes held as Shape", func(t *testing.T) {
 		var rectangle, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Rotate(0.3), Ell(Pt(9.0, 0.0), Sz(2.0, 1.0), 0.2)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = Distance(rectangle, ellipse) > 0
 		}, 0)
 	})
@@ -812,7 +711,7 @@ func TestNearest(t *testing.T) {
 	t.Run("allocates nothing for shapes held as Shape", func(t *testing.T) {
 		var circle, rectangle, ellipse Shape[float64] = Circ(Pt(-4.0, 0.0), 1.0), Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Rotate(0.3), Ell(Pt(9.0, 0.0), Sz(2.0, 1.0), 0.2)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			first, second := Nearest(rectangle, ellipse)
 			sinkBool = first == second
 
@@ -1025,10 +924,10 @@ func TestContains(t *testing.T) {
 	t.Run("allocates nothing for shapes held as Shape", func(t *testing.T) {
 		var box, circle, ellipse Shape[float64] = BoxFromMinMax(Pt(0.0, 0.0), Pt(10.0, 10.0)), Circ(Pt(5.0, 5.0), 2.0), Ell(Pt(5.0, 5.0), Sz(3.0, 2.0), 0.2)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = Contains(box, circle)
 		}, 0)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = Contains(box, ellipse)
 		}, 0)
 	})
@@ -1241,10 +1140,10 @@ func TestIntersects(t *testing.T) {
 	t.Run("allocates nothing for shapes held as Shape", func(t *testing.T) {
 		var rectangle, other, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Rotate(0.3), Rect(Pt(1.0, 0.0), Sz(3.0, 2.0), 0), Ell(Pt(3.0, 0.0), Sz(2.0, 1.0), 0.2)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = Intersects(rectangle, other)
 		}, 0)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			sinkBool = Intersects(rectangle, ellipse)
 		}, 0)
 	})
@@ -1546,46 +1445,10 @@ func TestCollide(t *testing.T) {
 	t.Run("allocates nothing for shapes held as Shape", func(t *testing.T) {
 		var rectangle, ellipse Shape[float64] = Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0).Rotate(0.3), Ell(Pt(3.0, 0.0), Sz(2.0, 1.0), 0.2)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = Collide(rectangle, ellipse)
 		}, 0)
 	})
-}
-
-// assertContactPoints asserts that a contact holds the given points, in either order.
-func assertContactPoints[T Number](t *testing.T, contact Contact[T], expected ...Point[T]) {
-	t.Helper()
-
-	points := slices.Clone(contact.Points.Items[:contact.Points.Count])
-	slices.SortFunc(points, Point[T].Compare)
-	slices.SortFunc(expected, Point[T].Compare)
-
-	geomtest.AssertVertices(t, points, expected)
-}
-
-func assertCollideReversed[T Number](t *testing.T, a, b Shape[T]) {
-	t.Helper()
-
-	contact, ok := Collide(a, b)
-	reverse, reverseOk := Collide(b, a)
-	message := fmt.Sprintf("%v → %v: %v, %v", a, b, contact, reverse)
-
-	assert.Equal(t, ok, reverseOk, message)
-	geomtest.AssertNumber(t, contact.Depth, reverse.Depth, message)
-	geomtest.AssertVector(t, contact.Normal, reverse.Normal.Negate(), message)
-}
-
-// cornerVertices returns the vertices of an L, two arms of width two along the axes from the
-// origin, with an inside corner between them.
-func cornerVertices() []Point[float64] {
-	return []Point[float64]{Pt(0.0, 0.0), Pt(6.0, 0.0), Pt(6.0, 2.0), Pt(2.0, 2.0), Pt(2.0, 6.0), Pt(0.0, 6.0)}
-}
-
-// reverse returns the points in the opposite order.
-func reverse[T Number](points []Point[T]) []Point[T] {
-	slices.Reverse(points)
-
-	return points
 }
 
 func BenchmarkCollide(b *testing.B) {
@@ -1829,31 +1692,10 @@ func TestSweep(t *testing.T) {
 	t.Run("allocates nothing for shapes held as Shape", func(t *testing.T) {
 		var circle, wall Shape[float64] = Circ(Pt(0.0, 0.0), 1.0), Rect(Pt(6.0, 0.0), Sz(2.0, 8.0), 0).Rotate(0.2)
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = Sweep(circle, Vec(10.0, 0.0), wall)
 		}, 0)
 	})
-}
-
-// assertPointSweep asserts that a point swept by the motion reaches the shape where the cast of
-// the segment it runs along does, given the hit of that cast: the same fraction, point and
-// normal within what the sweep closes on. A cast that only grazes the shape is left out,
-// since the sweep closes on a touch in passing without reaching it.
-func assertPointSweep(t *testing.T, start Point[float64], motion Vector[float64], shape Shape[float64], expected Hit[float64], ok bool) {
-	t.Helper()
-
-	message := fmt.Sprintf("%s + %s → %v: ", start, motion, shape)
-
-	hit, swept := Sweep[float64](Circ(start, 0.0), motion, shape)
-	if ok && math.Abs(expected.Normal.Dot(motion.Normalize())) < 1e-3 {
-		return
-	}
-
-	assert.Equal(t, swept, ok, message)
-	if swept && ok {
-		assert.True(t, EqualDelta(hit.Fraction, expected.Fraction, 1e-4), message+fmt.Sprint(hit, expected))
-		assert.Less(t, hit.Point.DistanceTo(expected.Point), 1e-3, message+fmt.Sprint(hit, expected))
-	}
 }
 
 func BenchmarkSweep(b *testing.B) {
@@ -2015,13 +1857,13 @@ func TestRaycast(t *testing.T) {
 		var foreign Shape[float64] = foreignShape[float64]{ellipse}
 		ray := Ry(Pt(-10.0, 0.0), Vec(1.0, 0.0))
 
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = Raycast(ray, rectangle)
 		}, 0)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = Raycast(ray, ellipse)
 		}, 0)
-		assertAllocations(t, func() {
+		assert.Allocates(t, func() {
 			_, sinkBool = Raycast(ray, foreign)
 		}, 0)
 	})
@@ -2062,10 +1904,48 @@ func TestTransformable(t *testing.T) {
 	})
 }
 
-// moved translates a shape and turns and scales it back and forth through the constraint, the
-// call a generic tween makes.
-func moved[T Number, S transformable[T, S]](shape S, vector Vector[T]) S {
-	return shape.Translate(vector).Rotate(2 * Pi).Scale(2).Unscale(2)
+// assertContactPoints asserts that a contact holds the given points, in either order.
+func assertContactPoints[T Number](t *testing.T, contact Contact[T], expected ...Point[T]) {
+	t.Helper()
+
+	points := slices.Clone(contact.Points.Items[:contact.Points.Count])
+	slices.SortFunc(points, Point[T].Compare)
+	slices.SortFunc(expected, Point[T].Compare)
+
+	geomtest.AssertVertices(t, points, expected)
+}
+
+func assertCollideReversed[T Number](t *testing.T, a, b Shape[T]) {
+	t.Helper()
+
+	contact, ok := Collide(a, b)
+	reverse, reverseOk := Collide(b, a)
+	message := fmt.Sprintf("%v → %v: %v, %v", a, b, contact, reverse)
+
+	assert.Equal(t, ok, reverseOk, message)
+	geomtest.AssertNumber(t, contact.Depth, reverse.Depth, message)
+	geomtest.AssertVector(t, contact.Normal, reverse.Normal.Negate(), message)
+}
+
+// assertPointSweep asserts that a point swept by the motion reaches the shape where the cast of
+// the segment it runs along does, given the hit of that cast: the same fraction, point and
+// normal within what the sweep closes on. A cast that only grazes the shape is left out,
+// since the sweep closes on a touch in passing without reaching it.
+func assertPointSweep(t *testing.T, start Point[float64], motion Vector[float64], shape Shape[float64], expected Hit[float64], ok bool) {
+	t.Helper()
+
+	message := fmt.Sprintf("%s + %s → %v: ", start, motion, shape)
+
+	hit, swept := Sweep[float64](Circ(start, 0.0), motion, shape)
+	if ok && math.Abs(expected.Normal.Dot(motion.Normalize())) < 1e-3 {
+		return
+	}
+
+	assert.Equal(t, swept, ok, message)
+	if swept && ok {
+		assert.True(t, EqualDelta(hit.Fraction, expected.Fraction, 1e-4), message+fmt.Sprint(hit, expected))
+		assert.Less(t, hit.Point.DistanceTo(expected.Point), 1e-3, message+fmt.Sprint(hit, expected))
+	}
 }
 
 // assertNearest asserts the properties Nearest has on every shape: the point itself exactly
@@ -2131,6 +2011,22 @@ func assertCrossings[T Number](t *testing.T, cast caster[T], points []Point[T], 
 	assert.True(t, len(points) == 0 || intersects, message)
 }
 
+// assertOrdered asserts that the points follow one another along the cast, the order every
+// crossing and every clipped part is returned in, measured in float64. An integer T rounds
+// them onto the lattice and off the cast, so their order is all that is asserted of them.
+func assertOrdered[T Number](t *testing.T, cast caster[T], points []Point[T], message string) {
+	t.Helper()
+
+	reached := math.Inf(-1)
+	for _, point := range points {
+		distance := along(cast, point)
+
+		assert.True(t, LessOrEqual(reached, distance), message+point.String()+" in order: ")
+
+		reached = distance
+	}
+}
+
 // assertEllipseCrossings asserts the properties the boundary crossings of a segment, a ray or a
 // line have on an ellipse: each point lies on the cast and on the boundary, a point moved outward
 // from the center past it being outside, they follow one another along the cast, and there is one
@@ -2165,41 +2061,6 @@ func assertClipped[T Number](t *testing.T, cast caster[T], parts []Segment[T], i
 	assertOrdered(t, cast, endsOf(parts), message)
 }
 
-// assertOrdered asserts that the points follow one another along the cast, the order every
-// crossing and every clipped part is returned in, measured in float64. An integer T rounds
-// them onto the lattice and off the cast, so their order is all that is asserted of them.
-func assertOrdered[T Number](t *testing.T, cast caster[T], points []Point[T], message string) {
-	t.Helper()
-
-	reached := math.Inf(-1)
-	for _, point := range points {
-		distance := along(cast, point)
-
-		assert.True(t, LessOrEqual(reached, distance), message+point.String()+" in order: ")
-
-		reached = distance
-	}
-}
-
-// endsOf returns the ends of the parts in order, the points a clip visits from Start.
-func endsOf[T Number](parts []Segment[T]) []Point[T] {
-	var ends []Point[T]
-	for _, part := range parts {
-		ends = append(ends, part.Start, part.End)
-	}
-
-	return ends
-}
-
-// along returns how far the point lies along the cast from where it starts, the order its
-// crossings and its clipped parts follow: the distance from Start or Origin in the direction the
-// cast runs, negative behind the origin of a line.
-func along[T Number](cast caster[T], point Point[T]) float64 {
-	start := cast.PointAt(0).Float()
-
-	return point.Float().Subtract(start).Dot(cast.PointAt(1).Float().Subtract(start).Normalize())
-}
-
 // assertShapeHit asserts the properties the Hit a method returns for a segment or a ray has on
 // every shape with an inside: there is one exactly where the shape does not contain the start
 // of the cast and the cast crosses its boundary, at the first of the crossings, facing the cast.
@@ -2215,6 +2076,20 @@ func assertShapeHit[T Number](t *testing.T, cast caster[T], hit Hit[T], ok, cont
 
 	geomtest.AssertPoint(t, hit.Point, crossings[0], message+hit.Point.String()+" is the first crossing: ")
 	assertFacing(t, cast, hit, message)
+}
+
+// assertFacing asserts what every Hit holds of the cast it was found on: a unit normal that
+// does not run along the cast, and a fraction ahead of its start that PointAt takes back to the
+// point.
+func assertFacing[T Number](t *testing.T, cast caster[T], hit Hit[T], message string) {
+	t.Helper()
+
+	direction := cast.PointAt(1).Float().Subtract(cast.PointAt(0).Float())
+
+	assert.True(t, hit.Normal.IsNormalized(), message+hit.Normal.String()+" is a unit: ")
+	assert.True(t, LessOrEqual(hit.Normal.Dot(direction.Normalize()), 0), message+hit.Normal.String()+" faces the cast: ")
+	assert.GreaterOrEqual(t, hit.Fraction, 0, message+"PointAt of the fraction: ")
+	geomtest.AssertPoint(t, cast.PointAt(hit.Fraction), hit.Point, message+"PointAt of the fraction: ")
 }
 
 // assertWallHit asserts the properties the Hit a method returns for a segment or a ray has
@@ -2234,20 +2109,6 @@ func assertWallHit[T Number](t *testing.T, cast caster[T], wall obstacle[T], hit
 	assertFacing(t, cast, hit, message)
 }
 
-// assertFacing asserts what every Hit holds of the cast it was found on: a unit normal that
-// does not run along the cast, and a fraction ahead of its start that PointAt takes back to the
-// point.
-func assertFacing[T Number](t *testing.T, cast caster[T], hit Hit[T], message string) {
-	t.Helper()
-
-	direction := cast.PointAt(1).Float().Subtract(cast.PointAt(0).Float())
-
-	assert.True(t, hit.Normal.IsNormalized(), message+hit.Normal.String()+" is a unit: ")
-	assert.True(t, LessOrEqual(hit.Normal.Dot(direction.Normalize()), 0), message+hit.Normal.String()+" faces the cast: ")
-	assert.GreaterOrEqual(t, hit.Fraction, 0, message+"PointAt of the fraction: ")
-	geomtest.AssertPoint(t, cast.PointAt(hit.Fraction), hit.Point, message+"PointAt of the fraction: ")
-}
-
 // assertReversed asserts that a segment and its Reverse cross a boundary at the same points,
 // given the crossings of each: those of the one are those of the other in the opposite order.
 func assertReversed[T Number](t *testing.T, points, reversed []Point[T], message string) {
@@ -2259,24 +2120,121 @@ func assertReversed[T Number](t *testing.T, points, reversed []Point[T], message
 	geomtest.AssertVertices(t, ordered, points, message)
 }
 
-// foreignShape is a shape of no kind this package names, as one of another package is: the
-// shape it holds, known to the package by the methods of Shape alone.
-type foreignShape[T Number] struct {
-	Shape[T]
+// closed reports whether the last edge returns to the first vertex, through the interface as
+// a caller would.
+func closed[T Number](shape outline[T]) bool {
+	var first, last Point[T]
+	for vertex := range shape.Vertices() {
+		first = vertex
+
+		break
+	}
+	for edge := range shape.Edges() {
+		last = edge.End
+	}
+
+	return first.Equal(last)
 }
 
-// impostorShape is a shape of another package that has every method of a Box, its Intersects and
-// Contains of a circle answering true wherever the circle is, so a call that reaches them shows.
-type impostorShape[T Number] struct {
-	Box[T]
+// intersectsKind tests a against b by the method of a naming the kind of b, the rays and the
+// lines included, which Intersects does not take.
+func intersectsKind[T Number](a, b intersector[T]) bool {
+	switch kind := b.(type) {
+	case Circle[T]:
+		return a.IntersectsCircle(kind)
+	case Capsule[T]:
+		return a.IntersectsCapsule(kind)
+	case Sector[T]:
+		return a.IntersectsSector(kind)
+	case Segment[T]:
+		return a.IntersectsSegment(kind)
+	case Ray[T]:
+		return a.IntersectsRay(kind)
+	case Line[T]:
+		return a.IntersectsLine(kind)
+	case Polygon[T]:
+		return a.IntersectsPolygon(kind)
+	case Rectangle[T]:
+		return a.IntersectsRectangle(kind)
+	case RegularPolygon[T]:
+		return a.IntersectsRegularPolygon(kind)
+	case Box[T]:
+		return a.IntersectsBox(kind)
+	default:
+		panic(fmt.Sprintf("intersectsKind: no method for %T", b))
+	}
 }
 
-func (s impostorShape[T]) IntersectsCircle(circle Circle[T]) bool {
-	return true
+// farIntersectors returns the fixtures of every kind with the Intersects methods, cast to float32
+// and moved by the offset: the far shapes but the ellipse, the rays and the lines.
+func farIntersectors(offset Vector[float32]) []intersector[float32] {
+	var shapes []intersector[float32]
+	for _, shape := range farShapes(offset) {
+		if kind, ok := shape.(intersector[float32]); ok {
+			shapes = append(shapes, kind)
+		}
+	}
+	for _, r := range rayFixtures {
+		shapes = append(shapes, r.Cast[float32]().Translate(offset))
+	}
+	for _, l := range lineFixtures {
+		shapes = append(shapes, l.Cast[float32]().Translate(offset))
+	}
+
+	return shapes
 }
 
-func (s impostorShape[T]) ContainsCircle(circle Circle[T]) bool {
-	return true
+// farShapes returns the shape fixtures of every kind cast to float32 and moved by the offset.
+func farShapes(offset Vector[float32]) []Shape[float32] {
+	var shapes []Shape[float32]
+	for _, c := range circleFixtures {
+		shapes = append(shapes, c.Cast[float32]().Translate(offset))
+	}
+	for _, c := range capsuleFixtures {
+		shapes = append(shapes, c.Cast[float32]().Translate(offset))
+	}
+	for _, s := range sectorFixtures() {
+		shapes = append(shapes, s.Cast[float32]().Translate(offset))
+	}
+	for _, s := range segmentFixtures {
+		shapes = append(shapes, s.Cast[float32]().Translate(offset))
+	}
+	for _, p := range polygonFixtures() {
+		shapes = append(shapes, p.Cast[float32]().Translate(offset))
+	}
+	for _, r := range rectFixtures {
+		shapes = append(shapes, r.Cast[float32]().Translate(offset))
+	}
+	for _, rp := range regularPolygonFixtures {
+		shapes = append(shapes, rp.Cast[float32]().Translate(offset))
+	}
+	for _, b := range boxFixtures {
+		shapes = append(shapes, b.Cast[float32]().Translate(offset))
+	}
+	for _, e := range ellipseFixtures {
+		shapes = append(shapes, e.Cast[float32]().Translate(offset))
+	}
+
+	return shapes
+}
+
+// shapeFixtures returns the fixtures of every kind of shape: the convex ones, the sectors past
+// half a turn, the polygon fixtures that are not convex, and the notched polygon, the one with
+// an outside between its vertices.
+func shapeFixtures() []Shape[float64] {
+	shapes := convexFixtures()
+	for _, s := range sectorFixtures() {
+		if math.Abs(s.Sweep) > Pi {
+			shapes = append(shapes, s)
+		}
+	}
+	for _, p := range polygonFixtures() {
+		if !p.IsConvex() {
+			shapes = append(shapes, p)
+		}
+	}
+
+	return append(shapes, Pol(notchedVertices()).Float())
 }
 
 // convexFixtures returns the fixtures of every kind of shape that are convex: the sectors of no
@@ -2318,23 +2276,42 @@ func convexFixtures() []Shape[float64] {
 	return shapes
 }
 
-// shapeFixtures returns the fixtures of every kind of shape: the convex ones, the sectors past
-// half a turn, the polygon fixtures that are not convex, and the notched polygon, the one with
-// an outside between its vertices.
-func shapeFixtures() []Shape[float64] {
-	shapes := convexFixtures()
-	for _, s := range sectorFixtures() {
-		if math.Abs(s.Sweep) > Pi {
-			shapes = append(shapes, s)
-		}
-	}
-	for _, p := range polygonFixtures() {
-		if !p.IsConvex() {
-			shapes = append(shapes, p)
-		}
+// cornerVertices returns the vertices of an L, two arms of width two along the axes from the
+// origin, with an inside corner between them.
+func cornerVertices() []Point[float64] {
+	return []Point[float64]{Pt(0.0, 0.0), Pt(6.0, 0.0), Pt(6.0, 2.0), Pt(2.0, 2.0), Pt(2.0, 6.0), Pt(0.0, 6.0)}
+}
+
+// reverse returns the points in the opposite order.
+func reverse[T Number](points []Point[T]) []Point[T] {
+	slices.Reverse(points)
+
+	return points
+}
+
+// moved translates a shape and turns and scales it back and forth through the constraint, the
+// call a generic tween makes.
+func moved[T Number, S transformable[T, S]](shape S, vector Vector[T]) S {
+	return shape.Translate(vector).Rotate(2 * Pi).Scale(2).Unscale(2)
+}
+
+// along returns how far the point lies along the cast from where it starts, the order its
+// crossings and its clipped parts follow: the distance from Start or Origin in the direction the
+// cast runs, negative behind the origin of a line.
+func along[T Number](cast caster[T], point Point[T]) float64 {
+	start := cast.PointAt(0).Float()
+
+	return point.Float().Subtract(start).Dot(cast.PointAt(1).Float().Subtract(start).Normalize())
+}
+
+// endsOf returns the ends of the parts in order, the points a clip visits from Start.
+func endsOf[T Number](parts []Segment[T]) []Point[T] {
+	var ends []Point[T]
+	for _, part := range parts {
+		ends = append(ends, part.Start, part.End)
 	}
 
-	return append(shapes, Pol(notchedVertices()).Float())
+	return ends
 }
 
 // translated returns the convex shape moved by the vector, in its own kind.
@@ -2390,56 +2367,79 @@ func scaled(shape Shape[float64], factor float64) Shape[float64] {
 	}
 }
 
-// farOffsets move the float32 fixtures to where an ulp of float32 exceeds Delta32, so a point
-// rounded into T stays on the boundary it was computed on only by the tolerance epsilonAt
-// widens with the coordinates.
-var farOffsets = []Vector[float32]{Vec[float32](1e4, -5e3), Vec[float32](1e5, -5e4)}
-
-// farShapes returns the shape fixtures of every kind cast to float32 and moved by the offset.
-func farShapes(offset Vector[float32]) []Shape[float32] {
-	var shapes []Shape[float32]
-	for _, c := range circleFixtures {
-		shapes = append(shapes, c.Cast[float32]().Translate(offset))
-	}
-	for _, c := range capsuleFixtures {
-		shapes = append(shapes, c.Cast[float32]().Translate(offset))
-	}
-	for _, s := range sectorFixtures() {
-		shapes = append(shapes, s.Cast[float32]().Translate(offset))
-	}
-	for _, s := range segmentFixtures {
-		shapes = append(shapes, s.Cast[float32]().Translate(offset))
-	}
-	for _, p := range polygonFixtures() {
-		shapes = append(shapes, p.Cast[float32]().Translate(offset))
-	}
-	for _, r := range rectFixtures {
-		shapes = append(shapes, r.Cast[float32]().Translate(offset))
-	}
-	for _, rp := range regularPolygonFixtures {
-		shapes = append(shapes, rp.Cast[float32]().Translate(offset))
-	}
-	for _, b := range boxFixtures {
-		shapes = append(shapes, b.Cast[float32]().Translate(offset))
-	}
-	for _, e := range ellipseFixtures {
-		shapes = append(shapes, e.Cast[float32]().Translate(offset))
-	}
-
-	return shapes
-}
-
-// narrowMatrix stretches the fixtures before they are cast to int16, past the square root of its
-// range, so a squared distance or a difference taken in T rather than float64 overflows where
-// every coordinate still fits.
-var narrowMatrix = ScaleMatrix(40.0, 40.0)
-
-// prefixPoint is the point the Append methods find in dst over the fixtures, so every result is
-// checked to follow it.
-var prefixPoint = Pt(-7.5, 3.25)
-
 // bufferWith returns a slice holding the element with room for more, the dst the Append methods
 // are checked with over the fixtures, so their results are appended in place after it.
 func bufferWith[E any](element E) []E {
 	return append(make([]E, 0, 8), element)
 }
+
+// impostorShape is a shape of another package that has every method of a Box, its Intersects and
+// Contains of a circle answering true wherever the circle is, so a call that reaches them shows.
+type impostorShape[T Number] struct {
+	Box[T]
+}
+
+func (s impostorShape[T]) IntersectsCircle(circle Circle[T]) bool {
+	return true
+}
+
+func (s impostorShape[T]) ContainsCircle(circle Circle[T]) bool {
+	return true
+}
+
+// foreignShape is a shape of no kind this package names, as one of another package is: the
+// shape it holds, known to the package by the methods of Shape alone.
+type foreignShape[T Number] struct {
+	Shape[T]
+}
+
+var (
+	_ Shape[int]       = Circle[int]{}
+	_ Shape[int]       = Capsule[int]{}
+	_ Shape[int]       = Sector[int]{}
+	_ Shape[int]       = Segment[int]{}
+	_ Shape[int]       = Polygon[int]{}
+	_ Shape[int]       = Rectangle[int]{}
+	_ Shape[int]       = RegularPolygon[int]{}
+	_ Shape[int]       = Box[int]{}
+	_ Shape[int]       = Ellipse[int]{}
+	_ intersector[int] = Circle[int]{}
+	_ intersector[int] = Capsule[int]{}
+	_ intersector[int] = Sector[int]{}
+	_ intersector[int] = Segment[int]{}
+	_ intersector[int] = Ray[int]{}
+	_ intersector[int] = Line[int]{}
+	_ intersector[int] = Polygon[int]{}
+	_ intersector[int] = Rectangle[int]{}
+	_ intersector[int] = RegularPolygon[int]{}
+	_ intersector[int] = Box[int]{}
+	_ container[int]   = Circle[int]{}
+	_ container[int]   = Capsule[int]{}
+	_ container[int]   = Sector[int]{}
+	_ container[int]   = Polygon[int]{}
+	_ container[int]   = Rectangle[int]{}
+	_ container[int]   = RegularPolygon[int]{}
+	_ container[int]   = Box[int]{}
+	_ body[int]        = Circle[int]{}
+	_ body[int]        = Capsule[int]{}
+	_ body[int]        = Sector[int]{}
+	_ body[int]        = Polygon[int]{}
+	_ body[int]        = Rectangle[int]{}
+	_ body[int]        = RegularPolygon[int]{}
+	_ body[int]        = Box[int]{}
+	_ body[int]        = Ellipse[int]{}
+
+	// farOffsets move the float32 fixtures to where an ulp of float32 exceeds Delta32, so a point
+	// rounded into T stays on the boundary it was computed on only by the tolerance epsilonAt
+	// widens with the coordinates.
+	farOffsets = []Vector[float32]{Vec[float32](1e4, -5e3), Vec[float32](1e5, -5e4)}
+
+	// narrowMatrix stretches the fixtures before they are cast to int16, past the square root of its
+	// range, so a squared distance or a difference taken in T rather than float64 overflows where
+	// every coordinate still fits.
+	narrowMatrix = ScaleMatrix(40.0, 40.0)
+
+	// prefixPoint is the point the Append methods find in dst over the fixtures, so every result is
+	// checked to follow it.
+	prefixPoint = Pt(-7.5, 3.25)
+)

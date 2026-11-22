@@ -10,15 +10,6 @@ import (
 	"github.com/gravitton/geometry/geomtest"
 )
 
-// Named types over the constraint's underlying types: the ~ in Number admits them,
-// so every type-level predicate has to recognize them as their underlying kind.
-type (
-	namedInt     int
-	namedInt8    int8
-	namedFloat32 float32
-	namedFloat64 float64
-)
-
 func TestCast(t *testing.T) {
 	t.Run("int rounds half away from zero", func(t *testing.T) {
 		assertCast[int](t, 1, 1)
@@ -54,13 +45,6 @@ func TestCast(t *testing.T) {
 		assert.True(t, math.IsInf(float64(Cast[float32](math.Inf(1))), 1))
 		assert.True(t, math.IsInf(float64(Cast[namedFloat64](math.Inf(-1))), -1))
 	})
-}
-
-// assertCast asserts that Cast of the value into T gives the expected one, T named at the call.
-func assertCast[T Number](t *testing.T, value float64, expected T) {
-	t.Helper()
-
-	geomtest.AssertNumber(t, Cast[T](value), expected)
 }
 
 func BenchmarkCast_Int(b *testing.B) {
@@ -122,13 +106,6 @@ func TestString(t *testing.T) {
 			return String(tenth)
 		})
 	})
-}
-
-// assertString asserts that String prints the value as expected.
-func assertString[T Number](t *testing.T, value T, expected string) {
-	t.Helper()
-
-	assert.Equal(t, String(value), expected)
 }
 
 func TestParse(t *testing.T) {
@@ -200,3 +177,26 @@ func TestParse(t *testing.T) {
 		assert.Equal(t, value, float32(1.0000001))
 	})
 }
+
+// assertCast asserts that Cast of the value into T gives the expected one, T named at the call.
+func assertCast[T Number](t *testing.T, value float64, expected T) {
+	t.Helper()
+
+	geomtest.AssertNumber(t, Cast[T](value), expected)
+}
+
+// assertString asserts that String prints the value as expected.
+func assertString[T Number](t *testing.T, value T, expected string) {
+	t.Helper()
+
+	assert.Equal(t, String(value), expected)
+}
+
+// Named types over the constraint's underlying types: the ~ in Number admits them,
+// so every type-level predicate has to recognize them as their underlying kind.
+type (
+	namedInt     int
+	namedInt8    int8
+	namedFloat32 float32
+	namedFloat64 float64
+)

@@ -13,6 +13,9 @@ opens with a **Breaking** group. Renames land as a rename; no deprecated alias i
 
 ## [Unreleased](https://github.com/gravitton/geometry/compare/v1.20.0...main)
 
+### Changed
+- Require `assert` v1.9.0 for the tests
+
 ## [v1.20.0](https://github.com/gravitton/geometry/compare/v1.19.0...v1.20.0) (2026-11-18)
 
 ### Added
