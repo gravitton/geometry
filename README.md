@@ -547,6 +547,7 @@ geom.ShearMatrix(0.5, 0.0)                     // x moved by half of y
 m := geom.IdentityMatrix[float64]().Rotate(geom.Pi / 4).Scale(2, 2)
 arrow.Transform(m) // every shape, point and vector takes a matrix
 m.Angle()          // π/4, read back from the matrix
+m.MaxScale()       // 2, the most it stretches a length in any direction
 ```
 
 `Translate`, `Rotate`, `RotateAround`, `Scale`, `ScaleAround`, `Shear` and `Reflect` compose with their constructor on

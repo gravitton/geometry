@@ -161,6 +161,15 @@ func (m Matrix[T]) Scaling() Vector[T] {
 	return Vector[T]{Cast[T](x), Cast[T](f.determinant() / x)}
 }
 
+// MaxScale returns the greatest factor the matrix stretches a length by, over every direction: the
+// greater absolute factor of a matrix built by TRSMatrix, and for a sheared one more than either
+// axis is stretched. The zero matrix gives zero.
+func (m Matrix[T]) MaxScale() float64 {
+	e, k, g, h := m.halves()
+
+	return math.Hypot(e, k) + math.Hypot(g, h)
+}
+
 // Determinant returns the determinant of the linear part.
 func (m Matrix[T]) Determinant() T {
 	return Cast[T](m.determinant())
@@ -197,8 +206,7 @@ func (m Matrix[T]) mapping(angle float64, size Size[float64]) Matrix[float64] {
 // thin shape where the difference of the halves cancels.
 func (m Matrix[T]) decomposition() (float64, Vector[float64], float64, bool) {
 	f := m.Float()
-	e, g := float64((f.A+f.E)/2), float64((f.A-f.E)/2)
-	h, k := float64((f.D+f.B)/2), float64((f.D-f.B)/2)
+	e, k, g, h := m.halves()
 
 	q, r := math.Hypot(e, k), math.Hypot(g, h)
 	anisotropy, rotation := math.Atan2(h, g), math.Atan2(k, e)
@@ -227,6 +235,15 @@ func (m Matrix[T]) decomposition() (float64, Vector[float64], float64, bool) {
 	}
 
 	return after, stretch, before, reflected
+}
+
+// halves returns the linear part split into a turn with a uniform scale, (e, k), then a mirror
+// with one, (g, h): the lengths of the two add to the greater stretch, so MaxScale and
+// decomposition read it from one expression.
+func (m Matrix[T]) halves() (float64, float64, float64, float64) {
+	f := m.Float()
+
+	return float64((f.A + f.E) / 2), float64((f.D - f.B) / 2), float64((f.A - f.E) / 2), float64((f.D + f.B) / 2)
 }
 
 // determinant returns the determinant in float64, so Inverse and IsInvertible judge an integer

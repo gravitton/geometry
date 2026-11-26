@@ -3,6 +3,9 @@ package geom_test
 import (
 	"encoding/json"
 	"fmt"
+	"math"
+	"math/big"
+	"slices"
 	"testing"
 
 	"github.com/gravitton/assert"
@@ -198,6 +201,63 @@ func TestMatrix_Scaling(t *testing.T) {
 
 			geomtest.AssertMatrix(t, rebuilt, m, fmt.Sprintf("%s: ", m))
 		}
+	})
+}
+
+func TestMatrix_MaxScale(t *testing.T) {
+	t.Run("reads the greater factor of a scale", func(t *testing.T) {
+		geomtest.AssertNumber(t, ScaleMatrix(2.0, 3.0).MaxScale(), 3.0)
+		geomtest.AssertNumber(t, ScaleMatrix(-4.0, 0.5).MaxScale(), 4.0)
+	})
+	t.Run("rotation, reflection and translation do not change it", func(t *testing.T) {
+		geomtest.AssertNumber(t, RotationMatrix[float64](0.7).Scale(2, -3).Translate(5, 6).MaxScale(), 3.0)
+	})
+	t.Run("a shear stretches a diagonal further than either axis", func(t *testing.T) {
+		geomtest.AssertNumber(t, ShearMatrix(1.0, 0.0).MaxScale(), (1+math.Sqrt(5))/2)
+		geomtest.AssertNumber(t, ShearMatrix(0.0, -1.0).MaxScale(), (1+math.Sqrt(5))/2)
+	})
+	t.Run("a collapsed axis keeps the factor of the other", func(t *testing.T) {
+		geomtest.AssertNumber(t, ScaleMatrix(0.0, 0.5).MaxScale(), 0.5)
+		geomtest.AssertNumber(t, RotationMatrix[float64](0.7).Scale(3, 0).MaxScale(), 3.0)
+	})
+	t.Run("identity is one and the zero matrix is zero", func(t *testing.T) {
+		geomtest.AssertNumber(t, IdentityMatrix[int]().MaxScale(), 1.0)
+		geomtest.AssertNumber(t, Matrix[int]{}.MaxScale(), 0.0)
+	})
+	t.Run("int is measured as float", func(t *testing.T) {
+		geomtest.AssertNumber(t, ShearMatrix(1, 0).MaxScale(), (1+math.Sqrt(5))/2)
+	})
+	t.Run("no direction is stretched further and one is stretched as far", func(t *testing.T) {
+		for _, m := range slices.Concat(matrixFixtures, []Matrix[float64]{ShearMatrix(1.0, 0.0), ShearMatrix(2.0, -0.5).Rotate(0.3)}) {
+			greatest := 0.0
+			for i := range 3600 {
+				greatest = max(greatest, Vec(1.0, 0.0).Rotate(float64(i)*Pi/1800).Transform(m).Length())
+			}
+
+			assert.LessOrEqual(t, greatest, m.MaxScale()+Delta, m.String()+": ")
+			assert.GreaterOrEqual(t, greatest, m.MaxScale()*(1-1e-6), m.String()+": ")
+		}
+	})
+}
+
+func FuzzMatrix_MaxScale(f *testing.F) {
+	f.Add(1.0, 0.0, 0.0, 1.0)
+	f.Add(1.0, 1.0, 0.0, 1.0)
+	f.Add(2.0, 0.0, 0.0, -3.0)
+	f.Add(1e-3, 1e3, -1e3, 1e-3)
+	f.Add(1.1, 2.3, 4.4, 5.5)
+
+	f.Fuzz(func(t *testing.T, a, b, d, e float64) {
+		for _, v := range []float64{a, b, d, e} {
+			if math.IsNaN(v) || math.Abs(v) > 1e6 {
+				t.Skip()
+			}
+		}
+
+		m := Mat(a, b, 0, d, e, 0)
+		reference := greatestSingularValueOf(a, b, d, e)
+
+		assert.EqualDelta(t, m.MaxScale(), reference, 1e-14*max(reference, 1), fmt.Sprintf("%s: the root of the greater eigenvalue of its square: ", m))
 	})
 }
 
@@ -866,6 +926,32 @@ func ExampleRotationMatrixAround() {
 func ExampleScaleMatrixAround() {
 	fmt.Println(ScaleMatrixAround(1, 2, 2, 3))
 	// Output: [[2, 0, -1], [0, 3, -4]]
+}
+
+// greatestSingularValueOf returns the root of the greater eigenvalue of MᵀM for the linear part
+// [[a, b], [d, e]], in a precision no float64 cancellation reaches.
+func greatestSingularValueOf(a, b, d, e float64) float64 {
+	value := func(x float64) *big.Float {
+		return new(big.Float).SetPrec(512).SetFloat64(x)
+	}
+	product := func(x, y *big.Float) *big.Float {
+		return value(0).Mul(x, y)
+	}
+
+	sum := value(0)
+	for _, x := range []float64{a, b, d, e} {
+		sum.Add(sum, product(value(x), value(x)))
+	}
+	determinant := value(0).Sub(product(value(a), value(e)), product(value(b), value(d)))
+
+	discriminant := value(0).Sub(product(sum, sum), product(value(4), product(determinant, determinant)))
+	if discriminant.Sign() < 0 {
+		discriminant = value(0)
+	}
+	eigenvalue := value(0).Quo(value(0).Add(sum, value(0).Sqrt(discriminant)), value(2))
+	result, _ := value(0).Sqrt(eigenvalue).Float64()
+
+	return result
 }
 
 // matrixFixtures span identity, translation, scale, rotation, and a general affine transform.
