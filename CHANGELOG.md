@@ -11,7 +11,12 @@ more expensive of the two. A breaking change opens its entry with **breaking**, 
 opens with a **Breaking** group. Renames land as a rename; no deprecated alias is kept.
 
 
-## [Unreleased](https://github.com/gravitton/geometry/compare/v1.20.1...main)
+## [Unreleased](https://github.com/gravitton/geometry/compare/v1.21.0...main)
+
+## [v1.21.0](https://github.com/gravitton/geometry/compare/v1.20.1...v1.21.0) (2026-11-26)
+
+### Added
+- `Matrix.MaxScale` returns the greatest factor a matrix stretches a length by, over every direction, which a shear makes more than either axis
 
 ## [v1.20.1](https://github.com/gravitton/geometry/compare/v1.20.0...v1.20.1) (2026-11-22)
 
