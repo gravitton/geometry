@@ -15,11 +15,11 @@
 //   - Enums: [Direction], [Axis], [Orientation] and [Winding], compared with == and marshaled as
 //     their names.
 //
-// Shapes are tested against each other by their Intersects<Kind>, Contains<Kind> and
-// Intersection<Kind> methods, and against a shape of any kind by [Intersects], [Contains],
-// [Distance], [Nearest], [Collide], [Sweep] and [Raycast]. Every type but the enums has Equal,
-// IsZero and String; geometry also has Cast, Int and Float, results do not. Package geomtest holds
-// test assertions, and packages ints and floats alias the int and float64 instantiations.
+// Shapes are tested against each other and meet by their Intersects<Kind>, Contains<Kind>,
+// Intersection<Kind> and Collide<Kind> methods, and a shape of any kind by [Intersects],
+// [Contains], [Distance], [Nearest], [Collide], [Sweep] and [Raycast]. Every type but the enums has
+// Equal, IsZero and String; geometry also has Cast, Int and Float, results do not. Package geomtest
+// holds test assertions, and packages ints and floats alias the int and float64 instantiations.
 //
 // # Naming
 //

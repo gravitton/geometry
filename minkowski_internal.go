@@ -21,15 +21,21 @@ const (
 // the way out from the origin parts them, so every pair known only by Support is decided on it, in
 // float64. With no first shape it is the difference from the point at the offset, the origin of a
 // ray.
-type minkowski[T Number] struct {
-	a, b   Shape[T]
+type minkowski[T Number, A, B Shape[T]] struct {
+	a      A
+	b      B
 	offset Vector[float64]
 }
 
+// minkowskiBetween returns the difference of the shapes, held as the types they are given in.
+func minkowskiBetween[T Number, A, B Shape[T]](a A, b B) minkowski[T, A, B] {
+	return minkowski[T, A, B]{a: a, b: b}
+}
+
 // support returns the point of the difference farthest along the direction.
-func (m minkowski[T]) support(direction Vector[float64]) minkowskiVertex {
+func (m minkowski[T, A, B]) support(direction Vector[float64]) minkowskiVertex {
 	from := m.b.Support(direction.Negate())
-	if m.a == nil {
+	if any(m.a) == nil {
 		return minkowskiVertex{m.offset.Point().Subtract(from), from}
 	}
 
@@ -38,8 +44,8 @@ func (m minkowski[T]) support(direction Vector[float64]) minkowskiVertex {
 
 // magnitude returns the largest absolute coordinate of the pair's Bounds, the magnitude the
 // tolerance of the pair is taken from.
-func (m minkowski[T]) magnitude() float64 {
-	if m.a == nil {
+func (m minkowski[T, A, B]) magnitude() float64 {
+	if any(m.a) == nil {
 		return max(m.offset.Point().magnitude(), m.b.Bounds().magnitude())
 	}
 
@@ -48,7 +54,7 @@ func (m minkowski[T]) magnitude() float64 {
 
 // tolerance returns the distance within which the difference counts as closed on: that of T, or of
 // float64 for an integer T, since a gap measured in float64 never closes exactly.
-func (m minkowski[T]) tolerance() float64 {
+func (m minkowski[T, A, B]) tolerance() float64 {
 	magnitude := m.magnitude()
 
 	return max(epsilonAt[T](magnitude), epsilonAt[float64](magnitude))
@@ -56,13 +62,13 @@ func (m minkowski[T]) tolerance() float64 {
 
 // precision returns the tolerance of float64 at the magnitude of the pair, the arithmetic every gap
 // is measured in, which nearest closes on whatever T is.
-func (m minkowski[T]) precision() float64 {
+func (m minkowski[T, A, B]) precision() float64 {
 	return epsilonAt[float64](m.magnitude())
 }
 
 // intersects reports whether the shapes share a point within the tolerance, the one every other
 // answer of the difference takes, so a round shape touching on the lattice is met from either side.
-func (m minkowski[T]) intersects() bool {
+func (m minkowski[T, A, B]) intersects() bool {
 	tolerance := m.tolerance()
 
 	return lessOrEqualSquared(m.nearest(m.precision(), tolerance).point.LengthSquared(), 0, tolerance)
@@ -75,7 +81,7 @@ func (m minkowski[T]) intersects() bool {
 // It never stops on the precision while the gap may lie either side of the tolerance, its bound
 // from the support within it and the gap held past it, since where the walk stops would then
 // decide the answer, and the walk of a shape swapped with the other stops elsewhere.
-func (m minkowski[T]) nearest(precision, tolerance float64) minkowskiVertex {
+func (m minkowski[T, A, B]) nearest(precision, tolerance float64) minkowskiVertex {
 	simplex := minkowskiSimplex{}
 	simplex.add(m.support(Vector[float64]{1, 0}))
 
@@ -105,7 +111,7 @@ func (m minkowski[T]) nearest(precision, tolerance float64) minkowskiVertex {
 // It starts from the supports along the four axes, wound as Vector.Normal turns. An edge the origin
 // lies beyond has a negative distance and grows first, so the polytope holds the origin before any
 // boundary edge is reached. A difference of no area grows nowhere and has no depth.
-func (m minkowski[T]) depth() (Vector[float64], float64) {
+func (m minkowski[T, A, B]) depth() (Vector[float64], float64) {
 	tolerance := m.tolerance()
 
 	polytope := minkowskiPolytope{}
@@ -134,7 +140,7 @@ func (m minkowski[T]) depth() (Vector[float64], float64) {
 // sweep returns where the moving first shape first touches the second, by conservative advancement:
 // each step moves it by the gap over the closing speed, which never passes the other, until the gap
 // is within the tolerance. The normal is that of the last advance, since a closed gap has none.
-func (m minkowski[T]) sweep(motion Vector[float64]) (Hit[T], bool) {
+func (m minkowski[T, A, B]) sweep(motion Vector[float64]) (Hit[T], bool) {
 	tolerance, precision := m.tolerance(), m.precision()
 	start := m.offset
 
@@ -163,7 +169,7 @@ func (m minkowski[T]) sweep(motion Vector[float64]) (Hit[T], bool) {
 // contact returns the points of the second shape the two meet at across the normal: both ends of
 // the overlap where two flat edges face each other, one point at a corner or a round boundary.
 // Edges that do not overlap, as deep corners can, meet halfway between them.
-func (m minkowski[T]) contact(normal Vector[float64]) Pair[Point[T]] {
+func (m minkowski[T, A, B]) contact(normal Vector[float64]) Pair[Point[T]] {
 	tangent := normal.Normal()
 	facing, faced := facingEdge(m.a, normal.Negate()), facingEdge(m.b, normal)
 
@@ -189,7 +195,7 @@ func (m minkowski[T]) contact(normal Vector[float64]) Pair[Point[T]] {
 // round boundary, from the supports a little to either side. Across a flat edge the support jumps
 // between the halves of that turn farther than it moves outside them, which tells it from a round
 // boundary, so the flat side of a Capsule is an edge.
-func facingEdge[T Number](shape Shape[T], direction Vector[float64]) Segment[float64] {
+func facingEdge[T Number, S Shape[T]](shape S, direction Vector[float64]) Segment[float64] {
 	start, end := shape.Support(direction.Rotate(facingAngle)), shape.Support(direction.Rotate(-facingAngle))
 	from, to := shape.Support(direction.Rotate(facingAngle/2)), shape.Support(direction.Rotate(-facingAngle/2))
 	if from.DistanceTo(to) <= 2*(start.DistanceTo(from)+end.DistanceTo(to)) {

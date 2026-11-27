@@ -462,6 +462,7 @@ floor := geom.Bx(geom.Pt(1.0, 6.0), geom.Pt(9.0, 8.0))
 ball := geom.Circ(geom.Pt(4.0, 5.0), 1.5)
 contact, ok := geom.Collide[float64](ball, floor) // Contact(⟨0,-1⟩;0.5;(4,6)): Normal, Depth, Points
 ball.Translate(contact.Separation())              // the shortest move out of the floor
+ball.CollideBox(floor)                            // the same contact, for a loop that knows its types
 
 crate := geom.RectangleFromCenter(geom.Pt(5.0, 5.0), geom.Sz(3.0, 2.5))
 geom.Collide[float64](crate, floor) // two Points where the sides lie flat

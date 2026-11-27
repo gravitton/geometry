@@ -50,3 +50,33 @@ func (c Contact[T]) String() string {
 
 	return string(buf)
 }
+
+// reverse returns the contact of the shapes given the other way round, the first now the second:
+// the normal turned around, the depth kept and the points of the first shape where they meet across
+// it, rounded once. The zero contact stays zero.
+func (c Contact[T]) reverse[A, B Shape[T]](first A, second B) Contact[T] {
+	if c.IsZero() {
+		return c
+	}
+
+	normal := c.Normal.Negate()
+
+	return Contact[T]{normal, c.Depth, minkowskiBetween[T](second, first).contact(normal)}
+}
+
+// contactAt returns the contact along the normal at the depth, raised to zero where the shapes only
+// touch, at the point rounded into T.
+func contactAt[T Number](normal Vector[float64], depth float64, point Point[float64]) Contact[T] {
+	return contactAlong[T](normal, depth, point, point)
+}
+
+// contactAlong returns the contact along the normal at the depth, raised to zero where the shapes
+// only touch, at the two ends of a stretch rounded into T, one point where they round alike.
+func contactAlong[T Number](normal Vector[float64], depth float64, first, second Point[float64]) Contact[T] {
+	a, b := first.Cast[T](), second.Cast[T]()
+	if a == b {
+		return Contact[T]{normal, max(depth, 0), Pair[Point[T]]{[2]Point[T]{a}, 1}}
+	}
+
+	return Contact[T]{normal, max(depth, 0), Pair[Point[T]]{[2]Point[T]{a, b}, 2}}
+}

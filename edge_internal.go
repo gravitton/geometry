@@ -2,6 +2,7 @@ package geom
 
 import (
 	"iter"
+	"math"
 )
 
 // edgesOf returns an iterator over the edges joining the vertices in order, the last closing back
@@ -157,4 +158,29 @@ func (c *edgeConvexity) step(direction Vector[float64]) bool {
 // result closes the outline back to the first direction and reports whether it is convex.
 func (c *edgeConvexity) result() bool {
 	return c.step(c.first) && c.turned && c.reversals <= 2
+}
+
+// edgeReach is the edge of an outline nearest a point, with the unit normal facing out of the
+// outline, counterclockwise, the walk Circle.collideOutline feeds. It starts as a literal at an
+// infinite distance.
+type edgeReach struct {
+	distance float64
+	nearest  Point[float64]
+	outward  Vector[float64]
+}
+
+// step takes the edge where it lies nearer the point than the nearest so far, or as near with its
+// normal nearer the X axis, so a point equally near two edges leaves along X. An edge of no length
+// faces no way and is passed over; the edges beside it reach its point.
+func (r *edgeReach) step(edge Segment[float64], point Point[float64]) {
+	if edge.Start == edge.End {
+		return
+	}
+
+	nearest := edge.Nearest(point)
+	distance := point.DistanceTo(nearest)
+	outward := edge.Vector().Normal().Negate().Normalize()
+	if distance < r.distance || distance == r.distance && math.Abs(outward.X) > math.Abs(r.outward.X) {
+		*r = edgeReach{distance, nearest, outward}
+	}
 }

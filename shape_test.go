@@ -31,19 +31,6 @@ type obstacle[T Number] interface {
 	Contains(point Point[T]) bool
 }
 
-// container is a shape other shapes lie within, with the eight Contains<Kind> methods: Circle,
-// Capsule, Sector, Polygon, Rectangle, RegularPolygon and Box.
-type container[T Number] interface {
-	ContainsCircle(circle Circle[T]) bool
-	ContainsCapsule(capsule Capsule[T]) bool
-	ContainsSector(sector Sector[T]) bool
-	ContainsSegment(segment Segment[T]) bool
-	ContainsPolygon(polygon Polygon[T]) bool
-	ContainsRectangle(rectangle Rectangle[T]) bool
-	ContainsRegularPolygon(polygon RegularPolygon[T]) bool
-	ContainsBox(box Box[T]) bool
-}
-
 // transformable is a shape that moves, turns and scales in its own type, the constraint a
 // generic tween would take.
 type transformable[T Number, S any] interface {
@@ -57,7 +44,7 @@ type transformable[T Number, S any] interface {
 // bounded is a shape with a circle around it, beside the box Shape gives: every Shape of the
 // package, which the interface itself does not list.
 type bounded[T Number] interface {
-	Shape[T]
+	Bounds() Box[T]
 	BoundingCircle() Circle[T]
 }
 
@@ -88,6 +75,53 @@ type intersector[T Number] interface {
 	IntersectsBox(box Box[T]) bool
 }
 
+// container is a shape other shapes lie within, with the eight Contains<Kind> methods: Circle,
+// Capsule, Sector, Polygon, Rectangle, RegularPolygon and Box.
+type container[T Number] interface {
+	ContainsCircle(circle Circle[T]) bool
+	ContainsCapsule(capsule Capsule[T]) bool
+	ContainsSector(sector Sector[T]) bool
+	ContainsSegment(segment Segment[T]) bool
+	ContainsPolygon(polygon Polygon[T]) bool
+	ContainsRectangle(rectangle Rectangle[T]) bool
+	ContainsRegularPolygon(polygon RegularPolygon[T]) bool
+	ContainsBox(box Box[T]) bool
+}
+
+// collider is a shape with the Collide method for each of the eight kinds: Circle, Capsule,
+// Sector, Segment, Polygon, Rectangle, RegularPolygon and Box.
+type collider[T Number] interface {
+	Shape[T]
+	CollideCircle(circle Circle[T]) (Contact[T], bool)
+	CollideCapsule(capsule Capsule[T]) (Contact[T], bool)
+	CollideSector(sector Sector[T]) (Contact[T], bool)
+	CollideSegment(segment Segment[T]) (Contact[T], bool)
+	CollidePolygon(polygon Polygon[T]) (Contact[T], bool)
+	CollideRectangle(rectangle Rectangle[T]) (Contact[T], bool)
+	CollideRegularPolygon(polygon RegularPolygon[T]) (Contact[T], bool)
+	CollideBox(box Box[T]) (Contact[T], bool)
+}
+
+// hitter is a cast with a Hit method for each kind it reaches: Segment and Ray. Raycast reads the
+// nine over shapes of a Ray; a Line has none, having no start to cast from.
+type hitter[T Number] interface {
+	HitCircle(circle Circle[T]) (Hit[T], bool)
+	HitCapsule(capsule Capsule[T]) (Hit[T], bool)
+	HitSector(sector Sector[T]) (Hit[T], bool)
+	HitArc(arc Arc[T]) (Hit[T], bool)
+	HitSegment(segment Segment[T]) (Hit[T], bool)
+	HitRay(ray Ray[T]) (Hit[T], bool)
+	HitLine(line Line[T]) (Hit[T], bool)
+	HitPolyline(polyline Polyline[T]) (Hit[T], bool)
+	HitQuadraticBezier(curve QuadraticBezier[T]) (Hit[T], bool)
+	HitCubicBezier(curve CubicBezier[T]) (Hit[T], bool)
+	HitPolygon(polygon Polygon[T]) (Hit[T], bool)
+	HitRectangle(rectangle Rectangle[T]) (Hit[T], bool)
+	HitRegularPolygon(polygon RegularPolygon[T]) (Hit[T], bool)
+	HitBox(box Box[T]) (Hit[T], bool)
+	HitEllipse(ellipse Ellipse[T]) (Hit[T], bool)
+}
+
 var (
 	_ Shape[int]       = Circle[int]{}
 	_ Shape[int]       = Capsule[int]{}
@@ -98,6 +132,21 @@ var (
 	_ Shape[int]       = RegularPolygon[int]{}
 	_ Shape[int]       = Box[int]{}
 	_ Shape[int]       = Ellipse[int]{}
+	_ body[int]        = Circle[int]{}
+	_ body[int]        = Capsule[int]{}
+	_ body[int]        = Sector[int]{}
+	_ body[int]        = Polygon[int]{}
+	_ body[int]        = Rectangle[int]{}
+	_ body[int]        = RegularPolygon[int]{}
+	_ body[int]        = Box[int]{}
+	_ body[int]        = Ellipse[int]{}
+	_ container[int]   = Circle[int]{}
+	_ container[int]   = Capsule[int]{}
+	_ container[int]   = Sector[int]{}
+	_ container[int]   = Polygon[int]{}
+	_ container[int]   = Rectangle[int]{}
+	_ container[int]   = RegularPolygon[int]{}
+	_ container[int]   = Box[int]{}
 	_ intersector[int] = Circle[int]{}
 	_ intersector[int] = Capsule[int]{}
 	_ intersector[int] = Sector[int]{}
@@ -108,21 +157,16 @@ var (
 	_ intersector[int] = Rectangle[int]{}
 	_ intersector[int] = RegularPolygon[int]{}
 	_ intersector[int] = Box[int]{}
-	_ container[int]   = Circle[int]{}
-	_ container[int]   = Capsule[int]{}
-	_ container[int]   = Sector[int]{}
-	_ container[int]   = Polygon[int]{}
-	_ container[int]   = Rectangle[int]{}
-	_ container[int]   = RegularPolygon[int]{}
-	_ container[int]   = Box[int]{}
-	_ body[int]        = Circle[int]{}
-	_ body[int]        = Capsule[int]{}
-	_ body[int]        = Sector[int]{}
-	_ body[int]        = Polygon[int]{}
-	_ body[int]        = Rectangle[int]{}
-	_ body[int]        = RegularPolygon[int]{}
-	_ body[int]        = Box[int]{}
-	_ body[int]        = Ellipse[int]{}
+	_ collider[int]    = Circle[int]{}
+	_ collider[int]    = Capsule[int]{}
+	_ collider[int]    = Sector[int]{}
+	_ collider[int]    = Segment[int]{}
+	_ collider[int]    = Polygon[int]{}
+	_ collider[int]    = Rectangle[int]{}
+	_ collider[int]    = RegularPolygon[int]{}
+	_ collider[int]    = Box[int]{}
+	_ hitter[int]      = Segment[int]{}
+	_ hitter[int]      = Ray[int]{}
 )
 
 func TestShape(t *testing.T) {
@@ -1234,12 +1278,6 @@ func TestCollide(t *testing.T) {
 		assert.True(t, EqualDelta(contact.Depth, 0.5, 1e-5), fmt.Sprint(contact))
 		assert.Equal(t, contact.Points.Count, 1)
 		assert.Less(t, contact.Points.Items[0].DistanceTo(Pt(2.0, 1.5)), 1e-2, fmt.Sprint(contact))
-
-		contact, ok = Collide[float64](Circ(Pt(0.0, 0.0), 1.0), Circ(Pt(1.5, 0.0), 1.0))
-
-		assert.True(t, ok)
-		assert.Equal(t, contact.Points.Count, 1)
-		assert.Less(t, contact.Points.Items[0].DistanceTo(Pt(0.5, 0.0)), 1e-2, fmt.Sprint(contact))
 	})
 	t.Run("shapes that only touch have a normal and no depth", func(t *testing.T) {
 		contact, ok := Collide[float64](BoxFromMinMax(Pt(0.0, 0.0), Pt(4.0, 1.5)), ground)
@@ -1501,6 +1539,27 @@ func BenchmarkCollide(b *testing.B) {
 			_, sinkBool = Collide(rectangle, ellipse)
 		}
 	})
+	b.Run("a pair met in closed form", func(b *testing.B) {
+		var circle, box Shape[float64] = Circ(Pt(0.0, 0.0), 3.0), BoxFromMinMax(Pt(2.0, -1.0), Pt(6.0, 2.0))
+
+		for b.Loop() {
+			_, sinkBool = Collide(circle, box)
+		}
+	})
+	b.Run("the method of a pair met in closed form", func(b *testing.B) {
+		circle, box := Circ(Pt(0.0, 0.0), 3.0), BoxFromMinMax(Pt(2.0, -1.0), Pt(6.0, 2.0))
+
+		for b.Loop() {
+			_, sinkBool = circle.CollideBox(box)
+		}
+	})
+	b.Run("the method of a pair met on the supports", func(b *testing.B) {
+		capsule, box := Cap(Pt(0.0, 0.0), Pt(4.0, 0.0), 1.0), BoxFromMinMax(Pt(2.0, -1.0), Pt(6.0, 2.0))
+
+		for b.Loop() {
+			_, sinkBool = capsule.CollideBox(box)
+		}
+	})
 	b.Run("a polygon that is not convex", func(b *testing.B) {
 		var box, polygon Shape[float64] = BoxFromMinMax(Pt(1.5, 1.8), Pt(4.0, 4.0)), Pol(cornerVertices())
 
@@ -1535,6 +1594,21 @@ func FuzzCollide(f *testing.F) {
 		assert.GreaterOrEqual(t, contact.Depth, 0, message)
 		assert.LessOrEqual(t, contact.Points.Count, 2, message)
 		assert.True(t, !ok || contact.Points.Count >= 1, message)
+
+		circle, rectangle := Circ(Pt(x1, y1), w1), Rect(Pt(x2, y2), Sz(w2, h2), angle2)
+		box, capsule := BoxFromMinMax(Pt(x2, y2), Pt(x2+w2, y2+h2)), Cap(Pt(x2, y2), Pt(x2+w2, y2+h2), h1)
+		assertCollideExact(t, circle, rectangle)
+		assertCollideExact(t, rectangle, circle)
+		assertCollideExact(t, circle, box)
+		assertCollideExact(t, circle, capsule)
+		assertCollideExact(t, capsule.Segment, circle)
+		assertCollideExact(t, BoxFromMinMax(Pt(x1, y1), Pt(x1+w1, y1+h1)), box)
+
+		typed, typedOk := capsule.CollideRectangle(rectangle)
+		expected, expectedOk := Collide[float64](capsule, rectangle)
+		assert.Equal(t, typedOk, expectedOk, message)
+		assert.True(t, typed.Equal(expected), message+typed.String())
+		assert.True(t, !typedOk || typed.Normal.IsNormalized() || typed.Normal.IsZero(), message+typed.String())
 	})
 }
 
@@ -1950,6 +2024,97 @@ func assertContactPoints[T Number](t *testing.T, contact Contact[T], expected ..
 	slices.SortFunc(expected, Point[T].Compare)
 
 	geomtest.AssertVertices(t, points, expected)
+}
+
+// assertCollideExact asserts that Collide of a pair it meets in closed form agrees with the
+// supports it reaches through a pointer in whether they meet, goes no deeper than the way out they
+// find, and that moving the first shape by the separation leaves the shapes touching.
+func assertCollideExact[S interface {
+	Shape[float64]
+	Translate(vector Vector[float64]) S
+}, P interface {
+	*S
+	Shape[float64]
+}](t *testing.T, a S, b Shape[float64]) {
+	t.Helper()
+
+	var pointer P = &a
+
+	contact, ok := Collide(a, b)
+	reference, referenceOk := Collide(pointer, b)
+	message := fmt.Sprintf("%v → %v: %v, %v: ", a, b, contact, reference)
+
+	assert.Equal(t, ok, referenceOk, message)
+	if !ok {
+		return
+	}
+
+	assert.LessOrEqual(t, contact.Depth, reference.Depth+1e-9*max(1, reference.Depth), message)
+
+	parted, touching := Collide(a.Translate(contact.Separation()), b)
+	assert.True(t, touching, message+parted.String())
+	assert.LessOrEqual(t, parted.Depth, 1e-9, message+parted.String())
+}
+
+// testCollide runs the properties of a Collide<Kind> method over the fixtures: Collide answers by
+// it, given the other way round it meets at the same depth with the opposite normal, or the same
+// normal where both ways out are as short, and it allocates nothing.
+func testCollide[A Shape[float64], B Shape[float64]](t *testing.T, collide func(A, B) (Contact[float64], bool), as []A, bs []B) {
+	t.Helper()
+
+	t.Run("Collide answers by it", func(t *testing.T) {
+		for _, a := range as {
+			for _, b := range bs {
+				contact, ok := collide(a, b)
+				expected, expectedOk := Collide[float64](a, b)
+				message := fmt.Sprintf("%v → %v: ", a, b)
+
+				assert.Equal(t, ok, expectedOk, message)
+				assert.True(t, contact.Equal(expected), message+contact.String())
+			}
+		}
+	})
+	t.Run("given the other way round meets at the same depth with the opposite normal", func(t *testing.T) {
+		for _, a := range as {
+			for _, b := range bs {
+				contact, _ := collide(a, b)
+				reverse, _ := Collide[float64](b, a)
+				message := fmt.Sprintf("%v → %v: %v, %v: ", a, b, contact, reverse)
+
+				geomtest.AssertNumber(t, contact.Depth, reverse.Depth, message)
+				assert.Contains(t, []Vector[float64]{reverse.Normal.Negate(), reverse.Normal}, contact.Normal, message)
+			}
+		}
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		for _, a := range as {
+			for _, b := range bs {
+				assert.Allocates(t, func() {
+					_, sinkBool = collide(a, b)
+				}, 0, fmt.Sprintf("%v → %v: ", a, b))
+			}
+		}
+	})
+}
+
+// testCollideExact runs the property of a Collide<Kind> method in closed form over the fixtures:
+// it goes no deeper than the supports and its separation leaves the shapes touching.
+func testCollideExact[A interface {
+	Shape[float64]
+	Translate(vector Vector[float64]) A
+}, P interface {
+	*A
+	Shape[float64]
+}, B Shape[float64]](t *testing.T, as []A, bs []B) {
+	t.Helper()
+
+	t.Run("goes no deeper than the supports and its separation leaves the shapes touching", func(t *testing.T) {
+		for _, a := range as {
+			for _, b := range bs {
+				assertCollideExact[A, P](t, a, b)
+			}
+		}
+	})
 }
 
 func assertCollideReversed[T Number](t *testing.T, a, b Shape[T]) {

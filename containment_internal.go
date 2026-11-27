@@ -19,7 +19,7 @@ const (
 // a support of the inner one reaches past the outer one, or both are settled over it, which answers
 // false, as do the bounds on halving and a NaN.
 func containsSupport[T Number](outer, inner Shape[T]) bool {
-	tolerance := minkowski[T]{a: inner, b: outer}.tolerance()
+	tolerance := minkowskiBetween[T](inner, outer).tolerance()
 
 	var ends [4]arcEnd
 	for i, direction := range [4]Vector[float64]{{1, 0}, {0, 1}, {-1, 0}, {0, -1}} {

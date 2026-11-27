@@ -13,8 +13,12 @@ opens with a **Breaking** group. Renames land as a rename; no deprecated alias i
 
 ## [Unreleased](https://github.com/gravitton/geometry/compare/v1.21.0...main)
 
+### Added
+- `Collide<Kind>` on every shape but `Ellipse`, one for each such kind, return what `Collide` returns without either shape escaping to the heap
+
 ### Changed
-- **breaking** `HitPolygon` and `HitSector` of a segment or a ray, and `Raycast` through them, reach a polygon or a sector past half a turn from a Start inside it or on its boundary where the cast comes back in after leaving it, as across a notch, where they gave nothing; a ray reflected where it hit reaches the shape again; `HitArc` and `HitPolyline` from a Start on the wall reach it again, an arc where the cast crosses its circle again on the arc and a path at an edge Start does not lie on
+- **breaking** `HitPolygon`, `HitSector`, `HitArc` and `HitPolyline` of a segment or a ray, and `Raycast` through them, reach the shape again from a Start inside or on it where the cast comes back, as across a notch, where they gave nothing
+- `Collide` meets a circle and a circle, capsule, segment, rectangle or box, and two boxes, exactly and four to a hundred times faster, where the supports were within the tolerance, or a part in a thousand deep in a large round shape; of equally short ways out it takes the one along X, toward positive X or Y
 
 ## [v1.21.0](https://github.com/gravitton/geometry/compare/v1.20.1...v1.21.0) (2026-11-26)
 

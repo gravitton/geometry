@@ -530,7 +530,7 @@ func (p Polygon[T]) shrink(dst []Point[T], amount float64, reversed bool) []Poin
 		amount = -amount
 	}
 
-	clip := newEdgeClip(dst, p.Points, reversed, 2*len(p.Points)+2)
+	clip := edgeClipInto(dst, p.Points, reversed, 2*len(p.Points)+2)
 	for edge := range p.Edges() {
 		clip.shift(edge, edge.Float().Normal().Normalize().Multiply(amount))
 	}
@@ -966,6 +966,54 @@ func (p Polygon[T]) IntersectionLine(line Line[T]) []Point[T] {
 	return line.IntersectionPolygon(p)
 }
 
+// CollideCircle returns how the polygon meets the circle, as Collide does, and false where they do
+// not intersect.
+func (p Polygon[T]) CollideCircle(circle Circle[T]) (Contact[T], bool) {
+	return collide[T](p, circle, p.IntersectsCircle(circle))
+}
+
+// CollideCapsule returns how the polygon meets the capsule, as Collide does, and false where they
+// do not intersect.
+func (p Polygon[T]) CollideCapsule(capsule Capsule[T]) (Contact[T], bool) {
+	return collide[T](p, capsule, p.IntersectsCapsule(capsule))
+}
+
+// CollideSector returns how the polygon meets the sector, as Collide does, and false where they do
+// not intersect.
+func (p Polygon[T]) CollideSector(sector Sector[T]) (Contact[T], bool) {
+	return collide[T](p, sector, p.IntersectsSector(sector))
+}
+
+// CollideSegment returns how the polygon meets the segment, as Collide does, and false where they
+// do not intersect.
+func (p Polygon[T]) CollideSegment(segment Segment[T]) (Contact[T], bool) {
+	return collide[T](p, segment, p.IntersectsSegment(segment))
+}
+
+// CollidePolygon returns how the polygon meets the given one, as Collide does, and false where they
+// do not intersect.
+func (p Polygon[T]) CollidePolygon(polygon Polygon[T]) (Contact[T], bool) {
+	return collide[T](p, polygon, p.IntersectsPolygon(polygon))
+}
+
+// CollideRectangle returns how the polygon meets the rectangle, as Collide does, and false where
+// they do not intersect.
+func (p Polygon[T]) CollideRectangle(rectangle Rectangle[T]) (Contact[T], bool) {
+	return collide[T](p, rectangle, p.IntersectsRectangle(rectangle))
+}
+
+// CollideRegularPolygon returns how the polygon meets the regular polygon, as Collide does, and
+// false where they do not intersect.
+func (p Polygon[T]) CollideRegularPolygon(polygon RegularPolygon[T]) (Contact[T], bool) {
+	return collide[T](p, polygon, p.IntersectsRegularPolygon(polygon))
+}
+
+// CollideBox returns how the polygon meets the box, as Collide does, and false where they do not
+// intersect.
+func (p Polygon[T]) CollideBox(box Box[T]) (Contact[T], bool) {
+	return collide[T](p, box, p.IntersectsBox(box))
+}
+
 // ClipPolygon returns the part of the polygons in common, and false where there is none or neither
 // is convex by IsConvex. One that is not convex, or this one where both are, is cut to the other,
 // so the result keeps the winding and the vertices of the one cut. A common part of several pieces
@@ -992,7 +1040,7 @@ func (p Polygon[T]) AppendClipPolygon(dst []Point[T], polygon Polygon[T]) []Poin
 		return dst
 	}
 
-	clip := newEdgeClip(dst, outline.Points, region.twiceArea() < 0, 2*(len(outline.Points)+len(region.Points)))
+	clip := edgeClipInto(dst, outline.Points, region.twiceArea() < 0, 2*(len(outline.Points)+len(region.Points)))
 	for edge := range region.Edges() {
 		clip.add(edge)
 	}
@@ -1017,7 +1065,7 @@ func (p Polygon[T]) AppendClipRectangle(dst []Point[T], rectangle Rectangle[T]) 
 		return dst
 	}
 
-	clip := newEdgeClip(dst, p.Points, false, 2*(len(p.Points)+4))
+	clip := edgeClipInto(dst, p.Points, false, 2*(len(p.Points)+4))
 	for edge := range rectangle.Edges() {
 		clip.add(edge)
 	}
@@ -1043,7 +1091,7 @@ func (p Polygon[T]) AppendClipRegularPolygon(dst []Point[T], polygon RegularPoly
 		return dst
 	}
 
-	clip := newEdgeClip(dst, p.Points, false, 2*(len(p.Points)+polygon.N))
+	clip := edgeClipInto(dst, p.Points, false, 2*(len(p.Points)+polygon.N))
 	for edge := range polygon.Edges() {
 		clip.add(edge)
 	}
@@ -1067,7 +1115,7 @@ func (p Polygon[T]) AppendClipBox(dst []Point[T], box Box[T]) []Point[T] {
 		return dst
 	}
 
-	clip := newEdgeClip(dst, p.Points, false, 2*(len(p.Points)+4))
+	clip := edgeClipInto(dst, p.Points, false, 2*(len(p.Points)+4))
 	corners := box.corners()
 	for edge := range edgesOf(corners[:]) {
 		clip.add(edge)
@@ -1148,7 +1196,7 @@ func (p Polygon[T]) containsSupport(shape Shape[T]) bool {
 			continue
 		}
 
-		difference := minkowski[T]{a: edge, b: shape}
+		difference := minkowskiBetween[T](edge, shape)
 		if !difference.intersects() {
 			continue
 		}
@@ -1177,7 +1225,7 @@ func (p Polygon[T]) intersectsSupport(shape Shape[T]) bool {
 	}
 
 	for edge := range p.Edges() {
-		if (minkowski[T]{a: edge, b: shape}).intersects() {
+		if minkowskiBetween[T](edge, shape).intersects() {
 			return true
 		}
 	}
@@ -1220,14 +1268,14 @@ func (p Polygon[T]) nearestSupport(shape Shape[T], intersects bool) (Point[T], P
 // side, as far as the shape reaches behind it. Where that is longer than the contact it replaces
 // the edge is passed over, and where every edge is, the shortest way out is returned. An edge of no
 // length keeps its own contact.
-func (p Polygon[T]) collideSupport(shape Shape[T], second bool) (Contact[T], bool) {
+func (p Polygon[T]) collideSupport[S Shape[T]](shape S, second bool) (Contact[T], bool) {
 	deepest, shallowest := Contact[T]{Depth: math.Inf(-1)}, Contact[T]{Depth: math.Inf(1)}
 
 	var deepestEdge, shallowestEdge Segment[T]
 
 	reversed := p.twiceArea() < 0
 	for edge := range p.Edges() {
-		contact, ok := Collide[T](edge, shape)
+		contact, ok := collideKinds[T](edge, shape)
 		if !ok {
 			continue
 		}
@@ -1241,7 +1289,7 @@ func (p Polygon[T]) collideSupport(shape Shape[T], second bool) (Contact[T], boo
 			inward = inward.Normalize()
 
 			depth := max(shape.Support(inward).Subtract(edge.Start.Float()).Dot(inward), 0)
-			outward := Contact[T]{inward, depth, minkowski[T]{a: edge, b: shape}.contact(inward)}
+			outward := Contact[T]{inward, depth, minkowskiBetween[T](edge, shape).contact(inward)}
 			if depth > contact.Depth {
 				if depth < shallowest.Depth {
 					shallowest, shallowestEdge = outward, edge
@@ -1270,7 +1318,7 @@ func (p Polygon[T]) collideSupport(shape Shape[T], second bool) (Contact[T], boo
 	if second {
 		normal := contact.Normal.Negate()
 
-		return Contact[T]{normal, contact.Depth, minkowski[T]{a: shape, b: edge}.contact(normal)}, true
+		return Contact[T]{normal, contact.Depth, minkowskiBetween[T](shape, edge).contact(normal)}, true
 	}
 
 	return contact, true

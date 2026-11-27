@@ -609,6 +609,54 @@ func (rp RegularPolygon[T]) IntersectionLine(line Line[T]) Pair[Point[T]] {
 	return line.IntersectionRegularPolygon(rp)
 }
 
+// CollideCircle returns how the regular polygon meets the circle, as Collide does, and false where
+// they do not intersect.
+func (rp RegularPolygon[T]) CollideCircle(circle Circle[T]) (Contact[T], bool) {
+	return collide[T](rp, circle, rp.IntersectsCircle(circle))
+}
+
+// CollideCapsule returns how the regular polygon meets the capsule, as Collide does, and false
+// where they do not intersect.
+func (rp RegularPolygon[T]) CollideCapsule(capsule Capsule[T]) (Contact[T], bool) {
+	return collide[T](rp, capsule, rp.IntersectsCapsule(capsule))
+}
+
+// CollideSector returns how the regular polygon meets the sector, as Collide does, and false where
+// they do not intersect.
+func (rp RegularPolygon[T]) CollideSector(sector Sector[T]) (Contact[T], bool) {
+	return collide[T](rp, sector, rp.IntersectsSector(sector))
+}
+
+// CollideSegment returns how the regular polygon meets the segment, as Collide does, and false
+// where they do not intersect.
+func (rp RegularPolygon[T]) CollideSegment(segment Segment[T]) (Contact[T], bool) {
+	return collide[T](rp, segment, rp.IntersectsSegment(segment))
+}
+
+// CollidePolygon returns how the regular polygon meets the polygon, as Collide does, and false
+// where they do not intersect.
+func (rp RegularPolygon[T]) CollidePolygon(polygon Polygon[T]) (Contact[T], bool) {
+	return collide[T](rp, polygon, rp.IntersectsPolygon(polygon))
+}
+
+// CollideRectangle returns how the regular polygon meets the rectangle, as Collide does, and false
+// where they do not intersect.
+func (rp RegularPolygon[T]) CollideRectangle(rectangle Rectangle[T]) (Contact[T], bool) {
+	return collide[T](rp, rectangle, rp.IntersectsRectangle(rectangle))
+}
+
+// CollideRegularPolygon returns how the regular polygon meets the given one, as Collide does, and
+// false where they do not intersect.
+func (rp RegularPolygon[T]) CollideRegularPolygon(polygon RegularPolygon[T]) (Contact[T], bool) {
+	return collide[T](rp, polygon, rp.IntersectsRegularPolygon(polygon))
+}
+
+// CollideBox returns how the regular polygon meets the box, as Collide does, and false where they
+// do not intersect.
+func (rp RegularPolygon[T]) CollideBox(box Box[T]) (Contact[T], bool) {
+	return collide[T](rp, box, rp.IntersectsBox(box))
+}
+
 // containsWithin is Contains for a caller that already holds the corners of Bounds.
 func (rp RegularPolygon[T]) containsWithin(point, a, b Point[T]) bool {
 	return point.Between(a, b) && rp.DistanceSquaredTo(point) == 0

@@ -582,6 +582,57 @@ func (s Segment[T]) IntersectionEllipse(ellipse Ellipse[T]) Pair[Point[T]] {
 	return s.pointsAt(fractions[:n]...)
 }
 
+// CollideCircle returns how the segment meets the circle, as Collide does, and false where they do
+// not intersect: Circle.CollideSegment the other way round, the points those of the circle facing
+// the segment.
+func (s Segment[T]) CollideCircle(circle Circle[T]) (Contact[T], bool) {
+	contact, ok := circle.CollideSegment(s)
+
+	return contact.reverse(circle, s), ok
+}
+
+// CollideCapsule returns how the segment meets the capsule, as Collide does, and false where they
+// do not intersect.
+func (s Segment[T]) CollideCapsule(capsule Capsule[T]) (Contact[T], bool) {
+	return collide[T](s, capsule, s.IntersectsCapsule(capsule))
+}
+
+// CollideSector returns how the segment meets the sector, as Collide does, and false where they do
+// not intersect.
+func (s Segment[T]) CollideSector(sector Sector[T]) (Contact[T], bool) {
+	return collide[T](s, sector, s.IntersectsSector(sector))
+}
+
+// CollideSegment returns how the segment meets the given one, as Collide does, and false where they
+// do not intersect.
+func (s Segment[T]) CollideSegment(segment Segment[T]) (Contact[T], bool) {
+	return collide[T](s, segment, s.IntersectsSegment(segment))
+}
+
+// CollidePolygon returns how the segment meets the polygon, as Collide does, and false where they
+// do not intersect.
+func (s Segment[T]) CollidePolygon(polygon Polygon[T]) (Contact[T], bool) {
+	return collide[T](s, polygon, s.IntersectsPolygon(polygon))
+}
+
+// CollideRectangle returns how the segment meets the rectangle, as Collide does, and false where
+// they do not intersect.
+func (s Segment[T]) CollideRectangle(rectangle Rectangle[T]) (Contact[T], bool) {
+	return collide[T](s, rectangle, s.IntersectsRectangle(rectangle))
+}
+
+// CollideRegularPolygon returns how the segment meets the regular polygon, as Collide does, and
+// false where they do not intersect.
+func (s Segment[T]) CollideRegularPolygon(polygon RegularPolygon[T]) (Contact[T], bool) {
+	return collide[T](s, polygon, s.IntersectsRegularPolygon(polygon))
+}
+
+// CollideBox returns how the segment meets the box, as Collide does, and false where they do not
+// intersect.
+func (s Segment[T]) CollideBox(box Box[T]) (Contact[T], bool) {
+	return collide[T](s, box, s.IntersectsBox(box))
+}
+
 // ClipCircle returns the part of the segment in the circle, and false where they share no point. A
 // segment touching the circle is clipped to that one point.
 func (s Segment[T]) ClipCircle(circle Circle[T]) (Segment[T], bool) {

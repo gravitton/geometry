@@ -425,6 +425,57 @@ func (c Capsule[T]) IntersectionLine(line Line[T]) Pair[Point[T]] {
 	return c.IntersectionSegment(line.span(c.minMax()))
 }
 
+// CollideCircle returns how the capsule meets the circle, as Collide does, and false where they do
+// not intersect: Circle.CollideCapsule the other way round, the points those of the circle facing
+// the capsule.
+func (c Capsule[T]) CollideCircle(circle Circle[T]) (Contact[T], bool) {
+	contact, ok := circle.CollideCapsule(c)
+
+	return contact.reverse(circle, c), ok
+}
+
+// CollideCapsule returns how the capsule meets the given one, as Collide does, and false where they
+// do not intersect.
+func (c Capsule[T]) CollideCapsule(capsule Capsule[T]) (Contact[T], bool) {
+	return collide[T](c, capsule, c.IntersectsCapsule(capsule))
+}
+
+// CollideSector returns how the capsule meets the sector, as Collide does, and false where they do
+// not intersect.
+func (c Capsule[T]) CollideSector(sector Sector[T]) (Contact[T], bool) {
+	return collide[T](c, sector, c.IntersectsSector(sector))
+}
+
+// CollideSegment returns how the capsule meets the segment, as Collide does, and false where they
+// do not intersect.
+func (c Capsule[T]) CollideSegment(segment Segment[T]) (Contact[T], bool) {
+	return collide[T](c, segment, c.IntersectsSegment(segment))
+}
+
+// CollidePolygon returns how the capsule meets the polygon, as Collide does, and false where they
+// do not intersect.
+func (c Capsule[T]) CollidePolygon(polygon Polygon[T]) (Contact[T], bool) {
+	return collide[T](c, polygon, c.IntersectsPolygon(polygon))
+}
+
+// CollideRectangle returns how the capsule meets the rectangle, as Collide does, and false where
+// they do not intersect.
+func (c Capsule[T]) CollideRectangle(rectangle Rectangle[T]) (Contact[T], bool) {
+	return collide[T](c, rectangle, c.IntersectsRectangle(rectangle))
+}
+
+// CollideRegularPolygon returns how the capsule meets the regular polygon, as Collide does, and
+// false where they do not intersect.
+func (c Capsule[T]) CollideRegularPolygon(polygon RegularPolygon[T]) (Contact[T], bool) {
+	return collide[T](c, polygon, c.IntersectsRegularPolygon(polygon))
+}
+
+// CollideBox returns how the capsule meets the box, as Collide does, and false where they do not
+// intersect.
+func (c Capsule[T]) CollideBox(box Box[T]) (Contact[T], bool) {
+	return collide[T](c, box, c.IntersectsBox(box))
+}
+
 // fractions returns the fractions along the segment, ascending and clamped to it, at which it
 // crosses the boundary, and how many there are: the first and last of its own ends, its crossings
 // of the end circles and of the two sides that lie on the boundary. Segment.HitCapsule reads the

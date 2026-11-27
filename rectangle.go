@@ -677,6 +677,57 @@ func (r Rectangle[T]) IntersectionLine(line Line[T]) Pair[Point[T]] {
 	return line.IntersectionRectangle(r)
 }
 
+// CollideCircle returns how the rectangle meets the circle, as Collide does, and false where they
+// do not intersect: Circle.CollideRectangle the other way round, the points those of the circle
+// facing the rectangle.
+func (r Rectangle[T]) CollideCircle(circle Circle[T]) (Contact[T], bool) {
+	contact, ok := circle.CollideRectangle(r)
+
+	return contact.reverse(circle, r), ok
+}
+
+// CollideCapsule returns how the rectangle meets the capsule, as Collide does, and false where they
+// do not intersect.
+func (r Rectangle[T]) CollideCapsule(capsule Capsule[T]) (Contact[T], bool) {
+	return collide[T](r, capsule, r.IntersectsCapsule(capsule))
+}
+
+// CollideSector returns how the rectangle meets the sector, as Collide does, and false where they
+// do not intersect.
+func (r Rectangle[T]) CollideSector(sector Sector[T]) (Contact[T], bool) {
+	return collide[T](r, sector, r.IntersectsSector(sector))
+}
+
+// CollideSegment returns how the rectangle meets the segment, as Collide does, and false where they
+// do not intersect.
+func (r Rectangle[T]) CollideSegment(segment Segment[T]) (Contact[T], bool) {
+	return collide[T](r, segment, r.IntersectsSegment(segment))
+}
+
+// CollidePolygon returns how the rectangle meets the polygon, as Collide does, and false where they
+// do not intersect.
+func (r Rectangle[T]) CollidePolygon(polygon Polygon[T]) (Contact[T], bool) {
+	return collide[T](r, polygon, r.IntersectsPolygon(polygon))
+}
+
+// CollideRectangle returns how the rectangle meets the given one, as Collide does, and false where
+// they do not intersect.
+func (r Rectangle[T]) CollideRectangle(rectangle Rectangle[T]) (Contact[T], bool) {
+	return collide[T](r, rectangle, r.IntersectsRectangle(rectangle))
+}
+
+// CollideRegularPolygon returns how the rectangle meets the regular polygon, as Collide does, and
+// false where they do not intersect.
+func (r Rectangle[T]) CollideRegularPolygon(polygon RegularPolygon[T]) (Contact[T], bool) {
+	return collide[T](r, polygon, r.IntersectsRegularPolygon(polygon))
+}
+
+// CollideBox returns how the rectangle meets the box, as Collide does, and false where they do not
+// intersect.
+func (r Rectangle[T]) CollideBox(box Box[T]) (Contact[T], bool) {
+	return collide[T](r, box, r.IntersectsBox(box))
+}
+
 // ClipRectangle returns the rectangle common to both, and false where the common part is no
 // rectangle: where they share no point, or where their angles are not whole quarter turns apart,
 // though IntersectsRectangle may hold. The result is turned as the one with the lesser center by

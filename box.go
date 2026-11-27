@@ -517,6 +517,82 @@ func (b Box[T]) IntersectionLine(line Line[T]) Pair[Point[T]] {
 	return line.IntersectionBox(b)
 }
 
+// CollideCircle returns how the box meets the circle, as Collide does, and false where they do not
+// intersect: Circle.CollideBox the other way round, the points those of the circle facing the box.
+func (b Box[T]) CollideCircle(circle Circle[T]) (Contact[T], bool) {
+	contact, ok := circle.CollideBox(b)
+
+	return contact.reverse(circle, b), ok
+}
+
+// CollideCapsule returns how the box meets the capsule, as Collide does, and false where they do
+// not intersect.
+func (b Box[T]) CollideCapsule(capsule Capsule[T]) (Contact[T], bool) {
+	return collide[T](b, capsule, b.IntersectsCapsule(capsule))
+}
+
+// CollideSector returns how the box meets the sector, as Collide does, and false where they do not
+// intersect.
+func (b Box[T]) CollideSector(sector Sector[T]) (Contact[T], bool) {
+	return collide[T](b, sector, b.IntersectsSector(sector))
+}
+
+// CollideSegment returns how the box meets the segment, as Collide does, and false where they do
+// not intersect.
+func (b Box[T]) CollideSegment(segment Segment[T]) (Contact[T], bool) {
+	return collide[T](b, segment, b.IntersectsSegment(segment))
+}
+
+// CollidePolygon returns how the box meets the polygon, as Collide does, and false where they do
+// not intersect.
+func (b Box[T]) CollidePolygon(polygon Polygon[T]) (Contact[T], bool) {
+	return collide[T](b, polygon, b.IntersectsPolygon(polygon))
+}
+
+// CollideRectangle returns how the box meets the rectangle, as Collide does, and false where they
+// do not intersect.
+func (b Box[T]) CollideRectangle(rectangle Rectangle[T]) (Contact[T], bool) {
+	return collide[T](b, rectangle, b.IntersectsRectangle(rectangle))
+}
+
+// CollideRegularPolygon returns how the box meets the regular polygon, as Collide does, and false
+// where they do not intersect.
+func (b Box[T]) CollideRegularPolygon(polygon RegularPolygon[T]) (Contact[T], bool) {
+	return collide[T](b, polygon, b.IntersectsRegularPolygon(polygon))
+}
+
+// CollideBox returns how the box meets the given one, as Collide does, and false where they do not
+// intersect: out along the axis they overlap less on, X where both are alike, toward positive X or
+// Y where both ways along it are alike, at the ends of the side of the given box it reaches, as far
+// as this box spans it. Boxes that are both single points meet with no normal.
+func (b Box[T]) CollideBox(box Box[T]) (Contact[T], bool) {
+	if !b.IntersectsBox(box) {
+		return Contact[T]{}, false
+	}
+
+	if b.Min == b.Max && box.Min == box.Max {
+		return contactAt[T](Vector[float64]{}, 0, box.Min.Float()), true
+	}
+
+	a1, b1, a2, b2 := b.Min.Float(), b.Max.Float(), box.Min.Float(), box.Max.Float()
+	low := Point[float64]{max(a1.X, a2.X), max(a1.Y, a2.Y)}
+	high := Point[float64]{min(b1.X, b2.X), min(b1.Y, b2.Y)}
+
+	right, left, up, down := b2.X-a1.X, b1.X-a2.X, b2.Y-a1.Y, b1.Y-a2.Y
+	least := min(right, left, up, down)
+	if least == right {
+		return contactAlong[T](Vector[float64]{1, 0}, right, Point[float64]{b2.X, low.Y}, Point[float64]{b2.X, high.Y}), true
+	}
+	if least == left {
+		return contactAlong[T](Vector[float64]{-1, 0}, left, Point[float64]{a2.X, high.Y}, Point[float64]{a2.X, low.Y}), true
+	}
+	if least == up {
+		return contactAlong[T](Vector[float64]{0, 1}, up, Point[float64]{high.X, b2.Y}, Point[float64]{low.X, b2.Y}), true
+	}
+
+	return contactAlong[T](Vector[float64]{0, -1}, down, Point[float64]{low.X, a2.Y}, Point[float64]{high.X, a2.Y}), true
+}
+
 // ClipBox returns the box common to both, and false where they share no point. Boxes touching at an
 // edge clip to a zero width or height, and at a corner to the zero-sized box there.
 func (b Box[T]) ClipBox(box Box[T]) (Box[T], bool) {

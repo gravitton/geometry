@@ -103,7 +103,7 @@ func DistanceSquared[T Number](a, b Shape[T]) float64 {
 		return min(DistanceSquared[T](halves[0], other), DistanceSquared[T](halves[1], other))
 	}
 
-	difference := minkowski[T]{a: a, b: b}
+	difference := minkowskiBetween[T](a, b)
 
 	return difference.nearest(difference.precision(), difference.tolerance()).point.LengthSquared()
 }
@@ -163,7 +163,7 @@ func Nearest[T Number](a, b Shape[T]) (Point[T], Point[T]) {
 		return first, second
 	}
 
-	difference := minkowski[T]{a: a, b: b}
+	difference := minkowskiBetween[T](a, b)
 	nearest := difference.nearest(difference.precision(), difference.tolerance())
 	if intersects {
 		point := nearest.from.Cast[T]()
@@ -188,45 +188,10 @@ func Nearest[T Number](a, b Shape[T]) (Point[T], Point[T]) {
 // Both arguments escape to the heap.
 func Contains[T Number](outer, inner Shape[T]) bool {
 	if shape, ok := outer.(container[T]); ok && isKind(outer) {
-		switch kind := inner.(type) {
-		case Circle[T]:
-			return shape.ContainsCircle(kind)
-		case Capsule[T]:
-			return shape.ContainsCapsule(kind)
-		case Sector[T]:
-			return shape.ContainsSector(kind)
-		case Segment[T]:
-			return shape.ContainsSegment(kind)
-		case Polygon[T]:
-			return shape.ContainsPolygon(kind)
-		case Rectangle[T]:
-			return shape.ContainsRectangle(kind)
-		case RegularPolygon[T]:
-			return shape.ContainsRegularPolygon(kind)
-		case Box[T]:
-			return shape.ContainsBox(kind)
-		}
+		return containsKinds[T](shape, inner)
 	}
 
-	if isEmpty(outer) || isEmpty(inner) {
-		return false
-	}
-
-	if ellipse, ok := outer.(Ellipse[T]); ok {
-		if other, ok := inner.(Ellipse[T]); ok && ellipse.Equal(other) {
-			return true
-		}
-	}
-
-	if polygon, ok := nonConvex(outer); ok {
-		return polygon.containsSupport(inner)
-	}
-
-	if sector, ok := reflex(outer); ok {
-		return sector.containsSupport(inner)
-	}
-
-	return containsSupport(outer, inner)
+	return contains[T](outer, inner)
 }
 
 // Intersects reports whether the shapes share a point. An empty polygon intersects nothing, and the
@@ -236,49 +201,10 @@ func Contains[T Number](outer, inner Shape[T]) bool {
 // A pointer to a shape of this package counts as a shape of another package.
 func Intersects[T Number](a, b Shape[T]) bool {
 	if shape, ok := a.(intersector[T]); ok && isKind(a) {
-		switch kind := b.(type) {
-		case Circle[T]:
-			return shape.IntersectsCircle(kind)
-		case Capsule[T]:
-			return shape.IntersectsCapsule(kind)
-		case Sector[T]:
-			return shape.IntersectsSector(kind)
-		case Segment[T]:
-			return shape.IntersectsSegment(kind)
-		case Polygon[T]:
-			return shape.IntersectsPolygon(kind)
-		case Rectangle[T]:
-			return shape.IntersectsRectangle(kind)
-		case RegularPolygon[T]:
-			return shape.IntersectsRegularPolygon(kind)
-		case Box[T]:
-			return shape.IntersectsBox(kind)
-		}
+		return intersectsKinds[T](shape, b)
 	}
 
-	if segment, ellipse, ok := eitherSegmentEllipse(a, b); ok {
-		return segment.IntersectsEllipse(ellipse)
-	}
-
-	if isEmpty(a) || isEmpty(b) {
-		return false
-	}
-
-	if circle, other, ok := eitherCircle(a, b); ok {
-		return circle.containsSquared(other.DistanceSquaredTo(circle.Center), other.Bounds().magnitude())
-	}
-
-	if polygon, other, ok := eitherNonConvex(a, b); ok {
-		return polygon.intersectsSupport(other)
-	}
-
-	if sector, other, ok := eitherReflex(a, b); ok {
-		halves := sector.halves()
-
-		return Intersects[T](halves[0], other) || Intersects[T](halves[1], other)
-	}
-
-	return minkowski[T]{a: a, b: b}.intersects()
+	return intersects[T](a, b)
 }
 
 // Collide returns how two intersecting shapes meet, and false where Intersects does not hold: the
@@ -289,64 +215,27 @@ func Intersects[T Number](a, b Shape[T]) bool {
 // otherwise. Swapping the shapes gives the opposite normal and the same depth, except for a shape
 // in the very middle of another.
 //
-// The normal and depth are measured on the supports to within the tolerance. A shape deep within
-// another has many ways out of nearly one length, and one is returned: of equally short ways the
-// one nearest the X axis, and in the very middle of a shape either of two opposite ones.
+// A Circle meets a Circle, a Capsule, a Segment, a Rectangle or a Box, and a Box meets a Box, in
+// either order, exactly to the rounding of the arithmetic. The normal and depth of other pairs are
+// measured on the supports to within the tolerance. A shape deep within another has many ways out
+// of nearly one length, and one is returned: of equally short ways the one nearest the X axis, and
+// in the very middle of a shape either of two opposite ones.
 //
 // A non-convex Polygon meets edge by edge, so a shape in a notch is parted from the sides of the
 // notch: the contact is the deepest with the edges the other crosses, which may leave the two
 // overlapping at another edge, and a shape inside crossing no edge parts from the hull. Of two such
-// polygons the edges of one meet, the same one whichever is given first, and each edge crossed
-// allocates. A Sector past half a turn meets as its two halves, the deeper of the two, so a shape
-// lying deep across the cut between them is parted from one half into the other. Both shapes escape
-// to the heap.
+// polygons the edges of one meet, the same one whichever is given first, and an Ellipse or a shape
+// of another package allocates for each edge it crosses. A Sector past half a turn meets as its two
+// halves, the deeper of the two, so a shape lying deep across the cut between them is parted from
+// one half into the other.
+//
+// Both shapes escape to the heap, so a loop that knows its types calls the named method instead.
 func Collide[T Number](a, b Shape[T]) (Contact[T], bool) {
-	if !Intersects(a, b) {
-		return Contact[T]{}, false
+	if shape, ok := a.(collider[T]); ok && isKind(a) {
+		return collideKinds[T](shape, b)
 	}
 
-	first, walkFirst := nonConvex(a)
-	second, walkSecond := nonConvex(b)
-	if walkFirst && walkSecond {
-		walkFirst = slices.CompareFunc(first.Points, second.Points, Point[T].Compare) <= 0
-	}
-
-	var contact Contact[T]
-
-	found := false
-	switch {
-	case walkFirst:
-		contact, found = first.collideSupport(b, false)
-	case walkSecond:
-		contact, found = second.collideSupport(a, true)
-	}
-
-	if found {
-		return contact, true
-	}
-
-	if sector, ok := reflex(a); ok {
-		for _, half := range sector.halves() {
-			if deeper, ok := Collide[T](half, b); ok && (!found || deeper.Depth > contact.Depth) {
-				contact, found = deeper, true
-			}
-		}
-	} else if sector, ok := reflex(b); ok {
-		for _, half := range sector.halves() {
-			if deeper, ok := Collide[T](a, half); ok && (!found || deeper.Depth > contact.Depth) {
-				contact, found = deeper, true
-			}
-		}
-	}
-
-	if found {
-		return contact, true
-	}
-
-	difference := minkowski[T]{a: a, b: b}
-	normal, depth := difference.depth()
-
-	return Contact[T]{normal, depth, difference.contact(normal)}, true
+	return collide[T](a, b, Intersects(a, b))
 }
 
 // Sweep returns where the first shape first touches the second while it moves by the motion, and
@@ -407,7 +296,7 @@ func Sweep[T Number](a Shape[T], motion Vector[T], b Shape[T]) (Hit[T], bool) {
 		return first, found
 	}
 
-	return minkowski[T]{a: a, b: b}.sweep(motion.Float())
+	return minkowskiBetween[T](a, b).sweep(motion.Float())
 }
 
 // Raycast returns where the ray first reaches the shape from outside, and false where it does not,
@@ -443,7 +332,7 @@ func Raycast[T Number](ray Ray[T], shape Shape[T]) (Hit[T], bool) {
 	}
 
 	bounds := shape.Bounds()
-	origin := minkowski[T]{b: shape, offset: ray.Origin.Float().Vector()}
+	origin := minkowski[T, Shape[T], Shape[T]]{b: shape, offset: ray.Origin.Float().Vector()}
 
 	return ray.rescale(origin.sweep(ray.reach(bounds.Min, bounds.Max).Vector().Float()))
 }
@@ -452,6 +341,7 @@ func Raycast[T Number](ray Ray[T], shape Shape[T]) (Hit[T], bool) {
 // dispatches on, which every shape but Ellipse has. Intersects reads it only on a kind isKind
 // names, so a shape of another package with the same methods is not taken for one.
 type intersector[T Number] interface {
+	Shape[T]
 	IntersectsCircle(circle Circle[T]) bool
 	IntersectsCapsule(capsule Capsule[T]) bool
 	IntersectsSector(sector Sector[T]) bool
@@ -466,6 +356,7 @@ type intersector[T Number] interface {
 // which every shape with an area but Ellipse has. Contains reads it only on a kind isKind names, so
 // a shape of another package with the same methods is not taken for one.
 type container[T Number] interface {
+	Shape[T]
 	ContainsCircle(circle Circle[T]) bool
 	ContainsCapsule(capsule Capsule[T]) bool
 	ContainsSector(sector Sector[T]) bool
@@ -476,9 +367,206 @@ type container[T Number] interface {
 	ContainsBox(box Box[T]) bool
 }
 
+// collider is a shape with the Collide method for each of the eight kinds Collide dispatches on,
+// which every kind Intersects names has. Collide reads it only on a kind isKind names.
+type collider[T Number] interface {
+	Shape[T]
+	CollideCircle(circle Circle[T]) (Contact[T], bool)
+	CollideCapsule(capsule Capsule[T]) (Contact[T], bool)
+	CollideSector(sector Sector[T]) (Contact[T], bool)
+	CollideSegment(segment Segment[T]) (Contact[T], bool)
+	CollidePolygon(polygon Polygon[T]) (Contact[T], bool)
+	CollideRectangle(rectangle Rectangle[T]) (Contact[T], bool)
+	CollideRegularPolygon(polygon RegularPolygon[T]) (Contact[T], bool)
+	CollideBox(box Box[T]) (Contact[T], bool)
+}
+
+// intersectsKinds reports whether the shapes share a point by the Intersects method of the first
+// naming the kind of the second, and any other second shape on the supports.
+func intersectsKinds[T Number, A intersector[T], B Shape[T]](a A, b B) bool {
+	switch kind := any(b).(type) {
+	case Circle[T]:
+		return a.IntersectsCircle(kind)
+	case Capsule[T]:
+		return a.IntersectsCapsule(kind)
+	case Sector[T]:
+		return a.IntersectsSector(kind)
+	case Segment[T]:
+		return a.IntersectsSegment(kind)
+	case Polygon[T]:
+		return a.IntersectsPolygon(kind)
+	case Rectangle[T]:
+		return a.IntersectsRectangle(kind)
+	case RegularPolygon[T]:
+		return a.IntersectsRegularPolygon(kind)
+	case Box[T]:
+		return a.IntersectsBox(kind)
+	}
+
+	return intersects[T](a, b)
+}
+
+// intersects reports whether the shapes share a point on their supports, a segment and an Ellipse
+// by the segment, a circle by its distance to the other, a non-convex Polygon edge by edge and a
+// Sector past half a turn by its halves.
+func intersects[T Number](a, b Shape[T]) bool {
+	if segment, ellipse, ok := eitherSegmentEllipse(a, b); ok {
+		return segment.IntersectsEllipse(ellipse)
+	}
+
+	if isEmpty(a) || isEmpty(b) {
+		return false
+	}
+
+	if circle, other, ok := eitherCircle(a, b); ok {
+		return circle.containsSquared(other.DistanceSquaredTo(circle.Center), other.Bounds().magnitude())
+	}
+
+	if polygon, other, ok := eitherNonConvex(a, b); ok {
+		return polygon.intersectsSupport(other)
+	}
+
+	if sector, other, ok := eitherReflex(a, b); ok {
+		halves := sector.halves()
+
+		return Intersects[T](halves[0], other) || Intersects[T](halves[1], other)
+	}
+
+	return minkowskiBetween[T](a, b).intersects()
+}
+
+// containsKinds reports whether the inner shape lies in the outer one by the Contains method of the
+// outer naming the kind of the inner, and any other inner shape on the supports.
+func containsKinds[T Number, A container[T], B Shape[T]](outer A, inner B) bool {
+	switch kind := any(inner).(type) {
+	case Circle[T]:
+		return outer.ContainsCircle(kind)
+	case Capsule[T]:
+		return outer.ContainsCapsule(kind)
+	case Sector[T]:
+		return outer.ContainsSector(kind)
+	case Segment[T]:
+		return outer.ContainsSegment(kind)
+	case Polygon[T]:
+		return outer.ContainsPolygon(kind)
+	case Rectangle[T]:
+		return outer.ContainsRectangle(kind)
+	case RegularPolygon[T]:
+		return outer.ContainsRegularPolygon(kind)
+	case Box[T]:
+		return outer.ContainsBox(kind)
+	}
+
+	return contains[T](outer, inner)
+}
+
+// contains reports whether the inner shape lies in the outer one on their supports, a non-convex
+// Polygon and a Sector past half a turn edge by edge and half by half, and an Ellipse holding one
+// Equal to it.
+func contains[T Number](outer, inner Shape[T]) bool {
+	if isEmpty(outer) || isEmpty(inner) {
+		return false
+	}
+
+	if ellipse, ok := outer.(Ellipse[T]); ok {
+		if other, ok := inner.(Ellipse[T]); ok && ellipse.Equal(other) {
+			return true
+		}
+	}
+
+	if polygon, ok := nonConvex(outer); ok {
+		return polygon.containsSupport(inner)
+	}
+
+	if sector, ok := reflex(outer); ok {
+		return sector.containsSupport(inner)
+	}
+
+	return containsSupport(outer, inner)
+}
+
+// collideKinds returns how the shapes meet by the Collide method of the first naming the kind of
+// the second, so a pair of kinds this package names meets with neither shape escaping, and any
+// other second shape on the supports.
+func collideKinds[T Number, A collider[T], B Shape[T]](a A, b B) (Contact[T], bool) {
+	switch kind := any(b).(type) {
+	case Circle[T]:
+		return a.CollideCircle(kind)
+	case Capsule[T]:
+		return a.CollideCapsule(kind)
+	case Sector[T]:
+		return a.CollideSector(kind)
+	case Segment[T]:
+		return a.CollideSegment(kind)
+	case Polygon[T]:
+		return a.CollidePolygon(kind)
+	case Rectangle[T]:
+		return a.CollideRectangle(kind)
+	case RegularPolygon[T]:
+		return a.CollideRegularPolygon(kind)
+	case Box[T]:
+		return a.CollideBox(kind)
+	}
+
+	return collide[T](a, b, Intersects[T](a, b))
+}
+
+// collide returns how the shapes meet on their supports, and false where they do not intersect as
+// given: a non-convex Polygon edge by edge, a Sector past half a turn by the deeper of its halves,
+// and any other pair on the difference of the two. Held as the types they are given in, neither
+// shape escapes.
+func collide[T Number, A, B Shape[T]](a A, b B, intersecting bool) (Contact[T], bool) {
+	if !intersecting {
+		return Contact[T]{}, false
+	}
+
+	first, walkFirst := nonConvex[T](a)
+	second, walkSecond := nonConvex[T](b)
+	if walkFirst && walkSecond {
+		walkFirst = slices.CompareFunc(first.Points, second.Points, Point[T].Compare) <= 0
+	}
+
+	var contact Contact[T]
+
+	found := false
+	switch {
+	case walkFirst:
+		contact, found = first.collideSupport(b, false)
+	case walkSecond:
+		contact, found = second.collideSupport(a, true)
+	}
+
+	if found {
+		return contact, true
+	}
+
+	if sector, ok := reflex[T](a); ok {
+		for _, half := range sector.halves() {
+			if deeper, ok := collideKinds[T](half, b); ok && (!found || deeper.Depth > contact.Depth) {
+				contact, found = deeper, true
+			}
+		}
+	} else if sector, ok := reflex[T](b); ok {
+		for _, half := range sector.halves() {
+			if deeper, ok := collideKinds[T](half, a); ok && (!found || deeper.Depth > contact.Depth) {
+				contact, found = deeper.reverse(half, a), true
+			}
+		}
+	}
+
+	if found {
+		return contact, true
+	}
+
+	difference := minkowskiBetween[T](a, b)
+	normal, depth := difference.depth()
+
+	return Contact[T]{normal, depth, difference.contact(normal)}, true
+}
+
 // isKind reports whether the shape is one of the kinds this package names with the methods of an
-// intersector or a container, the only shapes Intersects and Contains read named methods of. An
-// Ellipse has neither, so it is not among them.
+// intersector, a container or a collider, the only shapes Intersects, Contains and Collide read
+// named methods of. An Ellipse has none of them, so it is not among them.
 func isKind[T Number](shape Shape[T]) bool {
 	switch shape.(type) {
 	case Circle[T]:

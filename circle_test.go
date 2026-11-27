@@ -1461,6 +1461,211 @@ func TestCircle_IntersectionLine(t *testing.T) {
 	})
 }
 
+func TestCircle_CollideCircle(t *testing.T) {
+	t.Run("meets exactly along the line of the centers", func(t *testing.T) {
+		contact, ok := Circ(Pt(0.0, 0.0), 3.0).CollideCircle(Circ(Pt(4.0, 3.0), 3.0))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-0.8, -0.6))
+		geomtest.AssertNumber(t, contact.Depth, 1)
+		assertContactPoints(t, contact, Pt(1.6, 1.2))
+	})
+	t.Run("int rounds the point alone", func(t *testing.T) {
+		contact, ok := Circ(Pt(0, 0), 2).CollideCircle(Circ(Pt(3, 1), 2))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-3.0, -1.0).Normalize())
+		geomtest.AssertNumber(t, contact.Depth, 4-math.Sqrt(10))
+		assertContactPoints(t, contact, Pt(1, 0))
+	})
+	t.Run("a circle centered on another parts along X", func(t *testing.T) {
+		contact, ok := Circ(Pt(1.0, 1.0), 1.0).CollideCircle(Circ(Pt(1.0, 1.0), 2.0))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 3)
+		assertContactPoints(t, contact, Pt(3.0, 1.0))
+	})
+	t.Run("apart they meet nowhere", func(t *testing.T) {
+		contact, ok := Circ(Pt(0.0, 0.0), 1.0).CollideCircle(Circ(Pt(3.0, 0.0), 1.0))
+
+		assert.False(t, ok)
+		assert.True(t, contact.IsZero())
+	})
+	testCollide(t, Circle[float64].CollideCircle, circleFixtures, circleFixtures)
+	testCollideExact(t, circleFixtures, circleFixtures)
+}
+
+func TestCircle_CollideCapsule(t *testing.T) {
+	t.Run("meets along the line from the nearest point of the axis", func(t *testing.T) {
+		contact, ok := Circ(Pt(0.0, 3.0), 2.0).CollideCapsule(Cap(Pt(-4.0, 0.0), Pt(4.0, 0.0), 2.0))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(0.0, 1.0))
+		geomtest.AssertNumber(t, contact.Depth, 1)
+		assertContactPoints(t, contact, Pt(0.0, 2.0))
+	})
+	t.Run("a center on the axis leaves across it, toward positive Y or, across an axis along Y, positive X", func(t *testing.T) {
+		contact, _ := Circ(Pt(1.0, 0.0), 1.0).CollideCapsule(Cap(Pt(4.0, 0.0), Pt(-4.0, 0.0), 2.0))
+		geomtest.AssertVector(t, contact.Normal, Vec(0.0, 1.0))
+		geomtest.AssertNumber(t, contact.Depth, 3)
+		assertContactPoints(t, contact, Pt(1.0, 2.0))
+
+		contact, _ = Circ(Pt(0.0, 1.0), 1.0).CollideCapsule(Cap(Pt(0.0, 4.0), Pt(0.0, -4.0), 1.0))
+		geomtest.AssertVector(t, contact.Normal, Vec(1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 2)
+		assertContactPoints(t, contact, Pt(1.0, 1.0))
+	})
+	t.Run("int rounds the point alone", func(t *testing.T) {
+		contact, ok := Circ(Pt(1, 4), 3).CollideCapsule(Cap(Pt(-4, 0), Pt(4, 0), 2))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(0.0, 1.0))
+		geomtest.AssertNumber(t, contact.Depth, 1)
+		assertContactPoints(t, contact, Pt(1, 2))
+	})
+	testCollide(t, Circle[float64].CollideCapsule, circleFixtures, capsuleFixtures)
+	testCollideExact(t, circleFixtures, capsuleFixtures)
+}
+
+func TestCircle_CollideSector(t *testing.T) {
+	t.Run("reaching half a unit into the sector it parts along X, at one point", func(t *testing.T) {
+		contact, ok := Circ(Pt(0.0, 0.0), 1.0).CollideSector(Sect(Pt(0.5, 0.0), 3.0, -Pi/2, Pi))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, 0.0))
+	})
+	testCollide(t, Circle[float64].CollideSector, circleFixtures, sectorFixtures())
+}
+
+func TestCircle_CollideSegment(t *testing.T) {
+	t.Run("meets along the line from the nearest point of the segment", func(t *testing.T) {
+		contact, ok := Circ(Pt(5.0, 4.0), 6.0).CollideSegment(Seg(Pt(-4.0, 0.0), Pt(2.0, 0.0)))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(0.6, 0.8))
+		geomtest.AssertNumber(t, contact.Depth, 1)
+		assertContactPoints(t, contact, Pt(2.0, 0.0))
+	})
+	t.Run("a center on the segment leaves across it toward positive Y", func(t *testing.T) {
+		contact, ok := Circ(Pt(2.0, 0.0), 1.0).CollideSegment(Seg(Pt(4.0, 0.0), Pt(-4.0, 0.0)))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(0.0, 1.0))
+		geomtest.AssertNumber(t, contact.Depth, 1)
+		assertContactPoints(t, contact, Pt(2.0, 0.0))
+	})
+	testCollide(t, Circle[float64].CollideSegment, circleFixtures, segmentFixtures)
+	testCollideExact(t, circleFixtures, segmentFixtures)
+}
+
+func TestCircle_CollidePolygon(t *testing.T) {
+	t.Run("reaching half a unit into the polygon it parts along X, at one point", func(t *testing.T) {
+		contact, ok := Circ(Pt(0.0, 0.0), 1.0).CollidePolygon(Pol([]Point[float64]{Pt(0.5, -3.0), Pt(4.0, -3.0), Pt(4.0, 3.0), Pt(0.5, 3.0)}))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, 0.0))
+	})
+	testCollide(t, Circle[float64].CollidePolygon, circleFixtures, polygonFixtures())
+}
+
+func TestCircle_CollideRectangle(t *testing.T) {
+	t.Run("meets a turned rectangle at its nearest point", func(t *testing.T) {
+		contact, ok := Circ(Pt(2.0, 2.0), 2.0).CollideRectangle(Rect(Pt(0.0, 0.0), Sz(2.0, 2.0), Pi/4))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(math.Sqrt2/2, math.Sqrt2/2))
+		geomtest.AssertNumber(t, contact.Depth, 3-2*math.Sqrt2)
+		assertContactPoints(t, contact, Pt(math.Sqrt2/2, math.Sqrt2/2))
+	})
+	t.Run("a center inside leaves through the nearest side", func(t *testing.T) {
+		contact, ok := Circ(Pt(0.0, 0.5), 1.0).CollideRectangle(Rect(Pt(0.0, 0.0), Sz(4.0, 2.0), 0))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(0.0, 1.0))
+		geomtest.AssertNumber(t, contact.Depth, 1.5)
+		assertContactPoints(t, contact, Pt(0.0, 1.0))
+	})
+	testCollide(t, Circle[float64].CollideRectangle, circleFixtures, rectFixtures)
+	testCollideExact(t, circleFixtures, rectFixtures)
+}
+
+func TestCircle_CollideRegularPolygon(t *testing.T) {
+	t.Run("reaching half a unit into the regular polygon it parts along X, at one point", func(t *testing.T) {
+		contact, ok := Circ(Pt(0.0, 0.0), 1.0).CollideRegularPolygon(RegPol(Pt(3.5, 0.0), Sz(3*math.Sqrt2, 3*math.Sqrt2), 4, 0, Pi/4))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, 0.0))
+	})
+	testCollide(t, Circle[float64].CollideRegularPolygon, circleFixtures, regularPolygonFixtures)
+}
+
+func TestCircle_CollideBox(t *testing.T) {
+	t.Run("a center outside meets the nearest point", func(t *testing.T) {
+		contact, ok := Circ(Pt(5.0, 6.0), 6.0).CollideBox(BoxFromMinMax(Pt(0.0, 0.0), Pt(2.0, 2.0)))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(0.6, 0.8))
+		geomtest.AssertNumber(t, contact.Depth, 1)
+		assertContactPoints(t, contact, Pt(2.0, 2.0))
+	})
+	t.Run("a center inside leaves through the nearest side", func(t *testing.T) {
+		contact, ok := Circ(Pt(3.0, 3.5), 1.0).CollideBox(BoxFromMinMax(Pt(0.0, 0.0), Pt(6.0, 4.0)))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(0.0, 1.0))
+		geomtest.AssertNumber(t, contact.Depth, 1.5)
+		assertContactPoints(t, contact, Pt(3.0, 4.0))
+	})
+	t.Run("a center as near two sides leaves along X, a corner included", func(t *testing.T) {
+		contact, _ := Circ(Pt(1.0, 1.0), 1.0).CollideBox(BoxFromMinMax(Pt(0.0, 0.0), Pt(6.0, 4.0)))
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 2)
+		assertContactPoints(t, contact, Pt(0.0, 1.0))
+
+		contact, _ = Circ(Pt(0.0, 0.0), 1.0).CollideBox(BoxFromMinMax(Pt(0.0, 0.0), Pt(4.0, 4.0)))
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 1)
+		assertContactPoints(t, contact, Pt(0.0, 0.0))
+	})
+	t.Run("a center at the end of a box of no height leaves across it", func(t *testing.T) {
+		contact, ok := Circ(Pt(0.0, 0.0), 1.0).CollideBox(BoxFromMinMax(Pt(0.0, 0.0), Pt(4.0, 0.0)))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(0.0, -1.0))
+		geomtest.AssertNumber(t, contact.Depth, 1)
+		assertContactPoints(t, contact, Pt(0.0, 0.0))
+	})
+	t.Run("int rounds the point alone", func(t *testing.T) {
+		contact, ok := Circ(Pt(5, 6), 6).CollideBox(BoxFromMinMax(Pt(0, 0), Pt(2, 2)))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(0.6, 0.8))
+		geomtest.AssertNumber(t, contact.Depth, 1)
+		assertContactPoints(t, contact, Pt(2, 2))
+	})
+	t.Run("a circle and a box that are single points meet with no normal", func(t *testing.T) {
+		contact, ok := Circ(Pt(1.0, 1.0), 0.0).CollideBox(BoxFromMinMax(Pt(1.0, 1.0), Pt(1.0, 1.0)))
+
+		assert.True(t, ok)
+		assert.True(t, contact.Normal.IsZero())
+		assertContactPoints(t, contact, Pt(1.0, 1.0))
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		assert.Allocates(t, func() {
+			_, sinkBool = Circ(Pt(0.0, 0.0), 1.0).CollideBox(BoxFromMinMax(Pt(0.5, -3.0), Pt(4.0, 3.0)))
+		}, 0)
+	})
+	testCollide(t, Circle[float64].CollideBox, circleFixtures, boxFixtures)
+	testCollideExact(t, circleFixtures, boxFixtures)
+}
+
 func TestCircle_Tangents(t *testing.T) {
 	circle := Circ(Pt(0.0, 0.0), 3.0)
 

@@ -419,6 +419,80 @@ func (c Circle[T]) IntersectionLine(line Line[T]) Pair[Point[T]] {
 	return c.IntersectionSegment(line.span(c.minMax()))
 }
 
+// CollideCircle returns how the circle meets the given one, as Collide does, and false where they
+// do not intersect: along the line of their centers, along X for circles with one center, and with
+// no normal for two points.
+func (c Circle[T]) CollideCircle(circle Circle[T]) (Contact[T], bool) {
+	if !c.IntersectsCircle(circle) {
+		return Contact[T]{}, false
+	}
+
+	return c.collideAxis(Segment[T]{circle.Center, circle.Center}, float64(circle.Radius)), true
+}
+
+// CollideCapsule returns how the circle meets the capsule, as Collide does, and false where they do
+// not intersect: along the line from the nearest point of the axis to the center, and for a center
+// on the axis across it, toward positive Y or, across an axis along Y, positive X.
+func (c Circle[T]) CollideCapsule(capsule Capsule[T]) (Contact[T], bool) {
+	if !c.IntersectsCapsule(capsule) {
+		return Contact[T]{}, false
+	}
+
+	return c.collideAxis(capsule.Segment, float64(capsule.Radius)), true
+}
+
+// CollideSector returns how the circle meets the sector, as Collide does, and false where they do
+// not intersect.
+func (c Circle[T]) CollideSector(sector Sector[T]) (Contact[T], bool) {
+	return collide[T](c, sector, c.IntersectsSector(sector))
+}
+
+// CollideSegment returns how the circle meets the segment, as Collide does, and false where they do
+// not intersect: along the line from the nearest point of the segment to the center, and for a
+// center on the segment across it, toward positive Y or, across a segment along Y, positive X.
+func (c Circle[T]) CollideSegment(segment Segment[T]) (Contact[T], bool) {
+	if !c.IntersectsSegment(segment) {
+		return Contact[T]{}, false
+	}
+
+	return c.collideAxis(segment, 0), true
+}
+
+// CollidePolygon returns how the circle meets the polygon, as Collide does, and false where they do
+// not intersect.
+func (c Circle[T]) CollidePolygon(polygon Polygon[T]) (Contact[T], bool) {
+	return collide[T](c, polygon, c.IntersectsPolygon(polygon))
+}
+
+// CollideRectangle returns how the circle meets the rectangle, as Collide does, and false where
+// they do not intersect: from a center outside along the line from the nearest point of the
+// outline, and from a center inside out through the nearest side, of sides as near the one whose
+// normal is nearest the X axis.
+func (c Circle[T]) CollideRectangle(rectangle Rectangle[T]) (Contact[T], bool) {
+	if !c.IntersectsRectangle(rectangle) {
+		return Contact[T]{}, false
+	}
+
+	return c.collideOutline(rectangle.corners(), rectangle.Contains(c.Center)), true
+}
+
+// CollideRegularPolygon returns how the circle meets the regular polygon, as Collide does, and
+// false where they do not intersect.
+func (c Circle[T]) CollideRegularPolygon(polygon RegularPolygon[T]) (Contact[T], bool) {
+	return collide[T](c, polygon, c.IntersectsRegularPolygon(polygon))
+}
+
+// CollideBox returns how the circle meets the box, as Collide does, and false where they do not
+// intersect: from a center outside along the line from the nearest point of the outline, and from
+// a center inside out through the nearest side, of sides as near the one along X.
+func (c Circle[T]) CollideBox(box Box[T]) (Contact[T], bool) {
+	if !c.IntersectsBox(box) {
+		return Contact[T]{}, false
+	}
+
+	return c.collideOutline(box.corners(), box.Contains(c.Center)), true
+}
+
 // Tangents returns the points where the lines through the point touch the circle: two for a point
 // outside, the point itself on the boundary, and none inside. The first lies on the side
 // counterclockwise in math coordinates of the direction toward the point, the second is its mirror
@@ -514,6 +588,54 @@ func (c Circle[T]) fractions(segment Segment[T]) ([2]float64, int) {
 	default:
 		return [2]float64{}, 0
 	}
+}
+
+// collideAxis returns how the circle meets the points within the radius of the axis it intersects:
+// along the line from the nearest point of the axis to the center, and for a center on the axis
+// across it, toward positive Y or, across an axis along Y, positive X; along X where the axis has
+// no length. A circle and an axis that are both single points meet with no normal.
+func (c Circle[T]) collideAxis(axis Segment[T], radius float64) Contact[T] {
+	center, line := c.Center.Float(), axis.Float()
+	nearest := line.Nearest(center)
+	if c.Radius == 0 && radius == 0 && line.Start == line.End {
+		return contactAt[T](Vector[float64]{}, 0, nearest)
+	}
+
+	offset := center.Subtract(nearest)
+	distance := offset.Length()
+
+	normal := offset.Normalize()
+	if distance == 0 {
+		normal = line.Vector().Normal().Normalize()
+		if normal.Y < 0 || normal.Y == 0 && normal.X < 0 {
+			normal = normal.Negate()
+		}
+	}
+
+	return contactAt[T](normal, float64(c.Radius)+radius-distance, nearest.Add(normal.Multiply(radius)))
+}
+
+// collideOutline returns how the circle meets the convex outline of the corners, counterclockwise,
+// that it intersects: from a center outside, along the line from the nearest point of the outline,
+// and from a center inside, out through the nearest edge, of edges equally near the one whose
+// normal is nearest the X axis. An outline of one point meets as collideAxis meets the point.
+func (c Circle[T]) collideOutline(corners [4]Point[T], inside bool) Contact[T] {
+	if corners[0] == corners[2] {
+		return c.collideAxis(Segment[T]{corners[0], corners[0]}, 0)
+	}
+
+	center := c.Center.Float()
+
+	reach := edgeReach{distance: math.Inf(1)}
+	for edge := range edgesOf(corners[:]) {
+		reach.step(edge.Float(), center)
+	}
+
+	if inside {
+		return contactAt[T](reach.outward, float64(c.Radius)+reach.distance, reach.nearest)
+	}
+
+	return contactAt[T](center.Subtract(reach.nearest).Normalize(), float64(c.Radius)-reach.distance, reach.nearest)
 }
 
 // centerDistanceSquared returns the squared distance from the center to the point.

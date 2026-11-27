@@ -753,6 +753,116 @@ func TestCapsule_IntersectionLine(t *testing.T) {
 	assert.Nil(t, capsule.IntersectionLine(Ln(Pt(5.0, 10.0), Vec(1.0, 0.0))).AppendTo(nil))
 }
 
+func TestCapsule_CollideCircle(t *testing.T) {
+	t.Run("meets the circle with the normal turned around, at the point of the circle facing it", func(t *testing.T) {
+		contact, ok := Cap(Pt(-4.0, 0.0), Pt(4.0, 0.0), 2.0).CollideCircle(Circ(Pt(0.0, 3.0), 2.0))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(0.0, -1.0))
+		geomtest.AssertNumber(t, contact.Depth, 1)
+		assertContactPoints(t, contact, Pt(0.0, 1.0))
+	})
+	t.Run("int rounds the point alone", func(t *testing.T) {
+		contact, ok := Cap(Pt(-4, 0), Pt(4, 0), 2).CollideCircle(Circ(Pt(1, 4), 3))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(0.0, -1.0))
+		geomtest.AssertNumber(t, contact.Depth, 1)
+		assertContactPoints(t, contact, Pt(1, 1))
+	})
+	testCollide(t, Capsule[float64].CollideCircle, capsuleFixtures, circleFixtures)
+	testCollideExact(t, capsuleFixtures, circleFixtures)
+}
+
+func TestCapsule_CollideCapsule(t *testing.T) {
+	t.Run("reaching half a unit into the capsule it parts along X, at one point", func(t *testing.T) {
+		contact, ok := Cap(Pt(-2.0, 0.0), Pt(0.0, 0.0), 1.0).CollideCapsule(Cap(Pt(2.5, -3.0), Pt(2.5, 3.0), 2.0))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, 0.0))
+	})
+	testCollide(t, Capsule[float64].CollideCapsule, capsuleFixtures, capsuleFixtures)
+}
+
+func TestCapsule_CollideSector(t *testing.T) {
+	t.Run("reaching half a unit into the sector it parts along X, at one point", func(t *testing.T) {
+		contact, ok := Cap(Pt(-2.0, 0.0), Pt(0.0, 0.0), 1.0).CollideSector(Sect(Pt(0.5, 0.0), 3.0, -Pi/2, Pi))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, 0.0))
+	})
+	testCollide(t, Capsule[float64].CollideSector, capsuleFixtures, sectorFixtures())
+}
+
+func TestCapsule_CollideSegment(t *testing.T) {
+	t.Run("reaching half a unit into the segment it parts along X, at one point", func(t *testing.T) {
+		contact, ok := Cap(Pt(-2.0, 0.0), Pt(0.0, 0.0), 1.0).CollideSegment(Seg(Pt(0.5, -3.0), Pt(0.5, 3.0)))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, 0.0))
+	})
+	testCollide(t, Capsule[float64].CollideSegment, capsuleFixtures, segmentFixtures)
+}
+
+func TestCapsule_CollidePolygon(t *testing.T) {
+	t.Run("reaching half a unit into the polygon it parts along X, at one point", func(t *testing.T) {
+		contact, ok := Cap(Pt(-2.0, 0.0), Pt(0.0, 0.0), 1.0).CollidePolygon(Pol([]Point[float64]{Pt(0.5, -3.0), Pt(4.0, -3.0), Pt(4.0, 3.0), Pt(0.5, 3.0)}))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, 0.0))
+	})
+	testCollide(t, Capsule[float64].CollidePolygon, capsuleFixtures, polygonFixtures())
+}
+
+func TestCapsule_CollideRectangle(t *testing.T) {
+	t.Run("reaching half a unit into the rectangle it parts along X, at one point", func(t *testing.T) {
+		contact, ok := Cap(Pt(-2.0, 0.0), Pt(0.0, 0.0), 1.0).CollideRectangle(Rect(Pt(2.25, 0.0), Sz(3.5, 6.0), 0))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, 0.0))
+	})
+	testCollide(t, Capsule[float64].CollideRectangle, capsuleFixtures, rectFixtures)
+}
+
+func TestCapsule_CollideRegularPolygon(t *testing.T) {
+	t.Run("reaching half a unit into the regular polygon it parts along X, at one point", func(t *testing.T) {
+		contact, ok := Cap(Pt(-2.0, 0.0), Pt(0.0, 0.0), 1.0).CollideRegularPolygon(RegPol(Pt(3.5, 0.0), Sz(3*math.Sqrt2, 3*math.Sqrt2), 4, 0, Pi/4))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, 0.0))
+	})
+	testCollide(t, Capsule[float64].CollideRegularPolygon, capsuleFixtures, regularPolygonFixtures)
+}
+
+func TestCapsule_CollideBox(t *testing.T) {
+	t.Run("reaching half a unit into the box it parts along X, at one point", func(t *testing.T) {
+		contact, ok := Cap(Pt(-2.0, 0.0), Pt(0.0, 0.0), 1.0).CollideBox(BoxFromMinMax(Pt(0.5, -3.0), Pt(4.0, 3.0)))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, 0.0))
+	})
+	t.Run("allocates nothing", func(t *testing.T) {
+		assert.Allocates(t, func() {
+			_, sinkBool = Cap(Pt(-2.0, 0.0), Pt(0.0, 0.0), 1.0).CollideBox(BoxFromMinMax(Pt(0.5, -3.0), Pt(4.0, 3.0)))
+		}, 0)
+	})
+	testCollide(t, Capsule[float64].CollideBox, capsuleFixtures, boxFixtures)
+}
+
 func TestCapsule_Equal(t *testing.T) {
 	t.Run("equal", func(t *testing.T) {
 		assert.True(t, Cap(Pt(1.0, 2.0), Pt(3.0, 5.0), 0.5).Equal(Cap(Pt(1.0, 2.0), Pt(3.0, 5.0), 0.5)))

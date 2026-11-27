@@ -1144,6 +1144,102 @@ func TestRegularPolygon_IntersectionLine(t *testing.T) {
 	})
 }
 
+func TestRegularPolygon_CollideCircle(t *testing.T) {
+	t.Run("reaching half a unit into the circle it parts along X, at one point", func(t *testing.T) {
+		contact, ok := RegPol(Pt(0.0, 0.0), Sz(math.Sqrt2, math.Sqrt2), 4, 0, Pi/4).CollideCircle(Circ(Pt(2.5, 0.0), 2.0))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, 0.0))
+	})
+	testCollide(t, RegularPolygon[float64].CollideCircle, regularPolygonFixtures, circleFixtures)
+}
+
+func TestRegularPolygon_CollideCapsule(t *testing.T) {
+	t.Run("reaching half a unit into the capsule it parts along X, at the ends of the side they share", func(t *testing.T) {
+		contact, ok := RegPol(Pt(0.0, 0.0), Sz(math.Sqrt2, math.Sqrt2), 4, 0, Pi/4).CollideCapsule(Cap(Pt(2.5, -3.0), Pt(2.5, 3.0), 2.0))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, -1.0), Pt(0.5, 1.0))
+	})
+	testCollide(t, RegularPolygon[float64].CollideCapsule, regularPolygonFixtures, capsuleFixtures)
+}
+
+func TestRegularPolygon_CollideSector(t *testing.T) {
+	t.Run("reaching half a unit into the sector it parts along X, at the ends of the side they share", func(t *testing.T) {
+		contact, ok := RegPol(Pt(0.0, 0.0), Sz(math.Sqrt2, math.Sqrt2), 4, 0, Pi/4).CollideSector(Sect(Pt(0.5, 0.0), 3.0, -Pi/2, Pi))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, -1.0), Pt(0.5, 1.0))
+	})
+	testCollide(t, RegularPolygon[float64].CollideSector, regularPolygonFixtures, sectorFixtures())
+}
+
+func TestRegularPolygon_CollideSegment(t *testing.T) {
+	t.Run("reaching half a unit into the segment it parts along X, at the ends of the side they share", func(t *testing.T) {
+		contact, ok := RegPol(Pt(0.0, 0.0), Sz(math.Sqrt2, math.Sqrt2), 4, 0, Pi/4).CollideSegment(Seg(Pt(0.5, -3.0), Pt(0.5, 3.0)))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, -1.0), Pt(0.5, 1.0))
+	})
+	testCollide(t, RegularPolygon[float64].CollideSegment, regularPolygonFixtures, segmentFixtures)
+}
+
+func TestRegularPolygon_CollidePolygon(t *testing.T) {
+	t.Run("reaching half a unit into the polygon it parts along X, at the ends of the side they share", func(t *testing.T) {
+		contact, ok := RegPol(Pt(0.0, 0.0), Sz(math.Sqrt2, math.Sqrt2), 4, 0, Pi/4).CollidePolygon(Pol([]Point[float64]{Pt(0.5, -3.0), Pt(4.0, -3.0), Pt(4.0, 3.0), Pt(0.5, 3.0)}))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, -1.0), Pt(0.5, 1.0))
+	})
+	testCollide(t, RegularPolygon[float64].CollidePolygon, regularPolygonFixtures, polygonFixtures())
+}
+
+func TestRegularPolygon_CollideRectangle(t *testing.T) {
+	t.Run("reaching half a unit into the rectangle it parts along X, at the ends of the side they share", func(t *testing.T) {
+		contact, ok := RegPol(Pt(0.0, 0.0), Sz(math.Sqrt2, math.Sqrt2), 4, 0, Pi/4).CollideRectangle(Rect(Pt(2.25, 0.0), Sz(3.5, 6.0), 0))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, -1.0), Pt(0.5, 1.0))
+	})
+	testCollide(t, RegularPolygon[float64].CollideRectangle, regularPolygonFixtures, rectFixtures)
+}
+
+func TestRegularPolygon_CollideRegularPolygon(t *testing.T) {
+	t.Run("reaching half a unit into the regular polygon it parts along X, at the ends of the side they share", func(t *testing.T) {
+		contact, ok := RegPol(Pt(0.0, 0.0), Sz(math.Sqrt2, math.Sqrt2), 4, 0, Pi/4).CollideRegularPolygon(RegPol(Pt(3.5, 0.0), Sz(3*math.Sqrt2, 3*math.Sqrt2), 4, 0, Pi/4))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, -1.0), Pt(0.5, 1.0))
+	})
+	testCollide(t, RegularPolygon[float64].CollideRegularPolygon, regularPolygonFixtures, regularPolygonFixtures)
+}
+
+func TestRegularPolygon_CollideBox(t *testing.T) {
+	t.Run("reaching half a unit into the box it parts along X, at the ends of the side they share", func(t *testing.T) {
+		contact, ok := RegPol(Pt(0.0, 0.0), Sz(math.Sqrt2, math.Sqrt2), 4, 0, Pi/4).CollideBox(BoxFromMinMax(Pt(0.5, -3.0), Pt(4.0, 3.0)))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, -1.0), Pt(0.5, 1.0))
+	})
+	testCollide(t, RegularPolygon[float64].CollideBox, regularPolygonFixtures, boxFixtures)
+}
+
 func TestRegularPolygon_Equal(t *testing.T) {
 	t.Run("same polygon", func(t *testing.T) {
 		assert.True(t, RegPol(Pt(1, 2), Sz(2, 2), 4, 0, 0).Equal(RegPol(Pt(1, 2), Sz(2, 2), 4, 0, 0)))

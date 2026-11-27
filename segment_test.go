@@ -1980,6 +1980,103 @@ func TestSegment_IntersectionEllipse(t *testing.T) {
 	})
 }
 
+func TestSegment_CollideCircle(t *testing.T) {
+	t.Run("meets the circle with the normal turned around, at the point of the circle facing it", func(t *testing.T) {
+		contact, ok := Seg(Pt(-4.0, 0.0), Pt(2.0, 0.0)).CollideCircle(Circ(Pt(5.0, 4.0), 6.0))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-0.6, -0.8))
+		geomtest.AssertNumber(t, contact.Depth, 1)
+		assertContactPoints(t, contact, Pt(1.4, -0.8))
+	})
+	testCollide(t, Segment[float64].CollideCircle, segmentFixtures, circleFixtures)
+	testCollideExact(t, segmentFixtures, circleFixtures)
+}
+
+func TestSegment_CollideCapsule(t *testing.T) {
+	t.Run("reaching half a unit into the capsule it parts along X, at one point", func(t *testing.T) {
+		contact, ok := Seg(Pt(-1.0, 0.0), Pt(1.0, 0.0)).CollideCapsule(Cap(Pt(2.5, -3.0), Pt(2.5, 3.0), 2.0))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, 0.0))
+	})
+	testCollide(t, Segment[float64].CollideCapsule, segmentFixtures, capsuleFixtures)
+}
+
+func TestSegment_CollideSector(t *testing.T) {
+	t.Run("reaching half a unit into the sector it parts along X, at one point", func(t *testing.T) {
+		contact, ok := Seg(Pt(-1.0, 0.0), Pt(1.0, 0.0)).CollideSector(Sect(Pt(0.5, 0.0), 3.0, -Pi/2, Pi))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, 0.0))
+	})
+	testCollide(t, Segment[float64].CollideSector, segmentFixtures, sectorFixtures())
+}
+
+func TestSegment_CollideSegment(t *testing.T) {
+	t.Run("reaching half a unit into the segment it parts along X, at one point", func(t *testing.T) {
+		contact, ok := Seg(Pt(-1.0, 0.0), Pt(1.0, 0.0)).CollideSegment(Seg(Pt(0.5, -3.0), Pt(0.5, 3.0)))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, 0.0))
+	})
+	testCollide(t, Segment[float64].CollideSegment, segmentFixtures, segmentFixtures)
+}
+
+func TestSegment_CollidePolygon(t *testing.T) {
+	t.Run("reaching half a unit into the polygon it parts along X, at one point", func(t *testing.T) {
+		contact, ok := Seg(Pt(-1.0, 0.0), Pt(1.0, 0.0)).CollidePolygon(Pol([]Point[float64]{Pt(0.5, -3.0), Pt(4.0, -3.0), Pt(4.0, 3.0), Pt(0.5, 3.0)}))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, 0.0))
+	})
+	testCollide(t, Segment[float64].CollidePolygon, segmentFixtures, polygonFixtures())
+}
+
+func TestSegment_CollideRectangle(t *testing.T) {
+	t.Run("reaching half a unit into the rectangle it parts along X, at one point", func(t *testing.T) {
+		contact, ok := Seg(Pt(-1.0, 0.0), Pt(1.0, 0.0)).CollideRectangle(Rect(Pt(2.25, 0.0), Sz(3.5, 6.0), 0))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, 0.0))
+	})
+	testCollide(t, Segment[float64].CollideRectangle, segmentFixtures, rectFixtures)
+}
+
+func TestSegment_CollideRegularPolygon(t *testing.T) {
+	t.Run("reaching half a unit into the regular polygon it parts along X, at one point", func(t *testing.T) {
+		contact, ok := Seg(Pt(-1.0, 0.0), Pt(1.0, 0.0)).CollideRegularPolygon(RegPol(Pt(3.5, 0.0), Sz(3*math.Sqrt2, 3*math.Sqrt2), 4, 0, Pi/4))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, 0.0))
+	})
+	testCollide(t, Segment[float64].CollideRegularPolygon, segmentFixtures, regularPolygonFixtures)
+}
+
+func TestSegment_CollideBox(t *testing.T) {
+	t.Run("reaching half a unit into the box it parts along X, at one point", func(t *testing.T) {
+		contact, ok := Seg(Pt(-1.0, 0.0), Pt(1.0, 0.0)).CollideBox(BoxFromMinMax(Pt(0.5, -3.0), Pt(4.0, 3.0)))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, 0.0))
+	})
+	testCollide(t, Segment[float64].CollideBox, segmentFixtures, boxFixtures)
+}
+
 func TestSegment_ClipCircle(t *testing.T) {
 	circle := Circ(Pt(0.0, 0.0), 1.0)
 

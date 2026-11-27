@@ -29,9 +29,9 @@ type edgeClip[T Number] struct {
 	scratch  *[]Point[float64]
 }
 
-// newEdgeClip returns a clip of the points that appends to dst, with room for the given number of
+// edgeClipInto returns a clip of the points that appends to dst, with room for the given number of
 // vertices more, and for an integer T the outline in float64 it cuts.
-func newEdgeClip[T Number](dst, points []Point[T], reversed bool, room int) edgeClip[T] {
+func edgeClipInto[T Number](dst, points []Point[T], reversed bool, room int) edgeClip[T] {
 	clip := edgeClip[T]{dst: slices.Grow(dst, room), from: len(dst), points: points, reversed: reversed}
 	if isInt[T]() {
 		clip.scratch = exactOutlines.Get().(*[]Point[float64])

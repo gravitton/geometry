@@ -971,6 +971,134 @@ func TestBox_IntersectionLine(t *testing.T) {
 	})
 }
 
+func TestBox_CollideCircle(t *testing.T) {
+	t.Run("meets the circle with the normal turned around, at the point of the circle facing it", func(t *testing.T) {
+		contact, ok := BoxFromMinMax(Pt(0.0, 0.0), Pt(6.0, 4.0)).CollideCircle(Circ(Pt(3.0, 3.5), 1.0))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(0.0, -1.0))
+		geomtest.AssertNumber(t, contact.Depth, 1.5)
+		assertContactPoints(t, contact, Pt(3.0, 2.5))
+	})
+	testCollide(t, Box[float64].CollideCircle, boxFixtures, circleFixtures)
+	testCollideExact(t, boxFixtures, circleFixtures)
+}
+
+func TestBox_CollideCapsule(t *testing.T) {
+	t.Run("reaching half a unit into the capsule it parts along X, at the ends of the side they share as the supports find them", func(t *testing.T) {
+		contact, ok := BoxFromMinMax(Pt(-1.0, -1.0), Pt(1.0, 1.0)).CollideCapsule(Cap(Pt(2.5, -3.0), Pt(2.5, 3.0), 2.0))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assert.Equal(t, contact.Points.Count, 2)
+		for point := range contact.Points.All() {
+			assert.Less(t, math.Min(point.DistanceTo(Pt(0.5, -1.0)), point.DistanceTo(Pt(0.5, 1.0))), 1e-5, point.String()+": ")
+		}
+	})
+	testCollide(t, Box[float64].CollideCapsule, boxFixtures, capsuleFixtures)
+}
+
+func TestBox_CollideSector(t *testing.T) {
+	t.Run("reaching half a unit into the sector it parts along X, at the ends of the side they share", func(t *testing.T) {
+		contact, ok := BoxFromMinMax(Pt(-1.0, -1.0), Pt(1.0, 1.0)).CollideSector(Sect(Pt(0.5, 0.0), 3.0, -Pi/2, Pi))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, -1.0), Pt(0.5, 1.0))
+	})
+	t.Run("allocates nothing, a sector past half a turn included", func(t *testing.T) {
+		assert.Allocates(t, func() {
+			_, sinkBool = BoxFromMinMax(Pt(2.0, -1.0), Pt(6.0, 2.0)).CollideSector(Sect(Pt(0.0, 0.0), 4.0, 0.5, 1.6*Pi))
+		}, 0)
+	})
+	testCollide(t, Box[float64].CollideSector, boxFixtures, sectorFixtures())
+}
+
+func TestBox_CollideSegment(t *testing.T) {
+	t.Run("reaching half a unit into the segment it parts along X, at the ends of the side they share", func(t *testing.T) {
+		contact, ok := BoxFromMinMax(Pt(-1.0, -1.0), Pt(1.0, 1.0)).CollideSegment(Seg(Pt(0.5, -3.0), Pt(0.5, 3.0)))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, -1.0), Pt(0.5, 1.0))
+	})
+	testCollide(t, Box[float64].CollideSegment, boxFixtures, segmentFixtures)
+}
+
+func TestBox_CollidePolygon(t *testing.T) {
+	t.Run("reaching half a unit into the polygon it parts along X, at the ends of the side they share", func(t *testing.T) {
+		contact, ok := BoxFromMinMax(Pt(-1.0, -1.0), Pt(1.0, 1.0)).CollidePolygon(Pol([]Point[float64]{Pt(0.5, -3.0), Pt(4.0, -3.0), Pt(4.0, 3.0), Pt(0.5, 3.0)}))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, -1.0), Pt(0.5, 1.0))
+	})
+	t.Run("allocates nothing, a polygon that is not convex included", func(t *testing.T) {
+		box, polygon := BoxFromMinMax(Pt(1.5, 1.8), Pt(4.0, 4.0)), Pol(cornerVertices())
+
+		assert.Allocates(t, func() {
+			_, sinkBool = box.CollidePolygon(polygon)
+		}, 0)
+	})
+	testCollide(t, Box[float64].CollidePolygon, boxFixtures, polygonFixtures())
+}
+
+func TestBox_CollideRectangle(t *testing.T) {
+	t.Run("reaching half a unit into the rectangle it parts along X, at the ends of the side they share", func(t *testing.T) {
+		contact, ok := BoxFromMinMax(Pt(-1.0, -1.0), Pt(1.0, 1.0)).CollideRectangle(Rect(Pt(2.25, 0.0), Sz(3.5, 6.0), 0))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, -1.0), Pt(0.5, 1.0))
+	})
+	testCollide(t, Box[float64].CollideRectangle, boxFixtures, rectFixtures)
+}
+
+func TestBox_CollideRegularPolygon(t *testing.T) {
+	t.Run("reaching half a unit into the regular polygon it parts along X, at the ends of the side they share", func(t *testing.T) {
+		contact, ok := BoxFromMinMax(Pt(-1.0, -1.0), Pt(1.0, 1.0)).CollideRegularPolygon(RegPol(Pt(3.5, 0.0), Sz(3*math.Sqrt2, 3*math.Sqrt2), 4, 0, Pi/4))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 0.5)
+		assertContactPoints(t, contact, Pt(0.5, -1.0), Pt(0.5, 1.0))
+	})
+	testCollide(t, Box[float64].CollideRegularPolygon, boxFixtures, regularPolygonFixtures)
+}
+
+func TestBox_CollideBox(t *testing.T) {
+	t.Run("a box within leaves along X through the side it is as near, along the stretch it spans", func(t *testing.T) {
+		contact, ok := BoxFromMinMax(Pt(1.0, 1.0), Pt(2.0, 2.0)).CollideBox(BoxFromMinMax(Pt(0.0, 0.0), Pt(6.0, 4.0)))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(-1.0, 0.0))
+		geomtest.AssertNumber(t, contact.Depth, 2)
+		assertContactPoints(t, contact, Pt(0.0, 1.0), Pt(0.0, 2.0))
+	})
+	t.Run("int meets at the corners it shares", func(t *testing.T) {
+		contact, ok := BoxFromMinMax(Pt(0, 0), Pt(4, 2)).CollideBox(BoxFromMinMax(Pt(-10, 1), Pt(10, 5)))
+
+		assert.True(t, ok)
+		geomtest.AssertVector(t, contact.Normal, Vec(0.0, -1.0))
+		geomtest.AssertNumber(t, contact.Depth, 1)
+		assertContactPoints(t, contact, Pt(0, 1), Pt(4, 1))
+	})
+	t.Run("two single points meet with no normal", func(t *testing.T) {
+		contact, ok := BoxFromMinMax(Pt(1.0, 1.0), Pt(1.0, 1.0)).CollideBox(BoxFromMinMax(Pt(1.0, 1.0), Pt(1.0, 1.0)))
+
+		assert.True(t, ok)
+		assert.True(t, contact.Normal.IsZero())
+		assertContactPoints(t, contact, Pt(1.0, 1.0))
+	})
+	testCollide(t, Box[float64].CollideBox, boxFixtures, boxFixtures)
+	testCollideExact(t, boxFixtures, boxFixtures)
+}
+
 func TestBox_ClipBox(t *testing.T) {
 	box := BoxFromMinMax(Pt(0, 0), Pt(4, 4))
 

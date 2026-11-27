@@ -474,6 +474,54 @@ func (s Sector[T]) IntersectionLine(line Line[T]) []Point[T] {
 	return line.IntersectionSector(s)
 }
 
+// CollideCircle returns how the sector meets the circle, as Collide does, and false where they do
+// not intersect.
+func (s Sector[T]) CollideCircle(circle Circle[T]) (Contact[T], bool) {
+	return collide[T](s, circle, s.IntersectsCircle(circle))
+}
+
+// CollideCapsule returns how the sector meets the capsule, as Collide does, and false where they do
+// not intersect.
+func (s Sector[T]) CollideCapsule(capsule Capsule[T]) (Contact[T], bool) {
+	return collide[T](s, capsule, s.IntersectsCapsule(capsule))
+}
+
+// CollideSector returns how the sector meets the given one, as Collide does, and false where they
+// do not intersect.
+func (s Sector[T]) CollideSector(sector Sector[T]) (Contact[T], bool) {
+	return collide[T](s, sector, s.IntersectsSector(sector))
+}
+
+// CollideSegment returns how the sector meets the segment, as Collide does, and false where they do
+// not intersect.
+func (s Sector[T]) CollideSegment(segment Segment[T]) (Contact[T], bool) {
+	return collide[T](s, segment, s.IntersectsSegment(segment))
+}
+
+// CollidePolygon returns how the sector meets the polygon, as Collide does, and false where they do
+// not intersect.
+func (s Sector[T]) CollidePolygon(polygon Polygon[T]) (Contact[T], bool) {
+	return collide[T](s, polygon, s.IntersectsPolygon(polygon))
+}
+
+// CollideRectangle returns how the sector meets the rectangle, as Collide does, and false where
+// they do not intersect.
+func (s Sector[T]) CollideRectangle(rectangle Rectangle[T]) (Contact[T], bool) {
+	return collide[T](s, rectangle, s.IntersectsRectangle(rectangle))
+}
+
+// CollideRegularPolygon returns how the sector meets the regular polygon, as Collide does, and
+// false where they do not intersect.
+func (s Sector[T]) CollideRegularPolygon(polygon RegularPolygon[T]) (Contact[T], bool) {
+	return collide[T](s, polygon, s.IntersectsRegularPolygon(polygon))
+}
+
+// CollideBox returns how the sector meets the box, as Collide does, and false where they do not
+// intersect.
+func (s Sector[T]) CollideBox(box Box[T]) (Contact[T], bool) {
+	return collide[T](s, box, s.IntersectsBox(box))
+}
+
 // appendIntersectionSegment appends the points at the fractions crossings returns to dst: once
 // where two are Equal before or after rounding, and none inside a stretch the segment shares with a
 // radius. Segment.AppendIntersectionSector and the ray and line forms call it.
@@ -610,7 +658,7 @@ func (s Sector[T]) containsSupport(shape Shape[T]) bool {
 		return true
 	}
 
-	notch := minkowski[T]{a: s.notch(), b: shape}
+	notch := minkowskiBetween[T](s.notch(), shape)
 	if !notch.intersects() {
 		return true
 	}
