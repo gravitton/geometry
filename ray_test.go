@@ -1429,11 +1429,23 @@ func TestRay_HitSector(t *testing.T) {
 func TestRay_HitArc(t *testing.T) {
 	arc := Ac(Pt(0.0, 0.0), 5.0, 0, Pi/2)
 
-	hit, ok := Ry(Pt(3.0, 10.0), Vec(0.0, -2.0)).HitArc(arc)
-	assertHit(t, hit, ok, Hit[float64]{Point: Pt(3.0, 4.0), Normal: Vec(0.6, 0.8), Fraction: 3})
+	t.Run("from outside the circle, in units of Vector", func(t *testing.T) {
+		hit, ok := Ry(Pt(3.0, 10.0), Vec(0.0, -2.0)).HitArc(arc)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(3.0, 4.0), Normal: Vec(0.6, 0.8), Fraction: 3})
+	})
+	t.Run("pointing away hits nothing", func(t *testing.T) {
+		_, ok := Ry(Pt(3.0, 10.0), Vec(0.0, 2.0)).HitArc(arc)
+		assert.False(t, ok)
+	})
+	t.Run("an Origin on the arc reaches it again on its inner side, as a reflection does", func(t *testing.T) {
+		wide := Ac(Pt(0.0, 0.0), 5.0, 0, 3*Pi/2)
+		ray := Ry(Pt(0.0, 0.0), Vec(3.0, 4.0))
+		first, ok := ray.HitArc(wide)
+		assert.True(t, ok)
 
-	_, ok = Ry(Pt(3.0, 10.0), Vec(0.0, 2.0)).HitArc(arc)
-	assert.False(t, ok)
+		hit, ok := Ry(first.Point, ray.Vector.Reflect(first.Normal)).HitArc(wide)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(-3.0, -4.0), Normal: Vec(0.6, 0.8), Fraction: 2})
+	})
 }
 
 func TestRay_HitSegment(t *testing.T) {
@@ -1553,11 +1565,22 @@ func TestRay_HitLine(t *testing.T) {
 func TestRay_HitPolyline(t *testing.T) {
 	path := PolLn([]Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(4.0, 3.0)})
 
-	hit, ok := Ry(Pt(2.0, 5.0), Vec(0.0, -2.0)).HitPolyline(path)
-	assertHit(t, hit, ok, Hit[float64]{Point: Pt(2.0, 0.0), Normal: Vec(0.0, 1.0), Fraction: 2.5})
+	t.Run("the first edge reached, in units of Vector", func(t *testing.T) {
+		hit, ok := Ry(Pt(2.0, 5.0), Vec(0.0, -2.0)).HitPolyline(path)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(2.0, 0.0), Normal: Vec(0.0, 1.0), Fraction: 2.5})
+	})
+	t.Run("pointing away hits nothing", func(t *testing.T) {
+		_, ok := Ry(Pt(2.0, 5.0), Vec(0.0, 2.0)).HitPolyline(path)
+		assert.False(t, ok)
+	})
+	t.Run("an Origin on the path reaches the next edge, as a reflection does", func(t *testing.T) {
+		ray := Ry(Pt(1.0, 1.0), Vec(1.0, -1.0))
+		first, ok := ray.HitPolyline(path)
+		assert.True(t, ok)
 
-	_, ok = Ry(Pt(2.0, 5.0), Vec(0.0, 2.0)).HitPolyline(path)
-	assert.False(t, ok)
+		hit, ok := Ry(first.Point, ray.Vector.Reflect(first.Normal)).HitPolyline(path)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(4.0, 2.0), Normal: Vec(-1.0, 0.0), Fraction: 2})
+	})
 }
 
 func TestRay_HitQuadraticBezier(t *testing.T) {

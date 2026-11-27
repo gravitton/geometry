@@ -14,7 +14,7 @@ opens with a **Breaking** group. Renames land as a rename; no deprecated alias i
 ## [Unreleased](https://github.com/gravitton/geometry/compare/v1.21.0...main)
 
 ### Changed
-- **breaking** `HitPolygon` and `HitSector` of a segment or a ray, and `Raycast` through them, reach a polygon or a sector past half a turn from a Start inside it or on its boundary where the cast comes back in after leaving it, as across a notch, where they gave nothing; a ray reflected where it hit reaches the shape again
+- **breaking** `HitPolygon` and `HitSector` of a segment or a ray, and `Raycast` through them, reach a polygon or a sector past half a turn from a Start inside it or on its boundary where the cast comes back in after leaving it, as across a notch, where they gave nothing; a ray reflected where it hit reaches the shape again; `HitArc` and `HitPolyline` from a Start on the wall reach it again, an arc where the cast crosses its circle again on the arc and a path at an edge Start does not lie on
 
 ## [v1.21.0](https://github.com/gravitton/geometry/compare/v1.20.1...v1.21.0) (2026-11-26)
 

@@ -806,18 +806,22 @@ func (s Segment[T]) HitSector(sector Sector[T]) (Hit[T], bool) {
 }
 
 // HitArc returns where the segment first reaches the arc, a curved wall, and false where it does
-// not or Start lies on it. The normal is the direction from the center, turned to face the segment.
+// not. A Start on the arc reaches it only where the segment crosses the circle again on the arc, as
+// a cast reflected on its inner side does. The normal is the direction from the center, turned to
+// face the segment.
 func (s Segment[T]) HitArc(arc Arc[T]) (Hit[T], bool) {
-	if arc.Contains(s.Start) {
-		return Hit[T]{}, false
-	}
-
 	fractions, n := arc.crossings(s)
-	if n == 0 {
+
+	first := 0
+	if arc.Contains(s.Start) {
+		first = 1
+	}
+
+	if n <= first {
 		return Hit[T]{}, false
 	}
 
-	point := s.Float().PointAt(fractions[0])
+	point := s.Float().PointAt(fractions[first])
 
 	return s.hitAt(point.Cast[T](), point.Subtract(arc.Center.Float())), true
 }
@@ -867,15 +871,11 @@ func (s Segment[T]) HitLine(line Line[T]) (Hit[T], bool) {
 }
 
 // HitPolyline returns where the segment first reaches the path, a wall of several edges, and false
-// where it does not, Start lies on it or the path is empty. The normal is the perpendicular of the
-// edge hit, turned to face the segment, and back along the segment for an edge running along it. A
-// point two edges share takes the edge that faces Start, and the earlier in Edges where both do or
-// neither does.
+// where it does not or the path is empty. A Start on the path reaches only an edge it does not lie
+// on, as a cast reflected where it hit does. The normal is the perpendicular of the edge hit, turned
+// to face the segment, and back along the segment for an edge running along it. A point two edges
+// share takes the edge that faces Start, and the earlier in Edges where both do or neither does.
 func (s Segment[T]) HitPolyline(polyline Polyline[T]) (Hit[T], bool) {
-	if polyline.Contains(s.Start) {
-		return Hit[T]{}, false
-	}
-
 	var first Hit[T]
 	var wall Segment[T]
 

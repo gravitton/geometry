@@ -2827,28 +2827,42 @@ func TestSegment_HitArc(t *testing.T) {
 		hit, ok := Seg(Pt(3.0, 0.0), Pt(3.0, 10.0)).HitArc(arc)
 		assertHit(t, hit, ok, Hit[float64]{Point: Pt(3.0, 4.0), Normal: Vec(-0.6, -0.8), Fraction: 0.4})
 	})
-	t.Run("a Start on the arc, a cast past the sweep or short of it hits nothing", func(t *testing.T) {
+	t.Run("a Start on the arc heading out, a cast past the sweep or short of it hits nothing", func(t *testing.T) {
 		for _, s := range []Segment[float64]{Seg(Pt(3.0, 4.0), Pt(3.0, 10.0)), Seg(Pt(-3.0, 10.0), Pt(-3.0, -10.0)), Seg(Pt(3.0, 10.0), Pt(3.0, 5.0))} {
 			_, ok := s.HitArc(arc)
 			assert.False(t, ok, s.String())
 		}
 	})
+	t.Run("a Start on the arc reaches it where the chord ends on the arc, and nothing where it ends past the sweep", func(t *testing.T) {
+		wide := Ac(Pt(0.0, 0.0), 5.0, 0, 3*Pi/2)
+
+		hit, ok := Seg(Pt(3.0, 4.0), Pt(-6.0, -8.0)).HitArc(wide)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(-3.0, -4.0), Normal: Vec(0.6, 0.8), Fraction: 2.0 / 3})
+
+		_, ok = Seg(Pt(-4.0, 3.0), Pt(8.0, -6.0)).HitArc(wide)
+		assert.False(t, ok)
+	})
 	t.Run("int rounds the point and keeps the normal", func(t *testing.T) {
 		hit, ok := Seg(Pt(3, 10), Pt(3, 0)).HitArc(Ac(Pt(0, 0), 5, 0, Pi/2))
 		assertHit(t, hit, ok, Hit[int]{Point: Pt(3, 4), Normal: Vec(0.6, 0.8), Fraction: 0.6})
 	})
-	t.Run("the hit is the first crossing, from a Start off the arc", func(t *testing.T) {
+	t.Run("the hit is the first crossing, past Start where it lies on the arc", func(t *testing.T) {
 		for _, a := range arcFixtures {
 			for _, start := range pointFixtures {
 				for _, end := range pointFixtures {
 					s := Seg(start, end)
 					message := fmt.Sprintf("%s → %s: ", s, a)
 
+					first := 0
+					if a.Contains(start) {
+						first = 1
+					}
+
 					hit, ok := s.HitArc(a)
 					crossings := s.IntersectionArc(a).AppendTo(nil)
-					assert.Equal(t, ok, !a.Contains(start) && len(crossings) > 0, message)
+					assert.Equal(t, ok, len(crossings) > first, message)
 					if ok {
-						geomtest.AssertPoint(t, hit.Point, crossings[0], message)
+						geomtest.AssertPoint(t, hit.Point, crossings[first], message)
 						assertFacing(t, s, hit, message)
 					}
 				}
@@ -3008,8 +3022,18 @@ func TestSegment_HitPolyline(t *testing.T) {
 		hit, ok = Seg(Pt(5.0, 1.0), Pt(3.0, -1.0)).HitPolyline(path.Reverse())
 		assertHit(t, hit, ok, Hit[float64]{Point: Pt(4.0, 0.0), Normal: Vec(1.0, 0.0), Fraction: 0.5})
 	})
-	t.Run("a Start on the path, a cast beside it or an empty path hits nothing", func(t *testing.T) {
+	t.Run("a Start on the path reaches the next edge it crosses, as a reflection does", func(t *testing.T) {
+		hit, ok := Seg(Pt(2.0, 0.0), Pt(6.0, 4.0)).HitPolyline(path)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(4.0, 2.0), Normal: Vec(-1.0, 0.0), Fraction: 0.5})
+
+		hit, ok = Seg(Pt(4.0, 2.0), Pt(0.0, -2.0)).HitPolyline(path)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(2.0, 0.0), Normal: Vec(0.0, 1.0), Fraction: 0.5})
+	})
+	t.Run("a Start on the path reaching no other edge, a cast beside it or an empty path hits nothing", func(t *testing.T) {
 		_, ok := Seg(Pt(2.0, 0.0), Pt(2.0, 5.0)).HitPolyline(path)
+		assert.False(t, ok)
+
+		_, ok = Seg(Pt(4.0, 0.0), Pt(6.0, 1.0)).HitPolyline(path)
 		assert.False(t, ok)
 
 		_, ok = Seg(Pt(0.0, 1.0), Pt(3.0, 1.0)).HitPolyline(path)

@@ -407,8 +407,10 @@ func (r Ray[T]) HitSector(sector Sector[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(sector.minMax()).HitSector(sector))
 }
 
-// HitArc returns where the ray first reaches the arc, a curved wall, and false where it does not or
-// Origin lies on it. The normal is the direction from the center, turned to face the ray.
+// HitArc returns where the ray first reaches the arc, a curved wall, and false where it does not. An
+// Origin on the arc reaches it only where the ray crosses the circle again on the arc, as a ray
+// reflected on its inner side does. The normal is the direction from the center, turned to face the
+// ray.
 func (r Ray[T]) HitArc(arc Arc[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(arc.minMax()).HitArc(arc))
 }
@@ -457,10 +459,10 @@ func (r Ray[T]) HitLine(line Line[T]) (Hit[T], bool) {
 }
 
 // HitPolyline returns where the ray first reaches the path, a wall of several edges, and false
-// where it does not, Origin lies on it or the path is empty. The normal is the perpendicular of the
-// edge hit, turned to face the ray, and back along the ray for an edge running along it. A point
-// two edges share takes the edge that faces Origin, and the earlier in Edges where both do or
-// neither does.
+// where it does not or the path is empty. An Origin on the path reaches only an edge it does not lie
+// on, as a ray reflected where it hit does. The normal is the perpendicular of the edge hit, turned
+// to face the ray, and back along the ray for an edge running along it. A point two edges share
+// takes the edge that faces Origin, and the earlier in Edges where both do or neither does.
 func (r Ray[T]) HitPolyline(polyline Polyline[T]) (Hit[T], bool) {
 	bounds := polyline.Bounds()
 
