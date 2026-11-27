@@ -11,7 +11,9 @@ more expensive of the two. A breaking change opens its entry with **breaking**, 
 opens with a **Breaking** group. Renames land as a rename; no deprecated alias is kept.
 
 
-## [Unreleased](https://github.com/gravitton/geometry/compare/v1.21.0...main)
+## [Unreleased](https://github.com/gravitton/geometry/compare/v1.22.0...main)
+
+## [v1.22.0](https://github.com/gravitton/geometry/compare/v1.21.0...v1.22.0) (2026-11-27)
 
 ### Added
 - `Collide<Kind>` on every shape but `Ellipse`, one for each such kind, return what `Collide` returns without either shape escaping to the heap
