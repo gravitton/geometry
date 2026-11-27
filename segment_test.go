@@ -2741,7 +2741,7 @@ func TestSegment_HitSector(t *testing.T) {
 		hit, ok = Seg(Pt(2.0, -2.0), Pt(2.0, 2.0)).HitSector(sector)
 		assertHit(t, hit, ok, Hit[float64]{Point: Pt(2.0, 0.0), Normal: Vec(0.0, -1.0), Fraction: 0.5})
 	})
-	t.Run("a Start inside or on the boundary hits nothing", func(t *testing.T) {
+	t.Run("a Start inside or on the boundary of a sector it never comes back into hits nothing", func(t *testing.T) {
 		for _, s := range []Segment[float64]{Seg(Pt(1.0, 1.0), Pt(9.0, 9.0)), Seg(Pt(3.0, 4.0), Pt(9.0, 9.0)), Seg(Pt(0.0, 2.0), Pt(-5.0, 2.0))} {
 			_, ok := s.HitSector(sector)
 			assert.False(t, ok, s.String())
@@ -2764,6 +2764,10 @@ func TestSegment_HitSector(t *testing.T) {
 
 		_, ok = Seg(Pt(1.0, 0.2), Pt(8.0, 1.0)).HitSector(notched)
 		assert.False(t, ok)
+	})
+	t.Run("a Start inside or on the boundary reaches a radius where it comes back in across the notch", func(t *testing.T) {
+		hit, ok := Seg(Pt(2.0, 2.0), Pt(2.0, -3.0)).HitSector(notched)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(2.0, -2.0), Normal: Vec(math.Sqrt2/2, math.Sqrt2/2), Fraction: 0.8})
 	})
 	t.Run("int rounds the point and keeps the normal", func(t *testing.T) {
 		hit, ok := Seg(Pt(3, 10), Pt(3, 0)).HitSector(Sect(Pt(0, 0), 5, 0, Pi/2))
@@ -3179,12 +3183,25 @@ func TestSegment_HitPolygon(t *testing.T) {
 		hit, ok := Seg(Pt(2, 6), Pt(2, -2)).HitPolygon(notched)
 		assertHit(t, hit, ok, Hit[int]{Point: Pt(2, 1), Normal: Vec(1/math.Sqrt(13)*-3, 2/math.Sqrt(13)), Fraction: 0.625})
 	})
-	t.Run("a Start inside or on the boundary hits nothing", func(t *testing.T) {
+	t.Run("a Start inside or on the boundary of a polygon it never comes back into hits nothing", func(t *testing.T) {
 		_, ok := Seg(Pt(1, 1), Pt(5, 1)).HitPolygon(square)
 		assert.False(t, ok)
 
 		_, ok = Seg(Pt(0, 1), Pt(-5, 1)).HitPolygon(square)
 		assert.False(t, ok)
+	})
+	t.Run("a Start inside or on the boundary reaches the edge where it comes back in across a notch", func(t *testing.T) {
+		notch := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(4.0, 4.0), Pt(2.0, 1.0), Pt(0.0, 4.0)})
+		facing := Vec(-3/math.Sqrt(13), 2/math.Sqrt(13))
+
+		hit, ok := Seg(Pt(0.5, 3.0), Pt(3.5, 3.0)).HitPolygon(notch)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(10.0/3, 3.0), Normal: facing, Fraction: (10.0/3 - 0.5) / 3})
+
+		hit, ok = Seg(Pt(1.0, 2.5), Pt(4.0, 2.5)).HitPolygon(notch)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(3.0, 2.5), Normal: facing, Fraction: 2.0 / 3})
+
+		hit, ok = Seg(Pt(1.0, 2.5), Pt(4.0, 2.5)).HitPolygon(notch.Reverse())
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(3.0, 2.5), Normal: facing, Fraction: 2.0 / 3})
 	})
 	t.Run("apart and empty hit nothing", func(t *testing.T) {
 		_, ok := Seg(Pt(-1, 5), Pt(5, 5)).HitPolygon(square)

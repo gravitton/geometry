@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"slices"
 	"testing"
 
 	"github.com/gravitton/assert"
@@ -1151,7 +1152,11 @@ func assertSectorGrazes[T Number](t *testing.T, offset Vector[T]) {
 						assert.Equal(t, len(s.ClipSector(sector)) > 0, intersects, message)
 
 						hit, ok := s.HitSector(sector)
-						assert.Equal(t, ok, !sector.Contains(start) && intersects, message)
+						if sector.Contains(start) {
+							assert.True(t, !ok || slices.Contains(points[1:], hit.Point), message)
+							continue
+						}
+						assert.Equal(t, ok, intersects, message)
 						assert.True(t, !ok || hit.Point == points[0], message)
 					}
 				}

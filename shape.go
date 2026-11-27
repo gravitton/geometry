@@ -411,9 +411,11 @@ func Sweep[T Number](a Shape[T], motion Vector[T], b Shape[T]) (Hit[T], bool) {
 }
 
 // Raycast returns where the ray first reaches the shape from outside, and false where it does not,
-// by the Hit method of the ray naming the kind. The Fraction is in units of Vector, and an
-// Origin inside the shape hits nothing. A shape of another package is reached as Sweep reaches it,
-// within the tolerance, a touch in passing left out. The shape escapes to the heap.
+// by the Hit method of the ray naming the kind. The Fraction is in units of Vector. An Origin in
+// the shape hits nothing, unless the shape is a Polygon or a Sector past half a turn the ray comes
+// back into after leaving it, so a ray reflected where it hit reaches the shape again across a
+// notch. A shape of another package is reached as Sweep reaches it, within the tolerance, a touch
+// in passing left out. The shape escapes to the heap.
 func Raycast[T Number](ray Ray[T], shape Shape[T]) (Hit[T], bool) {
 	switch kind := shape.(type) {
 	case Circle[T]:

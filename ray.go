@@ -399,9 +399,10 @@ func (r Ray[T]) HitCapsule(capsule Capsule[T]) (Hit[T], bool) {
 }
 
 // HitSector returns where the ray first reaches the sector from outside, and false where it does
-// not or Origin lies in it. The normal points from Center on the arc and is the perpendicular of a
-// radius on it, the one facing Origin where the radii meet at Center. An Origin in the notch of a
-// sector past half a turn reaches a radius.
+// not. An Origin in the sector, on its boundary too, reaches it only where the ray comes back in
+// after leaving it, across the notch of a sector past half a turn. The normal points from Center on
+// the arc and is the perpendicular of a radius on it, the one facing Origin where the radii meet at
+// Center. An Origin in the notch of a sector past half a turn reaches a radius.
 func (r Ray[T]) HitSector(sector Sector[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(sector.minMax()).HitSector(sector))
 }
@@ -485,11 +486,12 @@ func (r Ray[T]) HitCubicBezier(curve CubicBezier[T]) (Hit[T], bool) {
 }
 
 // HitPolygon returns where the ray first reaches the polygon from outside, and false where it does
-// not, Origin lies in it or the polygon is empty. The normal is that of the edge hit, turned to
-// face the ray, so the polygon may be wound either way. A vertex takes the edge that faces Origin,
-// and the earlier in Edges where both do or, in a notch, neither does. The tip of a spike of no width
-// running along the ray is hit facing the ray, as is a vertex of an outline of no area, but a vertex
-// another edge crosses takes that edge.
+// not or the polygon is empty. An Origin in the polygon, on its boundary too, reaches it only where
+// the ray comes back in after leaving it, as across a notch. The normal is that of the edge hit,
+// turned to face the ray, so the polygon may be wound either way. A vertex takes the edge that
+// faces Origin, and the earlier in Edges where both do or, in a notch, neither does. The tip of a
+// spike of no width running along the ray is hit facing the ray, as is a vertex of an outline of no
+// area, but a vertex another edge crosses takes that edge.
 func (r Ray[T]) HitPolygon(polygon Polygon[T]) (Hit[T], bool) {
 	return r.rescale(r.reach(polygon.minMax()).HitPolygon(polygon))
 }

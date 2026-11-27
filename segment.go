@@ -785,12 +785,13 @@ func (s Segment[T]) HitCapsule(capsule Capsule[T]) (Hit[T], bool) {
 }
 
 // HitSector returns where the segment first reaches the sector from outside, and false where it
-// does not or Start lies in it. The normal points from Center on the arc and is the perpendicular
-// of a radius on it, the one facing Start where the radii meet at Center. A Start in the notch of a
-// sector past half a turn reaches a radius.
+// does not. A Start in the sector, on its boundary too, reaches it only where the segment comes
+// back in after leaving it, across the notch of a sector past half a turn. The normal points from
+// Center on the arc and is the perpendicular of a radius on it, the one facing Start where the
+// radii meet at Center. A Start in the notch of a sector past half a turn reaches a radius.
 func (s Segment[T]) HitSector(sector Sector[T]) (Hit[T], bool) {
 	if sector.Contains(s.Start) {
-		return Hit[T]{}, false
+		return s.reenterSector(sector)
 	}
 
 	fractions, n := sector.crossings(s)
@@ -909,14 +910,15 @@ func (s Segment[T]) HitCubicBezier(curve CubicBezier[T]) (Hit[T], bool) {
 }
 
 // HitPolygon returns where the segment first reaches the polygon from outside, and false where it
-// does not, Start lies in it or the polygon is empty. The normal is that of the edge hit, turned to
-// face the segment, so the polygon may be wound either way. A vertex takes the edge that faces
-// Start, and the earlier in Edges where both do or, in a notch, neither does. The tip of a spike of
-// no width running along the segment is hit facing the segment, as is a vertex of an outline of no
-// area, but a vertex another edge crosses takes that edge.
+// does not or the polygon is empty. A Start in the polygon, on its boundary too, reaches it only
+// where the segment comes back in after leaving it, as across a notch. The normal is that of the
+// edge hit, turned to face the segment, so the polygon may be wound either way. A vertex takes the
+// edge that faces Start, and the earlier in Edges where both do or, in a notch, neither does. The
+// tip of a spike of no width running along the segment is hit facing the segment, as is a vertex of
+// an outline of no area, but a vertex another edge crosses takes that edge.
 func (s Segment[T]) HitPolygon(polygon Polygon[T]) (Hit[T], bool) {
 	if polygon.Contains(s.Start) {
-		return Hit[T]{}, false
+		return s.reenterPolygon(polygon)
 	}
 
 	span := edgeSpan[T]{segment: s, along: true}
@@ -1294,6 +1296,76 @@ func (s Segment[T]) pass(polygon Polygon[T], reached Point[T]) edgePass[T] {
 	}
 
 	return pass
+}
+
+// reenterSector returns where the segment, starting in the sector, crosses back into it after
+// leaving it: the end of the first span between two crossings whose middle lies outside, the
+// normal taken from that middle.
+func (s Segment[T]) reenterSector(sector Sector[T]) (Hit[T], bool) {
+	places, n := sector.crossings(s)
+	cast := s.Float()
+	for i := 1; i < n; i++ {
+		if places[i] == places[i-1] {
+			continue
+		}
+
+		outside := cast.PointAt((places[i-1] + places[i]) / 2)
+		if sector.holds(outside) {
+			continue
+		}
+
+		point := cast.PointAt(places[i])
+
+		return s.hitAt(point.Cast[T](), sector.normal(point, outside)), true
+	}
+
+	return Hit[T]{}, false
+}
+
+// reenterPolygon returns where the segment, starting in the polygon, crosses back into it after
+// leaving it: the nearest crossing of an edge against its outward normal past the nearest crossing
+// of an edge along it.
+func (s Segment[T]) reenterPolygon(polygon Polygon[T]) (Hit[T], bool) {
+	exit, _, exited := s.crossingPast(polygon, 1, math.Inf(-1))
+	if !exited {
+		return Hit[T]{}, false
+	}
+
+	entry, normal, entered := s.crossingPast(polygon, -1, s.Float().fraction(exit))
+	if !entered {
+		return Hit[T]{}, false
+	}
+
+	return s.hitAt(entry.Cast[T](), normal), true
+}
+
+// crossingPast returns the nearest crossing past the fraction of the segment with an edge of the
+// polygon whose outward normal has the sign of the sense against the direction of the segment,
+// and that normal; false where there is none. An edge along the segment crosses it nowhere.
+func (s Segment[T]) crossingPast(polygon Polygon[T], sense, past float64) (Point[float64], Vector[float64], bool) {
+	outward := -1.0
+	if polygon.twiceArea() < 0 {
+		outward = 1
+	}
+
+	cast := s.Float()
+	direction := cast.Vector()
+	var nearest Point[float64]
+	var normal Vector[float64]
+	least, found := math.Inf(1), false
+	for edge := range polygon.Edges() {
+		crossing, ok, _ := s.intersectionSegment(edge)
+		facing := edge.Float().Normal().Multiply(outward)
+		if !ok || facing.Dot(direction)*sense <= 0 {
+			continue
+		}
+
+		if fraction := cast.fraction(crossing); fraction > past && fraction < least {
+			nearest, normal, least, found = crossing, facing, fraction, true
+		}
+	}
+
+	return nearest, normal, found
 }
 
 // hitAt returns the Hit at the point with the normal, of any length and sense, turned against the

@@ -1595,9 +1595,18 @@ func TestRay_HitPolygon(t *testing.T) {
 		hit, ok := Ry(Pt(2, 6), Vec(0, -1)).HitPolygon(notched)
 		assertHit(t, hit, ok, Hit[int]{Point: Pt(2, 1), Normal: Vec(-3/math.Sqrt(13), 2/math.Sqrt(13)), Fraction: 5})
 	})
-	t.Run("an Origin inside hits nothing", func(t *testing.T) {
+	t.Run("an Origin inside that never comes back in hits nothing", func(t *testing.T) {
 		_, ok := Ry(Pt(1, 1), Vec(1, 0)).HitPolygon(notched)
 		assert.False(t, ok)
+	})
+	t.Run("an Origin on the boundary heading out reaches the polygon again across its notch, as a reflection does", func(t *testing.T) {
+		notch := Pol([]Point[float64]{Pt(0.0, 0.0), Pt(10.0, 0.0), Pt(10.0, 10.0), Pt(7.0, 10.0), Pt(7.0, 3.0), Pt(3.0, 3.0), Pt(3.0, 10.0), Pt(0.0, 10.0)})
+		ray := Ry(Pt(5.0, 12.0), Vec(1.0, -2.0))
+		first, ok := ray.HitPolygon(notch)
+		assert.True(t, ok)
+
+		hit, ok := Ry(first.Point, ray.Vector.Reflect(first.Normal)).HitPolygon(notch)
+		assertHit(t, hit, ok, Hit[float64]{Point: Pt(4.5, 3.0), Normal: Vec(0.0, 1.0), Fraction: 2.5})
 	})
 	t.Run("pointing away and empty hit nothing", func(t *testing.T) {
 		_, ok := Ry(Pt(2, 6), Vec(0, 1)).HitPolygon(notched)
